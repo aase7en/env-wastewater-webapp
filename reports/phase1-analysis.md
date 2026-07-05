@@ -37,6 +37,16 @@ actual concentrated chlorine after applying the mix ratio. **Needs an explicit
 user decision on which maps to `wastewater.reading.chlorine_used`** — not a
 "pick either, they're equal" situation as the original mapping assumed.
 
+**DECIDED (2026-07-05): `chlorine_used` ← `คลอรีนน้ำที่ใช้จริง`.** Per the user:
+the chlorine dosing tank holds 100L; operators top it back up every 1-2 days
+with water + chlorine mixed at a ratio (1:2, 1:4, 1:9...) chosen day-to-day
+based on the measured Free Chlorine reading (weaker reading → richer ratio
+like 1:2; stronger reading → diluted further, 1:4 or 1:9). `ที่ใช้` is the
+gross top-up volume (water+chlorine combined); `ที่ใช้จริง` is the actual pure
+chlorine chemical quantity within that top-up, which is what feeds monthly
+chemical-usage and carbon-footprint accounting. `ที่ใช้` is intermediate
+working data, not part of the target schema — leave it unmapped (SKIP).
+
 ## 4. Electricity meter — `เลขมิเตอร์วันนี้` delta vs `ปริมาณการใช้ไฟฟ้าของระบบ`
 - Day-over-day delta vs `ปริมาณการใช้ไฟฟ้าของระบบ` — mismatches: **71** / 907 comparable pairs
 - Sample mismatches:
