@@ -1,0 +1,17 @@
+{
+  "hooks": {
+    "SessionStart": [
+      {
+        "matcher": "startup",
+        "hooks": [
+          {
+            "name": "a-wiki-companion-notice",
+            "type": "command",
+            "command": "bash .claude/hooks/session-start-companion-notice.sh",
+            "timeout": 10000
+          }
+        ]
+      }
+    ]
+  }
+}

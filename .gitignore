@@ -1,0 +1,21 @@
+# secrets — never commit
+.env
+.env.*
+
+# source data — hospital operational data, never commit
+data/raw/*
+!data/raw/.gitkeep
+
+# python
+__pycache__/
+*.pyc
+.venv/
+venv/
+
+# node (future frontend)
+node_modules/
+dist/
+.next/
+
+# OS
+.DS_Store
