@@ -37,6 +37,8 @@ skip it silently.
 
 ## Migration status
 
-See `MIGRATION.md` (once created) for the current phase (Phase 1 = read-only
-CSV analysis, Phase 2 = actual Supabase insert — gated behind explicit user
-approval each time, per the wastewater migration protocol worked out with A-Wiki).
+See `MIGRATION.md` for the current phase. Phase 1 (read-only CSV analysis)
+and Phase 2 (Supabase insert, gated behind explicit user approval each time)
+are both complete as of 2026-07-05 — 907/907 rows migrated. Remaining
+follow-ups (personnel/location FK backfill, discharge-volume field) are
+tracked there too.
