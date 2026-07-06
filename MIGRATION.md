@@ -33,4 +33,33 @@ into both `carbon.reading` and `wastewater.reading`, joined via
 ## Not started
 
 - FastAPI backend
-- Frontend (monitoring webapp)
+- Frontend (monitoring webapp) — a first UI design mockup exists as a Claude
+  Artifact (control-room-style daily dashboard: DO process-flow card, water
+  quality KPI tiles, equipment LED panel, 14-day log table). Not yet
+  implemented or saved into this repo — ask in-session for the link, or
+  regenerate the design brief from this file's context if the artifact link
+  is lost.
+
+## In progress — Personnel reconciliation (started 2026-07-05, session 2)
+
+Goal: backfill `wastewater.reading.reported_by` (currently NULL on all 907
+rows) by resolving `reported_by_name_legacy` to real `core.personnel` /
+`core.app_user` records.
+
+`reported_by_name_legacy` has 12 distinct values across 907 rows. 2 of them
+are raw IDs instead of names (see phase1-analysis.md §7):
+
+| Legacy value | Rows | Resolved to |
+|---|---|---|
+| `2122222222029292` | 176 | **นายวิโรจน์ สุขเกษม** (confirmed by user 2026-07-05) — same person as the 87 rows already logged under the full name "นายวิโรจน์ สุขเกษม"; these two legacy values must merge to one `core.personnel` row when backfilled |
+| `1234567890678` | 67 | **unresolved** — still need to identify who this is |
+
+Still needed before the backfill can run:
+1. Identity behind `1234567890678`.
+2. The personnel master source (`ข้อมูลบ่อบำบัดประจำวัน - ข้อมูลผู้ปฏิบัติงาน.csv`,
+   33 rows) or equivalent, to populate `core.personnel` + `core.app_user` for
+   all 12 reporters, not just the 2 unmatched ones.
+3. Once both are in hand: `INSERT` into `core.personnel`/`core.app_user`,
+   then `UPDATE wastewater.reading SET reported_by = ...` keyed off
+   `reported_by_name_legacy` (folding the two `2122222222029292` /
+   `นายวิโรจน์ สุขเกษม` variants into the same person).
