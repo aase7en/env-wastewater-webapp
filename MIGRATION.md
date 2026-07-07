@@ -85,6 +85,28 @@ national ID was deliberately not used as a key):
 export (possibly left before the export was taken, or name recorded
 differently). Left as-is; negligible impact (1/907 rows).
 
+## RESOLVED — PDF template-builder tables (closed 2026-07-07, chunk P2)
+
+Migration `p2_pdf_template_equipment_repair_request` applied to `ENV_DB`:
+
+- **`core.equipment`** — seeded with all 10 pieces of equipment, `code`
+  matching the existing boolean column names in `wastewater.reading`
+  (`pump1`, `pump2`, `aerator1`, `aerator2`, `sludge_pump1`, `sludge_pump2`,
+  `chlorine_pump1`, `chlorine_pump2`, `screen_coarse`, `screen_fine`).
+  `location_id` left NULL pending P3.
+- **`core.repair_request`** — `equipment_id`/`reading_id`/`reported_by` all
+  nullable, `cause text NOT NULL`, `status` enum (`open`/`in_progress`/
+  `resolved`/`cancelled`). Empty — nothing to seed, these get created by
+  staff/the future webapp.
+- **`core.pdf_template`** — `paper_size` enum (`a4`/`a5`), `orientation`
+  enum (`portrait`/`landscape`), `layout jsonb`, `is_builtin` flag. **Empty
+  on purpose** — no starter templates seeded yet, since the actual layout
+  for ทส.1/ทส.2/repair-request depends on the UI design work that's
+  paused (see `design/ui-brief.md`). Populate once that direction is picked.
+
+All three have RLS enabled with the same `ALL` policy for `authenticated`
+used elsewhere in this schema (see `carbon.reading`, `wastewater.reading`).
+
 ## Not started
 
 - FastAPI backend — see next-session chunk `P5`.
@@ -94,8 +116,6 @@ differently). Left as-is; negligible impact (1/907 rows).
   it up next) and the 4 mockups already made (dashboard ×3 palette
   variants + a live-dashboard-style variant + a mobile daily-entry form) —
   links are in-session only; regenerate from the brief if lost.
-- PDF template-builder module (`core.pdf_template`/`core.equipment`/
-  `core.repair_request` tables) — see next-session chunk `P2`.
 
 ## Next-session plan (cross-agent handoff)
 
@@ -108,7 +128,7 @@ be its own commit.
 | ID | Goal | Depends on | Files |
 |---|---|---|---|
 | ~~`P1`~~ | ~~Personnel backfill~~ — **done 2026-07-07**, see "Personnel reconciliation" above. | — | — |
-| `P2` | Add `core.pdf_template` (layout JSON), `core.equipment`, `core.repair_request` tables per `docs/adr/0001-pdf-template-builder-in-v1.md`. Write as a migration, apply via Supabase MCP `apply_migration`, verify with `list_tables`. | none | new migration file, update `SPEC.md` status line |
+| ~~`P2`~~ | ~~PDF-builder tables~~ — **done 2026-07-07**, see "PDF template-builder tables" above. | — | — |
 | `P3` | Expand `core.location`: add department/category field (enum or free text — decide against the list โรงครัว/ซักฟอก/OPD/IPD/ห้องฟัน/ห้องยา/การเงิน/etc.) + coordinate columns (`lat numeric`, `lng numeric`, or PostGIS point — decide based on whether map display is needed near-term). Seed the one wastewater location (Activated Sludge, 60 ลบ.ม.) then backfill `wastewater.reading.location_id` + `carbon.meter.location_id`. | none, but the column-type decision (enum vs text, lat/lng vs PostGIS) needs a quick user confirm before writing the migration | migration file, `CONTEXT.md` (add "Location" glossary update) |
 | `P4` | Change `wastewater_discharged` to boolean semantics (decided 2026-07-06) — either `ALTER COLUMN` type change or add new boolean column + deprecate the numeric one. Backfill the historical 907 rows' value from whatever's inferable, or leave NULL (nothing to infer — source only ever had a status, not captured before). | none | migration file |
 | `P5` | Scaffold FastAPI backend: project structure, Supabase client, `core.app_user`-based auth, REST endpoints for the daily form + dashboard reads, pytest scaffolding per Iron Law #1 (failing test first). | P1-P4 ideally done first so the schema is stable | new `app/` or `backend/` dir |
