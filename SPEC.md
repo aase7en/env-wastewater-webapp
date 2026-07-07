@@ -37,11 +37,15 @@
 
 ## Table เพิ่มที่ต้องมีสำหรับข้อ 5 (PDF module)
 
+**สร้างแล้ว 2026-07-07 (chunk P2)** — ดู `MIGRATION.md` สำหรับรายละเอียด
+
 - `core.pdf_template` — เก็บ layout ที่ผู้ใช้ออกแบบ (JSON: fields, data source,
-  paper size, orientation)
-- `core.equipment` — master รายการอุปกรณ์ (เชื่อมกับ checklist 10 รายการใน
-  `wastewater.reading`)
+  paper size, orientation) — table ว่าง รอ seed starter template (ทส.1/ทส.2/
+  ใบแจ้งซ่อม) หลัง UI design เสร็จ
+- `core.equipment` — master รายการอุปกรณ์ 10 ตัว (เชื่อมกับ checklist ใน
+  `wastewater.reading`) — seed ครบแล้ว
 - `core.repair_request` — ใบแจ้งซ่อมแต่ละใบ (equipment, สาเหตุ, วันที่, สถานะ)
+  — table ว่าง รอข้อมูลจริงจากการใช้งาน
 
 ## นอกขอบเขต v1 (ไว้ v2+)
 
