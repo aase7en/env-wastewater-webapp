@@ -20,8 +20,16 @@ into both `carbon.reading` and `wastewater.reading`, joined via
 
 ## Known follow-ups — decisions closed 2026-07-06
 
-- **`reported_by`** — mapping fully resolved, see "Personnel reconciliation" below.
-  Backfill SQL not yet written/run — that's next-session chunk `P1`.
+- **`reported_by`** — **P1 complete, executed 2026-07-07.** Decision: historical/
+  migrated rows do **not** get the `reported_by` FK backfilled (it points to
+  `core.app_user.id` → `auth.users.id`, which would mean creating real login
+  accounts for 3 already-resigned staff just for record-keeping — not worth
+  it). Instead: `reported_by_name_legacy` was consolidated (the 3 นายวิโรจน์
+  variants → one canonical string, verified 330 rows) and `core.personnel`
+  was seeded with all 9 identifiable people (name/position/status only — no
+  national ID/bank/salary/address, see below). `reported_by` (FK) stays NULL
+  for migrated rows; it'll be populated going forward once real users log
+  into the webapp.
 - **`location_id`** — **scope expanded** (user decision 2026-07-06): the
   wastewater pond is one location (Activated Sludge, 60 ลบ.ม.) but
   `core.location` must support the hospital's *other* departments too —
@@ -36,28 +44,46 @@ into both `carbon.reading` and `wastewater.reading`, joined via
   measurement). Current column is `numeric`; needs a type change or a new
   boolean column — see next-session chunk `P4`.
 
-## RESOLVED — Personnel reconciliation (closed 2026-07-06)
+## RESOLVED — Personnel reconciliation (closed 2026-07-07)
 
-`reported_by_name_legacy` has 12 distinct values across 907 rows. All three
-"reporter" variants below are now confirmed to be **the same person**:
+`reported_by_name_legacy` originally had 12 distinct values across 907 rows.
+All three of these are the **same person**, now consolidated to one string
+(`UPDATE ... SET reported_by_name_legacy = 'นายวิโรจน์ สุขเกษม' WHERE ...`,
+verified 330 rows post-update):
 
-| Legacy value | Rows | Person |
+| Legacy value (before) | Rows | Person |
 |---|---|---|
 | `นายวิโรจน์ สุขเกษม` (full name, as originally logged) | 87 | นายวิโรจน์ สุขเกษม |
-| `2122222222029292` (raw ID, confirmed 2026-07-05) | 176 | นายวิโรจน์ สุขเกษม |
-| `1234567890678` (raw ID, confirmed 2026-07-06) | 67 | นายวิโรจน์ สุขเกษม |
+| `2122222222029292` (raw ID) | 176 | นายวิโรจน์ สุขเกษม |
+| `1234567890678` (raw ID) | 67 | นายวิโรจน์ สุขเกษม |
 
-→ **330 of 907 rows (36%) all belong to one person**, logged under 3
-different legacy values. The backfill (`P1`, see below) must fold all three
-into a single `core.personnel` row.
+The source was the hospital's **full HR export** (264 employees, not the
+33-row water-treatment-specific file originally expected) — it contains
+national ID, bank account, salary, and home address per employee. **None of
+that was extracted, stored, or committed** — only name/position/department/
+status for the 9 people who actually appear as wastewater reporters. The raw
+upload itself was never committed to git (session-local only, same policy as
+`data/raw/`).
 
-**Still blocking the actual backfill**: the personnel master file. User
-pointed to `C:\Users\aase7en\Downloads\เจ้าหน้าที่รพ.อุทัย.csv` (2026-07-06)
-— **that path is on the user's own Windows machine, not reachable from this
-session** (this session runs in an isolated cloud container with no access
-to any local computer's filesystem). To unblock: attach/paste the CSV
-directly into the chat, or upload it to a Google Drive folder the session's
-Drive connector can search.
+`core.personnel` now has 9 rows (`STAFF-001`..`STAFF-009`, employee_code
+synthesized — the HR export had no usable position-number field, and
+national ID was deliberately not used as a key):
+
+| Code | Name | Position | Dept | Status |
+|---|---|---|---|---|
+| STAFF-001 | นายวิลาส รื่นวิชา | พนักงานบริการ | อนามัยสิ่งแวดล้อมฯ | active |
+| STAFF-002 | นายสมพร หามาลี | ผู้ช่วยช่างทั่วไป | งานซ่อมบำรุง | active |
+| STAFF-003 | นายวิโรจน์ สุขเกษม | พนักงานเปล | งานการพยาบาลผู้ป่วยนอก (ย้ายมาจาก ENV — confirmed by user) | active |
+| STAFF-004 | นายภาณุ งามนิมิตร | พนักงานบริการ | อนามัยสิ่งแวดล้อมฯ | ลาออก |
+| STAFF-005 | นายเชษฐา ธรรมสาลี | พนักงานบริการ | อนามัยสิ่งแวดล้อมฯ | ลาออก |
+| STAFF-006 | นายธงชัย มะอาจเลิศ | พนักงานบริการ | อนามัยสิ่งแวดล้อมฯ | active |
+| STAFF-007 | นายต้นฟ้า งามนิมิตร | พนักงานบริการ | อนามัยสิ่งแวดล้อมฯ | ลาออก |
+| STAFF-008 | นายศุภศิษฎิ์ คงสุวรรณ | นักวิชาการสาธารณสุข | อนามัยสิ่งแวดล้อมฯ | active |
+| STAFF-009 | นายเขตโสภณ แก้วเที่ยง | พนักงานช่วยเหลือคนไข้ | งานการพยาบาลผู้ป่วยนอก | active |
+
+**Not resolved**: `นางสาวอริศรา เรืองอุไร` (1 row only) — not found in the HR
+export (possibly left before the export was taken, or name recorded
+differently). Left as-is; negligible impact (1/907 rows).
 
 ## Not started
 
@@ -81,7 +107,7 @@ be its own commit.
 
 | ID | Goal | Depends on | Files |
 |---|---|---|---|
-| `P1` | Personnel backfill: `INSERT` 33 rows into `core.personnel`/`core.app_user` from the master CSV (once provided), then `UPDATE wastewater.reading SET reported_by = ...` keyed off `reported_by_name_legacy`, folding the 3 นายวิโรจน์ variants into one person. Gate: gets a live-DB write, needs explicit user approval before executing, same as Phase 2. | Personnel CSV from user | new `scripts/phase3_personnel_backfill.py` (mirror `phase2_generate_sql.py`'s batching pattern), `reports/phase3-personnel-summary.md` |
+| ~~`P1`~~ | ~~Personnel backfill~~ — **done 2026-07-07**, see "Personnel reconciliation" above. | — | — |
 | `P2` | Add `core.pdf_template` (layout JSON), `core.equipment`, `core.repair_request` tables per `docs/adr/0001-pdf-template-builder-in-v1.md`. Write as a migration, apply via Supabase MCP `apply_migration`, verify with `list_tables`. | none | new migration file, update `SPEC.md` status line |
 | `P3` | Expand `core.location`: add department/category field (enum or free text — decide against the list โรงครัว/ซักฟอก/OPD/IPD/ห้องฟัน/ห้องยา/การเงิน/etc.) + coordinate columns (`lat numeric`, `lng numeric`, or PostGIS point — decide based on whether map display is needed near-term). Seed the one wastewater location (Activated Sludge, 60 ลบ.ม.) then backfill `wastewater.reading.location_id` + `carbon.meter.location_id`. | none, but the column-type decision (enum vs text, lat/lng vs PostGIS) needs a quick user confirm before writing the migration | migration file, `CONTEXT.md` (add "Location" glossary update) |
 | `P4` | Change `wastewater_discharged` to boolean semantics (decided 2026-07-06) — either `ALTER COLUMN` type change or add new boolean column + deprecate the numeric one. Backfill the historical 907 rows' value from whatever's inferable, or leave NULL (nothing to infer — source only ever had a status, not captured before). | none | migration file |
