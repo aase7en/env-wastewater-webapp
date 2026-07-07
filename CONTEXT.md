@@ -44,10 +44,12 @@ not required to build those from scratch, but the underlying engine is
 generic, not three hardcoded templates.
 
 **Location (`core.location`)**
-Physical treatment-pond site. As of this writing the hospital's exact site
-count/naming is still an open decision (see roadmap task 2 in the session
-plan) — this repo has one row's worth of data (`carbon.meter` → one meter)
-in production, but the schema supports multiple.
+Any physical site the hospital tracks, not just the wastewater pond —
+scope confirmed 2026-07-06 to also cover โรงครัว, ซักฟอก, OPD, IPD, ห้องฟัน,
+ห้องยา, การเงิน, and more added later, each with GPS coordinates. The
+wastewater pond itself is exactly one location (Activated Sludge, 60 ลบ.ม.).
+Schema still needs a department/category column and lat/lng — tracked as
+next-session chunk `P3` in `MIGRATION.md`.
 
 **Input source (`input_source`)**
 Enum on `wastewater.reading` distinguishing how a row was captured. All 907
