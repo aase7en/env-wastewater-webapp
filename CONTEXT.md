@@ -31,8 +31,12 @@ must keep on file. Populated entirely from existing `wastewater.reading` /
 
 **ทส.2**
 Monthly summary report derived from ทส.1 entries, submitted to the local
-environmental/pollution-control authority (เจ้าพนักงานท้องถิ่น). Same data
-source as ทส.1, aggregated monthly.
+environmental/pollution-control authority (เจ้าพนักงานท้องถิ่น). Source is
+`wastewater.v_monthly_summary`, which aggregates `v_reading_detail` by
+month — averages for water-quality parameters, sums for consumption
+totals, and `days_discharged` (count of days `wastewater_discharged` was
+true) rather than a summed volume, since discharge is tracked as a
+yes/no per day, not a measured quantity.
 
 **PDF Template-Builder**
 A v1 module: a UI where the user composes a printable report layout by
@@ -45,11 +49,20 @@ generic, not three hardcoded templates.
 
 **Location (`core.location`)**
 Any physical site the hospital tracks, not just the wastewater pond —
-scope confirmed 2026-07-06 to also cover โรงครัว, ซักฟอก, OPD, IPD, ห้องฟัน,
-ห้องยา, การเงิน, and more added later, each with GPS coordinates. The
-wastewater pond itself is exactly one location (Activated Sludge, 60 ลบ.ม.).
-Schema still needs a department/category column and lat/lng — tracked as
-next-session chunk `P3` in `MIGRATION.md`.
+scope covers โรงครัว, ซักฟอก, OPD, IPD, ห้องฟัน, ห้องยา, การเงิน, และ
+สิ่งแวดล้อม (more categories added over time via `core.location_category`,
+a lookup table rather than an enum — see `docs/adr/0002`). Only one real
+location is seeded so far: the wastewater pond (`WWTP-1`, Activated Sludge
+60 ลบ.ม.) — other departments get added by whoever manages them, not
+pre-seeded with placeholder data. Coordinates are plain `lat`/`lng`
+numeric columns, not PostGIS (no spatial-query need exists yet).
+
+**การระบายน้ำทิ้ง (`wastewater_discharged`)**
+Boolean — did the plant discharge treated water today, yes/no. Not a
+measured volume (the source AppSheet system never tracked one, only a
+status). All 907 migrated rows are NULL (unknown), since the source column
+was folded into `note` instead during Phase 2, before this field existed
+in its current form.
 
 **Input source (`input_source`)**
 Enum on `wastewater.reading` distinguishing how a row was captured. All 907
