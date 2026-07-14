@@ -30,19 +30,10 @@ into both `carbon.reading` and `wastewater.reading`, joined via
   national ID/bank/salary/address, see below). `reported_by` (FK) stays NULL
   for migrated rows; it'll be populated going forward once real users log
   into the webapp.
-- **`location_id`** — **scope expanded** (user decision 2026-07-06): the
-  wastewater pond is one location (Activated Sludge, 60 ลบ.ม.) but
-  `core.location` must support the hospital's *other* departments too —
-  โรงครัว, ซักฟอก, OPD, IPD, ห้องฟัน, ห้องยา, การเงิน, and more added later —
-  plus **GPS coordinates** per location. Current `core.location` schema has
-  no coordinate columns (only `id, code, qr_code, area_name, image_path,
-  created_at`) — needs `lat`/`lng` (or a PostGIS `geography(Point)`) added.
-  This is bigger than "seed one row" — see next-session chunk `P3`.
-- **`wastewater_discharged`** — **decided (2026-07-06): simplify to a
-  boolean** (ระบายหรือไม่ระบาย) rather than tracking an actual discharged
-  volume — matches what the source system ever recorded (a status, not a
-  measurement). Current column is `numeric`; needs a type change or a new
-  boolean column — see next-session chunk `P4`.
+- **`location_id`** — **P3 complete, executed 2026-07-07.** See "Location
+  schema" below.
+- **`wastewater_discharged`** — **P4 complete, executed 2026-07-07.** See
+  "Discharge boolean" below.
 
 ## RESOLVED — Personnel reconciliation (closed 2026-07-07)
 
@@ -107,6 +98,45 @@ Migration `p2_pdf_template_equipment_repair_request` applied to `ENV_DB`:
 All three have RLS enabled with the same `ALL` policy for `authenticated`
 used elsewhere in this schema (see `carbon.reading`, `wastewater.reading`).
 
+## RESOLVED — Location schema (closed 2026-07-07, chunk P3)
+
+Migration `p3_location_category_coords_p4_discharge_boolean` applied to
+`ENV_DB`, decisions from a grilling session (see `docs/adr/0002-location-
+category-lookup-table.md` for the reasoning on the category decision):
+
+- **`core.location_category`** — new lookup table (not an enum, not free
+  text — see ADR-0002), seeded with 8 categories: สิ่งแวดล้อม, โรงครัว,
+  ซักฟอก, OPD, IPD, ห้องฟัน, ห้องยา, การเงิน.
+- **`core.location`** — gained `category_id` (FK), `lat`/`lng` (plain
+  `numeric`, not PostGIS — no spatial-query requirement exists yet).
+  Seeded with exactly **one** real row: `WWTP-1`, "บ่อบำบัดน้ำเสีย
+  (Activated Sludge 60 ลบ.ม.)", category สิ่งแวดล้อม. Other departments'
+  locations are *not* seeded with placeholder data — added by whoever
+  manages them, when ready.
+- **Backfilled**: all 907 `wastewater.reading.location_id` and the 1
+  `carbon.meter.location_id` now point at `WWTP-1`. Verified 0 remaining
+  NULLs on both.
+
+## RESOLVED — Discharge boolean (closed 2026-07-07, chunk P4)
+
+`wastewater.reading.wastewater_discharged` changed from `numeric` to
+`boolean` in place (`ALTER COLUMN ... TYPE boolean`, NULL-preserving —
+all 907 rows were NULL before and after, so no data was at risk). Meaning
+is now simply "was treated water discharged today" (yes/no), matching what
+the source system ever actually recorded (a status, never a measured
+volume).
+
+**Discovered mid-migration**: two views depend on this column —
+`wastewater.v_reading_detail` (per-reading detail + threshold flags used by
+the dashboard) and `wastewater.v_monthly_summary` (the ทส.2 data source),
+which had `sum(wastewater_discharged)` — meaningless once the column is
+boolean. Both views were dropped and recreated; `v_monthly_summary`'s
+`total_wastewater_discharged` (a sum) became **`days_discharged`**
+(`count(*) FILTER (WHERE wastewater_discharged)`) — "how many days this
+month had a discharge," the boolean-correct equivalent. Verified the view
+still runs and returns sane data (all `days_discharged = 0` currently,
+correct since every row is still NULL).
+
 ## Not started
 
 - FastAPI backend — see next-session chunk `P5`.
@@ -129,8 +159,8 @@ be its own commit.
 |---|---|---|---|
 | ~~`P1`~~ | ~~Personnel backfill~~ — **done 2026-07-07**, see "Personnel reconciliation" above. | — | — |
 | ~~`P2`~~ | ~~PDF-builder tables~~ — **done 2026-07-07**, see "PDF template-builder tables" above. | — | — |
-| `P3` | Expand `core.location`: add department/category field (enum or free text — decide against the list โรงครัว/ซักฟอก/OPD/IPD/ห้องฟัน/ห้องยา/การเงิน/etc.) + coordinate columns (`lat numeric`, `lng numeric`, or PostGIS point — decide based on whether map display is needed near-term). Seed the one wastewater location (Activated Sludge, 60 ลบ.ม.) then backfill `wastewater.reading.location_id` + `carbon.meter.location_id`. | none, but the column-type decision (enum vs text, lat/lng vs PostGIS) needs a quick user confirm before writing the migration | migration file, `CONTEXT.md` (add "Location" glossary update) |
-| `P4` | Change `wastewater_discharged` to boolean semantics (decided 2026-07-06) — either `ALTER COLUMN` type change or add new boolean column + deprecate the numeric one. Backfill the historical 907 rows' value from whatever's inferable, or leave NULL (nothing to infer — source only ever had a status, not captured before). | none | migration file |
+| ~~`P3`~~ | ~~Location schema~~ — **done 2026-07-07**, see "Location schema" above. | — | — |
+| ~~`P4`~~ | ~~Discharge boolean~~ — **done 2026-07-07**, see "Discharge boolean" above. | — | — |
 | `P5` | Scaffold FastAPI backend: project structure, Supabase client, `core.app_user`-based auth, REST endpoints for the daily form + dashboard reads, pytest scaffolding per Iron Law #1 (failing test first). | P1-P4 ideally done first so the schema is stable | new `app/` or `backend/` dir |
 | `P6` | Build the real frontend from the approved design (see `design/ui-brief.md` + chosen mockup direction) — replace the Claude Artifact mockups with real templated pages wired to P5's API. | P5, and a design direction locked in via Claude Design/z.ai | frontend dir (framework TBD at P5) |
 
