@@ -163,11 +163,20 @@ sub-chunks (P5a–P5e), each its own commit on branch `claude/webapp-p5-fastapi`
 
 ### Open follow-up from P5
 
-- **P5b.2 — schema introspection verification.** The 11 ORM models are
-  reconstructed from `phase2_generate_sql.py` (the authoritative INSERT
-  contract) + migration notes, NOT introspected from the live DB yet. Once
-  `SUPABASE_DB_URL` is provided, snapshot the real schema into
-  `reports/schema-snapshot-p5.md` and reconcile any drift (DB wins).
+- **P5b.2-local — DONE.** Reconciled the 11 ORM models against the Phase 2
+  INSERT contract (`phase2_generate_sql.py` `WR_COLS`) + migration notes.
+  Found and fixed one real drift: `wastewater.reading.cause` did not exist
+  (it lives on `core.repair_request`); the request field is now
+  `abnormal_cause` and seeds a repair request in the same transaction.
+  Recorded in `reports/schema-snapshot-p5.md`.
+- **P5b.2-live — scaffolded, awaiting `SUPABASE_DB_URL`.** Two artifacts
+  land the moment the URL is provided:
+  1. `scripts/introspect_schema.py` — dumps exact types, enums, constraints,
+     indexes, RLS, and view definitions to `reports/schema-snapshot-live.md`.
+  2. `tests/integration/` — 8 tests (table/column presence, 907-row claim,
+     view queryability, seeds, GET endpoints end-to-end). Auto-skip until
+     the URL is set; `uv run pytest` stays green on fresh checkouts.
+  Run with: `uv run python scripts/introspect_schema.py && uv run pytest tests/integration -v`
 
 ## Not started
 
