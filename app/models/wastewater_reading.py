@@ -98,11 +98,12 @@ class WastewaterReading(Base, UUIDPrimaryKey, Timestamps):
     color_desc: Mapped[Optional[str]] = mapped_column(String(100))
     smell_desc: Mapped[Optional[str]] = mapped_column(String(100))
     note: Mapped[Optional[str]] = mapped_column(Text)
-    # When system_operating=false, cause is mandatory (SPEC.md §6). Stored on
-    # the reading itself so it flows into a repair-request later. NOTE: column
-    # existence to be confirmed at P5b.2 introspection — if absent in DB, this
-    # attribute should be moved to a side table or added via migration.
-    cause: Mapped[Optional[str]] = mapped_column(Text)
+    # NOTE: SPEC §6 requires a mandatory "cause" when system_operating=False.
+    # That column does NOT exist on wastewater.reading today (not in WR_COLS,
+    # the authoritative INSERT contract from phase2_generate_sql.py). The cause
+    # lives on core.repair_request.cause, which the form raises when abnormal.
+    # Adding cause to this table needs a real migration — tracked in MIGRATION.md
+    # as a P5b.2 follow-up. Do not re-add it here as an unverified column.
 
     # --- Provenance ----------------------------------------------------------
     legacy_id: Mapped[Optional[str]] = mapped_column(String(64))

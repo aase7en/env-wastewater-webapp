@@ -26,31 +26,31 @@ class TestReadingCreate:
         assert r.ph == Decimal("7.2")
 
     def test_cause_required_when_abnormal(self):
-        """SPEC §6: setting system_operating=False without a cause must fail."""
+        """SPEC §6: setting system_operating=False without abnormal_cause must fail."""
         kwargs = self._base_kwargs()
         kwargs["system_operating"] = False
-        with pytest.raises(ValueError, match="cause"):
+        with pytest.raises(ValueError, match="abnormal_cause"):
             ReadingCreate(**kwargs)
 
     def test_abnormal_with_cause_ok(self):
         kwargs = self._base_kwargs()
         kwargs["system_operating"] = False
-        kwargs["cause"] = "ปั๊ม 1 น้ำรั่ว"
+        kwargs["abnormal_cause"] = "ปั๊ม 1 น้ำรั่ว"
         r = ReadingCreate(**kwargs)
-        assert r.cause == "ปั๊ม 1 น้ำรั่ว"
+        assert r.abnormal_cause == "ปั๊ม 1 น้ำรั่ว"
 
     def test_cause_not_required_when_normal(self):
         kwargs = self._base_kwargs()
         kwargs["system_operating"] = True
-        # no cause — fine
+        # no abnormal_cause — fine
         r = ReadingCreate(**kwargs)
-        assert r.cause is None
+        assert r.abnormal_cause is None
 
     def test_whitespace_cause_rejected(self):
         kwargs = self._base_kwargs()
         kwargs["system_operating"] = False
-        kwargs["cause"] = "   "
-        with pytest.raises(ValueError, match="cause"):
+        kwargs["abnormal_cause"] = "   "
+        with pytest.raises(ValueError, match="abnormal_cause"):
             ReadingCreate(**kwargs)
 
 
@@ -61,12 +61,12 @@ class TestReadingUpdate:
         assert u.note is None
 
     def test_abnormal_requires_cause(self):
-        with pytest.raises(ValueError, match="cause"):
+        with pytest.raises(ValueError, match="abnormal_cause"):
             ReadingUpdate(system_operating=False)
 
     def test_abnormal_with_cause(self):
-        u = ReadingUpdate(system_operating=False, cause="เสีย")
-        assert u.cause == "เสีย"
+        u = ReadingUpdate(system_operating=False, abnormal_cause="เสีย")
+        assert u.abnormal_cause == "เสีย"
 
 
 class TestModelsImport:

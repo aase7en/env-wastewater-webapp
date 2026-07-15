@@ -62,8 +62,10 @@ class _ReadingBase(BaseModel):
     color_desc: Optional[str] = None
     smell_desc: Optional[str] = None
     note: Optional[str] = None
-    # When system_operating=False, cause is mandatory (SPEC §6).
-    cause: Optional[str] = None
+    # NOTE: 'cause' is intentionally NOT a column on wastewater.reading (it is
+    # not in WR_COLS, the authoritative INSERT contract). SPEC §6 makes it a
+    # mandatory form input when system_operating=False; it seeds a
+    # core.repair_request row instead. See ReadingCreate.abnormal_cause below.
 
 
 class ReadingCreate(_ReadingBase):
@@ -73,17 +75,26 @@ class ReadingCreate(_ReadingBase):
     user and the default WWTP-1 (for now), not by the client. The companion
     carbon.reading row is created in the same transaction from the meter +
     consumption derived from pump1_meter/pump2_meter deltas.
+
+    SPEC §6: when system_operating=False the client MUST send `abnormal_cause`.
+    That value does NOT get stored on wastewater.reading (no such column) —
+    the endpoint uses it to create a core.repair_request row in the same
+    transaction.
     """
     # Electricity consumed today (kWh) — written to carbon.reading.consumption.
     # Optional; if omitted, no carbon row is linked.
     electricity_consumption: Optional[Decimal] = None
     # The meter reading itself (kWh cumulative) — carbon.reading.meter_value.
     electricity_meter_value: Optional[Decimal] = None
+    # Required iff system_operating is False. Seeds core.repair_request.cause.
+    abnormal_cause: Optional[str] = None
 
     @model_validator(mode="after")
     def cause_required_when_abnormal(self) -> "ReadingCreate":
-        if self.system_operating is False and not (self.cause and self.cause.strip()):
-            raise ValueError("cause is required when system_operating is False")
+        if self.system_operating is False and not (
+            self.abnormal_cause and self.abnormal_cause.strip()
+        ):
+            raise ValueError("abnormal_cause is required when system_operating is False")
         return self
 
 
@@ -122,12 +133,15 @@ class ReadingUpdate(BaseModel):
     color_desc: Optional[str] = None
     smell_desc: Optional[str] = None
     note: Optional[str] = None
-    cause: Optional[str] = None
+    # See ReadingCreate: abnormal_cause seeds a repair_request, not a column.
+    abnormal_cause: Optional[str] = None
 
     @model_validator(mode="after")
     def cause_required_when_abnormal(self) -> "ReadingUpdate":
-        if self.system_operating is False and not (self.cause and self.cause.strip()):
-            raise ValueError("cause is required when system_operating is False")
+        if self.system_operating is False and not (
+            self.abnormal_cause and self.abnormal_cause.strip()
+        ):
+            raise ValueError("abnormal_cause is required when system_operating is False")
         return self
 
 

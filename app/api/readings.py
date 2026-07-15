@@ -80,7 +80,9 @@ async def create_reading(
         await session.flush()  # populate carbon.id
 
     reading = WastewaterReading(
-        **payload.model_dump(exclude={"electricity_consumption", "electricity_meter_value"}),
+        **payload.model_dump(
+            exclude={"electricity_consumption", "electricity_meter_value", "abnormal_cause"}
+        ),
         location_id=location_id,
         carbon_reading_id=carbon.id if carbon else None,
         # reported_by needs a real app_user id; in stub mode leave NULL and
@@ -90,6 +92,23 @@ async def create_reading(
         input_source="manual",
     )
     session.add(reading)
+    await session.flush()  # populate reading.id before creating the repair request
+
+    # SPEC §6: when system_operating=False, abnormal_cause seeds a repair
+    # request in the SAME transaction. The cause is NOT a column on
+    # wastewater.reading — it lives on core.repair_request.cause.
+    if payload.abnormal_cause:
+        from app.models.repair_request import RepairRequest
+        session.add(
+            RepairRequest(
+                reading_id=reading.id,
+                reported_by=UUID(user.app_user_id) if user.app_user_id else None,
+                cause=payload.abnormal_cause,
+                status="open",
+                reported_date=payload.reading_date,
+            )
+        )
+
     try:
         await session.commit()
     except IntegrityError as e:
@@ -187,7 +206,9 @@ async def update_reading(
     row = await session.get(WastewaterReading, reading_id)
     if row is None:
         raise HTTPException(status_code=404, detail="reading not found")
-    data = payload.model_dump(exclude_unset=True)
+    # abnormal_cause is a request-level field (seeds repair_request), not a
+    # column on wastewater.reading — never setattr it onto the row.
+    data = payload.model_dump(exclude_unset=True, exclude={"abnormal_cause"})
     for k, v in data.items():
         setattr(row, k, v)
     await session.commit()
