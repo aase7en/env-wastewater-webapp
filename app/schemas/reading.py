@@ -9,8 +9,9 @@ from __future__ import annotations
 from datetime import date
 from decimal import Decimal
 from typing import Optional
+from uuid import UUID
 
-from pydantic import BaseModel, ConfigDict, Field, model_validator
+from pydantic import BaseModel, ConfigDict, Field, field_validator, model_validator
 
 from app.core.computed import (
     date_thai_be,
@@ -144,6 +145,11 @@ class ReadingDetail(_ReadingBase):
     sv30_percent: Optional[float] = None
     energy_per_m3: Optional[float] = None
     date_thai_be: Optional[int] = None
+
+    @field_validator("id", "location_id", "carbon_reading_id", mode="before")
+    @classmethod
+    def _coerce_uuid_to_str(cls, v):
+        return str(v) if isinstance(v, UUID) else v
 
     @classmethod
     def from_orm_with_computed(cls, obj) -> "ReadingDetail":
