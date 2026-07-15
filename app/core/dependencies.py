@@ -16,12 +16,14 @@ from sqlalchemy.ext.asyncio import AsyncSession
 
 async def current_user(
     authorization: str | None = Header(default=None),
-    session: AsyncSession = Depends(get_session),
+    session: AsyncSession | None = Depends(get_session),
 ) -> CurrentUser:
     s = get_settings()
     if s.auth_mode == "stub":
         return await resolve_stub_user()
-    # JWT mode
+    # JWT mode — needs a real session to look up core.app_user.
+    if session is None:  # pragma: no cover - defensive
+        raise HTTPException(status_code=503, detail="db session unavailable")
     if not authorization or not authorization.lower().startswith("bearer "):
         raise HTTPException(
             status_code=status.HTTP_401_UNAUTHORIZED,

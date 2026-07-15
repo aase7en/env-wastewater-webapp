@@ -39,5 +39,8 @@ async def health() -> dict[str, str]:
     }
 
 
-# Routers are registered in sub-chunks as endpoints land:
+# Routers are registered in sub-chunks as endpoints land.
+from app.api.meta import router as meta_router  # noqa: E402
+
+app.include_router(meta_router)
 #   P5d: app.api.readings, app.api.dashboard, app.api.equipment, ...

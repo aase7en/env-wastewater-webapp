@@ -36,7 +36,18 @@ def client(env_test_mode) -> TestClient:
     from app.core import config
     config.get_settings.cache_clear()
     from app.main import app
-    return TestClient(app)
+    # In stub auth mode no DB session is needed — override the dependency so
+    # tests never try to build/connect a real engine.
+    from app.core.dependencies import current_user
+    from app.core.auth import resolve_stub_user
+    from app.core.db import get_session
+
+    async def _override_session():
+        yield None
+
+    app.dependency_overrides[get_session] = _override_session
+    yield TestClient(app)
+    app.dependency_overrides.clear()
 
 
 # ---- session-scoped monkeypatch (pytest's monkeypatch is function-scoped) ----
