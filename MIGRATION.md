@@ -137,15 +137,47 @@ month had a discharge," the boolean-correct equivalent. Verified the view
 still runs and returns sane data (all `days_discharged = 0` currently,
 correct since every row is still NULL).
 
+## RESOLVED — FastAPI backend (closed 2026-07-16, chunk P5)
+
+The backend is scaffolded and all v1 endpoints are live. Built in five
+sub-chunks (P5a–P5e), each its own commit on branch `claude/webapp-p5-fastapi`.
+
+- **Stack** (decision recorded in `docs/adr/0003-fastapi-sqlalchemy-async-
+  supabase-jwt.md`): FastAPI + SQLAlchemy 2.0 async + asyncpg against ENV_DB.
+  The original Pi5 self-host plan was abandoned (Pi5 also runs a Bitcoin full
+  node + Hermes agent — CPU ~80%, RAM strained). Supabase free tier replaces it.
+- **Auth** runs in two selectable modes via `AUTH_MODE`:
+  - `stub` — fixed mock user (for local dev before real `auth.users` rows exist)
+  - `jwt`  — verifies Supabase-issued JWTs with `SUPABASE_JWT_SECRET`, looks
+    up `core.app_user` by `auth.users.id`
+- **15 endpoints** across 6 routers: daily-form CRUD (transactional carbon +
+  wastewater insert), dashboard (reads `v_reading_detail` + `v_monthly_summary`),
+  reference data, repair requests, PDF templates, `/api/me`.
+- **Threshold stub**: DO<2.0 / Cl<0.5 / pH 6.5–8.5 checks fire on create and
+  log at WARNING. Telegram/Line delivery is deliberately NOT wired (SPEC lists
+  threshold alerts as out-of-v1) — the return list lets a future notifier
+  consume the same results.
+- **44 tests passing** — pure-function (computed values, thresholds), schema
+  validation (SPEC §6 cause-mandatory rule), auth stub, and endpoint contracts
+  via a stub async session. DB-backed integration tests deferred (see P5b.2).
+
+### Open follow-up from P5
+
+- **P5b.2 — schema introspection verification.** The 11 ORM models are
+  reconstructed from `phase2_generate_sql.py` (the authoritative INSERT
+  contract) + migration notes, NOT introspected from the live DB yet. Once
+  `SUPABASE_DB_URL` is provided, snapshot the real schema into
+  `reports/schema-snapshot-p5.md` and reconcile any drift (DB wins).
+
 ## Not started
 
-- FastAPI backend — see next-session chunk `P5`.
-- Frontend build-out — see next-session chunk `P6`. Design direction for
-  this is paused for now; see `design/ui-brief.md` for the full brief
-  (portable prompt for Claude Design / z.ai design or whichever tool picks
-  it up next) and the 4 mockups already made (dashboard ×3 palette
-  variants + a live-dashboard-style variant + a mobile daily-entry form) —
-  links are in-session only; regenerate from the brief if lost.
+- **P6 — Frontend build-out.** Build the real frontend from the approved design
+  (see `design/ui-brief.md` + chosen mockup direction), replacing the Claude
+  Artifact mockups with real templated pages wired to P5's API. Depends on P5
+  (done) and a design direction being locked in via Claude Design/z.ai. Design
+  is currently paused — 4 mockups exist (dashboard ×3 palette variants + a
+  live-dashboard-style variant + a mobile daily-entry form); links are
+  in-session only, regenerate from the brief if lost.
 
 ## Next-session plan (cross-agent handoff)
 
@@ -161,7 +193,7 @@ be its own commit.
 | ~~`P2`~~ | ~~PDF-builder tables~~ — **done 2026-07-07**, see "PDF template-builder tables" above. | — | — |
 | ~~`P3`~~ | ~~Location schema~~ — **done 2026-07-07**, see "Location schema" above. | — | — |
 | ~~`P4`~~ | ~~Discharge boolean~~ — **done 2026-07-07**, see "Discharge boolean" above. | — | — |
-| `P5` | Scaffold FastAPI backend: project structure, Supabase client, `core.app_user`-based auth, REST endpoints for the daily form + dashboard reads, pytest scaffolding per Iron Law #1 (failing test first). | P1-P4 ideally done first so the schema is stable | new `app/` or `backend/` dir |
+| ~~`P5`~~ | ~~Scaffold FastAPI backend~~ — **done 2026-07-16**, see "FastAPI backend" above. 5 sub-chunks P5a–P5e. | — | `app/`, `tests/`, `pyproject.toml`, `docs/adr/0003-*.md` |
 | `P6` | Build the real frontend from the approved design (see `design/ui-brief.md` + chosen mockup direction) — replace the Claude Artifact mockups with real templated pages wired to P5's API. | P5, and a design direction locked in via Claude Design/z.ai | frontend dir (framework TBD at P5) |
 
 **Resume command for a fresh agent**: read this file, then `git log --oneline -10` to see which `chunk(P#)` commits already landed, then continue at the lowest-numbered `P#` not yet committed.
