@@ -107,10 +107,10 @@ async def main() -> int:
         return 1
 
     url = settings.supabase_db_url
-    if "unset" in url:
+    if "unset" in url or "REPLACE_WITH" in url:
         print(
-            "SUPABASE_DB_URL is not configured (still the placeholder). "
-            "Set it in .env first — see .env.example.",
+            "SUPABASE_DB_URL is not configured (still a placeholder). "
+            "Fill in the real DB password in .env first — see .env.example.",
             file=sys.stderr,
         )
         return 1
