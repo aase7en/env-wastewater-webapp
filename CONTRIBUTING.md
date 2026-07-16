@@ -34,6 +34,36 @@ secrets — integration tests skip themselves when `SUPABASE_DB_URL` is absent.
   `app/models/` are verified against it via `scripts/introspect_schema.py` +
   `tests/integration/`.
 
+## Secret storage across devices
+
+The canonical `.env` lives in **Google Drive** so secrets sync across
+machines (same pattern as the A-Wiki `drive/` symlink). The local `.env` is a
+stub containing `__LOAD_FROM_DRIVE__=true`; the config loader
+(`app/core/config.py`) reads the real values from Drive when that flag is set.
+
+### First-time setup on a new machine
+
+1. Mount Google Drive so `A-Wiki-Data/secrets/env-wastewater-webapp.env` is
+   reachable. On this Windows box it's `L:\My Drive\A-Wiki-Data\secrets\...`;
+   on macOS it's typically `~/Google Drive/My Drive/A-Wiki-Data/secrets/...`.
+   The loader checks both.
+2. Create the local stub `.env` (gitignored) with one line:
+   ```
+   __LOAD_FROM_DRIVE__=true
+   ```
+3. Run `uv run pytest` — if it picks up the Drive values, you're set.
+
+### Editing secrets
+
+Edit `A-Wiki-Data/secrets/env-wastewater-webapp.env` directly (in Drive).
+Every machine sees the change on next Drive sync — no per-machine edits.
+
+### Fallback (CI, machines without Drive)
+
+If Drive isn't mounted, the loader falls back to a normal local `.env`. This
+is what CI does (it sets `SUPABASE_DB_URL` via the workflow env, and
+integration tests skip when it's absent).
+
 ## Companion repo (A-Wiki)
 
 Domain knowledge, the original schema design doc, and the project pointer page
