@@ -25,11 +25,13 @@ from decimal import Decimal
 from sqlalchemy import (
     Boolean,
     Date,
+    DateTime,
     ForeignKey,
     Numeric,
     String,
     Text,
     UniqueConstraint,
+    func,
     text,
 )
 from sqlalchemy.dialects.postgresql import UUID

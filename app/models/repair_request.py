@@ -36,6 +36,4 @@ class RepairRequest(Base, UUIDPrimaryKey, Timestamps):
     status: Mapped[str] = mapped_column(
         String(32), nullable=False, default="open", server_default=text("'open'")
     )
-    reported_date: Mapped[Optional[date]] = mapped_column(Date)
-    resolved_date: Mapped[Optional[date]] = mapped_column(Date)
-    note: Mapped[Optional[str]] = mapped_column(Text)
+    resolved_at: Mapped[Optional[date]] = mapped_column(Date)

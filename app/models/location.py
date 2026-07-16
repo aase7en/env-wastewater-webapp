@@ -25,7 +25,7 @@ class Location(Base, UUIDPrimaryKey, Timestamps):
     __table_args__ = {"schema": "core"}
 
     code: Mapped[str] = mapped_column(String(32), unique=True, nullable=False)
-    name: Mapped[str] = mapped_column(String(200), nullable=False)
+    area_name: Mapped[str] = mapped_column(String(200), nullable=False)
     category_id: Mapped[Optional[uuid.UUID]] = mapped_column(
         UUID(as_uuid=True),
         ForeignKey("core.location_category.id"),
@@ -33,6 +33,5 @@ class Location(Base, UUIDPrimaryKey, Timestamps):
     )
     lat: Mapped[Optional[Decimal]] = mapped_column(Numeric(9, 6))
     lng: Mapped[Optional[Decimal]] = mapped_column(Numeric(9, 6))
-    is_active: Mapped[bool] = mapped_column(
-        nullable=False, default=True, server_default=text("true")
-    )
+    image_path: Mapped[Optional[str]] = mapped_column(String(500))
+    qr_code: Mapped[Optional[str]] = mapped_column(String(100))

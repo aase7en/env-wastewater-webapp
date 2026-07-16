@@ -25,7 +25,9 @@ class Personnel(Base, UUIDPrimaryKey, Timestamps):
     employee_code: Mapped[str] = mapped_column(String(32), unique=True, nullable=False)
     full_name: Mapped[str] = mapped_column(String(200), nullable=False)
     position: Mapped[Optional[str]] = mapped_column(String(200))
-    department: Mapped[Optional[str]] = mapped_column(String(200))
     status: Mapped[str] = mapped_column(
         String(32), nullable=False, default="active", server_default=text("'active'")
     )
+    nickname: Mapped[Optional[str]] = mapped_column(String(50))
+    phone: Mapped[Optional[str]] = mapped_column(String(20))
+    photo_path: Mapped[Optional[str]] = mapped_column(String(500))

@@ -17,6 +17,3 @@ class LocationCategory(Base, UUIDPrimaryKey, Timestamps):
     __table_args__ = {"schema": "core"}
 
     name: Mapped[str] = mapped_column(String(100), unique=True, nullable=False)
-    is_active: Mapped[bool] = mapped_column(
-        nullable=False, default=True, server_default=text("true")
-    )

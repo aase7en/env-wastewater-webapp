@@ -7,9 +7,10 @@ templates (is_builtin=true). See docs/adr/0001-pdf-template-builder-in-v1.md.
 from __future__ import annotations
 
 from typing import Optional
+import uuid
 
-from sqlalchemy import Boolean, String, text
-from sqlalchemy.dialects.postgresql import JSONB
+from sqlalchemy import Boolean, ForeignKey, String, text
+from sqlalchemy.dialects.postgresql import JSONB, UUID
 from sqlalchemy.orm import Mapped, mapped_column
 
 from app.core.db import Base
@@ -34,4 +35,7 @@ class PdfTemplate(Base, UUIDPrimaryKey, Timestamps):
     layout: Mapped[Optional[dict]] = mapped_column(JSONB)
     is_builtin: Mapped[bool] = mapped_column(
         Boolean, nullable=False, default=False, server_default=text("false")
+    )
+    created_by: Mapped[Optional[uuid.UUID]] = mapped_column(
+        UUID(as_uuid=True), ForeignKey("core.app_user.id")
     )
