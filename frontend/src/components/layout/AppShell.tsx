@@ -86,7 +86,12 @@ export function AppShell({ children }: { children: ReactNode }) {
       {/* ── Desktop sidebar (suite: fixed w-72, brand, nav, user footer) ── */}
       <aside className="hidden md:flex w-72 h-screen sticky top-0 shrink-0 flex-col bg-aura-bg/80 backdrop-blur-2xl border-r border-aura-borderSubtle">
         <div className="px-6 py-8">
-          <Link to="/dashboard">
+          <Link to="/dashboard" className="flex items-center gap-3">
+            <img
+              src={`${import.meta.env.BASE_URL}logo-aura.png`}
+              alt=""
+              className="w-9 h-9 rounded-xl shrink-0"
+            />
             <BrandWordmark className="text-xl" />
           </Link>
           <p className="mt-1 text-[10px] font-bold uppercase tracking-[0.1em] text-aura-textMuted">

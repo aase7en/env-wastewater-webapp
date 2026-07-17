@@ -278,7 +278,7 @@ binding rules are here.
 
 | Chunk | Agent | Claimed | Scope (files) |
 |---|---|---|---|
-| F3 assets + docs (logo/favicon, ui-brief authority) | fable5 | 2026-07-18 | `frontend/public/*` (additive — ไม่แตะไฟล์ PWA ของ Z), `design/ui-brief.md`, MIGRATION claim release |
+| _(none — both tracks idle; claim here before starting)_ | | | |
 
 Done: ~~F1 dual-theme foundation~~ (2026-07-18 — tokens.css `:root`/`.dark`,
 toggle in AppShell, no-flash script in index.html; `frontend/index.html` is
@@ -287,6 +287,10 @@ released back to shared-hotspot status → Z may start PWA manifest work).
 Material Symbols + top bar + user footer, ENV wordmark, AuraCard static-ring
 discipline, Gauge/PFD/Recharts token-driven colors; landed from the track-f
 worktree after 3 working-tree wipes, see rule 6).
+~~F3 assets + docs~~ (2026-07-18 — logo/favicon from `logo 3D_aura.png`
+into `frontend/public/` + sidebar brand + favicon link; `design/ui-brief.md`
+rewritten as the suite-authority record with the 9 binding domain-mapping
+rules; brand = UTH[AI]-ENV closed).
 
 ### Track F queue (Fable5)
 

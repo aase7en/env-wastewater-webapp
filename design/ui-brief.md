@@ -1,21 +1,45 @@
 # UI Design Brief — Wastewater Treatment Monitoring Webapp
 
-> **⚠ Direction locked in 2026-07-17 — UTH[AI]-EVN Aura Edition.**
-> The SaaS/PFD direction described in the copy-paste prompt below is
-> **superseded** by the UTH[AI]-EVN Aura Edition design system (dark
-> deep-teal foundation, neon cyan/lime accents, glassmorphism cards with
-> a rotating conic-gradient aura border, Plus Jakarta Sans display font).
-> See:
-> - `design/uth_ai_evn_system_design_aura_edition.md` — the authoritative spec.
-> - `design/DESIGN.md` — full color/typography token table (Boost variant).
-> - `design/luminous_mint/DESIGN.md` — the paired light-mode variant.
-> - `design/water_management_refined_aura_dark/code.html` — reference
->   implementation (Tailwind config + `.glass-card` CSS pattern).
+> **⚠ Style authority since 2026-07-18: the full `design/` suite** —
+> 14 Claude-Design screen exports (`*_aura_dark` / `*_light_mode` folders,
+> each `code.html` + `screen.png`) + two token sets:
+> - `design/boost_resource_management/DESIGN.md` — **dark** ("Boost", = root
+>   `DESIGN.md`)
+> - `design/luminous_mint/DESIGN.md` — **light** ("Luminous Mint")
+> - `design/uth_ai_evn_system_design_aura_edition.md` — aura-card spec
+> - `design/water_management_refined_aura_dark/code.html` — closest reference
+>   for this app's dashboard (see also `..._dark_mode_fix`, which fixes the
+>   wordmark to **UTH[AI]-ENV** — ENV, not EVN; that spelling is canonical).
 >
-> The Aura foundation landed in the frontend as `chunk(P10.6.1)` (tailwind
-> palette + `.aura-card` + UI primitives); the daily-entry form (P10.6.4)
-> and readings list (P10.6.5) ship on it. The PFD dashboard (P10.1–4)
-> still uses the legacy clinical-teal palette and migrates in P10.7.
+> **Brand question is closed**: `UTH[AI]-ENV` + `logo 3D_aura.png`
+> (optimized copies live in `frontend/public/logo-aura.png` + favicon).
+>
+> Frontend state: F1 (2026-07-18) made the tokens dual-theme CSS variables
+> (`:root` = Luminous Mint light, `.dark` = Boost dark) with a persisted
+> toggle; F2 aligned the shell (w-72 sidebar, Material Symbols, top bar,
+> user footer) and made all SVG/chart colors token-driven. See MIGRATION.md
+> "Two-track F/Z" for how visual (F) and feature (Z) work run in parallel.
+>
+> **Domain-mapping rules (binding — style ตาม suite, เนื้อหาตามระบบจริง):**
+> 1. PFD flow-line semantics are fixed in every theme: 🔵 water in/out,
+>    ⚪ air bubbles, 🟤 sludge (RAS/WAS) — neon accents never restyle them.
+> 2. No fake telemetry: data is a once-daily manual entry → show
+>    "บันทึกล่าสุด <date>", never a pulsing LIVE badge, until real IoT lands.
+> 3. No fake actuation: the app monitors and records — no Manage Valves /
+>    Optimize Load / Emergency Shutdown controls. The equivalent real action
+>    is "แจ้งเหตุผิดปกติ" (system_operating override + mandatory cause →
+>    repair request).
+> 4. Thai text renders via IBM Plex Sans Thai fallback (Plus Jakarta Sans
+>    has no Thai glyphs); telemetry numbers use tabular figures.
+> 5. Raw neon (#00F0FF/#CCFF00) is dark-mode-only; light mode uses the
+>    Luminous Mint readable pairs (see tokens.css).
+> 6. Rotating aura rings are reserved for cards needing operator attention;
+>    everything else uses a static ring (`prefers-reduced-motion` stops all).
+> 7. ทส.1 / ทส.2 / ใบแจ้งซ่อม print output stays plain black-on-white.
+> 8. Never hotlink `lh3.googleusercontent.com` assets from the exports —
+>    copy assets into `frontend/public/`.
+> 9. The AI-Admin exports contain a real staff name — this repo is private,
+>    but do **not** copy `design/` exports into A-Wiki (public).
 >
 > The rest of this file is kept as a historical record of the brief that
 > drove the earlier mockup iterations — the **content/data requirements**
