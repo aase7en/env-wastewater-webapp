@@ -7,7 +7,8 @@ monitoring webapp for โรงพยาบาลอุทัย's environmental
   design, ENV concepts) this repo builds against — see `AGENTS.md` for details.
 - **Status**: Phases 1–4 done (907/907 rows migrated, schema stabilized). The
   FastAPI backend (P5) is scaffolded with all v1 endpoints live; the frontend
-  (P6) is next. See `MIGRATION.md`.
+  (P10) has a tracer-bullet React dashboard (PFD direction) wired to the API.
+  See `MIGRATION.md`.
 - **Data**: `data/raw/` is gitignored — source exports never get committed.
 
 ## Running the backend
@@ -37,3 +38,23 @@ DB engine built lazily). Any endpoint that queries will fail loudly until
 
 See `docs/adr/0003-fastapi-sqlalchemy-async-supabase-jwt.md` for why the
 backend uses SQLAlchemy async + JWT verification instead of supabase-py.
+
+## Running the frontend
+
+The frontend is a tracer-bullet (P10) — a React + Vite + TypeScript +
+Tailwind app with a Process Flow Diagram (PFD) dashboard wired to the
+backend's `/api/*` endpoints. Start the backend first (above), then:
+
+```bash
+cd frontend
+npm install
+npm run dev
+#   Dashboard: http://127.0.0.1:5173
+```
+
+Vite proxies `/api` → `http://127.0.0.1:8000`, so no backend URL needs to be
+configured in the frontend — it talks to FastAPI via the same origin.
+
+Design direction and scope are captured in `design/ui-brief.md`. The current
+page set is the dashboard only (P10.1–P10.4); the daily-entry form, auth
+flow, and PDF template-builder UI are deferred to later chunks.

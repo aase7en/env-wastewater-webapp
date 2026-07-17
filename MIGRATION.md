@@ -178,15 +178,43 @@ sub-chunks (P5a–P5e), each its own commit on branch `claude/webapp-p5-fastapi`
      the URL is set; `uv run pytest` stays green on fresh checkouts.
   Run with: `uv run python scripts/introspect_schema.py && uv run pytest tests/integration -v`
 
+## RESOLVED — Frontend tracer-bullet (closed 2026-07-16, chunk P10)
+
+The PFD-direction frontend is scaffolded end-to-end as a tracer-bullet, built
+in sub-chunks P10.1–P10.5 on branch `claude/webapp-p5-fastapi`.
+
+- **Stack**: React 18 + Vite + TypeScript + Tailwind CSS + react-router-dom.
+  Vite proxies `/api` → `http://127.0.0.1:8000` so the frontend shares the
+  backend's origin in dev — no separate API URL to configure.
+- **Design direction** (locked in, superseding the earlier paused mockups):
+  Process Flow Diagram (PFD) as centerpiece — a 5-stage SVG (screening →
+  aeration → sedimentation → chlorination → discharge) with animated dashed
+  water-flow lines, particle bubbles in the aeration tank tied to the
+  aerator on/off status, circular gauges for DO/pH/free-chlorine/TDS, and
+  traffic-light threshold badges. Palette is clinical-teal + deep navy +
+  amber alert + real water blues. Fonts: "Sora" (display) + "IBM Plex Sans
+  Thai" (body). See `design/ui-brief.md` for the brief that informed it.
+- **Tracer-bullet page** (`pages/DashboardPage.tsx`): KPI tiles (water used,
+  electricity, days discharged) + PFD + 14-day log table with Thai-BE dates,
+  wired to `/api/dashboard?days=14`, `/api/readings`, `/api/equipment`.
+- **Verified**: TypeScript 0 errors, Vite build 274KB → 88KB gzip, `/api/health`
+  proxies through Vite → FastAPI successfully, `index.html` serves HTTP 200.
+
+### Open follow-up from P10 (deferred chunks)
+
+- **P10.6+ — Daily-entry form page** (mobile-first daily form, the other
+  screen from `design/ui-brief.md`). Replaces the Claude Artifact mockup.
+- **Auth flow wiring** — frontend currently no-op against stub auth; JWT
+  login UI + token storage is a later chunk once `AUTH_MODE=jwt` is real.
+- **PDF template-builder UI** — depends on the layout work still paused in
+  `design/ui-brief.md` (ทส.1/ทส.2/repair-request layouts).
+- **OpenAPI auto-gen client** — `src/lib/types.ts` is manual for now;
+  `openapi-typescript` auto-gen is a later hardening chunk.
+
 ## Not started
 
-- **P6 — Frontend build-out.** Build the real frontend from the approved design
-  (see `design/ui-brief.md` + chosen mockup direction), replacing the Claude
-  Artifact mockups with real templated pages wired to P5's API. Depends on P5
-  (done) and a design direction being locked in via Claude Design/z.ai. Design
-  is currently paused — 4 mockups exist (dashboard ×3 palette variants + a
-  live-dashboard-style variant + a mobile daily-entry form); links are
-  in-session only, regenerate from the brief if lost.
+(Nothing currently blocked — see "Next-session plan" below for the next
+chunk candidates: P10.6 daily form, auth wiring, deployment.)
 
 ## Next-session plan (cross-agent handoff)
 
@@ -203,6 +231,23 @@ be its own commit.
 | ~~`P3`~~ | ~~Location schema~~ — **done 2026-07-07**, see "Location schema" above. | — | — |
 | ~~`P4`~~ | ~~Discharge boolean~~ — **done 2026-07-07**, see "Discharge boolean" above. | — | — |
 | ~~`P5`~~ | ~~Scaffold FastAPI backend~~ — **done 2026-07-16**, see "FastAPI backend" above. 5 sub-chunks P5a–P5e. | — | `app/`, `tests/`, `pyproject.toml`, `docs/adr/0003-*.md` |
-| `P6` | Build the real frontend from the approved design (see `design/ui-brief.md` + chosen mockup direction) — replace the Claude Artifact mockups with real templated pages wired to P5's API. | P5, and a design direction locked in via Claude Design/z.ai | frontend dir (framework TBD at P5) |
+| ~~`P10`~~ | ~~Frontend tracer-bullet~~ — **done 2026-07-16**, see "Frontend tracer-bullet" above. 5 sub-chunks P10.1–P10.5. | P5, design direction (PFD, locked in) | `frontend/` (React + Vite + Tailwind) |
+
+> **Note on the P-numbering gap (P6–P9)**: those chunks were cross-cutting
+> work tracked in the companion **A-Wiki** repo, not migration chunks here —
+> P6.5 (Drive-backed global `.env` + repo env) is the only one with a commit
+> in this repo (`b4d9b5e`); P7 (bootstrap automation), P8, P9 (stability
+> hardening) landed in A-Wiki. The frontend was originally planned as "P6"
+> but shipped as P10 once the design direction was locked in. No work is
+> missing — the gap is just a shared cross-repo numbering scheme.
 
 **Resume command for a fresh agent**: read this file, then `git log --oneline -10` to see which `chunk(P#)` commits already landed, then continue at the lowest-numbered `P#` not yet committed.
+
+**Next chunk candidates** (in rough priority order; pick one per session):
+
+| ID | Goal | Depends on | Files |
+|---|---|---|---|
+| `P10.6` | Daily-entry form page (mobile-first) — the other screen from `design/ui-brief.md` | P10.1–4 (scaffold) | `frontend/src/pages/DailyFormPage.tsx` + form components |
+| `P11` | Auth wiring — JWT login UI + token storage; flip `AUTH_MODE=jwt` | P5 (auth modes), P10 | `frontend/src/pages/AuthPage.tsx`, `app/core/auth.py` |
+| `P12` | Deployment — Dockerfile + Cloud Run (or Supabase Edge Function for API) | P5 + P10 | `Dockerfile`, `.github/workflows/deploy.yml` |
+| `P13` | PDF template-builder UI — ทส.1/ทส.2/repair-request layouts | `design/ui-brief.md` unpause, P5 PDF endpoints | `frontend/src/pages/ReportsPage.tsx` |
