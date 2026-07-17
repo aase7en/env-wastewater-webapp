@@ -1,12 +1,13 @@
 import { type ReactNode } from "react";
 import { Link, useLocation } from "react-router-dom";
-import { LayoutDashboard, FileText, ListChecks, FileBarChart, Settings } from "lucide-react";
+import { LayoutDashboard, FileText, ListChecks, FileBarChart, Wrench, Settings } from "lucide-react";
 import { cn } from "../../lib/utils";
 
 const NAV = [
   { to: "/dashboard", label: "แดชบอร์ด", icon: LayoutDashboard },
   { to: "/form", label: "บันทึกประจำวัน", icon: FileText },
   { to: "/readings", label: "ประวัติ", icon: ListChecks },
+  { to: "/equipment", label: "อุปกรณ์", icon: Wrench },
   { to: "/reports", label: "เอกสาร", icon: FileBarChart },
   { to: "/settings", label: "ตั้งค่า", icon: Settings },
 ];

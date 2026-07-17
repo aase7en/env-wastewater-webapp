@@ -61,9 +61,10 @@ test.describe("Aura SPA smoke", () => {
     await expect(page.locator("text=กลับหน้าแดชบอร์ด")).toBeVisible();
   });
 
-  test("sidebar nav has 4 items", async ({ page }) => {
+  test("sidebar nav has the full set of items", async ({ page }) => {
     await page.goto("/dashboard");
-    const navLabels = ["แดชบอร์ด", "บันทึกประจำวัน", "ประวัติ", "ตั้งค่า"];
+    // Update this list when NAV grows. Order matters less than presence.
+    const navLabels = ["แดชบอร์ด", "บันทึกประจำวัน", "ประวัติ", "อุปกรณ์", "เอกสาร", "ตั้งค่า"];
     for (const label of navLabels) {
       await expect(page.locator(`nav a:has-text("${label}")`)).toBeVisible();
     }
