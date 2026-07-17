@@ -83,11 +83,16 @@ COMMENT ON VIEW wastewater.v_dashboard_14day IS
     'Dashboard rollup: most-recent-first rows with computed do_average + threshold flags. P12 frontend-first replacement for FastAPI /api/dashboard.';
 
 -- ───────────────────────────────────────────────────────────────────────────
--- v_reading_detail — single-reading detail + computed fields for the form.
--- Replaces FastAPI /api/readings/{id} GET response with computed fields.
+-- v_reading_with_computed — single-reading detail + P12 computed fields
+-- for the frontend form/edit view. We use a NEW view name (not
+-- v_reading_detail) because v_reading_detail already exists from P3+P4
+-- with extra columns (pump1_consumption, flag_do1..3, etc.) that are
+-- referenced by v_monthly_summary — CREATE OR REPLACE cannot drop
+-- columns, and DROP would cascade-break the dependent. The legacy view
+-- is left untouched; the frontend queries this new view instead.
 -- ───────────────────────────────────────────────────────────────────────────
-DROP VIEW IF EXISTS wastewater.v_reading_detail;
-CREATE VIEW wastewater.v_reading_detail AS
+DROP VIEW IF EXISTS wastewater.v_reading_with_computed;
+CREATE VIEW wastewater.v_reading_with_computed AS
 SELECT
     r.*,
     wastewater.fn_do_average(r.do_aeration, r.do_sedimentation, r.do_before_discharge) AS do_average,
@@ -95,5 +100,5 @@ SELECT
     EXTRACT(YEAR FROM r.reading_date)::int + 543 AS date_thai_be
 FROM wastewater.reading r;
 
-COMMENT ON VIEW wastewater.v_reading_detail IS
-    'Reading detail + computed fields. P12 frontend-first replacement for FastAPI /api/readings/{id} ReadingDetail response.';
+COMMENT ON VIEW wastewater.v_reading_with_computed IS
+    'Reading detail + P12 computed fields (do_average, energy_kwh_estimate, date_thai_be). Frontend edit-mode view. Distinct from legacy v_reading_detail which has different computed columns used by v_monthly_summary.';

@@ -53,7 +53,7 @@ export async function fetchReadings(limit = 30): Promise<{ items: ReadingListIte
 /** Single reading for edit mode. Replaces /api/readings/{id}. */
 export async function fetchReading(id: string): Promise<ReadingDetail> {
   const { data, error } = await supabase
-    .from("v_reading_detail")
+    .from("v_reading_with_computed")
     .select("*")
     .eq("id", id)
     .maybeSingle();
