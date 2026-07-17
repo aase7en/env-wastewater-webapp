@@ -1,0 +1,56 @@
+name: E2E smoke tests
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - "frontend/**"
+      - ".github/workflows/e2e.yml"
+  pull_request:
+    branches: [main]
+    paths:
+      - "frontend/**"
+  workflow_dispatch:
+
+jobs:
+  smoke:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "20"
+          cache: "npm"
+          cache-dependency-path: frontend/package-lock.json
+
+      - name: Install deps
+        working-directory: frontend
+        run: npm ci
+
+      - name: Install Playwright browsers
+        working-directory: frontend
+        run: npx playwright install --with-deps chromium
+
+      - name: Build (catch TS errors before running tests)
+        working-directory: frontend
+        env:
+          GH_PAGES_BASE: /env-wastewater-webapp/
+          VITE_SUPABASE_URL: ${{ secrets.VITE_SUPABASE_URL }}
+          VITE_SUPABASE_ANON_KEY: ${{ secrets.VITE_SUPABASE_ANON_KEY }}
+        run: npm run build
+
+      - name: Run smoke tests against the deployed prod URL
+        working-directory: frontend
+        env:
+          E2E_BASE_URL: https://aase7en.github.io/env-wastewater-webapp/
+        run: npm run e2e:prod
+
+      - name: Upload test artifacts on failure
+        if: failure()
+        uses: actions/upload-artifact@v4
+        with:
+          name: playwright-results
+          path: frontend/test-results/
+          retention-days: 7

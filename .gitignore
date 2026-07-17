@@ -35,3 +35,9 @@ dist/
 
 # OS
 .DS_Store
+
+# playwright + ladle artifacts
+frontend/test-results/
+frontend/playwright-report/
+frontend/playwright/.cache/
+frontend/ladle-dist/
