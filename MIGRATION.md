@@ -178,36 +178,56 @@ sub-chunks (P5a–P5e), each its own commit on branch `claude/webapp-p5-fastapi`
      the URL is set; `uv run pytest` stays green on fresh checkouts.
   Run with: `uv run python scripts/introspect_schema.py && uv run pytest tests/integration -v`
 
-## RESOLVED — Frontend tracer-bullet (closed 2026-07-16, chunk P10)
+## RESOLVED — Frontend tracer-bullet (closed 2026-07-16 → 17, chunks P10 + P10.6)
 
-The PFD-direction frontend is scaffolded end-to-end as a tracer-bullet, built
-in sub-chunks P10.1–P10.5 on branch `claude/webapp-p5-fastapi`.
+The frontend is scaffolded end-to-end as a tracer-bullet on branch
+`claude/webapp-p5-fastapi`. P10.1–P10.5 shipped the dashboard; P10.6
+added the Aura Edition design system + the daily-entry form.
 
 - **Stack**: React 18 + Vite + TypeScript + Tailwind CSS + react-router-dom.
   Vite proxies `/api` → `http://127.0.0.1:8000` so the frontend shares the
   backend's origin in dev — no separate API URL to configure.
-- **Design direction** (locked in, superseding the earlier paused mockups):
-  Process Flow Diagram (PFD) as centerpiece — a 5-stage SVG (screening →
-  aeration → sedimentation → chlorination → discharge) with animated dashed
-  water-flow lines, particle bubbles in the aeration tank tied to the
-  aerator on/off status, circular gauges for DO/pH/free-chlorine/TDS, and
-  traffic-light threshold badges. Palette is clinical-teal + deep navy +
-  amber alert + real water blues. Fonts: "Sora" (display) + "IBM Plex Sans
-  Thai" (body). See `design/ui-brief.md` for the brief that informed it.
-- **Tracer-bullet page** (`pages/DashboardPage.tsx`): KPI tiles (water used,
-  electricity, days discharged) + PFD + 14-day log table with Thai-BE dates,
-  wired to `/api/dashboard?days=14`, `/api/readings`, `/api/equipment`.
-- **Verified**: TypeScript 0 errors, Vite build 274KB → 88KB gzip, `/api/health`
-  proxies through Vite → FastAPI successfully, `index.html` serves HTTP 200.
+- **Design direction — UTH[AI]-EVN Aura Edition** (locked in P10.6,
+  superseding the P10.1–4 clinical-teal PFD palette for new pages): dark
+  deep-teal foundation (`#00161B`), neon cyan/lime accents (`#00F0FF` /
+  `#CCFF00`), glassmorphism cards with a rotating conic-gradient aura
+  border, `Plus Jakarta Sans` display + `IBM Plex Sans Thai` fallback.
+  See `design/uth_ai_evn_system_design_aura_edition.md` + `design/DESIGN.md`.
+  The PFD dashboard (P10.1–4) is still on the legacy palette and migrates
+  in P10.7.
+- **Pages** (3 of them, all wired to the live API):
+  - `/dashboard` — Process Flow Diagram + KPI tiles + 14-day log table
+    with Thai-BE dates (P10.1–4, legacy palette).
+  - `/form` + `/form/:id` — daily-entry form (create / edit), 6-section
+    Accordion, mobile-first, inline threshold warnings, conditional
+    `abnormal_cause` when `system_operating=false` (SPEC §6), admin-gated
+    delete (P10.6.4).
+  - `/readings` — recent readings list, row click → edit (P10.6.5).
+- **CRUD**: `POST/GET/PUT/DELETE /api/readings` all wired through typed
+  `api-client.ts` + mutation hooks (`useCreate/Update/DeleteReading`).
+  `reported_by` + `location_id` are NOT sent by the form (server-derived).
+- **Verified** (P10.6 smoke test): TypeScript 0 errors, Vite build
+  ~300KB → ~94KB gzip, all routes serve HTTP 200, Vite `/api/*` proxy
+  reaches FastAPI (`/api/health` returns JSON). DB-backed endpoints return
+  500 on this Windows machine — known IPv6-only direct-host issue (see
+  P5b.2-live), not a P10.6 bug; full CRUD round-trip waits for Cloud Run
+  deploy or a v4-pooled Supabase connection.
 
 ### Open follow-up from P10 (deferred chunks)
 
-- **P10.6+ — Daily-entry form page** (mobile-first daily form, the other
-  screen from `design/ui-brief.md`). Replaces the Claude Artifact mockup.
-- **Auth flow wiring** — frontend currently no-op against stub auth; JWT
-  login UI + token storage is a later chunk once `AUTH_MODE=jwt` is real.
-- **PDF template-builder UI** — depends on the layout work still paused in
-  `design/ui-brief.md` (ทส.1/ทส.2/repair-request layouts).
+- **P10.7 — Dashboard Aura migration.** Migrate `DashboardPage.tsx` + the
+  PFD components (Gauge / StatusBadge / AerationTank / ProcessFlowDiagram)
+  from the clinical-teal palette to the Aura Edition dark theme. The
+  Aura foundation (P10.6.1) is already in place; this is purely a
+  styling pass.
+- **P11 — Auth flow wiring.** Frontend currently no-op against stub auth;
+  JWT login UI + token storage is a later chunk once `AUTH_MODE=jwt` is
+  real and `auth.users` rows exist.
+- **P12 — Deployment.** Dockerfile + Cloud Run (or Supabase Edge
+  Function for the API). Also unblocks the full CRUD round-trip by
+  giving the backend a v4-routable DB connection.
+- **P13 — PDF template-builder UI** — ทส.1/ทส.2/repair-request layouts.
+  Depends on the layout work still paused in `design/ui-brief.md`.
 - **OpenAPI auto-gen client** — `src/lib/types.ts` is manual for now;
   `openapi-typescript` auto-gen is a later hardening chunk.
 
@@ -231,7 +251,8 @@ be its own commit.
 | ~~`P3`~~ | ~~Location schema~~ — **done 2026-07-07**, see "Location schema" above. | — | — |
 | ~~`P4`~~ | ~~Discharge boolean~~ — **done 2026-07-07**, see "Discharge boolean" above. | — | — |
 | ~~`P5`~~ | ~~Scaffold FastAPI backend~~ — **done 2026-07-16**, see "FastAPI backend" above. 5 sub-chunks P5a–P5e. | — | `app/`, `tests/`, `pyproject.toml`, `docs/adr/0003-*.md` |
-| ~~`P10`~~ | ~~Frontend tracer-bullet~~ — **done 2026-07-16**, see "Frontend tracer-bullet" above. 5 sub-chunks P10.1–P10.5. | P5, design direction (PFD, locked in) | `frontend/` (React + Vite + Tailwind) |
+| ~~`P10`~~ | ~~Frontend tracer-bullet (dashboard)~~ — **done 2026-07-16**, see "Frontend tracer-bullet" above. 5 sub-chunks P10.1–P10.5. | P5, design direction (PFD, locked in) | `frontend/` (React + Vite + Tailwind) |
+| ~~`P10.6`~~ | ~~Aura Edition design system + daily-entry form + readings list~~ — **done 2026-07-17**, see "Frontend tracer-bullet" above. 6 sub-chunks P10.6.1–P10.6.6. | P10 (scaffold), Aura design direction (locked in) | `frontend/src/components/ui/`, `pages/DailyFormPage.tsx`, `pages/ReadingsListPage.tsx`, `design/` |
 
 > **Note on the P-numbering gap (P6–P9)**: those chunks were cross-cutting
 > work tracked in the companion **A-Wiki** repo, not migration chunks here —
@@ -247,7 +268,7 @@ be its own commit.
 
 | ID | Goal | Depends on | Files |
 |---|---|---|---|
-| `P10.6` | Daily-entry form page (mobile-first) — the other screen from `design/ui-brief.md` | P10.1–4 (scaffold) | `frontend/src/pages/DailyFormPage.tsx` + form components |
-| `P11` | Auth wiring — JWT login UI + token storage; flip `AUTH_MODE=jwt` | P5 (auth modes), P10 | `frontend/src/pages/AuthPage.tsx`, `app/core/auth.py` |
-| `P12` | Deployment — Dockerfile + Cloud Run (or Supabase Edge Function for API) | P5 + P10 | `Dockerfile`, `.github/workflows/deploy.yml` |
+| `P10.7` | Dashboard → Aura migration (restyle `DashboardPage` + PFD components onto the Aura Edition dark theme; foundation already landed in P10.6.1) | P10.6.1 (Aura foundation) | `frontend/src/pages/DashboardPage.tsx`, `components/pfd/*` |
+| `P11` | Auth wiring — JWT login UI + token storage; flip `AUTH_MODE=jwt` | P5 (auth modes), P10.6 | `frontend/src/pages/AuthPage.tsx`, `app/core/auth.py` |
+| `P12` | Deployment — Dockerfile + Cloud Run (or Supabase Edge Function for API). Also unblocks full CRUD round-trip (v4-routable DB connection). | P5 + P10.6 | `Dockerfile`, `.github/workflows/deploy.yml` |
 | `P13` | PDF template-builder UI — ทส.1/ทส.2/repair-request layouts | `design/ui-brief.md` unpause, P5 PDF endpoints | `frontend/src/pages/ReportsPage.tsx` |

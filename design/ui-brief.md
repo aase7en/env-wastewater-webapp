@@ -1,5 +1,27 @@
 # UI Design Brief — Wastewater Treatment Monitoring Webapp
 
+> **⚠ Direction locked in 2026-07-17 — UTH[AI]-EVN Aura Edition.**
+> The SaaS/PFD direction described in the copy-paste prompt below is
+> **superseded** by the UTH[AI]-EVN Aura Edition design system (dark
+> deep-teal foundation, neon cyan/lime accents, glassmorphism cards with
+> a rotating conic-gradient aura border, Plus Jakarta Sans display font).
+> See:
+> - `design/uth_ai_evn_system_design_aura_edition.md` — the authoritative spec.
+> - `design/DESIGN.md` — full color/typography token table (Boost variant).
+> - `design/luminous_mint/DESIGN.md` — the paired light-mode variant.
+> - `design/water_management_refined_aura_dark/code.html` — reference
+>   implementation (Tailwind config + `.glass-card` CSS pattern).
+>
+> The Aura foundation landed in the frontend as `chunk(P10.6.1)` (tailwind
+> palette + `.aura-card` + UI primitives); the daily-entry form (P10.6.4)
+> and readings list (P10.6.5) ship on it. The PFD dashboard (P10.1–4)
+> still uses the legacy clinical-teal palette and migrates in P10.7.
+>
+> The rest of this file is kept as a historical record of the brief that
+> drove the earlier mockup iterations — the **content/data requirements**
+> section at the bottom is still authoritative (the data fields the UI
+> must surface have not changed).
+
 Captured 2026-07-06. UI/visual design work is **paused in this repo/session** —
 the user plans to continue it in a dedicated design tool (Claude Design,
 z.ai design, or similar) so it can keep going across rate-limit windows by
