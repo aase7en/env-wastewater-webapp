@@ -227,6 +227,61 @@ migrated the dashboard onto Aura so the whole app is consistent.
 - **OpenAPI auto-gen client** — `src/lib/types.ts` is manual for now;
   `openapi-typescript` auto-gen is a later hardening chunk.
 
+> **⚠ Superseded 2026-07-17/18 (ZCode rolling roadmap):** the three bullets
+> above shipped in a different shape than planned — P11 = Supabase Auth
+> (email/password + Google + LINE, no FastAPI JWT), P12 = **drop FastAPI in
+> prod** (frontend → Supabase JS client + SQL views), P13 = GitHub Pages
+> deploy, plus P14–P19 (UX polish, Playwright+Ladle, ทส.1/ทส.2/ใบแจ้งซ่อม
+> client-side PDF, threshold notifications, Equipment page, Trends charts).
+> See `git log --oneline` + `.zcode/plans/` for the authoritative trail.
+
+## ACTIVE — Two-track parallel work: F (Fable5) ∥ Z (ZCode) — from 2026-07-18
+
+Two agents work this repo **at the same time**. Read this before starting any
+chunk. Full plan lives in the session plan file of 2026-07-18 (Fable5); the
+binding rules are here.
+
+### Lanes
+
+| | **Track F — Fable5** (visual layer) | **Track Z — ZCode** (feature/data layer) |
+|---|---|---|
+| Scope | Theme/tokens, AppShell/layout, styling (className/markup) of all pages, `design/ui-brief.md`, `frontend/public/` assets, `frontend/index.html` (while F1 open) | `src/lib/*` logic (supabase-queries, hooks, pdf), page logic, new feature pages, Supabase SQL / Edge Functions, `tests/e2e/*`, `.zcode/*`, `.github/workflows/*` |
+| Chunk prefix | `chunk(F#): ...` | `chunk(P#): ...` (continues P20+) |
+| Must NOT touch | Z's logic/data code, SQL, e2e tests | Colors/fonts/layout/theme, `tailwind.config.js`, `index.css`, `src/styles/*`, `design/` |
+
+### Shared rules (both agents)
+
+1. **Claim before work**: add a row to the In-progress table below, commit+push
+   it, then start. Remove the lock in the chunk's own commit when done.
+   Never edit files inside another agent's locked chunk scope.
+2. **Pull before commit**: `git pull --ff-only` (rebase own commits if
+   diverged) + `npm run build` must pass before every push.
+3. **Hotspot files**: `package.json` — additive deps OK, pull first.
+   `App.tsx` — Z may add routes; F does not edit routes.
+   `index.html` — owned by F until F1 is done, then Z may add PWA manifest.
+4. **Same page ≠ same time**: a Z chunk that edits logic inside an existing
+   page (e.g. autosave in `DailyFormPage`) must not run while an F chunk is
+   restyling that page — check the In-progress table first.
+5. **Dark/Light toggle is Track F (F1)** — removed from ZCode's P20 rolling
+   list. Z: do not implement theming.
+
+### In-progress claims
+
+| Chunk | Agent | Claimed | Scope (files) |
+|---|---|---|---|
+| F1 dual-theme foundation | fable5 | 2026-07-18 | `tailwind.config.js`, `src/index.css`, `src/styles/tokens.css`, `src/lib/theme.ts`, `components/layout/AppShell.tsx`, `frontend/index.html` |
+
+### Track F queue (Fable5)
+
+F1 dual theme (Luminous Mint light + Boost dark + toggle) → F2.1–F2.7
+per-page conformance with the 14-screen suite in `design/` (Dashboard, Form,
+Readings, Trends, Equipment, Reports, Auth) → F3 logo/favicon + docs.
+
+### Track Z queue (ZCode — user assigns; suggested order to avoid F)
+
+P20a bulk import CSV (new files) → P20b form autosave (after F2 form pass) →
+P20c PWA (after F1 releases `index.html`) → P20d sensor feed / AI query.
+
 ## Not started
 
 (Nothing currently blocked — see "Next-session plan" below for the next
