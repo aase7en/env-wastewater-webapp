@@ -197,3 +197,18 @@ export async function deleteReading(id: string): Promise<void> {
   const { error } = await supabase.from("reading").delete().eq("id", id);
   if (error) throw new Error(error.message);
 }
+
+/**
+ * Bulk insert wrapper used by the CSV import flow (P20a). Returns {error}
+ * so the caller in csv-import.ts can keep going through batches without
+ * throwing. The fn_persist_threshold_alerts trigger still fires per row
+ * inside the batch, so threshold breaches from imported data get staged.
+ *
+ * P20a — additive only, no change to existing exports.
+ */
+export async function bulkInsertReadingRows(
+  rows: Record<string, unknown>[]
+): Promise<{ error: string | null }> {
+  const { error } = await supabase.from("reading").insert(rows);
+  return { error: error?.message ?? null };
+}
