@@ -48,12 +48,19 @@ jobs:
           VITE_SUPABASE_ANON_KEY: ${{ secrets.VITE_SUPABASE_ANON_KEY }}
         run: npm run build
 
-      - name: SPA fallback (copy index.html → 404.html)
-        # GitHub Pages returns the static 404.html for any unknown path.
-        # Copying index.html there gives us client-side routing fallback
-        # so direct hits to /form, /readings, /auth/callback, etc. work.
+      - name: SPA fallback (404.html with redirect snippet)
+        # GitHub Pages serves 404.html for any unknown path. We inject a
+        # small redirect snippet (not the full SPA) so the browser bounces
+        # to the SPA root with the intended path stashed in sessionStorage.
+        # main.tsx's BrowserRouter reads that stash and re-routes client-side.
+        # (Plain cp index.html → 404.html does NOT work: GitHub still sends
+        # HTTP 404 status, which breaks fetches and some browser behaviors.)
         working-directory: frontend
-        run: cp dist/index.html dist/404.html
+        run: |
+          {
+            cat ../scripts/github-pages-spa-redirect.html
+            cat dist/index.html
+          } > dist/404.html
 
       - name: Add .nojekyll
         # Disable Jekyll so _-prefixed asset folders aren't dropped.

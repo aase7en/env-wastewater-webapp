@@ -1,0 +1,21 @@
+<!--
+  GitHub Pages SPA redirect (single-page-app fallback).
+  Injected into dist/404.html by .github/workflows/deploy-frontend.yml.
+
+  GitHub Pages serves this file with HTTP 404 for any path that isn't a
+  real file (e.g. /login, /form/abc, /auth/callback). The script below
+  stashes the intended path, redirects to the SPA root (which returns 200),
+  then main.tsx's BrowserRouter reads the stashed path and re-routes
+  client-side. This is the canonical GitHub-Pages SPA pattern.
+-->
+<script>
+  (function () {
+    var path = window.location.pathname;
+    // Only redirect for unknown sub-paths, not for assets that genuinely
+    // don't exist (favicon, images, etc. — those should stay 404).
+    if (path && !/\.[a-z0-9]+$/i.test(path)) {
+      sessionStorage.setItem('gh-pages-spa-redirect', path + window.location.search + window.location.hash);
+      window.location.replace('/env-wastewater-webapp/');
+    }
+  })();
+</script>
