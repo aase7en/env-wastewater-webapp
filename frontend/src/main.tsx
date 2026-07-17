@@ -3,6 +3,7 @@ import { createRoot } from "react-dom/client";
 import { BrowserRouter } from "react-router-dom";
 import App from "./App";
 import "./index.css";
+import { registerServiceWorker } from "./lib/sw-register";
 
 // basename = repo subpath on GitHub Pages, "/" in dev.
 // Vite injects import.meta.env.BASE_URL from vite.config.ts.
@@ -27,3 +28,7 @@ createRoot(document.getElementById("root")!).render(
     </BrowserRouter>
   </StrictMode>
 );
+
+// Register the service worker for offline-capable PWA (P20c). Skipped in
+// dev (HMR proxy conflicts) — only runs in production builds.
+void registerServiceWorker();

@@ -270,7 +270,6 @@ binding rules are here.
 | Chunk | Agent | Claimed | Scope (files) |
 |---|---|---|---|
 | F2 shell + per-page suite conformance | fable5 | 2026-07-18 | `components/layout/AppShell.tsx`, `components/ui/*`, `components/pfd/*` (className), `pages/*.tsx` (className/markup only) |
-| P20c PWA manifest + service worker | zcode | 2026-07-18 | `frontend/public/manifest.webmanifest`, `frontend/public/sw.js`, `frontend/src/lib/sw-register.ts`, additive `<link rel="manifest">` + `<script>` in `frontend/index.html` (F1-released). **No AppShell/page edit.** |
 
 Done: ~~F1 dual-theme foundation~~ (2026-07-18 — tokens.css `:root`/`.dark`,
 toggle in AppShell, no-flash script in index.html; `frontend/index.html` is
