@@ -1,8 +1,10 @@
 import { Link, useNavigate } from "react-router-dom";
-import { Plus, RefreshCw, Pencil } from "lucide-react";
+import { Plus, RefreshCw, Pencil, FileText } from "lucide-react";
 import { AuraCard } from "../components/ui/AuraCard";
 import { Button } from "../components/ui/Button";
 import { StatusBadge } from "../components/pfd/StatusBadge";
+import { EmptyState } from "../components/ui/EmptyState";
+import { TableSkeleton } from "../components/ui/Skeleton";
 import { useReadings } from "../lib/hooks";
 import { fmt, thaiDate } from "../lib/utils";
 
@@ -34,14 +36,32 @@ export function ReadingsListPage() {
         </div>
       </header>
 
-      {loading && <div className="text-aura-textMuted font-thai p-8">กำลังโหลด…</div>}
       {error && (
         <AuraCard>
           <p className="text-sm text-alert-red font-thai">โหลดข้อมูลไม่สำเร็จ: {error}</p>
         </AuraCard>
       )}
 
-      {!loading && !error && (
+      {loading ? (
+        <AuraCard className="p-0">
+          <TableSkeleton rows={6} cols={5} />
+        </AuraCard>
+      ) : !data || data.items.length === 0 ? (
+        <AuraCard>
+          <EmptyState
+            icon={<FileText className="w-8 h-8" />}
+            title="ยังไม่มีรายการบันทึก"
+            description="เริ่มบันทึกค่าคุณภาพน้ำรายวันของระบบบำบัด — ข้อมูลจะปรากฏที่นี่"
+            action={
+              <Link to="/form">
+                <Button>
+                  <Plus className="w-4 h-4" /> เพิ่มรายการแรก
+                </Button>
+              </Link>
+            }
+          />
+        </AuraCard>
+      ) : (
         <AuraCard className="p-0 overflow-hidden">
           <div className="overflow-x-auto">
             <table className="w-full text-sm">
@@ -56,7 +76,7 @@ export function ReadingsListPage() {
                 </tr>
               </thead>
               <tbody className="divide-y divide-aura-borderSubtle/50">
-                {(data?.items || []).map((r) => (
+                {data.items.map((r) => (
                   <tr
                     key={r.id}
                     className="group hover:bg-aura-cyan/5 transition-colors cursor-pointer"
@@ -72,13 +92,6 @@ export function ReadingsListPage() {
                     </td>
                   </tr>
                 ))}
-                {(data?.items || []).length === 0 && (
-                  <tr>
-                    <td colSpan={6} className="px-4 py-12 text-center text-aura-textMuted font-thai">
-                      ยังไม่มีรายการบันทึก
-                    </td>
-                  </tr>
-                )}
               </tbody>
             </table>
           </div>

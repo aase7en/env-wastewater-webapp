@@ -5,10 +5,10 @@ monitoring webapp for โรงพยาบาลอุทัย's environmental
 
 - **Companion repo**: [A-Wiki](../A-Wiki) holds the domain knowledge (schema
   design, ENV concepts) this repo builds against — see `AGENTS.md` for details.
-- **Status**: Phases 1–4 done (907/907 rows migrated, schema stabilized). The
-  FastAPI backend (P5) is live with all v1 endpoints. The frontend (P10) has
-  a dashboard + daily-entry form + readings list wired to the API on the
-  UTH[AI]-EVN Aura Edition design system. See `MIGRATION.md`.
+- **Status**: Production live at **https://aase7en.github.io/env-wastewater-webapp/**
+  — frontend talks to Supabase directly (P11 auth + P12 Supabase-first pivot
+  per ADR-0004; FastAPI retained as reference, not deployed). All v1 pages
+  shipped on the UTH[AI]-EVN Aura Edition design system.
 - **Data**: `data/raw/` is gitignored — source exports never get committed.
 
 ## Running the backend
