@@ -1,39 +1,41 @@
 /** @type {import('tailwindcss').Config} */
 export default {
   content: ["./index.html", "./src/**/*.{js,ts,jsx,tsx}"],
-  // Aura Edition = dark default; "light" class opts into Luminous Mint variant later.
+  // Dual theme (F1): `.dark` on <html> = Boost Aura dark, default = Luminous
+  // Mint light. Values live in src/styles/tokens.css as CSS variables so the
+  // same utility classes render correctly in both themes.
   darkMode: "class",
   theme: {
     extend: {
       colors: {
-        // ── UTH[AI]-EVN Aura Edition (dark, locked 2026-07-17) ──────────────
-        // Primary design system; P10.6+ builds against this. See
-        // design/uth_ai_evn_system_design_aura_edition.md + design/DESIGN.md.
+        // ── UTH[AI]-ENV dual-theme tokens — see src/styles/tokens.css ──────
+        // RGB-triplet vars keep Tailwind opacity modifiers working
+        // (e.g. border-aura-cyan/40).
         aura: {
-          // Neon accents — the "Aura"
-          cyan: "#00F0FF",     // primary neon
-          lime: "#CCFF00",     // secondary neon
-          cyanDim: "#00DBE9",  // primary-fixed-dim
-          limeDim: "#ABD600",  // secondary-fixed-dim
-          // Deep teal foundation
-          bg: "#00161B",             // background
-          bgDeep: "#03181C",         // background-deep (floor)
-          surface: "#092429",        // raised card fill (opaque fallback)
-          surfaceLow: "#041F24",
-          surfaceHigh: "#142E33",
-          surfaceHighest: "#1F383E",
-          borderSubtle: "#13383E",
-          // Text
-          textMain: "#FFFFFF",
-          textMuted: "#A1B5BB",
-          onSurface: "#CCE7EE",
+          cyan: "rgb(var(--aura-cyan) / <alpha-value>)",
+          lime: "rgb(var(--aura-lime) / <alpha-value>)",
+          cyanDim: "rgb(var(--aura-cyan-dim) / <alpha-value>)",
+          limeDim: "rgb(var(--aura-lime-dim) / <alpha-value>)",
+          bg: "rgb(var(--aura-bg) / <alpha-value>)",
+          bgDeep: "rgb(var(--aura-bg-deep) / <alpha-value>)",
+          surface: "rgb(var(--aura-surface) / <alpha-value>)",
+          surfaceLow: "rgb(var(--aura-surface-low) / <alpha-value>)",
+          surfaceHigh: "rgb(var(--aura-surface-high) / <alpha-value>)",
+          surfaceHighest: "rgb(var(--aura-surface-highest) / <alpha-value>)",
+          borderSubtle: "rgb(var(--aura-border-subtle) / <alpha-value>)",
+          textMain: "rgb(var(--aura-text-main) / <alpha-value>)",
+          textMuted: "rgb(var(--aura-text-muted) / <alpha-value>)",
+          onSurface: "rgb(var(--aura-on-surface) / <alpha-value>)",
         },
         glass: {
-          // Glassmorphism fills (rgba) — use with backdrop-blur
+          // Theme-aware glass fill (preferred) + fixed legacy fills.
+          card: "var(--aura-glass)",
           dark: "rgba(0, 22, 27, 0.65)",
           white: "rgba(255, 255, 255, 0.70)", // Luminous Mint variant
         },
-        // ── Legacy PFD palette (P10.1-4 dashboard) — kept until P10.7 migration
+        alert: { amber: "#f59e0b", red: "#ef4444", green: "#22c55e" },
+        // ── Legacy PFD palette (pre-Aura) — kept only for old stories/tests;
+        // do not use in new code.
         teal: {
           50: "#f0fdfa", 100: "#ccfbf1", 200: "#99f6e4", 300: "#5eead4",
           400: "#2dd4bf", 500: "#14b8a6", 600: "#0d9488", 700: "#0f766e",
@@ -47,7 +49,6 @@ export default {
           100: "#e0f2fe", 300: "#7dd3fc", 500: "#0ea5e9",
           600: "#0284c7", 700: "#0369a1",
         },
-        alert: { amber: "#f59e0b", red: "#ef4444", green: "#22c55e" },
       },
       fontFamily: {
         // Plus Jakarta Sans = Aura display/body; IBM Plex Sans Thai = Thai fallback
@@ -58,18 +59,17 @@ export default {
         mono: ['"JetBrains Mono"', "monospace"],
       },
       borderRadius: {
-        aura: "24px", // primary card radius (DESIGN.md rounded-lg = 1.5rem here)
+        aura: "24px", // primary card radius (suite glass-card spec)
       },
       boxShadow: {
-        // 3D elevation for floating cards above the deep-teal floor
-        "aura-card":
-          "inset 0 1px 1px rgba(255,255,255,0.10), inset 0 -1px 1px rgba(0,0,0,0.30), 0 10px 30px rgba(0,0,0,0.50)",
-        "aura-glow-cyan": "0 0 20px rgba(0,240,255,0.35)",
-        "aura-glow-lime": "0 0 20px rgba(204,255,0,0.30)",
-        "aura-glow-red": "0 0 18px rgba(239,68,68,0.55)",
+        // Theme-aware elevations (values in tokens.css)
+        "aura-card": "var(--aura-card-shadow)",
+        "aura-glow-cyan": "var(--aura-glow-cyan)",
+        "aura-glow-lime": "var(--aura-glow-lime)",
+        "aura-glow-red": "var(--aura-glow-red)",
       },
       animation: {
-        // PFD (legacy)
+        // PFD
         "flow": "flow 3s linear infinite",
         "bubble": "bubble 2s ease-in infinite",
         "pulse-slow": "pulse 3s ease-in-out infinite",

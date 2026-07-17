@@ -1,0 +1,118 @@
+/* ════════════════════════════════════════════════════════════════════════
+ * UTH[AI]-ENV design tokens — dual theme (F1)
+ *
+ * Source of truth: design/ suite (2026-07-18)
+ *   :root  = "Luminous Mint" light  → design/luminous_mint/DESIGN.md
+ *   .dark  = "Boost" Aura dark      → design/boost_resource_management/DESIGN.md
+ *
+ * Color channels are stored as space-separated RGB triplets so Tailwind
+ * opacity modifiers keep working (bg-aura-cyan/20 → rgb(var(--aura-cyan)/.2)).
+ * Composite values (shadows, gradients, glass fills) are full CSS values.
+ * ════════════════════════════════════════════════════════════════════════ */
+
+:root {
+  /* Accents — light mode must stay readable: raw neon fails contrast on
+     white, so cyan→Mint primary, lime→Boost's on-secondary-container. */
+  --aura-cyan: 0 107 90;        /* #006b5a  primary (Luminous Mint) */
+  --aura-cyan-dim: 0 209 178;   /* #00d1b2  primary-container */
+  --aura-lime: 85 109 0;        /* #556d00  lime family, AA on light */
+  --aura-lime-dim: 85 109 0;
+
+  /* Foundation */
+  --aura-bg: 243 251 247;             /* #f3fbf7  background */
+  --aura-bg-deep: 237 245 241;        /* #edf5f1  floor */
+  --aura-surface: 255 255 255;        /* card fill (opaque) */
+  --aura-surface-low: 237 245 241;
+  --aura-surface-high: 226 234 230;   /* #e2eae6 */
+  --aura-surface-highest: 220 228 224;
+  --aura-border-subtle: 186 202 196;  /* #bacac4  outline-variant */
+
+  /* Text */
+  --aura-text-main: 22 29 27;         /* #161d1b */
+  --aura-text-muted: 59 74 69;        /* #3b4a45  on-surface-variant */
+  --aura-on-surface: 22 29 27;
+
+  /* Composites */
+  --aura-glass: rgba(255, 255, 255, 0.70);
+  --aura-glass-blur: 12px;
+  --aura-card-shadow:
+    0 4px 20px rgba(0, 43, 54, 0.08),
+    0 0 15px rgba(0, 209, 178, 0.10);
+  --aura-glow-cyan: 0 0 15px rgba(0, 209, 178, 0.25);
+  --aura-glow-lime: 0 0 15px rgba(0, 209, 178, 0.20);
+  --aura-glow-red: 0 0 18px rgba(186, 26, 26, 0.35);
+  --aura-gradient-from: #006b5a;
+  --aura-gradient-to: #00d1b2;
+  --aura-gradient-text: #ffffff;
+  --aura-ring-1: rgba(0, 209, 178, 0.55);   /* conic aura ring stops */
+  --aura-ring-2: rgba(0, 107, 90, 0.65);
+  --aura-ambient-1: rgba(0, 209, 178, 0.06);
+  --aura-ambient-2: rgba(0, 107, 90, 0.04);
+  --aura-body-bg: #f3fbf7;
+  --aura-input-bg: #ffffff;
+  --aura-input-border: #bacac4;
+  --aura-focus: #006b5a;
+  --aura-focus-glow: rgba(0, 209, 178, 0.30);
+  --aura-placeholder: #6b7a75;
+
+  color-scheme: light;
+}
+
+.dark {
+  /* Accents — full neon (Boost) */
+  --aura-cyan: 0 240 255;       /* #00F0FF */
+  --aura-cyan-dim: 0 219 233;   /* #00DBE9 */
+  --aura-lime: 204 255 0;       /* #CCFF00 */
+  --aura-lime-dim: 171 214 0;   /* #ABD600 */
+
+  /* Foundation */
+  --aura-bg: 0 22 27;           /* #00161B */
+  --aura-bg-deep: 3 24 28;      /* #03181C */
+  --aura-surface: 9 36 41;      /* #092429 */
+  --aura-surface-low: 4 31 36;
+  --aura-surface-high: 20 46 51;
+  --aura-surface-highest: 31 56 62;
+  --aura-border-subtle: 19 56 62; /* #13383E */
+
+  /* Text */
+  --aura-text-main: 255 255 255;
+  --aura-text-muted: 161 181 187; /* #A1B5BB */
+  --aura-on-surface: 204 231 238; /* #CCE7EE */
+
+  /* Composites */
+  --aura-glass: rgba(0, 22, 27, 0.65);
+  --aura-glass-blur: 16px;
+  --aura-card-shadow:
+    inset 0 1px 1px rgba(255, 255, 255, 0.10),
+    inset 0 -1px 1px rgba(0, 0, 0, 0.30),
+    0 10px 30px rgba(0, 0, 0, 0.50);
+  --aura-glow-cyan: 0 0 20px rgba(0, 240, 255, 0.35);
+  --aura-glow-lime: 0 0 20px rgba(204, 255, 0, 0.30);
+  --aura-glow-red: 0 0 18px rgba(239, 68, 68, 0.55);
+  --aura-gradient-from: #00F0FF;
+  --aura-gradient-to: #CCFF00;
+  --aura-gradient-text: #00161B;
+  --aura-ring-1: rgba(0, 240, 255, 0.60);
+  --aura-ring-2: rgba(204, 255, 0, 0.80);
+  --aura-ambient-1: rgba(0, 240, 255, 0.05);
+  --aura-ambient-2: rgba(204, 255, 0, 0.03);
+  --aura-body-bg: #03181C;
+  --aura-input-bg: #03181C;
+  --aura-input-border: #13383E;
+  --aura-focus: #00F0FF;
+  --aura-focus-glow: rgba(0, 240, 255, 0.30);
+  --aura-placeholder: #6B7A75;
+
+  color-scheme: dark;
+}
+
+/* Motion accessibility — the design exports ship none of this; added per
+ * Track F rules. Stops the rotating aura, pulse dots, and PFD loops. */
+@media (prefers-reduced-motion: reduce) {
+  .aura-card::before,
+  .aura-pulse-dot,
+  .pfd-flow-line,
+  .bubble {
+    animation: none !important;
+  }
+}

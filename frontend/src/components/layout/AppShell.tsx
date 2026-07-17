@@ -1,6 +1,7 @@
 import { type ReactNode } from "react";
 import { Link, useLocation } from "react-router-dom";
 import { LayoutDashboard, FileText, ListChecks, FileBarChart, Wrench, TrendingUp, Settings } from "lucide-react";
+import { ThemeToggle } from "../ui/ThemeToggle";
 import { cn } from "../../lib/utils";
 
 const NAV = [
@@ -59,8 +60,11 @@ export function AppShell({ children }: { children: ReactNode }) {
           })}
         </nav>
 
-        <div className="hidden md:block md:px-2 md:mt-auto text-xs text-aura-textMuted font-thai">
-          โรงพยาบาลอุทัย · 2569
+        <ThemeToggle className="shrink-0 md:hidden" />
+
+        <div className="hidden md:flex md:px-2 md:mt-auto items-center justify-between gap-2">
+          <span className="text-xs text-aura-textMuted font-thai">โรงพยาบาลอุทัย · 2569</span>
+          <ThemeToggle />
         </div>
       </aside>
 

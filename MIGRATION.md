@@ -269,7 +269,11 @@ binding rules are here.
 
 | Chunk | Agent | Claimed | Scope (files) |
 |---|---|---|---|
-| F1 dual-theme foundation | fable5 | 2026-07-18 | `tailwind.config.js`, `src/index.css`, `src/styles/tokens.css`, `src/lib/theme.ts`, `components/layout/AppShell.tsx`, `frontend/index.html` |
+| F2 shell + per-page suite conformance | fable5 | 2026-07-18 | `components/layout/AppShell.tsx`, `components/ui/*`, `components/pfd/*` (className), `pages/*.tsx` (className/markup only) |
+
+Done: ~~F1 dual-theme foundation~~ (2026-07-18 — tokens.css `:root`/`.dark`,
+toggle in AppShell, no-flash script in index.html; `frontend/index.html` is
+released back to shared-hotspot status → Z may start PWA manifest work).
 
 ### Track F queue (Fable5)
 
