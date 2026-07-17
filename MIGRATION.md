@@ -178,26 +178,25 @@ sub-chunks (P5a–P5e), each its own commit on branch `claude/webapp-p5-fastapi`
      the URL is set; `uv run pytest` stays green on fresh checkouts.
   Run with: `uv run python scripts/introspect_schema.py && uv run pytest tests/integration -v`
 
-## RESOLVED — Frontend tracer-bullet (closed 2026-07-16 → 17, chunks P10 + P10.6)
+## RESOLVED — Frontend tracer-bullet (closed 2026-07-16 → 17, chunks P10 → P10.7)
 
 The frontend is scaffolded end-to-end as a tracer-bullet on branch
 `claude/webapp-p5-fastapi`. P10.1–P10.5 shipped the dashboard; P10.6
-added the Aura Edition design system + the daily-entry form.
+added the Aura Edition design system + the daily-entry form; P10.7
+migrated the dashboard onto Aura so the whole app is consistent.
 
 - **Stack**: React 18 + Vite + TypeScript + Tailwind CSS + react-router-dom.
   Vite proxies `/api` → `http://127.0.0.1:8000` so the frontend shares the
   backend's origin in dev — no separate API URL to configure.
 - **Design direction — UTH[AI]-EVN Aura Edition** (locked in P10.6,
-  superseding the P10.1–4 clinical-teal PFD palette for new pages): dark
-  deep-teal foundation (`#00161B`), neon cyan/lime accents (`#00F0FF` /
-  `#CCFF00`), glassmorphism cards with a rotating conic-gradient aura
-  border, `Plus Jakarta Sans` display + `IBM Plex Sans Thai` fallback.
+  applied across the whole app in P10.7): dark deep-teal foundation
+  (`#00161B`), neon cyan/lime accents (`#00F0FF` / `#CCFF00`),
+  glassmorphism cards with a rotating conic-gradient aura border,
+  `Plus Jakarta Sans` display + `IBM Plex Sans Thai` fallback.
   See `design/uth_ai_evn_system_design_aura_edition.md` + `design/DESIGN.md`.
-  The PFD dashboard (P10.1–4) is still on the legacy palette and migrates
-  in P10.7.
-- **Pages** (3 of them, all wired to the live API):
+- **Pages** (3 of them, all wired to the live API, all on Aura):
   - `/dashboard` — Process Flow Diagram + KPI tiles + 14-day log table
-    with Thai-BE dates (P10.1–4, legacy palette).
+    with Thai-BE dates (P10.1–4 → migrated to Aura in P10.7).
   - `/form` + `/form/:id` — daily-entry form (create / edit), 6-section
     Accordion, mobile-first, inline threshold warnings, conditional
     `abnormal_cause` when `system_operating=false` (SPEC §6), admin-gated
@@ -206,20 +205,17 @@ added the Aura Edition design system + the daily-entry form.
 - **CRUD**: `POST/GET/PUT/DELETE /api/readings` all wired through typed
   `api-client.ts` + mutation hooks (`useCreate/Update/DeleteReading`).
   `reported_by` + `location_id` are NOT sent by the form (server-derived).
-- **Verified** (P10.6 smoke test): TypeScript 0 errors, Vite build
-  ~300KB → ~94KB gzip, all routes serve HTTP 200, Vite `/api/*` proxy
-  reaches FastAPI (`/api/health` returns JSON). DB-backed endpoints return
-  500 on this Windows machine — known IPv6-only direct-host issue (see
-  P5b.2-live), not a P10.6 bug; full CRUD round-trip waits for Cloud Run
-  deploy or a v4-pooled Supabase connection.
+- **Verified** (P10.6 smoke test + P10.7 DOM scan): TypeScript 0 errors,
+  Vite build ~301KB → ~94KB gzip, all routes serve HTTP 200, Vite
+  `/api/*` proxy reaches FastAPI (`/api/health` returns JSON). Dashboard
+  DOM scan confirms no legacy `bg-white` / `text-navy-900` / `border-navy`
+  classes remain. DB-backed endpoints return 500 on this Windows machine
+  — known IPv6-only direct-host issue (see P5b.2-live), not a frontend
+  bug; full CRUD round-trip waits for Cloud Run deploy or a v4-pooled
+  Supabase connection.
 
-### Open follow-up from P10 (deferred chunks)
+### Open follow-up (deferred chunks)
 
-- **P10.7 — Dashboard Aura migration.** Migrate `DashboardPage.tsx` + the
-  PFD components (Gauge / StatusBadge / AerationTank / ProcessFlowDiagram)
-  from the clinical-teal palette to the Aura Edition dark theme. The
-  Aura foundation (P10.6.1) is already in place; this is purely a
-  styling pass.
 - **P11 — Auth flow wiring.** Frontend currently no-op against stub auth;
   JWT login UI + token storage is a later chunk once `AUTH_MODE=jwt` is
   real and `auth.users` rows exist.
@@ -253,6 +249,7 @@ be its own commit.
 | ~~`P5`~~ | ~~Scaffold FastAPI backend~~ — **done 2026-07-16**, see "FastAPI backend" above. 5 sub-chunks P5a–P5e. | — | `app/`, `tests/`, `pyproject.toml`, `docs/adr/0003-*.md` |
 | ~~`P10`~~ | ~~Frontend tracer-bullet (dashboard)~~ — **done 2026-07-16**, see "Frontend tracer-bullet" above. 5 sub-chunks P10.1–P10.5. | P5, design direction (PFD, locked in) | `frontend/` (React + Vite + Tailwind) |
 | ~~`P10.6`~~ | ~~Aura Edition design system + daily-entry form + readings list~~ — **done 2026-07-17**, see "Frontend tracer-bullet" above. 6 sub-chunks P10.6.1–P10.6.6. | P10 (scaffold), Aura design direction (locked in) | `frontend/src/components/ui/`, `pages/DailyFormPage.tsx`, `pages/ReadingsListPage.tsx`, `design/` |
+| ~~`P10.7`~~ | ~~Dashboard → Aura migration~~ — **done 2026-07-17**. Restyled `DashboardPage` + the 4 PFD components (KpiTile, Gauge, AerationTank, ProcessFlowDiagram) onto the Aura Edition dark theme. Pure styling pass, no behavior change. | P10.6.1 (Aura foundation) | `frontend/src/pages/DashboardPage.tsx`, `components/pfd/*`, `components/KpiTile.tsx` |
 
 > **Note on the P-numbering gap (P6–P9)**: those chunks were cross-cutting
 > work tracked in the companion **A-Wiki** repo, not migration chunks here —
@@ -268,7 +265,6 @@ be its own commit.
 
 | ID | Goal | Depends on | Files |
 |---|---|---|---|
-| `P10.7` | Dashboard → Aura migration (restyle `DashboardPage` + PFD components onto the Aura Edition dark theme; foundation already landed in P10.6.1) | P10.6.1 (Aura foundation) | `frontend/src/pages/DashboardPage.tsx`, `components/pfd/*` |
 | `P11` | Auth wiring — JWT login UI + token storage; flip `AUTH_MODE=jwt` | P5 (auth modes), P10.6 | `frontend/src/pages/AuthPage.tsx`, `app/core/auth.py` |
 | `P12` | Deployment — Dockerfile + Cloud Run (or Supabase Edge Function for API). Also unblocks full CRUD round-trip (v4-routable DB connection). | P5 + P10.6 | `Dockerfile`, `.github/workflows/deploy.yml` |
 | `P13` | PDF template-builder UI — ทส.1/ทส.2/repair-request layouts | `design/ui-brief.md` unpause, P5 PDF endpoints | `frontend/src/pages/ReportsPage.tsx` |
