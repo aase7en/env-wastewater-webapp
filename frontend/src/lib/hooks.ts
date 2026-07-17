@@ -1,5 +1,13 @@
 import { useCallback, useEffect, useState } from "react";
-import { api } from "./api-client";
+import {
+  createReading as createReadingQ,
+  deleteReading as deleteReadingQ,
+  fetchDashboard,
+  fetchEquipment,
+  fetchReading,
+  fetchReadings,
+  updateReading as updateReadingQ,
+} from "./supabase-queries";
 import type {
   DashboardRow,
   EquipmentOut,
@@ -9,35 +17,43 @@ import type {
   ReadingUpdate,
 } from "./types";
 
-/** Fetch the 14-day dashboard log. Returns {data, loading, error, refresh}. */
+/**
+ * Data hooks — all queries now hit Supabase directly via supabase-queries.ts
+ * (P12: FastAPI is no longer in the runtime path for the frontend).
+ *
+ * Each read hook exposes `refresh` so callers can invalidate after a
+ * mutation. Mutation hooks (useCreate/Update/DeleteReading) return
+ * { loading, error, data, mutate, reset }.
+ */
+
+// ─── Read hooks ─────────────────────────────────────────────────────────
+
 export function useDashboard(days = 14) {
   const [data, setData] = useState<DashboardRow[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
-  const refresh = () => {
+  const refresh = useCallback(() => {
     setLoading(true);
-    api.dashboard(days)
+    fetchDashboard(days)
       .then((rows) => { setData(rows); setError(null); })
       .catch((e: Error) => setError(e.message))
       .finally(() => setLoading(false));
-  };
+  }, [days]);
 
-  useEffect(refresh, [days]);
+  useEffect(() => { refresh(); }, [refresh]);
   return { data, loading, error, refresh };
 }
 
-/** Fetch recent readings (for the log table). */
 export function useReadings(limit = 14) {
   const [data, setData] = useState<ReadingList | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [nonce, setNonce] = useState(0);
-
   const refresh = useCallback(() => setNonce((n) => n + 1), []);
 
   useEffect(() => {
-    api.readings(limit)
+    fetchReadings(limit)
       .then(setData)
       .catch((e: Error) => setError(e.message))
       .finally(() => setLoading(false));
@@ -46,14 +62,13 @@ export function useReadings(limit = 14) {
   return { data, loading, error, refresh };
 }
 
-/** Equipment reference — for the 10-item checklist labels (Thai names). */
 export function useEquipment() {
   const [data, setData] = useState<EquipmentOut[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
-    api.equipment()
+    fetchEquipment()
       .then(setData)
       .catch((e: Error) => setError(e.message))
       .finally(() => setLoading(false));
@@ -62,7 +77,6 @@ export function useEquipment() {
   return { data, loading, error };
 }
 
-/** GET a single reading for edit mode. Pass null/undefined to skip (create mode). */
 export function useReading(id: string | null | undefined) {
   const [data, setData] = useState<ReadingDetail | null>(null);
   const [loading, setLoading] = useState(!!id);
@@ -75,7 +89,7 @@ export function useReading(id: string | null | undefined) {
       return;
     }
     setLoading(true);
-    api.getReading(id)
+    fetchReading(id)
       .then(setData)
       .catch((e: Error) => setError(e.message))
       .finally(() => setLoading(false));
@@ -84,13 +98,9 @@ export function useReading(id: string | null | undefined) {
   return { data, loading, error };
 }
 
-// ─── Mutation hooks (lightweight — no react-query needed yet) ────────────
+// ─── Mutation hooks ─────────────────────────────────────────────────────
 
-type MutationData<T> = {
-  loading: boolean;
-  error: string | null;
-  data: T | null;
-};
+type MutationData<T> = { loading: boolean; error: string | null; data: T | null };
 
 function useMutation<TArgs extends unknown[], TResult>(
   fn: (...args: TArgs) => Promise<TResult>
@@ -126,15 +136,13 @@ function useMutation<TArgs extends unknown[], TResult>(
 }
 
 export function useCreateReading() {
-  return useMutation((body: ReadingCreate) => api.createReading(body));
+  return useMutation((body: ReadingCreate) => createReadingQ(body));
 }
 
 export function useUpdateReading() {
-  return useMutation((id: string, body: ReadingUpdate) =>
-    api.updateReading(id, body)
-  );
+  return useMutation((id: string, body: ReadingUpdate) => updateReadingQ(id, body));
 }
 
 export function useDeleteReading() {
-  return useMutation((id: string) => api.deleteReading(id));
+  return useMutation((id: string) => deleteReadingQ(id));
 }
