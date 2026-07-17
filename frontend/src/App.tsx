@@ -9,6 +9,7 @@ import { ReadingsListPage } from "./pages/ReadingsListPage";
 import { AuthPage } from "./pages/AuthPage";
 import { AuthCallback } from "./pages/AuthCallback";
 import { NotFoundPage } from "./pages/NotFoundPage";
+import { ReportsPage } from "./pages/ReportsPage";
 
 export default function App() {
   return (
@@ -48,6 +49,14 @@ export default function App() {
                     element={
                       <RequireAuth>
                         <ReadingsListPage />
+                      </RequireAuth>
+                    }
+                  />
+                  <Route
+                    path="/reports"
+                    element={
+                      <RequireAuth>
+                        <ReportsPage />
                       </RequireAuth>
                     }
                   />

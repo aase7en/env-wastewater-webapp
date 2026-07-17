@@ -1,4 +1,3 @@
-import type { Story } from "@ladle/react";
 import { AuraCard } from "./AuraCard";
 import { Button } from "./Button";
 import { Field, Input, NumberInput, Select, Textarea } from "./Input";
@@ -74,7 +73,7 @@ export const FormInputs = () => (
   </Wrapper>
 );
 
-export const ToggleStates: Story<{ on: boolean }> = ({ on }) => (
+export const ToggleStates = () => (
   <Wrapper>
     <div style={{ display: "flex", flexDirection: "column", gap: "1rem", maxWidth: 400 }}>
       <Toggle checked={true} onChange={() => {}} label="อุปกรณ์ทำงาน" description="เปิดอยู่" />
@@ -83,7 +82,6 @@ export const ToggleStates: Story<{ on: boolean }> = ({ on }) => (
     </div>
   </Wrapper>
 );
-ToggleStates.args = { on: true };
 
 export const StatusBadges = () => (
   <Wrapper>
