@@ -11,6 +11,7 @@ import { AuthCallback } from "./pages/AuthCallback";
 import { NotFoundPage } from "./pages/NotFoundPage";
 import { ReportsPage } from "./pages/ReportsPage";
 import { EquipmentPage } from "./pages/EquipmentPage";
+import { TrendsPage } from "./pages/TrendsPage";
 
 export default function App() {
   return (
@@ -66,6 +67,14 @@ export default function App() {
                     element={
                       <RequireAuth>
                         <EquipmentPage />
+                      </RequireAuth>
+                    }
+                  />
+                  <Route
+                    path="/trends"
+                    element={
+                      <RequireAuth>
+                        <TrendsPage />
                       </RequireAuth>
                     }
                   />
