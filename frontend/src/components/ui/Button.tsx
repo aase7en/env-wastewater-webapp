@@ -15,7 +15,7 @@ const VARIANTS: Record<Variant, string> = {
   danger:
     "bg-alert-red/15 border border-alert-red text-alert-red hover:bg-alert-red/25 hover:shadow-aura-glow-red",
   // Ghost: no border, just muted text (cancel links).
-  ghost: "bg-transparent text-aura-textMuted hover:text-aura-textMain hover:bg-aura-textMain/5",
+  ghost: "bg-transparent text-aura-textMuted hover:text-aura-textMain hover:bg-white/5",
 };
 
 const SIZES: Record<Size, string> = {

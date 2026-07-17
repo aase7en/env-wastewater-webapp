@@ -14,8 +14,6 @@ import { AuraCard } from "../components/ui/AuraCard";
 import { Skeleton } from "../components/ui/Skeleton";
 import { EmptyState } from "../components/ui/EmptyState";
 import { supabase } from "../lib/supabase";
-import { cssVar, cssVarRGB } from "../lib/theme";
-import { useAuraTheme } from "../lib/useAuraTheme";
 import { fmt, thaiDate } from "../lib/utils";
 
 interface ReadingPoint {
@@ -48,25 +46,6 @@ export function TrendsPage() {
   const [error, setError] = useState<string | null>(null);
   // 365 days pulls ~12 months of daily points — plenty for trend lines.
   const [days, setDays] = useState(365);
-
-  // Recharts takes color strings (SVG attributes), so token colors are
-  // resolved at render; useAuraTheme re-renders this page on toggle.
-  const theme = useAuraTheme();
-  const tok = useMemo(
-    () => ({
-      grid: cssVarRGB("--aura-border-subtle"),
-      axis: cssVarRGB("--aura-text-muted"),
-      tooltip: {
-        background: cssVar("--aura-body-bg"),
-        border: `1px solid ${cssVarRGB("--aura-border-subtle")}`,
-        borderRadius: 8,
-        color: cssVarRGB("--aura-text-main"),
-      },
-      cyan: cssVarRGB("--aura-cyan"),
-      lime: cssVarRGB("--aura-lime"),
-    }),
-    [theme]
-  );
 
   useEffect(() => {
     setLoading(true);
@@ -157,18 +136,23 @@ export function TrendsPage() {
             <div className="h-72">
               <ResponsiveContainer width="100%" height="100%">
                 <LineChart data={chartData} margin={{ top: 8, right: 16, left: 0, bottom: 8 }}>
-                  <CartesianGrid stroke={tok.grid} strokeDasharray="3 3" />
-                  <XAxis dataKey="reading_date" tickFormatter={monthLabel} stroke={tok.axis} tick={{ fontSize: 10 }} />
-                  <YAxis stroke={tok.axis} tick={{ fontSize: 10 }} />
+                  <CartesianGrid stroke="#13383E" strokeDasharray="3 3" />
+                  <XAxis dataKey="reading_date" tickFormatter={monthLabel} stroke="#A1B5BB" tick={{ fontSize: 10 }} />
+                  <YAxis stroke="#A1B5BB" tick={{ fontSize: 10 }} />
                   <Tooltip
-                    contentStyle={tok.tooltip}
+                    contentStyle={{
+                      background: "#03181C",
+                      border: "1px solid #13383E",
+                      borderRadius: 8,
+                      color: "#fff",
+                    }}
                     labelFormatter={(v) => thaiDate(String(v))}
                     formatter={(v) => fmt(NUM(v), 2)}
                   />
                   <Legend wrapperStyle={{ fontSize: 11 }} />
                   <ReferenceLine y={2.0} stroke="#ef4444" strokeDasharray="4 4" label={{ value: "DO min 2.0", fontSize: 9, fill: "#ef4444" }} />
-                  <Line type="monotone" dataKey="do_average" name="DO เฉลี่ย (mg/L)" stroke={tok.cyan} dot={false} strokeWidth={2} connectNulls />
-                  <Line type="monotone" dataKey="ph" name="pH" stroke={tok.lime} dot={false} strokeWidth={2} connectNulls />
+                  <Line type="monotone" dataKey="do_average" name="DO เฉลี่ย (mg/L)" stroke="#00F0FF" dot={false} strokeWidth={2} connectNulls />
+                  <Line type="monotone" dataKey="ph" name="pH" stroke="#CCFF00" dot={false} strokeWidth={2} connectNulls />
                   <Line type="monotone" dataKey="free_chlorine" name="Cl อิสระ (mg/L)" stroke="#f59e0b" dot={false} strokeWidth={2} connectNulls />
                 </LineChart>
               </ResponsiveContainer>
@@ -183,11 +167,11 @@ export function TrendsPage() {
             <div className="h-64">
               <ResponsiveContainer width="100%" height="100%">
                 <LineChart data={chartData} margin={{ top: 8, right: 16, left: 0, bottom: 8 }}>
-                  <CartesianGrid stroke={tok.grid} strokeDasharray="3 3" />
-                  <XAxis dataKey="reading_date" tickFormatter={monthLabel} stroke={tok.axis} tick={{ fontSize: 10 }} />
-                  <YAxis stroke={tok.axis} tick={{ fontSize: 10 }} unit=" m³" />
+                  <CartesianGrid stroke="#13383E" strokeDasharray="3 3" />
+                  <XAxis dataKey="reading_date" tickFormatter={monthLabel} stroke="#A1B5BB" tick={{ fontSize: 10 }} />
+                  <YAxis stroke="#A1B5BB" tick={{ fontSize: 10 }} unit=" m³" />
                   <Tooltip
-                    contentStyle={tok.tooltip}
+                    contentStyle={{ background: "#03181C", border: "1px solid #13383E", borderRadius: 8, color: "#fff" }}
                     labelFormatter={(v) => thaiDate(String(v))}
                     formatter={(v) => fmt(NUM(v), 1)}
                   />

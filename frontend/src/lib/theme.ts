@@ -29,20 +29,6 @@ export function applyTheme(theme: Theme): void {
   } catch {
     // Private mode etc. — theme still applies for this page load.
   }
-  // Notify JS consumers that resolve token colors at render time
-  // (e.g. Recharts, which takes color strings, not CSS classes).
-  window.dispatchEvent(new Event("aura-theme"));
-}
-
-/** Raw value of a CSS custom property on <html> (e.g. "--aura-body-bg"). */
-export function cssVar(name: string): string {
-  return getComputedStyle(document.documentElement).getPropertyValue(name).trim();
-}
-
-/** RGB-triplet token (e.g. "--aura-cyan" = "0 240 255") as a CSS color. */
-export function cssVarRGB(name: string, alpha?: number): string {
-  const triplet = cssVar(name);
-  return alpha === undefined ? `rgb(${triplet})` : `rgb(${triplet} / ${alpha})`;
 }
 
 export function toggleTheme(): Theme {

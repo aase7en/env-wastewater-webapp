@@ -270,6 +270,7 @@ binding rules are here.
 | Chunk | Agent | Claimed | Scope (files) |
 |---|---|---|---|
 | F2 shell + per-page suite conformance | fable5 | 2026-07-18 | `components/layout/AppShell.tsx`, `components/ui/*`, `components/pfd/*` (className), `pages/*.tsx` (className/markup only) |
+| P20a bulk import CSV | zcode | 2026-07-18 | `frontend/src/pages/BulkImportPage.tsx`, `frontend/src/lib/csv-import.ts`, `frontend/src/lib/supabase-queries.ts` (additive only — new `bulkInsertReadings` fn), one route in `App.tsx`. **NO AppShell edit** (linked from Readings list + URL only — F2 owns NAV) |
 
 Done: ~~F1 dual-theme foundation~~ (2026-07-18 — tokens.css `:root`/`.dark`,
 toggle in AppShell, no-flash script in index.html; `frontend/index.html` is

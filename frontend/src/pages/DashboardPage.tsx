@@ -26,7 +26,6 @@ export function DashboardPage() {
           </h1>
           <p className="text-sm text-aura-textMuted font-thai mt-1">
             14 วันล่าสุด · {rows.length} รายการ
-            {today?.reading_date && <> · บันทึกล่าสุด {thaiDate(today.reading_date)}</>}
           </p>
         </div>
         <Button variant="secondary" size="sm" onClick={refresh} loading={loading}>
