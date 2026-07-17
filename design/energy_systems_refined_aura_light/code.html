@@ -1,0 +1,572 @@
+<!DOCTYPE html>
+
+<html lang="en"><head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<title>Energy &amp; Solar ROI Monitor - MedResource OS</title>
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<script id="tailwind-config">
+  tailwind.config = {
+    darkMode: "class",
+    theme: {
+      extend: {
+        "colors": {
+                "surface-container-lowest": "#ffffff",
+                "on-tertiary": "#ffffff",
+                "surface-bright": "#f3fbf7",
+                "primary": "#006b5a",
+                "tertiary-fixed": "#ffdcc3",
+                "primary-fixed-dim": "#2cdebf",
+                "secondary": "#406370",
+                "outline-variant": "#bacac4",
+                "surface-container-low": "#edf5f1",
+                "on-primary": "#ffffff",
+                "on-background": "#161d1b",
+                "surface-container": "#e8f0ec",
+                "secondary-container": "#c0e6f4",
+                "on-tertiary-fixed-variant": "#6e3900",
+                "primary-fixed": "#58fbda",
+                "outline": "#6b7a75",
+                "on-error": "#ffffff",
+                "on-tertiary-container": "#723c00",
+                "error": "#ba1a1a",
+                "surface-variant": "#dce4e0",
+                "error-container": "#ffdad6",
+                "surface": "#f3fbf7",
+                "inverse-surface": "#2a322f",
+                "tertiary": "#904d00",
+                "on-secondary-container": "#446874",
+                "inverse-primary": "#2cdebf",
+                "background": "#F7FAFA",
+                "on-secondary": "#ffffff",
+                "on-error-container": "#93000a",
+                "primary-container": "#00d1b2",
+                "secondary-fixed-dim": "#a7ccda",
+                "tertiary-fixed-dim": "#ffb77d",
+                "on-primary-container": "#005446",
+                "secondary-fixed": "#c3e8f7",
+                "on-surface-variant": "#3b4a45",
+                "surface-dim": "#d4dcd8",
+                "on-secondary-fixed-variant": "#274c57",
+                "inverse-on-surface": "#ebf3ee",
+                "on-secondary-fixed": "#001f28",
+                "on-surface": "#161d1b",
+                "surface-container-highest": "#dce4e0",
+                "on-primary-fixed-variant": "#005143",
+                "on-tertiary-fixed": "#2f1500",
+                "surface-tint": "#006b5a",
+                "tertiary-container": "#ffa557",
+                "on-primary-fixed": "#00201a",
+                "surface-container-high": "#e2eae6",
+                "text-main": "#161d1b",
+                "text-muted": "#406370",
+                "border-subtle": "#bacac4",
+                "background-deep": "#F7FAFA"
+        },
+        "borderRadius": {
+                "DEFAULT": "0.25rem",
+                "lg": "0.5rem",
+                "xl": "0.75rem",
+                "full": "9999px"
+        },
+        "spacing": {
+                "sm": "12px",
+                "xs": "4px",
+                "xl": "80px",
+                "lg": "48px",
+                "md": "24px",
+                "base": "8px",
+                "container-max": "1280px",
+                "gutter": "24px",
+                "margin-desktop": "40px",
+                "margin-mobile": "16px"
+        },
+        "fontFamily": {
+                "label-sm": [
+                        "Plus Jakarta Sans"
+                ],
+                "headline-sm": [
+                        "Plus Jakarta Sans"
+                ],
+                "headline-lg": [
+                        "Plus Jakarta Sans"
+                ],
+                "headline-md": [
+                        "Plus Jakarta Sans"
+                ],
+                "body-md": [
+                        "Plus Jakarta Sans"
+                ],
+                "headline-lg-mobile": [
+                        "Plus Jakarta Sans"
+                ],
+                "body-lg": [
+                        "Plus Jakarta Sans"
+                ],
+                "label-md": [
+                        "Plus Jakarta Sans"
+                ],
+                "section-title": [
+                        "Plus Jakarta Sans"
+                ],
+                "label-caps": [
+                        "Plus Jakarta Sans"
+                ],
+                "data-display": [
+                        "Plus Jakarta Sans"
+                ],
+                "body-main": [
+                        "Plus Jakarta Sans"
+                ],
+                "hero-title": [
+                        "Plus Jakarta Sans"
+                ],
+                "card-title": [
+                        "Plus Jakarta Sans"
+                ]
+        },
+        "fontSize": {
+                "label-sm": [
+                        "12px",
+                        {
+                                "lineHeight": "1.2",
+                                "fontWeight": "700"
+                        }
+                ],
+                "headline-sm": [
+                        "24px",
+                        {
+                                "lineHeight": "1.3",
+                                "fontWeight": "700"
+                        }
+                ],
+                "headline-lg": [
+                        "48px",
+                        {
+                                "lineHeight": "1.2",
+                                "letterSpacing": "-0.02em",
+                                "fontWeight": "800"
+                        }
+                ],
+                "headline-md": [
+                        "32px",
+                        {
+                                "lineHeight": "1.3",
+                                "fontWeight": "700"
+                        }
+                ],
+                "body-md": [
+                        "16px",
+                        {
+                                "lineHeight": "1.6",
+                                "fontWeight": "400"
+                        }
+                ],
+                "headline-lg-mobile": [
+                        "32px",
+                        {
+                                "lineHeight": "1.2",
+                                "letterSpacing": "-0.02em",
+                                "fontWeight": "800"
+                        }
+                ],
+                "body-lg": [
+                        "18px",
+                        {
+                                "lineHeight": "1.6",
+                                "fontWeight": "400"
+                        }
+                ],
+                "label-md": [
+                        "14px",
+                        {
+                                "lineHeight": "1.4",
+                                "letterSpacing": "0.01em",
+                                "fontWeight": "600"
+                        }
+                ],
+                "section-title": [
+                        "48px",
+                        {
+                                "lineHeight": "1.2",
+                                "letterSpacing": "-0.02em",
+                                "fontWeight": "600"
+                        }
+                ],
+                "label-caps": [
+                        "12px",
+                        {
+                                "lineHeight": "1",
+                                "letterSpacing": "0.1em",
+                                "fontWeight": "700"
+                        }
+                ],
+                "data-display": [
+                        "32px",
+                        {
+                                "lineHeight": "1.2",
+                                "letterSpacing": "-0.01em",
+                                "fontWeight": "500"
+                        }
+                ],
+                "body-main": [
+                        "16px",
+                        {
+                                "lineHeight": "1.6",
+                                "fontWeight": "400"
+                        }
+                ],
+                "hero-title": [
+                        "72px",
+                        {
+                                "lineHeight": "1.1",
+                                "letterSpacing": "-0.04em",
+                                "fontWeight": "700"
+                        }
+                ],
+                "card-title": [
+                        "24px",
+                        {
+                                "lineHeight": "1.4",
+                                "fontWeight": "600"
+                        }
+                ]
+        }
+},
+    },
+  }
+</script>
+<style>
+        body {
+            background-color: theme('colors.background');
+            color: theme('colors.on-background');
+        }
+        .bento-grid {
+            display: grid;
+            grid-template-columns: repeat(12, 1fr);
+            gap: theme('spacing.gutter');
+        }
+        @media (max-width: 1024px) {
+            .bento-grid {
+                grid-template-columns: repeat(8, 1fr);
+            }
+        }
+        @media (max-width: 768px) {
+            .bento-grid {
+                grid-template-columns: 1fr;
+            }
+        }
+        
+        .glass-3d {
+            background: rgba(255, 255, 255, 0.4);
+            backdrop-filter: blur(12px);
+            -webkit-backdrop-filter: blur(12px);
+            border: 1px solid rgba(255, 255, 255, 0.5);
+            box-shadow: 
+                8px 8px 16px rgba(0, 0, 0, 0.05),
+                -8px -8px 16px rgba(255, 255, 255, 0.8),
+                inset 1px 1px 2px rgba(255, 255, 255, 0.9);
+        }
+        
+        @keyframes aura-border-strict {
+            0%, 100% { border-color: rgba(0, 107, 90, 0.2); }
+            50% { border-color: rgba(0, 209, 178, 0.8); }
+        }
+        
+        .aura-border {
+            animation: aura-border-strict 4s ease-in-out infinite;
+            border-width: 2px;
+            border-style: solid;
+        }
+
+        .progress-bar-fill {
+            background: linear-gradient(90deg, theme('colors.primary-container') 0%, theme('colors.primary') 100%);
+        }
+    </style>
+</head>
+<body class="font-body-main text-on-background bg-background min-h-screen antialiased selection:bg-primary-container selection:text-on-primary-container flex">
+<!-- SideNavBar -->
+<nav class="hidden md:flex flex-col h-screen w-64 fixed left-0 top-0 bg-background border-r border-outline-variant py-base z-50">
+<div class="px-6 mb-8 mt-4 flex flex-col items-center justify-center">
+<div class="w-16 h-16 rounded-full bg-surface-container flex items-center justify-center mb-4 border border-primary-container overflow-hidden">
+<img alt="User profile avatar" class="w-full h-full object-cover" data-alt="A futuristic medical technology avatar, glowing cyan accents on a dark metallic surface, highly detailed, 8k resolution, minimalist cyberpunk aesthetic suitable for a high-tech hospital OS." src="https://lh3.googleusercontent.com/aida-public/AB6AXuB0pA9qlVPg0EKJD8bXlpBp8BTG-AW_TOszJsXBuI4yBwZt7UvxUKfqwMPdUOml9v73inINFmROy8ljcKBPVUcG3oLR5d79jeDY9-B91nKNhSCBaVSPFABECf1jRoujwHacoaJ4MJBOjuHgudm_561HjXuueKHOVDKj-u0GYQOJdueSl7t_IEg1WfK25toie0f4l4zDlZMnMv83M1IkvbUksCkIBD225qlKOYxK5Cq8oQmZ-h5mlmcz_g"/>
+</div>
+<h1 class="font-hero-title text-card-title text-on-background tracking-tighter text-center">UTH[AI]-EVN</h1>
+<p class="font-label-caps text-label-caps text-outline mt-1 uppercase">Environmental Department</p>
+</div>
+<div class="flex-1 overflow-y-auto px-4 space-y-2">
+<a class="flex items-center gap-4 px-4 py-3 rounded-lg text-outline hover:text-on-background hover:bg-surface-container-high transition-colors duration-200 group" href="#">
+<span class="material-symbols-outlined group-active:scale-95 duration-150">dashboard</span>
+<span class="font-body-main text-body-main font-medium">Dashboard</span>
+</a>
+<a class="flex items-center gap-4 px-4 py-3 rounded-lg bg-surface-container-highest text-primary border-r-2 border-primary-container transition-colors duration-200 group" href="#">
+<span class="material-symbols-outlined group-active:scale-95 duration-150 text-primary-container" style="font-variation-settings: 'FILL' 1;">bolt</span>
+<span class="font-body-main text-body-main font-bold">Energy</span>
+</a>
+<a class="flex items-center gap-4 px-4 py-3 rounded-lg text-outline hover:text-on-background hover:bg-surface-container-high transition-colors duration-200 group" href="#">
+<span class="material-symbols-outlined group-active:scale-95 duration-150">water_drop</span>
+<span class="font-body-main text-body-main font-medium">Water</span>
+</a>
+<a class="flex items-center gap-4 px-4 py-3 rounded-lg text-outline hover:text-on-background hover:bg-surface-container-high transition-colors duration-200 group" href="#">
+<span class="material-symbols-outlined group-active:scale-95 duration-150">delete</span>
+<span class="font-body-main text-body-main font-medium">Waste</span>
+</a>
+<a class="flex items-center gap-4 px-4 py-3 rounded-lg text-outline hover:text-on-background hover:bg-surface-container-high transition-colors duration-200 group" href="#">
+<span class="material-symbols-outlined group-active:scale-95 duration-150">co2</span>
+<span class="font-body-main text-body-main font-medium">Carbon</span>
+</a>
+<a class="flex items-center gap-4 px-4 py-3 rounded-lg text-outline hover:text-on-background hover:bg-surface-container-high transition-colors duration-200 group" href="#">
+<span class="material-symbols-outlined group-active:scale-95 duration-150">medical_services</span>
+<span class="font-body-main text-body-main font-medium">Equipment</span>
+</a>
+<a class="flex items-center gap-4 px-4 py-3 rounded-lg text-outline hover:text-on-background hover:bg-surface-container-high transition-colors duration-200 group" href="#">
+<span class="material-symbols-outlined group-active:scale-95 duration-150">menu_book</span>
+<span class="font-body-main text-body-main font-medium">Manuals</span>
+</a>
+<a class="flex items-center gap-4 px-4 py-3 rounded-lg text-outline hover:text-on-background hover:bg-surface-container-high transition-colors duration-200 group" href="#">
+<span class="material-symbols-outlined group-active:scale-95 duration-150">smart_toy</span>
+<span class="font-body-main text-body-main font-medium">AI Admin</span>
+</a>
+</div>
+<div class="px-4 mt-auto">
+<button class="w-full py-3 px-4 rounded-lg bg-surface border border-error/30 text-error font-body-main text-body-main font-bold flex items-center justify-center gap-2 hover:bg-error/10 transition-colors">
+<span class="material-symbols-outlined">warning</span>
+                Emergency Shutdown
+            </button>
+</div>
+</nav>
+<!-- Main Content Wrapper -->
+<div class="flex-1 ml-0 md:ml-64 flex flex-col min-h-screen relative">
+<!-- TopAppBar -->
+<header class="fixed top-0 right-0 left-0 md:left-64 h-16 z-40 glass-3d flex justify-between items-center px-gutter w-auto md:w-[calc(100%-16rem)]">
+<div class="flex items-center gap-4">
+<!-- Mobile Menu Button (placeholder functionality) -->
+<button class="md:hidden text-outline hover:text-primary transition-colors">
+<span class="material-symbols-outlined">menu</span>
+</button>
+<span class="font-label-caps text-label-caps text-primary tracking-widest uppercase hidden sm:block">Advanced Electricity &amp; Solar ROI</span>
+</div>
+<div class="flex items-center gap-4">
+<div class="hidden md:flex relative group cursor-pointer">
+<span class="material-symbols-outlined text-outline group-hover:text-primary-container transition-all">search</span>
+</div>
+<div class="flex items-center gap-3">
+<button class="text-outline hover:text-primary-container transition-all active:opacity-80 relative">
+<span class="material-symbols-outlined">notifications</span>
+<span class="absolute top-0 right-0 w-2 h-2 bg-error rounded-full animate-pulse"></span>
+</button>
+<button class="text-outline hover:text-primary-container transition-all active:opacity-80">
+<span class="material-symbols-outlined">settings</span>
+</button>
+<div class="w-8 h-8 rounded-full bg-surface-container border border-outline-variant overflow-hidden ml-2">
+<img alt="Chief Medical Engineer" class="w-full h-full object-cover" data-alt="Portrait of a Chief Medical Engineer, futuristic sterile environment, glowing ambient lighting in cyan and deep teal, professional clinical portrait, 4k." src="https://lh3.googleusercontent.com/aida-public/AB6AXuDnBSnYk39T42psBERC0rzfRvab8BEUOgcexCq46iIkvI8NjzjG4gOXgoWEQlt118cCyFFjUKhulmHr_ZnmJ-Zqw_EORKRYnZCC8oJNFg6J2IkwIcxl-SJQDsSr3GkfWOwEwOFap4PrKU0tMBYksAJbt3CpTysvWen1cz1uavIAGY2CEbhQjlRPdPhvKNEfQqhwVBNZKNGxRzGYJF8x-TFN20fCm9Cv_nWf1N6usrU3RdKepTM0HVj4zQ"/>
+</div>
+</div>
+</div>
+</header>
+<!-- Main Canvas -->
+<main class="flex-1 pt-24 pb-12 px-margin-mobile md:px-margin-desktop overflow-x-hidden">
+<div class="max-w-container-max mx-auto space-y-gutter">
+<!-- Page Header -->
+<div class="flex flex-col md:flex-row justify-between items-start md:items-end mb-8 gap-4">
+<div>
+<h2 class="font-section-title text-section-title text-on-background mb-2">Energy Systems Overview</h2>
+<p class="font-body-main text-body-main text-outline">Real-time monitoring of hospital power consumption and solar asset ROI.</p>
+</div>
+<div class="flex gap-3">
+<div class="flex items-center gap-2 glass-3d px-3 py-1.5 rounded-full border border-outline-variant">
+<span class="w-2 h-2 rounded-full bg-primary-container animate-pulse"></span>
+<span class="font-label-caps text-label-caps text-primary-container uppercase tracking-wider">Live System Sync</span>
+</div>
+</div>
+</div>
+<!-- Core Metrics Row -->
+<div class="bento-grid">
+<!-- Grid Consumption -->
+<div class="col-span-12 md:col-span-4 lg:col-span-4 rounded-xl glass-3d aura-border p-6 flex flex-col relative overflow-hidden">
+<div class="absolute top-0 right-0 p-4 opacity-10">
+<span class="material-symbols-outlined text-[100px]" style="font-variation-settings: 'FILL' 1;">electric_meter</span>
+</div>
+<div class="flex justify-between items-start mb-6 z-10">
+<div class="flex items-center gap-2 text-outline">
+<span class="material-symbols-outlined">power</span>
+<span class="font-label-caps text-label-caps uppercase tracking-wider">Total Grid Consumption</span>
+</div>
+<span class="px-2 py-1 rounded bg-surface-container border border-outline-variant font-label-caps text-[10px] text-outline uppercase">Today</span>
+</div>
+<div class="z-10">
+<div class="font-data-display text-data-display text-on-background mb-1">12,450 <span class="text-xl text-outline font-normal">kWh</span></div>
+<div class="flex items-center gap-2 mt-4">
+<span class="font-card-title text-xl text-error">฿ 56,025</span>
+<span class="font-label-caps text-[10px] text-error flex items-center bg-error/10 px-1.5 py-0.5 rounded"><span class="material-symbols-outlined text-[12px] mr-1">arrow_upward</span> 4.2%</span>
+</div>
+</div>
+<div class="mt-4 pt-4 border-t border-outline-variant/50 z-10 flex justify-between items-center text-sm text-outline">
+<span class="">Peak Demand: 2:00 PM</span>
+<span class="">Avg Cost/Unit: ฿4.5</span>
+</div>
+</div>
+<!-- Solar Generation -->
+<div class="col-span-12 md:col-span-4 lg:col-span-4 rounded-xl glass-3d aura-border p-6 flex flex-col relative overflow-hidden">
+<div class="absolute -right-4 -bottom-4 w-32 h-32 bg-primary-container/20 rounded-full blur-3xl"></div>
+<div class="flex justify-between items-start mb-6 z-10">
+<div class="flex items-center gap-2 text-primary-container">
+<span class="material-symbols-outlined" style="font-variation-settings: 'FILL' 1;">solar_power</span>
+<span class="font-label-caps text-label-caps uppercase tracking-wider text-primary-container">Solar Generation</span>
+</div>
+<span class="px-2 py-1 rounded bg-primary-container/10 border border-primary-container/30 font-label-caps text-[10px] text-primary-container uppercase flex items-center gap-1"><span class="w-1.5 h-1.5 rounded-full bg-primary-container animate-pulse"></span> Active</span>
+</div>
+<div class="z-10">
+<div class="font-data-display text-data-display text-on-background mb-1">4,820 <span class="text-xl text-outline font-normal">kWh</span></div>
+<div class="flex items-center gap-2 mt-4">
+<span class="font-card-title text-xl text-primary">฿ 21,690 <span class="text-sm font-normal text-outline">Saved</span></span>
+</div>
+</div>
+<div class="mt-4 pt-4 border-t border-outline-variant/50 z-10 flex justify-between items-center text-sm text-outline">
+<span class="">Efficiency: 92%</span>
+<span class="text-primary">Offset: ~38%</span>
+</div>
+</div>
+<!-- Maintenance -->
+<div class="col-span-12 md:col-span-4 lg:col-span-4 rounded-xl glass-3d p-6 flex flex-col justify-between">
+<div class="flex justify-between items-start mb-4">
+<div class="flex items-center gap-2 text-outline">
+<span class="material-symbols-outlined">build_circle</span>
+<span class="font-label-caps text-label-caps uppercase tracking-wider">Maintenance Schedule</span>
+</div>
+</div>
+<div class="bg-surface-container-high rounded-lg p-4 border border-outline-variant mb-4">
+<div class="flex justify-between items-center mb-2">
+<span class="font-body-main text-on-background font-medium">Solar Inverters (Block A)</span>
+<span class="px-2 py-0.5 rounded bg-surface text-outline text-xs border border-outline-variant">Routine</span>
+</div>
+<div class="flex items-center gap-2 text-error mt-2">
+<span class="material-symbols-outlined text-[16px]">calendar_month</span>
+<span class="font-bold text-sm">Due in 14 Days</span>
+<span class="text-outline text-sm ml-auto">Oct 24, 2024</span>
+</div>
+</div>
+<div class="bg-surface-container-low rounded-lg p-3 border border-outline-variant opacity-80">
+<div class="flex justify-between items-center">
+<span class="font-body-main text-outline text-sm">Panel Cleaning</span>
+<span class="text-outline text-xs">Nov 15, 2024</span>
+</div>
+</div>
+</div>
+</div>
+<!-- Analytics Row -->
+<div class="bento-grid mt-gutter">
+<!-- ROI Progress -->
+<div class="col-span-12 lg:col-span-5 rounded-xl glass-3d aura-border p-6 flex flex-col">
+<div class="flex items-center gap-2 text-outline mb-6">
+<span class="material-symbols-outlined">monitoring</span>
+<span class="font-label-caps text-label-caps uppercase tracking-wider">Installation ROI Tracker</span>
+</div>
+<div class="flex-1 flex flex-col justify-center">
+<div class="flex justify-between items-end mb-2">
+<div>
+<div class="text-sm text-outline mb-1">Total Installation Value</div>
+<div class="font-card-title text-2xl text-on-background">฿ 4,500,000</div>
+</div>
+<div class="text-right">
+<div class="text-sm text-outline mb-1">Recovered</div>
+<div class="font-card-title text-xl text-primary-container">฿ 1,935,000</div>
+</div>
+</div>
+<!-- Progress Bar -->
+<div class="h-4 w-full bg-surface-container-lowest rounded-full overflow-hidden border border-outline-variant mt-4 mb-2">
+<div class="h-full progress-bar-fill rounded-full" style="width: 43%;"></div>
+</div>
+<div class="flex justify-between text-xs text-outline mt-2">
+<span class="">0%</span>
+<span class="text-primary-container font-bold">43%</span>
+<span class="">100%</span>
+</div>
+<div class="grid grid-cols-2 gap-4 mt-8 pt-6 border-t border-outline-variant">
+<div class="bg-surface-container-low p-3 rounded-lg border border-outline-variant">
+<div class="text-xs text-outline mb-1 uppercase tracking-wider">Est. Payback</div>
+<div class="font-card-title text-lg text-on-background">3.2 Years</div>
+</div>
+<div class="bg-surface-container-low p-3 rounded-lg border border-outline-variant flex flex-col justify-between relative overflow-hidden">
+<div class="absolute -right-2 -bottom-2 opacity-20">
+<span class="material-symbols-outlined text-[40px] text-primary" style="font-variation-settings: 'FILL' 1;">eco</span>
+</div>
+<div class="text-xs text-outline mb-1 uppercase tracking-wider z-10">CO2 Reduction</div>
+<div class="font-card-title text-lg text-primary z-10">42.5 Tons</div>
+</div>
+</div>
+</div>
+</div>
+<!-- Savings vs Grid Chart Mockup -->
+<div class="col-span-12 lg:col-span-7 rounded-xl glass-3d p-6 flex flex-col">
+<div class="flex justify-between items-center mb-6">
+<div class="flex items-center gap-2 text-outline">
+<span class="material-symbols-outlined">stacked_bar_chart</span>
+<span class="font-label-caps text-label-caps uppercase tracking-wider">Cost vs Savings Trend</span>
+</div>
+<div class="flex gap-2">
+<span class="flex items-center gap-1 text-xs text-outline"><span class="w-3 h-3 rounded bg-surface-container border border-outline-variant block"></span> Grid Cost</span>
+<span class="flex items-center gap-1 text-xs text-outline"><span class="w-3 h-3 rounded progress-bar-fill block"></span> Solar Savings</span>
+</div>
+</div>
+<!-- Chart Abstract UI -->
+<div class="flex-1 relative min-h-[250px] flex items-end justify-between px-2 pb-6 border-b border-l border-outline-variant">
+<!-- Y-axis labels -->
+<div class="absolute left-[-30px] top-0 bottom-6 flex flex-col justify-between text-[10px] text-outline py-2">
+<span class="">100k</span>
+<span class="">75k</span>
+<span class="">50k</span>
+<span class="">25k</span>
+<span class="">0</span>
+</div>
+<!-- Grid lines -->
+<div class="absolute left-0 right-0 top-[10%] border-b border-outline-variant/30 border-dashed z-0"></div>
+<div class="absolute left-0 right-0 top-[35%] border-b border-outline-variant/30 border-dashed z-0"></div>
+<div class="absolute left-0 right-0 top-[60%] border-b border-outline-variant/30 border-dashed z-0"></div>
+<div class="absolute left-0 right-0 top-[85%] border-b border-outline-variant/30 border-dashed z-0"></div>
+<!-- Bars -->
+<div class="w-12 flex flex-col justify-end h-full z-10 gap-1 group cursor-crosshair">
+<div class="w-full bg-surface-container border border-outline-variant rounded-t-sm" style="height: 60%;"></div>
+<div class="w-full progress-bar-fill rounded-b-sm group-hover:brightness-110 transition-all" style="height: 20%;"></div>
+<div class="absolute -bottom-6 text-xs text-outline text-center w-12">May</div>
+</div>
+<div class="w-12 flex flex-col justify-end h-full z-10 gap-1 group cursor-crosshair">
+<div class="w-full bg-surface-container border border-outline-variant rounded-t-sm" style="height: 70%;"></div>
+<div class="w-full progress-bar-fill rounded-b-sm group-hover:brightness-110 transition-all" style="height: 25%;"></div>
+<div class="absolute -bottom-6 text-xs text-outline text-center w-12">Jun</div>
+</div>
+<div class="w-12 flex flex-col justify-end h-full z-10 gap-1 group cursor-crosshair">
+<div class="w-full bg-surface-container border border-outline-variant rounded-t-sm" style="height: 85%;"></div>
+<div class="w-full progress-bar-fill rounded-b-sm group-hover:brightness-110 transition-all" style="height: 35%;"></div>
+<div class="absolute -bottom-6 text-xs text-outline text-center w-12">Jul</div>
+</div>
+<div class="w-12 flex flex-col justify-end h-full z-10 gap-1 group cursor-crosshair">
+<div class="w-full bg-surface-container border border-outline-variant rounded-t-sm" style="height: 80%;"></div>
+<div class="w-full progress-bar-fill rounded-b-sm group-hover:brightness-110 transition-all" style="height: 30%;"></div>
+<div class="absolute -bottom-6 text-xs text-outline text-center w-12">Aug</div>
+</div>
+<div class="w-12 flex flex-col justify-end h-full z-10 gap-1 group cursor-crosshair relative">
+<!-- Tooltip mockup on active month -->
+<div class="absolute -top-16 left-1/2 transform -translate-x-1/2 bg-surface-container-highest border border-outline-variant p-2 rounded shadow-lg z-20 w-32 hidden group-hover:block pointer-events-none">
+<div class="text-[10px] text-outline mb-1">Sep Summary</div>
+<div class="text-xs text-error mb-0.5">Grid: ฿68k</div>
+<div class="text-xs text-primary">Saved: ฿22k</div>
+</div>
+<div class="w-full bg-surface-container border border-outline-variant rounded-t-sm" style="height: 75%;"></div>
+<div class="w-full progress-bar-fill rounded-b-sm group-hover:brightness-110 transition-all" style="height: 28%;"></div>
+<div class="absolute -bottom-6 text-xs text-primary-container text-center w-12 font-bold">Sep</div>
+</div>
+<div class="w-12 flex flex-col justify-end h-full z-10 gap-1 group cursor-crosshair">
+<div class="w-full bg-surface-container border border-outline-variant rounded-t-sm opacity-50" style="height: 40%;"></div>
+<div class="w-full progress-bar-fill rounded-b-sm opacity-50 group-hover:brightness-110 transition-all" style="height: 15%;"></div>
+<div class="absolute -bottom-6 text-xs text-outline/50 text-center w-12">Oct</div>
+</div>
+</div>
+</div>
+</div>
+</div>
+</main>
+</div>
+</body></html>

@@ -1,0 +1,455 @@
+<!DOCTYPE html><html class="dark" lang="en"><head>
+<meta charset="utf-8">
+<meta content="width=device-width, initial-scale=1.0" name="viewport">
+<title>Staff Manuals - MedResource OS</title>
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&amp;display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet">
+<script id="tailwind-config">
+      tailwind.config = {
+        darkMode: "class",
+        theme: {
+          extend: {
+            "colors": {
+                    "surface-dim": "#00161b",
+                    "primary-fixed": "#7df4ff",
+                    "text-main": "#FFFFFF",
+                    "secondary-fixed-dim": "#abd600",
+                    "error": "#ffb4ab",
+                    "surface": "#00161b",
+                    "primary-container": "#00f0ff",
+                    "on-primary-container": "#006970",
+                    "on-primary-fixed": "#002022",
+                    "on-surface-variant": "#b9cacb",
+                    "on-error": "#690005",
+                    "on-secondary": "#283500",
+                    "on-tertiary-fixed-variant": "#004f58",
+                    "on-tertiary-fixed": "#001f24",
+                    "surface-variant": "#1f383e",
+                    "secondary-container": "#c3f400",
+                    "surface-container-lowest": "#001114",
+                    "surface-tint": "#00dbe9",
+                    "on-secondary-fixed-variant": "#3c4d00",
+                    "secondary-fixed": "#c3f400",
+                    "surface-container-high": "#142e33",
+                    "tertiary-fixed": "#9cf0ff",
+                    "outline": "#849495",
+                    "text-muted": "#A1B5BB",
+                    "on-tertiary": "#00363d",
+                    "on-secondary-container": "#556d00",
+                    "surface-container-low": "#041f24",
+                    "inverse-on-surface": "#1b3439",
+                    "background-deep": "#03181C",
+                    "tertiary-fixed-dim": "#58d7eb",
+                    "inverse-primary": "#006970",
+                    "on-tertiary-container": "#006975",
+                    "primary-fixed-dim": "#00dbe9",
+                    "on-background": "#cce7ee",
+                    "background": "#00161b",
+                    "on-primary": "#00363a",
+                    "surface-container": "#082328",
+                    "secondary": "#ffffff",
+                    "surface-container-highest": "#1f383e",
+                    "border-subtle": "#13383E",
+                    "primary": "#dbfcff",
+                    "inverse-surface": "#cce7ee",
+                    "on-secondary-fixed": "#161e00",
+                    "outline-variant": "#3b494b",
+                    "on-primary-fixed-variant": "#004f54",
+                    "on-error-container": "#ffdad6",
+                    "error-container": "#93000a",
+                    "tertiary": "#e2faff",
+                    "tertiary-container": "#6eeaff",
+                    "on-surface": "#cce7ee",
+                    "surface-bright": "#243d42"
+            },
+            "borderRadius": {
+                    "DEFAULT": "0.25rem",
+                    "lg": "0.5rem",
+                    "xl": "0.75rem",
+                    "full": "9999px"
+            },
+            "spacing": {
+                    "margin-desktop": "40px",
+                    "gutter": "24px",
+                    "margin-mobile": "16px",
+                    "container-max": "1440px",
+                    "base": "8px"
+            },
+            "fontFamily": {
+                    "card-title": [
+                            "Plus Jakarta Sans"
+                    ],
+                    "section-title": [
+                            "Plus Jakarta Sans"
+                    ],
+                    "hero-title": [
+                            "Plus Jakarta Sans"
+                    ],
+                    "body-main": [
+                            "Plus Jakarta Sans"
+                    ],
+                    "data-display": [
+                            "Plus Jakarta Sans"
+                    ],
+                    "label-caps": [
+                            "Plus Jakarta Sans"
+                    ]
+            },
+            "fontSize": {
+                    "card-title": [
+                            "24px",
+                            {
+                                    "lineHeight": "1.4",
+                                    "fontWeight": "600"
+                            }
+                    ],
+                    "section-title": [
+                            "48px",
+                            {
+                                    "lineHeight": "1.2",
+                                    "letterSpacing": "-0.02em",
+                                    "fontWeight": "600"
+                            }
+                    ],
+                    "hero-title": [
+                            "72px",
+                            {
+                                    "lineHeight": "1.1",
+                                    "letterSpacing": "-0.04em",
+                                    "fontWeight": "700"
+                            }
+                    ],
+                    "body-main": [
+                            "16px",
+                            {
+                                    "lineHeight": "1.6",
+                                    "fontWeight": "400"
+                            }
+                    ],
+                    "data-display": [
+                            "32px",
+                            {
+                                    "lineHeight": "1.2",
+                                    "letterSpacing": "-0.01em",
+                                    "fontWeight": "500"
+                            }
+                    ],
+                    "label-caps": [
+                            "12px",
+                            {
+                                    "lineHeight": "1",
+                                    "letterSpacing": "0.1em",
+                                    "fontWeight": "700"
+                            }
+                    ]
+            }
+          }
+        }
+      }
+    </script>
+<style>
+        body {
+            background-color: #03181C; /* background-deep */
+            color: #FFFFFF; /* text-main */
+        }
+        
+        /* Inner Glow effect for active/critical cards */
+        .neon-glow-active {
+            box-shadow: inset 0 0 0 1px rgba(0, 240, 255, 0.5), 0 0 15px rgba(0, 240, 255, 0.15);
+        }
+        
+        .neon-gradient-text {
+            background-clip: text;
+            -webkit-background-clip: text;
+            color: transparent;
+            background-image: linear-gradient(to right, #00f0ff, #abd600);
+        }
+        
+        .neon-gradient-bg {
+            background-image: linear-gradient(to right, #00f0ff, #abd600);
+        }
+        
+        /* Custom Scrollbar for a more integrated tech look */
+        ::-webkit-scrollbar {
+            width: 8px;
+            height: 8px;
+        }
+        ::-webkit-scrollbar-track {
+            background: #00161b;
+        }
+        ::-webkit-scrollbar-thumb {
+            background: #1f383e;
+            border-radius: 4px;
+        }
+        ::-webkit-scrollbar-thumb:hover {
+            background: #00f0ff;
+        }
+    </style>
+</head>
+<body class="antialiased min-h-screen flex font-body-main text-body-main">
+<!-- SideNavBar -->
+<nav class="hidden md:flex flex-col h-screen w-72 fixed left-0 top-0 bg-surface-dim/90 backdrop-blur-2xl border-r border-border-subtle shadow-[0_0_20px_rgba(0,240,255,0.05)] py-base gap-2 z-40">
+<div class="px-6 py-6 mb-4">
+<h1 class="font-card-title text-card-title font-bold text-primary-container tracking-tight">UTH<span style="color: rgb(204, 255, 0);" class="">AI</span>-ENV</h1>
+<p class="font-label-caps text-label-caps text-text-muted mt-1">Environmental Department</p>
+</div>
+<div class="flex-1 flex flex-col gap-2">
+<a class="text-text-muted hover:text-text-main hover:bg-surface-container-high/50 hover:text-primary transition-all flex items-center gap-4 px-6 py-4 duration-200" href="#">
+<span class="material-symbols-outlined" data-icon="dashboard">dashboard</span>
+<span class="font-label-caps text-label-caps">Dashboard</span>
+</a>
+<a class="text-text-muted hover:text-text-main hover:bg-surface-container-high/50 hover:text-primary transition-all flex items-center gap-4 px-6 py-4 duration-200" href="#">
+<span class="material-symbols-outlined" data-icon="solar_power">solar_power</span>
+<span class="font-label-caps text-label-caps">Solar Energy</span>
+</a>
+<a class="text-text-muted hover:text-text-main hover:bg-surface-container-high/50 hover:text-primary transition-all flex items-center gap-4 px-6 py-4 duration-200" href="#">
+<span class="material-symbols-outlined" data-icon="water_drop">water_drop</span>
+<span class="font-label-caps text-label-caps">Water Management</span>
+</a>
+<a class="text-text-muted hover:text-text-main hover:bg-surface-container-high/50 hover:text-primary transition-all flex items-center gap-4 px-6 py-4 duration-200" href="#">
+<span class="material-symbols-outlined" data-icon="medical_services">medical_services</span>
+<span class="font-label-caps text-label-caps">Equipment Inventory</span>
+</a>
+<!-- Active State -->
+<a class="bg-surface-variant/50 text-primary-fixed-dim border-l-4 border-primary-container flex items-center gap-4 px-6 py-4 transition-all duration-300 active:scale-[0.98]" href="#">
+<span class="material-symbols-outlined" data-icon="menu_book">menu_book</span>
+<span class="font-label-caps text-label-caps">Staff Manuals</span>
+</a>
+</div>
+<div class="px-6 py-4 mt-auto">
+<div class="flex items-center gap-3">
+<div class="w-10 h-10 rounded-full overflow-hidden border border-border-subtle">
+<img alt="Staff Member Profile" class="w-full h-full object-cover" data-alt="A highly detailed close-up of a generic staff member avatar icon on a dark high-tech background, glowing cyan accents, minimal clinical aesthetic." src="https://lh3.googleusercontent.com/aida-public/AB6AXuC2oQDklivdQovgkOphcAG6qqkK2kPI3vrHdNS0Er-ZnGt_6A0_llFzGff9wuDVprga9oJmeXgrAg5It7sr_HW0q4eew76kWKGh557ky_omIfQi1AIwfNBjMqErpRrrNJxyLmaCYbrcelrrVykDgZm3Ua-v9v3NQPGlnKck-KCDR10EMhj6OmA1FLQKeESUfFn8hfbiMUPjMbG1Qb270_tdPCFA33l8raP1fmqgLTg-QFtYtggOZXiAqg">
+</div>
+<div>
+<p class="font-label-caps text-label-caps text-text-main">Dr. A. Chen</p>
+<p class="text-[10px] text-text-muted tracking-wide">SYSTEM ADMIN</p>
+</div>
+</div>
+</div>
+</nav>
+<!-- Main Content Canvas -->
+<div class="flex-1 md:ml-72 flex flex-col min-h-screen relative">
+<!-- TopNavBar -->
+<header class="flex justify-between items-center h-16 px-margin-desktop w-full bg-background-deep/80 backdrop-blur-md z-30 sticky top-0 border-b border-border-subtle">
+<div class="flex-1 flex items-center">
+<!-- Search Bar Container -->
+<div class="relative w-full max-w-xl group">
+<span class="material-symbols-outlined absolute left-4 top-1/2 -translate-y-1/2 text-text-muted group-focus-within:text-primary-container transition-colors">search</span>
+<input class="w-full bg-[#03181C] border border-border-subtle text-text-main pl-12 pr-4 py-2 rounded focus:ring-2 focus:ring-primary-container/50 outline-none focus:border-primary-container transition-all duration-300 placeholder:text-text-muted font-body-main text-body-main" placeholder="Search manuals, procedures, or keywords..." type="text">
+<div class="absolute right-2 top-1/2 -translate-y-1/2 flex items-center gap-1 opacity-50">
+<kbd class="px-2 py-1 rounded bg-surface-container text-xs text-text-muted border border-border-subtle">⌘</kbd>
+<kbd class="px-2 py-1 rounded bg-surface-container text-xs text-text-muted border border-border-subtle">K</kbd>
+</div>
+</div>
+</div>
+<div class="flex items-center gap-6">
+<button class="text-text-muted hover:text-primary-fixed-dim transition-colors cursor-pointer outline-none focus:ring-2 focus:ring-primary-container/50 rounded-full p-1 relative">
+<span class="material-symbols-outlined" data-icon="notifications_active">notifications_active</span>
+<span class="absolute top-1 right-1 w-2 h-2 rounded-full bg-error animate-pulse"></span>
+</button>
+<button class="text-text-muted hover:text-primary-fixed-dim transition-colors cursor-pointer outline-none focus:ring-2 focus:ring-primary-container/50 rounded-full p-1">
+<span class="material-symbols-outlined" data-icon="settings">settings</span>
+</button>
+<button class="text-text-muted hover:text-primary-fixed-dim transition-colors cursor-pointer outline-none focus:ring-2 focus:ring-primary-container/50 rounded-full p-1">
+<span class="material-symbols-outlined" data-icon="account_circle">account_circle</span>
+</button>
+</div>
+</header>
+<!-- Main Workspace -->
+<main class="flex-1 p-margin-mobile md:p-margin-desktop overflow-x-hidden">
+<!-- Header Section -->
+<div class="mb-8 flex flex-col md:flex-row justify-between items-start md:items-end gap-4">
+<div>
+<h2 class="font-section-title text-section-title text-text-main">Knowledge Base</h2>
+<p class="text-text-muted mt-2 max-w-2xl">Access standardized operating procedures, safety protocols, and emergency response guidelines across all clinical infrastructure subsystems.</p>
+</div>
+<div class="flex gap-3">
+<button class="bg-surface-container border border-border-subtle hover:border-primary-container/50 text-text-main px-4 py-2 rounded flex items-center gap-2 transition-all">
+<span class="material-symbols-outlined text-sm">filter_list</span>
+<span class="font-label-caps text-label-caps">Filter</span>
+</button>
+<button class="neon-gradient-bg text-on-primary-container font-bold px-4 py-2 rounded flex items-center gap-2 hover:opacity-90 transition-opacity">
+<span class="material-symbols-outlined text-sm">upload_file</span>
+<span class="font-label-caps text-label-caps">Upload Document</span>
+</button>
+</div>
+</div>
+<!-- Bento Grid Layout -->
+<div class="grid grid-cols-1 md:grid-cols-12 gap-gutter auto-rows-min">
+<!-- Categories Quick Links (Span 12 on mobile, 4 on desktop) -->
+<section class="col-span-1 md:col-span-4 flex flex-col gap-4">
+<div class="bg-surface border border-border-subtle rounded-lg p-6 h-full backdrop-blur-xl">
+<h3 class="font-card-title text-card-title text-text-main mb-6 flex items-center gap-2">
+<span class="material-symbols-outlined text-primary-container">category</span>
+                            Categories
+                        </h3>
+<div class="flex flex-col gap-3">
+<a class="group p-4 rounded bg-surface-container hover:bg-surface-container-high border border-transparent hover:border-primary-container/30 transition-all flex items-start gap-4" href="#">
+<div class="p-2 rounded bg-surface-variant text-primary-container group-hover:neon-glow-active transition-all">
+<span class="material-symbols-outlined">settings_suggest</span>
+</div>
+<div class="flex-1">
+<h4 class="font-bold text-text-main mb-1">Operating Procedures</h4>
+<p class="text-sm text-text-muted">Standard workflows for daily operations and routine maintenance.</p>
+</div>
+<span class="text-xs font-mono text-text-muted mt-1">42 Docs</span>
+</a>
+<a class="group p-4 rounded bg-surface-container hover:bg-surface-container-high border border-transparent hover:border-secondary-fixed-dim/30 transition-all flex items-start gap-4" href="#">
+<div class="p-2 rounded bg-surface-variant text-secondary-fixed-dim transition-all">
+<span class="material-symbols-outlined">health_and_safety</span>
+</div>
+<div class="flex-1">
+<h4 class="font-bold text-text-main mb-1">Safety Protocols</h4>
+<p class="text-sm text-text-muted">Compliance, hazard mitigation, and environmental guidelines.</p>
+</div>
+<span class="text-xs font-mono text-text-muted mt-1">18 Docs</span>
+</a>
+<a class="group p-4 rounded bg-surface-container hover:bg-surface-container-high border border-transparent hover:border-error/30 transition-all flex items-start gap-4" href="#">
+<div class="p-2 rounded bg-surface-variant text-error transition-all">
+<span class="material-symbols-outlined">emergency</span>
+</div>
+<div class="flex-1">
+<h4 class="font-bold text-error mb-1">Emergency Contacts</h4>
+<p class="text-sm text-text-muted">Critical escalation paths and rapid response directives.</p>
+</div>
+<span class="text-xs font-mono text-text-muted mt-1">5 Docs</span>
+</a>
+</div>
+</div>
+</section>
+<!-- Document Preview Cards (Span 12 on mobile, 8 on desktop) -->
+<section class="col-span-1 md:col-span-8">
+<div class="grid grid-cols-1 sm:grid-cols-2 gap-gutter">
+<!-- Doc Card 1 - Active/Pinned -->
+<div class="bg-surface border border-border-subtle rounded-lg overflow-hidden neon-glow-active flex flex-col group cursor-pointer relative">
+<div class="absolute top-2 right-2 z-10 flex gap-2">
+<span class="bg-surface-container-high/80 backdrop-blur text-primary-container text-xs px-2 py-1 rounded border border-primary-container/30 flex items-center gap-1">
+<span class="w-1.5 h-1.5 rounded-full bg-primary-container animate-pulse"></span>
+                                    Pinned
+                                </span>
+</div>
+<div class="h-32 bg-surface-container relative overflow-hidden border-b border-border-subtle">
+<div class="absolute inset-0 bg-gradient-to-t from-surface to-transparent z-0"></div>
+<div class="absolute inset-0 flex items-center justify-center text-primary-container/20 group-hover:scale-110 transition-transform duration-500">
+<span class="material-symbols-outlined text-6xl">solar_power</span>
+</div>
+</div>
+<div class="p-5 flex-1 flex flex-col">
+<div class="flex items-center gap-2 mb-2">
+<span class="text-[10px] font-label-caps text-primary-container tracking-wider uppercase">Operating Procedure</span>
+<span class="text-text-muted text-xs">•</span>
+<span class="text-text-muted text-xs font-mono">v3.1.4</span>
+</div>
+<h4 class="font-bold text-lg text-text-main mb-2 group-hover:text-primary-container transition-colors">Photovoltaic Array Diagnostic Walkthrough</h4>
+<p class="text-sm text-text-muted line-clamp-2 mb-4">Comprehensive guide for isolating inverter faults and running recalibration sequences on rooftop grid B.</p>
+<div class="mt-auto flex justify-between items-center text-xs text-text-muted border-t border-border-subtle pt-3">
+<span class="">Updated: 2h ago</span>
+<div class="flex -space-x-2">
+<div class="w-6 h-6 rounded-full bg-surface-variant border border-border-subtle flex items-center justify-center text-[10px]">RC</div>
+<div class="w-6 h-6 rounded-full bg-surface-variant border border-border-subtle flex items-center justify-center text-[10px]">MK</div>
+</div>
+</div>
+</div>
+</div>
+<!-- Doc Card 2 -->
+<div class="bg-surface border border-border-subtle rounded-lg overflow-hidden hover:border-primary-container/50 transition-colors flex flex-col group cursor-pointer">
+<div class="h-32 bg-surface-container relative overflow-hidden border-b border-border-subtle">
+<div class="absolute inset-0 flex items-center justify-center text-secondary-fixed-dim/20 group-hover:scale-110 transition-transform duration-500">
+<span class="material-symbols-outlined text-6xl">water_drop</span>
+</div>
+</div>
+<div class="p-5 flex-1 flex flex-col">
+<div class="flex items-center gap-2 mb-2">
+<span class="text-[10px] font-label-caps text-secondary-fixed-dim tracking-wider uppercase">Safety Protocol</span>
+<span class="text-text-muted text-xs">•</span>
+<span class="text-text-muted text-xs font-mono">v1.0.2</span>
+</div>
+<h4 class="font-bold text-lg text-text-main mb-2 group-hover:text-secondary-fixed-dim transition-colors">Blackwater Containment Breach Response</h4>
+<p class="text-sm text-text-muted line-clamp-2 mb-4">Immediate isolation steps and environmental hazmat contacting procedures in the event of primary tank failure.</p>
+<div class="mt-auto flex justify-between items-center text-xs text-text-muted border-t border-border-subtle pt-3">
+<span class="">Updated: Yesterday</span>
+<span class="material-symbols-outlined text-sm">visibility</span>
+</div>
+</div>
+</div>
+</div>
+</section>
+<!-- Video/Diagram Gallery (Full width) -->
+<section class="col-span-1 md:col-span-12 mt-4">
+<div class="bg-surface border border-border-subtle rounded-lg p-6 backdrop-blur-xl">
+<div class="flex justify-between items-center mb-6">
+<h3 class="font-card-title text-card-title text-text-main flex items-center gap-2">
+<span class="material-symbols-outlined text-tertiary-fixed-dim">play_circle</span>
+                                Instructional Media
+                            </h3>
+<a class="text-sm text-primary-container hover:underline" href="#">View All Media →</a>
+</div>
+<div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+<!-- Media 1 -->
+<div class="group relative rounded border border-border-subtle overflow-hidden cursor-pointer">
+<div class="aspect-video bg-surface-container relative">
+<img alt="MRI Cooling Schematic" class="w-full h-full object-cover opacity-60 group-hover:opacity-100 transition-opacity" data-alt="A highly detailed futuristic schematic diagram of an MRI machine cooling system, dark mode, glowing blue lines on a black background, clinical tech aesthetic." src="https://lh3.googleusercontent.com/aida-public/AB6AXuCMJia8xAoQKkcT6siVAhZkBAyJ1TXVDhh7wHl2EVBenF_U_yiBiMaHHzIw2UWbtSyGvmTGhuyx--6GXwmwbO3aH4-hMomyDcsMsUUg-XROmMyrBe7hK-stRbnsfLETZbEsy1z7uQpK15ml5g--L6fTAMhHtkcRBrBA6QxvvlYCWGkwrW4_gg3kPBU8jEf9V4mllHDd--Ke23UTbpl115K0i6qhc8Kp_787U472UUuttNriRlPKe0tquw">
+<div class="absolute inset-0 flex items-center justify-center">
+<div class="w-10 h-10 rounded-full bg-background-deep/80 backdrop-blur flex items-center justify-center border border-border-subtle group-hover:border-primary-container transition-colors">
+<span class="material-symbols-outlined text-text-main group-hover:text-primary-container">play_arrow</span>
+</div>
+</div>
+</div>
+<div class="p-3 bg-surface-variant/50">
+<h5 class="text-sm font-medium text-text-main truncate">MRI Helium Venting Proc...</h5>
+<span class="text-xs text-text-muted font-mono">04:12</span>
+</div>
+</div>
+<!-- Media 2 -->
+<div class="group relative rounded border border-border-subtle overflow-hidden cursor-pointer">
+<div class="aspect-video bg-surface-container relative">
+<img alt="Inverter Panel Guide" class="w-full h-full object-cover opacity-60 group-hover:opacity-100 transition-opacity" data-alt="A highly detailed dark mode wireframe illustration of a solar inverter control panel interface, neon green highlights, technical drawing style." src="https://lh3.googleusercontent.com/aida-public/AB6AXuBXccF65mjd8owz0HeqwZoLgjbRApGUV_ySaVMNsH5J8eKZj6NWWguhxSC4tdgDo0OJUsMmpTEkekev34SEfcwiBozfUqTQwHCQYuKVxP8AEJPfP8S4iDB939KSwsWDdHWqgVy64uD1XBp5Za4K9wTa99jpgjWQZ11Hi1CfF5U5N5YwTP_YKWFlzPhs2AOsnJr_29Dc5s4COPxN4dSWyZCfoFWtPkZd1_qWx106XnE2W50J4am308NjOw">
+<div class="absolute inset-0 flex items-center justify-center">
+<div class="w-10 h-10 rounded-full bg-background-deep/80 backdrop-blur flex items-center justify-center border border-border-subtle group-hover:border-primary-container transition-colors">
+<span class="material-symbols-outlined text-text-main group-hover:text-primary-container">play_arrow</span>
+</div>
+</div>
+</div>
+<div class="p-3 bg-surface-variant/50">
+<h5 class="text-sm font-medium text-text-main truncate">Inverter Manual Override</h5>
+<span class="text-xs text-text-muted font-mono">02:45</span>
+</div>
+</div>
+<!-- Media 3 (Diagram) -->
+<div class="group relative rounded border border-border-subtle overflow-hidden cursor-pointer">
+<div class="aspect-video bg-surface-container relative flex items-center justify-center p-4">
+<span class="material-symbols-outlined text-5xl text-outline-variant group-hover:text-text-main transition-colors">account_tree</span>
+</div>
+<div class="absolute top-2 right-2">
+<span class="bg-surface-dim/80 text-xs px-2 py-0.5 rounded text-text-muted font-label-caps border border-border-subtle">PDF</span>
+</div>
+<div class="p-3 bg-surface-variant/50">
+<h5 class="text-sm font-medium text-text-main truncate">Network Topology Map</h5>
+<span class="text-xs text-text-muted font-mono">1.2 MB</span>
+</div>
+</div>
+<!-- Media 4 (Diagram) -->
+<div class="group relative rounded border border-border-subtle overflow-hidden cursor-pointer">
+<div class="aspect-video bg-surface-container relative flex items-center justify-center p-4">
+<span class="material-symbols-outlined text-5xl text-outline-variant group-hover:text-text-main transition-colors">valve</span>
+</div>
+<div class="absolute top-2 right-2">
+<span class="bg-surface-dim/80 text-xs px-2 py-0.5 rounded text-text-muted font-label-caps border border-border-subtle">PDF</span>
+</div>
+<div class="p-3 bg-surface-variant/50">
+<h5 class="text-sm font-medium text-text-main truncate">Sub-basement Valve Map</h5>
+<span class="text-xs text-text-muted font-mono">3.4 MB</span>
+</div>
+</div>
+</div>
+</div>
+</section>
+</div>
+</main>
+</div>
+
+
+
+</body></html>

@@ -1,0 +1,517 @@
+<!DOCTYPE html>
+
+<html class="dark" lang="en"><head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<title>Fuel &amp; Fleet Management - UTH[AI]-EVN</title>
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<script id="tailwind-config">
+        tailwind.config = {
+            darkMode: "class",
+            theme: {
+                extend: {
+                    "colors": {
+                        "surface-bright": "#243d42",
+                        "surface-variant": "#1f383e",
+                        "tertiary": "#e2faff",
+                        "on-error-container": "#ffdad6",
+                        "error": "#ffb4ab",
+                        "on-secondary-fixed-variant": "#3c4d00",
+                        "on-primary": "#00363a",
+                        "surface-container-highest": "#1f383e",
+                        "on-tertiary-fixed-variant": "#004f58",
+                        "outline": "#849495",
+                        "on-background": "#cce7ee",
+                        "on-error": "#690005",
+                        "inverse-surface": "#cce7ee",
+                        "secondary-fixed-dim": "#abd600",
+                        "secondary-fixed": "#c3f400",
+                        "on-secondary-fixed": "#161e00",
+                        "on-primary-fixed": "#002022",
+                        "text-main": "#FFFFFF",
+                        "background-deep": "#03181C",
+                        "secondary-container": "#c3f400",
+                        "secondary": "#ffffff",
+                        "tertiary-container": "#6eeaff",
+                        "tertiary-fixed": "#9cf0ff",
+                        "on-tertiary-container": "#006975",
+                        "border-subtle": "#13383E",
+                        "on-tertiary-fixed": "#001f24",
+                        "surface-container": "#082328",
+                        "on-primary-fixed-variant": "#004f54",
+                        "on-tertiary": "#00363d",
+                        "surface-container-low": "#041f24",
+                        "outline-variant": "#3b494b",
+                        "on-surface-variant": "#b9cacb",
+                        "on-primary-container": "#006970",
+                        "primary": "#dbfcff",
+                        "error-container": "#93000a",
+                        "on-secondary-container": "#556d00",
+                        "inverse-on-surface": "#1b3439",
+                        "inverse-primary": "#006970",
+                        "surface-container-high": "#142e33",
+                        "tertiary-fixed-dim": "#58d7eb",
+                        "surface-container-lowest": "#001114",
+                        "on-secondary": "#283500",
+                        "primary-fixed": "#7df4ff",
+                        "surface-tint": "#00dbe9",
+                        "primary-fixed-dim": "#00dbe9",
+                        "on-surface": "#cce7ee",
+                        "surface-dim": "#00161b",
+                        "primary-container": "#00f0ff",
+                        "text-muted": "#A1B5BB",
+                        "background": "#00161b",
+                        "surface": "#00161b"
+                    },
+                    "borderRadius": {
+                        "DEFAULT": "0.25rem",
+                        "lg": "0.5rem",
+                        "xl": "0.75rem",
+                        "full": "9999px"
+                    },
+                    "spacing": {
+                        "margin-mobile": "16px",
+                        "margin-desktop": "40px",
+                        "gutter": "24px",
+                        "container-max": "1440px",
+                        "base": "8px"
+                    },
+                    "fontFamily": {
+                        "section-title": ["Plus Jakarta Sans"],
+                        "hero-title": ["Plus Jakarta Sans"],
+                        "data-display": ["Plus Jakarta Sans"],
+                        "card-title": ["Plus Jakarta Sans"],
+                        "label-caps": ["Plus Jakarta Sans"],
+                        "body-main": ["Plus Jakarta Sans"]
+                    },
+                    "fontSize": {
+                        "section-title": ["48px", {"lineHeight": "1.2", "letterSpacing": "-0.02em", "fontWeight": "600"}],
+                        "hero-title": ["72px", {"lineHeight": "1.1", "letterSpacing": "-0.04em", "fontWeight": "700"}],
+                        "data-display": ["32px", {"lineHeight": "1.2", "letterSpacing": "-0.01em", "fontWeight": "500"}],
+                        "card-title": ["24px", {"lineHeight": "1.4", "fontWeight": "600"}],
+                        "label-caps": ["12px", {"lineHeight": "1", "letterSpacing": "0.1em", "fontWeight": "700"}],
+                        "body-main": ["16px", {"lineHeight": "1.6", "fontWeight": "400"}]
+                    }
+                }
+            }
+        }
+    </script>
+<style>
+        body {
+            background-color: #00161b !important;
+            background-image: 
+                radial-gradient(circle at 0% 0%, rgba(0, 240, 255, 0.05) 0%, transparent 50%),
+                radial-gradient(circle at 100% 100%, rgba(204, 255, 0, 0.03) 0%, transparent 50%);
+            color: theme('colors.text-main');
+        }
+        .neon-glow-primary {
+            box-shadow: 0 0 15px 0px rgba(0, 219, 233, 0.15);
+        }
+        .neon-glow-active {
+            box-shadow: inset 0 0 0 1px rgba(0, 219, 233, 0.5);
+        }
+        .bg-gradient-primary {
+            background: linear-gradient(135deg, #00dbe9 0%, #c3f400 100%);
+        }
+        .text-gradient-primary {
+            background: linear-gradient(135deg, #00dbe9 0%, #c3f400 100%);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+        }
+        
+        /* Glassmorphism utilities */
+        .glass-panel {
+            background: rgba(0, 22, 27, 0.6);
+            backdrop-filter: blur(16px);
+            -webkit-backdrop-filter: blur(16px);
+        }
+
+        /* 3D Glassmorphism & Refined Aura Border */
+        @property --bg-angle {
+            syntax: '<angle>';
+            initial-value: 0turn;
+            inherits: false;
+        }
+
+        @keyframes aura-border {
+            to { --bg-angle: 1turn; }
+        }
+
+        .glass-card {
+            position: relative;
+            background: rgba(0, 22, 27, 0.6);
+            backdrop-filter: blur(20px);
+            -webkit-backdrop-filter: blur(20px);
+            border-radius: 24px;
+            box-shadow: 
+                0 8px 32px -4px rgba(0, 0, 0, 0.3),
+                inset 0 1px 1px rgba(255, 255, 255, 0.05);
+            z-index: 1;
+        }
+
+        .glass-card::before {
+            content: '';
+            position: absolute;
+            inset: 0;
+            border-radius: inherit;
+            padding: 1px;
+            background: conic-gradient(
+                from var(--bg-angle),
+                transparent 20%,
+                rgba(0, 219, 233, 0.5) 40%,
+                rgba(195, 244, 0, 0.7) 50%,
+                rgba(0, 219, 233, 0.5) 60%,
+                transparent 80%
+            );
+            -webkit-mask: 
+                linear-gradient(#fff 0 0) content-box,
+                linear-gradient(#fff 0 0);
+            -webkit-mask-composite: xor;
+            mask-composite: exclude;
+            pointer-events: none;
+            animation: aura-border 4s linear infinite;
+        }
+
+        @supports not (background: paint(something)) {
+            .glass-card::before {
+                animation: rotate-border-fallback 4s linear infinite;
+            }
+            
+            @keyframes rotate-border-fallback {
+                0% { transform: rotate(0deg); }
+                100% { transform: rotate(360deg); }
+            }
+        }
+    </style>
+</head>
+<body class="font-body-main antialiased selection:bg-primary-container selection:text-on-primary-container overflow-x-hidden">
+<!-- TopAppBar -->
+<header class="fixed top-0 right-0 left-64 h-16 z-40 bg-surface/80 dark:bg-surface/80 backdrop-blur-xl border-b border-border-subtle shadow-sm flex justify-between items-center px-gutter w-[calc(100%-16rem)]">
+<div class="flex items-center gap-4">
+<span class="font-label-caps text-label-caps text-secondary-container tracking-widest uppercase">UTH[AI]-EVN</span>
+<div class="h-4 w-px bg-border-subtle"></div>
+<span class="font-body-main text-body-main text-text-muted">Fuel &amp; Fleet</span>
+</div>
+<div class="flex items-center gap-6">
+<div class="relative">
+<span class="material-symbols-outlined text-text-muted hover:text-primary-fixed-dim cursor-pointer transition-all">notifications</span>
+<span class="absolute top-0 right-0 w-2 h-2 rounded-full bg-secondary-container"></span>
+</div>
+<span class="material-symbols-outlined text-text-muted hover:text-primary-fixed-dim cursor-pointer transition-all">settings</span>
+<div class="h-8 w-8 rounded-full overflow-hidden border border-border-subtle">
+<img alt="Chief Medical Engineer" class="w-full h-full object-cover" data-alt="A clinical headshot of a Chief Medical Engineer in a futuristic hospital control room. High-tech lighting, dark cyan and black aesthetic. Professional, focused demeanor." src="https://lh3.googleusercontent.com/aida-public/AB6AXuBfgCxp_zKDkB_AwcYc1Y0uXkdvAzOhaZKUykoG0Rxuw8vyf5u3_9bRUGyfb24mk_e2n8bfFHomdE8GIjERlQoI-pwV0ggqqNFgWgS9a41As3m_2c7BLjrfAZtyWFlrJxqmU9W5LYz5tZXdDvVfl3mx8jc5SZYU1Td_s1KGEOq5djA2Vz4QCluiGRWxG7B8UlwQQdUru4utytSlCQku_th3WQ5jZyRHlY-7DKszARaYIajneIZCZEQvIg"/>
+</div>
+</div>
+</header>
+<!-- SideNavBar -->
+<nav class="h-screen w-64 fixed left-0 top-0 bg-background-deep dark:bg-background-deep border-r border-border-subtle flex flex-col h-full py-base z-50">
+<div class="px-6 py-8 mb-4">
+<h1 class="font-hero-title text-card-title text-primary-fixed-dim tracking-tighter">UTH[AI]-EVN</h1>
+<p class="font-body-main text-body-main text-text-muted mt-1 text-sm">Clinical Infrastructure</p>
+</div>
+<ul class="flex flex-col gap-1 px-4 flex-grow">
+<li>
+<a class="flex items-center gap-4 px-4 py-3 rounded-lg text-text-muted hover:bg-surface-container-high transition-colors duration-200 group" href="#">
+<span class="material-symbols-outlined group-hover:text-primary-fixed-dim transition-colors">dashboard</span>
+<span class="font-body-main text-body-main">Dashboard</span>
+</a>
+</li>
+<li>
+<a class="flex items-center gap-4 px-4 py-3 rounded-lg text-text-muted hover:bg-surface-container-high transition-colors duration-200 group" href="#">
+<span class="material-symbols-outlined group-hover:text-primary-fixed-dim transition-colors">bolt</span>
+<span class="font-body-main text-body-main">Energy</span>
+</a>
+</li>
+<li>
+<a class="flex items-center gap-4 px-4 py-3 rounded-lg text-text-muted hover:bg-surface-container-high transition-colors duration-200 group" href="#">
+<span class="material-symbols-outlined group-hover:text-primary-fixed-dim transition-colors">water_drop</span>
+<span class="font-body-main text-body-main">Water</span>
+</a>
+</li>
+<li>
+<a class="flex items-center gap-4 px-4 py-3 rounded-lg text-text-muted hover:bg-surface-container-high transition-colors duration-200 group" href="#">
+<span class="material-symbols-outlined group-hover:text-primary-fixed-dim transition-colors">delete</span>
+<span class="font-body-main text-body-main">Waste</span>
+</a>
+</li>
+<li>
+<a class="flex items-center gap-4 px-4 py-3 rounded-lg text-text-muted hover:bg-surface-container-high transition-colors duration-200 group" href="#">
+<span class="material-symbols-outlined group-hover:text-primary-fixed-dim transition-colors">co2</span>
+<span class="font-body-main text-body-main">Carbon</span>
+</a>
+</li>
+<li>
+<a class="flex items-center gap-4 px-4 py-3 rounded-lg bg-surface-container-highest text-secondary-container border-r-2 border-secondary-container transform scale-[0.98] transition-transform duration-150" href="#">
+<span class="material-symbols-outlined" style="font-variation-settings: 'FILL' 1;">medical_services</span>
+<span class="font-body-main text-body-main font-semibold">Equipment</span>
+</a>
+</li>
+<li>
+<a class="flex items-center gap-4 px-4 py-3 rounded-lg text-text-muted hover:bg-surface-container-high transition-colors duration-200 group" href="#">
+<span class="material-symbols-outlined group-hover:text-primary-fixed-dim transition-colors">menu_book</span>
+<span class="font-body-main text-body-main">Manuals</span>
+</a>
+</li>
+<li>
+<a class="flex items-center gap-4 px-4 py-3 rounded-lg text-text-muted hover:bg-surface-container-high transition-colors duration-200 group" href="#">
+<span class="material-symbols-outlined group-hover:text-primary-fixed-dim transition-colors">smart_toy</span>
+<span class="font-body-main text-body-main">AI Admin</span>
+</a>
+</li>
+</ul>
+<div class="px-4 mt-auto">
+<button class="w-full py-3 rounded-lg border border-error/50 text-error hover:bg-error/10 hover:border-error transition-all font-label-caps text-label-caps flex items-center justify-center gap-2">
+<span class="material-symbols-outlined text-sm">warning</span>
+                Emergency Shutdown
+            </button>
+</div>
+</nav>
+<!-- Main Content Canvas -->
+<main class="ml-64 pt-24 px-gutter pb-margin-desktop min-h-screen">
+<!-- Header Section -->
+<div class="flex justify-between items-end mb-8">
+<div>
+<h2 class="font-section-title text-section-title text-text-main">Fleet Diagnostics</h2>
+<p class="font-body-main text-text-muted mt-2 max-w-2xl">Real-time telemetrics and fuel consumption for medical transport, utility vehicles, and backup infrastructure.</p>
+</div>
+<div class="flex gap-4">
+<div class="flex items-center gap-2 bg-surface rounded-full px-4 py-2 border border-border-subtle">
+<span class="w-2 h-2 rounded-full bg-secondary-container animate-pulse"></span>
+<span class="font-label-caps text-label-caps text-text-muted">Live Sync Active</span>
+</div>
+<button class="bg-gradient-primary text-background-deep font-label-caps text-label-caps px-6 py-2 rounded-full hover:opacity-90 transition-opacity flex items-center gap-2">
+<span class="material-symbols-outlined text-sm">download</span>
+                    Export Log
+                </button>
+</div>
+</div>
+<!-- Bento Grid Layout -->
+<div class="grid grid-cols-12 gap-gutter">
+<!-- Overall Status Panel (Spans 4) -->
+<div class="col-span-12 md:col-span-4 glass-card p-6 flex flex-col justify-between neon-glow-active relative group">
+<div class="absolute -right-12 -top-12 w-48 h-48 bg-primary/5 rounded-full blur-3xl group-hover:bg-primary/10 transition-all duration-500"></div>
+<div class="flex justify-between items-start mb-6 relative z-10">
+<h3 class="font-card-title text-card-title text-text-main flex items-center gap-3">
+<span class="material-symbols-outlined text-primary-fixed-dim">local_shipping</span>
+                        Fleet Health
+                    </h3>
+<div class="bg-[#004f58]/30 border border-[#00dbe9]/30 text-[#00dbe9] px-3 py-1 rounded-full font-label-caps text-[10px] flex items-center gap-1">
+<span class="material-symbols-outlined text-[12px]">check_circle</span>
+                        Optimal
+                    </div>
+</div>
+<div class="space-y-6 relative z-10">
+<div>
+<div class="flex justify-between text-sm mb-2">
+<span class="text-text-muted">Active Units</span>
+<span class="font-semibold text-text-main">42 / 45</span>
+</div>
+<div class="h-2 w-full bg-background-deep rounded-full overflow-hidden">
+<div class="h-full bg-gradient-primary w-[93%]"></div>
+</div>
+</div>
+<div class="grid grid-cols-3 gap-4 pt-4 border-t border-border-subtle">
+<div class="text-center">
+<div class="text-2xl font-data-display text-text-main">28</div>
+<div class="font-label-caps text-[10px] text-text-muted mt-1">Ambulances</div>
+</div>
+<div class="text-center">
+<div class="text-2xl font-data-display text-text-main">10</div>
+<div class="font-label-caps text-[10px] text-text-muted mt-1">Utility</div>
+</div>
+<div class="text-center">
+<div class="text-2xl font-data-display text-text-main">4</div>
+<div class="font-label-caps text-[10px] text-text-muted mt-1">Generators</div>
+</div>
+</div>
+</div>
+</div>
+<!-- Fuel Consumption Chart Placeholder (Spans 8) -->
+<div class="col-span-12 md:col-span-8 glass-card p-6 flex flex-col">
+<div class="flex justify-between items-center mb-6 relative z-10">
+<h3 class="font-card-title text-card-title text-text-main flex items-center gap-3">
+<span class="material-symbols-outlined text-primary-fixed-dim">local_gas_station</span>
+                        Global Fuel Consumption
+                    </h3>
+<div class="flex gap-2">
+<button class="px-3 py-1 bg-surface-container-high rounded text-sm text-text-main border border-border-subtle hover:bg-surface-container-highest">24h</button>
+<button class="px-3 py-1 bg-primary/10 rounded text-sm text-primary-fixed-dim border border-primary/20">7d</button>
+<button class="px-3 py-1 bg-surface-container-high rounded text-sm text-text-main border border-border-subtle hover:bg-surface-container-highest">30d</button>
+</div>
+</div>
+<div class="flex-grow flex items-center justify-center border border-dashed border-border-subtle rounded-lg bg-surface-container-low relative overflow-hidden z-10">
+<!-- Abstract Chart Representation -->
+<div class="absolute inset-0 flex items-end px-8 pt-10 pb-4 gap-4 opacity-50">
+<div class="w-full bg-border-subtle/50 h-[30%] rounded-t-sm relative"><div class="absolute top-0 w-full h-1 bg-primary/30"></div></div>
+<div class="w-full bg-border-subtle/50 h-[45%] rounded-t-sm relative"><div class="absolute top-0 w-full h-1 bg-primary/30"></div></div>
+<div class="w-full bg-border-subtle/50 h-[60%] rounded-t-sm relative"><div class="absolute top-0 w-full h-1 bg-primary/30"></div></div>
+<div class="w-full bg-border-subtle/50 h-[40%] rounded-t-sm relative"><div class="absolute top-0 w-full h-1 bg-primary/30"></div></div>
+<div class="w-full bg-gradient-to-t from-primary/5 to-primary/20 h-[80%] rounded-t-sm relative border-t border-primary-fixed-dim shadow-[0_0_15px_rgba(0,219,233,0.3)]"></div>
+<div class="w-full bg-border-subtle/50 h-[55%] rounded-t-sm relative"><div class="absolute top-0 w-full h-1 bg-primary/30"></div></div>
+<div class="w-full bg-border-subtle/50 h-[70%] rounded-t-sm relative"><div class="absolute top-0 w-full h-1 bg-primary/30"></div></div>
+</div>
+<div class="z-10 text-center">
+<span class="text-3xl font-data-display text-text-main">14,250 L</span>
+<p class="text-sm text-text-muted mt-1">-2.4% vs last week</p>
+</div>
+</div>
+</div>
+<!-- Carbon Emissions (Spans 4) -->
+<div class="col-span-12 md:col-span-4 glass-card p-6">
+<h3 class="font-card-title text-card-title text-text-main flex items-center gap-3 mb-6 relative z-10">
+<span class="material-symbols-outlined text-secondary-container">co2</span>
+                    Emissions Trace
+                </h3>
+<div class="space-y-5 relative z-10">
+<div class="flex flex-col gap-2">
+<div class="flex justify-between items-end">
+<div class="flex items-center gap-2">
+<span class="material-symbols-outlined text-text-muted text-sm">ambulance</span>
+<span class="text-sm text-text-main">Medical Transport</span>
+</div>
+<span class="text-sm font-semibold">2.4 tCO2e</span>
+</div>
+<div class="h-1.5 w-full bg-background-deep rounded-full overflow-hidden">
+<div class="h-full bg-error/70 w-[65%]"></div>
+</div>
+</div>
+<div class="flex flex-col gap-2">
+<div class="flex justify-between items-end">
+<div class="flex items-center gap-2">
+<span class="material-symbols-outlined text-text-muted text-sm">precision_manufacturing</span>
+<span class="text-sm text-text-main">Generators</span>
+</div>
+<span class="text-sm font-semibold">1.1 tCO2e</span>
+</div>
+<div class="h-1.5 w-full bg-background-deep rounded-full overflow-hidden">
+<div class="h-full bg-secondary-container/70 w-[30%]"></div>
+</div>
+</div>
+<div class="flex flex-col gap-2">
+<div class="flex justify-between items-end">
+<div class="flex items-center gap-2">
+<span class="material-symbols-outlined text-text-muted text-sm">agriculture</span>
+<span class="text-sm text-text-main">Utility &amp; Grounds</span>
+</div>
+<span class="text-sm font-semibold">0.3 tCO2e</span>
+</div>
+<div class="h-1.5 w-full bg-background-deep rounded-full overflow-hidden">
+<div class="h-full bg-primary/70 w-[15%]"></div>
+</div>
+</div>
+</div>
+</div>
+<!-- Detailed Asset List (Spans 8) -->
+<div class="col-span-12 md:col-span-8 glass-card flex flex-col">
+<div class="p-6 border-b border-border-subtle flex justify-between items-center bg-surface-container-low/50 relative z-10">
+<h3 class="font-card-title text-card-title text-text-main">Asset Telemetry</h3>
+<div class="relative">
+<span class="material-symbols-outlined absolute left-3 top-1/2 -translate-y-1/2 text-text-muted text-sm">search</span>
+<input class="bg-background-deep/50 border border-border-subtle text-text-main text-sm rounded-md pl-9 pr-4 py-1.5 focus:outline-none focus:border-primary-fixed-dim focus:ring-1 focus:ring-primary-fixed-dim transition-all w-64 placeholder-text-muted/50" placeholder="Search ID or Asset..." type="text"/>
+</div>
+</div>
+<div class="overflow-x-auto relative z-10">
+<table class="w-full text-left border-collapse">
+<thead>
+<tr class="bg-background-deep/30 text-text-muted font-label-caps text-label-caps uppercase border-b border-border-subtle">
+<th class="p-4 font-semibold">Asset ID</th>
+<th class="p-4 font-semibold">Type</th>
+<th class="p-4 font-semibold">Fuel Level</th>
+<th class="p-4 font-semibold">Status</th>
+<th class="p-4 font-semibold text-right">Action</th>
+</tr>
+</thead>
+<tbody class="text-sm divide-y divide-border-subtle">
+<tr class="hover:bg-surface-container-high/50 transition-colors group">
+<td class="p-4 font-medium text-text-main flex items-center gap-3">
+<div class="w-8 h-8 rounded bg-surface-container-highest flex items-center justify-center border border-border-subtle">
+<span class="material-symbols-outlined text-primary-fixed-dim text-[18px]">ambulance</span>
+</div>
+                                    AMB-704
+                                </td>
+<td class="p-4 text-text-muted">Type III Transport</td>
+<td class="p-4">
+<div class="flex items-center gap-3">
+<div class="w-24 h-1.5 bg-background-deep rounded-full overflow-hidden">
+<div class="h-full bg-secondary-container w-[85%]"></div>
+</div>
+<span class="text-text-main text-xs">85%</span>
+</div>
+</td>
+<td class="p-4">
+<div class="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-[#004f58]/30 border border-[#00dbe9]/30 text-[#00dbe9] text-[10px] font-label-caps uppercase">
+<span class="w-1.5 h-1.5 rounded-full bg-[#00dbe9] animate-pulse"></span>
+                                        Active Route
+                                    </div>
+</td>
+<td class="p-4 text-right">
+<button class="text-text-muted group-hover:text-primary-fixed-dim transition-colors">
+<span class="material-symbols-outlined text-[20px]">more_vert</span>
+</button>
+</td>
+</tr>
+<tr class="hover:bg-surface-container-high/50 transition-colors group bg-error/5">
+<td class="p-4 font-medium text-text-main flex items-center gap-3">
+<div class="w-8 h-8 rounded bg-surface-container-highest flex items-center justify-center border border-error/30">
+<span class="material-symbols-outlined text-error text-[18px]">precision_manufacturing</span>
+</div>
+                                    GEN-B02
+                                </td>
+<td class="p-4 text-text-muted">Backup Generator</td>
+<td class="p-4">
+<div class="flex items-center gap-3">
+<div class="w-24 h-1.5 bg-background-deep rounded-full overflow-hidden">
+<div class="h-full bg-error w-[15%]"></div>
+</div>
+<span class="text-error font-medium text-xs">15%</span>
+</div>
+</td>
+<td class="p-4">
+<div class="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-error/10 border border-error/30 text-error text-[10px] font-label-caps uppercase">
+<span class="material-symbols-outlined text-[12px]">build</span>
+                                        Maintenance
+                                    </div>
+</td>
+<td class="p-4 text-right">
+<button class="text-text-muted group-hover:text-primary-fixed-dim transition-colors">
+<span class="material-symbols-outlined text-[20px]">more_vert</span>
+</button>
+</td>
+</tr>
+<tr class="hover:bg-surface-container-high/50 transition-colors group">
+<td class="p-4 font-medium text-text-main flex items-center gap-3">
+<div class="w-8 h-8 rounded bg-surface-container-highest flex items-center justify-center border border-border-subtle">
+<span class="material-symbols-outlined text-text-muted text-[18px]">agriculture</span>
+</div>
+                                    UTL-M01
+                                </td>
+<td class="p-4 text-text-muted">Industrial Mower</td>
+<td class="p-4">
+<div class="flex items-center gap-3">
+<div class="w-24 h-1.5 bg-background-deep rounded-full overflow-hidden">
+<div class="h-full bg-text-muted w-[40%]"></div>
+</div>
+<span class="text-text-muted text-xs">40%</span>
+</div>
+</td>
+<td class="p-4">
+<div class="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-surface-container-high/50 border border-border-subtle text-text-muted text-[10px] font-label-caps uppercase">
+<span class="material-symbols-outlined text-[12px]">power_settings_new</span>
+                                        Offline
+                                    </div>
+</td>
+<td class="p-4 text-right">
+<button class="text-text-muted group-hover:text-primary-fixed-dim transition-colors">
+<span class="material-symbols-outlined text-[20px]">more_vert</span>
+</button>
+</td>
+</tr>
+</tbody>
+</table>
+</div>
+</div>
+</div>
+</main>
+</body></html>

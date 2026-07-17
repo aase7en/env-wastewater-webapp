@@ -1,36 +1,52 @@
 import { type ReactNode } from "react";
 import { Link, useLocation } from "react-router-dom";
-import { Droplets, LayoutDashboard, FileText, Settings } from "lucide-react";
+import { LayoutDashboard, FileText, ListChecks, Settings } from "lucide-react";
 import { cn } from "../../lib/utils";
 
 const NAV = [
-  { to: "/dashboard", label: "Dashboard", icon: LayoutDashboard },
-  { to: "/form", label: "บันทึก", icon: FileText },
+  { to: "/dashboard", label: "แดชบอร์ด", icon: LayoutDashboard },
+  { to: "/form", label: "บันทึกประจำวัน", icon: FileText },
+  { to: "/readings", label: "ประวัติ", icon: ListChecks },
   { to: "/settings", label: "ตั้งค่า", icon: Settings },
 ];
 
+/**
+ * UTH[AI]-EVN Aura Edition shell — deep-teal sidebar with neon brand lockup.
+ * The [AI] segment is highlighted cyan/lime per the Aura spec
+ * (design/uth_ai_evn_system_design_aura_edition.md §1).
+ *
+ * Mobile: top bar with icon-only nav. Desktop: fixed 14rem sidebar.
+ */
 export function AppShell({ children }: { children: ReactNode }) {
   const loc = useLocation();
   return (
-    <div className="min-h-screen flex flex-col md:flex-row bg-navy-50">
-      {/* Sidebar (desktop) / top bar (mobile) */}
-      <aside className="md:w-56 md:min-h-screen bg-navy-900 text-navy-100 flex md:flex-col flex-row items-center md:items-stretch md:py-6 px-4 py-3 gap-2 md:gap-1 shrink-0 sticky top-0 z-10">
-        <Link to="/dashboard" className="flex items-center gap-2 md:mb-8 md:px-2">
-          <Droplets className="w-7 h-7 text-teal-400" />
-          <span className="font-display font-semibold text-lg hidden md:inline">ENV</span>
+    <div className="min-h-screen flex flex-col md:flex-row">
+      <aside className="md:w-56 md:min-h-screen bg-aura-bg/80 backdrop-blur-xl border-b md:border-b-0 md:border-r border-aura-borderSubtle flex md:flex-col flex-row items-center md:items-stretch md:py-6 px-4 py-3 gap-2 md:gap-1 shrink-0 sticky top-0 z-20">
+        {/* Brand: UTH[AI]-EVN with neon [AI] */}
+        <Link to="/dashboard" className="flex items-center gap-2 md:mb-8 md:px-2 font-display font-bold">
+          <span className="text-lg tracking-tight">
+            <span className="text-aura-textMain">UTH</span>
+            <span className="aura-text-gradient">[AI]</span>
+            <span className="text-aura-textMain">-EVN</span>
+          </span>
+          <span className="hidden md:inline text-[10px] uppercase tracking-widest text-aura-textMuted self-end mb-1">
+            OS
+          </span>
         </Link>
-        <nav className="flex md:flex-col flex-row gap-1 md:gap-1 flex-1 md:px-2">
+
+        <nav className="flex md:flex-col flex-row gap-1 flex-1 md:px-2 overflow-x-auto">
           {NAV.map(({ to, label, icon: Icon }) => {
-            const active = loc.pathname === to;
+            // /form/:id should still highlight the บันทึก nav item.
+            const active = loc.pathname === to || loc.pathname.startsWith(to + "/");
             return (
               <Link
                 key={to}
                 to={to}
                 className={cn(
-                  "flex items-center gap-2.5 px-3 py-2 rounded-lg text-sm font-medium transition-colors",
+                  "flex items-center gap-2.5 px-3 py-2 rounded-xl text-sm font-medium font-thai transition-all whitespace-nowrap",
                   active
-                    ? "bg-teal-600 text-white"
-                    : "text-navy-300 hover:bg-navy-800 hover:text-white"
+                    ? "bg-gradient-to-r from-aura-cyan/20 to-aura-lime/10 text-aura-cyan shadow-aura-glow-cyan border border-aura-cyan/40"
+                    : "text-aura-textMuted hover:bg-white/5 hover:text-aura-textMain border border-transparent"
                 )}
               >
                 <Icon className="w-4 h-4 shrink-0" />
@@ -39,15 +55,13 @@ export function AppShell({ children }: { children: ReactNode }) {
             );
           })}
         </nav>
-        <div className="hidden md:block md:px-2 md:mt-auto text-xs text-navy-400">
+
+        <div className="hidden md:block md:px-2 md:mt-auto text-xs text-aura-textMuted font-thai">
           โรงพยาบาลอุทัย · 2569
         </div>
       </aside>
 
-      {/* Main */}
-      <main className="flex-1 p-4 md:p-8 max-w-full overflow-x-hidden">
-        {children}
-      </main>
+      <main className="flex-1 p-4 md:p-8 max-w-full overflow-x-hidden">{children}</main>
     </div>
   );
 }

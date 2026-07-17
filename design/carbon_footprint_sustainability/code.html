@@ -1,0 +1,361 @@
+<!DOCTYPE html><html class="dark" lang="en" style=""><head>
+<meta charset="utf-8">
+<meta content="width=device-width, initial-scale=1.0" name="viewport">
+<title>Carbon Footprint &amp; Sustainability Analytics</title>
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700&amp;display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet">
+<script id="tailwind-config">
+        tailwind.config = {
+            darkMode: "class",
+            theme: {
+                extend: {
+                    "colors": {
+                        "surface-container-highest": "#1f383e",
+                        "secondary-container": "#c3f400",
+                        "primary-fixed-dim": "#00dbe9",
+                        "outline": "#849495",
+                        "on-tertiary-fixed": "#001f24",
+                        "on-secondary-fixed": "#161e00",
+                        "on-tertiary-container": "#006975",
+                        "on-primary-container": "#006970",
+                        "text-main": "#FFFFFF",
+                        "surface-container-high": "#142e33",
+                        "on-surface": "#cce7ee",
+                        "on-error-container": "#ffdad6",
+                        "inverse-primary": "#006970",
+                        "on-background": "#cce7ee",
+                        "on-secondary": "#283500",
+                        "tertiary-container": "#6eeaff",
+                        "tertiary-fixed-dim": "#58d7eb",
+                        "text-muted": "#A1B5BB",
+                        "surface-bright": "#243d42",
+                        "secondary-fixed-dim": "#abd600",
+                        "background-deep": "#03181C",
+                        "on-secondary-fixed-variant": "#3c4d00",
+                        "surface-container-lowest": "#001114",
+                        "secondary-fixed": "#c3f400",
+                        "primary": "#dbfcff",
+                        "on-secondary-container": "#556d00",
+                        "surface-tint": "#00dbe9",
+                        "on-tertiary-fixed-variant": "#004f58",
+                        "tertiary": "#e2faff",
+                        "outline-variant": "#3b494b",
+                        "on-primary": "#00363a",
+                        "error-container": "#93000a",
+                        "background": "#00161b",
+                        "surface-dim": "#00161b",
+                        "inverse-surface": "#cce7ee",
+                        "surface": "#00161b",
+                        "inverse-on-surface": "#1b3439",
+                        "surface-container-low": "#041f24",
+                        "on-error": "#690005",
+                        "primary-container": "#00f0ff",
+                        "border-subtle": "#13383E",
+                        "error": "#ffb4ab",
+                        "on-surface-variant": "#b9cacb",
+                        "on-tertiary": "#00363d",
+                        "on-primary-fixed-variant": "#004f54",
+                        "tertiary-fixed": "#9cf0ff",
+                        "primary-fixed": "#7df4ff",
+                        "surface-variant": "#1f383e",
+                        "surface-container": "#082328",
+                        "secondary": "#ffffff",
+                        "on-primary-fixed": "#002022"
+                    },
+                    "borderRadius": {
+                        "DEFAULT": "0.25rem",
+                        "lg": "0.5rem",
+                        "xl": "0.75rem",
+                        "full": "9999px"
+                    },
+                    "spacing": {
+                        "gutter": "24px",
+                        "container-max": "1440px",
+                        "base": "8px",
+                        "margin-desktop": "40px",
+                        "margin-mobile": "16px"
+                    },
+                    "fontFamily": {
+                        "section-title": ["Plus Jakarta Sans"],
+                        "label-caps": ["Plus Jakarta Sans"],
+                        "data-display": ["Plus Jakarta Sans"],
+                        "body-main": ["Plus Jakarta Sans"],
+                        "hero-title": ["Plus Jakarta Sans"],
+                        "card-title": ["Plus Jakarta Sans"]
+                    },
+                    "fontSize": {
+                        "section-title": ["48px", { "lineHeight": "1.2", "letterSpacing": "-0.02em", "fontWeight": "600" }],
+                        "label-caps": ["12px", { "lineHeight": "1", "letterSpacing": "0.1em", "fontWeight": "700" }],
+                        "data-display": ["32px", { "lineHeight": "1.2", "letterSpacing": "-0.01em", "fontWeight": "500" }],
+                        "body-main": ["16px", { "lineHeight": "1.6", "fontWeight": "400" }],
+                        "hero-title": ["72px", { "lineHeight": "1.1", "letterSpacing": "-0.04em", "fontWeight": "700" }],
+                        "card-title": ["24px", { "lineHeight": "1.4", "fontWeight": "600" }]
+                    }
+                }
+            }
+        }
+    </script>
+<style>
+        .neon-glow {
+            box-shadow: 0 0 15px rgba(0, 219, 233, 0.15);
+        }
+        .neon-border {
+            border: 1px solid rgba(0, 219, 233, 0.3);
+        }
+        .gradient-cyan-lime {
+            background: linear-gradient(90deg, #00dbe9 0%, #c3f400 100%);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+        }
+        .bg-gradient-cyan-lime {
+            background: linear-gradient(90deg, #00dbe9 0%, #c3f400 100%);
+        }
+        .glass-panel {
+            background: rgba(0, 22, 27, 0.6);
+            backdrop-filter: blur(12px);
+            -webkit-backdrop-filter: blur(12px);
+            border: 1px solid #13383E;
+        }
+    </style>
+</head>
+<body class="bg-background-deep text-text-main font-body-main antialiased overflow-x-hidden">
+<!-- SideNavBar -->
+<nav class="bg-background-deep h-screen w-64 fixed left-0 top-0 border-r border-border-subtle flex flex-col h-full py-base z-50">
+<div class="px-gutter mb-8 mt-4">
+<h1 class="font-hero-title text-card-title text-primary-fixed-dim tracking-tighter leading-tight" style="--tw-border-spacing-y: 0; --tw-translate-x: 0; --tw-translate-y: 0; --tw-rotate: 0; --tw-skew-x: 0; --tw-skew-y: 0; --tw-scale-x: 1; --tw-scale-y: 1; --tw-pan-x: ; --tw-pan-y: ; --tw-pinch-zoom: ; --tw-scroll-snap-strictness: proximity; --tw-gradient-from-position: ; --tw-gradient-via-position: ; --tw-gradient-to-position: ; --tw-ordinal: ; --tw-slashed-zero: ; --tw-numeric-figure: ; --tw-numeric-spacing: ; --tw-numeric-fraction: ; --tw-ring-inset: ; --tw-ring-offset-width: 0px; --tw-ring-offset-color: #fff; --tw-ring-color: rgb(59 130 246 / 0.5); --tw-ring-offset-shadow: 0 0 #0000; --tw-ring-shadow: 0 0 #0000; --tw-shadow: 0 0 #0000; --tw-shadow-colored: 0 0 #0000; --tw-blur: ; --tw-brightness: ; --tw-contrast: ; --tw-grayscale: ; --tw-hue-rotate: ; --tw-invert: ; --tw-saturate: ; --tw-sepia: ; --tw-drop-shadow: ; --tw-backdrop-blur: ; --tw-backdrop-brightness: ; --tw-backdrop-contrast: ; --tw-backdrop-grayscale: ; --tw-backdrop-hue-rotate: ; --tw-backdrop-invert: ; --tw-backdrop-opacity: ; --tw-backdrop-saturate: ; --tw-backdrop-sepia: ; --tw-contain-size: ; --tw-contain-layout: ; --tw-contain-paint: ; --tw-contain-style: ; line-height: 1.25; --tw-text-opacity: 1; color: rgb(0, 219, 233); outline: none !important; box-shadow: none !important;">UTH<span class="text-secondary-container">AI</span>-ENV</h1>
+<p class="font-label-caps text-label-caps text-text-muted mt-1"><span style="letter-spacing: 1.2px;" class="">Environmental Department</span></p>
+</div>
+<div class="flex-1 px-4 space-y-2">
+<a class="flex items-center gap-3 px-4 py-3 rounded-lg text-text-muted hover:text-text-main hover:bg-surface-container-high transition-colors duration-200" href="#">
+<span class="material-symbols-outlined" data-icon="dashboard">dashboard</span>
+<span class="font-body-main text-body-main">Dashboard</span>
+</a>
+<a class="flex items-center gap-3 px-4 py-3 rounded-lg text-text-muted hover:text-text-main hover:bg-surface-container-high transition-colors duration-200" href="#">
+<span class="material-symbols-outlined" data-icon="bolt">bolt</span>
+<span class="font-body-main text-body-main">Energy</span>
+</a>
+<a class="flex items-center gap-3 px-4 py-3 rounded-lg text-text-muted hover:text-text-main hover:bg-surface-container-high transition-colors duration-200" href="#">
+<span class="material-symbols-outlined" data-icon="water_drop">water_drop</span>
+<span class="font-body-main text-body-main">Water</span>
+</a>
+<a class="flex items-center gap-3 px-4 py-3 rounded-lg text-text-muted hover:text-text-main hover:bg-surface-container-high transition-colors duration-200" href="#">
+<span class="material-symbols-outlined" data-icon="delete">delete</span>
+<span class="font-body-main text-body-main">Waste</span>
+</a>
+<a class="flex items-center gap-3 px-4 py-3 rounded-lg bg-surface-container-highest text-secondary-container border-r-2 border-secondary-container transform scale-95 duration-150 transition-all" href="#">
+<span class="material-symbols-outlined" data-icon="co2">co2</span>
+<span class="font-body-main text-body-main">Carbon</span>
+</a>
+<a class="flex items-center gap-3 px-4 py-3 rounded-lg text-text-muted hover:text-text-main hover:bg-surface-container-high transition-colors duration-200" href="#">
+<span class="material-symbols-outlined" data-icon="medical_services">medical_services</span>
+<span class="font-body-main text-body-main">Equipment</span>
+</a>
+<a class="flex items-center gap-3 px-4 py-3 rounded-lg text-text-muted hover:text-text-main hover:bg-surface-container-high transition-colors duration-200" href="#">
+<span class="material-symbols-outlined" data-icon="menu_book">menu_book</span>
+<span class="font-body-main text-body-main">Manuals</span>
+</a>
+<a class="flex items-center gap-3 px-4 py-3 rounded-lg text-text-muted hover:text-text-main hover:bg-surface-container-high transition-colors duration-200" href="#">
+<span class="material-symbols-outlined" data-icon="smart_toy">smart_toy</span>
+<span class="font-body-main text-body-main">AI Admin</span>
+</a>
+</div>
+<div class="px-4 mt-auto">
+<button class="w-full py-3 px-4 border border-error text-error rounded-lg hover:bg-error/10 transition-colors flex items-center justify-center gap-2">
+<span class="material-symbols-outlined text-sm">warning</span>
+<span class="font-label-caps text-label-caps">Emergency Shutdown</span>
+</button>
+</div>
+</nav>
+<!-- TopAppBar -->
+<header class="bg-surface/80 backdrop-blur-xl fixed top-0 right-0 left-64 h-16 z-40 border-b border-border-subtle flex justify-between items-center px-gutter w-[calc(100%-16rem)]">
+<div class="flex items-center">
+<div class="relative w-64">
+<span class="material-symbols-outlined absolute left-3 top-1/2 transform -translate-y-1/2 text-text-muted">search</span>
+<input class="w-full bg-background-deep border border-border-subtle rounded-full py-1.5 pl-10 pr-4 text-text-main focus:outline-none focus:border-primary-fixed-dim focus:ring-1 focus:ring-primary-fixed-dim transition-all text-sm" placeholder="Search analytics..." type="text">
+</div>
+</div>
+<div class="flex items-center gap-4">
+<button class="text-text-muted hover:text-primary-fixed-dim cursor-pointer transition-all">
+<span class="material-symbols-outlined" data-icon="notifications">notifications</span>
+</button>
+<button class="text-text-muted hover:text-primary-fixed-dim cursor-pointer transition-all">
+<span class="material-symbols-outlined" data-icon="settings">settings</span>
+</button>
+<div class="w-8 h-8 rounded-full overflow-hidden border border-border-subtle ml-2">
+<img alt="Chief Medical Engineer" class="w-full h-full object-cover" data-alt="A futuristic medical personnel avatar in a high-tech hospital setting, deep dark background with neon cyan rim lighting, minimalist and professional aesthetic, highly detailed rendering." src="https://lh3.googleusercontent.com/aida-public/AB6AXuDtS1LTge1tP-rqDL2y5xgVDMY_LpSstcZfcjaPHAmvztal4tUz3gCWV0Et-kDkpA992KMVSv4h2NQ-dSNEiWBkI1AllDbx_20y6VtPC-X8SmmwGbe-jBASrG2w9ehWO4kzqbgrHtt2gbrHnHZzR8Q0btxCopnvdpQ1Tg85472kY55OWnBy75kxPjyhVaj-IPH71O1T6XPacpJBQt01cmKioZ6IaY_wHp6EzT_y80v3rcUVRAmjxkMi0g">
+</div>
+</div>
+</header>
+<!-- Main Content Canvas -->
+<main class="ml-64 pt-24 px-gutter pb-margin-desktop min-h-screen">
+<div class="mb-8 flex justify-between items-end">
+<div>
+<h2 class="font-section-title text-section-title text-text-main mb-2">Carbon Footprint</h2>
+<p class="font-body-main text-body-main text-text-muted">Real-time emissions tracking &amp; sustainability analytics</p>
+</div>
+<div class="flex gap-2">
+<span class="px-3 py-1 rounded-full bg-primary-fixed-dim/10 text-primary-fixed-dim border border-primary-fixed-dim/30 font-label-caps text-label-caps flex items-center gap-2">
+<span class="w-2 h-2 rounded-full bg-primary-fixed-dim animate-pulse"></span>
+                    LIVE MONITORING
+                </span>
+</div>
+</div>
+<!-- Bento Grid -->
+<div class="grid grid-cols-1 md:grid-cols-12 gap-gutter">
+<!-- Key Metrics Row -->
+<div class="col-span-12 md:col-span-4">
+<div class="glass-panel p-6 rounded-xl h-full neon-glow relative overflow-hidden">
+<div class="absolute top-0 right-0 p-4 opacity-10">
+<span class="material-symbols-outlined text-6xl" data-icon="co2">co2</span>
+</div>
+<h3 class="font-card-title text-card-title text-text-main mb-1">Total GHG Emissions</h3>
+<p class="font-label-caps text-label-caps text-error mb-4">CRITICAL LEVEL</p>
+<div class="mt-auto">
+<span class="font-hero-title text-hero-title text-text-main">1,240</span>
+<span class="font-body-main text-body-main text-text-muted">tCO2e</span>
+</div>
+<div class="w-full bg-background-deep h-1 mt-4 rounded-full overflow-hidden">
+<div class="bg-error h-full w-[85%]"></div>
+</div>
+</div>
+</div>
+<div class="col-span-12 md:col-span-4">
+<div class="glass-panel p-6 rounded-xl h-full relative overflow-hidden">
+<div class="absolute top-0 right-0 p-4 opacity-10">
+<span class="material-symbols-outlined text-6xl" data-icon="forest">forest</span>
+</div>
+<h3 class="font-card-title text-card-title text-text-main mb-1">Total Sequestration</h3>
+<p class="font-label-caps text-label-caps text-primary-fixed-dim mb-4">OPTIMAL FLOW</p>
+<div class="mt-auto">
+<span class="font-hero-title text-hero-title gradient-cyan-lime">480</span>
+<span class="font-body-main text-body-main text-text-muted">tCO2e absorbed</span>
+</div>
+<div class="w-full bg-background-deep h-1 mt-4 rounded-full overflow-hidden">
+<div class="bg-gradient-cyan-lime h-full w-[45%]"></div>
+</div>
+</div>
+</div>
+<div class="col-span-12 md:col-span-4">
+<div class="glass-panel p-6 rounded-xl h-full neon-border relative overflow-hidden">
+<div class="absolute top-0 right-0 p-4 opacity-10">
+<span class="material-symbols-outlined text-6xl" data-icon="balance">balance</span>
+</div>
+<h3 class="font-card-title text-card-title text-text-main mb-1">Net Carbon Offset</h3>
+<p class="font-label-caps text-label-caps text-secondary-container mb-4">TARGET VARIANCE</p>
+<div class="mt-auto">
+<span class="font-hero-title text-hero-title text-text-main">760</span>
+<span class="font-body-main text-body-main text-text-muted">tCO2e remaining</span>
+</div>
+<div class="w-full bg-background-deep h-1 mt-4 rounded-full overflow-hidden">
+<div class="bg-secondary-container h-full w-[60%]"></div>
+</div>
+</div>
+</div>
+<!-- Main Chart Area -->
+<div class="col-span-12 md:col-span-8">
+<div class="glass-panel p-6 rounded-xl h-[400px] flex flex-col">
+<div class="flex justify-between items-center mb-6">
+<h3 class="font-card-title text-card-title text-text-main">Emission vs Absorption Vectors</h3>
+<div class="flex gap-4">
+<div class="flex items-center gap-2">
+<div class="w-3 h-3 rounded-full bg-error"></div>
+<span class="font-label-caps text-label-caps text-text-muted">EMISSIONS</span>
+</div>
+<div class="flex items-center gap-2">
+<div class="w-3 h-3 rounded-full bg-primary-fixed-dim"></div>
+<span class="font-label-caps text-label-caps text-text-muted">ABSORPTION</span>
+</div>
+</div>
+</div>
+<!-- Abstract Chart Representation -->
+<div class="flex-1 relative border-l border-b border-border-subtle ml-8 mb-4">
+<!-- Y-axis labels -->
+<div class="absolute -left-8 top-0 text-xs text-text-muted">1.5k</div>
+<div class="absolute -left-8 top-1/2 text-xs text-text-muted">750</div>
+<div class="absolute -left-8 bottom-0 text-xs text-text-muted">0</div>
+<!-- Grid lines -->
+<div class="absolute w-full top-0 border-t border-border-subtle/30"></div>
+<div class="absolute w-full top-1/4 border-t border-border-subtle/30"></div>
+<div class="absolute w-full top-2/4 border-t border-border-subtle/30"></div>
+<div class="absolute w-full top-3/4 border-t border-border-subtle/30"></div>
+<!-- Data Bars -->
+<div class="absolute bottom-0 w-full h-full flex items-end justify-around px-4">
+<!-- Q1 -->
+<div class="w-12 h-[80%] bg-error/20 border border-error/50 rounded-t-sm relative group cursor-pointer hover:bg-error/30 transition-all">
+<div class="absolute bottom-0 w-full h-[30%] bg-gradient-cyan-lime opacity-80 rounded-t-sm"></div>
+</div>
+<!-- Q2 -->
+<div class="w-12 h-[75%] bg-error/20 border border-error/50 rounded-t-sm relative group cursor-pointer hover:bg-error/30 transition-all">
+<div class="absolute bottom-0 w-full h-[35%] bg-gradient-cyan-lime opacity-80 rounded-t-sm"></div>
+</div>
+<!-- Q3 -->
+<div class="w-12 h-[90%] bg-error/20 border border-error/50 rounded-t-sm relative group cursor-pointer hover:bg-error/30 transition-all">
+<div class="absolute bottom-0 w-full h-[40%] bg-gradient-cyan-lime opacity-80 rounded-t-sm"></div>
+</div>
+<!-- Q4 -->
+<div class="w-12 h-[60%] bg-error/20 border border-error/50 rounded-t-sm relative group cursor-pointer hover:bg-error/30 transition-all">
+<div class="absolute bottom-0 w-full h-[50%] bg-gradient-cyan-lime opacity-80 rounded-t-sm"></div>
+</div>
+</div>
+<!-- X-axis labels -->
+<div class="absolute -bottom-6 w-full flex justify-around text-xs text-text-muted px-4">
+<span class="">Q1</span>
+<span class="">Q2</span>
+<span class="">Q3</span>
+<span class="">Q4</span>
+</div>
+</div>
+</div>
+</div>
+<!-- Initiatives Column -->
+<div class="col-span-12 md:col-span-4 flex flex-col gap-gutter">
+<!-- Initiative 1 -->
+<div class="glass-panel p-5 rounded-xl border-l-2 border-l-primary-fixed-dim hover:bg-surface-container-high transition-colors cursor-pointer">
+<div class="flex justify-between items-start mb-2">
+<div class="flex items-center gap-3">
+<span class="material-symbols-outlined text-primary-fixed-dim" data-icon="park">park</span>
+<h4 class="font-card-title text-card-title text-text-main text-lg">Tree Planting Project</h4>
+</div>
+<span class="px-2 py-1 bg-surface-container-highest rounded text-xs text-text-muted font-label-caps">ACTIVE</span>
+</div>
+<div class="flex justify-between items-end mt-4">
+<span class="font-body-main text-text-muted text-sm">Sequestration Value</span>
+<span class="font-data-display text-data-display text-primary-fixed-dim text-2xl">210 <span class="text-sm text-text-muted">tCO2e</span></span>
+</div>
+</div>
+<!-- Initiative 2 -->
+<div class="glass-panel p-5 rounded-xl border-l-2 border-l-secondary-container hover:bg-surface-container-high transition-colors cursor-pointer">
+<div class="flex justify-between items-start mb-2">
+<div class="flex items-center gap-3">
+<span class="material-symbols-outlined text-secondary-container" data-icon="compost">compost</span>
+<h4 class="font-card-title text-card-title text-text-main text-lg">Organic Composting</h4>
+</div>
+<span class="px-2 py-1 bg-surface-container-highest rounded text-xs text-text-muted font-label-caps">ACTIVE</span>
+</div>
+<div class="flex justify-between items-end mt-4">
+<span class="font-body-main text-text-muted text-sm">Absorption Value</span>
+<span class="font-data-display text-data-display text-secondary-container text-2xl">145 <span class="text-sm text-text-muted">tCO2e</span></span>
+</div>
+</div>
+<!-- Initiative 3 -->
+<div class="glass-panel p-5 rounded-xl border-l-2 border-l-tertiary-fixed-dim hover:bg-surface-container-high transition-colors cursor-pointer">
+<div class="flex justify-between items-start mb-2">
+<div class="flex items-center gap-3">
+<span class="material-symbols-outlined text-tertiary-fixed-dim" data-icon="receipt_long">receipt_long</span>
+<h4 class="font-card-title text-card-title text-text-main text-lg">Carbon Credit Compensation</h4>
+</div>
+<span class="px-2 py-1 bg-surface-container-highest rounded text-xs text-text-muted font-label-caps">VERIFIED</span>
+</div>
+<div class="flex justify-between items-end mt-4">
+<span class="font-body-main text-text-muted text-sm">Offset Purchased</span>
+<span class="font-data-display text-data-display text-tertiary-fixed-dim text-2xl">125 <span class="text-sm text-text-muted">tCO2e</span></span>
+</div>
+</div>
+</div>
+</div>
+</main>
+
+
+
+</body></html>
