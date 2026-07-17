@@ -278,8 +278,7 @@ binding rules are here.
 
 | Chunk | Agent | Claimed | Scope (files) |
 |---|---|---|---|
-| F3 assets + docs (logo/favicon, ui-brief authority) | fable5 | 2026-07-18 | `frontend/public/*`, `design/ui-brief.md`, MIGRATION claim release |
-| P20c PWA manifest + service worker | zcode | 2026-07-18 | `frontend/public/manifest.webmanifest`, `frontend/public/sw.js`, `frontend/src/lib/sw-register.ts`, additive `<link rel="manifest">` + `<script>` in `frontend/index.html` (F1-released). **No AppShell/page edit.** |
+| F3 assets + docs (logo/favicon, ui-brief authority) | fable5 | 2026-07-18 | `frontend/public/*` (additive — ไม่แตะไฟล์ PWA ของ Z), `design/ui-brief.md`, MIGRATION claim release |
 
 Done: ~~F1 dual-theme foundation~~ (2026-07-18 — tokens.css `:root`/`.dark`,
 toggle in AppShell, no-flash script in index.html; `frontend/index.html` is

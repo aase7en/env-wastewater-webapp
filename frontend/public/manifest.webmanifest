@@ -1,0 +1,43 @@
+{
+  "name": "UTH[AI]-EVN — ระบบบำบัดน้ำเสีย รพ.อุทัย",
+  "short_name": "UTH-EVN",
+  "description": "ระบบบันทึกและติดตามคุณภาพน้ำทิ้ง ระบบบำบัดน้ำเสีย โรงพยาบาลอุทัย",
+  "lang": "th",
+  "dir": "ltr",
+  "start_url": "/env-wastewater-webapp/",
+  "scope": "/env-wastewater-webapp/",
+  "display": "standalone",
+  "orientation": "portrait-primary",
+  "background_color": "#03181C",
+  "theme_color": "#00161B",
+  "categories": ["productivity", "medical", "utilities"],
+  "icons": [
+    {
+      "src": "/env-wastewater-webapp/favicon.svg",
+      "sizes": "any",
+      "type": "image/svg+xml",
+      "purpose": "any"
+    },
+    {
+      "src": "/env-wastewater-webapp/favicon.svg",
+      "sizes": "any",
+      "type": "image/svg+xml",
+      "purpose": "maskable"
+    }
+  ],
+  "shortcuts": [
+    {
+      "name": "บันทึกประจำวัน",
+      "short_name": "บันทึก",
+      "description": "กรอกค่าคุณภาพน้ำประจำวัน",
+      "url": "/env-wastewater-webapp/form",
+      "icons": [{ "src": "/env-wastewater-webapp/favicon.svg", "sizes": "any" }]
+    },
+    {
+      "name": "แดชบอร์ด",
+      "short_name": "แดชบอร์ด",
+      "url": "/env-wastewater-webapp/dashboard",
+      "icons": [{ "src": "/env-wastewater-webapp/favicon.svg", "sizes": "any" }]
+    }
+  ]
+}
