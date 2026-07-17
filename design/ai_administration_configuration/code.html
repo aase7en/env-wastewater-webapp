@@ -1,0 +1,462 @@
+<!DOCTYPE html><html lang="en" class="dark" style=""><head><meta charset="UTF-8"><meta name="viewport" content="width=device-width, initial-scale=1.0"><link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=block" rel="stylesheet"><link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700&amp;display=swap" rel="stylesheet"><script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script><script id="tailwind-config">try{
+        tailwind.config = {
+          darkMode: "class",
+          theme: {
+            extend: {
+              "colors": {
+                      "surface-container-highest": "#1f383e",
+                      "secondary-container": "#c3f400",
+                      "primary-fixed-dim": "#00dbe9",
+                      "outline": "#849495",
+                      "on-tertiary-fixed": "#001f24",
+                      "on-secondary-fixed": "#161e00",
+                      "on-tertiary-container": "#006975",
+                      "on-primary-container": "#006970",
+                      "text-main": "#FFFFFF",
+                      "surface-container-high": "#142e33",
+                      "on-surface": "#cce7ee",
+                      "on-error-container": "#ffdad6",
+                      "inverse-primary": "#006970",
+                      "on-background": "#cce7ee",
+                      "on-secondary": "#283500",
+                      "tertiary-container": "#6eeaff",
+                      "tertiary-fixed-dim": "#58d7eb",
+                      "text-muted": "#A1B5BB",
+                      "surface-bright": "#243d42",
+                      "secondary-fixed-dim": "#abd600",
+                      "background-deep": "#03181C",
+                      "on-secondary-fixed-variant": "#3c4d00",
+                      "surface-container-lowest": "#001114",
+                      "secondary-fixed": "#c3f400",
+                      "primary": "#dbfcff",
+                      "on-secondary-container": "#556d00",
+                      "surface-tint": "#00dbe9",
+                      "on-tertiary-fixed-variant": "#004f58",
+                      "tertiary": "#e2faff",
+                      "outline-variant": "#3b494b",
+                      "on-primary": "#00363a",
+                      "error-container": "#93000a",
+                      "background": "#00161b",
+                      "surface-dim": "#00161b",
+                      "inverse-surface": "#cce7ee",
+                      "surface": "#00161b",
+                      "inverse-on-surface": "#1b3439",
+                      "surface-container-low": "#041f24",
+                      "on-error": "#690005",
+                      "primary-container": "#00f0ff",
+                      "border-subtle": "#13383E",
+                      "error": "#ffb4ab",
+                      "on-surface-variant": "#b9cacb",
+                      "on-tertiary": "#00363d",
+                      "on-primary-fixed-variant": "#004f54",
+                      "tertiary-fixed": "#9cf0ff",
+                      "primary-fixed": "#7df4ff",
+                      "surface-variant": "#1f383e",
+                      "surface-container": "#082328",
+                      "secondary": "#ffffff",
+                      "on-primary-fixed": "#002022"
+              },
+              "borderRadius": {
+                      "DEFAULT": "0.25rem",
+                      "lg": "0.5rem",
+                      "xl": "0.75rem",
+                      "full": "9999px"
+              },
+              "spacing": {
+                      "gutter": "24px",
+                      "container-max": "1440px",
+                      "base": "8px",
+                      "margin-desktop": "40px",
+                      "margin-mobile": "16px"
+              },
+              "fontFamily": {
+                      "section-title": ["Plus Jakarta Sans"],
+                      "label-caps": ["Plus Jakarta Sans"],
+                      "data-display": ["Plus Jakarta Sans"],
+                      "body-main": ["Plus Jakarta Sans"],
+                      "hero-title": ["Plus Jakarta Sans"],
+                      "card-title": ["Plus Jakarta Sans"]
+              },
+              "fontSize": {
+                      "section-title": ["48px", { "lineHeight": "1.2", "letterSpacing": "-0.02em", "fontWeight": "600" }],
+                      "label-caps": ["12px", { "lineHeight": "1", "letterSpacing": "0.1em", "fontWeight": "700" }],
+                      "data-display": ["32px", { "lineHeight": "1.2", "letterSpacing": "-0.01em", "fontWeight": "500" }],
+                      "body-main": ["16px", { "lineHeight": "1.6", "fontWeight": "400" }],
+                      "hero-title": ["72px", { "lineHeight": "1.1", "letterSpacing": "-0.04em", "fontWeight": "700" }],
+                      "card-title": ["24px", { "lineHeight": "1.4", "fontWeight": "600" }]
+              }
+            }
+          }
+        }
+    }catch(_e){}</script></head><body class="bg-background-deep text-text-main antialiased min-h-screen overflow-x-hidden">
+
+    <!-- SideNavBar -->
+    <nav class="h-screen w-64 fixed left-0 top-0 bg-background-deep border-r border-border-subtle flex flex-col py-base z-50">
+        <div class="px-gutter mb-8">
+            <h1 class="font-hero-title text-[28px] leading-tight text-primary-fixed-dim tracking-tighter mt-4">UTH[<span class="text-primary-fixed-dim">AI</span>]-ENV</h1>
+            <p class="font-label-caps text-label-caps text-text-muted mt-1 uppercase tracking-widest">Clinical Infrastructure</p>
+        </div>
+
+        <ul class="flex-1 px-4 space-y-2 overflow-y-auto">
+            <li class="">
+                <a href="#" class="flex items-center space-x-3 px-4 py-3 rounded-lg text-text-muted hover:text-text-main hover:bg-surface-container-high transition-colors duration-200">
+                    <span class="material-symbols-outlined text-[20px]">dashboard</span>
+                    <span class="font-body-main text-body-main">Dashboard</span>
+                </a>
+            </li>
+            <li class="">
+                <a href="#" class="flex items-center space-x-3 px-4 py-3 rounded-lg text-text-muted hover:text-text-main hover:bg-surface-container-high transition-colors duration-200">
+                    <span class="material-symbols-outlined text-[20px]">bolt</span>
+                    <span class="font-body-main text-body-main">Energy</span>
+                </a>
+            </li>
+            <li class="">
+                <a href="#" class="flex items-center space-x-3 px-4 py-3 rounded-lg text-text-muted hover:text-text-main hover:bg-surface-container-high transition-colors duration-200">
+                    <span class="material-symbols-outlined text-[20px]">water_drop</span>
+                    <span class="font-body-main text-body-main">Water</span>
+                </a>
+            </li>
+            <li class="">
+                <a href="#" class="flex items-center space-x-3 px-4 py-3 rounded-lg text-text-muted hover:text-text-main hover:bg-surface-container-high transition-colors duration-200">
+                    <span class="material-symbols-outlined text-[20px]">delete</span>
+                    <span class="font-body-main text-body-main">Waste</span>
+                </a>
+            </li>
+            <li class="">
+                <a href="#" class="flex items-center space-x-3 px-4 py-3 rounded-lg text-text-muted hover:text-text-main hover:bg-surface-container-high transition-colors duration-200">
+                    <span class="material-symbols-outlined text-[20px]">co2</span>
+                    <span class="font-body-main text-body-main">Carbon</span>
+                </a>
+            </li>
+            <li class="">
+                <a href="#" class="flex items-center space-x-3 px-4 py-3 rounded-lg text-text-muted hover:text-text-main hover:bg-surface-container-high transition-colors duration-200">
+                    <span class="material-symbols-outlined text-[20px]">medical_services</span>
+                    <span class="font-body-main text-body-main">Equipment</span>
+                </a>
+            </li>
+            <li class="">
+                <a href="#" class="flex items-center space-x-3 px-4 py-3 rounded-lg text-text-muted hover:text-text-main hover:bg-surface-container-high transition-colors duration-200">
+                    <span class="material-symbols-outlined text-[20px]">menu_book</span>
+                    <span class="font-body-main text-body-main">Manuals</span>
+                </a>
+            </li>
+            <!-- Active Tab -->
+            <li class="">
+                <a href="#" class="flex items-center space-x-3 px-4 py-3 rounded-lg bg-surface-container-highest text-secondary-container border-r-2 border-secondary-container scale-95 duration-150 relative overflow-hidden group">
+                    <div class="absolute inset-0 bg-secondary-container/5 opacity-0 group-hover:opacity-100 transition-opacity"></div>
+                    <span class="material-symbols-outlined text-[20px]" style="font-variation-settings: &quot;FILL&quot; 1;">smart_toy</span>
+                    <span class="font-body-main text-body-main font-medium relative z-10">AI Admin</span>
+                </a>
+            </li>
+        </ul>
+
+        <div class="px-4 mt-auto">
+            <button class="w-full flex items-center justify-center space-x-2 py-3 rounded-lg border border-error/30 text-error hover:bg-error/10 transition-colors duration-200">
+                <span class="material-symbols-outlined text-[18px]">warning</span>
+                <span class="font-label-caps text-label-caps uppercase tracking-wider">Emergency Shutdown</span>
+            </button>
+        </div>
+    </nav>
+
+    <!-- TopAppBar -->
+    <header class="fixed top-0 right-0 left-64 h-16 z-40 bg-surface/80 backdrop-blur-xl border-b border-border-subtle shadow-sm flex justify-between items-center px-gutter w-[calc(100%-16rem)]">
+        
+        <!-- Search Bar (on_left) -->
+        <div class="flex-1 max-w-md">
+            <div class="relative group">
+                <span class="material-symbols-outlined absolute left-3 top-1/2 -translate-y-1/2 text-text-muted group-focus-within:text-primary-fixed-dim transition-colors">search</span>
+                <input type="text" placeholder="Search operational databanks..." class="w-full bg-surface-container-high border border-border-subtle rounded-full py-2 pl-10 pr-4 font-body-main text-[14px] text-text-main placeholder:text-text-muted/60 focus:outline-none focus:border-primary-container focus:ring-1 focus:ring-primary-container/50 transition-all">
+            </div>
+        </div>
+
+        <div class="font-label-caps text-label-caps text-secondary-container tracking-widest absolute left-1/2 -translate-x-1/2 hidden lg:block">UTH[<span class="text-primary-fixed-dim">AI</span>]-EVN // SYS.CTRL</div>
+
+        <!-- Trailing Actions -->
+        <div class="flex items-center space-x-4">
+            <button class="text-text-muted hover:text-primary-fixed-dim cursor-pointer transition-all relative">
+                <span class="material-symbols-outlined">notifications</span>
+                <span class="absolute top-0 right-0 w-2 h-2 bg-error rounded-full animate-pulse"></span>
+            </button>
+            <button class="text-text-muted hover:text-primary-fixed-dim cursor-pointer transition-all">
+                <span class="material-symbols-outlined">settings</span>
+            </button>
+            
+            <div class="h-8 w-px bg-border-subtle mx-2"></div>
+            
+            <div class="flex items-center space-x-3 cursor-pointer group">
+                <div class="text-right hidden md:block">
+                    <p class="font-label-caps text-[10px] text-text-muted uppercase tracking-widest group-hover:text-primary-fixed-dim transition-colors">senior DEVOPS Engineer</p>
+                    <p class="font-body-main text-[13px] font-medium text-text-main">Mr.Suppasit Kongsuwan</p>
+                </div>
+                <div class="w-9 h-9 rounded-full bg-surface-container-highest border border-border-subtle flex items-center justify-center overflow-hidden">
+                     <span class="material-symbols-outlined text-text-muted">person</span>
+                </div>
+            </div>
+        </div>
+    </header>
+
+    <!-- Main Content Canvas -->
+    <main class="ml-64 pt-16 p-gutter min-h-screen relative">
+        <!-- Subtle background glow -->
+        <div class="absolute top-0 right-1/4 w-96 h-96 bg-primary-container/5 rounded-full blur-[100px] pointer-events-none"></div>
+
+        <!-- Page Header -->
+        <div class="mb-8 flex justify-between items-end">
+            <div>
+                <div class="flex items-center space-x-2 mb-2 text-primary-fixed-dim">
+                    <span class="material-symbols-outlined text-[18px]">memory</span>
+                    <span class="font-label-caps text-label-caps uppercase tracking-widest">Inference Engine Integration</span>
+                </div>
+                <h2 class="font-section-title text-[36px] font-semibold tracking-tight text-text-main">AI Provider Configuration</h2>
+                <p class="font-body-main text-text-muted mt-1 max-w-2xl">Connect MedResource OS to an external Large Language Model for advanced predictive analytics and natural language queries across secure hospital databases.</p>
+            </div>
+            
+            <div class="hidden md:flex items-center space-x-2 bg-surface-container-high border border-border-subtle rounded-full px-4 py-1.5 shadow-[0_0_15px_rgba(0,219,233,0.1)]">
+                <span class="w-2 h-2 rounded-full bg-secondary-container animate-pulse"></span>
+                <span class="font-label-caps text-[11px] text-text-muted uppercase tracking-wider">System Ready</span>
+            </div>
+        </div>
+
+        <!-- Bento Grid Layout -->
+        <div class="grid grid-cols-1 lg:grid-cols-12 gap-gutter">
+            
+            <!-- Left Column: Form (8 cols) -->
+            <div class="lg:col-span-8 space-y-gutter">
+                
+                <!-- Connection Settings Card -->
+                <div class="bg-surface border border-border-subtle rounded-xl p-6 relative overflow-hidden group">
+                    <!-- Top inner glow -->
+                    <div class="absolute top-0 left-0 right-0 h-px bg-gradient-to-r from-transparent via-primary-fixed-dim/30 to-transparent"></div>
+                    
+                    <h3 class="font-card-title text-card-title text-text-main mb-6 flex items-center">
+                        <span class="material-symbols-outlined mr-3 text-text-muted">router</span>
+                        Connection Endpoints
+                    </h3>
+
+                    <div class="space-y-6">
+                        <!-- Provider Dropdown -->
+                        <div>
+                            <label class="block font-label-caps text-label-caps text-text-muted uppercase tracking-widest mb-2">Provider Target</label>
+                            <div class="relative">
+                                <select class="w-full bg-background-deep border border-border-subtle rounded-lg py-3 px-4 appearance-none font-body-main text-text-main focus:outline-none focus:border-primary-fixed-dim focus:ring-1 focus:ring-primary-fixed-dim/30 transition-colors cursor-pointer glow-input">
+                                    <option value="openai">OpenAI (Secure Enclave)</option>
+                                    <option value="anthropic">Anthropic (Claude API)</option>
+                                    <option value="google">Google Cloud Vertex AI</option>
+                                    <option value="azure">Azure OpenAI Service</option>
+                                </select>
+                                <span class="material-symbols-outlined absolute right-4 top-1/2 -translate-y-1/2 text-text-muted pointer-events-none">expand_more</span>
+                            </div>
+                        </div>
+
+                        <!-- Base URL -->
+                        <div>
+                            <label class="block font-label-caps text-label-caps text-text-muted uppercase tracking-widest mb-2 flex justify-between">
+                                <span class="">API Base URL</span>
+                                <span class="text-text-muted/50 font-normal normal-case tracking-normal">Optional for managed services</span>
+                            </label>
+                            <div class="relative flex items-center">
+                                <span class="absolute left-4 text-text-muted font-mono text-[14px]">https://</span>
+                                <input type="text" placeholder="api.provider.com/v1" class="w-full bg-background-deep border border-border-subtle rounded-lg py-3 pl-[70px] pr-4 font-mono text-[14px] text-text-main placeholder:text-text-muted/40 transition-all glow-input">
+                            </div>
+                        </div>
+
+                        <!-- Model Name -->
+                        <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                            <div>
+                                <label class="block font-label-caps text-label-caps text-text-muted uppercase tracking-widest mb-2">Model Identifier</label>
+                                <input type="text" value="Fable5" class="w-full bg-background-deep border border-border-subtle rounded-lg py-3 px-4 font-mono text-[14px] text-primary-fixed-dim transition-all glow-input">
+                            </div>
+                            <div>
+                                <label class="block font-label-caps text-label-caps text-text-muted uppercase tracking-widest mb-2">Authentication Key</label>
+                                <div class="relative">
+                                    <input type="password" value="sk-medres-xxxxxxxxxxxxxxxx" class="w-full bg-background-deep border border-border-subtle rounded-lg py-3 pl-4 pr-10 font-mono text-[14px] text-text-main transition-all glow-input">
+                                    <button class="absolute right-3 top-1/2 -translate-y-1/2 text-text-muted hover:text-text-main transition-colors">
+                                        <span class="material-symbols-outlined text-[18px]">visibility</span>
+                                    </button>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Scope Configuration Card -->
+                <div class="bg-surface border border-border-subtle rounded-xl p-6 relative overflow-hidden">
+                    
+                    <div class="flex justify-between items-center mb-6">
+                        <h3 class="font-card-title text-card-title text-text-main flex items-center">
+                            <span class="material-symbols-outlined mr-3 text-text-muted">policy</span>
+                            Vector DB Access Scopes
+                        </h3>
+                        <div class="px-3 py-1 bg-surface-container-high rounded-full border border-border-subtle flex items-center space-x-2">
+                            <span class="material-symbols-outlined text-[14px] text-text-muted">info</span>
+                            <span class="font-label-caps text-[10px] text-text-muted uppercase tracking-wider">RAG Context Limits</span>
+                        </div>
+                    </div>
+
+                    <p class="font-body-main text-[14px] text-text-muted mb-6">Define which operational databases the AI agent is permitted to query for Retrieval-Augmented Generation (RAG) when answering staff questions.</p>
+
+                    <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                        <!-- Toggle Item 1 -->
+                        <label class="flex items-center justify-between p-4 bg-background-deep border border-border-subtle rounded-lg cursor-pointer hover:bg-surface-container-lowest transition-colors group">
+                            <div class="flex items-center space-x-4">
+                                <div class="w-10 h-10 rounded-full bg-surface-container-highest flex items-center justify-center text-primary-fixed-dim group-hover:bg-primary-fixed-dim/10 transition-colors">
+                                    <span class="material-symbols-outlined text-[20px]">bolt</span>
+                                </div>
+                                <div>
+                                    <div class="font-body-main font-medium text-text-main">Energy Data</div>
+                                    <div class="font-label-caps text-[10px] text-text-muted mt-1">Read-Only / Real-time</div>
+                                </div>
+                            </div>
+                            <div class="relative inline-block w-12 h-6 align-middle select-none transition duration-200 ease-in">
+                                <input type="checkbox" name="toggle" id="toggle-energy" checked="" class="toggle-checkbox absolute block w-6 h-6 rounded-full bg-white border-4 appearance-none cursor-pointer transition-transform duration-200 ease-in-out translate-x-full border-primary-fixed-dim z-10">
+                                <label for="toggle-energy" class="toggle-label block overflow-hidden h-6 rounded-full bg-primary-fixed-dim cursor-pointer transition-colors duration-200 ease-in-out shadow-inner"></label>
+                            </div>
+                        </label>
+
+                        <!-- Toggle Item 2 -->
+                        <label class="flex items-center justify-between p-4 bg-background-deep border border-border-subtle rounded-lg cursor-pointer hover:bg-surface-container-lowest transition-colors group">
+                            <div class="flex items-center space-x-4">
+                                <div class="w-10 h-10 rounded-full bg-surface-container-highest flex items-center justify-center text-tertiary-fixed-dim group-hover:bg-tertiary-fixed-dim/10 transition-colors">
+                                    <span class="material-symbols-outlined text-[20px]">water_drop</span>
+                                </div>
+                                <div>
+                                    <div class="font-body-main font-medium text-text-main">Water Data</div>
+                                    <div class="font-label-caps text-[10px] text-text-muted mt-1">Read-Only / Historical</div>
+                                </div>
+                            </div>
+                            <div class="relative inline-block w-12 h-6 align-middle select-none transition duration-200 ease-in">
+                                <input type="checkbox" name="toggle" id="toggle-water" checked="" class="toggle-checkbox absolute block w-6 h-6 rounded-full bg-white border-4 appearance-none cursor-pointer transition-transform duration-200 ease-in-out translate-x-full border-primary-fixed-dim z-10">
+                                <label for="toggle-water" class="toggle-label block overflow-hidden h-6 rounded-full bg-primary-fixed-dim cursor-pointer transition-colors duration-200 ease-in-out shadow-inner"></label>
+                            </div>
+                        </label>
+
+                        <!-- Toggle Item-->
+                        <label class="flex items-center justify-between p-4 bg-background-deep border border-border-subtle rounded-lg cursor-pointer hover:bg-surface-container-lowest transition-colors group">
+                            <div class="flex items-center space-x-4">
+                                <div class="w-10 h-10 rounded-full bg-surface-container-highest flex items-center justify-center text-outline group-hover:text-text-main transition-colors">
+                                    <span class="material-symbols-outlined text-[20px]">delete</span>
+                                </div>
+                                <div>
+                                    <div class="font-body-main font-medium text-text-main">Waste Management</div>
+                                    <div class="font-label-caps text-[10px] text-text-muted mt-1">Manifests &amp; Routing</div>
+                                </div>
+                            </div>
+                            <div class="relative inline-block w-12 h-6 align-middle select-none transition duration-200 ease-in">
+                                <input type="checkbox" name="toggle" id="toggle-waste" class="toggle-checkbox absolute block w-6 h-6 rounded-full bg-outline border-4 appearance-none cursor-pointer transition-transform duration-200 ease-in-out border-background z-10">
+                                <label for="toggle-waste" class="toggle-label block overflow-hidden h-6 rounded-full bg-surface-container-highest border border-border-subtle cursor-pointer transition-colors duration-200 ease-in-out shadow-inner"></label>
+                            </div>
+                        </label>
+
+                        <!-- Toggle Item 4 -->
+                        <label class="flex items-center justify-between p-4 bg-background-deep border border-border-subtle rounded-lg cursor-pointer hover:bg-surface-container-lowest transition-colors group">
+                            <div class="flex items-center space-x-4">
+                                <div class="w-10 h-10 rounded-full bg-surface-container-highest flex items-center justify-center text-secondary-container group-hover:bg-secondary-container/10 transition-colors">
+                                    <span class="material-symbols-outlined text-[20px]">medical_services</span>
+                                </div>
+                                <div>
+                                    <div class="font-body-main font-medium text-text-main">Equipment Inventory</div>
+                                    <div class="font-label-caps text-[10px] text-text-muted mt-1">Location &amp; Status</div>
+                                </div>
+                            </div>
+                            <div class="relative inline-block w-12 h-6 align-middle select-none transition duration-200 ease-in">
+                                <input type="checkbox" name="toggle" id="toggle-equip" checked="" class="toggle-checkbox absolute block w-6 h-6 rounded-full bg-white border-4 appearance-none cursor-pointer transition-transform duration-200 ease-in-out translate-x-full border-primary-fixed-dim z-10">
+                                <label for="toggle-equip" class="toggle-label block overflow-hidden h-6 rounded-full bg-primary-fixed-dim cursor-pointer transition-colors duration-200 ease-in-out shadow-inner"></label>
+                            </div>
+                        </label>
+
+                        <!-- Toggle Item 5 -->
+                        <label class="flex items-center justify-between p-4 bg-background-deep border border-border-subtle rounded-lg cursor-pointer hover:bg-surface-container-lowest transition-colors group md:col-span-2">
+                            <div class="flex items-center space-x-4">
+                                <div class="w-10 h-10 rounded-full bg-surface-container-highest flex items-center justify-center text-secondary group-hover:text-primary transition-colors">
+                                    <span class="material-symbols-outlined text-[20px]">co2</span>
+                                </div>
+                                <div>
+                                    <div class="font-body-main font-medium text-text-main">Carbon Reporting</div>
+                                    <div class="font-label-caps text-[10px] text-text-muted mt-1">Emission Calc Engine</div>
+                                </div>
+                            </div>
+                            <div class="relative inline-block w-12 h-6 align-middle select-none transition duration-200 ease-in">
+                                <input type="checkbox" name="toggle" id="toggle-carbon" class="toggle-checkbox absolute block w-6 h-6 rounded-full bg-outline border-4 appearance-none cursor-pointer transition-transform duration-200 ease-in-out border-background z-10">
+                                <label for="toggle-carbon" class="toggle-label block overflow-hidden h-6 rounded-full bg-surface-container-highest border border-border-subtle cursor-pointer transition-colors duration-200 ease-in-out shadow-inner"></label>
+                            </div>
+                        </label>
+                    </div>
+                </div>
+
+                <!-- Action Bar -->
+                <div class="flex justify-end space-x-4 mt-6">
+                    <button class="px-6 py-3 rounded-lg border border-border-subtle text-text-main font-body-main font-medium hover:bg-surface-container-high transition-colors">
+                        Revert Changes
+                    </button>
+                    <button class="px-8 py-3 rounded-lg bg-gradient-to-r from-primary-fixed-dim to-[#00f0ff] text-background-deep font-body-main font-bold hover:shadow-[0_0_20px_rgba(0,219,233,0.4)] transition-all transform hover:-translate-y-0.5 flex items-center">
+                        <span class="material-symbols-outlined mr-2 text-[20px]">save</span>
+                        Deploy Configuration
+                    </button>
+                </div>
+
+            </div>
+
+            <!-- Right Column: Code Preview (4 cols) -->
+            <div class="lg:col-span-4 h-full">
+                <div class="bg-surface-container-lowest border border-border-subtle rounded-xl h-full flex flex-col overflow-hidden relative">
+                    
+                    <!-- decorative top bar -->
+                    <div class="h-1 w-full bg-gradient-to-r from-surface-container-lowest via-secondary-container/50 to-surface-container-lowest"></div>
+
+                    <div class="px-4 py-3 border-b border-border-subtle flex justify-between items-center bg-surface-container-highest">
+                        <div class="flex space-x-2">
+                            <div class="w-3 h-3 rounded-full bg-error/50"></div>
+                            <div class="w-3 h-3 rounded-full bg-outline/50"></div>
+                            <div class="w-3 h-3 rounded-full bg-secondary-container/50"></div>
+                        </div>
+                        <span class="font-mono text-[11px] text-text-muted uppercase tracking-widest">config.json (Live Gen)</span>
+                        <button class="text-text-muted hover:text-primary-fixed-dim transition-colors">
+                            <span class="material-symbols-outlined text-[16px]">content_copy</span>
+                        </button>
+                    </div>
+
+                    <div class="p-4 flex-1 overflow-y-auto code-scroll font-mono text-[13px] leading-relaxed">
+<pre class="text-text-muted"><code>{
+  <span class="text-primary-fixed-dim">"ai_engine"</span>: {
+    <span class="text-primary-fixed-dim">"provider"</span>: <span class="text-secondary-container">"openai"</span>,
+    <span class="text-primary-fixed-dim">"base_url"</span>: <span class="text-secondary-container">"https://api.openai.com/v1"</span>,
+    <span class="text-primary-fixed-dim">"model"</span>: <span class="text-secondary-container">"gpt-4-turbo-preview"</span>,
+    <span class="text-primary-fixed-dim">"auth_strategy"</span>: <span class="text-secondary-container">"bearer_token"</span>,
+    <span class="text-primary-fixed-dim">"temperature"</span>: <span class="text-outline">0.2</span>,
+    <span class="text-primary-fixed-dim">"max_tokens"</span>: <span class="text-outline">2048</span>
+  },
+  <span class="text-primary-fixed-dim">"rag_scopes"</span>: {
+    <span class="text-primary-fixed-dim">"energy_db"</span>: {
+      <span class="text-primary-fixed-dim">"access"</span>: <span class="text-tertiary-fixed-dim">true</span>,
+      <span class="text-primary-fixed-dim">"collections"</span>: [<span class="text-secondary-container">"solar_yield"</span>, <span class="text-secondary-container">"grid_draw"</span>]
+    },
+    <span class="text-primary-fixed-dim">"water_db"</span>: {
+      <span class="text-primary-fixed-dim">"access"</span>: <span class="text-tertiary-fixed-dim">true</span>,
+      <span class="text-primary-fixed-dim">"collections"</span>: [<span class="text-secondary-container">"flow_rate"</span>, <span class="text-secondary-container">"filtration"</span>]
+    },
+    <span class="text-primary-fixed-dim">"waste_db"</span>: {
+      <span class="text-primary-fixed-dim">"access"</span>: <span class="text-error-container">false</span>
+    },
+    <span class="text-primary-fixed-dim">"equipment_db"</span>: {
+      <span class="text-primary-fixed-dim">"access"</span>: <span class="text-tertiary-fixed-dim">true</span>,
+      <span class="text-primary-fixed-dim">"collections"</span>: [<span class="text-secondary-container">"mri_status"</span>, <span class="text-secondary-container">"hvac_logs"</span>]
+    },
+    <span class="text-primary-fixed-dim">"carbon_db"</span>: {
+      <span class="text-primary-fixed-dim">"access"</span>: <span class="text-error-container">false</span>
+    }
+  },
+  <span class="text-primary-fixed-dim">"system_prompt"</span>: <span class="text-secondary-container">"You are the MedResource OS operational AI. Your primary directive is providing accurate data regarding clinical infrastructure..."</span>
+}</code></pre>
+                    </div>
+                    
+                    <!-- Gradient fade at bottom of code block -->
+                    <div class="absolute bottom-0 left-0 right-0 h-12 bg-gradient-to-t from-surface-container-lowest to-transparent pointer-events-none"></div>
+                </div>
+            </div>
+
+        </div>
+    </main>
+
+    <!-- Custom Script for native interaction feel -->
+    <script class="">
+        // Simple script</script></body></html>

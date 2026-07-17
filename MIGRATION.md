@@ -137,15 +137,100 @@ month had a discharge," the boolean-correct equivalent. Verified the view
 still runs and returns sane data (all `days_discharged = 0` currently,
 correct since every row is still NULL).
 
+## RESOLVED — FastAPI backend (closed 2026-07-16, chunk P5)
+
+The backend is scaffolded and all v1 endpoints are live. Built in five
+sub-chunks (P5a–P5e), each its own commit on branch `claude/webapp-p5-fastapi`.
+
+- **Stack** (decision recorded in `docs/adr/0003-fastapi-sqlalchemy-async-
+  supabase-jwt.md`): FastAPI + SQLAlchemy 2.0 async + asyncpg against ENV_DB.
+  The original Pi5 self-host plan was abandoned (Pi5 also runs a Bitcoin full
+  node + Hermes agent — CPU ~80%, RAM strained). Supabase free tier replaces it.
+- **Auth** runs in two selectable modes via `AUTH_MODE`:
+  - `stub` — fixed mock user (for local dev before real `auth.users` rows exist)
+  - `jwt`  — verifies Supabase-issued JWTs with `SUPABASE_JWT_SECRET`, looks
+    up `core.app_user` by `auth.users.id`
+- **15 endpoints** across 6 routers: daily-form CRUD (transactional carbon +
+  wastewater insert), dashboard (reads `v_reading_detail` + `v_monthly_summary`),
+  reference data, repair requests, PDF templates, `/api/me`.
+- **Threshold stub**: DO<2.0 / Cl<0.5 / pH 6.5–8.5 checks fire on create and
+  log at WARNING. Telegram/Line delivery is deliberately NOT wired (SPEC lists
+  threshold alerts as out-of-v1) — the return list lets a future notifier
+  consume the same results.
+- **44 tests passing** — pure-function (computed values, thresholds), schema
+  validation (SPEC §6 cause-mandatory rule), auth stub, and endpoint contracts
+  via a stub async session. DB-backed integration tests deferred (see P5b.2).
+
+### Open follow-up from P5
+
+- **P5b.2-local — DONE.** Reconciled the 11 ORM models against the Phase 2
+  INSERT contract (`phase2_generate_sql.py` `WR_COLS`) + migration notes.
+  Found and fixed one real drift: `wastewater.reading.cause` did not exist
+  (it lives on `core.repair_request`); the request field is now
+  `abnormal_cause` and seeds a repair request in the same transaction.
+  Recorded in `reports/schema-snapshot-p5.md`.
+- **P5b.2-live — scaffolded, awaiting `SUPABASE_DB_URL`.** Two artifacts
+  land the moment the URL is provided:
+  1. `scripts/introspect_schema.py` — dumps exact types, enums, constraints,
+     indexes, RLS, and view definitions to `reports/schema-snapshot-live.md`.
+  2. `tests/integration/` — 8 tests (table/column presence, 907-row claim,
+     view queryability, seeds, GET endpoints end-to-end). Auto-skip until
+     the URL is set; `uv run pytest` stays green on fresh checkouts.
+  Run with: `uv run python scripts/introspect_schema.py && uv run pytest tests/integration -v`
+
+## RESOLVED — Frontend tracer-bullet (closed 2026-07-16 → 17, chunks P10 → P10.7)
+
+The frontend is scaffolded end-to-end as a tracer-bullet on branch
+`claude/webapp-p5-fastapi`. P10.1–P10.5 shipped the dashboard; P10.6
+added the Aura Edition design system + the daily-entry form; P10.7
+migrated the dashboard onto Aura so the whole app is consistent.
+
+- **Stack**: React 18 + Vite + TypeScript + Tailwind CSS + react-router-dom.
+  Vite proxies `/api` → `http://127.0.0.1:8000` so the frontend shares the
+  backend's origin in dev — no separate API URL to configure.
+- **Design direction — UTH[AI]-EVN Aura Edition** (locked in P10.6,
+  applied across the whole app in P10.7): dark deep-teal foundation
+  (`#00161B`), neon cyan/lime accents (`#00F0FF` / `#CCFF00`),
+  glassmorphism cards with a rotating conic-gradient aura border,
+  `Plus Jakarta Sans` display + `IBM Plex Sans Thai` fallback.
+  See `design/uth_ai_evn_system_design_aura_edition.md` + `design/DESIGN.md`.
+- **Pages** (3 of them, all wired to the live API, all on Aura):
+  - `/dashboard` — Process Flow Diagram + KPI tiles + 14-day log table
+    with Thai-BE dates (P10.1–4 → migrated to Aura in P10.7).
+  - `/form` + `/form/:id` — daily-entry form (create / edit), 6-section
+    Accordion, mobile-first, inline threshold warnings, conditional
+    `abnormal_cause` when `system_operating=false` (SPEC §6), admin-gated
+    delete (P10.6.4).
+  - `/readings` — recent readings list, row click → edit (P10.6.5).
+- **CRUD**: `POST/GET/PUT/DELETE /api/readings` all wired through typed
+  `api-client.ts` + mutation hooks (`useCreate/Update/DeleteReading`).
+  `reported_by` + `location_id` are NOT sent by the form (server-derived).
+- **Verified** (P10.6 smoke test + P10.7 DOM scan): TypeScript 0 errors,
+  Vite build ~301KB → ~94KB gzip, all routes serve HTTP 200, Vite
+  `/api/*` proxy reaches FastAPI (`/api/health` returns JSON). Dashboard
+  DOM scan confirms no legacy `bg-white` / `text-navy-900` / `border-navy`
+  classes remain. DB-backed endpoints return 500 on this Windows machine
+  — known IPv6-only direct-host issue (see P5b.2-live), not a frontend
+  bug; full CRUD round-trip waits for Cloud Run deploy or a v4-pooled
+  Supabase connection.
+
+### Open follow-up (deferred chunks)
+
+- **P11 — Auth flow wiring.** Frontend currently no-op against stub auth;
+  JWT login UI + token storage is a later chunk once `AUTH_MODE=jwt` is
+  real and `auth.users` rows exist.
+- **P12 — Deployment.** Dockerfile + Cloud Run (or Supabase Edge
+  Function for the API). Also unblocks the full CRUD round-trip by
+  giving the backend a v4-routable DB connection.
+- **P13 — PDF template-builder UI** — ทส.1/ทส.2/repair-request layouts.
+  Depends on the layout work still paused in `design/ui-brief.md`.
+- **OpenAPI auto-gen client** — `src/lib/types.ts` is manual for now;
+  `openapi-typescript` auto-gen is a later hardening chunk.
+
 ## Not started
 
-- FastAPI backend — see next-session chunk `P5`.
-- Frontend build-out — see next-session chunk `P6`. Design direction for
-  this is paused for now; see `design/ui-brief.md` for the full brief
-  (portable prompt for Claude Design / z.ai design or whichever tool picks
-  it up next) and the 4 mockups already made (dashboard ×3 palette
-  variants + a live-dashboard-style variant + a mobile daily-entry form) —
-  links are in-session only; regenerate from the brief if lost.
+(Nothing currently blocked — see "Next-session plan" below for the next
+chunk candidates: P10.6 daily form, auth wiring, deployment.)
 
 ## Next-session plan (cross-agent handoff)
 
@@ -161,7 +246,25 @@ be its own commit.
 | ~~`P2`~~ | ~~PDF-builder tables~~ — **done 2026-07-07**, see "PDF template-builder tables" above. | — | — |
 | ~~`P3`~~ | ~~Location schema~~ — **done 2026-07-07**, see "Location schema" above. | — | — |
 | ~~`P4`~~ | ~~Discharge boolean~~ — **done 2026-07-07**, see "Discharge boolean" above. | — | — |
-| `P5` | Scaffold FastAPI backend: project structure, Supabase client, `core.app_user`-based auth, REST endpoints for the daily form + dashboard reads, pytest scaffolding per Iron Law #1 (failing test first). | P1-P4 ideally done first so the schema is stable | new `app/` or `backend/` dir |
-| `P6` | Build the real frontend from the approved design (see `design/ui-brief.md` + chosen mockup direction) — replace the Claude Artifact mockups with real templated pages wired to P5's API. | P5, and a design direction locked in via Claude Design/z.ai | frontend dir (framework TBD at P5) |
+| ~~`P5`~~ | ~~Scaffold FastAPI backend~~ — **done 2026-07-16**, see "FastAPI backend" above. 5 sub-chunks P5a–P5e. | — | `app/`, `tests/`, `pyproject.toml`, `docs/adr/0003-*.md` |
+| ~~`P10`~~ | ~~Frontend tracer-bullet (dashboard)~~ — **done 2026-07-16**, see "Frontend tracer-bullet" above. 5 sub-chunks P10.1–P10.5. | P5, design direction (PFD, locked in) | `frontend/` (React + Vite + Tailwind) |
+| ~~`P10.6`~~ | ~~Aura Edition design system + daily-entry form + readings list~~ — **done 2026-07-17**, see "Frontend tracer-bullet" above. 6 sub-chunks P10.6.1–P10.6.6. | P10 (scaffold), Aura design direction (locked in) | `frontend/src/components/ui/`, `pages/DailyFormPage.tsx`, `pages/ReadingsListPage.tsx`, `design/` |
+| ~~`P10.7`~~ | ~~Dashboard → Aura migration~~ — **done 2026-07-17**. Restyled `DashboardPage` + the 4 PFD components (KpiTile, Gauge, AerationTank, ProcessFlowDiagram) onto the Aura Edition dark theme. Pure styling pass, no behavior change. | P10.6.1 (Aura foundation) | `frontend/src/pages/DashboardPage.tsx`, `components/pfd/*`, `components/KpiTile.tsx` |
+
+> **Note on the P-numbering gap (P6–P9)**: those chunks were cross-cutting
+> work tracked in the companion **A-Wiki** repo, not migration chunks here —
+> P6.5 (Drive-backed global `.env` + repo env) is the only one with a commit
+> in this repo (`b4d9b5e`); P7 (bootstrap automation), P8, P9 (stability
+> hardening) landed in A-Wiki. The frontend was originally planned as "P6"
+> but shipped as P10 once the design direction was locked in. No work is
+> missing — the gap is just a shared cross-repo numbering scheme.
 
 **Resume command for a fresh agent**: read this file, then `git log --oneline -10` to see which `chunk(P#)` commits already landed, then continue at the lowest-numbered `P#` not yet committed.
+
+**Next chunk candidates** (in rough priority order; pick one per session):
+
+| ID | Goal | Depends on | Files |
+|---|---|---|---|
+| `P11` | Auth wiring — JWT login UI + token storage; flip `AUTH_MODE=jwt` | P5 (auth modes), P10.6 | `frontend/src/pages/AuthPage.tsx`, `app/core/auth.py` |
+| `P12` | Deployment — Dockerfile + Cloud Run (or Supabase Edge Function for API). Also unblocks full CRUD round-trip (v4-routable DB connection). | P5 + P10.6 | `Dockerfile`, `.github/workflows/deploy.yml` |
+| `P13` | PDF template-builder UI — ทส.1/ทส.2/repair-request layouts | `design/ui-brief.md` unpause, P5 PDF endpoints | `frontend/src/pages/ReportsPage.tsx` |

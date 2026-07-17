@@ -6,11 +6,27 @@
 data/raw/*
 !data/raw/.gitkeep
 
+# secrets — never commit
+.env
+.env.*
+!.env.example
+
+# source data — hospital operational data, never commit
+data/raw/*
+!data/raw/.gitkeep
+
 # python
 __pycache__/
 *.pyc
 .venv/
 venv/
+*.egg-info/
+.pytest_cache/
+.mypy_cache/
+.ruff_cache/
+htmlcov/
+.coverage
+coverage.xml
 
 # node (future frontend)
 node_modules/

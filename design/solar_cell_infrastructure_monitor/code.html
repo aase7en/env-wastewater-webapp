@@ -1,0 +1,441 @@
+<!DOCTYPE html><html class="dark" lang="en"><svg class="inline-defs-container" aria-hidden="true" style="position:absolute;width:0;height:0;overflow:hidden"></svg><head>
+<meta charset="utf-8">
+<meta content="width=device-width, initial-scale=1.0" name="viewport">
+<title>Solar Energy Monitoring - MedResource OS</title>
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&amp;display=swap" rel="stylesheet">
+<script id="tailwind-config">
+        tailwind.config = {
+          darkMode: "class",
+          theme: {
+            extend: {
+              "colors": {
+                      "surface-dim": "#00161b",
+                      "primary-fixed": "#7df4ff",
+                      "text-main": "#FFFFFF",
+                      "secondary-fixed-dim": "#abd600",
+                      "error": "#ffb4ab",
+                      "surface": "#00161b",
+                      "primary-container": "#00f0ff",
+                      "on-primary-container": "#006970",
+                      "on-primary-fixed": "#002022",
+                      "on-surface-variant": "#b9cacb",
+                      "on-error": "#690005",
+                      "on-secondary": "#283500",
+                      "on-tertiary-fixed-variant": "#004f58",
+                      "on-tertiary-fixed": "#001f24",
+                      "surface-variant": "#1f383e",
+                      "secondary-container": "#c3f400",
+                      "surface-container-lowest": "#001114",
+                      "surface-tint": "#00dbe9",
+                      "on-secondary-fixed-variant": "#3c4d00",
+                      "secondary-fixed": "#c3f400",
+                      "surface-container-high": "#142e33",
+                      "tertiary-fixed": "#9cf0ff",
+                      "outline": "#849495",
+                      "text-muted": "#A1B5BB",
+                      "on-tertiary": "#00363d",
+                      "on-secondary-container": "#556d00",
+                      "surface-container-low": "#041f24",
+                      "inverse-on-surface": "#1b3439",
+                      "background-deep": "#03181C",
+                      "tertiary-fixed-dim": "#58d7eb",
+                      "inverse-primary": "#006970",
+                      "on-tertiary-container": "#006975",
+                      "primary-fixed-dim": "#00dbe9",
+                      "on-background": "#cce7ee",
+                      "background": "#00161b",
+                      "on-primary": "#00363a",
+                      "surface-container": "#082328",
+                      "secondary": "#ffffff",
+                      "surface-container-highest": "#1f383e",
+                      "border-subtle": "#13383E",
+                      "primary": "#dbfcff",
+                      "inverse-surface": "#cce7ee",
+                      "on-secondary-fixed": "#161e00",
+                      "outline-variant": "#3b494b",
+                      "on-primary-fixed-variant": "#004f54",
+                      "on-error-container": "#ffdad6",
+                      "error-container": "#93000a",
+                      "tertiary": "#e2faff",
+                      "tertiary-container": "#6eeaff",
+                      "on-surface": "#cce7ee",
+                      "surface-bright": "#243d42"
+              },
+              "borderRadius": {
+                      "DEFAULT": "0.25rem",
+                      "lg": "0.5rem",
+                      "xl": "0.75rem",
+                      "full": "9999px"
+              },
+              "spacing": {
+                      "margin-desktop": "40px",
+                      "gutter": "24px",
+                      "margin-mobile": "16px",
+                      "container-max": "1440px",
+                      "base": "8px"
+              },
+              "fontFamily": {
+                      "card-title": [
+                              "Plus Jakarta Sans"
+                      ],
+                      "section-title": [
+                              "Plus Jakarta Sans"
+                      ],
+                      "hero-title": [
+                              "Plus Jakarta Sans"
+                      ],
+                      "body-main": [
+                              "Plus Jakarta Sans"
+                      ],
+                      "data-display": [
+                              "Plus Jakarta Sans"
+                      ],
+                      "label-caps": [
+                              "Plus Jakarta Sans"
+                      ]
+              },
+              "fontSize": {
+                      "card-title": [
+                              "24px",
+                              {
+                                      "lineHeight": "1.4",
+                                      "fontWeight": "600"
+                              }
+                      ],
+                      "section-title": [
+                              "48px",
+                              {
+                                      "lineHeight": "1.2",
+                                      "letterSpacing": "-0.02em",
+                                      "fontWeight": "600"
+                              }
+                      ],
+                      "hero-title": [
+                              "72px",
+                              {
+                                      "lineHeight": "1.1",
+                                      "letterSpacing": "-0.04em",
+                                      "fontWeight": "700"
+                              }
+                      ],
+                      "body-main": [
+                              "16px",
+                              {
+                                      "lineHeight": "1.6",
+                                      "fontWeight": "400"
+                              }
+                      ],
+                      "data-display": [
+                              "32px",
+                              {
+                                      "lineHeight": "1.2",
+                                      "letterSpacing": "-0.01em",
+                                      "fontWeight": "500"
+                              }
+                      ],
+                      "label-caps": [
+                              "12px",
+                              {
+                                      "lineHeight": "1",
+                                      "letterSpacing": "0.1em",
+                                      "fontWeight": "700"
+                              }
+                      ]
+              }
+      },
+          },
+        }
+    </script>
+<style>
+        body {
+            background-color: #03181C; /* background-deep */
+            color: #FFFFFF; /* text-main */
+        }
+        
+        .bento-card {
+            background-color: #00161b; /* surface */
+            border: 1px solid #13383E; /* border-subtle */
+            border-radius: 0.5rem;
+            position: relative;
+            overflow: hidden;
+        }
+
+        .glow-active::after {
+            content: '';
+            position: absolute;
+            top: 0; left: 0; right: 0; bottom: 0;
+            border: 1px solid transparent;
+            background: linear-gradient(135deg, rgba(0, 240, 255, 0.2), rgba(171, 214, 0, 0.1)) border-box;
+            -webkit-mask: linear-gradient(#fff 0 0) padding-box, linear-gradient(#fff 0 0);
+            -webkit-mask-composite: destination-out;
+            mask-composite: exclude;
+            pointer-events: none;
+            border-radius: inherit;
+        }
+        
+        .pulse-live {
+            animation: pulse-ring 2s cubic-bezier(0.4, 0, 0.6, 1) infinite;
+        }
+
+        @keyframes pulse-ring {
+            0% { transform: scale(0.8); opacity: 0.8; }
+            50% { transform: scale(1.5); opacity: 0; }
+            100% { transform: scale(0.8); opacity: 0; }
+        }
+
+        .chart-grid {
+            background-image: 
+                linear-gradient(to right, #13383E 1px, transparent 1px),
+                linear-gradient(to bottom, #13383E 1px, transparent 1px);
+            background-size: 40px 40px;
+            opacity: 0.3;
+        }
+    </style>
+</head>
+<body class="flex min-h-screen bg-background-deep font-body-main text-text-main selection:bg-primary-container selection:text-on-primary-container">
+<!-- SideNavBar -->
+<nav class="hidden md:flex h-screen w-72 fixed left-0 top-0 flex-col py-base gap-2 bg-surface-dim/90 backdrop-blur-2xl border-r border-border-subtle shadow-[0_0_20px_rgba(0,240,255,0.05)] z-40">
+<div class="px-6 py-6 mb-4">
+<h1 class="font-card-title text-card-title font-bold text-primary-container tracking-tight"></h1><h1 class="font-hero-title text-card-title text-primary-fixed-dim tracking-tighter leading-tight cursor-text" spellcheck="false" data-stitch-added-classes="cursor-text" style="--tw-border-spacing-y: 0; --tw-translate-x: 0; --tw-translate-y: 0; --tw-rotate: 0; --tw-skew-x: 0; --tw-skew-y: 0; --tw-scale-x: 1; --tw-scale-y: 1; --tw-pan-x: ; --tw-pan-y: ; --tw-pinch-zoom: ; --tw-scroll-snap-strictness: proximity; --tw-gradient-from-position: ; --tw-gradient-via-position: ; --tw-gradient-to-position: ; --tw-ordinal: ; --tw-slashed-zero: ; --tw-numeric-figure: ; --tw-numeric-spacing: ; --tw-numeric-fraction: ; --tw-ring-inset: ; --tw-ring-offset-width: 0px; --tw-ring-offset-color: #fff; --tw-ring-color: rgb(59 130 246 / 0.5); --tw-ring-offset-shadow: 0 0 #0000; --tw-ring-shadow: 0 0 #0000; --tw-shadow: 0 0 #0000; --tw-shadow-colored: 0 0 #0000; --tw-blur: ; --tw-brightness: ; --tw-contrast: ; --tw-grayscale: ; --tw-hue-rotate: ; --tw-invert: ; --tw-saturate: ; --tw-sepia: ; --tw-drop-shadow: ; --tw-backdrop-blur: ; --tw-backdrop-brightness: ; --tw-backdrop-contrast: ; --tw-backdrop-grayscale: ; --tw-backdrop-hue-rotate: ; --tw-backdrop-invert: ; --tw-backdrop-opacity: ; --tw-backdrop-saturate: ; --tw-backdrop-sepia: ; --tw-contain-size: ; --tw-contain-layout: ; --tw-contain-paint: ; --tw-contain-style: ; line-height: 1.25; letter-spacing: -1.2px; --tw-text-opacity: 1; color: rgb(0, 219, 233); background-color: rgb(3, 24, 28); outline: none !important; box-shadow: none !important;">UTH[<span class="text-primary-fixed-dim cursor-text" spellcheck="false" data-stitch-added-classes="cursor-text" style="--tw-border-spacing-y: 0; --tw-translate-x: 0; --tw-translate-y: 0; --tw-rotate: 0; --tw-skew-x: 0; --tw-skew-y: 0; --tw-scale-x: 1; --tw-scale-y: 1; --tw-pan-x: ; --tw-pan-y: ; --tw-pinch-zoom: ; --tw-scroll-snap-strictness: proximity; --tw-gradient-from-position: ; --tw-gradient-via-position: ; --tw-gradient-to-position: ; --tw-ordinal: ; --tw-slashed-zero: ; --tw-numeric-figure: ; --tw-numeric-spacing: ; --tw-numeric-fraction: ; --tw-ring-inset: ; --tw-ring-offset-width: 0px; --tw-ring-offset-color: #fff; --tw-ring-color: rgb(59 130 246 / 0.5); --tw-ring-offset-shadow: 0 0 #0000; --tw-ring-shadow: 0 0 #0000; --tw-shadow: 0 0 #0000; --tw-shadow-colored: 0 0 #0000; --tw-blur: ; --tw-brightness: ; --tw-contrast: ; --tw-grayscale: ; --tw-hue-rotate: ; --tw-invert: ; --tw-saturate: ; --tw-sepia: ; --tw-drop-shadow: ; --tw-backdrop-blur: ; --tw-backdrop-brightness: ; --tw-backdrop-contrast: ; --tw-backdrop-grayscale: ; --tw-backdrop-hue-rotate: ; --tw-backdrop-invert: ; --tw-backdrop-opacity: ; --tw-backdrop-saturate: ; --tw-backdrop-sepia: ; --tw-contain-size: ; --tw-contain-layout: ; --tw-contain-paint: ; --tw-contain-style: ; --tw-text-opacity: 1; color: rgb(0, 219, 233); cursor: crosshair !important;">AI</span>]-ENV</h1>
+<p class="font-label-caps text-label-caps text-text-muted mt-1">Clinical Infrastructure OS</p>
+</div>
+<div class="flex-1 flex flex-col gap-2">
+<a class="text-text-muted hover:text-text-main hover:bg-surface-container-high/50 hover:text-primary transition-all flex items-center gap-4 px-6 py-4 duration-200 active:scale-[0.98]" href="#">
+<span class="material-symbols-outlined" style="font-variation-settings: &quot;FILL&quot; 0;">dashboard</span>
+<span class="font-body-main text-body-main">Dashboard</span>
+</a>
+<a class="bg-surface-variant/50 text-primary-fixed-dim border-l-4 border-primary-container flex items-center gap-4 px-6 py-4 transition-all duration-300 hover:bg-surface-container-high/50 hover:text-primary active:scale-[0.98]" href="#">
+<span class="material-symbols-outlined" style="font-variation-settings: &quot;FILL&quot; 1;">solar_power</span>
+<span class="font-body-main text-body-main">Solar Energy</span>
+</a>
+<a class="text-text-muted hover:text-text-main hover:bg-surface-container-high/50 hover:text-primary transition-all flex items-center gap-4 px-6 py-4 duration-200 active:scale-[0.98]" href="#">
+<span class="material-symbols-outlined" style="font-variation-settings: &quot;FILL&quot; 0;">water_drop</span>
+<span class="font-body-main text-body-main">Water Management</span>
+</a>
+<a class="text-text-muted hover:text-text-main hover:bg-surface-container-high/50 hover:text-primary transition-all flex items-center gap-4 px-6 py-4 duration-200 active:scale-[0.98]" href="#">
+<span class="material-symbols-outlined" style="font-variation-settings: &quot;FILL&quot; 0;">medical_services</span>
+<span class="font-body-main text-body-main">Equipment Inventory</span>
+</a>
+<a class="text-text-muted hover:text-text-main hover:bg-surface-container-high/50 hover:text-primary transition-all flex items-center gap-4 px-6 py-4 duration-200 active:scale-[0.98]" href="#">
+<span class="material-symbols-outlined" style="font-variation-settings: &quot;FILL&quot; 0;">menu_book</span>
+<span class="font-body-main text-body-main">Staff Manuals</span>
+</a>
+</div>
+<div class="mt-auto px-6 py-4 border-t border-border-subtle">
+<div class="flex items-center gap-3">
+<div class="w-10 h-10 rounded-full bg-surface-variant overflow-hidden border border-border-subtle">
+<img class="w-full h-full object-cover" data-alt="Futuristic glowing avatar profile picture of a clinical technician in dark mode UI." src="https://lh3.googleusercontent.com/aida-public/AB6AXuCltZG2hP8b8U62hQ_wSiRScy_wgrOurnWHwOxrv9hzpi2lMYWGZ5u2y9GHzS024nOog7CHuHdpFBJoQmm7t6J-YM3N9UW5Uu6NUET-uBmy7Ka6v40Kx2ggcFarYlQRxXnA5QPka7jKBIx7z-eNYFW7SuZkgQvUxYlqBkGuQyzo--8R6RSOBmP6K0xlA_uIBUj9umacf_vTGD3axkjSmxZl1eBBOGx3A6Yu7i_Wbwa5J4Vhf1apUMiMGA">
+</div>
+<div>
+<p class="font-body-main text-body-main font-medium">T. Chen</p>
+<p class="font-label-caps text-label-caps text-text-muted">Chief Engineer</p>
+</div>
+</div>
+</div>
+</nav>
+<!-- Main Content Canvas -->
+<main class="flex-1 flex flex-col min-h-screen md:ml-72 w-full relative">
+<!-- TopNavBar -->
+<header class="hidden md:flex justify-between items-center h-16 px-margin-desktop w-full bg-background-deep/80 backdrop-blur-md border-b border-border-subtle docked full-width top-0 z-30 sticky">
+<div class="flex-1"></div>
+<div class="flex items-center gap-4">
+<button class="text-text-muted hover:text-primary-fixed-dim transition-colors cursor-pointer focus:ring-2 focus:ring-primary-container/50 outline-none p-2 rounded-full">
+<span class="material-symbols-outlined">notifications_active</span>
+</button>
+<button class="text-text-muted hover:text-primary-fixed-dim transition-colors cursor-pointer focus:ring-2 focus:ring-primary-container/50 outline-none p-2 rounded-full">
+<span class="material-symbols-outlined">settings</span>
+</button>
+<button class="text-text-muted hover:text-primary-fixed-dim transition-colors cursor-pointer focus:ring-2 focus:ring-primary-container/50 outline-none p-2 rounded-full">
+<span class="material-symbols-outlined">account_circle</span>
+</button>
+</div>
+</header>
+<!-- Canvas Body -->
+<div class="p-margin-mobile md:p-margin-desktop space-y-gutter pb-24 md:pb-margin-desktop">
+<!-- Page Header -->
+<div class="flex flex-col md:flex-row justify-between items-start md:items-end gap-4">
+<div>
+<h2 class="font-section-title text-section-title text-text-main flex items-center gap-3">
+                        Solar Array Status
+                        <div class="relative w-3 h-3 flex items-center justify-center">
+<div class="absolute w-full h-full bg-primary-container rounded-full opacity-50 pulse-live"></div>
+<div class="w-2 h-2 bg-primary-container rounded-full"></div>
+</div>
+</h2>
+<p class="font-body-main text-body-main text-text-muted mt-2">Real-time monitoring of clinical microgrid performance.</p>
+</div>
+<div class="flex gap-3">
+<button class="px-6 py-2 rounded border border-border-subtle bg-surface hover:bg-surface-variant transition-colors text-text-main font-label-caps text-label-caps tracking-wider">GENERATE REPORT</button>
+<button class="px-6 py-2 rounded bg-gradient-to-r from-primary-container to-secondary-fixed-dim text-on-primary-container font-label-caps text-label-caps font-bold tracking-wider shadow-[0_0_15px_rgba(0,240,255,0.3)] hover:shadow-[0_0_25px_rgba(0,240,255,0.5)] transition-all">OPTIMIZE LOAD</button>
+</div>
+</div>
+<!-- Bento Grid -->
+<div class="grid grid-cols-1 md:grid-cols-12 gap-gutter">
+<!-- Main Power Graph (Spans 8 cols) -->
+<div class="bento-card col-span-1 md:col-span-8 p-6 glow-active min-h-[400px] flex flex-col">
+<div class="flex justify-between items-center mb-6">
+<h3 class="font-card-title text-card-title text-text-main flex items-center gap-2">
+<span class="material-symbols-outlined text-primary-container">show_chart</span>
+                            Generation vs Consumption
+                        </h3>
+<div class="flex bg-surface-container-high rounded p-1">
+<button class="px-3 py-1 font-label-caps text-label-caps text-primary-container bg-surface-variant rounded">LIVE</button>
+<button class="px-3 py-1 font-label-caps text-label-caps text-text-muted hover:text-text-main">24H</button>
+<button class="px-3 py-1 font-label-caps text-label-caps text-text-muted hover:text-text-main">7D</button>
+</div>
+</div>
+<!-- Abstract Chart Area -->
+<div class="flex-1 relative chart-grid rounded border border-border-subtle overflow-hidden">
+<!-- Chart Lines (Simulated with SVG for visual structure) -->
+<svg class="absolute inset-0 w-full h-full" preserveAspectRatio="none" viewBox="0 0 100 100">
+<!-- Generation Line (Cyan) -->
+<path d="M0,80 Q10,75 20,60 T40,20 T60,10 T80,30 T100,50" fill="none" stroke="#00f0ff" stroke-width="2" vector-effect="non-scaling-stroke"></path>
+<path d="M0,100 L0,80 Q10,75 20,60 T40,20 T60,10 T80,30 T100,50 L100,100 Z" fill="url(#cyan-grad)" opacity="0.2"></path>
+<!-- Consumption Line (Lime) -->
+<path d="M0,60 Q15,65 30,55 T50,45 T70,50 T90,65 T100,60" fill="none" stroke="#abd600" stroke-dasharray="4,4" stroke-width="2" vector-effect="non-scaling-stroke"></path>
+<defs>
+<linearGradient id="cyan-grad" x1="0" x2="0" y1="0" y2="1">
+<stop offset="0%" stop-color="#00f0ff" stop-opacity="1"></stop>
+<stop offset="100%" stop-color="#00161b" stop-opacity="0"></stop>
+</linearGradient>
+</defs>
+</svg>
+<!-- Data Overlay Points -->
+<div class="absolute left-[40%] top-[20%] w-3 h-3 bg-primary-container rounded-full shadow-[0_0_10px_#00f0ff] -translate-x-1.5 -translate-y-1.5 cursor-pointer group">
+<div class="hidden group-hover:block absolute bottom-full left-1/2 -translate-x-1/2 mb-2 bg-surface border border-border-subtle p-2 rounded whitespace-nowrap z-10">
+<p class="font-label-caps text-label-caps text-text-muted">PEAK GEN</p>
+<p class="font-body-main text-body-main text-primary-container font-bold">420 kW</p>
+</div>
+</div>
+</div>
+<div class="flex justify-between mt-4">
+<div class="flex items-center gap-2">
+<div class="w-3 h-1 bg-primary-container"></div>
+<span class="font-label-caps text-label-caps text-text-muted">Generation (kW)</span>
+</div>
+<div class="flex items-center gap-2">
+<div class="w-3 h-1 bg-secondary-fixed-dim border border-secondary-fixed-dim border-dashed"></div>
+<span class="font-label-caps text-label-caps text-text-muted">Consumption (kW)</span>
+</div>
+</div>
+</div>
+<!-- Right Column Stack (Spans 4 cols) -->
+<div class="col-span-1 md:col-span-4 flex flex-col gap-gutter">
+<!-- Current Output KPI -->
+<div class="bento-card p-6 flex-1 flex flex-col justify-between">
+<div>
+<h3 class="font-label-caps text-label-caps text-text-muted mb-2">CURRENT ARRAY OUTPUT</h3>
+<div class="font-data-display text-data-display text-text-main flex items-baseline gap-1">
+                                384.2 <span class="text-body-main text-primary-container">kW</span>
+</div>
+</div>
+<div class="mt-4">
+<div class="flex justify-between font-label-caps text-label-caps mb-1">
+<span class="text-text-muted">Efficiency</span>
+<span class="text-secondary-fixed-dim">94%</span>
+</div>
+<div class="h-2 w-full bg-surface-container-high rounded-full overflow-hidden">
+<div class="h-full bg-gradient-to-r from-primary-container to-secondary-fixed-dim w-[94%]"></div>
+</div>
+</div>
+</div>
+<!-- Battery Storage -->
+<div class="bento-card p-6 flex-1 flex flex-col justify-between">
+<div class="flex justify-between items-start">
+<h3 class="font-label-caps text-label-caps text-text-muted">CRITICAL STORAGE</h3>
+<span class="material-symbols-outlined text-text-muted">battery_charging_full</span>
+</div>
+<div class="my-4 flex items-center justify-center">
+<!-- Abstract Battery Ring -->
+<div class="relative w-24 h-24">
+<svg class="w-full h-full transform -rotate-90">
+<circle cx="48" cy="48" fill="none" r="40" stroke="#142e33" stroke-width="8"></circle>
+<circle class="transition-all duration-1000" cx="48" cy="48" fill="none" r="40" stroke="#00f0ff" stroke-dasharray="251.2" stroke-dashoffset="50.24" stroke-width="8"></circle>
+</svg>
+<div class="absolute inset-0 flex flex-col items-center justify-center">
+<span class="font-card-title text-card-title font-bold text-primary-container">80%</span>
+</div>
+</div>
+</div>
+<p class="font-label-caps text-label-caps text-center text-text-muted">Est. 14h Backup Runtime</p>
+</div>
+</div>
+<!-- Bottom Row Metrics -->
+<!-- Equipment Status (Spans 6 cols) -->
+<div class="bento-card col-span-1 md:col-span-6 p-6">
+<h3 class="font-card-title text-card-title text-text-main mb-6 border-b border-border-subtle pb-4">Inverter Diagnostics</h3>
+<div class="space-y-4">
+<div class="flex items-center justify-between p-3 bg-surface-container-low rounded border border-border-subtle hover:border-outline-variant transition-colors">
+<div class="flex items-center gap-3">
+<span class="material-symbols-outlined text-primary-fixed-dim">thermostat</span>
+<div>
+<p class="font-body-main text-body-main text-text-main">Central Inverter A</p>
+<p class="font-label-caps text-label-caps text-text-muted">Status: Optimal</p>
+</div>
+</div>
+<div class="text-right">
+<p class="font-data-display text-[24px] text-text-main">42°C</p>
+</div>
+</div>
+<div class="flex items-center justify-between p-3 bg-surface-container-low rounded border border-border-subtle hover:border-outline-variant transition-colors">
+<div class="flex items-center gap-3">
+<span class="material-symbols-outlined text-error">warning</span>
+<div>
+<p class="font-body-main text-body-main text-text-main">String Inverter B3</p>
+<p class="font-label-caps text-label-caps text-text-muted">Status: Elevated Temp</p>
+</div>
+</div>
+<div class="text-right">
+<p class="font-data-display text-[24px] text-error">68°C</p>
+</div>
+</div>
+</div>
+</div>
+<!-- Savings Calculator (Spans 6 cols) -->
+<div class="bento-card col-span-1 md:col-span-6 p-6">
+<h3 class="font-card-title text-card-title text-text-main mb-6 border-b border-border-subtle pb-4">Cost Mitigation</h3>
+<div class="grid grid-cols-2 gap-4 h-[calc(100%-4rem)]">
+<div class="bg-surface-container-low rounded border border-border-subtle p-4 flex flex-col justify-center">
+<p class="font-label-caps text-label-caps text-text-muted mb-2">SAVINGS (MONTH TO DATE)</p>
+<p class="font-data-display text-data-display text-secondary-fixed-dim">+$14,250</p>
+<p class="font-body-main text-[14px] text-text-muted mt-2">vs. Traditional Grid</p>
+</div>
+<div class="bg-surface-container-low rounded border border-border-subtle p-4 flex flex-col justify-center relative overflow-hidden">
+<!-- Subtle decorative bg -->
+<div class="absolute -right-4 -bottom-4 opacity-10">
+<span class="material-symbols-outlined text-[120px]">eco</span>
+</div>
+<p class="font-label-caps text-label-caps text-text-muted mb-2">CO2 OFFSET</p>
+<p class="font-data-display text-data-display text-primary-container">12.4t</p>
+<p class="font-body-main text-[14px] text-text-muted mt-2">Carbon equivalent</p>
+</div>
+</div>
+</div>
+</div>
+</div>
+</main>
+<!-- BottomNavBar (Mobile Only) - Suppressed per rules? No, this is a top level destination (Solar Energy). Let's implement it for mobile, but hide on desktop. -->
+<nav class="md:hidden fixed bottom-0 w-full bg-background-deep/95 backdrop-blur-md border-t-0 bg-surface-dim pt-2 pb-6 px-4 flex justify-between items-center z-50">
+<a class="flex flex-col items-center gap-1 text-text-muted p-2" href="#">
+<span class="material-symbols-outlined" style="font-variation-settings: &quot;FILL&quot; 0;">dashboard</span>
+<span class="font-label-caps text-[10px]">Dashboard</span>
+</a>
+<a class="flex flex-col items-center gap-1 text-primary-container p-2" href="#">
+<span class="material-symbols-outlined" style="font-variation-settings: &quot;FILL&quot; 1;">solar_power</span>
+<span class="font-label-caps text-[10px] font-bold">Solar</span>
+</a>
+<a class="flex flex-col items-center gap-1 text-text-muted p-2" href="#">
+<span class="material-symbols-outlined" style="font-variation-settings: &quot;FILL&quot; 0;">water_drop</span>
+<span class="font-label-caps text-[10px]">Water</span>
+</a>
+<a class="flex flex-col items-center gap-1 text-text-muted p-2" href="#">
+<span class="material-symbols-outlined" style="font-variation-settings: &quot;FILL&quot; 0;">medical_services</span>
+<span class="font-label-caps text-[10px]">Equip</span>
+</a>
+</nav>
+
+
+
+</body></html>

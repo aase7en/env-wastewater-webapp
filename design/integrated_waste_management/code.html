@@ -1,0 +1,558 @@
+<!DOCTYPE html><html class="dark" lang="en"><head>
+<meta charset="utf-8">
+<meta content="width=device-width, initial-scale=1.0" name="viewport">
+<title>Waste Management Dashboard - MedResource OS</title>
+<link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700&amp;display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet">
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<script id="tailwind-config">
+        tailwind.config = {
+          darkMode: "class",
+          theme: {
+            extend: {
+              "colors": {
+                      "surface-container-highest": "#1f383e",
+                      "secondary-container": "#c3f400",
+                      "primary-fixed-dim": "#00dbe9",
+                      "outline": "#849495",
+                      "on-tertiary-fixed": "#001f24",
+                      "on-secondary-fixed": "#161e00",
+                      "on-tertiary-container": "#006975",
+                      "on-primary-container": "#006970",
+                      "text-main": "#FFFFFF",
+                      "surface-container-high": "#142e33",
+                      "on-surface": "#cce7ee",
+                      "on-error-container": "#ffdad6",
+                      "inverse-primary": "#006970",
+                      "on-background": "#cce7ee",
+                      "on-secondary": "#283500",
+                      "tertiary-container": "#6eeaff",
+                      "tertiary-fixed-dim": "#58d7eb",
+                      "text-muted": "#A1B5BB",
+                      "surface-bright": "#243d42",
+                      "secondary-fixed-dim": "#abd600",
+                      "background-deep": "#03181C",
+                      "on-secondary-fixed-variant": "#3c4d00",
+                      "surface-container-lowest": "#001114",
+                      "secondary-fixed": "#c3f400",
+                      "primary": "#dbfcff",
+                      "on-secondary-container": "#556d00",
+                      "surface-tint": "#00dbe9",
+                      "on-tertiary-fixed-variant": "#004f58",
+                      "tertiary": "#e2faff",
+                      "outline-variant": "#3b494b",
+                      "on-primary": "#00363a",
+                      "error-container": "#93000a",
+                      "background": "#00161b",
+                      "surface-dim": "#00161b",
+                      "inverse-surface": "#cce7ee",
+                      "surface": "#00161b",
+                      "inverse-on-surface": "#1b3439",
+                      "surface-container-low": "#041f24",
+                      "on-error": "#690005",
+                      "primary-container": "#00f0ff",
+                      "border-subtle": "#13383E",
+                      "error": "#ffb4ab",
+                      "on-surface-variant": "#b9cacb",
+                      "on-tertiary": "#00363d",
+                      "on-primary-fixed-variant": "#004f54",
+                      "tertiary-fixed": "#9cf0ff",
+                      "primary-fixed": "#7df4ff",
+                      "surface-variant": "#1f383e",
+                      "surface-container": "#082328",
+                      "secondary": "#ffffff",
+                      "on-primary-fixed": "#002022"
+              },
+              "borderRadius": {
+                      "DEFAULT": "0.25rem",
+                      "lg": "0.5rem",
+                      "xl": "0.75rem",
+                      "full": "9999px"
+              },
+              "spacing": {
+                      "gutter": "24px",
+                      "container-max": "1440px",
+                      "base": "8px",
+                      "margin-desktop": "40px",
+                      "margin-mobile": "16px"
+              },
+              "fontFamily": {
+                      "section-title": ["Plus Jakarta Sans"],
+                      "label-caps": ["Plus Jakarta Sans"],
+                      "data-display": ["Plus Jakarta Sans"],
+                      "body-main": ["Plus Jakarta Sans"],
+                      "hero-title": ["Plus Jakarta Sans"],
+                      "card-title": ["Plus Jakarta Sans"]
+              },
+              "fontSize": {
+                      "section-title": ["48px", {"lineHeight": "1.2", "letterSpacing": "-0.02em", "fontWeight": "600"}],
+                      "label-caps": ["12px", {"lineHeight": "1", "letterSpacing": "0.1em", "fontWeight": "700"}],
+                      "data-display": ["32px", {"lineHeight": "1.2", "letterSpacing": "-0.01em", "fontWeight": "500"}],
+                      "body-main": ["16px", {"lineHeight": "1.6", "fontWeight": "400"}],
+                      "hero-title": ["72px", {"lineHeight": "1.1", "letterSpacing": "-0.04em", "fontWeight": "700"}],
+                      "card-title": ["24px", {"lineHeight": "1.4", "fontWeight": "600"}]
+              }
+            }
+          }
+        }
+    </script>
+<style>
+        .material-symbols-outlined {
+          font-variation-settings: 'FILL' 0, 'wght' 400, 'GRAD' 0, 'opsz' 24;
+        }
+        .icon-fill {
+            font-variation-settings: 'FILL' 1;
+        }
+        
+        /* Neon Glows */
+        .glow-cyan {
+            box-shadow: 0 0 15px rgba(0, 219, 233, 0.15);
+            border: 1px solid rgba(0, 219, 233, 0.3);
+        }
+        .glow-red {
+            box-shadow: 0 0 15px rgba(255, 180, 171, 0.15);
+            border: 1px solid rgba(255, 180, 171, 0.3);
+        }
+        .glow-amber {
+            box-shadow: 0 0 15px rgba(255, 218, 214, 0.15);
+            border: 1px solid rgba(255, 218, 214, 0.3);
+        }
+        
+        /* Gradients */
+        .bg-gradient-primary {
+            background: linear-gradient(135deg, #00dbe9 0%, #c3f400 100%);
+        }
+        .bg-gradient-critical {
+            background: linear-gradient(135deg, #93000a 0%, #ffb4ab 100%);
+        }
+        
+        /* Pulse Animation */
+        @keyframes pulse-neon {
+            0% { box-shadow: 0 0 0 0 rgba(0, 219, 233, 0.4); }
+            70% { box-shadow: 0 0 0 10px rgba(0, 219, 233, 0); }
+            100% { box-shadow: 0 0 0 0 rgba(0, 219, 233, 0); }
+        }
+        .animate-pulse-neon {
+            animation: pulse-neon 2s infinite;
+        }
+        
+        @keyframes pulse-critical {
+            0% { box-shadow: 0 0 0 0 rgba(255, 180, 171, 0.4); }
+            70% { box-shadow: 0 0 0 10px rgba(255, 180, 171, 0); }
+            100% { box-shadow: 0 0 0 0 rgba(255, 180, 171, 0); }
+        }
+        .animate-pulse-critical {
+            animation: pulse-critical 1.5s infinite;
+        }
+        
+        /* Scrollbar */
+        ::-webkit-scrollbar {
+            width: 6px;
+            height: 6px;
+        }
+        ::-webkit-scrollbar-track {
+            background: #00161b; 
+        }
+        ::-webkit-scrollbar-thumb {
+            background: #1f383e; 
+            border-radius: 9999px;
+        }
+        ::-webkit-scrollbar-thumb:hover {
+            background: #3b494b; 
+        }
+    </style>
+</head>
+<body class="bg-background-deep text-text-main font-body-main antialiased min-h-screen flex selection:bg-primary-fixed-dim selection:text-background-deep">
+<!-- SideNavBar (Shared Component) -->
+<nav class="h-screen w-64 fixed left-0 top-0 bg-background-deep dark:bg-background-deep text-primary-fixed-dim dark:text-primary-fixed-dim font-body-main text-body-main border-r border-border-subtle flex flex-col py-base z-50">
+<!-- Brand / Header -->
+<div class="px-gutter mb-8 mt-4 flex items-center gap-3">
+<div class="w-10 h-10 rounded-lg bg-surface-container flex items-center justify-center border border-border-subtle glow-cyan">
+<span class="material-symbols-outlined icon-fill text-primary-fixed-dim" data-icon="medical_services">medical_services</span>
+</div>
+<div><h1 class="font-hero-title text-card-title text-primary-fixed-dim tracking-tighter leading-tight">UTH<span class="text-secondary-container">AI</span>-ENV</h1><p class="font-label-caps text-label-caps text-text-muted mt-1">Environmental Department</p></div>
+</div>
+<!-- Navigation Links -->
+<div class="flex-1 overflow-y-auto px-4 flex flex-col gap-1">
+<a class="flex items-center gap-3 px-4 py-3 rounded-lg text-text-muted hover:text-text-main hover:bg-surface-container-high transition-colors duration-200 group" href="#">
+<span class="material-symbols-outlined group-hover:scale-110 transition-transform duration-200" data-icon="dashboard">dashboard</span>
+<span class="font-body-main text-body-main">Dashboard</span>
+</a>
+<a class="flex items-center gap-3 px-4 py-3 rounded-lg text-text-muted hover:text-text-main hover:bg-surface-container-high transition-colors duration-200 group" href="#">
+<span class="material-symbols-outlined group-hover:scale-110 transition-transform duration-200" data-icon="bolt">bolt</span>
+<span class="font-body-main text-body-main">Energy</span>
+</a>
+<a class="flex items-center gap-3 px-4 py-3 rounded-lg text-text-muted hover:text-text-main hover:bg-surface-container-high transition-colors duration-200 group" href="#">
+<span class="material-symbols-outlined group-hover:scale-110 transition-transform duration-200" data-icon="water_drop">water_drop</span>
+<span class="font-body-main text-body-main">Water</span>
+</a>
+<!-- Active Tab: Waste -->
+<a class="flex items-center gap-3 px-4 py-3 rounded-lg bg-surface-container-highest text-secondary-container border-r-2 border-secondary-container transition-all duration-150 scale-95 group" href="#">
+<span class="material-symbols-outlined icon-fill" data-icon="delete">delete</span>
+<span class="font-body-main text-body-main font-bold">Waste</span>
+</a>
+<a class="flex items-center gap-3 px-4 py-3 rounded-lg text-text-muted hover:text-text-main hover:bg-surface-container-high transition-colors duration-200 group" href="#">
+<span class="material-symbols-outlined group-hover:scale-110 transition-transform duration-200" data-icon="co2">co2</span>
+<span class="font-body-main text-body-main">Carbon</span>
+</a>
+<a class="flex items-center gap-3 px-4 py-3 rounded-lg text-text-muted hover:text-text-main hover:bg-surface-container-high transition-colors duration-200 group" href="#">
+<span class="material-symbols-outlined group-hover:scale-110 transition-transform duration-200" data-icon="medical_services">medical_services</span>
+<span class="font-body-main text-body-main">Equipment</span>
+</a>
+<a class="flex items-center gap-3 px-4 py-3 rounded-lg text-text-muted hover:text-text-main hover:bg-surface-container-high transition-colors duration-200 group" href="#">
+<span class="material-symbols-outlined group-hover:scale-110 transition-transform duration-200" data-icon="menu_book">menu_book</span>
+<span class="font-body-main text-body-main">Manuals</span>
+</a>
+<a class="flex items-center gap-3 px-4 py-3 rounded-lg text-text-muted hover:text-text-main hover:bg-surface-container-high transition-colors duration-200 group" href="#">
+<span class="material-symbols-outlined group-hover:scale-110 transition-transform duration-200" data-icon="smart_toy">smart_toy</span>
+<span class="font-body-main text-body-main">AI Admin</span>
+</a>
+</div>
+<!-- CTA -->
+<div class="px-4 mt-auto pt-4">
+<button class="w-full py-3 px-4 rounded-lg bg-error-container/20 text-error border border-error/30 font-label-caps text-label-caps flex items-center justify-center gap-2 hover:bg-error-container/40 transition-colors">
+<span class="material-symbols-outlined text-[16px]" data-icon="warning">warning</span>
+                Emergency Shutdown
+            </button>
+</div>
+</nav>
+<!-- Main Content Canvas -->
+<main class="ml-64 flex-1 flex flex-col min-h-screen w-[calc(100%-16rem)] relative">
+<!-- TopAppBar (Shared Component) -->
+<header class="fixed top-0 right-0 left-64 h-16 z-40 bg-surface/80 dark:bg-surface/80 backdrop-blur-xl border-b border-border-subtle shadow-sm flex justify-between items-center px-gutter w-[calc(100%-16rem)] text-primary dark:text-primary font-body-main text-body-main">
+<!-- Product Name / Title -->
+<div class="flex items-center gap-4">
+<span class="font-label-caps text-label-caps text-secondary-container tracking-widest opacity-80 uppercase">Waste Analytics</span>
+</div>
+<!-- Trailing Actions -->
+<div class="flex items-center gap-4">
+<!-- Search (on left of actions) -->
+<div class="relative hidden md:block">
+<span class="material-symbols-outlined absolute left-3 top-1/2 -translate-y-1/2 text-text-muted text-[18px]" data-icon="search">search</span>
+<input class="bg-background-deep border border-border-subtle rounded-full py-1.5 pl-9 pr-4 text-sm text-text-main focus:outline-none focus:border-primary-fixed-dim focus:ring-1 focus:ring-primary-fixed-dim w-64 transition-all" placeholder="Search resources..." type="text">
+</div>
+<div class="h-6 w-px bg-border-subtle mx-2 hidden md:block"></div>
+<button class="p-2 text-text-muted hover:text-primary-fixed-dim cursor-pointer transition-all rounded-full hover:bg-surface-container relative">
+<span class="material-symbols-outlined" data-icon="notifications">notifications</span>
+<span class="absolute top-2 right-2 w-2 h-2 bg-error rounded-full"></span>
+</button>
+<button class="p-2 text-text-muted hover:text-primary-fixed-dim cursor-pointer transition-all rounded-full hover:bg-surface-container">
+<span class="material-symbols-outlined" data-icon="settings">settings</span>
+</button>
+<div class="ml-2 w-8 h-8 rounded-full overflow-hidden border border-border-subtle cursor-pointer hover:border-primary-fixed-dim transition-colors">
+<img alt="Chief Medical Engineer" class="w-full h-full object-cover" data-alt="A futuristic portrait of a clinical engineer in a high-tech hospital environment, cool neon lighting, deep shadows, professional medical gear. Vibrant cyan accents. Sharp focus." src="https://lh3.googleusercontent.com/aida-public/AB6AXuA7m6wFT8z9yoXsw9gqDiMvuth3zo_dz8jH1lKNWFxMoZI7LTwquOXIrL9XmY313cIpS6GX1qw4Bba6cplhweeQKz_nSe4x0tq11YOdzaJ51XALDH1gEPMr43T9eYAVNC3K8WjUoKWAMzeLXSPR-ZJzdH0wuSgjMKHM_DsaXLaZ1kqlch7o3166RkPmC_8luha504ZCvwExd4zWLvKufKrwe1bZVVAdV_8jCJjTxvmP8HohMc3F7n2C9A">
+</div>
+</div>
+</header>
+<!-- Dashboard Content -->
+<div class="flex-1 mt-16 p-gutter overflow-y-auto">
+<!-- Page Header -->
+<div class="flex justify-between items-end mb-6">
+<div>
+<h2 class="font-section-title text-section-title text-text-main">Waste Management</h2>
+<p class="font-body-main text-body-main text-text-muted mt-2">Real-time tracking of disposal streams and compliance metrics.</p>
+</div>
+<div class="flex gap-3">
+<button class="px-4 py-2 rounded-lg border border-border-subtle text-text-main hover:bg-surface-container transition-colors flex items-center gap-2 text-sm">
+<span class="material-symbols-outlined text-[18px]" data-icon="download">download</span>
+                        Export Report
+                    </button>
+<button class="px-4 py-2 rounded-lg bg-gradient-primary text-background-deep font-medium hover:opacity-90 transition-opacity flex items-center gap-2 text-sm">
+<span class="material-symbols-outlined text-[18px]" data-icon="add">add</span>
+                        Log Manifest
+                    </button>
+</div>
+</div>
+<!-- Bento Grid -->
+<div class="grid grid-cols-12 gap-6 pb-12">
+<!-- 1. General Waste (Weight) - 3 Col -->
+<div class="col-span-12 md:col-span-4 lg:col-span-3 bg-surface rounded-xl border border-border-subtle p-5 relative overflow-hidden flex flex-col justify-between h-48">
+<!-- Background subtle graphic -->
+<div class="absolute -bottom-10 -right-10 opacity-5 pointer-events-none">
+<span class="material-symbols-outlined text-[120px]" data-icon="delete">delete</span>
+</div>
+<div class="flex justify-between items-start z-10">
+<div>
+<h3 class="font-label-caps text-label-caps text-text-muted uppercase">General Waste</h3>
+<div class="mt-1 flex items-center gap-2">
+<span class="w-2 h-2 rounded-full bg-tertiary-fixed-dim"></span>
+<span class="text-xs text-tertiary-fixed-dim">Normal Flow</span>
+</div>
+</div>
+<div class="w-8 h-8 rounded-full bg-surface-container-high flex items-center justify-center">
+<span class="material-symbols-outlined text-text-muted text-[16px]" data-icon="shopping_basket">shopping_basket</span>
+</div>
+</div>
+<div class="z-10">
+<div class="flex items-baseline gap-2">
+<span class="font-data-display text-data-display text-text-main">1,240</span>
+<span class="font-body-main text-body-main text-text-muted">kg</span>
+</div>
+<div class="mt-2 flex items-center gap-1 text-xs text-secondary-fixed">
+<span class="material-symbols-outlined text-[14px]" data-icon="arrow_downward">arrow_downward</span>
+<span class="">-4.2% vs last week</span>
+</div>
+</div>
+</div>
+<!-- 2. Infectious Waste (Critical) - 5 Col -->
+<div class="col-span-12 md:col-span-8 lg:col-span-5 bg-surface rounded-xl border border-error/30 p-5 relative overflow-hidden glow-red h-48 flex flex-col">
+<div class="absolute top-0 left-0 w-full h-1 bg-gradient-critical"></div>
+<div class="flex justify-between items-start z-10 mb-4">
+<div class="flex items-center gap-3">
+<div class="w-10 h-10 rounded-lg bg-error-container/20 flex items-center justify-center border border-error/20">
+<span class="material-symbols-outlined text-error" data-icon="coronavirus">coronavirus</span>
+</div>
+<div>
+<h3 class="font-card-title text-[18px] text-error font-semibold">Infectious Waste</h3>
+<div class="flex items-center gap-2 mt-0.5">
+<span class="w-2 h-2 rounded-full bg-error animate-pulse-critical"></span>
+<span class="font-label-caps text-[10px] text-error uppercase tracking-wider">Critical Monitoring</span>
+</div>
+</div>
+</div>
+<div class="px-2 py-1 rounded bg-error-container text-on-error-container text-xs font-semibold flex items-center gap-1">
+                            Incinerator: Active
+                        </div>
+</div>
+<div class="flex-1 grid grid-cols-2 gap-4 items-end z-10">
+<div>
+<p class="text-xs text-text-muted mb-1">Current Backlog</p>
+<div class="flex items-baseline gap-1">
+<span class="font-data-display text-[28px] text-text-main">342</span>
+<span class="text-sm text-text-muted">kg</span>
+</div>
+</div>
+<div>
+<p class="text-xs text-text-muted mb-1">Incineration Rate</p>
+<div class="w-full h-2 bg-surface-container-highest rounded-full overflow-hidden">
+<div class="h-full bg-error w-[75%]"></div>
+</div>
+<div class="flex justify-between mt-1">
+<span class="text-xs text-error">75% Load</span>
+<span class="text-xs text-text-muted">450kg/hr</span>
+</div>
+</div>
+</div>
+</div>
+<!-- 3. Overall Waste Distribution (Donut Chart area) - 4 Col -->
+<div class="col-span-12 lg:col-span-4 bg-surface rounded-xl border border-border-subtle p-5 h-48 flex items-center justify-between">
+<div class="w-1/2">
+<h3 class="font-label-caps text-label-caps text-text-muted uppercase mb-4">Distribution</h3>
+<ul class="space-y-3">
+<li class="flex items-center gap-2 text-sm">
+<span class="w-3 h-3 rounded-sm bg-tertiary-fixed-dim"></span>
+<span class="text-text-muted flex-1">General</span>
+<span class="text-text-main font-medium">42%</span>
+</li>
+<li class="flex items-center gap-2 text-sm">
+<span class="w-3 h-3 rounded-sm bg-secondary-container"></span>
+<span class="text-text-muted flex-1">Recyclables</span>
+<span class="text-text-main font-medium">35%</span>
+</li>
+<li class="flex items-center gap-2 text-sm">
+<span class="w-3 h-3 rounded-sm bg-error"></span>
+<span class="text-text-muted flex-1">Medical/Inf.</span>
+<span class="text-text-main font-medium">23%</span>
+</li>
+</ul>
+</div>
+<!-- CSS Donut Chart representation -->
+<div class="w-28 h-28 relative rounded-full flex items-center justify-center bg-surface-container-highest" style="background: conic-gradient(#58d7eb 0% 42%, #c3f400 42% 77%, #ffb4ab 77% 100%);">
+<div class="w-20 h-20 bg-surface rounded-full absolute flex items-center justify-center border border-border-subtle">
+<span class="font-label-caps text-[10px] text-text-muted uppercase text-center leading-tight">Total<br><span class="text-text-main text-sm">2.8t</span></span>
+</div>
+</div>
+</div>
+<!-- 4. Recyclables - 6 Col -->
+<div class="col-span-12 lg:col-span-6 bg-surface rounded-xl border border-border-subtle p-5">
+<div class="flex justify-between items-center mb-6">
+<div>
+<h3 class="font-card-title text-[20px] text-text-main">Recyclables</h3>
+<p class="text-sm text-text-muted mt-1">Sorted stream volume tracking</p>
+</div>
+<button class="p-1.5 rounded-md hover:bg-surface-container text-text-muted transition-colors">
+<span class="material-symbols-outlined text-[20px]" data-icon="more_horiz">more_horiz</span>
+</button>
+</div>
+<div class="grid grid-cols-2 sm:grid-cols-4 gap-4">
+<!-- Cardboard -->
+<div class="bg-surface-container-low rounded-lg p-4 border border-border-subtle hover:border-primary-fixed-dim/50 transition-colors group cursor-pointer text-center">
+<div class="w-10 h-10 mx-auto rounded-full bg-surface-container-highest flex items-center justify-center mb-3 group-hover:scale-110 transition-transform">
+<span class="material-symbols-outlined text-text-muted group-hover:text-primary-fixed-dim" data-icon="inventory_2">inventory_2</span>
+</div>
+<h4 class="text-sm font-medium text-text-main">Cardboard</h4>
+<p class="text-xs text-text-muted mt-1">450 kg</p>
+</div>
+<!-- Plastic -->
+<div class="bg-surface-container-low rounded-lg p-4 border border-border-subtle hover:border-primary-fixed-dim/50 transition-colors group cursor-pointer text-center">
+<div class="w-10 h-10 mx-auto rounded-full bg-surface-container-highest flex items-center justify-center mb-3 group-hover:scale-110 transition-transform">
+<span class="material-symbols-outlined text-text-muted group-hover:text-primary-fixed-dim" data-icon="recycling">recycling</span>
+</div>
+<h4 class="text-sm font-medium text-text-main">Plastic</h4>
+<p class="text-xs text-text-muted mt-1">210 kg</p>
+</div>
+<!-- Glass -->
+<div class="bg-surface-container-low rounded-lg p-4 border border-border-subtle hover:border-primary-fixed-dim/50 transition-colors group cursor-pointer text-center">
+<div class="w-10 h-10 mx-auto rounded-full bg-surface-container-highest flex items-center justify-center mb-3 group-hover:scale-110 transition-transform">
+<span class="material-symbols-outlined text-text-muted group-hover:text-primary-fixed-dim" data-icon="local_drink">local_drink</span>
+</div>
+<h4 class="text-sm font-medium text-text-main">Glass</h4>
+<p class="text-xs text-text-muted mt-1">85 kg</p>
+</div>
+<!-- Metal -->
+<div class="bg-surface-container-low rounded-lg p-4 border border-border-subtle hover:border-primary-fixed-dim/50 transition-colors group cursor-pointer text-center">
+<div class="w-10 h-10 mx-auto rounded-full bg-surface-container-highest flex items-center justify-center mb-3 group-hover:scale-110 transition-transform">
+<span class="material-symbols-outlined text-text-muted group-hover:text-primary-fixed-dim" data-icon="hardware">hardware</span>
+</div>
+<h4 class="text-sm font-medium text-text-main">Metal</h4>
+<p class="text-xs text-text-muted mt-1">120 kg</p>
+</div>
+</div>
+</div>
+<!-- 5. Hazardous Waste (List View) - 6 Col -->
+<div class="col-span-12 lg:col-span-6 bg-surface rounded-xl border border-border-subtle p-5 flex flex-col">
+<div class="flex justify-between items-center mb-4">
+<div class="flex items-center gap-2">
+<h3 class="font-card-title text-[20px] text-text-main">Hazardous Items</h3>
+<span class="w-2 h-2 rounded-full bg-tertiary-fixed-dim animate-pulse-neon"></span>
+</div>
+<a class="text-sm text-primary-fixed-dim hover:underline" href="#">View Manifest</a>
+</div>
+<div class="flex-1 overflow-hidden">
+<div class="space-y-2 max-h-[160px] overflow-y-auto pr-2">
+<!-- Item 1 -->
+<div class="flex items-center justify-between p-3 rounded-lg bg-surface-container-low border border-border-subtle hover:bg-surface-container transition-colors">
+<div class="flex items-center gap-3">
+<div class="w-8 h-8 rounded bg-surface-container-highest flex items-center justify-center text-text-muted">
+<span class="material-symbols-outlined text-[16px]" data-icon="science">science</span>
+</div>
+<div>
+<h4 class="text-sm font-medium text-text-main">Chemical Solvents</h4>
+<p class="text-xs text-text-muted">Lab Wing B</p>
+</div>
+</div>
+<div class="text-right">
+<span class="px-2 py-0.5 rounded text-[10px] font-bold uppercase bg-surface-container-highest text-tertiary-fixed-dim border border-tertiary-fixed-dim/30">Processing</span>
+<p class="text-xs text-text-main mt-1">45 L</p>
+</div>
+</div>
+<!-- Item 2 -->
+<div class="flex items-center justify-between p-3 rounded-lg bg-surface-container-low border border-border-subtle hover:bg-surface-container transition-colors">
+<div class="flex items-center gap-3">
+<div class="w-8 h-8 rounded bg-surface-container-highest flex items-center justify-center text-text-muted">
+<span class="material-symbols-outlined text-[16px]" data-icon="memory">memory</span>
+</div>
+<div>
+<h4 class="text-sm font-medium text-text-main">E-Waste (Monitors)</h4>
+<p class="text-xs text-text-muted">IT Depot</p>
+</div>
+</div>
+<div class="text-right">
+<span class="px-2 py-0.5 rounded text-[10px] font-bold uppercase bg-surface-container-highest text-text-muted border border-border-subtle">Awaiting Pickup</span>
+<p class="text-xs text-text-main mt-1">12 units</p>
+</div>
+</div>
+<!-- Item 3 -->
+<div class="flex items-center justify-between p-3 rounded-lg bg-surface-container-low border border-border-subtle hover:bg-surface-container transition-colors">
+<div class="flex items-center gap-3">
+<div class="w-8 h-8 rounded bg-surface-container-highest flex items-center justify-center text-text-muted">
+<span class="material-symbols-outlined text-[16px]" data-icon="lightbulb">lightbulb</span>
+</div>
+<div>
+<h4 class="text-sm font-medium text-text-main">Fluorescent Bulbs</h4>
+<p class="text-xs text-text-muted">Maintenance</p>
+</div>
+</div>
+<div class="text-right">
+<span class="px-2 py-0.5 rounded text-[10px] font-bold uppercase bg-surface-container-highest text-tertiary-fixed-dim border border-tertiary-fixed-dim/30">Processing</span>
+<p class="text-xs text-text-main mt-1">8 kg</p>
+</div>
+</div>
+<!-- Item 4 -->
+<div class="flex items-center justify-between p-3 rounded-lg bg-surface-container-low border border-border-subtle hover:bg-surface-container transition-colors">
+<div class="flex items-center gap-3">
+<div class="w-8 h-8 rounded bg-surface-container-highest flex items-center justify-center text-text-muted">
+<span class="material-symbols-outlined text-[16px]" data-icon="print">print</span>
+</div>
+<div>
+<h4 class="text-sm font-medium text-text-main">Ink Cartridges</h4>
+<p class="text-xs text-text-muted">Admin Office</p>
+</div>
+</div>
+<div class="text-right">
+<span class="px-2 py-0.5 rounded text-[10px] font-bold uppercase bg-surface-container-highest text-secondary-container border border-secondary-container/30">Cleared</span>
+<p class="text-xs text-text-main mt-1">24 units</p>
+</div>
+</div>
+</div>
+</div>
+</div>
+<!-- 6. Medical Waste System (Safe Disposal Status) - 12 Col -->
+<div class="col-span-12 bg-surface rounded-xl border border-border-subtle p-6 glow-cyan">
+<div class="flex flex-col md:flex-row gap-6 md:items-center justify-between mb-6">
+<div>
+<h3 class="font-card-title text-[20px] text-text-main flex items-center gap-2">
+<span class="material-symbols-outlined text-primary-fixed-dim" data-icon="vaccines">vaccines</span>
+                                Medical Waste System
+                            </h3>
+<p class="text-sm text-text-muted mt-1">Secure sharps and pharmaceutical disposal routing</p>
+</div>
+<div class="flex gap-4">
+<div class="bg-surface-container-low px-4 py-2 rounded-lg border border-border-subtle">
+<span class="text-xs text-text-muted block mb-1">System Status</span>
+<span class="text-sm font-semibold text-primary-fixed-dim flex items-center gap-1">
+<span class="material-symbols-outlined text-[16px]" data-icon="check_circle">check_circle</span>
+                                    Optimal
+                                </span>
+</div>
+<div class="bg-surface-container-low px-4 py-2 rounded-lg border border-border-subtle">
+<span class="text-xs text-text-muted block mb-1">Last Audit</span>
+<span class="text-sm text-text-main">Today, 08:00 AM</span>
+</div>
+</div>
+</div>
+<!-- Pipeline visualization -->
+<div class="relative w-full h-24 bg-background-deep rounded-lg border border-border-subtle overflow-hidden flex items-center px-8">
+<!-- Abstract connecting line -->
+<div class="absolute top-1/2 left-8 right-8 h-0.5 bg-border-subtle -translate-y-1/2 z-0"></div>
+<div class="absolute top-1/2 left-8 w-[60%] h-0.5 bg-primary-fixed-dim -translate-y-1/2 z-0 shadow-[0_0_8px_rgba(0,219,233,0.8)]"></div>
+<!-- Nodes -->
+<div class="w-full flex justify-between relative z-10">
+<!-- Node 1 -->
+<div class="flex flex-col items-center">
+<div class="w-10 h-10 rounded-full bg-surface-container flex items-center justify-center border-2 border-primary-fixed-dim text-primary-fixed-dim shadow-[0_0_10px_rgba(0,219,233,0.3)]">
+<span class="material-symbols-outlined text-[20px]" data-icon="local_hospital">local_hospital</span>
+</div>
+<span class="text-xs text-text-muted mt-2 font-medium">Collection</span>
+</div>
+<!-- Node 2 -->
+<div class="flex flex-col items-center">
+<div class="w-10 h-10 rounded-full bg-surface-container flex items-center justify-center border-2 border-primary-fixed-dim text-primary-fixed-dim shadow-[0_0_10px_rgba(0,219,233,0.3)]">
+<span class="material-symbols-outlined text-[20px]" data-icon="lock">lock</span>
+</div>
+<span class="text-xs text-text-muted mt-2 font-medium">Secure Transit</span>
+</div>
+<!-- Node 3 -->
+<div class="flex flex-col items-center">
+<div class="w-10 h-10 rounded-full bg-primary-fixed-dim flex items-center justify-center border-2 border-primary-fixed-dim text-background-deep shadow-[0_0_15px_rgba(0,219,233,0.6)]">
+<span class="material-symbols-outlined text-[20px]" data-icon="autorenew">autorenew</span>
+</div>
+<span class="text-xs text-primary-fixed-dim mt-2 font-bold">Processing</span>
+</div>
+<!-- Node 4 -->
+<div class="flex flex-col items-center">
+<div class="w-10 h-10 rounded-full bg-surface flex items-center justify-center border-2 border-border-subtle text-text-muted">
+<span class="material-symbols-outlined text-[20px]" data-icon="done_all">done_all</span>
+</div>
+<span class="text-xs text-text-muted mt-2 font-medium">Safe Disposal</span>
+</div>
+</div>
+</div>
+</div>
+</div>
+</div>
+</main>
+
+
+
+</body></html>

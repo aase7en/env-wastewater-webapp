@@ -1,0 +1,535 @@
+<!DOCTYPE html>
+
+<html class="light" lang="en" style=""><head><meta charset="utf-8"/><meta content="width=device-width, initial-scale=1.0" name="viewport"/><link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=block" rel="stylesheet"/><link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700&amp;display=swap" rel="stylesheet"/><script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script><script id="tailwind-config">try{
+        tailwind.config = {
+          darkMode: "class",
+          theme: {
+            extend: {
+              "colors": {
+                "surface": "#f3fbf7",
+                "surface-tint": "#006b5a",
+                "on-background": "#161d1b",
+                "surface-bright": "#f3fbf7",
+                "on-tertiary-fixed-variant": "#6e3900",
+                "tertiary-container": "#ffa557",
+                "surface-variant": "#dce4e0",
+                "surface-container-lowest": "#ffffff",
+                "secondary-fixed-dim": "#a7ccda",
+                "error": "#ba1a1a",
+                "on-primary-fixed": "#00201a",
+                "on-primary-container": "#005446",
+                "secondary": "#406370",
+                "secondary-container": "#c0e6f4",
+                "primary-fixed-dim": "#2cdebf",
+                "on-error-container": "#93000a",
+                "surface-container": "#e8f0ec",
+                "inverse-on-surface": "#ebf3ee",
+                "tertiary-fixed-dim": "#ffb77d",
+                "on-tertiary-container": "#723c00",
+                "on-error": "#ffffff",
+                "primary-fixed": "#58fbda",
+                "on-primary": "#ffffff",
+                "background": "#f3fbf7",
+                "inverse-primary": "#2cdebf",
+                "outline": "#6b7a75",
+                "primary": "#006b5a",
+                "secondary-fixed": "#c3e8f7",
+                "on-tertiary": "#ffffff",
+                "on-secondary-fixed-variant": "#274c57",
+                "on-secondary-container": "#446874",
+                "tertiary-fixed": "#ffdcc3",
+                "on-surface": "#161d1b",
+                "on-primary-fixed-variant": "#005143",
+                "surface-container-highest": "#dce4e0",
+                "surface-container-high": "#e2eae6",
+                "on-surface-variant": "#3b4a45",
+                "on-secondary": "#ffffff",
+                "tertiary": "#904d00",
+                "primary-container": "#00d1b2",
+                "on-tertiary-fixed": "#2f1500",
+                "on-secondary-fixed": "#001f28",
+                "outline-variant": "#bacac4",
+                "error-container": "#ffdad6",
+                "surface-container-low": "#edf5f1",
+                "surface-dim": "#d4dcd8",
+                "inverse-surface": "#2a322f",
+                "glass-white": "rgba(255, 255, 255, 0.7)",
+                "cyan-highlight": "#00dbe9"
+              },
+              "borderRadius": {
+                      "DEFAULT": "0.25rem",
+                      "lg": "0.5rem",
+                      "xl": "0.75rem",
+                      "full": "9999px"
+              },
+              "spacing": {
+                      "xl": "80px",
+                      "sm": "12px",
+                      "md": "24px",
+                      "base": "8px",
+                      "lg": "48px",
+                      "container-max": "1280px",
+                      "xs": "4px",
+                      "gutter": "24px"
+              },
+              "fontFamily": {
+                      "label-sm": [
+                              "Plus Jakarta Sans"
+                      ],
+                      "headline-md": [
+                              "Plus Jakarta Sans"
+                      ],
+                      "label-md": [
+                              "Plus Jakarta Sans"
+                      ],
+                      "headline-lg": [
+                              "Plus Jakarta Sans"
+                      ],
+                      "body-md": [
+                              "Plus Jakarta Sans"
+                      ],
+                      "headline-sm": [
+                              "Plus Jakarta Sans"
+                      ],
+                      "headline-lg-mobile": [
+                              "Plus Jakarta Sans"
+                      ],
+                      "body-lg": [
+                              "Plus Jakarta Sans"
+                      ]
+              },
+              "fontSize": {
+                      "label-sm": [
+                              "12px",
+                              {
+                                      "lineHeight": "1.2",
+                                      "fontWeight": "700"
+                              }
+                      ],
+                      "headline-md": [
+                              "32px",
+                              {
+                                      "lineHeight": "1.3",
+                                      "fontWeight": "700"
+                              }
+                      ],
+                      "label-md": [
+                              "14px",
+                              {
+                                      "lineHeight": "1.4",
+                                      "letterSpacing": "0.01em",
+                                      "fontWeight": "600"
+                              }
+                      ],
+                      "headline-lg": [
+                              "48px",
+                              {
+                                      "lineHeight": "1.2",
+                                      "letterSpacing": "-0.02em",
+                                      "fontWeight": "800"
+                              }
+                      ],
+                      "body-md": [
+                              "16px",
+                              {
+                                      "lineHeight": "1.6",
+                                      "fontWeight": "400"
+                              }
+                      ],
+                      "headline-sm": [
+                              "24px",
+                              {
+                                      "lineHeight": "1.3",
+                                      "fontWeight": "700"
+                              }
+                      ],
+                      "headline-lg-mobile": [
+                              "32px",
+                              {
+                                      "lineHeight": "1.2",
+                                      "letterSpacing": "-0.02em",
+                                      "fontWeight": "800"
+                              }
+                      ],
+                      "body-lg": [
+                              "18px",
+                              {
+                                      "lineHeight": "1.6",
+                                      "fontWeight": "400"
+                              }
+                      ]
+              },
+              animation: {
+                "aura": "aura 4s linear infinite",
+              },
+              keyframes: {
+                aura: {
+                  "0%, 100%": {
+                    "background-position": "0% 50%"
+                  },
+                  "50%": {
+                    "background-position": "100% 50%"
+                  }
+                }
+              }
+            }
+          }
+        }
+    }catch(_e){}</script>
+<style>
+.aura-border {
+  position: relative;
+  z-index: 0;
+  border-radius: inherit;
+}
+.aura-border::before {
+  content: "";
+  position: absolute;
+  z-index: -1;
+  inset: -2px;
+  border-radius: inherit;
+  background: linear-gradient(90deg, #00d1b2, #406370, #006b5a, #00d1b2);
+  background-size: 300% 300%;
+  animation: aura 4s linear infinite;
+  mask: linear-gradient(#fff 0 0) content-box, linear-gradient(#fff 0 0);
+  -webkit-mask: linear-gradient(#fff 0 0) content-box, linear-gradient(#fff 0 0);
+  mask-composite: exclude;
+  -webkit-mask-composite: destination-out;
+  padding: 2px;
+}
+</style>
+</head><body class="bg-background text-on-surface antialiased min-h-screen overflow-x-hidden">
+<!-- SideNavBar -->
+<nav class="h-screen w-64 fixed left-0 top-0 bg-white/40 backdrop-blur-xl border-r border-white/60 shadow-[4px_0_24px_-8px_rgba(0,107,90,0.08)] flex flex-col py-base z-50">
+<div class="px-gutter mb-8 mt-4">
+<h1 class="font-headline-sm text-headline-sm leading-tight tracking-tighter text-on-surface">UTH[<span class="text-cyan-highlight">AI</span>]-EVN</h1>
+<p class="font-label-sm text-label-sm text-on-surface-variant mt-1 uppercase tracking-widest">Clinical Infrastructure</p>
+</div>
+<ul class="flex-1 px-4 space-y-2 overflow-y-auto">
+<li class="">
+<a class="flex items-center space-x-3 px-4 py-3 rounded-lg text-on-surface-variant hover:text-primary hover:bg-white/50 backdrop-blur-sm transition-all shadow-[inset_0_1px_1px_rgba(255,255,255,0.4)]" href="#">
+<span class="material-symbols-outlined text-[20px]">dashboard</span>
+<span class="font-body-md text-body-md">Dashboard</span>
+</a>
+</li>
+<li class="">
+<a class="flex items-center space-x-3 px-4 py-3 rounded-lg text-on-surface-variant hover:text-primary hover:bg-white/50 backdrop-blur-sm transition-all shadow-[inset_0_1px_1px_rgba(255,255,255,0.4)]" href="#">
+<span class="material-symbols-outlined text-[20px]">bolt</span>
+<span class="font-body-md text-body-md">Energy</span>
+</a>
+</li>
+<li class="">
+<a class="flex items-center space-x-3 px-4 py-3 rounded-lg text-on-surface-variant hover:text-primary hover:bg-white/50 backdrop-blur-sm transition-all shadow-[inset_0_1px_1px_rgba(255,255,255,0.4)]" href="#">
+<span class="material-symbols-outlined text-[20px]">water_drop</span>
+<span class="font-body-md text-body-md">Water</span>
+</a>
+</li>
+<li class="">
+<a class="flex items-center space-x-3 px-4 py-3 rounded-lg text-on-surface-variant hover:text-primary hover:bg-white/50 backdrop-blur-sm transition-all shadow-[inset_0_1px_1px_rgba(255,255,255,0.4)]" href="#">
+<span class="material-symbols-outlined text-[20px]">delete</span>
+<span class="font-body-md text-body-md">Waste</span>
+</a>
+</li>
+<li class="">
+<a class="flex items-center space-x-3 px-4 py-3 rounded-lg text-on-surface-variant hover:text-primary hover:bg-white/50 backdrop-blur-sm transition-all shadow-[inset_0_1px_1px_rgba(255,255,255,0.4)]" href="#">
+<span class="material-symbols-outlined text-[20px]">co2</span>
+<span class="font-body-md text-body-md">Carbon</span>
+</a>
+</li>
+<li class="">
+<a class="flex items-center space-x-3 px-4 py-3 rounded-lg text-on-surface-variant hover:text-primary hover:bg-white/50 backdrop-blur-sm transition-all shadow-[inset_0_1px_1px_rgba(255,255,255,0.4)]" href="#">
+<span class="material-symbols-outlined text-[20px]">medical_services</span>
+<span class="font-body-md text-body-md">Equipment</span>
+</a>
+</li>
+<li class="">
+<a class="flex items-center space-x-3 px-4 py-3 rounded-lg text-on-surface-variant hover:text-primary hover:bg-white/50 backdrop-blur-sm transition-all shadow-[inset_0_1px_1px_rgba(255,255,255,0.4)]" href="#">
+<span class="material-symbols-outlined text-[20px]">menu_book</span>
+<span class="font-body-md text-body-md">Manuals</span>
+</a>
+</li>
+<!-- Active Tab -->
+<li class="">
+<a class="flex items-center space-x-3 px-4 py-3 rounded-lg bg-white/70 backdrop-blur-md text-primary-container border-l-[3px] border-primary-container scale-[0.98] duration-150 relative overflow-hidden group shadow-[0_4px_12px_rgba(0,209,178,0.1),inset_0_1px_2px_rgba(255,255,255,0.8)]" href="#">
+<div class="absolute inset-0 bg-gradient-to-r from-primary-container/10 to-transparent opacity-0 group-hover:opacity-100 transition-opacity"></div>
+<span class="material-symbols-outlined text-[20px]" style='font-variation-settings: "FILL" 1;'>smart_toy</span>
+<span class="font-body-md text-body-md font-medium relative z-10 text-on-surface">AI Admin</span>
+</a>
+</li>
+</ul>
+<div class="px-4 mt-auto pb-4">
+<button class="w-full flex items-center justify-center space-x-2 py-3 rounded-lg border border-error/50 text-error hover:bg-error/10 transition-colors duration-200 bg-white/50 backdrop-blur-md shadow-[0_4px_12px_rgba(186,26,26,0.05),inset_0_1px_1px_rgba(255,255,255,0.6)]">
+<span class="material-symbols-outlined text-[18px]">warning</span>
+<span class="font-label-sm text-label-sm uppercase tracking-wider">Emergency Shutdown</span>
+</button>
+</div>
+</nav>
+<!-- TopAppBar -->
+<header class="fixed top-0 right-0 left-64 h-16 z-40 bg-white/40 backdrop-blur-xl border-b border-white/60 shadow-[0_4px_24px_-8px_rgba(0,107,90,0.08)] flex justify-between items-center px-gutter w-[calc(100%-16rem)]">
+<!-- Search Bar (on_left) -->
+<div class="flex-1 max-w-md">
+<div class="relative group">
+<span class="material-symbols-outlined absolute left-3 top-1/2 -translate-y-1/2 text-on-surface-variant group-focus-within:text-primary-container transition-colors">search</span>
+<input class="w-full bg-white/60 backdrop-blur-md border border-white/80 rounded-full py-2 pl-10 pr-4 font-body-md text-[14px] text-on-surface placeholder:text-on-surface-variant focus:outline-none focus:border-primary-container/50 focus:ring-1 focus:ring-primary-container/30 transition-all shadow-[inset_0_2px_4px_rgba(0,0,0,0.02),0_1px_2px_rgba(255,255,255,0.8)]" placeholder="Search operational databanks..." type="text"/>
+</div>
+</div>
+<div class="font-label-sm text-label-sm text-on-surface tracking-widest absolute left-1/2 -translate-x-1/2 hidden lg:block">UTH[<span class="text-cyan-highlight">AI</span>]-EVN // SYS.CTRL</div>
+<!-- Trailing Actions -->
+<div class="flex items-center space-x-4">
+<button class="text-on-surface-variant hover:text-primary-container cursor-pointer transition-all relative">
+<span class="material-symbols-outlined">notifications</span>
+<span class="absolute top-0 right-0 w-2 h-2 bg-error rounded-full animate-pulse"></span>
+</button>
+<button class="text-on-surface-variant hover:text-primary-container cursor-pointer transition-all">
+<span class="material-symbols-outlined">settings</span>
+</button>
+<div class="h-8 w-px bg-outline-variant/30 mx-2"></div>
+<div class="flex items-center space-x-3 cursor-pointer group">
+<div class="text-right hidden md:block">
+<p class="font-label-sm text-[10px] text-on-surface-variant uppercase tracking-widest group-hover:text-primary-container transition-colors">senior DEVOPS Engineer</p>
+<p class="font-body-md text-[13px] font-medium text-on-surface">Mr.Suppasit Kongsuwan</p>
+</div>
+<div class="w-9 h-9 rounded-full bg-white/60 backdrop-blur-sm border border-white/80 flex items-center justify-center overflow-hidden shadow-[inset_0_1px_2px_rgba(255,255,255,0.8),0_2px_4px_rgba(0,0,0,0.05)]">
+<span class="material-symbols-outlined text-on-surface-variant">person</span>
+</div>
+</div>
+</div>
+</header>
+<!-- Main Content Canvas -->
+<main class="ml-64 pt-20 p-gutter min-h-screen relative">
+<!-- Subtle background glow -->
+<div class="absolute top-0 right-1/4 w-96 h-96 bg-primary-container/10 rounded-full blur-[100px] pointer-events-none"></div>
+<div class="absolute -bottom-20 left-1/4 w-96 h-96 bg-secondary-container/20 rounded-full blur-[100px] pointer-events-none"></div>
+<!-- Page Header -->
+<div class="mb-8 flex justify-between items-end relative z-10">
+<div>
+<div class="flex items-center space-x-2 mb-2 text-primary-container drop-shadow-sm">
+<span class="material-symbols-outlined text-[18px]">memory</span>
+<span class="font-label-sm text-label-sm uppercase tracking-widest">Inference Engine Integration</span>
+</div>
+<h2 class="font-headline-md text-headline-md tracking-tight text-on-surface drop-shadow-sm">AI Provider Configuration</h2>
+<p class="font-body-lg text-body-lg text-on-surface-variant mt-2 max-w-2xl drop-shadow-sm">Connect MedResource OS to an external Large Language Model for advanced predictive analytics and natural language queries across secure hospital databases.</p>
+</div>
+<div class="hidden md:flex items-center space-x-2 bg-white/50 backdrop-blur-xl border border-white/60 rounded-full px-4 py-1.5 shadow-[0_4px_12px_rgba(0,209,178,0.1),inset_0_1px_2px_rgba(255,255,255,0.8)]">
+<span class="w-2 h-2 rounded-full bg-primary-container animate-pulse shadow-[0_0_8px_rgba(0,209,178,0.6)]"></span>
+<span class="font-label-sm text-[11px] text-on-surface-variant uppercase tracking-wider">System Ready</span>
+</div>
+</div>
+<!-- Bento Grid Layout -->
+<div class="grid grid-cols-1 lg:grid-cols-12 gap-gutter relative z-10">
+<!-- Left Column: Form (8 cols) -->
+<div class="lg:col-span-8 space-y-gutter">
+<!-- Connection Settings Card -->
+<div class="bg-white/40 backdrop-blur-2xl rounded-2xl p-6 relative group shadow-[0_8px_32px_rgba(0,107,90,0.06),inset_0_1px_1px_rgba(255,255,255,0.8)] aura-border">
+<h3 class="font-headline-sm text-headline-sm text-on-surface mb-6 flex items-center drop-shadow-sm">
+<span class="material-symbols-outlined mr-3 text-on-surface-variant">router</span>
+                        Connection Endpoints
+                    </h3>
+<div class="space-y-6 relative z-10">
+<!-- Provider Dropdown -->
+<div>
+<label class="block font-label-sm text-label-sm text-on-surface-variant uppercase tracking-widest mb-2 drop-shadow-sm">Provider Target</label>
+<div class="relative">
+<select class="w-full bg-white/60 backdrop-blur-md border border-white/80 rounded-xl py-3 px-4 appearance-none font-body-md text-on-surface focus:outline-none focus:border-primary-container/50 focus:ring-2 focus:ring-primary-container/20 transition-all cursor-pointer shadow-[inset_0_2px_4px_rgba(0,0,0,0.02),0_1px_2px_rgba(255,255,255,0.8)]">
+<option value="openai">OpenAI (Secure Enclave)</option>
+<option value="anthropic">Anthropic (Claude API)</option>
+<option value="google">Google Cloud Vertex AI</option>
+<option value="azure">Azure OpenAI Service</option>
+</select>
+<span class="material-symbols-outlined absolute right-4 top-1/2 -translate-y-1/2 text-on-surface-variant pointer-events-none">expand_more</span>
+</div>
+</div>
+<!-- Base URL -->
+<div>
+<label class="block font-label-sm text-label-sm text-on-surface-variant uppercase tracking-widest mb-2 flex justify-between drop-shadow-sm">
+<span class="">API Base URL</span>
+<span class="text-on-surface-variant/70 font-normal normal-case tracking-normal">Optional for managed services</span>
+</label>
+<div class="relative flex items-center">
+<span class="absolute left-4 text-on-surface-variant font-mono text-[14px]">https://</span>
+<input class="w-full bg-white/60 backdrop-blur-md border border-white/80 rounded-xl py-3 pl-[70px] pr-4 font-mono text-[14px] text-on-surface placeholder:text-on-surface-variant/60 transition-all focus:border-primary-container/50 focus:ring-2 focus:ring-primary-container/20 shadow-[inset_0_2px_4px_rgba(0,0,0,0.02),0_1px_2px_rgba(255,255,255,0.8)]" placeholder="api.provider.com/v1" type="text"/>
+</div>
+</div>
+<!-- Model Name -->
+<div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+<div>
+<label class="block font-label-sm text-label-sm text-on-surface-variant uppercase tracking-widest mb-2 drop-shadow-sm">Model Identifier</label>
+<input class="w-full bg-white/60 backdrop-blur-md border border-white/80 rounded-xl py-3 px-4 font-mono text-[14px] text-primary-container font-medium transition-all focus:border-primary-container/50 focus:ring-2 focus:ring-primary-container/20 shadow-[inset_0_2px_4px_rgba(0,0,0,0.02),0_1px_2px_rgba(255,255,255,0.8)]" type="text" value="Fable5"/>
+</div>
+<div>
+<label class="block font-label-sm text-label-sm text-on-surface-variant uppercase tracking-widest mb-2 drop-shadow-sm">Authentication Key</label>
+<div class="relative">
+<input class="w-full bg-white/60 backdrop-blur-md border border-white/80 rounded-xl py-3 pl-4 pr-10 font-mono text-[14px] text-on-surface transition-all focus:border-primary-container/50 focus:ring-2 focus:ring-primary-container/20 shadow-[inset_0_2px_4px_rgba(0,0,0,0.02),0_1px_2px_rgba(255,255,255,0.8)]" type="password" value="sk-medres-xxxxxxxxxxxxxxxx"/>
+<button class="absolute right-3 top-1/2 -translate-y-1/2 text-on-surface-variant hover:text-on-surface transition-colors">
+<span class="material-symbols-outlined text-[18px]">visibility</span>
+</button>
+</div>
+</div>
+</div>
+</div>
+</div>
+<!-- Scope Configuration Card -->
+<div class="bg-white/40 backdrop-blur-2xl rounded-2xl p-6 relative group shadow-[0_8px_32px_rgba(0,107,90,0.06),inset_0_1px_1px_rgba(255,255,255,0.8)] aura-border mt-8">
+<div class="flex justify-between items-center mb-6 relative z-10">
+<h3 class="font-headline-sm text-headline-sm text-on-surface flex items-center drop-shadow-sm">
+<span class="material-symbols-outlined mr-3 text-on-surface-variant">policy</span>
+                            Vector DB Access Scopes
+                        </h3>
+<div class="px-3 py-1 bg-white/60 backdrop-blur-md rounded-full border border-white/80 flex items-center space-x-2 shadow-[0_2px_8px_rgba(0,0,0,0.04)]">
+<span class="material-symbols-outlined text-[14px] text-on-surface-variant">info</span>
+<span class="font-label-sm text-[10px] text-on-surface-variant uppercase tracking-wider">RAG Context Limits</span>
+</div>
+</div>
+<p class="font-body-md text-on-surface-variant mb-6 relative z-10 drop-shadow-sm">Define which operational databases the AI agent is permitted to query for Retrieval-Augmented Generation (RAG) when answering staff questions.</p>
+<div class="grid grid-cols-1 md:grid-cols-2 gap-4 relative z-10">
+<!-- Toggle Item 1 -->
+<label class="flex items-center justify-between p-4 bg-white/50 backdrop-blur-md border border-white/60 rounded-xl cursor-pointer hover:bg-white/70 transition-all group shadow-[0_4px_12px_rgba(0,0,0,0.03),inset_0_1px_2px_rgba(255,255,255,0.8)] aura-border">
+<div class="flex items-center space-x-4 relative z-10">
+<div class="w-10 h-10 rounded-full bg-white/60 backdrop-blur-sm border border-white/80 flex items-center justify-center text-primary-container shadow-sm group-hover:bg-primary-container/10 transition-colors">
+<span class="material-symbols-outlined text-[20px]">bolt</span>
+</div>
+<div>
+<div class="font-body-md font-medium text-on-surface">Energy Data</div>
+<div class="font-label-sm text-[10px] text-on-surface-variant mt-1">Read-Only / Real-time</div>
+</div>
+</div>
+<div class="relative inline-block w-12 h-6 align-middle select-none transition duration-200 ease-in z-10">
+<input checked="" class="toggle-checkbox absolute block w-6 h-6 rounded-full bg-white border-[3px] appearance-none cursor-pointer transition-transform duration-200 ease-in-out translate-x-full border-primary-container shadow-[0_1px_3px_rgba(0,0,0,0.1)] z-10" id="toggle-energy" name="toggle" type="checkbox"/>
+<label class="toggle-label block overflow-hidden h-6 rounded-full bg-primary-container/90 backdrop-blur-sm cursor-pointer transition-colors duration-200 ease-in-out shadow-[inset_0_2px_4px_rgba(0,0,0,0.1)]" for="toggle-energy"></label>
+</div>
+</label>
+<!-- Toggle Item 2 -->
+<label class="flex items-center justify-between p-4 bg-white/50 backdrop-blur-md border border-white/60 rounded-xl cursor-pointer hover:bg-white/70 transition-all group shadow-[0_4px_12px_rgba(0,0,0,0.03),inset_0_1px_2px_rgba(255,255,255,0.8)] aura-border">
+<div class="flex items-center space-x-4 relative z-10">
+<div class="w-10 h-10 rounded-full bg-white/60 backdrop-blur-sm border border-white/80 flex items-center justify-center text-secondary shadow-sm group-hover:bg-secondary/10 transition-colors">
+<span class="material-symbols-outlined text-[20px]">water_drop</span>
+</div>
+<div>
+<div class="font-body-md font-medium text-on-surface">Water Data</div>
+<div class="font-label-sm text-[10px] text-on-surface-variant mt-1">Read-Only / Historical</div>
+</div>
+</div>
+<div class="relative inline-block w-12 h-6 align-middle select-none transition duration-200 ease-in z-10">
+<input checked="" class="toggle-checkbox absolute block w-6 h-6 rounded-full bg-white border-[3px] appearance-none cursor-pointer transition-transform duration-200 ease-in-out translate-x-full border-primary-container shadow-[0_1px_3px_rgba(0,0,0,0.1)] z-10" id="toggle-water" name="toggle" type="checkbox"/>
+<label class="toggle-label block overflow-hidden h-6 rounded-full bg-primary-container/90 backdrop-blur-sm cursor-pointer transition-colors duration-200 ease-in-out shadow-[inset_0_2px_4px_rgba(0,0,0,0.1)]" for="toggle-water"></label>
+</div>
+</label>
+<!-- Toggle Item-->
+<label class="flex items-center justify-between p-4 bg-white/50 backdrop-blur-md border border-white/60 rounded-xl cursor-pointer hover:bg-white/70 transition-all group shadow-[0_4px_12px_rgba(0,0,0,0.03),inset_0_1px_2px_rgba(255,255,255,0.8)] aura-border">
+<div class="flex items-center space-x-4 relative z-10">
+<div class="w-10 h-10 rounded-full bg-white/60 backdrop-blur-sm border border-white/80 flex items-center justify-center text-outline shadow-sm group-hover:text-on-surface transition-colors">
+<span class="material-symbols-outlined text-[20px]">delete</span>
+</div>
+<div>
+<div class="font-body-md font-medium text-on-surface">Waste Management</div>
+<div class="font-label-sm text-[10px] text-on-surface-variant mt-1">Manifests &amp; Routing</div>
+</div>
+</div>
+<div class="relative inline-block w-12 h-6 align-middle select-none transition duration-200 ease-in z-10">
+<input class="toggle-checkbox absolute block w-6 h-6 rounded-full bg-white border-[3px] appearance-none cursor-pointer transition-transform duration-200 ease-in-out border-surface-container-highest shadow-[0_1px_3px_rgba(0,0,0,0.1)] z-10" id="toggle-waste" name="toggle" type="checkbox"/>
+<label class="toggle-label block overflow-hidden h-6 rounded-full bg-surface-container-high border border-outline-variant/30 cursor-pointer transition-colors duration-200 ease-in-out shadow-[inset_0_2px_4px_rgba(0,0,0,0.05)]" for="toggle-waste"></label>
+</div>
+</label>
+<!-- Toggle Item 4 -->
+<label class="flex items-center justify-between p-4 bg-white/50 backdrop-blur-md border border-white/60 rounded-xl cursor-pointer hover:bg-white/70 transition-all group shadow-[0_4px_12px_rgba(0,0,0,0.03),inset_0_1px_2px_rgba(255,255,255,0.8)] aura-border">
+<div class="flex items-center space-x-4 relative z-10">
+<div class="w-10 h-10 rounded-full bg-white/60 backdrop-blur-sm border border-white/80 flex items-center justify-center text-primary-container shadow-sm group-hover:bg-primary-container/10 transition-colors">
+<span class="material-symbols-outlined text-[20px]">medical_services</span>
+</div>
+<div>
+<div class="font-body-md font-medium text-on-surface">Equipment Inventory</div>
+<div class="font-label-sm text-[10px] text-on-surface-variant mt-1">Location &amp; Status</div>
+</div>
+</div>
+<div class="relative inline-block w-12 h-6 align-middle select-none transition duration-200 ease-in z-10">
+<input checked="" class="toggle-checkbox absolute block w-6 h-6 rounded-full bg-white border-[3px] appearance-none cursor-pointer transition-transform duration-200 ease-in-out translate-x-full border-primary-container shadow-[0_1px_3px_rgba(0,0,0,0.1)] z-10" id="toggle-equip" name="toggle" type="checkbox"/>
+<label class="toggle-label block overflow-hidden h-6 rounded-full bg-primary-container/90 backdrop-blur-sm cursor-pointer transition-colors duration-200 ease-in-out shadow-[inset_0_2px_4px_rgba(0,0,0,0.1)]" for="toggle-equip"></label>
+</div>
+</label>
+<!-- Toggle Item 5 -->
+<label class="flex items-center justify-between p-4 bg-white/50 backdrop-blur-md border border-white/60 rounded-xl cursor-pointer hover:bg-white/70 transition-all group md:col-span-2 shadow-[0_4px_12px_rgba(0,0,0,0.03),inset_0_1px_2px_rgba(255,255,255,0.8)] aura-border">
+<div class="flex items-center space-x-4 relative z-10">
+<div class="w-10 h-10 rounded-full bg-white/60 backdrop-blur-sm border border-white/80 flex items-center justify-center text-outline shadow-sm group-hover:text-primary transition-colors">
+<span class="material-symbols-outlined text-[20px]">co2</span>
+</div>
+<div>
+<div class="font-body-md font-medium text-on-surface">Carbon Reporting</div>
+<div class="font-label-sm text-[10px] text-on-surface-variant mt-1">Emission Calc Engine</div>
+</div>
+</div>
+<div class="relative inline-block w-12 h-6 align-middle select-none transition duration-200 ease-in z-10">
+<input class="toggle-checkbox absolute block w-6 h-6 rounded-full bg-white border-[3px] appearance-none cursor-pointer transition-transform duration-200 ease-in-out border-surface-container-highest shadow-[0_1px_3px_rgba(0,0,0,0.1)] z-10" id="toggle-carbon" name="toggle" type="checkbox"/>
+<label class="toggle-label block overflow-hidden h-6 rounded-full bg-surface-container-high border border-outline-variant/30 cursor-pointer transition-colors duration-200 ease-in-out shadow-[inset_0_2px_4px_rgba(0,0,0,0.05)]" for="toggle-carbon"></label>
+</div>
+</label>
+</div>
+</div>
+<!-- Action Bar -->
+<div class="flex justify-end space-x-4 mt-8 relative z-10">
+<button class="px-6 py-3 rounded-xl border border-white/80 text-on-surface font-body-md font-medium hover:bg-white/70 transition-all bg-white/50 backdrop-blur-md shadow-[0_4px_12px_rgba(0,0,0,0.04),inset_0_1px_2px_rgba(255,255,255,0.8)]">
+                        Revert Changes
+                    </button>
+<button class="px-8 py-3 rounded-xl bg-gradient-to-r from-primary-container to-primary text-white font-body-md font-bold hover:shadow-[0_8px_24px_rgba(0,209,178,0.3)] transition-all transform hover:-translate-y-0.5 flex items-center border border-white/20 backdrop-blur-md shadow-[0_4px_16px_rgba(0,209,178,0.2),inset_0_1px_2px_rgba(255,255,255,0.4)]">
+<span class="material-symbols-outlined mr-2 text-[20px]">save</span>
+                        Deploy Configuration
+                    </button>
+</div>
+</div>
+<!-- Right Column: Code Preview (4 cols) -->
+<div class="lg:col-span-4 h-full relative z-10">
+<div class="bg-white/40 backdrop-blur-2xl rounded-2xl h-full flex flex-col overflow-hidden relative shadow-[0_8px_32px_rgba(0,107,90,0.06),inset_0_1px_1px_rgba(255,255,255,0.8)] aura-border">
+<!-- decorative top bar -->
+<div class="h-1 w-full bg-gradient-to-r from-transparent via-primary-container to-transparent opacity-70 relative z-10"></div>
+<div class="px-4 py-3 border-b border-white/40 flex justify-between items-center bg-white/30 backdrop-blur-sm relative z-10">
+<div class="flex space-x-2">
+<div class="w-3 h-3 rounded-full bg-error shadow-inner"></div>
+<div class="w-3 h-3 rounded-full bg-tertiary-container shadow-inner"></div>
+<div class="w-3 h-3 rounded-full bg-primary-container shadow-inner"></div>
+</div>
+<span class="font-mono text-[11px] text-on-surface-variant uppercase tracking-widest font-semibold drop-shadow-sm">config.json (Live Gen)</span>
+<button class="text-on-surface-variant hover:text-primary-container transition-colors drop-shadow-sm">
+<span class="material-symbols-outlined text-[16px]">content_copy</span>
+</button>
+</div>
+<div class="p-6 flex-1 overflow-y-auto code-scroll font-mono text-[13px] leading-relaxed relative z-10 bg-white/10">
+<pre class="text-on-surface"><code>{
+  <span class="text-primary">"ai_engine"</span>: {
+    <span class="text-primary">"provider"</span>: <span class="text-secondary">"openai"</span>,
+    <span class="text-primary">"base_url"</span>: <span class="text-secondary">"https://api.openai.com/v1"</span>,
+    <span class="text-primary">"model"</span>: <span class="text-secondary">"gpt-4-turbo-preview"</span>,
+    <span class="text-primary">"auth_strategy"</span>: <span class="text-secondary">"bearer_token"</span>,
+    <span class="text-primary">"temperature"</span>: <span class="text-tertiary">0.2</span>,
+    <span class="text-primary">"max_tokens"</span>: <span class="text-tertiary">2048</span>
+  },
+  <span class="text-primary">"rag_scopes"</span>: {
+    <span class="text-primary">"energy_db"</span>: {
+      <span class="text-primary">"access"</span>: <span class="text-primary-container">true</span>,
+      <span class="text-primary">"collections"</span>: [<span class="text-secondary">"solar_yield"</span>, <span class="text-secondary">"grid_draw"</span>]
+    },
+    <span class="text-primary">"water_db"</span>: {
+      <span class="text-primary">"access"</span>: <span class="text-primary-container">true</span>,
+      <span class="text-primary">"collections"</span>: [<span class="text-secondary">"flow_rate"</span>, <span class="text-secondary">"filtration"</span>]
+    },
+    <span class="text-primary">"waste_db"</span>: {
+      <span class="text-primary">"access"</span>: <span class="text-error">false</span>
+    },
+    <span class="text-primary">"equipment_db"</span>: {
+      <span class="text-primary">"access"</span>: <span class="text-primary-container">true</span>,
+      <span class="text-primary">"collections"</span>: [<span class="text-secondary">"mri_status"</span>, <span class="text-secondary">"hvac_logs"</span>]
+    },
+    <span class="text-primary">"carbon_db"</span>: {
+      <span class="text-primary">"access"</span>: <span class="text-error">false</span>
+    }
+  },
+  <span class="text-primary">"system_prompt"</span>: <span class="text-secondary">"You are the MedResource OS operational AI. Your primary directive is providing accurate data regarding clinical infrastructure..."</span>
+}</code></pre>
+</div>
+<!-- Gradient fade at bottom of code block -->
+<div class="absolute bottom-0 left-0 right-0 h-16 bg-gradient-to-t from-white/80 to-transparent pointer-events-none z-20"></div>
+</div>
+</div>
+</div>
+</main>
+<!-- Custom Script for native interaction feel -->
+<script class="">
+        // Simple script</script></body></html>
