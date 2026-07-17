@@ -264,17 +264,30 @@ binding rules are here.
    restyling that page — check the In-progress table first.
 5. **Dark/Light toggle is Track F (F1)** — removed from ZCode's P20 rolling
    list. Z: do not implement theming.
+6. **No destructive git in the shared working tree** (added after F2 was
+   wiped 3× mid-flight by Track Z `reset --hard`/`clean` cycles on
+   2026-07-18): `git reset --hard`, `git checkout -- .`, and `git clean`
+   destroy the *other* agent's uncommitted work — use `git stash` /
+   `git revert` instead. Track F now works from its own **git worktree**
+   (`git worktree add ../envww-trackf track-f`) and lands via fast-forward
+   pushes of `track-f` → `main`, so Z's tree operations can no longer
+   collide with F. Z: keep pulling `main` as usual; never delete the
+   `track-f` branch or the worktree registration.
 
 ### In-progress claims
 
 | Chunk | Agent | Claimed | Scope (files) |
 |---|---|---|---|
-| F2 shell + per-page suite conformance | fable5 | 2026-07-18 | `components/layout/AppShell.tsx`, `components/ui/*`, `components/pfd/*` (className), `pages/*.tsx` (className/markup only) |
+| F3 assets + docs (logo/favicon, ui-brief authority) | fable5 | 2026-07-18 | `frontend/public/*`, `design/ui-brief.md`, MIGRATION claim release |
 | P20c PWA manifest + service worker | zcode | 2026-07-18 | `frontend/public/manifest.webmanifest`, `frontend/public/sw.js`, `frontend/src/lib/sw-register.ts`, additive `<link rel="manifest">` + `<script>` in `frontend/index.html` (F1-released). **No AppShell/page edit.** |
 
 Done: ~~F1 dual-theme foundation~~ (2026-07-18 — tokens.css `:root`/`.dark`,
 toggle in AppShell, no-flash script in index.html; `frontend/index.html` is
 released back to shared-hotspot status → Z may start PWA manifest work).
+~~F2 shell + theme-safety conformance~~ (2026-07-18 — suite AppShell w-72 +
+Material Symbols + top bar + user footer, ENV wordmark, AuraCard static-ring
+discipline, Gauge/PFD/Recharts token-driven colors; landed from the track-f
+worktree after 3 working-tree wipes, see rule 6).
 
 ### Track F queue (Fable5)
 
