@@ -270,7 +270,6 @@ binding rules are here.
 | Chunk | Agent | Claimed | Scope (files) |
 |---|---|---|---|
 | F2 shell + per-page suite conformance | fable5 | 2026-07-18 | `components/layout/AppShell.tsx`, `components/ui/*`, `components/pfd/*` (className), `pages/*.tsx` (className/markup only) |
-| P20d sensor feed foundation | zcode | 2026-07-18 | `supabase/migrations/...sensor.sql`, `supabase/functions/ingest-sensor/index.ts`, `frontend/src/lib/use-sensor-feed.ts`. SQL + Edge Function + frontend hook. **No AppShell/page edit** (a future P20d.2 chunk can add a /sensors page once F2 finishes styling patterns). |
 
 Done: ~~F1 dual-theme foundation~~ (2026-07-18 — tokens.css `:root`/`.dark`,
 toggle in AppShell, no-flash script in index.html; `frontend/index.html` is
