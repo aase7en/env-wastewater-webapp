@@ -1,0 +1,75 @@
+name: Deploy frontend to GitHub Pages
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - "frontend/**"
+      - ".github/workflows/deploy-frontend.yml"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  pages: write
+  id-token: write
+
+# Allow one concurrent deployment, cancel any in-flight run.
+concurrency:
+  group: "pages"
+  cancel-in-progress: true
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "20"
+          cache: "npm"
+          cache-dependency-path: frontend/package-lock.json
+
+      - name: Install
+        working-directory: frontend
+        run: npm ci
+
+      - name: Build
+        working-directory: frontend
+        env:
+          # GitHub Pages serves this repo at /env-wastewater-webapp/
+          # Vite uses this for asset URLs + BrowserRouter basename.
+          GH_PAGES_BASE: /env-wastewater-webapp/
+          # VITE_* env vars are baked into the static bundle at build time.
+          # The publishable/anon key is RLS-gated — safe to embed (see
+          # docs/adr/0004-supabase-first-no-fastapi-in-prod.md). Real secret
+          # lives only in Edge Functions / SQL.
+          VITE_SUPABASE_URL: ${{ secrets.VITE_SUPABASE_URL }}
+          VITE_SUPABASE_ANON_KEY: ${{ secrets.VITE_SUPABASE_ANON_KEY }}
+        run: npm run build
+
+      - name: SPA fallback (copy index.html → 404.html)
+        # GitHub Pages returns the static 404.html for any unknown path.
+        # Copying index.html there gives us client-side routing fallback
+        # so direct hits to /form, /readings, /auth/callback, etc. work.
+        working-directory: frontend
+        run: cp dist/index.html dist/404.html
+
+      - name: Add .nojekyll
+        # Disable Jekyll so _-prefixed asset folders aren't dropped.
+        working-directory: frontend
+        run: touch dist/.nojekyll
+
+      - uses: actions/upload-pages-artifact@v3
+        with:
+          path: frontend/dist
+
+  deploy:
+    needs: build
+    runs-on: ubuntu-latest
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    steps:
+      - id: deployment
+        uses: actions/deploy-pages@v4
