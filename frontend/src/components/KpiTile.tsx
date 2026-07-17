@@ -7,24 +7,39 @@ interface KpiTileProps {
   unit?: string;
   icon?: ReactNode;
   digits?: number;
-  accent?: "teal" | "water" | "amber";
+  /** Aura accent — neon cyan / lime / amber. All glow on hover. */
+  accent?: "cyan" | "lime" | "amber";
 }
 
-export function KpiTile({ label, value, unit, icon, digits = 1, accent = "teal" }: KpiTileProps) {
+export function KpiTile({ label, value, unit, icon, digits = 1, accent = "cyan" }: KpiTileProps) {
   const accentClass = {
-    teal: "text-teal-600 bg-teal-50",
-    water: "text-water-600 bg-water-100",
-    amber: "text-alert-amber bg-amber-50",
+    cyan: "text-aura-cyan bg-aura-cyan/10 border-aura-cyan/30",
+    lime: "text-aura-lime bg-aura-lime/10 border-aura-lime/30",
+    amber: "text-alert-amber bg-alert-amber/10 border-alert-amber/30",
+  }[accent];
+  const glowClass = {
+    cyan: "hover:shadow-aura-glow-cyan",
+    lime: "hover:shadow-aura-glow-lime",
+    amber: "",
   }[accent];
 
   return (
-    <div className="bg-white rounded-xl border border-navy-100 shadow-sm p-4 flex items-center gap-3">
-      {icon && <div className={cn("w-10 h-10 rounded-lg flex items-center justify-center shrink-0", accentClass)}>{icon}</div>}
+    <div
+      className={cn(
+        "aura-card p-4 flex items-center gap-3 transition-shadow",
+        glowClass
+      )}
+    >
+      {icon && (
+        <div className={cn("w-10 h-10 rounded-xl flex items-center justify-center shrink-0 border", accentClass)}>
+          {icon}
+        </div>
+      )}
       <div className="min-w-0">
-        <div className="text-xs text-navy-500 truncate">{label}</div>
-        <div className="font-mono font-semibold text-navy-900 text-lg">
+        <div className="text-xs text-aura-textMuted font-thai truncate">{label}</div>
+        <div className="font-mono font-semibold text-aura-textMain text-lg">
           {fmt(value, digits)}
-          {unit && <span className="text-xs text-navy-400 ml-1">{unit}</span>}
+          {unit && <span className="text-xs text-aura-textMuted ml-1 font-sans">{unit}</span>}
         </div>
       </div>
     </div>

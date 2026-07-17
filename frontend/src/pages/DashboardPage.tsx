@@ -3,6 +3,8 @@ import { useDashboard, useReadings } from "../lib/hooks";
 import { ProcessFlowDiagram } from "../components/pfd/ProcessFlowDiagram";
 import { KpiTile } from "../components/KpiTile";
 import { StatusBadge } from "../components/pfd/StatusBadge";
+import { AuraCard } from "../components/ui/AuraCard";
+import { Button } from "../components/ui/Button";
 import { fmt, thaiDate } from "../lib/utils";
 
 export function DashboardPage() {
@@ -18,32 +20,34 @@ export function DashboardPage() {
       {/* Header */}
       <header className="flex items-center justify-between flex-wrap gap-2">
         <div>
-          <h1 className="font-display font-bold text-2xl text-navy-900">แดชบอร์ดระบบบำบัดน้ำเสีย</h1>
-          <p className="text-sm text-navy-500">14 วันล่าสุด · {rows.length} รายการ</p>
+          <h1 className="font-display font-bold text-2xl md:text-3xl tracking-tight">
+            <span className="aura-text-gradient">แดชบอร์ด</span>
+            <span className="text-aura-textMain"> ระบบบำบัดน้ำเสีย</span>
+          </h1>
+          <p className="text-sm text-aura-textMuted font-thai mt-1">
+            14 วันล่าสุด · {rows.length} รายการ
+          </p>
         </div>
-        <button
-          onClick={refresh}
-          className="px-3 py-1.5 text-sm rounded-lg bg-teal-600 text-white hover:bg-teal-700 transition-colors"
-        >
+        <Button variant="secondary" size="sm" onClick={refresh} loading={loading}>
           รีเฟรช
-        </button>
+        </Button>
       </header>
 
       {/* Loading / error */}
-      {loading && <div className="text-navy-500">กำลังโหลด…</div>}
+      {loading && <div className="text-aura-textMuted font-thai">กำลังโหลด…</div>}
       {error && (
-        <div className="bg-red-50 border border-red-200 rounded-lg p-4 text-sm text-red-700">
+        <div className="rounded-2xl border border-alert-red/40 bg-alert-red/10 p-4 text-sm text-alert-red font-thai">
           โหลดข้อมูลไม่สำเร็จ: {error}
         </div>
       )}
 
-      {/* KPI tiles */}
+      {/* KPI tiles — neon accents */}
       {!loading && !error && (
         <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
-          <KpiTile label="น้ำเข้าระบบวันนี้" value={today?.wastewater_in} unit="m³" icon={<Droplets className="w-5 h-5" />} accent="water" digits={1} />
-          <KpiTile label="น้ำที่ใช้" value={today?.water_used_total} unit="m³" icon={<Activity className="w-5 h-5" />} accent="teal" digits={1} />
+          <KpiTile label="น้ำเข้าระบบวันนี้" value={today?.wastewater_in} unit="m³" icon={<Droplets className="w-5 h-5" />} accent="cyan" digits={1} />
+          <KpiTile label="น้ำที่ใช้" value={today?.water_used_total} unit="m³" icon={<Activity className="w-5 h-5" />} accent="lime" digits={1} />
           <KpiTile label="วันผิดปกติ (14d)" value={daysNormal} unit="วัน" icon={<Zap className="w-5 h-5" />} accent="amber" digits={0} />
-          <KpiTile label="วันระบายน้ำทิ้ง" value={daysDischarged} unit="วัน" icon={<Calendar className="w-5 h-5" />} accent="teal" digits={0} />
+          <KpiTile label="วันระบายน้ำทิ้ง" value={daysDischarged} unit="วัน" icon={<Calendar className="w-5 h-5" />} accent="cyan" digits={0} />
         </div>
       )}
 
@@ -51,38 +55,38 @@ export function DashboardPage() {
       <ProcessFlowDiagram row={today} />
 
       {/* 14-day log table */}
-      <section className="bg-white rounded-xl border border-navy-100 shadow-sm overflow-hidden">
-        <h2 className="font-display font-semibold text-navy-900 p-4 border-b border-navy-100">
+      <AuraCard className="p-0 overflow-hidden">
+        <h2 className="font-display font-semibold text-aura-textMain p-4 border-b border-aura-borderSubtle font-thai">
           ประวัติ 14 วัน
         </h2>
         <div className="overflow-x-auto">
           <table className="w-full text-sm">
-            <thead className="bg-navy-50 text-navy-600 text-left">
-              <tr>
-                <th className="px-4 py-2 font-medium">วันที่</th>
-                <th className="px-4 py-2 font-medium">DO เฉลี่ย</th>
-                <th className="px-4 py-2 font-medium">pH</th>
-                <th className="px-4 py-2 font-medium">Cl อิสระ</th>
-                <th className="px-4 py-2 font-medium">สถานะ</th>
+            <thead>
+              <tr className="text-aura-textMuted text-left border-b border-aura-borderSubtle">
+                <th className="px-4 py-2 font-medium font-thai">วันที่</th>
+                <th className="px-4 py-2 font-medium font-thai">DO เฉลี่ย</th>
+                <th className="px-4 py-2 font-medium font-thai">pH</th>
+                <th className="px-4 py-2 font-medium font-thai">Cl อิสระ</th>
+                <th className="px-4 py-2 font-medium font-thai">สถานะ</th>
               </tr>
             </thead>
-            <tbody className="divide-y divide-navy-100">
+            <tbody className="divide-y divide-aura-borderSubtle/50">
               {(readings?.items || []).map((r) => (
-                <tr key={r.id} className="hover:bg-navy-50">
-                  <td className="px-4 py-2 text-navy-700">{thaiDate(r.reading_date)}</td>
-                  <td className="px-4 py-2 font-mono text-navy-900">{fmt(r.do_average, 2)}</td>
-                  <td className="px-4 py-2 font-mono text-navy-900">{fmt(r.ph, 1)}</td>
-                  <td className="px-4 py-2 font-mono text-navy-900">{fmt(r.free_chlorine, 2)}</td>
+                <tr key={r.id} className="hover:bg-aura-cyan/5 transition-colors">
+                  <td className="px-4 py-2 text-aura-textMain font-thai">{thaiDate(r.reading_date)}</td>
+                  <td className="px-4 py-2 font-mono text-aura-textMain">{fmt(r.do_average, 2)}</td>
+                  <td className="px-4 py-2 font-mono text-aura-textMain">{fmt(r.ph, 1)}</td>
+                  <td className="px-4 py-2 font-mono text-aura-textMain">{fmt(r.free_chlorine, 2)}</td>
                   <td className="px-4 py-2"><StatusBadge status={r.system_operating ?? null} /></td>
                 </tr>
               ))}
               {(readings?.items || []).length === 0 && (
-                <tr><td colSpan={5} className="px-4 py-6 text-center text-navy-400">ไม่มีข้อมูล</td></tr>
+                <tr><td colSpan={5} className="px-4 py-6 text-center text-aura-textMuted font-thai">ไม่มีข้อมูล</td></tr>
               )}
             </tbody>
           </table>
         </div>
-      </section>
+      </AuraCard>
     </div>
   );
 }
