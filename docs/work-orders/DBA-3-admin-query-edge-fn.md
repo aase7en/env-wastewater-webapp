@@ -33,7 +33,7 @@ Depends on: DBA-2
 
 ## Checkpoint log
 
-### done — 2026-07-17 (zcode) — commit `<TBD>`
+### done — 2026-07-17 (zcode) — commit `6f71b13`
 - **DESIGN PIVOT**: replaced planned Deno Edge Function with PL/pgSQL
   PG functions (`admin_run_query`, `admin_explain`). Reasoning (a-think):
   - PostgREST auto-exposes RPC at `/rest/v1/rpc/<name>` — no deploy step
