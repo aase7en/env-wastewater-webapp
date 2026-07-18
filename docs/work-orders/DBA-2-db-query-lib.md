@@ -1,5 +1,5 @@
 # WO-DBA-2: lib/admin/db-query.ts — whitelist + RLS-bounded execution
-Status: open
+Status: done (2026-07-17, zcode) — commit `<TBD>`
 Lane/files: `frontend/src/lib/admin/db-query.ts` (new) เท่านั้น
 Branch: main
 Depends on: DBA-1
@@ -29,3 +29,32 @@ Depends on: DBA-1
 - Mutation: `executeMutation('DELETE FROM ... WHERE id=...')` → audit_log row present
 
 ## Checkpoint log
+
+### done — 2026-07-17 (zcode) — commit `974b6d6`
+- `frontend/src/lib/admin/db-query.ts` (new, 320 lines)
+- Exports: `isStatementAllowed`, `stripComments`, `runBuilderQuery`,
+  `runRawQuery`, `runExplain`, `runQuery` (dispatcher)
+- Layer 1 whitelist rules (debug-mantra applied, falsified via 17 cases):
+  - ALLOW leading: SELECT, INSERT INTO, UPDATE, DELETE FROM, WITH
+  - DENY anywhere: DROP/TRUNCATE/ALTER/GRANT/REVOKE/CREATE/VACUUM/
+    ANALYZE/COPY/CALL/DO-$$/SET ROLE/RESET ROLE
+  - Comments stripped before scan (defends against `/* hide */ DROP`)
+  - Stacked queries blocked (any `;` after trailing terminator rejected)
+- Layer 2 RLS: uses shared `lib/supabase.ts` client (publishable key +
+  authenticated session). NO service_role in browser. Tables see only
+  rows permitted by their policy.
+- Builder mode: supabase-js chain (`.from().select().eq().order().limit()`)
+- Raw mode: `supabase.rpc('admin_run_query', {sql_text})` → DBA-3 RPC.
+  Falls back with clear error if DBA-3 not deployed yet (PGRST202).
+- EXPLAIN: `supabase.rpc('admin_explain', {sql_text})` → DBA-3.
+- Smoke test (17 cases, all pass): allow/deny each leading keyword,
+  comment-hidden DROP caught, stacked query caught, false-positive
+  check (`dropbox` not flagged).
+- Build passes (TS strict).
+- Root-cause fix log (debug-mantra):
+  - bug 1: `*/` in JSDoc comment closed comment block early → removed
+    the literal sequence from docstrings
+  - bug 2: supabase-js builder generic chain too complex → switched
+    applyFilter to `any` with eslint-disable + documented reason
+    (runtime correctness verified by integration test path; type safety
+    lives in BuilderQuery input contract)
