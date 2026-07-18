@@ -14,7 +14,7 @@ insert ทดสอบ 1 แถวผ่าน hook → query เห็นแถ
 
 ## Checkpoint log
 
-### done — 2026-07-17 (zcode) — commit `<TBD>`
+### done — 2026-07-17 (zcode) — commit `b95d03c`
 - **RLS** verified via Management API on live ENV_DB:
   - `core.repair_request` — policy `core_repair_request_rw`, role `authenticated`, ALL, `true`/`true`
   - `core.equipment` — policy `core_equipment_rw`, role `authenticated`, ALL, `true`/`true`
