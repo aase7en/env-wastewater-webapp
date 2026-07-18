@@ -1,20 +1,49 @@
 # WO-F4.1–F4.5: Per-page suite conformance (หน้าละ sub-WO — claim แยกได้)
-Status: F4.1–F4.2 done · F4.3–F4.5 open
-Lane/files: `frontend/src/pages/<หน้านั้น>.tsx` — **className/markup เท่านั้น** (logic/hook ห้ามแตะ)
-Branch: track-f (fable5) / main (zcode)
+Status: F4.1–F4.2 done · **F4.3–F4.5 open**
+Lane/files: `frontend/src/pages/<หน้านั้น>.tsx` — **className/markup เท่านั้น** (logic/hook/state ห้ามแตะ)
+Branch: main (cheap model ทำใน shared tree ได้ — งานไฟล์เดียว commit เร็ว)
+Model tier: **cheap-ok** (glm / sonnet5) — งาน mechanical มี pattern ให้ copy ครบ
 
-## Sub-WOs
-- **F4.1 DailyFormPage** — mobile-first, Luminous Mint light เด่น (staff กรอกกลางแจ้ง), Accordion 6 section ใช้ AuraCard static, chips สี/กลิ่นตามข้อมูลจริง, touch ≥44px
-- **F4.2 ReadingsListPage** — ตาราง + status pills ตาม `fuel_fleet_refined_aura_dark` table pattern
-- **F4.3 EquipmentPage** — list + maintenance ตาม `integrated_waste_management` card/stepper patterns
-- **F4.4 ReportsPage** — template cards ตาม `staff_manuals_resources` card pattern (Pinned/updated meta)
-- **F4.5 AuthPage** — glass card กลางจอ + brand + gradient CTA; Google logo สีทางการคงเดิม
+## Reference patterns (copy จากไฟล์เหล่านี้เท่านั้น — อย่าประดิษฐ์ใหม่)
+- **Icon**: `import { MSymbol } from "../components/ui/MSymbol";` แล้วแทน lucide ทุกตัว:
+  `<IconName className="w-4 h-4" />` → `<MSymbol name="<material_name>" className="text-[18px]" />`
+  (ขนาดเทียบ: w-4=text-[16px]~[18px], w-5=text-[20px], w-8=text-[32px])
+- **หัวตาราง small-caps**: copy `<tr>` header จาก `pages/ReadingsListPage.tsx` (คลาส
+  `text-[11px] uppercase tracking-wider` + `font-bold` ต่อ th)
+- **หน้า/การ์ด/ปุ่ม**: ดูโครงจาก `pages/CarbonPage.tsx` (golden reference: header,
+  AuraCard, KPI, chip, EmptyState, Skeleton)
 
-## Acceptance (ทุก sub)
-เทียบ screenshot ใกล้เคียงใน `design/`; dark/light สมบูรณ์ (ไม่มี hardcoded dark hex); mobile 375px ไม่มี h-scroll; reduced-motion; build ผ่าน; E2E เดิมเขียว (แก้ selector ที่พังจาก markup ใน commit เดียวกัน)
+## Sub-WOs + icon map ที่ต้องใช้
+- **F4.3 EquipmentPage** — แทน lucide (ตรวจตัวจริงในไฟล์): Wrench→`build`,
+  RefreshCw→`refresh`, CheckCircle2→`check_circle`, AlertTriangle→`warning`,
+  Clock→`schedule`, Plus→`add`; หัวตารางใช้ pattern ReadingsListPage
+- **F4.4 ReportsPage** — icons: FileText/FileBarChart→`description`, Download→`download`,
+  Printer→`print`; การ์ด template ใช้ AuraCard (static) + บรรทัด meta ล่างแบบการ์ดใน
+  `design/staff_manuals_resources/screen.png` (ชื่อหนา + คำอธิบาย muted + meta เล็ก)
+- **F4.5 AuthPage** — โครง: glass card (`aura-card aura-card--static p-6`) กว้าง ~max-w-md
+  กลางจอ; เพิ่ม BrandWordmark **copy ทั้ง function จาก `components/layout/AppShell.tsx`
+  มาไว้ในไฟล์** (อย่า export ข้ามไฟล์ — กัน scope ขยาย); ปุ่ม tab/submit ใช้ `Button`
+  เดิม; **Google logo SVG สีทางการห้ามเปลี่ยน**
 
-## Verify
-เปิดหน้าใน preview ทั้ง 2 theme + 375px; รายงาน DOM/computed-style ยืนยัน token
+## Steps (ทำทีละ sub-WO, commit แยก)
+1. claim sub-WO ในตาราง MIGRATION.md (`### In-progress claims`) → commit+push
+2. เปิดไฟล์เป้าหมาย แทน icon ตาม map + ปรับ markup ตาม reference pattern
+3. รัน Verify commands ให้ผ่านครบ
+4. อัปเดต Status บนหัวไฟล์นี้ + append Checkpoint (รูปแบบดูตัวอย่างด้านล่าง)
+5. commit: `chunk(F4.x): <page> conformance [next: F4.x+1]` + ปลด claim → push
+
+## Forbidden (เกินนี้ = หยุดแล้วถามใน checkpoint แทน)
+- ห้ามแก้ hook/useState/useEffect/ฟังก์ชัน logic ใด ๆ, ห้ามแก้ไฟล์อื่นนอก page เป้าหมาย
+  (ยกเว้น MIGRATION claim + ไฟล์นี้), ห้ามเพิ่ม dependency, ห้ามแก้ route,
+  ห้ามลบ error/loading/empty state ที่มีอยู่, ห้ามแตะ `tests/` (ถ้า smoke พังเพราะ
+  markup — บันทึกใน checkpoint ให้ fable5 ตรวจ)
+
+## Verify commands (ต้องผ่านทุกข้อก่อน commit)
+```
+cd frontend
+npm run build          # ต้องจบด้วย "built in" ไม่มี error TS
+npx playwright test    # ต้อง 8 passed
+```
 
 ## Checkpoint log
 - [2026-07-18] fable5: **F4.2 done** — ReadingsListPage: icons lucide→MSymbol
