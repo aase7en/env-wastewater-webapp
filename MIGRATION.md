@@ -285,7 +285,8 @@ binding rules are here.
 
 | Chunk | Agent | Claimed | Scope (files) |
 |---|---|---|---|
-| _(none — claim here before starting; see docs/work-orders/)_ | | | |
+| SCHEMA-3 unified carbon rollup view | zcode | 2026-07-17 | `supabase/migrations/20260719000002_v2_unified_rollup.sql` — see `docs/work-orders/SCHEMA-3-rollup-view.md` |
+| SCHEMA-4 audit trigger + audit_log RLS policies | zcode | 2026-07-17 | `supabase/migrations/20260719000003_v2_audit_trigger.sql` — see `docs/work-orders/SCHEMA-4-audit-trigger.md` |
 
 > **Phase 2 (Wave 1) is live** — chunks are defined in `docs/work-orders/`:
 > V1a/b ใบแจ้งซ่อม · V2a/b Carbon page · V3a/b Notification bell ·
