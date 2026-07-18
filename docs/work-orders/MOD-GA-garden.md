@@ -1,5 +1,5 @@
 # WO-MOD-GA-a: Garden/Landscaping module — data + page skeleton
-Status: open
+Status: done (2026-07-17, zcode) — commit `28cef54`
 Lane/files: `frontend/src/lib/garden.ts` (new), `frontend/src/pages/GardenPage.tsx` (new), 1 route in App.tsx, column extensions on `garden.work_round`
 Branch: main
 Depends on SCHEMA-1

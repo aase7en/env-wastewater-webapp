@@ -1,5 +1,5 @@
 # WO-MOD-FU-a: Fuel module — data + page skeleton
-Status: open
+Status: done (2026-07-17, zcode) — commit `28cef54`
 Lane/files: `frontend/src/lib/fuel.ts` (new), `frontend/src/pages/FuelPage.tsx` (new), 1 route in App.tsx, column extensions on `fuel.dispense_log`, **+ MIG-FU** legacy CSV migration
 Branch: main
 Depends on: SCHEMA-1

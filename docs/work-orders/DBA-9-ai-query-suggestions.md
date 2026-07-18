@@ -1,5 +1,5 @@
 # WO-DBA-9: AI query suggestions panel (schema-aware)
-Status: open
+Status: done (2026-07-17, zcode) — commit `ec4bc0d`
 Lane/files: `frontend/src/components/admin/AiSuggestions.tsx` (new), extends `frontend/src/lib/admin/ai-sql.ts`
 Branch: main
 Depends on: DBA-8

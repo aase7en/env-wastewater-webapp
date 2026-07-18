@@ -1,5 +1,5 @@
 # WO-DBA-5: QueryBuilder + ResultTable + RowEditor (CRUD UI skeleton)
-Status: open
+Status: done (2026-07-17, zcode) — commit `d48c6f2`
 Lane/files: `frontend/src/components/admin/QueryBuilder.tsx`, `ResultTable.tsx`, `RowEditor.tsx` (new)
 Branch: main
 Depends on: DBA-4

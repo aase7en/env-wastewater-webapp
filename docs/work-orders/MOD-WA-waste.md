@@ -1,5 +1,5 @@
 # WO-MOD-WA-a: Waste/Garbage module — data + page skeleton
-Status: open
+Status: done (2026-07-17, zcode) — commit `28cef54`
 Lane/files: `frontend/src/lib/garbage.ts` (new), `frontend/src/pages/GarbagePage.tsx` (new), 1 route in App.tsx, column extensions on `garbage.collection_log`, **+ MIG-WA** legacy CSV migration
 Branch: main
 Depends on: SCHEMA-1

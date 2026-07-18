@@ -1,5 +1,5 @@
 # WO-DBA-4: DBAConsolePage + /admin/db route (admin-only)
-Status: open
+Status: done (2026-07-17, zcode) — commit `d48c6f2`
 Lane/files: `frontend/src/pages/admin/DBAConsolePage.tsx` (new), `frontend/src/App.tsx` (1 route), `frontend/src/components/layout/AppShell.tsx` (admin-only nav link — Track F owns className)
 Branch: main
 Depends on: DBA-2

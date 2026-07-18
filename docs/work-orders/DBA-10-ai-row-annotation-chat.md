@@ -1,5 +1,5 @@
 # WO-DBA-10: AI row annotation + chat on result set
-Status: open
+Status: done (2026-07-17, zcode) — commit `ec4bc0d`
 Lane/files: `frontend/src/components/admin/AiResultChat.tsx` (new), `frontend/src/components/admin/RowAnnotation.tsx` (new), extends `frontend/src/lib/admin/ai-sql.ts`
 Branch: main
 Depends on: DBA-8

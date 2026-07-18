@@ -1,5 +1,5 @@
 # WO-MOD-WS-a: Water Supply (groundwater) module — data + page skeleton
-Status: open
+Status: done (2026-07-17, zcode) — commit `28cef54`
 Lane/files: `frontend/src/lib/water-supply.ts` (new), `frontend/src/pages/WaterSupplyPage.tsx` (new), 1 route in `frontend/src/App.tsx`, optional `supabase/migrations/..._mod_ws.sql` (column extensions on `water_supply.daily_check`)
 Branch: main
 Depends on: SCHEMA-1

@@ -1,5 +1,5 @@
 # WO-MOD-FO-a: Food Sanitation (coliform) module — data + page skeleton
-Status: open
+Status: done (2026-07-17, zcode) — commit `28cef54`
 Lane/files: `frontend/src/lib/food.ts` (new), `frontend/src/pages/FoodPage.tsx` (new), 1 route in App.tsx, column extensions on `food.lab_test`, **+ reagent stock decrement sub-system**
 Branch: main
 Depends on: SCHEMA-1

@@ -1,5 +1,5 @@
 # WO-MOD-BL-a: Building Inspection module — data + page skeleton
-Status: open
+Status: done (2026-07-17, zcode) — commit `28cef54`
 Lane/files: `frontend/src/lib/building.ts` (new), `frontend/src/pages/BuildingPage.tsx` (new), 1 route in App.tsx, column extensions on `building.inspection_round`
 Branch: main
 Depends on: SCHEMA-1

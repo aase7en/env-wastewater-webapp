@@ -1,5 +1,5 @@
 # WO-DBA-7: SavedQueryPanel — list/save/share
-Status: open
+Status: done (2026-07-17, zcode) — commit `d48c6f2`
 Lane/files: `frontend/src/components/admin/SavedQueryPanel.tsx` (new), `frontend/src/lib/admin/saved-query.ts` (new)
 Branch: main
 Depends on: DBA-1, DBA-5

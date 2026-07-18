@@ -1,5 +1,5 @@
 # WO-DBA-8: AiQueryBox (NL→SQL) — uses existing AI chat plumbing + PHI filter
-Status: open
+Status: done (2026-07-17, zcode) — commit `ec4bc0d`
 Lane/files: `frontend/src/components/admin/AiQueryBox.tsx` (new), `frontend/src/lib/admin/ai-sql.ts` (new)
 Branch: main
 Depends on: AI-1, AI-2 (provider config + chat panel from Wave 4), DBA-5

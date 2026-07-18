@@ -1,5 +1,5 @@
 # WO-MOD-FS-a: Fire Safety module — data + page skeleton
-Status: open
+Status: done (2026-07-17, zcode) — commit `28cef54`
 Lane/files: `frontend/src/lib/safety.ts` (new), `frontend/src/pages/SafetyPage.tsx` (new), 1 route in App.tsx, column extensions on `safety.monthly_check`
 Branch: main
 Depends on SCHEMA-1
