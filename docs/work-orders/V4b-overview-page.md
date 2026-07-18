@@ -1,0 +1,15 @@
+# WO-V4b: Unified Command home page
+Status: open (บล็อกโดย V4a)
+Lane/files: `frontend/src/pages/OverviewPage.tsx` (ใหม่), route `/` ใน `App.tsx` (เฉพาะ WO นี้), nav ใน `AppShell.tsx` (แดชบอร์ด → ชี้ `/`, หน้าน้ำเดิมยังอยู่ `/dashboard`)
+Branch: track-f / main ตามผู้ทำ
+
+## Goal + Acceptance
+- ตาม `design/unified_central_command_dashboard/screen.png`: การ์ดใหญ่ 3 ใบ Water / Energy / Carbon + status chip (ปกติ=เขียว nuance ตาม suite) + ตัวเลขหลักจาก V4a + คลิกการ์ด → drill-down (`/dashboard`, `/carbon`; Energy ยังไม่มีหน้า → การ์ดแสดงตัวเลขแต่ไม่มีลิงก์ หรือลิงก์ไป Trends)
+- `/` เลิก redirect ไป /dashboard → render OverviewPage (public เหมือน dashboard)
+- **ห้าม** Emergency Shutdown / Systems Topology ปลอม (no-fake-actuation; topology เป็นรูป mockup — ไม่ใส่)
+- dark/light + mobile + reduced-motion
+
+## Verify
+เปิด `/` เห็น Overview; ตัวเลข 3 ระบบตรงหน้า detail; nav กลับไปกลับมาถูก; E2E เดิมที่คาด redirect `/`→dashboard ต้องแก้ใน WO นี้ให้เขียว
+
+## Checkpoint log

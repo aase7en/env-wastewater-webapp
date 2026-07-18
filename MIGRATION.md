@@ -273,12 +273,26 @@ binding rules are here.
    pushes of `track-f` → `main`, so Z's tree operations can no longer
    collide with F. Z: keep pulling `main` as usual; never delete the
    `track-f` branch or the worktree registration.
+7. **Work orders (Phase 2)**: every chunk has a spec file in
+   `docs/work-orders/` any agent can execute or resume — file scope binds
+   to the *chunk*, not permanently to an agent; whoever holds the claim
+   may touch its files. Pause/resume protocol + the standard resume prompt
+   live in `docs/work-orders/README.md` (built for the 5-hr-limit handoff).
+8. **New page = new file**; the `App.tsx` route for a page is edited only
+   by the holder of that page's work order (one WO at a time).
 
 ### In-progress claims
 
 | Chunk | Agent | Claimed | Scope (files) |
 |---|---|---|---|
-| _(none — both tracks idle; claim here before starting)_ | | | |
+| WO-F4.1 DailyFormPage conformance | fable5 | 2026-07-18 | `pages/DailyFormPage.tsx` (className/markup only) — see `docs/work-orders/F4-page-conformance.md` |
+
+> **Phase 2 (Wave 1) is live** — chunks are defined in `docs/work-orders/`:
+> V1a/b ใบแจ้งซ่อม · V2a/b Carbon page · V3a/b Notification bell ·
+> V4a/b Unified Command home · F4.1–F4.5 · F5 · F6.
+> Z suggested start order: **V1a → V3a → V2a** (all new files, zero
+> collision), then V4a after V2a. UI halves (b) unblock as data halves
+> land — either agent may claim them (rule 7).
 
 Done: ~~F1 dual-theme foundation~~ (2026-07-18 — tokens.css `:root`/`.dark`,
 toggle in AppShell, no-flash script in index.html; `frontend/index.html` is
