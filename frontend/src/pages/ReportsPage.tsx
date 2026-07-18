@@ -1,7 +1,7 @@
 import { useState } from "react";
-import { FileText, Download, Calendar, AlertCircle } from "lucide-react";
 import { AuraCard } from "../components/ui/AuraCard";
 import { Button } from "../components/ui/Button";
+import { MSymbol } from "../components/ui/MSymbol";
 import { Field, Input, Select, Textarea } from "../components/ui/Input";
 import { useToast } from "../components/ui/Toast";
 import { useDashboard } from "../lib/hooks";
@@ -114,11 +114,14 @@ export function ReportsPage() {
             }
           >
             <div className="flex items-center gap-2 mb-2">
-              <FileText className={"w-5 h-5 " + (selected === t.key ? "text-aura-cyan" : "text-aura-textMuted")} />
+              <MSymbol name="description" className={"text-[20px] " + (selected === t.key ? "text-aura-cyan" : "text-aura-textMuted")} />
               <span className="text-xs font-bold text-aura-textMuted">{t.code}</span>
             </div>
             <div className="font-semibold text-aura-textMain">{t.title}</div>
             <div className="text-xs text-aura-textMuted mt-1">{t.description}</div>
+            <div className="mt-3 pt-2 border-t border-aura-borderSubtle/50 text-[11px] text-aura-textMuted">
+              ดาวน์โหลดเป็น PDF
+            </div>
           </button>
         ))}
       </div>
@@ -128,7 +131,7 @@ export function ReportsPage() {
         {(selected === "ts1" || selected === "ts2") && (
           <Field label="เดือนที่ต้องการรายงาน" required>
             <div className="relative">
-              <Calendar className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-aura-textMuted pointer-events-none" />
+              <MSymbol name="calendar_month" className="absolute left-3 top-1/2 -translate-y-1/2 text-[16px] text-aura-textMuted pointer-events-none" />
               <Input
                 type="month"
                 value={month}
@@ -187,14 +190,14 @@ export function ReportsPage() {
         )}
 
         <div className="flex items-center gap-2 text-xs text-aura-textMuted font-thai">
-          <AlertCircle className="w-3 h-3" />
+          <MSymbol name="info" className="text-[12px]" />
           {selected === "repair"
             ? "ใบแจ้งซ่อมนี้เป็นการสร้างเอกสารแบบ standalone — หากต้องการบันทึกในระบบ ให้ใช้ฟอร์มบันทึกประจำวันและเลือก 'ระบบผิดปกติ'"
             : "ข้อมูลมาจาก wastewater.reading ของเดือนที่เลือก — รวมเฉพาะวันที่มีบันทึกจริง"}
         </div>
 
         <Button size="lg" className="w-full" onClick={onDownload}>
-          <Download className="w-4 h-4" /> ดาวน์โหลด PDF
+          <MSymbol name="download" className="text-[18px]" /> ดาวน์โหลด PDF
         </Button>
       </AuraCard>
     </div>

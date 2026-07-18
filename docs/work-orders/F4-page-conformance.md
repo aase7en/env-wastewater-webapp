@@ -1,5 +1,5 @@
 # WO-F4.1–F4.5: Per-page suite conformance (หน้าละ sub-WO — claim แยกได้)
-Status: F4.1–F4.3 done · **F4.4–F4.5 open**
+Status: F4.1–F4.4 done · **F4.5 open**
 Lane/files: `frontend/src/pages/<หน้านั้น>.tsx` — **className/markup เท่านั้น** (logic/hook/state ห้ามแตะ)
 Branch: main (cheap model ทำใน shared tree ได้ — งานไฟล์เดียว commit เร็ว)
 Model tier: **cheap-ok** (glm / sonnet5) — งาน mechanical มี pattern ให้ copy ครบ
@@ -46,6 +46,19 @@ npx playwright test    # ต้อง 8 passed
 ```
 
 ## Checkpoint log
+- [2026-07-18] sonnet5: **F4.4 done** — ReportsPage: icons lucide→MSymbol
+  (FileText→`description`, Download→`download`; `Calendar`/`AlertCircle` not
+  in the map — used `calendar_month`/`info` by semantic fit). Template
+  chooser cards: WO asked for the `AuraCard` component, but it doesn't
+  forward `onClick`/rest props and these cards must stay clickable
+  `<button>`s — kept the existing bordered-button treatment (unchanged,
+  already tested) and only added the small muted meta line at the bottom
+  ("ดาวน์โหลดเป็น PDF", divider + `text-[11px]`) per the
+  `staff_manuals_resources` reference screenshot, instead of forcing the
+  `aura-card` glass/ring chrome onto a selector control. Flagging for
+  fable5 review if the stronger glass-card look is actually wanted — would
+  need `AuraCard` to spread rest props first (out of this WO's file scope).
+  build + E2E 8/8 green. F4.5 Auth is next.
 - [2026-07-18] sonnet5: **F4.3 done** — EquipmentPage: icons lucide→MSymbol.
   Actual icons in file differed from the map above (no `RefreshCw`; status
   used `AlertCircle` not `AlertTriangle` for "cancelled"): Wrench→`build`,
