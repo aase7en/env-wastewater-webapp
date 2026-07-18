@@ -14,8 +14,8 @@ import { cn } from "../lib/utils";
 interface EquipmentRow {
   id: string;
   code: string;
-  name_th: string;
-  name_en: string | null;
+  name_th: string; // aliased from DB column `name` at query time
+  location_id: string | null;
   is_active: boolean;
 }
 
@@ -24,8 +24,8 @@ interface RepairRow {
   equipment_id: string | null;
   cause: string;
   status: "open" | "in_progress" | "resolved" | "cancelled";
-  reported_date: string;
-  resolved_date: string | null;
+  created_at: string;
+  resolved_at: string | null;
 }
 
 /** Status badge style for repair requests. */
@@ -54,11 +54,14 @@ export function EquipmentPage() {
     setError(null);
     try {
       const [eqResp, repResp] = await Promise.all([
-        supabase.from("equipment").select("id, code, name_th, name_en, is_active").order("code"),
+        supabase
+          .from("equipment")
+          .select("id, code, name_th:name, location_id, is_active")
+          .order("code"),
         supabase
           .from("repair_request")
-          .select("id, equipment_id, cause, status, reported_date, resolved_date")
-          .order("reported_date", { ascending: false })
+          .select("id, equipment_id, cause, status, created_at, resolved_at")
+          .order("created_at", { ascending: false })
           .limit(50),
       ]);
       if (eqResp.error) throw eqResp.error;
@@ -141,7 +144,6 @@ export function EquipmentPage() {
                       )}
                     </div>
                     <div className="font-semibold text-aura-textMain font-thai">{eq.name_th}</div>
-                    {eq.name_en && <div className="text-xs text-aura-textMuted">{eq.name_en}</div>}
                   </div>
                   <StatusBadge status={open.length > 0 ? true : false} label={open.length > 0 ? "มีการแจ้งซ่อม" : "ปกติ"} />
                 </div>
@@ -156,7 +158,7 @@ export function EquipmentPage() {
                             <span className="flex items-center gap-1.5 font-semibold font-thai">
                               <MSymbol name={b.icon} className="text-[12px]" /> {b.label}
                             </span>
-                            <span className="font-thai">{thaiDate(r.reported_date)}</span>
+                            <span className="font-thai">{thaiDate(r.created_at)}</span>
                           </div>
                           <p className="font-thai text-aura-textMain">{r.cause}</p>
                         </div>
@@ -190,7 +192,7 @@ export function EquipmentPage() {
                   const b = repairBadge(r.status);
                   return (
                     <tr key={r.id} className="hover:bg-aura-cyan/5">
-                      <td className="px-4 py-2 text-aura-textMain font-thai">{thaiDate(r.reported_date)}</td>
+                      <td className="px-4 py-2 text-aura-textMain font-thai">{thaiDate(r.created_at)}</td>
                       <td className="px-4 py-2">
                         <span className={cn("inline-flex items-center gap-1 px-2 py-0.5 rounded-md text-xs font-thai border", b.color)}>
                           <MSymbol name={b.icon} className="text-[12px]" /> {b.label}

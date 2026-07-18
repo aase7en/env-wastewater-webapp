@@ -67,7 +67,9 @@ export async function fetchReading(id: string): Promise<ReadingDetail> {
 export async function fetchEquipment(): Promise<EquipmentOut[]> {
   const { data, error } = await supabase
     .from("equipment")
-    .select("id, code, name_th, name_en, location_id, is_active")
+    // DB column is `name` (singular, Thai). Map to EquipmentOut.name_th via
+    // supabase-js alias syntax `name_th:name`. name_en stays null (no column).
+    .select("id, code, name_th:name, location_id, is_active")
     .order("code");
   if (error) throw new Error(error.message);
   return (data ?? []) as EquipmentOut[];
@@ -148,11 +150,12 @@ export async function createReading(payload: ReadingCreate): Promise<ReadingDeta
 
   // 3. If abnormal_cause provided, seed a repair_request in the same flow.
   if (abnormal_cause && String(abnormal_cause).trim()) {
+    // repair_request has no `reported_date` column — `created_at` defaults
+    // to now() server-side. Don't send phantom field (silently swallowed).
     const { error: repairErr } = await supabase.from("repair_request").insert({
       reading_id: reading.id,
       cause: abnormal_cause,
       status: "open",
-      reported_date: readingCols.reading_date,
     });
     if (repairErr) {
       // Don't fail the whole create — the reading succeeded; log and continue.
@@ -186,7 +189,6 @@ export async function updateReading(id: string, payload: ReadingUpdate): Promise
       reading_id: id,
       cause: abnormal_cause,
       status: "open",
-      reported_date: new Date().toISOString().slice(0, 10),
     });
   }
 
