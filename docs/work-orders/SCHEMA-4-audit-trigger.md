@@ -20,7 +20,7 @@ Depends on: SCHEMA-1
 
 ## Checkpoint log
 
-### done — 2026-07-17 (zcode) — commit `<TBD>`
+### done — 2026-07-17 (zcode) — commit `ef6989c`
 - **Approach A chosen** (generic function `core.fn_audit_log()` + per-table
   trigger) over per-table inline code. DRY — new tables only need a
   CREATE TRIGGER line. Uses `to_jsonb(NEW)`/`to_jsonb(OLD)` so column-

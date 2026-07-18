@@ -24,7 +24,7 @@ Depends on: SCHEMA-1, SCHEMA-2
 
 ## Checkpoint log
 
-### done — 2026-07-17 (zcode) — commit `<TBD>`
+### done — 2026-07-17 (zcode) — commit `ef6989c`
 - **Approach A chosen** (single UNION ALL VIEW) over MATERIALIZED VIEW (B)
   and parameterized function (C). Reason: PostgREST queryable directly
   via `/rest/v1/v_unified_co2e`, no cron/staleness to manage, data
