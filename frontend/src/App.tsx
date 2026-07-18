@@ -12,6 +12,7 @@ import { NotFoundPage } from "./pages/NotFoundPage";
 import { ReportsPage } from "./pages/ReportsPage";
 import { EquipmentPage } from "./pages/EquipmentPage";
 import { TrendsPage } from "./pages/TrendsPage";
+import { CarbonPage } from "./pages/CarbonPage";
 import { BulkImportPage } from "./pages/BulkImportPage";
 
 export default function App() {
@@ -76,6 +77,14 @@ export default function App() {
                     element={
                       <RequireAuth>
                         <TrendsPage />
+                      </RequireAuth>
+                    }
+                  />
+                  <Route
+                    path="/carbon"
+                    element={
+                      <RequireAuth>
+                        <CarbonPage />
                       </RequireAuth>
                     }
                   />

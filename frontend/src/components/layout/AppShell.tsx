@@ -14,6 +14,7 @@ const NAV = [
   { to: "/form", label: "บันทึกประจำวัน", icon: "edit_note" },
   { to: "/readings", label: "ประวัติ", icon: "history" },
   { to: "/trends", label: "แนวโน้ม", icon: "monitoring" },
+  { to: "/carbon", label: "คาร์บอน", icon: "co2" },
   { to: "/equipment", label: "อุปกรณ์", icon: "medical_services" },
   { to: "/reports", label: "เอกสาร", icon: "description" },
   { to: "/import", label: "นำเข้าข้อมูล", icon: "upload_file", adminOnly: true },
