@@ -1,4 +1,5 @@
 import { Routes, Route, Navigate } from "react-router-dom";
+import { lazy, Suspense } from "react";
 import { AuthProvider } from "./components/AuthProvider";
 import { RequireAuth } from "./components/RequireAuth";
 import { ToastProvider } from "./components/ui/Toast";
@@ -22,6 +23,10 @@ import { BuildingPage } from "./pages/BuildingPage";
 import { SafetyPage } from "./pages/SafetyPage";
 import { FoodPage } from "./pages/FoodPage";
 import { ChemicalPage } from "./pages/ChemicalPage";
+// Lazy-load DBA Console (admin-only, heavy bundle) — keeps main chunk lean.
+const DBAConsolePage = lazy(() =>
+  import("./pages/admin/DBAConsolePage").then((m) => ({ default: m.DBAConsolePage })),
+);
 
 export default function App() {
   return (
@@ -113,6 +118,17 @@ export default function App() {
                   <Route path="/safety" element={<RequireAuth><SafetyPage /></RequireAuth>} />
                   <Route path="/food" element={<RequireAuth><FoodPage /></RequireAuth>} />
                   <Route path="/chemical" element={<RequireAuth><ChemicalPage /></RequireAuth>} />
+                  {/* DBA Console — admin-only, lazy-loaded */}
+                  <Route
+                    path="/admin/db"
+                    element={
+                      <RequireAuth requireAdmin>
+                        <Suspense fallback={<div className="p-8 text-center font-thai text-aura-textMuted">กำลังโหลด DBA Console…</div>}>
+                          <DBAConsolePage />
+                        </Suspense>
+                      </RequireAuth>
+                    }
+                  />
                   <Route path="*" element={<NotFoundPage />} />
                 </Routes>
               </AppShell>
