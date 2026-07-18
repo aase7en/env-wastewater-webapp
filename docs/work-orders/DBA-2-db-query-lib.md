@@ -30,7 +30,7 @@ Depends on: DBA-1
 
 ## Checkpoint log
 
-### done — 2026-07-17 (zcode) — commit `<TBD>`
+### done — 2026-07-17 (zcode) — commit `974b6d6`
 - `frontend/src/lib/admin/db-query.ts` (new, 320 lines)
 - Exports: `isStatementAllowed`, `stripComments`, `runBuilderQuery`,
   `runRawQuery`, `runExplain`, `runQuery` (dispatcher)
