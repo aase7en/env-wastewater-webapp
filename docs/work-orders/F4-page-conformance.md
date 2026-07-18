@@ -1,5 +1,5 @@
 # WO-F4.1–F4.5: Per-page suite conformance (หน้าละ sub-WO — claim แยกได้)
-Status: F4.1–F4.4 done · **F4.5 open**
+Status: **F4.1–F4.5 done** — WO closed
 Lane/files: `frontend/src/pages/<หน้านั้น>.tsx` — **className/markup เท่านั้น** (logic/hook/state ห้ามแตะ)
 Branch: main (cheap model ทำใน shared tree ได้ — งานไฟล์เดียว commit เร็ว)
 Model tier: **cheap-ok** (glm / sonnet5) — งาน mechanical มี pattern ให้ copy ครบ
@@ -46,6 +46,17 @@ npx playwright test    # ต้อง 8 passed
 ```
 
 ## Checkpoint log
+- [2026-07-18] sonnet5: **F4.5 done — WO-F4 closed** — AuthPage: icons
+  lucide→MSymbol (Mail→`mail`, KeyRound→`key`, AlertCircle→`error`,
+  CheckCircle2→`check_circle`, ArrowRight→`arrow_forward` — none of these
+  were in the original map, chosen by semantic fit). Copied `BrandWordmark`
+  function from `AppShell.tsx` into this file (not exported, per WO) — this
+  also fixes a pre-existing brand typo the inline markup had ("-EVN" →
+  correct "-ENV"). Mode tabs (login/register/reset) switched from raw
+  `<button>` to the shared `Button` component (`primary`/`ghost` variant)
+  per "ปุ่ม tab/submit ใช้ Button เดิม"; submit button already used `Button`.
+  `AuraCard` padding bumped to `p-6` per WO. Google/LINE SVG logos
+  untouched. build + E2E 8/8 green.
 - [2026-07-18] sonnet5: **F4.4 done** — ReportsPage: icons lucide→MSymbol
   (FileText→`description`, Download→`download`; `Calendar`/`AlertCircle` not
   in the map — used `calendar_month`/`info` by semantic fit). Template

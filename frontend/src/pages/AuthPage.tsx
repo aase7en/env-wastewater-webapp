@@ -1,12 +1,26 @@
 import { type FormEvent, useState } from "react";
 import { useNavigate, useSearchParams } from "react-router-dom";
-import { Mail, KeyRound, ArrowRight, AlertCircle, CheckCircle2 } from "lucide-react";
 import { AuraCard } from "../components/ui/AuraCard";
 import { Button } from "../components/ui/Button";
 import { Field, Input } from "../components/ui/Input";
+import { MSymbol } from "../components/ui/MSymbol";
 import { useAuth } from "../components/AuthProvider";
+import { cn } from "../lib/utils";
 
 type Mode = "login" | "register" | "reset";
+
+/** Brand lockup — UTH[AI]-ENV with the [AI] neon highlight (suite §1).
+ * Copied from AppShell.tsx's BrandWordmark (F4.5: kept file-local on
+ * purpose, not exported, to avoid widening this page's scope). */
+function BrandWordmark({ className }: { className?: string }) {
+  return (
+    <span className={cn("font-display font-bold tracking-tight", className)}>
+      <span className="text-aura-textMain">UTH</span>
+      <span className="aura-text-gradient">[AI]</span>
+      <span className="text-aura-textMain">-ENV</span>
+    </span>
+  );
+}
 
 export function AuthPage() {
   const { signInWithEmail, signUpWithEmail, resetPassword, signInWithGoogle, signInWithLine } = useAuth();
@@ -51,31 +65,24 @@ export function AuthPage() {
       <div className="w-full max-w-md space-y-4">
         {/* Brand */}
         <div className="text-center">
-          <h1 className="text-3xl font-bold font-display tracking-tight">
-            <span className="text-aura-textMain">UTH</span>
-            <span className="aura-text-gradient">[AI]</span>
-            <span className="text-aura-textMain">-EVN</span>
-          </h1>
+          <h1><BrandWordmark className="text-3xl" /></h1>
           <p className="text-sm text-aura-textMuted font-thai mt-1">ระบบบำบัดน้ำเสีย · โรงพยาบาลอุทัย</p>
         </div>
 
-        <AuraCard className="space-y-4">
+        <AuraCard className="p-6 space-y-4">
           {/* Mode tabs */}
           <div className="flex gap-1 p-1 rounded-xl bg-aura-surfaceHigh/40 border border-aura-borderSubtle">
             {(["login", "register", "reset"] as const).map((m) => (
-              <button
+              <Button
                 key={m}
                 type="button"
+                variant={mode === m ? "primary" : "ghost"}
+                size="sm"
+                className="flex-1 font-thai"
                 onClick={() => { setMode(m); setError(null); setInfo(null); }}
-                className={
-                  "flex-1 px-3 py-2 rounded-lg text-sm font-medium font-thai transition-colors " +
-                  (mode === m
-                    ? "aura-bg-gradient text-aura-bg font-semibold"
-                    : "text-aura-textMuted hover:text-aura-textMain")
-                }
               >
                 {m === "login" ? "เข้าสู่ระบบ" : m === "register" ? "สมัครใหม่" : "ลืมรหัส"}
-              </button>
+              </Button>
             ))}
           </div>
 
@@ -83,7 +90,7 @@ export function AuthPage() {
           <form onSubmit={onSubmit} className="space-y-3">
             <Field label="อีเมล" required htmlFor="email">
               <div className="relative">
-                <Mail className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-aura-textMuted pointer-events-none" />
+                <MSymbol name="mail" className="absolute left-3 top-1/2 -translate-y-1/2 text-[16px] text-aura-textMuted pointer-events-none" />
                 <Input
                   id="email"
                   type="email"
@@ -100,7 +107,7 @@ export function AuthPage() {
             {mode !== "reset" && (
               <Field label="รหัสผ่าน" required htmlFor="password">
                 <div className="relative">
-                  <KeyRound className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-aura-textMuted pointer-events-none" />
+                  <MSymbol name="key" className="absolute left-3 top-1/2 -translate-y-1/2 text-[16px] text-aura-textMuted pointer-events-none" />
                   <Input
                     id="password"
                     type="password"
@@ -117,18 +124,18 @@ export function AuthPage() {
 
             {error && (
               <div className="flex items-start gap-2 rounded-lg p-3 text-sm font-thai bg-alert-red/10 border border-alert-red/40 text-alert-red">
-                <AlertCircle className="w-4 h-4 shrink-0 mt-0.5" /> <span>{error}</span>
+                <MSymbol name="error" className="text-[16px] shrink-0 mt-0.5" /> <span>{error}</span>
               </div>
             )}
             {info && (
               <div className="flex items-start gap-2 rounded-lg p-3 text-sm font-thai bg-alert-green/10 border border-alert-green/40 text-alert-green">
-                <CheckCircle2 className="w-4 h-4 shrink-0 mt-0.5" /> <span>{info}</span>
+                <MSymbol name="check_circle" className="text-[16px] shrink-0 mt-0.5" /> <span>{info}</span>
               </div>
             )}
 
             <Button type="submit" loading={loading} size="lg" className="w-full">
               {mode === "login" ? "เข้าสู่ระบบ" : mode === "register" ? "สมัครสมาชิก" : "ส่งลิงก์รีเซ็ต"}
-              <ArrowRight className="w-4 h-4" />
+              <MSymbol name="arrow_forward" className="text-[16px]" />
             </Button>
           </form>
 
