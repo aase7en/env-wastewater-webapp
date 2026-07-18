@@ -1,6 +1,6 @@
 import { Link, useNavigate } from "react-router-dom";
-import { Plus, RefreshCw, Pencil, FileText } from "lucide-react";
 import { AuraCard } from "../components/ui/AuraCard";
+import { MSymbol } from "../components/ui/MSymbol";
 import { Button } from "../components/ui/Button";
 import { StatusBadge } from "../components/pfd/StatusBadge";
 import { EmptyState } from "../components/ui/EmptyState";
@@ -26,11 +26,11 @@ export function ReadingsListPage() {
         </div>
         <div className="flex gap-2">
           <Button variant="secondary" size="sm" onClick={refresh} loading={loading}>
-            <RefreshCw className="w-4 h-4" /> รีเฟรช
+            <MSymbol name="refresh" className="text-[18px]" /> รีเฟรช
           </Button>
           <Link to="/form">
             <Button size="sm">
-              <Plus className="w-4 h-4" /> เพิ่มรายการ
+              <MSymbol name="add" className="text-[18px]" /> เพิ่มรายการ
             </Button>
           </Link>
         </div>
@@ -49,13 +49,13 @@ export function ReadingsListPage() {
       ) : !data || data.items.length === 0 ? (
         <AuraCard>
           <EmptyState
-            icon={<FileText className="w-8 h-8" />}
+            icon={<MSymbol name="description" className="text-[32px]" />}
             title="ยังไม่มีรายการบันทึก"
             description="เริ่มบันทึกค่าคุณภาพน้ำรายวันของระบบบำบัด — ข้อมูลจะปรากฏที่นี่"
             action={
               <Link to="/form">
                 <Button>
-                  <Plus className="w-4 h-4" /> เพิ่มรายการแรก
+                  <MSymbol name="add" className="text-[18px]" /> เพิ่มรายการแรก
                 </Button>
               </Link>
             }
@@ -66,12 +66,13 @@ export function ReadingsListPage() {
           <div className="overflow-x-auto">
             <table className="w-full text-sm">
               <thead>
-                <tr className="text-left text-aura-textMuted border-b border-aura-borderSubtle">
-                  <th className="px-4 py-3 font-medium font-thai">วันที่</th>
-                  <th className="px-4 py-3 font-medium font-thai">DO เฉลี่ย</th>
-                  <th className="px-4 py-3 font-medium font-thai">pH</th>
-                  <th className="px-4 py-3 font-medium font-thai">Cl อิสระ</th>
-                  <th className="px-4 py-3 font-medium font-thai">สถานะ</th>
+                {/* Suite table-header pattern: small caps labels (fuel-fleet screens) */}
+                <tr className="text-left text-aura-textMuted border-b border-aura-borderSubtle text-[11px] uppercase tracking-wider">
+                  <th className="px-4 py-3 font-bold font-thai">วันที่</th>
+                  <th className="px-4 py-3 font-bold">DO เฉลี่ย</th>
+                  <th className="px-4 py-3 font-bold">pH</th>
+                  <th className="px-4 py-3 font-bold">Cl อิสระ</th>
+                  <th className="px-4 py-3 font-bold font-thai">สถานะ</th>
                   <th className="px-4 py-3 w-10" />
                 </tr>
               </thead>
@@ -88,7 +89,7 @@ export function ReadingsListPage() {
                     <td className="px-4 py-3 font-mono text-aura-textMain">{fmt(r.free_chlorine, 2)}</td>
                     <td className="px-4 py-3"><StatusBadge status={r.system_operating ?? null} /></td>
                     <td className="px-4 py-3 text-right">
-                      <Pencil className="w-4 h-4 text-aura-textMuted inline group-hover:text-aura-cyan transition-colors" />
+                      <MSymbol name="edit" className="text-[16px] text-aura-textMuted group-hover:text-aura-cyan transition-colors" />
                     </td>
                   </tr>
                 ))}

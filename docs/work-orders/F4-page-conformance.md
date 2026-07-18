@@ -1,5 +1,5 @@
 # WO-F4.1–F4.5: Per-page suite conformance (หน้าละ sub-WO — claim แยกได้)
-Status: F4.1 done · F4.2–F4.5 open
+Status: F4.1–F4.2 done · F4.3–F4.5 open
 Lane/files: `frontend/src/pages/<หน้านั้น>.tsx` — **className/markup เท่านั้น** (logic/hook ห้ามแตะ)
 Branch: track-f (fable5) / main (zcode)
 
@@ -17,6 +17,9 @@ Branch: track-f (fable5) / main (zcode)
 เปิดหน้าใน preview ทั้ง 2 theme + 375px; รายงาน DOM/computed-style ยืนยัน token
 
 ## Checkpoint log
+- [2026-07-18] fable5: **F4.2 done** — ReadingsListPage: icons lucide→MSymbol
+  (refresh/add/description/edit), header ตารางเป็น small-caps label style ตาม
+  ตาราง fuel-fleet ใน suite; build + E2E 8/8 เขียว. F4.3 Equipment คือคิวถัดไป
 - [2026-07-18] fable5: **F4.1 done** — sticky submit bar `md:left-56`→`md:left-72`
   (สอดคล้อง sidebar F2), icons lucide→MSymbol (warning/check_circle/delete),
   เพิ่ม QuickChips สี/กลิ่นค่าจริงจาก dataset (สี: น้ำตาลเข้ม/อ่อน; กลิ่น:
