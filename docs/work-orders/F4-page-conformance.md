@@ -1,5 +1,5 @@
 # WO-F4.1–F4.5: Per-page suite conformance (หน้าละ sub-WO — claim แยกได้)
-Status: F4.1–F4.2 done · **F4.3–F4.5 open**
+Status: F4.1–F4.3 done · **F4.4–F4.5 open**
 Lane/files: `frontend/src/pages/<หน้านั้น>.tsx` — **className/markup เท่านั้น** (logic/hook/state ห้ามแตะ)
 Branch: main (cheap model ทำใน shared tree ได้ — งานไฟล์เดียว commit เร็ว)
 Model tier: **cheap-ok** (glm / sonnet5) — งาน mechanical มี pattern ให้ copy ครบ
@@ -46,6 +46,16 @@ npx playwright test    # ต้อง 8 passed
 ```
 
 ## Checkpoint log
+- [2026-07-18] sonnet5: **F4.3 done** — EquipmentPage: icons lucide→MSymbol.
+  Actual icons in file differed from the map above (no `RefreshCw`; status
+  used `AlertCircle` not `AlertTriangle` for "cancelled"): Wrench→`build`,
+  CheckCircle2→`check_circle`, Clock→`schedule`, Plus→`add`,
+  AlertCircle→`cancel` (semantic match to "ยกเลิก" label, not in the
+  original map — flagging for fable5 review). `repairBadge()` now returns
+  an icon *name* string instead of a lucide component reference so both
+  call sites render `<MSymbol name={b.icon} .../>` — presentational-only
+  change, no logic/state touched. Table header → small-caps pattern from
+  ReadingsListPage. build + E2E 8/8 green. F4.4 Reports is next.
 - [2026-07-18] fable5: **F4.2 done** — ReadingsListPage: icons lucide→MSymbol
   (refresh/add/description/edit), header ตารางเป็น small-caps label style ตาม
   ตาราง fuel-fleet ใน suite; build + E2E 8/8 เขียว. F4.3 Equipment คือคิวถัดไป

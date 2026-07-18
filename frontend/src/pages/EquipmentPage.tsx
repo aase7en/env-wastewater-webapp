@@ -1,9 +1,9 @@
 import { useEffect, useState } from "react";
 import { Link } from "react-router-dom";
-import { Wrench, AlertCircle, CheckCircle2, Clock, Plus } from "lucide-react";
 import { AuraCard } from "../components/ui/AuraCard";
 import { Button } from "../components/ui/Button";
 import { EmptyState } from "../components/ui/EmptyState";
+import { MSymbol } from "../components/ui/MSymbol";
 import { Skeleton } from "../components/ui/Skeleton";
 import { StatusBadge } from "../components/pfd/StatusBadge";
 import { supabase } from "../lib/supabase";
@@ -32,13 +32,13 @@ interface RepairRow {
 function repairBadge(status: RepairRow["status"]) {
   switch (status) {
     case "open":
-      return { label: "รอดำเนินการ", icon: Clock, color: "text-alert-amber border-alert-amber/40 bg-alert-amber/10" };
+      return { label: "รอดำเนินการ", icon: "schedule", color: "text-alert-amber border-alert-amber/40 bg-alert-amber/10" };
     case "in_progress":
-      return { label: "กำลังซ่อม", icon: Wrench, color: "text-aura-cyan border-aura-cyan/40 bg-aura-cyan/10" };
+      return { label: "กำลังซ่อม", icon: "build", color: "text-aura-cyan border-aura-cyan/40 bg-aura-cyan/10" };
     case "resolved":
-      return { label: "ซ่อมเสร็จ", icon: CheckCircle2, color: "text-alert-green border-alert-green/40 bg-alert-green/10" };
+      return { label: "ซ่อมเสร็จ", icon: "check_circle", color: "text-alert-green border-alert-green/40 bg-alert-green/10" };
     case "cancelled":
-      return { label: "ยกเลิก", icon: AlertCircle, color: "text-aura-textMuted border-aura-borderSubtle bg-aura-surfaceHigh/40" };
+      return { label: "ยกเลิก", icon: "cancel", color: "text-aura-textMuted border-aura-borderSubtle bg-aura-surfaceHigh/40" };
   }
 }
 
@@ -101,7 +101,7 @@ export function EquipmentPage() {
         </div>
         <Link to="/reports">
           <Button size="sm" variant="secondary">
-            <Plus className="w-4 h-4" /> สร้างใบแจ้งซ่อม
+            <MSymbol name="add" className="text-[18px]" /> สร้างใบแจ้งซ่อม
           </Button>
         </Link>
       </header>
@@ -121,7 +121,7 @@ export function EquipmentPage() {
       ) : equipment.length === 0 ? (
         <AuraCard>
           <EmptyState
-            icon={<Wrench className="w-8 h-8" />}
+            icon={<MSymbol name="build" className="text-[32px]" />}
             title="ยังไม่มีอุปกรณ์ในระบบ"
             description="อุปกรณ์ถูก seed ผ่าน migration — หากเห็นหน้านี้ แสดงว่ายังไม่ได้รัน migration P2"
           />
@@ -150,12 +150,11 @@ export function EquipmentPage() {
                   <div className="space-y-2 pt-2 border-t border-aura-borderSubtle/50">
                     {open.map((r) => {
                       const b = repairBadge(r.status);
-                      const Icon = b.icon;
                       return (
                         <div key={r.id} className={cn("rounded-lg border px-3 py-2 text-xs", b.color)}>
                           <div className="flex items-center justify-between mb-1">
                             <span className="flex items-center gap-1.5 font-semibold font-thai">
-                              <Icon className="w-3 h-3" /> {b.label}
+                              <MSymbol name={b.icon} className="text-[12px]" /> {b.label}
                             </span>
                             <span className="font-thai">{thaiDate(r.reported_date)}</span>
                           </div>
@@ -180,22 +179,21 @@ export function EquipmentPage() {
           <div className="overflow-x-auto">
             <table className="w-full text-sm">
               <thead>
-                <tr className="text-left text-aura-textMuted border-b border-aura-borderSubtle">
-                  <th className="px-4 py-2 font-medium font-thai">วันที่แจ้ง</th>
-                  <th className="px-4 py-2 font-medium font-thai">สถานะ</th>
-                  <th className="px-4 py-2 font-medium font-thai">สาเหตุ</th>
+                <tr className="text-left text-aura-textMuted border-b border-aura-borderSubtle text-[11px] uppercase tracking-wider">
+                  <th className="px-4 py-3 font-bold font-thai">วันที่แจ้ง</th>
+                  <th className="px-4 py-3 font-bold font-thai">สถานะ</th>
+                  <th className="px-4 py-3 font-bold font-thai">สาเหตุ</th>
                 </tr>
               </thead>
               <tbody className="divide-y divide-aura-borderSubtle/50">
                 {repairs.slice(0, 15).map((r) => {
                   const b = repairBadge(r.status);
-                  const Icon = b.icon;
                   return (
                     <tr key={r.id} className="hover:bg-aura-cyan/5">
                       <td className="px-4 py-2 text-aura-textMain font-thai">{thaiDate(r.reported_date)}</td>
                       <td className="px-4 py-2">
                         <span className={cn("inline-flex items-center gap-1 px-2 py-0.5 rounded-md text-xs font-thai border", b.color)}>
-                          <Icon className="w-3 h-3" /> {b.label}
+                          <MSymbol name={b.icon} className="text-[12px]" /> {b.label}
                         </span>
                       </td>
                       <td className="px-4 py-2 text-aura-textMain font-thai max-w-md truncate">{r.cause}</td>
