@@ -35,7 +35,7 @@ Depends on: SCHEMA-1 (core schema), SCHEMA-4 (audit_log trigger)
 
 ## Checkpoint log
 
-### done — 2026-07-17 (zcode) — commit `<TBD>`
+### done — 2026-07-17 (zcode) — commit `4d262fd`
 - Migration `20260719000004_dba_saved_query.sql` applied live 13/13 OK
 - 3 RLS policies: owner_all (created_by = auth.uid()), shared_read
   (is_shared=true, SELECT FOR authenticated), admin_all (admin role full)

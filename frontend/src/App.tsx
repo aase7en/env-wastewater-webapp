@@ -14,6 +14,14 @@ import { EquipmentPage } from "./pages/EquipmentPage";
 import { TrendsPage } from "./pages/TrendsPage";
 import { CarbonPage } from "./pages/CarbonPage";
 import { BulkImportPage } from "./pages/BulkImportPage";
+import { WaterSupplyPage } from "./pages/WaterSupplyPage";
+import { GarbagePage } from "./pages/GarbagePage";
+import { FuelPage } from "./pages/FuelPage";
+import { GardenPage } from "./pages/GardenPage";
+import { BuildingPage } from "./pages/BuildingPage";
+import { SafetyPage } from "./pages/SafetyPage";
+import { FoodPage } from "./pages/FoodPage";
+import { ChemicalPage } from "./pages/ChemicalPage";
 
 export default function App() {
   return (
@@ -96,6 +104,15 @@ export default function App() {
                       </RequireAuth>
                     }
                   />
+                  {/* v2 multi-domain modules (Wave 3 -a skeletons) */}
+                  <Route path="/water-supply" element={<RequireAuth><WaterSupplyPage /></RequireAuth>} />
+                  <Route path="/garbage" element={<RequireAuth><GarbagePage /></RequireAuth>} />
+                  <Route path="/fuel" element={<RequireAuth><FuelPage /></RequireAuth>} />
+                  <Route path="/garden" element={<RequireAuth><GardenPage /></RequireAuth>} />
+                  <Route path="/building" element={<RequireAuth><BuildingPage /></RequireAuth>} />
+                  <Route path="/safety" element={<RequireAuth><SafetyPage /></RequireAuth>} />
+                  <Route path="/food" element={<RequireAuth><FoodPage /></RequireAuth>} />
+                  <Route path="/chemical" element={<RequireAuth><ChemicalPage /></RequireAuth>} />
                   <Route path="*" element={<NotFoundPage />} />
                 </Routes>
               </AppShell>

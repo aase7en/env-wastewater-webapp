@@ -38,7 +38,7 @@ export interface ChemicalMovement {
 }
 
 export type ChemicalMasterInput = Omit<ChemicalMaster, "id" | "current_balance" | "created_at">;
-export type ChemicalMovementInput = Omit<ChemicalMovement, "id" | "balance_after" | "recorded_by" | "created_at">;
+export type ChemicalMovementInput = Omit<ChemicalMovement, "id" | "recorded_by" | "created_at">;
 
 const MASTER_COLS =
   "id, name, cas_no, hazard_class, unit, reorder_point, current_balance, is_active, created_at";
@@ -91,6 +91,11 @@ export async function createChemicalMovement(input: ChemicalMovementInput): Prom
     .single();
   if (error) throw new Error(error.message);
   return data as ChemicalMovement;
+}
+
+export async function deleteChemicalMovement(id: string): Promise<void> {
+  const { error } = await supabase.from("movement").delete().eq("id", id);
+  if (error) throw new Error(error.message);
 }
 
 // ─── Hooks ───────────────────────────────────────────────────────────────
