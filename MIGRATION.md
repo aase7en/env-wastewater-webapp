@@ -286,6 +286,7 @@ binding rules are here.
 | Chunk | Agent | Claimed | Scope (files) |
 |---|---|---|---|
 | MOD-WS/WA/FU/GA/BL/FS/FO/CH module -a batches | zcode | 2026-07-17 | column extensions + lib/*.ts + pages/*.tsx skeletons — see `docs/work-orders/MOD-*.md` |
+| WO-V2b carbon page | fable5 | 2026-07-18 | `frontend/src/pages/CarbonPage.tsx` (new), `/carbon` route in `App.tsx` (rule 8 — heads-up Z: expect trivial App.tsx merge with MOD skeleton routes), nav item in `AppShell.tsx` — see `docs/work-orders/V2b-carbon-page.md` |
 
 > **Phase 2 (Wave 1) is live** — chunks are defined in `docs/work-orders/`:
 > V1a/b ใบแจ้งซ่อม · V2a/b Carbon page · V3a/b Notification bell ·
