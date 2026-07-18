@@ -1,19 +1,31 @@
+import { useState } from "react";
 import { Zap, Droplets, Activity, Calendar } from "lucide-react";
 import { useDashboard, useReadings } from "../lib/hooks";
+import { useAuth } from "../components/AuthProvider";
 import { ProcessFlowDiagram } from "../components/pfd/ProcessFlowDiagram";
 import { KpiTile } from "../components/KpiTile";
 import { StatusBadge } from "../components/pfd/StatusBadge";
 import { AuraCard } from "../components/ui/AuraCard";
 import { Button } from "../components/ui/Button";
+import { MSymbol } from "../components/ui/MSymbol";
+import { RepairRequestModal } from "../components/repair/RepairRequestModal";
 import { fmt, thaiDate } from "../lib/utils";
 
 export function DashboardPage() {
   const { data: rows, loading, error, refresh } = useDashboard(14);
   const { data: readings } = useReadings(14);
+  const { isAuthenticated } = useAuth();
+  const [repairOpen, setRepairOpen] = useState(false);
 
   const today = rows[0]; // newest first
   const daysNormal = rows.filter((r) => r.system_operating === false).length;
   const daysDischarged = rows.filter((r) => r.wastewater_discharged === true).length;
+  // แจ้งเหตุผิดปกติ button appears only for a REAL abnormal/alerting state
+  // (no fake-actuation; SPEC §6 flow → core.repair_request).
+  const attention =
+    !!today &&
+    (today.system_operating === false ||
+      !!today.do_alert || !!today.ph_alert || !!today.chlorine_alert);
 
   return (
     <div className="space-y-6 max-w-6xl mx-auto">
@@ -29,10 +41,19 @@ export function DashboardPage() {
             {today?.reading_date && <> · บันทึกล่าสุด {thaiDate(today.reading_date)}</>}
           </p>
         </div>
-        <Button variant="secondary" size="sm" onClick={refresh} loading={loading}>
-          รีเฟรช
-        </Button>
+        <div className="flex gap-2">
+          {attention && isAuthenticated && (
+            <Button variant="danger" size="sm" onClick={() => setRepairOpen(true)}>
+              <MSymbol name="build" className="text-[18px]" /> แจ้งเหตุผิดปกติ
+            </Button>
+          )}
+          <Button variant="secondary" size="sm" onClick={refresh} loading={loading}>
+            รีเฟรช
+          </Button>
+        </div>
       </header>
+
+      <RepairRequestModal open={repairOpen} onClose={() => setRepairOpen(false)} />
 
       {/* Loading / error */}
       {loading && <div className="text-aura-textMuted font-thai">กำลังโหลด…</div>}
