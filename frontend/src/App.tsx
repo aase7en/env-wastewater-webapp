@@ -26,6 +26,8 @@ import { FoodPage } from "./pages/FoodPage";
 import { ChemicalPage } from "./pages/ChemicalPage";
 import { RegulationsPage } from "./pages/RegulationsPage";
 import { CarbonRollupPage } from "./pages/CarbonRollupPage";
+import { PDFDesignerPage } from "./pages/PDFDesignerPage";
+import { AttachmentsPage } from "./pages/AttachmentsPage";
 // Lazy-load DBA Console (admin-only, heavy bundle) — keeps main chunk lean.
 const DBAConsolePage = lazy(() =>
   import("./pages/admin/DBAConsolePage").then((m) => ({ default: m.DBAConsolePage })),
@@ -148,6 +150,8 @@ export default function App() {
                       </RequireAuth>
                     }
                   />
+                  <Route path="/pdf-designer" element={<RequireAuth requireAdmin><PDFDesignerPage /></RequireAuth>} />
+                  <Route path="/attachments" element={<RequireAuth><AttachmentsPage /></RequireAuth>} />
                   <Route path="*" element={<NotFoundPage />} />
                 </Routes>
               </AppShell>

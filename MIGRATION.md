@@ -285,7 +285,6 @@ binding rules are here.
 
 | Chunk | Agent | Claimed | Scope (files) |
 |---|---|---|---|
-| IMP-1/2/3 + PDF-1/2/3 + DOC-3 | zcode | 2026-07-17 | `lib/import-engine.ts`, `lib/import-adapters/*`, `lib/pdf-template.ts`, `lib/print.ts`, `lib/attachments.ts` + pages + deps — see roadmap Wave 4/6 |
 | F4.3 EquipmentPage conformance | sonnet5 | 2026-07-18 | `frontend/src/pages/EquipmentPage.tsx` — see `docs/work-orders/F4-page-conformance.md` |
 
 > **Phase 2 (Wave 1) is live** — chunks are defined in `docs/work-orders/`:
