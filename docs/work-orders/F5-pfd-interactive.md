@@ -1,5 +1,5 @@
 # WO-F5: PFD interactive drill-down
-Status: open
+Status: in_progress (logic-half only, zcode substituting sonnet) — claim `<TBD>`
 Lane/files: `frontend/src/components/pfd/ProcessFlowDiagram.tsx` เท่านั้น
 Branch: main
 Model tier: **mid** (opus4.8 — reasoning ปานกลาง, spec ปิดช่องแล้ว)
