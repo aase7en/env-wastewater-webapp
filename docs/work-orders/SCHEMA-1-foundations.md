@@ -23,7 +23,7 @@ Branch: main (env-wastewater-webapp) / sync-env-schema-v2 (A-Wiki)
 
 ## Checkpoint log
 
-### done — 2026-07-17 (zcode) — commit `<TBD>`
+### done — 2026-07-17 (zcode) — commit `c639b67`
 - **Migration applied live** via Management API (`20260719000000_v2_schemas.sql`):
   - 56/58 statements OK; 2 FAIL (food.lab_test comment split on `;`
     inside comment text — known splitter bug). All actual DDL + RLS +
