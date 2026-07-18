@@ -2,6 +2,7 @@ import { type ReactNode } from "react";
 import { Link, useLocation } from "react-router-dom";
 import { useAuth } from "../AuthProvider";
 import { MSymbol } from "../ui/MSymbol";
+import { NotificationBell } from "../ui/NotificationBell";
 import { ThemeToggle } from "../ui/ThemeToggle";
 import { cn } from "../../lib/utils";
 
@@ -133,9 +134,12 @@ export function AppShell({ children }: { children: ReactNode }) {
           <span className="font-display font-extrabold text-sm aura-text-gradient tracking-tight">
             UTH[AI]-ENV
           </span>
-          <span className="text-xs text-aura-textMuted font-thai">
-            ระบบติดตามบ่อบำบัดน้ำเสีย
-          </span>
+          <div className="flex items-center gap-4">
+            <span className="text-xs text-aura-textMuted font-thai">
+              ระบบติดตามบ่อบำบัดน้ำเสีย
+            </span>
+            <NotificationBell />
+          </div>
         </header>
 
         {/* Mobile top bar: brand + icon nav + toggle */}
@@ -160,6 +164,7 @@ export function AppShell({ children }: { children: ReactNode }) {
               </Link>
             ))}
           </nav>
+          <NotificationBell className="shrink-0" />
           <ThemeToggle className="shrink-0" />
         </header>
 
