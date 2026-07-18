@@ -285,7 +285,7 @@ binding rules are here.
 
 | Chunk | Agent | Claimed | Scope (files) |
 |---|---|---|---|
-| _(none — claim here before starting; see docs/work-orders/)_ | | | |
+| SCHEMA-2 emission factors (Scope 1+2+3) | zcode | 2026-07-17 | `supabase/migrations/20260719000001_v2_emission_factors.sql` — see `docs/work-orders/SCHEMA-2-emission-factors.md` |
 
 > **Phase 2 (Wave 1) is live** — chunks are defined in `docs/work-orders/`:
 > V1a/b ใบแจ้งซ่อม · V2a/b Carbon page · V3a/b Notification bell ·
