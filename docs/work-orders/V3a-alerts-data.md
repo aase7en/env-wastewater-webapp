@@ -14,7 +14,7 @@ insert แถวทดสอบใน staging table → hook คืนแถว 
 
 ## Checkpoint log
 
-### done — 2026-07-17 (zcode) — commit `<TBD>`
+### done — 2026-07-17 (zcode) — commit `02f8e3a`
 - **Schema gap found + fixed**: P17 `wastewater.threshold_alert` had
   only `notified_at` (webhook-push status) and no concept of "user has
   seen it in the UI". Also RLS was disabled with no policies →
