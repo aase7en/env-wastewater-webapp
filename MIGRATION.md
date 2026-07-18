@@ -285,11 +285,14 @@ binding rules are here.
 
 | Chunk | Agent | Claimed | Scope (files) |
 |---|---|---|---|
+| SCHEMA-5 | zcode (รอ dispatch) | 2026-07-19 | `supabase/migrations/*_schema5_rest_exposure.sql` + `frontend/src/lib/attachments.ts:51` |
 
-> **Track Z rolling roadmap CLOSED 2026-07-19.** No open Z claims. Resume
-> guidance + remaining work + model routing lives in
-> `docs/handoff/2026-07-19-track-z-complete.md`. Open WOs (`F5`, `F6`) are
-> Track F scope (Sonnet 5). Everything else is P3 deferred / P4 idea.
+> **Reopened 2026-07-19 (Fable5 review): P0 `SCHEMA-5-rest-exposure`** — ทุก
+> `.from()` ใน frontend 404 (PGRST205) เพราะ `public` schema ว่างเปล่าและไม่
+> expose domain schemas. Fix spec + DDL verbatim ครบใน
+> `docs/work-orders/SCHEMA-5-rest-exposure.md` (cheap-ok → GLM).
+> ผล review เต็มอยู่ท้าย `docs/handoff/2026-07-19-track-z-complete.md`.
+> Track Z chunks อื่นปิดหมดตามเดิม; F5/F6 เป็น Track F scope (Sonnet 5).
 
 > **Phase 2 (Wave 1) is live** — chunks are defined in `docs/work-orders/`:
 > V1a/b ใบแจ้งซ่อม · V2a/b Carbon page · V3a/b Notification bell ·

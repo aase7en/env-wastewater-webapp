@@ -123,3 +123,27 @@
 ---
 
 **จบ Track Z สำหรับตอนนี้.** ส่งต่อให้ Fable5 ตรวจ diff รอบนี้, และ Sonnet 5 รับ F5/F6.
+
+---
+
+## Fable5 review — 2026-07-19 (ตรวจ commits `cf83876`, `7c7159a`, `8c81f15`, `892fa17`)
+
+| ข้อตรวจ | ผล |
+|---|---|
+| B2 alias `name_th:name` | ✅ ถูกต้องระดับ schema — ตรวจกับ DB จริง: `core.equipment` = `id, code, name, location_id, is_active, created_at` และ `core.repair_request` = `..., created_at, resolved_at` (phantom `reported_date`/`resolved_date`/`name_en` ยืนยันว่าไม่มีจริง) **แต่ runtime ยัง 404 — ดู P0 ข้างล่าง** |
+| B3 success toast | ✅ ผ่าน — pure logic `toast("success", "ลบแล้ว")` 9 จุด/8 ไฟล์, ไม่มี className แม้แต่ตัวเดียว, อยู่ใน Z scope |
+| B4 handoff doc | ✅ โครง + scope + กติกาใช้ได้ / ⚠️ 3 จุด: (1) "Track Z COMPLETE" เกินความจริง — data path ตายทั้งแอป (P0 ข้างล่าง), (2) F4.3–F4.5 จริง ๆ land บน `main` ตรง ไม่ใช่ผ่าน `track-f` worktree, (3) จ่าย F5/F6 (tier `mid`=Opus4.8 ตามตาราง README) ให้ Sonnet 5 — ยอมรับได้ตามหลัก cost-first (เริ่มถูกก่อน escalate เมื่อติด) แต่ควรระบุว่าตั้งใจ downgrade |
+| Regression EquipmentPage / DailyForm | ✅ ไม่มี — DailyFormPage + components/repair ไม่ถูกแตะใน 4 commits; merged head `npm run build` ผ่าน + Playwright 8/8 |
+| cf83876 hash backfill | ✅ ทุก hash ที่เติม (4d262fd, 974b6d6, 6f71b13, c639b67, eb03084, ef6989c) มีจริงใน history |
+
+### 🚨 P0 — REST data path ตายทั้งแอป (พบระหว่าง review; **ไม่ได้เกิดจาก 4 commits นี้** — เป็นมาตั้งแต่แรก)
+
+- PostgREST expose แค่ `public, graphql_public` แต่ **`public` schema ว่างเปล่า** (0 tables, 0 views) — ตารางจริงอยู่ 11 domain schemas
+- ทุก `supabase.from()` ใน frontend (33 relations) → **HTTP 404 `PGRST205`** — พิสูจน์: curl `rest/v1/equipment` → PGRST205; `Accept-Profile: core` → PGRST106 "Only the following schemas are exposed: public, graphql_public"
+- `.rpc()` 3 ตัว (`admin_run_query`, `admin_explain`, `increment_saved_query_run`) อยู่ `public` → ใช้ได้ ไม่กระทบ
+- ของแถมที่เจอ: phantom `.from("attachments")` (ตารางจริง `core.attachment` — `lib/attachments.ts:51`), phantom `.from("carbon_reading")` (ไม่มีตารางชื่อนี้), policy หาย 4 ตาราง (`app_user`/`attachment`/`location`/`personnel` — RLS on แต่ 0 policy = deny-all), RLS ปิดอยู่ 2 ตาราง (`wastewater.sensor`, `sensor_reading`)
+- **Root cause**: Track Z verify ผ่าน SQL ตรง (MCP) + `npm run build` + smoke test ที่ไม่ login — ไม่เคยยิง authenticated REST query จริงแม้แต่ครั้งเดียว. บทเรียน: ทุก WO ฝั่ง data ต้องมี verify ระดับ REST/curl ไม่ใช่แค่ SQL
+- **Fix spec เขียนเสร็จแล้ว (Fable5 design, DDL verbatim ให้ครบ): `docs/work-orders/SCHEMA-5-rest-exposure.md`** — public façade views + `security_invoker` + grants + แก้ 1 บรรทัด. Tier: cheap-ok → **dispatch GLM ได้เลย**
+- สรุป B2: **ผ่านแบบมีเงื่อนไข** — จะประทับ Verified เต็มเมื่อ SCHEMA-5 ลงแล้ว curl alias คืน 200 + rows
+
+*Reviewed by Fable5, 2026-07-19 — build ✅ · Playwright 8/8 ✅ · DB audit ✅ · REST probe ❌ (→ SCHEMA-5)*
