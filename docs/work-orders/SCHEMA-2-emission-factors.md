@@ -1,5 +1,5 @@
 # WO-SCHEMA-2: carbon.emission_factor master rows (Scope 1+2+3)
-Status: done (2026-07-17, zcode) — commit `<TBD>`
+Status: done (2026-07-17, zcode) — commit `eb03084`
 Lane/files: `supabase/migrations/20260719000001_v2_emission_factors.sql` เท่านั้น
 Branch: main
 Depends on: SCHEMA-1

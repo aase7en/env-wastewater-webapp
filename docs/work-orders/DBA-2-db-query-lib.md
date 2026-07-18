@@ -1,5 +1,5 @@
 # WO-DBA-2: lib/admin/db-query.ts — whitelist + RLS-bounded execution
-Status: done (2026-07-17, zcode) — commit `<TBD>`
+Status: done (2026-07-17, zcode) — commit `974b6d6`
 Lane/files: `frontend/src/lib/admin/db-query.ts` (new) เท่านั้น
 Branch: main
 Depends on: DBA-1

@@ -1,5 +1,5 @@
 # WO-DBA-3: admin_run_query + admin_explain PG functions (defense in depth)
-Status: done (2026-07-17, zcode) — commit `<TBD>`
+Status: done (2026-07-17, zcode) — commit `6f71b13`
 Lane/files: `supabase/migrations/20260719000005_dba3_admin_fn.sql` เท่านั้น (PG function แทน Edge Function — see decision below)
 Lane/files: `supabase/functions/admin-query/index.ts` (new) เท่านอร์ only
 Branch: main

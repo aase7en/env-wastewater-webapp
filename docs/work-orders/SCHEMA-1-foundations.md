@@ -1,5 +1,5 @@
 # WO-SCHEMA-1: v2 multi-domain foundations
-Status: done (2026-07-17, zcode) — commit `<TBD>`
+Status: done (2026-07-17, zcode) — commit `c639b67`
 Lane/files: `supabase/migrations/20260719000000_v2_schemas.sql` (new) + WO skeleton files for Wave 2/3 + A-Wiki schema-doc cross-repo sync
 Branch: main (env-wastewater-webapp) / sync-env-schema-v2 (A-Wiki)
 

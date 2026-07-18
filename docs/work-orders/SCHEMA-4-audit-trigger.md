@@ -1,5 +1,5 @@
 # WO-SCHEMA-4: generic audit_log trigger
-Status: done (2026-07-17, zcode) — commit `<TBD>`
+Status: done (2026-07-17, zcode) — commit `ef6989c`
 Lane/files: `supabase/migrations/20260719000003_v2_audit_trigger.sql` เท่านั้น
 Branch: main
 Depends on: SCHEMA-1

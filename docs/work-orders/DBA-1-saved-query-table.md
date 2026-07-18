@@ -1,5 +1,5 @@
 # WO-DBA-1: core.saved_query table (DBA console foundation)
-Status: done (2026-07-17, zcode) — commit `<TBD>`
+Status: done (2026-07-17, zcode) — commit `4d262fd`
 Lane/files: `supabase/migrations/<ts>_v2_saved_query.sql` เท่านั้น
 Branch: main
 Depends on: SCHEMA-1 (core schema), SCHEMA-4 (audit_log trigger)

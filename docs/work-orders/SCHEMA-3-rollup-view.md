@@ -1,5 +1,5 @@
 # WO-SCHEMA-3: cross-schema carbon rollup view
-Status: done (2026-07-17, zcode) — commit `<TBD>`
+Status: done (2026-07-17, zcode) — commit `ef6989c`
 Lane/files: `supabase/migrations/20260719000002_v2_unified_rollup.sql` เท่านั้น
 Branch: main
 Depends on: SCHEMA-1, SCHEMA-2
