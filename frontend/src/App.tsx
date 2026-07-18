@@ -23,6 +23,8 @@ import { BuildingPage } from "./pages/BuildingPage";
 import { SafetyPage } from "./pages/SafetyPage";
 import { FoodPage } from "./pages/FoodPage";
 import { ChemicalPage } from "./pages/ChemicalPage";
+import { RegulationsPage } from "./pages/RegulationsPage";
+import { CarbonRollupPage } from "./pages/CarbonRollupPage";
 // Lazy-load DBA Console (admin-only, heavy bundle) — keeps main chunk lean.
 const DBAConsolePage = lazy(() =>
   import("./pages/admin/DBAConsolePage").then((m) => ({ default: m.DBAConsolePage })),
@@ -121,6 +123,8 @@ export default function App() {
                   <Route path="/safety" element={<RequireAuth><SafetyPage /></RequireAuth>} />
                   <Route path="/food" element={<RequireAuth><FoodPage /></RequireAuth>} />
                   <Route path="/chemical" element={<RequireAuth><ChemicalPage /></RequireAuth>} />
+                  <Route path="/regulations" element={<RequireAuth><RegulationsPage /></RequireAuth>} />
+                  <Route path="/carbon-rollup" element={<RequireAuth><CarbonRollupPage /></RequireAuth>} />
                   {/* DBA Console — admin-only, lazy-loaded */}
                   <Route
                     path="/admin/db"
