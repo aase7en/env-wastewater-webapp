@@ -1,7 +1,9 @@
+import { useState } from "react";
 import { Gauge } from "./Gauge";
 import { AerationTank } from "./AerationTank";
 import { StatusBadge } from "./StatusBadge";
 import { AuraCard } from "../ui/AuraCard";
+import { fmt } from "../../lib/utils";
 import type { DashboardRow } from "../../lib/types";
 
 /**
@@ -11,8 +13,16 @@ import type { DashboardRow } from "../../lib/types";
  *
  * Aura Edition: glass card with neon cyan flow line + dark stage nodes that
  * glow per stage color.
+ *
+ * F5 interactive (logic half — zcode substituting Sonnet 2026-07-19): click
+ * or keyboard-activate a stage node → panel under the diagram shows that
+ * stage's fields + 1-line description. Click the same node again = close.
+ * Aria/role wired for keyboard users. Visual className polish (selected-ring
+ * token swap, micro-anim) is intentionally deferred to Track F.
  */
 export function ProcessFlowDiagram({ row }: { row: DashboardRow | undefined }) {
+  const [selected, setSelected] = useState<string | null>(null);
+
   if (!row) {
     return (
       <AuraCard>
@@ -26,6 +36,14 @@ export function ProcessFlowDiagram({ row }: { row: DashboardRow | undefined }) {
   const attention =
     row.system_operating === false ||
     !!row.do_alert || !!row.ph_alert || !!row.chlorine_alert;
+
+  // Stage values are accessed by key via a Record helper because several
+  // fields (do_aeration, sv30, chlorine_used, do_before_discharge, …) are
+  // part of the data feed but not yet on the DashboardRow type. Treat the
+  // row as a string-keyed bag so missing fields render as "—".
+  const r = row as unknown as Record<string, number | string | null | undefined>;
+  const num = (k: string): number | string | null | undefined => r[k];
+  const selectedStage = STAGES.find((s) => s.key === selected) ?? null;
 
   return (
     <AuraCard aura={attention ? "animated" : "static"}>
@@ -47,22 +65,72 @@ export function ProcessFlowDiagram({ row }: { row: DashboardRow | undefined }) {
         <path d="M 40 80 L 760 80" fill="none" stroke="url(#pfd-flow-grad)" strokeWidth="6"
           className="pfd-flow-line" opacity="0.85" />
 
-        {/* Stage nodes — theme surface fill with stage-colored stroke + glow */}
-        {STAGES.map((s, i) => (
-          <g key={s.key} transform={`translate(${80 + i * 160}, 80)`}>
-            <circle r="26" strokeWidth="3"
-              style={{
-                fill: "rgb(var(--aura-surface-high))",
-                stroke: s.color,
-                filter: `drop-shadow(0 0 4px ${s.glow})`,
-              }} />
-            <text textAnchor="middle" y="-32" className="fill-aura-textMain font-thai"
-              style={{ fontSize: 11, fontWeight: 600 }}>
-              {s.label}
-            </text>
-          </g>
-        ))}
+        {/* Stage nodes — theme surface fill with stage-colored stroke + glow.
+            F5: each <g> is focusable + clickable; selected node stroke is thicker.
+            Track F will swap the static strokeWidth delta for a token-driven ring. */}
+        {STAGES.map((s, i) => {
+          const isSelected = selected === s.key;
+          return (
+            <g
+              key={s.key}
+              transform={`translate(${80 + i * 160}, 80)`}
+              tabIndex={0}
+              role="button"
+              aria-label={`${s.label}: ${s.description}`}
+              aria-pressed={isSelected}
+              onClick={() => setSelected((cur) => (cur === s.key ? null : s.key))}
+              onKeyDown={(e) => {
+                if (e.key === "Enter" || e.key === " ") {
+                  e.preventDefault();
+                  setSelected((cur) => (cur === s.key ? null : s.key));
+                }
+              }}
+              style={{ cursor: "pointer", outline: "none" }}
+            >
+              <circle r="26" strokeWidth={isSelected ? 5 : 3}
+                style={{
+                  fill: "rgb(var(--aura-surface-high))",
+                  stroke: s.color,
+                  filter: `drop-shadow(0 0 4px ${s.glow})`,
+                }} />
+              <text textAnchor="middle" y="-32" className="fill-aura-textMain font-thai"
+                style={{ fontSize: 11, fontWeight: 600 }}>
+                {s.label}
+              </text>
+            </g>
+          );
+        })}
       </svg>
+
+      {/* F5 interactive: selected-stage panel (logic half — markup copied from
+          CarbonPage KPI row. className polish deferred to Track F.) */}
+      {selectedStage && (
+        <div className="mt-4 p-4 rounded-xl border border-aura-borderSubtle bg-aura-surfaceHigh/40">
+          <div className="flex items-baseline justify-between mb-3">
+            <h3 className="font-display font-semibold text-aura-textMain font-thai">
+              {selectedStage.label}
+            </h3>
+            <span className="text-xs text-aura-textMuted font-thai">
+              {selectedStage.description}
+            </span>
+          </div>
+          <div className="grid grid-cols-2 sm:grid-cols-3 gap-3">
+            {selectedStage.fields.map((f) => (
+              <div key={f.key} className="flex flex-col">
+                <span className="text-[11px] uppercase tracking-wider font-bold text-aura-textMuted font-thai">
+                  {f.label}
+                </span>
+                <span className="mt-1 text-2xl font-display font-bold text-aura-textMain tabular-nums">
+                  {fmt(num(f.key) ?? null, f.digits)}
+                  {f.unit && (
+                    <span className="text-xs font-normal text-aura-textMuted ml-1">{f.unit}</span>
+                  )}
+                </span>
+              </div>
+            ))}
+          </div>
+        </div>
+      )}
 
       {/* Gauges row — DO at 3 stages + pH + free chlorine */}
       <div className="grid grid-cols-2 md:grid-cols-5 gap-4 mt-4 place-items-center">
@@ -84,12 +152,67 @@ export function ProcessFlowDiagram({ row }: { row: DashboardRow | undefined }) {
 // (blue water, teal aeration, navy sediment, amber chlorine, green discharge).
 // Aeration uses the theme accent token so it stays readable in light mode;
 // the rest are legible on both themes as-is.
+//
+// F5: each stage carries its field list (key → label + unit + digits) and a
+// one-line description shown in the panel. Fields not yet on DashboardRow
+// are read via the Record helper — missing values render as "—".
 const STAGES = [
-  { key: "screening", label: "ตะแกรง", color: "#94a3b8", glow: "rgba(148,163,184,0.65)" },
-  { key: "aeration", label: "เติมอากาศ", color: "rgb(var(--aura-cyan))", glow: "rgb(var(--aura-cyan) / 0.65)" },
-  { key: "sediment", label: "ตกตะกอน", color: "#0ea5e9", glow: "rgba(14,165,233,0.65)" },
-  { key: "chlorine", label: "คลอรีน", color: "#f59e0b", glow: "rgba(245,158,11,0.65)" },
-  { key: "discharge", label: "ระบาย", color: "#22c55e", glow: "rgba(34,197,94,0.65)" },
+  {
+    key: "screening",
+    label: "ตะแกรง",
+    color: "#94a3b8",
+    glow: "rgba(148,163,184,0.65)",
+    description: "ตะแกรงดักขยะก่อนเข้าระบบ",
+    fields: [
+      // Screening has no per-row metric today — operator notes are the source.
+      { key: "screening_washed", label: "การล้างตะแกรง", unit: "", digits: 0 },
+    ],
+  },
+  {
+    key: "aeration",
+    label: "เติมอากาศ",
+    color: "rgb(var(--aura-cyan))",
+    glow: "rgb(var(--aura-cyan) / 0.65)",
+    description: "ถังเติมอากาศ — จุลินทรีย์ย่อยสารอินทรีย์",
+    fields: [
+      { key: "do_aeration", label: "DO", unit: "mg/L", digits: 2 },
+      { key: "tds_aeration", label: "TDS", unit: "mg/L", digits: 0 },
+      { key: "temp_aeration", label: "อุณหภูมิ", unit: "°C", digits: 1 },
+    ],
+  },
+  {
+    key: "sediment",
+    label: "ตกตะกอน",
+    color: "#0ea5e9",
+    glow: "rgba(14,165,233,0.65)",
+    description: "ถังตกตะกอน — แยกตะกอนจุลินทรีย์",
+    fields: [
+      { key: "do_sedimentation", label: "DO", unit: "mg/L", digits: 2 },
+      { key: "sv30", label: "SV30", unit: "mL/L", digits: 0 },
+    ],
+  },
+  {
+    key: "chlorine",
+    label: "คลอรีน",
+    color: "#f59e0b",
+    glow: "rgba(245,158,11,0.65)",
+    description: "เติมคลอรีนฆ่าเชื้อก่อนระบาย",
+    fields: [
+      { key: "free_chlorine", label: "Free Cl", unit: "mg/L", digits: 2 },
+      { key: "chlorine_used", label: "ปริมาณใช้", unit: "L", digits: 1 },
+    ],
+  },
+  {
+    key: "discharge",
+    label: "ระบาย",
+    color: "#22c55e",
+    glow: "rgba(34,197,94,0.65)",
+    description: "จุดระบายน้ำที่บำบัดแล้ว",
+    fields: [
+      { key: "do_before_discharge", label: "DO", unit: "mg/L", digits: 2 },
+      { key: "tds_before_discharge", label: "TDS", unit: "mg/L", digits: 0 },
+    ],
+  },
 ];
 
 /** Map a value to a 0–1 fraction of the gauge arc, clamped. */

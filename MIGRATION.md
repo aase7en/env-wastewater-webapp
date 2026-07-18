@@ -285,7 +285,6 @@ binding rules are here.
 
 | Chunk | Agent | Claimed | Scope (files) |
 |---|---|---|---|
-| F5 (logic half) | zcode (sub for sonnet) | 2026-07-19 | `frontend/src/components/pfd/ProcessFlowDiagram.tsx` — state + onClick + onKeyDown + panel markup (visual polish pending Track F) |
 
 > **Reopened 2026-07-19 (Fable5 review): P0 `SCHEMA-5-rest-exposure`** — ทุก
 > `.from()` ใน frontend 404 (PGRST205) เพราะ `public` schema ว่างเปล่าและไม่
