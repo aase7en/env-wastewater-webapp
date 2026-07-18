@@ -285,7 +285,7 @@ binding rules are here.
 
 | Chunk | Agent | Claimed | Scope (files) |
 |---|---|---|---|
-| MOD-WS/WA/FU/GA/BL/FS/FO/CH module -a batches | zcode | 2026-07-17 | column extensions + lib/*.ts + pages/*.tsx skeletons — see `docs/work-orders/MOD-*.md` |
+| IMP-1/2/3 + PDF-1/2/3 + DOC-3 | zcode | 2026-07-17 | `lib/import-engine.ts`, `lib/import-adapters/*`, `lib/pdf-template.ts`, `lib/print.ts`, `lib/attachments.ts` + pages + deps — see roadmap Wave 4/6 |
 
 > **Phase 2 (Wave 1) is live** — chunks are defined in `docs/work-orders/`:
 > V1a/b ใบแจ้งซ่อม · V2a/b Carbon page · V3a/b Notification bell ·
