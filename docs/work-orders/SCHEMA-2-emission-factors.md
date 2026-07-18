@@ -22,7 +22,7 @@ Depends on: SCHEMA-1
 
 ## Checkpoint log
 
-### done — 2026-07-17 (zcode) — commit `<TBD>`
+### done — 2026-07-17 (zcode) — commit `eb03084`
 - **Strategy**: TGO Thailand first (Scope 2 electricity 0.4999 kWh, confirmed
   identical to frontend `lib/carbon.ts` constant), IPCC 2006 + USEPA AP-42
   fallback for fuels/waste/chemical. ESTIMATED flag in note marks rows user
