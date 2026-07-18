@@ -285,7 +285,6 @@ binding rules are here.
 
 | Chunk | Agent | Claimed | Scope (files) |
 |---|---|---|---|
-| SCHEMA-5 | zcode (active) | 2026-07-19 | `supabase/migrations/*_schema5_rest_exposure.sql` + `frontend/src/lib/attachments.ts:51` |
 
 > **Reopened 2026-07-19 (Fable5 review): P0 `SCHEMA-5-rest-exposure`** — ทุก
 > `.from()` ใน frontend 404 (PGRST205) เพราะ `public` schema ว่างเปล่าและไม่

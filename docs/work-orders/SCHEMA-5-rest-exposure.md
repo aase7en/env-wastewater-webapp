@@ -1,5 +1,5 @@
 # WO-SCHEMA-5: REST exposure — public façade views (P0 — ปลดล็อก data path ทั้งแอป)
-Status: open
+Status: done (2026-07-19, zcode) — commit `<TBD>`
 Lane/files: `supabase/migrations/<timestamp>_schema5_rest_exposure.sql` (ไฟล์ใหม่),
 `frontend/src/lib/attachments.ts` (บรรทัด 51 บรรทัดเดียว) — ห้ามแตะไฟล์อื่น
 Branch: main
@@ -146,3 +146,6 @@ npx playwright test    # 8 passed
 
 ## Checkpoint log (append-only)
 - [2026-07-19] fable5: เขียน WO + DDL spec ครบจากการ audit DB จริง (schemas/columns/policies/grants ตรวจแล้วทุกตัว) — รอ dispatch GLM
+- [2026-07-19] zcode: applied 46 statements via `apply_migration_api.py`. Splitter bug ข้าม `meter` view (statement counter jumped 29→30) — แก้ด้วย fixup migration แยก 3 statements (meter view + grant + notify). DDL verbatim จาก WO ไม่มีการแก้/ตัด/เพิ่ม.
+- [2026-07-19] zcode: attachments.ts audit — `.from("attachment")` (singular) อยู่แล้วทุกจุด (line 26/61/83); `.storage.from("attachments")` (line 51/72/80/89) = Storage bucket API คนละตัวกับ DB relation. WO spec อ้าง line 51 ผิด (จริง ๆ คือ storage ไม่ใช่ DB) → **ไม่ต้องแก้ frontend**
+- [2026-07-19] zcode verify: build ✅ · playwright 8/8 ✅ · `v_dashboard_14day` HTTP 200 (anon) ✅ · `equipment`/`meter` HTTP 401 (anon — ถูกต้องตาม policy `to authenticated`) · authenticated JWT verify ต้องมี user login จริง (รอ integration test)
