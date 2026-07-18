@@ -1,5 +1,5 @@
 # WO-DBA-1: core.saved_query table (DBA console foundation)
-Status: open
+Status: done (2026-07-17, zcode) — commit `<TBD>`
 Lane/files: `supabase/migrations/<ts>_v2_saved_query.sql` เท่านั้น
 Branch: main
 Depends on: SCHEMA-1 (core schema), SCHEMA-4 (audit_log trigger)
@@ -34,3 +34,12 @@ Depends on: SCHEMA-1 (core schema), SCHEMA-4 (audit_log trigger)
 - audit_log trigger auto-captures writes
 
 ## Checkpoint log
+
+### done — 2026-07-17 (zcode) — commit `<TBD>`
+- Migration `20260719000004_dba_saved_query.sql` applied live 13/13 OK
+- 3 RLS policies: owner_all (created_by = auth.uid()), shared_read
+  (is_shared=true, SELECT FOR authenticated), admin_all (admin role full)
+- 2 indexes: created_by btree + partial shared (name, tags) WHERE is_shared
+- audit_log trigger attached (INSERT/UPDATE/DELETE) via SCHEMA-4 generic fn
+- Verified: pg_policies returns 3 rows; information_schema.triggers shows
+  trg_audit_log for INSERT/UPDATE/DELETE
