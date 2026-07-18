@@ -10,7 +10,8 @@ import { cn } from "../../lib/utils";
 // suite exports). Only routes that actually exist are listed — no dead links.
 // adminOnly entries render only for admin users (route is admin-guarded too).
 const NAV = [
-  { to: "/dashboard", label: "แดชบอร์ด", icon: "dashboard" },
+  { to: "/", label: "ภาพรวม", icon: "dashboard" },
+  { to: "/dashboard", label: "บ่อบำบัด", icon: "water_drop" },
   { to: "/form", label: "บันทึกประจำวัน", icon: "edit_note" },
   { to: "/readings", label: "ประวัติ", icon: "history" },
   { to: "/trends", label: "แนวโน้ม", icon: "monitoring" },

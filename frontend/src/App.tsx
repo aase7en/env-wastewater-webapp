@@ -1,4 +1,4 @@
-import { Routes, Route, Navigate } from "react-router-dom";
+import { Routes, Route } from "react-router-dom";
 import { AuthProvider } from "./components/AuthProvider";
 import { RequireAuth } from "./components/RequireAuth";
 import { ToastProvider } from "./components/ui/Toast";
@@ -13,6 +13,7 @@ import { ReportsPage } from "./pages/ReportsPage";
 import { EquipmentPage } from "./pages/EquipmentPage";
 import { TrendsPage } from "./pages/TrendsPage";
 import { CarbonPage } from "./pages/CarbonPage";
+import { OverviewPage } from "./pages/OverviewPage";
 import { BulkImportPage } from "./pages/BulkImportPage";
 
 export default function App() {
@@ -30,7 +31,8 @@ export default function App() {
             element={
               <AppShell>
                 <Routes>
-                  <Route path="/" element={<Navigate to="/dashboard" replace />} />
+                  {/* V4b: unified overview replaces the old redirect-to-dashboard */}
+                  <Route path="/" element={<OverviewPage />} />
                   <Route path="/dashboard" element={<DashboardPage />} />
                   <Route
                     path="/form"

@@ -7,9 +7,10 @@ import { test, expect } from "@playwright/test";
  */
 
 test.describe("Aura SPA smoke", () => {
-  test("root redirects to /dashboard", async ({ page }) => {
+  test("root renders the unified overview (V4b)", async ({ page }) => {
     await page.goto("/");
-    await expect(page).toHaveURL(/\/dashboard$/);
+    // No redirect anymore — "/" is the Unified Command landing page.
+    await expect(page.locator("h1", { hasText: "ภาพรวมระบบ" })).toBeVisible();
   });
 
   test("dashboard renders brand + Aura theme", async ({ page }) => {
@@ -68,7 +69,7 @@ test.describe("Aura SPA smoke", () => {
     // Update this list when NAV grows. Order matters less than presence.
     // F2: "ตั้งค่า" removed (dead link — no /settings route exists);
     // "นำเข้าข้อมูล" is admin-only and hidden when unauthenticated.
-    const navLabels = ["แดชบอร์ด", "บันทึกประจำวัน", "ประวัติ", "แนวโน้ม", "อุปกรณ์", "เอกสาร"];
+    const navLabels = ["ภาพรวม", "บ่อบำบัด", "บันทึกประจำวัน", "ประวัติ", "แนวโน้ม", "คาร์บอน", "อุปกรณ์", "เอกสาร"];
     for (const label of navLabels) {
       await expect(page.locator(`nav a:has-text("${label}")`).first()).toBeVisible();
     }

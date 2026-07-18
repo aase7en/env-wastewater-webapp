@@ -1,5 +1,5 @@
 # WO-V4a: Unified overview data layer
-Status: open (บล็อกโดย V2a — ใช้ carbon hook)
+Status: done (2026-07-18, fable5)
 Lane/files: `frontend/src/lib/overview.ts` (ใหม่) เท่านั้น
 Branch: main
 
@@ -14,3 +14,7 @@ Branch: main
 ตัวเลขตรงกับหน้า detail แต่ละระบบ
 
 ## Checkpoint log
+- [2026-07-18] fable5: **done** — `lib/overview.ts`: `useOverview()` compose
+  hooks เดิมล้วน (useDashboard + useCarbonMonthly — ไม่ duplicate query)
+  คืน water/energy/carbon แยก loading/error ต่อ section ตาม acceptance;
+  energy เดือนล่าสุด = CarbonMonth ตัวท้าย (แหล่งเดียวกับ carbon)

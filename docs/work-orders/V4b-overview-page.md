@@ -1,5 +1,5 @@
 # WO-V4b: Unified Command home page
-Status: open (บล็อกโดย V4a)
+Status: done (2026-07-18, fable5)
 Lane/files: `frontend/src/pages/OverviewPage.tsx` (ใหม่), route `/` ใน `App.tsx` (เฉพาะ WO นี้), nav ใน `AppShell.tsx` (แดชบอร์ด → ชี้ `/`, หน้าน้ำเดิมยังอยู่ `/dashboard`)
 Branch: track-f / main ตามผู้ทำ
 
@@ -13,3 +13,12 @@ Branch: track-f / main ตามผู้ทำ
 เปิด `/` เห็น Overview; ตัวเลข 3 ระบบตรงหน้า detail; nav กลับไปกลับมาถูก; E2E เดิมที่คาด redirect `/`→dashboard ต้องแก้ใน WO นี้ให้เขียว
 
 ## Checkpoint log
+- [2026-07-18] fable5: **done** — `pages/OverviewPage.tsx`: การ์ด 3 ระบบ
+  (Water status chip ปกติ/ผิดปกติ/ยังไม่บันทึก + DO ล่าสุด; Energy kWh
+  เดือนล่าสุด + วันบันทึก; Carbon tCO₂e + MoM chip) คลิก drill-down,
+  aura animated เฉพาะ water ผิดปกติจริง, QuickLink 4 ปุ่มไปหน้าที่มีจริง;
+  `/` render OverviewPage แทน redirect (ลบ Navigate ที่ไม่ใช้แล้ว);
+  nav: ภาพรวม `/` (dashboard icon) + บ่อบำบัด `/dashboard` (water_drop) +
+  คาร์บอน; ไม่มี Emergency Shutdown/topology mockup ตามกติกา.
+  smoke.spec แก้ 2 จุด: root ตรวจ h1 ภาพรวมระบบ แทน redirect, nav list 8
+  รายการใหม่. build + Playwright 8/8 เขียว (รันก่อน commit)
