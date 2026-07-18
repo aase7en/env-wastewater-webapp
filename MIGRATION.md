@@ -293,6 +293,18 @@ binding rules are here.
 > Z suggested start order: **V1a → V3a → V2a** (all new files, zero
 > collision), then V4a after V2a. UI halves (b) unblock as data halves
 > land — either agent may claim them (rule 7).
+>
+> **v2 multi-domain expansion (2026-07-17)** — Wave 2 (SCHEMA-1..4)
+> shipped: 8 new schemas + RLS + emission factors Scope 1+2+3 +
+> `carbon.v_unified_co2e` rollup view + `core.fn_audit_log()` trigger
+> on every transactional table + A-Wiki schema-doc sync (PR #8).
+> Wave 3 module data + UI skeletons queued (MOD-WS/WA/FU/GA/BL/FS/FO/CH).
+> Wave 4 cross-cutting infra (AI-1/2/3, IMP-1/2/3, PDF-1/2/3).
+> **Wave 4b DBA Console** queued: DBA-1..10 — admin database management
+> UI (Hybrid query builder + raw SQL Advanced), NL→SQL generator,
+> saved-query store, row annotation, chat on result set. RLS-bounded +
+> statement whitelist (defense in depth via Edge Function). PHI filter
+> via `core.ai_scope.patient_safe` flag.
 
 Done: ~~F1 dual-theme foundation~~ (2026-07-18 — tokens.css `:root`/`.dark`,
 toggle in AppShell, no-flash script in index.html; `frontend/index.html` is
