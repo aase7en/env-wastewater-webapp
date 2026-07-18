@@ -27,6 +27,9 @@ import { ChemicalPage } from "./pages/ChemicalPage";
 const DBAConsolePage = lazy(() =>
   import("./pages/admin/DBAConsolePage").then((m) => ({ default: m.DBAConsolePage })),
 );
+const AIAdminPage = lazy(() =>
+  import("./pages/admin/AIAdminPage").then((m) => ({ default: m.AIAdminPage })),
+);
 
 export default function App() {
   return (
@@ -125,6 +128,16 @@ export default function App() {
                       <RequireAuth requireAdmin>
                         <Suspense fallback={<div className="p-8 text-center font-thai text-aura-textMuted">กำลังโหลด DBA Console…</div>}>
                           <DBAConsolePage />
+                        </Suspense>
+                      </RequireAuth>
+                    }
+                  />
+                  <Route
+                    path="/admin/ai"
+                    element={
+                      <RequireAuth requireAdmin>
+                        <Suspense fallback={<div className="p-8 text-center font-thai text-aura-textMuted">กำลังโหลด AI Admin…</div>}>
+                          <AIAdminPage />
                         </Suspense>
                       </RequireAuth>
                     }
