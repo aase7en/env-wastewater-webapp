@@ -28,7 +28,7 @@ export function GarbagePage() {
   }
   async function remove(id: string) {
     if (!confirm("ลบ?")) return;
-    try { await deleteGarbageLog(id); refresh(); } catch (e) { toast("error", `ผิดพลาด: ${(e as Error).message}`); }
+    try { await deleteGarbageLog(id); toast("success", "ลบแล้ว"); refresh(); } catch (e) { toast("error", `ผิดพลาด: ${(e as Error).message}`); }
   }
 
   return (

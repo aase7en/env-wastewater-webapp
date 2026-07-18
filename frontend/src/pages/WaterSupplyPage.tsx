@@ -39,7 +39,7 @@ export function WaterSupplyPage() {
   }
   async function remove(id: string) {
     if (!confirm("ลบแถวนี้?")) return;
-    try { await deleteWaterSupplyDaily(id); refresh(); }
+    try { await deleteWaterSupplyDaily(id); toast("success", "ลบแล้ว"); refresh(); }
     catch (e) { toast("error", `ผิดพลาด: ${(e as Error).message}`); }
   }
 

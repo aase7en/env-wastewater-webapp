@@ -29,7 +29,7 @@ export function FoodPage() {
   }
   async function remove(id: string) {
     if (!confirm("ลบ?")) return;
-    try { await deleteFoodLabTest(id); refresh(); } catch (e) { toast("error", `ผิดพลาด: ${(e as Error).message}`); }
+    try { await deleteFoodLabTest(id); toast("success", "ลบแล้ว"); refresh(); } catch (e) { toast("error", `ผิดพลาด: ${(e as Error).message}`); }
   }
 
   return (

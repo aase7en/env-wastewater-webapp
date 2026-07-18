@@ -34,7 +34,7 @@ export function SafetyPage() {
   }
   async function remove(id: string) {
     if (!confirm("ลบ?")) return;
-    try { await deleteSafetyCheck(id); refresh(); } catch (e) { toast("error", `ผิดพลาด: ${(e as Error).message}`); }
+    try { await deleteSafetyCheck(id); toast("success", "ลบแล้ว"); refresh(); } catch (e) { toast("error", `ผิดพลาด: ${(e as Error).message}`); }
   }
 
   return (

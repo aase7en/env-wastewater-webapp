@@ -45,11 +45,11 @@ export function ChemicalPage() {
   }
   async function removeMaster(id: string) {
     if (!confirm("ลบเคมีนี้? จะไม่ลบ movement history")) return;
-    try { await deleteChemicalMaster(id); stock.refresh(); } catch (e) { toast("error", `ผิดพลาด: ${(e as Error).message}`); }
+    try { await deleteChemicalMaster(id); toast("success", "ลบแล้ว"); stock.refresh(); } catch (e) { toast("error", `ผิดพลาด: ${(e as Error).message}`); }
   }
   async function removeMove(id: string) {
     if (!confirm("ลบ movement?")) return;
-    try { await deleteChemicalMovement(id); moves.refresh(); stock.refresh(); } catch (e) { toast("error", `ผิดพลาด: ${(e as Error).message}`); }
+    try { await deleteChemicalMovement(id); toast("success", "ลบแล้ว"); moves.refresh(); stock.refresh(); } catch (e) { toast("error", `ผิดพลาด: ${(e as Error).message}`); }
   }
 
   return (

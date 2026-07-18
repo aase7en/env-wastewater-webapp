@@ -28,7 +28,7 @@ export function GardenPage() {
   }
   async function remove(id: string) {
     if (!confirm("ลบ?")) return;
-    try { await deleteGardenRound(id); refresh(); } catch (e) { toast("error", `ผิดพลาด: ${(e as Error).message}`); }
+    try { await deleteGardenRound(id); toast("success", "ลบแล้ว"); refresh(); } catch (e) { toast("error", `ผิดพลาด: ${(e as Error).message}`); }
   }
 
   return (

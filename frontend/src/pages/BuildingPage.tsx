@@ -27,7 +27,7 @@ export function BuildingPage() {
   }
   async function remove(id: string) {
     if (!confirm("ลบ?")) return;
-    try { await deleteBuildingRound(id); refresh(); } catch (e) { toast("error", `ผิดพลาด: ${(e as Error).message}`); }
+    try { await deleteBuildingRound(id); toast("success", "ลบแล้ว"); refresh(); } catch (e) { toast("error", `ผิดพลาด: ${(e as Error).message}`); }
   }
 
   return (
