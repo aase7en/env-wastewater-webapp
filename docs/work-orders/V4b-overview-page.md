@@ -1,5 +1,5 @@
 # WO-V4b: Unified Command home page
-Status: done (2026-07-18, fable5)
+Status: done (2026-07-18, fable5) — commit `1d2e6a8`
 Lane/files: `frontend/src/pages/OverviewPage.tsx` (ใหม่), route `/` ใน `App.tsx` (เฉพาะ WO นี้), nav ใน `AppShell.tsx` (แดชบอร์ด → ชี้ `/`, หน้าน้ำเดิมยังอยู่ `/dashboard`)
 Branch: track-f / main ตามผู้ทำ
 

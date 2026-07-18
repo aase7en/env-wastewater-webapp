@@ -1,5 +1,5 @@
 # WO-V1b: Repair-request UI — แจ้งเหตุผิดปกติ → ใบแจ้งซ่อม
-Status: done (2026-07-18, fable5)
+Status: done (2026-07-18, fable5) — commit `cbc4283`
 Lane/files: `frontend/src/components/repair/*` (ใหม่), `frontend/src/pages/DashboardPage.tsx` (เพิ่มปุ่ม/modal), reuse `lib/pdf.ts`
 Branch: track-f (ถ้า fable5 ทำ) / main (ถ้า zcode ทำ)
 

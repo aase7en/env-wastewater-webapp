@@ -1,5 +1,5 @@
 # WO-V3a: Threshold alerts data layer
-Status: done (2026-07-17, zcode)
+Status: done (2026-07-17, zcode) — commit `02f8e3a`
 Lane/files: `frontend/src/lib/alerts.ts` (ใหม่) เท่านั้น + `supabase/migrations/20260718000003_v3a_alert_readrls.sql`
 Branch: main
 

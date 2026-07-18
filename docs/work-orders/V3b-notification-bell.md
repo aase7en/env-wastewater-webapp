@@ -1,5 +1,5 @@
 # WO-V3b: Notification bell ใน top bar
-Status: done (2026-07-18, fable5)
+Status: done (2026-07-18, fable5) — commit `f707822`
 Lane/files: `frontend/src/components/ui/NotificationBell.tsx` (ใหม่), `frontend/src/components/layout/AppShell.tsx` (top bar + mobile header)
 Branch: track-f / main ตามผู้ทำ
 

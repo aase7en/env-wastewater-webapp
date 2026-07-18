@@ -1,5 +1,5 @@
 # WO-V1a: Repair-request data layer
-Status: done (2026-07-17, zcode)
+Status: done (2026-07-17, zcode) — commit `b95d03c`
 Lane/files: `frontend/src/lib/repair.ts` (ใหม่) เท่านั้น + ตรวจ RLS ฝั่ง Supabase
 Branch: main
 

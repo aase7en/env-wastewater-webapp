@@ -1,5 +1,5 @@
 # WO-V2a: Carbon data layer
-Status: done (2026-07-17, zcode)
+Status: done (2026-07-17, zcode) — commit `765e24e`
 Lane/files: `frontend/src/lib/carbon.ts` (ใหม่) เท่านั้น (+ SQL view เฉพาะถ้าจำเป็นจริง)
 Branch: main
 

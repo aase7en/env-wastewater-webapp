@@ -1,5 +1,5 @@
 # WO-V4a: Unified overview data layer
-Status: done (2026-07-18, fable5)
+Status: done (2026-07-18, fable5) — commit `1d2e6a8`
 Lane/files: `frontend/src/lib/overview.ts` (ใหม่) เท่านั้น
 Branch: main
 

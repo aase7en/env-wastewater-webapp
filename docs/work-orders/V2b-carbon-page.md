@@ -1,5 +1,5 @@
 # WO-V2b: Carbon Footprint page
-Status: done (2026-07-18, fable5)
+Status: done (2026-07-18, fable5) — commit `5c56c08`
 Lane/files: `frontend/src/pages/CarbonPage.tsx` (ใหม่), route ใน `App.tsx` (เฉพาะ WO นี้), nav ใน `AppShell.tsx` (เพิ่ม 1 รายการ icon `co2`)
 Branch: track-f / main ตามผู้ทำ
 
