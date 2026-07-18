@@ -1,5 +1,5 @@
 # WO-F5: PFD interactive drill-down
-Status: logic-half done (2026-07-19, zcode sub for sonnet) — commit `<TBD>`. Visual polish (selected-ring token swap, micro-anim, panel transitions) still pending Track F.
+Status: logic-half done (2026-07-19, zcode sub for sonnet) — commit `130b53d`. Visual polish (selected-ring token swap, micro-anim, panel transitions) still pending Track F.
 Lane/files: `frontend/src/components/pfd/ProcessFlowDiagram.tsx` เท่านั้น
 Branch: main
 Model tier: **mid** (opus4.8 — reasoning ปานกลาง, spec ปิดช่องแล้ว)
