@@ -1,7 +1,7 @@
 import { type FormEvent, useEffect, useMemo, useState } from "react";
 import { useNavigate, useParams } from "react-router-dom";
-import { AlertTriangle, CheckCircle2, Trash2 } from "lucide-react";
 import { AccordionSection } from "../components/ui/Accordion";
+import { MSymbol } from "../components/ui/MSymbol";
 import { Button } from "../components/ui/Button";
 import { Field, Input, NumberInput, Textarea } from "../components/ui/Input";
 import { Toggle } from "../components/ui/Toggle";
@@ -49,6 +49,34 @@ type FormState = Omit<ReadingCreate, "reading_date"> & {
 // ─── Equipment checklist config ──────────────────────────────────────────
 // Maps the *_running / screen_cleaned_* keys to the core.equipment code,
 // so we can pull the Thai name from /api/equipment (fallback to code).
+// Quick-pick chips for สี/กลิ่น — the ONLY values that exist in the real
+// 907-row dataset (SPEC: สี = น้ำตาลเข้ม 824 / น้ำตาลอ่อน 83; กลิ่น =
+// กลิ่นดินปกติ 907). Free-text stays available for new observations.
+const COLOR_CHIPS = ["น้ำตาลเข้ม", "น้ำตาลอ่อน"];
+const SMELL_CHIPS = ["กลิ่นดินปกติ"];
+
+function QuickChips({ options, value, onPick }: { options: string[]; value: string; onPick: (v: string) => void }) {
+  return (
+    <div className="flex flex-wrap gap-2 mb-2">
+      {options.map((o) => (
+        <button
+          key={o}
+          type="button"
+          onClick={() => onPick(o)}
+          className={cn(
+            "px-3.5 py-1.5 rounded-full text-xs font-thai border transition-colors min-h-[36px]",
+            value === o
+              ? "aura-bg-gradient border-transparent font-semibold"
+              : "bg-aura-surfaceHigh/40 border-aura-borderSubtle text-aura-textMuted hover:text-aura-textMain hover:border-aura-cyan/40"
+          )}
+        >
+          {o}
+        </button>
+      ))}
+    </div>
+  );
+}
+
 const EQUIPMENT_CHECKS: { key: keyof FormState; code: string }[] = [
   { key: "screen_cleaned_coarse", code: "screen_coarse" },
   { key: "screen_cleaned_fine", code: "screen_fine" },
@@ -186,7 +214,7 @@ export function DailyFormPage() {
             banner.kind === "warning" && "bg-alert-amber/10 border-alert-amber/40 text-alert-amber"
           )}
         >
-          {banner.kind === "success" ? <CheckCircle2 className="w-4 h-4" /> : <AlertTriangle className="w-4 h-4" />}
+          <MSymbol name={banner.kind === "success" ? "check_circle" : "warning"} className="text-[18px]" />
           {banner.msg}
         </div>
       )}
@@ -195,7 +223,7 @@ export function DailyFormPage() {
       {thresholdAlerts.length > 0 && (
         <div className="rounded-2xl px-4 py-3 text-sm font-thai bg-alert-amber/10 border border-alert-amber/40 text-alert-amber space-y-1">
           <div className="flex items-center gap-2 font-semibold">
-            <AlertTriangle className="w-4 h-4" /> ค่าผิดปกติ ({thresholdAlerts.length})
+            <MSymbol name="warning" className="text-[18px]" /> ค่าผิดปกติ ({thresholdAlerts.length})
           </div>
           {thresholdAlerts.map((a, i) => (
             <div key={i} className="pl-6">• {a.message}</div>
@@ -340,19 +368,21 @@ export function DailyFormPage() {
 
       {/* SECTION 6 — หมายเหตุ */}
       <AccordionSection title="หมายเหตุ" subtitle="สี, กลิ่น, ข้อสังเกตอื่นๆ">
-        <Field label="สีของน้ำ">
-          <Input value={String(form.color_desc ?? "")} onChange={(e) => set("color_desc", e.target.value)} placeholder="เช่น น้ำตาลอ่อน, ใส" />
+        <Field label="สีของน้ำ" hint="แตะเลือกค่าที่พบบ่อย หรือพิมพ์เอง">
+          <QuickChips options={COLOR_CHIPS} value={String(form.color_desc ?? "")} onPick={(v) => set("color_desc", v)} />
+          <Input value={String(form.color_desc ?? "")} onChange={(e) => set("color_desc", e.target.value)} placeholder="เช่น น้ำตาลเข้ม" />
         </Field>
-        <Field label="กลิ่น">
-          <Input value={String(form.smell_desc ?? "")} onChange={(e) => set("smell_desc", e.target.value)} placeholder="เช่น ปกติ, มีกลิ่นคลอรีน" />
+        <Field label="กลิ่น" hint="แตะเลือกค่าที่พบบ่อย หรือพิมพ์เอง">
+          <QuickChips options={SMELL_CHIPS} value={String(form.smell_desc ?? "")} onPick={(v) => set("smell_desc", v)} />
+          <Input value={String(form.smell_desc ?? "")} onChange={(e) => set("smell_desc", e.target.value)} placeholder="เช่น กลิ่นดินปกติ" />
         </Field>
         <Field label="หมายเหตุเพิ่มเติม">
           <Textarea rows={3} value={String(form.note ?? "")} onChange={(e) => set("note", e.target.value)} />
         </Field>
       </AccordionSection>
 
-      {/* Sticky submit bar */}
-      <div className="fixed bottom-0 inset-x-0 md:left-56 border-t border-aura-borderSubtle bg-aura-bgDeep/90 backdrop-blur-xl px-4 py-3 flex items-center gap-3 z-30">
+      {/* Sticky submit bar — left offset matches the F2 sidebar (w-72) */}
+      <div className="fixed bottom-0 inset-x-0 md:left-72 border-t border-aura-borderSubtle bg-aura-bgDeep/90 backdrop-blur-xl px-4 py-3 flex items-center gap-3 z-30">
         <Button type="submit" loading={submitting} size="lg" className="flex-1 sm:flex-none sm:min-w-40">
           {isEdit ? "อัปเดต" : "บันทึก"}
         </Button>
@@ -361,7 +391,7 @@ export function DailyFormPage() {
         </Button>
         {isEdit && (
           <Button type="button" variant="danger" size="lg" onClick={onDelete} loading={deleteMut.loading} className="ml-auto">
-            <Trash2 className="w-4 h-4" /> ลบ
+            <MSymbol name="delete" className="text-[18px]" /> ลบ
           </Button>
         )}
       </div>

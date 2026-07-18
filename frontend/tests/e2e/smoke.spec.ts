@@ -14,9 +14,11 @@ test.describe("Aura SPA smoke", () => {
 
   test("dashboard renders brand + Aura theme", async ({ page }) => {
     await page.goto("/dashboard");
-    // Brand lockup — UTH[AI]-EVN with [AI] highlighted
-    await expect(page.locator("text=UTH")).toBeVisible();
-    await expect(page.locator("text=EVN")).toBeVisible();
+    // Brand lockup — UTH[AI]-ENV (F2: wordmark corrected EVN → ENV per
+    // design/water_management_dark_mode_fix). Multiple lockups exist
+    // (sidebar + top bars), so assert on the first.
+    await expect(page.locator("text=UTH").first()).toBeVisible();
+    await expect(page.locator("text=-ENV").first()).toBeVisible();
     // Header — should contain "แดชบอร์ด"
     await expect(page.locator("h1", { hasText: "แดชบอร์ด" })).toBeVisible();
   });
@@ -64,9 +66,11 @@ test.describe("Aura SPA smoke", () => {
   test("sidebar nav has the full set of items", async ({ page }) => {
     await page.goto("/dashboard");
     // Update this list when NAV grows. Order matters less than presence.
-    const navLabels = ["แดชบอร์ด", "บันทึกประจำวัน", "ประวัติ", "แนวโน้ม", "อุปกรณ์", "เอกสาร", "ตั้งค่า"];
+    // F2: "ตั้งค่า" removed (dead link — no /settings route exists);
+    // "นำเข้าข้อมูล" is admin-only and hidden when unauthenticated.
+    const navLabels = ["แดชบอร์ด", "บันทึกประจำวัน", "ประวัติ", "แนวโน้ม", "อุปกรณ์", "เอกสาร"];
     for (const label of navLabels) {
-      await expect(page.locator(`nav a:has-text("${label}")`)).toBeVisible();
+      await expect(page.locator(`nav a:has-text("${label}")`).first()).toBeVisible();
     }
   });
 });
