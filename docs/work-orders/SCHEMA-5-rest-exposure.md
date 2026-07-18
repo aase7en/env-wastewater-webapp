@@ -1,5 +1,5 @@
 # WO-SCHEMA-5: REST exposure — public façade views (P0 — ปลดล็อก data path ทั้งแอป)
-Status: done (2026-07-19, zcode) — commit `<TBD>`
+Status: done (2026-07-19, zcode) — commit `4c60805`
 Lane/files: `supabase/migrations/<timestamp>_schema5_rest_exposure.sql` (ไฟล์ใหม่),
 `frontend/src/lib/attachments.ts` (บรรทัด 51 บรรทัดเดียว) — ห้ามแตะไฟล์อื่น
 Branch: main
