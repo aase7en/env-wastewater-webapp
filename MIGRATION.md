@@ -285,6 +285,7 @@ binding rules are here.
 
 | Chunk | Agent | Claimed | Scope (files) |
 |---|---|---|---|
+| FASTAPI-removal | fable5 (track-f worktree) | 2026-07-19 | `app/`, `tests/`, `pyproject.toml`, `uv.lock`, `scripts/{_env.py,apply_migration_api.py,introspect_schema_api.py,introspect_schema.py}`, `.github/workflows/test.yml`, `README.md`, `CONTRIBUTING.md`, `docs/roadmap.md` |
 
 > **Reopened 2026-07-19 (Fable5 review): P0 `SCHEMA-5-rest-exposure`** — ทุก
 > `.from()` ใน frontend 404 (PGRST205) เพราะ `public` schema ว่างเปล่าและไม่
