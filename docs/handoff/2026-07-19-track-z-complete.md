@@ -285,3 +285,82 @@ ENV_DB state (probed via Supabase Management API 2026-07-19):
 ทำ visual polish เอง อ้าง WO F5-pfd-interactive.md Checkpoint log
 (มี pending Track F list ครบ).
 ```
+
+---
+
+## Dispatch prompt #2 — Fable5 (GLM sweep รอบใหม่ + FastAPI removal audit)
+
+วาง prompt ด้านล่างใน session Fable5 ใหม่ (เลือก model Fable5 ก่อน):
+
+```
+อ่าน docs/handoff/2026-07-19-track-z-complete.md (โดยเฉพาะ "GLM sweep"
+สองส่วน) + docs/work-orders/FASTAPI-removal.md + MIGRATION.md §Two-track
+
+### Part 1 — ตรวจ diff GLM sweep รอบใหม่ (Claude ยังติด 5hr limit)
+
+สังเกต: GLM ทำ Track F scope แทน Sonnet เพราะ user อนุญาตเฉพาะรอบนี้
+(F6 + MOD-*-b + E2E) โดยมีเงื่อนไข "WO เขียนเป็นสูตร verbatim + ตรวจ
+ทุกใบ"
+
+ตรวจ diff 6 commits:
+
+  15476c4  docs(FASTAPI-removal): inventory + A/B/C decision tree
+  f1f8674  test(e2e): module routes + DBA guard + sidebar (23/23)
+  c87fc81  chunk(MOD-*-b batch): UI polish 8 module pages (container+h1+subtitle)
+  a04df47  chunk(F6): production polish — self-host fonts + lazy + pdf + favicon
+
+เช็คเป็นข้อ ๆ:
+
+1. F6 (a04df47):
+   - Self-host fonts: 13 woff2 + Material Symbols variable (3.9MB full —
+     subset ของ variable font ทำให้ axes หาย จึงเก็บเต็ม). แทน @import
+     ใน index.css ด้วย @font-face + unicode-range per subset. ถูกไหม?
+   - React.lazy: TrendsPage/CarbonPage/CarbonRollupPage + Suspense fallback
+     ภาษาไทย. pattern เดียวกับ DBAConsolePage ที่คุณเขียนเอง
+   - Dynamic import pdf.ts: ReportsPage.onDownload async +
+     RepairRequestModal.printPdf async (type-only import ค้างไว้)
+   - favicon.ico multi-size (16/32/64) ผ่าน PIL + index.html เพิ่ม link
+   - Main chunk 1,255KB → 424KB (-66%, < 600KB target ✅)
+   - **pending Track F (visual verify)**: dev server → block
+     fonts.googleapis.com + fonts.gstatic.com → reload → ฟอนต์ไทย/icon
+     ยัง render ถูก. กดพิมพ์ PDF ยังได้ (chunk pdf load on demand)
+
+2. MOD-*-b (c87fc81): UI polish 8 module pages
+   - แตะแค่ container + h1 + subtitle (Aura pattern เดียวกับ CarbonPage)
+   - AuraCard/form/list ไม่ถูกแตะ
+   - typo fix bonus: GarbagePage "ขย้า / การเก็บขยะ" → "การ จัดการขยะ"
+   - WO: docs/work-orders/MOD-b-ui-polish-batch.md
+   - **ถ้าคุณเห็น spacing/layout ที่ยังไม่ใช่ Aura — เจ้าของ Track F
+     คือคุณ แก้ได้เลย**
+
+3. E2E modules + DBA (f1f8674): 3 tests ใหม่ → 23/23 รวม
+   - modules.spec.ts: 8 module routes + 2 admin routes bounce
+   - sidebar assertion: ใช้ .first() เพราะ desktop+mobile sidebar ซ้อน
+   - **Track F gap ที่พบ**: NAV list ใน AppShell.tsx ไม่มี 8 module
+     routes + admin/db + admin/ai → ผู้ใช้ต้องพิมพ์ URL เอง. flag ไว้ใน
+     test comment. คุณเป็นเจ้าของ — อยากเพิ่มใน NAV รอบถัดไปไหม?
+
+### Part 2 — FastAPI removal audit (the real ask)
+
+อ่าน docs/work-orders/FASTAPI-removal.md ที่ GLM เขียน inventory + dep
+graph + A/B/C decision tree ให้ครบ แล้ว:
+
+- **ตัดสินใจ Approach A/B/C** พร้อมเหตุผล (one-way door ⚠️)
+- **เขียน Step-by-step ละเอียด** ในไฟล์เดียวกัน (เพิ่มใต้ "Acceptance gate")
+  เฉพาะส่วนที่ต้อง port `_resolve_env_file()` + `get_settings()` subset
+  ออกจาก app/core/config.py มาเป็น module ใหม่ (Approach A/C) — หรือ
+  Approach B ไม่ต้อง port
+- **verify scripts ที่จะเหลือ**: สำคัญสุดคือ apply_migration_api.py
+  (ใช้ทุก migration) — หลัง remove ต้องยังรันได้
+- **ระบุ tier**: Approach A=mid, B=cheap-ok, C=mid
+- ถ้ายังไม่ถึงเวลา remove (ขอดูข้อมูลจริงก่อน / รอ deploy) → ปิด WO
+  ด้วย "deferred" + บอกเหตุผล ไม่ผิดกติกา
+
+กติกาเดิม: append "Verified by Fable5 (date)" ใน handoff doc + claim
+ใน MIGRATION.md ถ้าจะ execute เอง. ห้าม git reset --hard. PHI boundary
+ไม่ route ผ่าน Z.ai cloud.
+
+บริบทเพิ่ม: GLM5.2 Track Z + Track F (sub for Sonnet) หมดแล้ว. ถ้า
+FastAPI WO ของคุณออกมาเป็น cheap-ok/mid tier และ Claude ยังติด limit
+GLM รับ execute ต่อได้ทันที.
+```
