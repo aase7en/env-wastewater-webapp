@@ -3,8 +3,17 @@ import { Gauge } from "./Gauge";
 import { AerationTank } from "./AerationTank";
 import { StatusBadge } from "./StatusBadge";
 import { AuraCard } from "../ui/AuraCard";
-import { fmt } from "../../lib/utils";
+import { fmt, thaiDate } from "../../lib/utils";
 import type { DashboardRow } from "../../lib/types";
+
+/** Days between today (local) and a YYYY-MM-DD string. 0 = today. */
+function daysSince(isoDate: string): number {
+  const today = new Date();
+  today.setHours(0, 0, 0, 0);
+  const d = new Date(isoDate);
+  d.setHours(0, 0, 0, 0);
+  return Math.round((today.getTime() - d.getTime()) / 86_400_000);
+}
 
 /**
  * Process Flow Diagram — SVG centerpiece of the dashboard.
@@ -20,13 +29,32 @@ import type { DashboardRow } from "../../lib/types";
  * Aria/role wired for keyboard users. Visual className polish (selected-ring
  * token swap, micro-anim) is intentionally deferred to Track F.
  */
-export function ProcessFlowDiagram({ row }: { row: DashboardRow | undefined }) {
+export function ProcessFlowDiagram({
+  row,
+  latestDate,
+}: {
+  row: DashboardRow | undefined;
+  /** F7: latest reading_date across all time — shown in the empty-state so
+   *  staff can tell "no one logged" from "system broken". null = truly empty. */
+  latestDate?: string | null;
+}) {
   const [selected, setSelected] = useState<string | null>(null);
 
   if (!row) {
+    // F7 stale-data fallback: if we have a latestDate outside the 14-day
+    // window, surface it. Pure text addition — no chart/gauge/status from
+    // stale data (domain honesty, ui-brief rule).
+    const staleLine = latestDate
+      ? `บันทึกล่าสุด ${thaiDate(latestDate)} (${daysSince(latestDate)} วันก่อน)`
+      : null;
     return (
       <AuraCard>
-        <div className="text-aura-textMuted text-sm font-thai py-8 text-center">ไม่มีข้อมูลวันนี้</div>
+        <div className="text-aura-textMuted text-sm font-thai py-8 text-center">
+          ไม่มีข้อมูลวันนี้
+          {staleLine && (
+            <div className="mt-1 text-xs text-aura-textMuted">{staleLine}</div>
+          )}
+        </div>
       </AuraCard>
     );
   }

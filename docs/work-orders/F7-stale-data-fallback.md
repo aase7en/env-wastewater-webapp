@@ -1,5 +1,5 @@
 # WO-F7: Stale-data fallback — dashboard/overview บอก "ข้อมูลล่าสุด" แทนจอว่าง
-Status: open
+Status: done (2026-07-19, zcode) — commit `<TBD>`
 Lane/files: `frontend/src/lib/supabase-queries.ts` (เพิ่ม 1 ฟังก์ชัน),
 `frontend/src/pages/DashboardPage.tsx`, `frontend/src/pages/OverviewPage.tsx`,
 `frontend/src/components/pfd/ProcessFlowDiagram.tsx` (เฉพาะ empty-state block)

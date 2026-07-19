@@ -1,5 +1,7 @@
+import { useEffect, useState } from "react";
 import { useDashboard } from "./hooks";
 import { useCarbonMonthly, type CarbonMonth } from "./carbon";
+import { fetchLatestReadingDate } from "./supabase-queries";
 import type { DashboardRow } from "./types";
 
 /**
@@ -37,6 +39,18 @@ export function useOverview(): OverviewData {
   const carbon = useCarbonMonthly(12);
 
   const today = water.data[0];
+
+  // F7: when the 14-day window is empty, fetch the actual latest date so the
+  // landing card can say "บันทึกล่าสุด <date> (N วันก่อน)" instead of bare
+  // "ยังไม่บันทึกวันนี้". Only fetched when today is undefined.
+  const [latestDateAny, setLatestDateAny] = useState<string | null>(null);
+  useEffect(() => {
+    if (today) { setLatestDateAny(null); return; }
+    fetchLatestReadingDate()
+      .then(setLatestDateAny)
+      .catch(() => setLatestDateAny(null));
+  }, [today]);
+
   const latestMonth = carbon.data?.months.length
     ? carbon.data.months[carbon.data.months.length - 1]
     : null;
@@ -46,7 +60,7 @@ export function useOverview(): OverviewData {
       today,
       status: today?.system_operating ?? null,
       anyAlert: !!today && (!!today.do_alert || !!today.ph_alert || !!today.chlorine_alert),
-      lastDate: today?.reading_date ?? null,
+      lastDate: today?.reading_date ?? latestDateAny,
       loading: water.loading,
       error: water.error,
     },

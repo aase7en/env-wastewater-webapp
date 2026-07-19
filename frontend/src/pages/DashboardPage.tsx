@@ -1,6 +1,7 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { Zap, Droplets, Activity, Calendar } from "lucide-react";
 import { useDashboard, useReadings } from "../lib/hooks";
+import { fetchLatestReadingDate } from "../lib/supabase-queries";
 import { useAuth } from "../components/AuthProvider";
 import { ProcessFlowDiagram } from "../components/pfd/ProcessFlowDiagram";
 import { KpiTile } from "../components/KpiTile";
@@ -11,11 +12,30 @@ import { MSymbol } from "../components/ui/MSymbol";
 import { RepairRequestModal } from "../components/repair/RepairRequestModal";
 import { fmt, thaiDate } from "../lib/utils";
 
+/** Days between today (local) and a YYYY-MM-DD string (UTC). 0 = today. */
+function daysSince(isoDate: string): number {
+  const today = new Date();
+  today.setHours(0, 0, 0, 0);
+  const d = new Date(isoDate);
+  d.setHours(0, 0, 0, 0);
+  return Math.round((today.getTime() - d.getTime()) / 86_400_000);
+}
+
 export function DashboardPage() {
   const { data: rows, loading, error, refresh } = useDashboard(14);
   const { data: readings } = useReadings(14);
   const { isAuthenticated } = useAuth();
   const [repairOpen, setRepairOpen] = useState(false);
+
+  // F7 stale-data fallback: when fetchDashboard returns [] (latest record
+  // older than the 14-day window), surface the actual latest date so staff
+  // can tell "no one logged" from "system broken". Fetched once, no window.
+  const [latestDate, setLatestDate] = useState<string | null>(null);
+  useEffect(() => {
+    fetchLatestReadingDate()
+      .then(setLatestDate)
+      .catch(() => setLatestDate(null));
+  }, []);
 
   const today = rows[0]; // newest first
   const daysNormal = rows.filter((r) => r.system_operating === false).length;
@@ -26,6 +46,14 @@ export function DashboardPage() {
     !!today &&
     (today.system_operating === false ||
       !!today.do_alert || !!today.ph_alert || !!today.chlorine_alert);
+
+  // F7: when there's no row inside the 14-day window but data exists
+  // further back, show "บันทึกล่าสุด <date> (N วันก่อน)" instead of bare
+  // "0 รายการ". Falls back to null (no extra line) when DB is truly empty.
+  const staleLine =
+    !loading && !error && rows.length === 0 && latestDate
+      ? `บันทึกล่าสุด ${thaiDate(latestDate)} (${daysSince(latestDate)} วันก่อน)`
+      : null;
 
   return (
     <div className="space-y-6 max-w-6xl mx-auto">
@@ -39,6 +67,7 @@ export function DashboardPage() {
           <p className="text-sm text-aura-textMuted font-thai mt-1">
             14 วันล่าสุด · {rows.length} รายการ
             {today?.reading_date && <> · บันทึกล่าสุด {thaiDate(today.reading_date)}</>}
+            {staleLine && <> · <span className="text-aura-textMuted">{staleLine}</span></>}
           </p>
         </div>
         <div className="flex gap-2">
@@ -74,7 +103,7 @@ export function DashboardPage() {
       )}
 
       {/* Process Flow Diagram */}
-      <ProcessFlowDiagram row={today} />
+      <ProcessFlowDiagram row={today} latestDate={latestDate} />
 
       {/* 14-day log table */}
       <AuraCard className="p-0 overflow-hidden">

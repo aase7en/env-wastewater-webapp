@@ -39,6 +39,25 @@ export async function fetchDashboard(days = 14): Promise<DashboardRow[]> {
   return (data ?? []) as DashboardRow[];
 }
 
+/**
+ * Latest reading date across all time (no 14-day window) — used by F7
+ * stale-data fallback. When fetchDashboard returns [] because the newest
+ * record is older than the window, the empty-state card shows
+ * "บันทึกล่าสุด <date> (N วันก่อน)" so staff can tell "no one logged"
+ * vs "system broken". Returns null when the table is truly empty.
+ *
+ * Same source as fetchDashboard (v_dashboard_14day) but unfiltered + desc.
+ */
+export async function fetchLatestReadingDate(): Promise<string | null> {
+  const { data, error } = await supabase
+    .from("v_dashboard_14day")
+    .select("reading_date")
+    .order("reading_date", { ascending: false })
+    .limit(1);
+  if (error) throw new Error(error.message);
+  return (data ?? [])[0]?.reading_date ?? null;
+}
+
 /** Recent readings list (newest first). Replaces /api/readings. */
 export async function fetchReadings(limit = 30): Promise<{ items: ReadingListItem[]; total: number }> {
   const { data, error, count } = await supabase
