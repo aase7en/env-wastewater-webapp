@@ -150,6 +150,23 @@
 
 ---
 
+## GLM sweep — 2026-07-19 (Claude ติด 5hr limit, GLM5.2 รับ Track Z sweep)
+
+### T4.1 — `core.app_user` probe (verify-only, no new code)
+
+ENV_DB state (probed via Supabase Management API 2026-07-19):
+- `core.app_user` = **1 row**, role = `admin`
+- `auth.users` = **1 row**
+
+→ มี real admin user ในระบบ. Authenticated REST smoke จริงต้องได้ JWT จากการ login จริง — GLM ไม่ route password ผ่าน Z.ai cloud (PHI boundary + Chinese law). แนะนำ admin/Fable5:
+- ทดสอบ login ผ่านเบราเซอร์ → grab JWT จาก sessionStorage → curl ด้วย Bearer JWT นั้น
+- หรือ Sonnet/Fable5 ใช้ service-role key server-side (ไม่ใช่ใน browser) เพื่อ mint test JWT
+
+สถานะ SCHEMA-5 acceptance: 1 ใน 2 สุดท้ายยัง pending (curl authenticated 200 สำหรับ equipment/meter) — ไม่ใช่ block เพราะ build + anon curls + Playwright ผ่าน + policy มีอยู่ + มี admin user. แต่ closure สมบูรณ์ต้องการ JWT round-trip จริง.
+**[ปิดแล้วโดย Fable5 review #2 ข้างล่าง — DB-level role simulation แทน JWT]**
+
+---
+
 ## Fable5 review #2 — 2026-07-19 (GLM sweep 10 commits: `cf7fb5b`→`f5308f7`)
 
 | ข้อตรวจ | ผล |
@@ -177,3 +194,81 @@
   `F7-stale-data-fallback` (cheap-ok → Sonnet/GLM)
 - F5 ปิดสมบูรณ์ทั้ง 2 ครึ่ง (visual polish โดย fable5 — ดู checkpoint ใน WO)
 - เหลือใน backlog เดิม: F6 production polish (mid)
+
+---
+
+## Dispatch prompt — ส่ง Fable5 ตรวจ diff รอบนี้ (append 2026-07-19) [ดำเนินการแล้ว — ผลอยู่ใน review #2 ด้านบน]
+
+วาง prompt ด้านล่างใน session Fable5 ใหม่ (เลือก model Fable5 ก่อน):
+
+```
+อ่าน docs/handoff/2026-07-19-track-z-complete.md (โดยเฉพาะส่วน "GLM sweep — 2026-07-19")
++ MIGRATION.md §Two-track ก่อนเริ่ม
+
+ตรวจ diff 10 commits ที่ GLM5.2 push ตอน Claude ติด 5hr limit:
+
+  f5308f7  chunk(CRB-realtime): useCarbonRollupRealtime + harden PFD tests
+  cd27c40  chunk(SCHEMA-5 addendum): audit_log façade view
+  f50296a  docs(WO): backfill commit hash V1..V4
+  195b55b  test(e2e): auth guard + PFD interactive — 11 new tests
+  130b53d  chunk(F5 logic-half): PFD interactive drill-down
+  bdb2a5c  docs(F5): backfill hash
+  b2e27b4  claim(F5): PFD interactive — logic half
+  5be1d56  fix(apply_migration_api): rewrite split_sql
+  4c60805  chunk(SCHEMA-5): REST exposure P0 (จาก WO ที่คุณเขียน)
+  cd7fb5b  docs(SCHEMA-5): backfill hash
+
+เช็คเป็นข้อ ๆ:
+
+1. SCHEMA-5 (commit 4c60805) — คุณเขียน WO verbatim ให้ GLM:
+   - ลงจริงครบไหม (splitter bug ข้าม meter view → fixup cd27c40 เสริม)
+   - curl anon: v_dashboard_14day=200, equipment/meter/audit_log=401
+   - ปิด acceptance ของคุณครบไหม (curl authenticated ยัง pending — ต้องมี JWT จริง)
+
+2. apply_migration_api splitter rewrite (5be1d56) — GLM เขียน state machine
+   ใหม่แทน regex อันเก่าที่ drop meter view:
+   - อ่าน split_sql ใน scripts/apply_migration_api.py — logic ถูกไหม
+     (dollar-quote / single-quote / -- comment / ; terminator)
+   - regression test scripts/test_split_sql.py — ครอบเคสครบไหม
+   - รัน uv run python scripts/test_split_sql.py ผ่านไหม
+
+3. F5 logic-half (130b53d) — คุณเขียน WO ไว้ tier mid ให้ Sonnet ทำ:
+   - GLM ทำแค่ logic (state + onClick + onKeyDown + panel markup)
+   - className ยังเป็นของเดิม — Track F ยังไม่ได้แตะ
+   - ตรวจ: useState / tabIndex / role / aria-* / strokeWidth 3→5 / panel
+     structure ตรง acceptance ของคุณไหม
+   - **pending Track F**: selected-ring token swap, focus-visible ring,
+     panel micro-animation (jot ไว้ใน WO checkpoint แล้ว)
+
+4. E2E tests (195b55b + f5308f7) — auth.spec.ts + pfd.spec.ts:
+   - ตรวจ assertion logic ถูกไหม (mock v_dashboard_14day เพราะ DB ไม่มี
+     ข้อมูล 14 วันล่าสุด — วันนี้ 2026-07-19 ข้อมูลล่าสุด 2026-07-04)
+   - **production question**: fetchDashboard filter gte(today-14d) ทำให้
+     dashboard ว่างเมื่อข้อมูล stale — intended หรือ bug? (GLM ไม่ได้แตะ)
+
+5. CRB-realtime hook (f5308f7) — useCarbonRollupRealtime:
+   - subscribe postgres_changes บน carbon.reading → refetch rollup
+   - ไม่บังคับใช้ใน page (Track F เลือกเอง)
+   - channel cleanup + cancelled flag ถูกไหม
+
+6. audit_log façade view (cd27c40):
+   - security_invoker=on + admin-gated policy มีอยู่ → curl anon = 401 ถูกไหม
+   - ไม่มี PHI ใน audit_log ใช่ไหม (action + table + row jsonb)
+
+7. docs backfill (f50296a + bdb2a5c + cd7fb5b) — hash ที่ใส่ทั้งหมด
+   มีจริงใน git log ไหม
+
+กติกาเดิม:
+- ผ่าน → append "Verified by Fable5 (date)" ใน handoff doc
+- เจอปัญหา → append ใน handoff doc + claim ใน MIGRATION.md In-progress
+  table + เขียน WO fix แยกถ้าจำเป็น
+- ห้ามแตะ className/สี/ฟอนต์ (Track F scope — แต่คุณเป็น Fable5
+  เจ้าของ Track F อยู่แล้ว ถ้าจะลง visual polish เองได้เลย)
+- ห้าม git reset --hard (rule 6)
+- PHI boundary: ไม่ route ผ่าน Z.ai cloud
+
+บริบทเพิ่ม: ตอนนี้ GLM5.2 ทำ Track Z sweep จนหมด — ไม่มี Track Z
+งานเปิดอยู่. F5 visual polish + F6 production polish รอคุณ. ถ้าจะเลือก
+ทำ visual polish เอง อ้าง WO F5-pfd-interactive.md Checkpoint log
+(มี pending Track F list ครบ).
+```
