@@ -285,7 +285,6 @@ binding rules are here.
 
 | Chunk | Agent | Claimed | Scope (files) |
 |---|---|---|---|
-| STAT-1 | zcode (GLM5.2) | 2026-07-20 | `frontend/src/components/pfd/StatusBadge.tsx`, `ProcessFlowDiagram.tsx`, `pages/DashboardPage.tsx`, `pages/ReadingsListPage.tsx`, `pages/EquipmentPage.tsx`, `components/ui/aura.stories.tsx` |
 | SCHEMA-6 | zcode (GLM5.2) | 2026-07-20 | `supabase/migrations/20260720000000_schema6_overview_public_aggregate.sql`, `frontend/src/lib/supabase-queries.ts`, `frontend/src/lib/overview.ts` |
 
 > **Reopened 2026-07-19 (Fable5 review): P0 `SCHEMA-5-rest-exposure`** — ทุก

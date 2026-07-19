@@ -119,7 +119,7 @@ export function DashboardPage() {
                   <td className="px-4 py-2 font-mono text-aura-textMain">{fmt(r.do_average, 2)}</td>
                   <td className="px-4 py-2 font-mono text-aura-textMain">{fmt(r.ph, 1)}</td>
                   <td className="px-4 py-2 font-mono text-aura-textMain">{fmt(r.free_chlorine, 2)}</td>
-                  <td className="px-4 py-2"><StatusBadge status={r.system_operating ?? null} /></td>
+                  <td className="px-4 py-2"><StatusBadge operating={r.system_operating ?? null} /></td>
                 </tr>
               ))}
               {(readings?.items || []).length === 0 && (

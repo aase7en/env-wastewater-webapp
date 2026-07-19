@@ -68,7 +68,7 @@ export function ProcessFlowDiagram({
     <AuraCard aura={attention ? "animated" : "static"}>
       <div className="flex items-center justify-between mb-4">
         <h2 className="font-display font-semibold text-aura-textMain font-thai">ผังกระบวนการบำบัด</h2>
-        <StatusBadge status={row.system_operating ?? null} />
+        <StatusBadge operating={row.system_operating ?? null} />
       </div>
 
       {/* SVG: horizontal flow with animated dashed line */}

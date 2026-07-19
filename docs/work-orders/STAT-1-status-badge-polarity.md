@@ -1,5 +1,5 @@
 # WO-STAT-1: แก้ StatusBadge polarity — rename prop `status` → `operating`
-Status: open
+Status: done (2026-07-20, zcode) — commit pending
 Lane/files: `frontend/src/components/pfd/StatusBadge.tsx` (interface + body),
 3 callsites (`ProcessFlowDiagram.tsx`, `DashboardPage.tsx`, `ReadingsListPage.tsx`),
 1 callsite กรณีพิเศษ (`EquipmentPage.tsx`),
@@ -150,3 +150,10 @@ cd frontend && npx @ladle/react serve   # → /?story=aura--status-badges ตร
 - [2026-07-20] zcode (GLM): เขียน WO จาก Fable5 tour finding + codebase-design
   verdict (deepening via rename, ไม่ negate 3 callsites). user approved rename
   shape ใน AskUserQuestion. รอ dispatch/claim.
+- [2026-07-20] zcode (GLM): execute ตาม Steps 1-6 — rename `status`→`operating`,
+  flip polarity logic (`operating === true` = green/ปกติ, `=== false` = red/
+  ผิดปกติ). 3 callsites (PFD/Dashboard/Readings) เปลี่ยนชื่อ prop เฉย ๆ.
+  EquipmentPage negate 1 จุด (`operating={open.length === 0}`). Stories rename
+  + reorder (null → true → false อ่านซ้ายไปขวา natural). Verify: `npm run
+  build` ✅ (TS จับ rename ครบ — ไม่มี leftover `status=`) · Playwright 23/23 ✅.
+  Visual smoke (สี) ส่ง Fable5 เพราะ Track F เป็นเจ้าของสี — GLM ไม่ assert สี.

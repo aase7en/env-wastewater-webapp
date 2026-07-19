@@ -145,7 +145,7 @@ export function EquipmentPage() {
                     </div>
                     <div className="font-semibold text-aura-textMain font-thai">{eq.name_th}</div>
                   </div>
-                  <StatusBadge status={open.length > 0 ? true : false} label={open.length > 0 ? "มีการแจ้งซ่อม" : "ปกติ"} />
+                  <StatusBadge operating={open.length === 0} label={open.length > 0 ? "มีการแจ้งซ่อม" : "ปกติ"} />
                 </div>
 
                 {open.length > 0 && (

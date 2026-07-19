@@ -86,9 +86,9 @@ export const ToggleStates = () => (
 export const StatusBadges = () => (
   <Wrapper>
     <div style={{ display: "flex", gap: "0.5rem" }}>
-      <StatusBadge status={null} />
-      <StatusBadge status={true} />
-      <StatusBadge status={false} />
+      <StatusBadge operating={null} />
+      <StatusBadge operating={true} />
+      <StatusBadge operating={false} />
     </div>
   </Wrapper>
 );
