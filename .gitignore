@@ -38,6 +38,10 @@ dist/
 
 # playwright + ladle artifacts
 frontend/test-results/
+test-results/
 frontend/playwright-report/
 frontend/playwright/.cache/
 frontend/ladle-dist/
+
+# zcode agent session state (local scaffolding — plans, scratchpads)
+.zcode/
