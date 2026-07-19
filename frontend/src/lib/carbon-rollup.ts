@@ -103,3 +103,63 @@ export function useCarbonRollup(months = 12) {
 
   return { data, loading, error };
 }
+
+/**
+ * Realtime-aware variant of useCarbonRollup.
+ *
+ * Subscribes to `postgres_changes` on `carbon.reading` (the primary daily
+ * feed into v_unified_co2e). On any INSERT/UPDATE/DELETE there, refetches
+ * the rollup so the page shows fresh totals without a manual refresh.
+ *
+ * Scope: Track Z (logic only). Track F owns the decision of *whether* a
+ * page uses this hook vs the polling variant — wire it from
+ * CarbonRollupPage when ready. Realtime on the underlying view itself is
+ * not supported by Supabase (views can't be broadcast), so we watch the
+ * most-frequently-written base table. Other sources (fuel, garbage,
+ * garden, chemical) will land on next manual refresh; covering them all
+ * would need 5 channels — defer until usage proves the need.
+ *
+ * Returns the same shape as useCarbonRollup plus a `live` flag the UI can
+ * use to show a "live" indicator.
+ */
+export function useCarbonRollupRealtime(months = 12) {
+  const [data, setData] = useState<RollupSummary | null>(null);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
+  const [live, setLive] = useState(false);
+
+  useEffect(() => {
+    let cancelled = false;
+    setLoading(true);
+    fetchRollup(months)
+      .then((d) => { if (!cancelled) { setData(d); setError(null); } })
+      .catch((e: Error) => { if (!cancelled) setError(e.message); })
+      .finally(() => { if (!cancelled) setLoading(false); });
+
+    const channel = supabase
+      .channel("carbon-rollup-realtime")
+      .on(
+        "postgres_changes",
+        { event: "*", schema: "carbon", table: "reading" },
+        () => {
+          // Refetch the whole rollup — v_unified_co2e aggregates server-side.
+          fetchRollup(months)
+            .then((d) => { if (!cancelled) { setData(d); setError(null); } })
+            .catch((e: Error) => { if (!cancelled) setError(e.message); });
+        },
+      )
+      .subscribe((status) => {
+        if (cancelled) return;
+        // "SUBSCRIBED" === connected; anything else (TIMED_OUT/CLOSED/CHANNEL_ERROR) = offline.
+        setLive(status === "SUBSCRIBED");
+      });
+
+    return () => {
+      cancelled = true;
+      supabase.removeChannel(channel);
+      setLive(false);
+    };
+  }, [months]);
+
+  return { data, loading, error, live };
+}
