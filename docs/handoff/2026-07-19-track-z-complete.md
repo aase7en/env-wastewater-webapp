@@ -413,3 +413,32 @@ GLM รับ execute ต่อได้ทันที.
   localStorage session + mock app_user + SPA popstate navigation เลี่ยงบั๊ก AUTH-1)
 
 — Fable5 (2026-07-19)
+
+---
+
+## Fable5 review #4 — 2026-07-19 (dispatch #2: GLM sweep รอบ 2 + FASTAPI audit → executed)
+
+ตรวจ 6 commits (`a04df47` F6 · `c87fc81` MOD-b · `f1f8674` e2e · `15476c4`
+FASTAPI-WO · backfill `4e3edc7`/`688e457`) + hotfix `c995ac0` ของ session tour
+ที่ push แทรกระหว่างรอบนี้
+
+| ข้อตรวจ | ผล |
+|---|---|
+| 1. F6 `a04df47` | ✅ **ผ่านหลัง F6.5** — lazy 3 chart pages ตรง DBAConsole pattern (Suspense fallback ไทยครบ); pdf dynamic import ถูกต้องทั้ง 2 จุด (type-only import คง static — ตรวจ dist: `pdf-*.js` 425+434KB แยก chunk จริง, main 428KB < 600KB target); favicon ico ทำงาน; **daysSince dedupe เข้า `lib/utils.ts` = ปิด nit จาก review #3**. defect @import order เป็นเรื่องจริง → ข้อ 2 |
+| 2. F6.5 `c995ac0` (hotfix โดย session tour) | ✅ ถูกต้องตามสเปค (@import ก่อน rule อื่นทุกชนิด). เติมความแม่นให้บันทึก: ผมตรวจ dist **ก่อน** hotfix แล้วพบ tokens ถูก inline ครบ + ไม่มี literal @import เหลือ (rolldown-vite inline ให้แม้ตำแหน่งผิดสเปค) → กลไกที่พังชัวร์คือ **dev** (browser ทิ้ง literal @import); "production build ล่มด้วย" ยังไม่มีหลักฐานตรง — moot แล้วหลัง hotfix. Post-hotfix: build ✅ + tokens อยู่ต้น dist CSS ✅ |
+| 3. Fonts self-host (F6) | ✅ ใช้จริง (ยืนยันซ้ำจาก fonts.check ของ tour) + ตรวจไฟล์ลึก: Jakarta + JetBrains เป็น **variable font จริง** (fvar ตรวจด้วย fontTools) → ทุก weight render ถูก แต่เป็น**ไฟล์เดียวกัน copy 5+2 ชื่อ** (MD5 ตรงกัน, ~100KB โหลดซ้ำ/URL) → nit: ยุบเหลือ @font-face เดียว `font-weight: 400 800` ต่อตระกูล; IBM Plex Thai เป็น static per-weight ถูกต้องแล้ว; Material 3.9MB full-variable = tradeoff ที่บันทึกไว้ (เน็ตช้า icon จะ blank นาน — ลอง `pyftsubset --flavor woff2` แบบ keep-axes ภายหลังได้) |
+| 4. MOD-b `c87fc81` | ✅ 8 ไฟล์ pattern เดียวกันเป๊ะ (`max-w-5xl mx-auto` + header + gradient h1 + subtitle ไทย) ตรง CarbonPage; AuraCard/form/list ไม่ถูกแตะ; typo "ขย้า" แก้แล้ว. nit typographic: gradient-split ทำให้มีช่องว่างกลางคำไทย ("การ จัดการขยะ", "น้ำประปา บาดาล") — แก้ตอน Track F NAV pass ได้ |
+| 5. e2e `f1f8674` | ✅ assertion ถูก (bounce + `%2F` encode + `.first()` กัน desktop/mobile sidebar ซ้อน); รันจริงที่ merged head = **26 passed** (tracked 23 + `__screens.spec.ts` scratch 3 ของ session tour). **NAV gap — ruling เจ้าของ Track F: เพิ่ม 8 module + `/admin/db` + `/admin/ai` เข้า AppShell NAV ในรอบ Track F ถัดไป** (มัดรวมกับ STAT-1 sweep ได้ — ตอนนั้นค่อยแก้ sidebar test ให้ assert ชุดเต็ม) |
+| 6. FASTAPI `15476c4` + Part 2 | ✅ inventory/dep-graph ถูก แต่ประเมิน port surface เกินจริง — `introspect_schema_api` เรียก `get_settings()` แบบ dead call (ไม่ใช้ค่า) และ `apply_migration_api` ใช้แค่ `_resolve_env_file` → **ตัดสิน Approach C และ execute เสร็จแล้ว** (`0841078` claim → `c6fc72a` chunk): `archive/fastapi-backend` push แล้ว, `scripts/_env.py` stdlib-only, ลบ 52 ไฟล์ (−4,164 บรรทัด), pyproject 0.2.0 เหลือ dep เดียว httpx, CI → split_sql regression, docs 5 ไฟล์อัปเดต (รวม Vite-proxy stale จาก P12), snapshot refresh. Verify: split_sql 8/8 · introspect + `SELECT 1;` migration ผ่านโดย**ล้าง token ใน env บังคับเดิน Drive chain เต็มเส้น** · grep สะอาด · build ✅ |
+| 7. backfill `4e3edc7`/`688e457` | ✅ hash ตรง history ทั้งคู่ |
+
+### ขอบเขต + ของที่ไม่แตะ
+
+- **STAT-1 / AUTH-1 / SCHEMA-6** จาก visual tour — เป็นของ session tour
+  (ประกาศ `[next: STAT-1]` ในหัว commit) → review นี้ไม่ claim กันชน
+- Backlog เปิดหลังรอบนี้: F6 nit fonts dedupe (cheap-ok) · Track F NAV pass
+  (+ช่องว่าง h1) · `introspect_schema_api::SCHEMAS` ขยาย 3→11 domain schemas
+  (cheap-ok) · E2E authenticated integration profile (P11 follow-up)
+
+*Reviewed + executed by Fable5, 2026-07-19 — build ✅ · Playwright 26/26 ✅ ·
+FASTAPI removal C done (`c6fc72a`) · dist CSS token-order ✅*
