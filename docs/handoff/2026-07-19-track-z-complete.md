@@ -197,6 +197,19 @@ ENV_DB state (probed via Supabase Management API 2026-07-19):
 
 ---
 
+## Fable5 review #3 — 2026-07-19 (CRB-2 `72634fb` + F7 `7d71166` + backfills)
+
+**✅ Verified by Fable5 (2026-07-19) — ผ่านทั้ง 4 ข้อ ไม่มี defect**
+
+1. **CRB-2 publication** ✅ `pg_publication_tables` = carbon.reading + wastewater.sensor + sensor_reading (ของเดิมครบ) — realtime hook ใช้งานได้แล้ว
+2. **Date cutoff** ✅ อ่านไฟล์จริงยืนยัน: `setDate(1)` มาก่อน `setMonth` ทั้ง `carbon-rollup.ts` และ `food.ts` (ตอนแรก diff แบบตัด context ทำให้ดูกำกวม — ตรวจไฟล์ตรงแล้วถูกต้อง)
+3. **F7 fetchLatestReadingDate** ✅ unfiltered + desc + limit 1 + null-safe; ใช้ definer view → หน้า `/` ที่ public อ่านได้โดยไม่ login; render ครบ 3 จุด: DashboardPage header (guard `!loading && !error && rows.length===0`), PFD empty card, OverviewPage header (ผ่าน `overview.ts lastDate` — ฉลาดกว่า spec: ไม่ต้องแตะ page)
+4. **Domain honesty** ✅ `latestDate` เป็น text ล้วน — status/anyAlert/chart/gauge ยังผูกกับ window 14 วันเท่านั้น
+- Build ✅ · Playwright 20/20 ✅ · hash backfill ครบทั้ง 2 ใบ (`72634fb`, `7d71166`)
+- Nit (ไม่ bounce): `daysSince()` ซ้ำ 2 ไฟล์ (PFD + DashboardPage) → ยุบเข้า `lib/utils.ts` ในรอบ cleanup/F6; OverviewPage แสดงแค่วันที่ไม่มี "(N วันก่อน)" (cosmetic — header pattern เดิม)
+
+---
+
 ## Dispatch prompt — ส่ง Fable5 ตรวจ diff รอบนี้ (append 2026-07-19) [ดำเนินการแล้ว — ผลอยู่ใน review #2 ด้านบน]
 
 วาง prompt ด้านล่างใน session Fable5 ใหม่ (เลือก model Fable5 ก่อน):
