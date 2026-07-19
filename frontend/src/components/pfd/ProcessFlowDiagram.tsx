@@ -3,17 +3,8 @@ import { Gauge } from "./Gauge";
 import { AerationTank } from "./AerationTank";
 import { StatusBadge } from "./StatusBadge";
 import { AuraCard } from "../ui/AuraCard";
-import { fmt, thaiDate } from "../../lib/utils";
+import { fmt, thaiDate, daysSince } from "../../lib/utils";
 import type { DashboardRow } from "../../lib/types";
-
-/** Days between today (local) and a YYYY-MM-DD string. 0 = today. */
-function daysSince(isoDate: string): number {
-  const today = new Date();
-  today.setHours(0, 0, 0, 0);
-  const d = new Date(isoDate);
-  d.setHours(0, 0, 0, 0);
-  return Math.round((today.getTime() - d.getTime()) / 86_400_000);
-}
 
 /**
  * Process Flow Diagram — SVG centerpiece of the dashboard.

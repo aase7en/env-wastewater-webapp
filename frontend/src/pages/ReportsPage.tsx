@@ -5,7 +5,9 @@ import { MSymbol } from "../components/ui/MSymbol";
 import { Field, Input, Select, Textarea } from "../components/ui/Input";
 import { useToast } from "../components/ui/Toast";
 import { useDashboard } from "../lib/hooks";
-import { downloadPDF, generateRepairRequest, generateTs1, generateTs2 } from "../lib/pdf";
+// Type-only import stays static (no runtime bundle cost). Functions are
+// dynamically imported inside onDownload so jspdf/html2canvas only load
+// when the user actually clicks "ดาวน์โหลด PDF".
 import type { RepairRequestInput } from "../lib/pdf";
 
 const TEMPLATES = [
@@ -59,7 +61,7 @@ export function ReportsPage() {
     status: "open",
   });
 
-  const onDownload = () => {
+  const onDownload = async () => {
     try {
       // Filter dashboard rows to the selected month (YYYY-MM).
       const monthRows = rows.filter((r) => r.reading_date.startsWith(month));
@@ -68,6 +70,10 @@ export function ReportsPage() {
         return;
       }
       const label = monthLabel(month);
+      // Dynamic import — pdf.ts pulls jspdf + html2canvas (~600KB). Loading
+      // only on demand keeps the Reports page bundle small.
+      const { downloadPDF, generateRepairRequest, generateTs1, generateTs2 } =
+        await import("../lib/pdf");
       if (selected === "ts1") {
         downloadPDF(generateTs1(monthRows, label), `ทส.1_${month}.pdf`);
         toast.success(`ดาวน์โหลด ทส.1 เดือน ${label} แล้ว`);

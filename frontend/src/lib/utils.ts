@@ -22,3 +22,14 @@ export function thaiDate(d: string | Date): string {
                   "ก.ค.", "ส.ค.", "ก.ย.", "ต.ค.", "พ.ย.", "ธ.ค."];
   return `${date.getDate()} ${months[date.getMonth()]} ${be}`;
 }
+
+/** Whole days between today (local, midnight) and a YYYY-MM-DD string.
+ * 0 when the date is today; positive for past dates.
+ * Used by F7 stale-data fallback ("N วันก่อน"). */
+export function daysSince(isoDate: string): number {
+  const today = new Date();
+  today.setHours(0, 0, 0, 0);
+  const d = new Date(isoDate);
+  d.setHours(0, 0, 0, 0);
+  return Math.round((today.getTime() - d.getTime()) / 86_400_000);
+}

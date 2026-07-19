@@ -1,5 +1,5 @@
 # WO-F6: Production polish — fonts/logo/bundle
-Status: in_progress (zcode sub for sonnet, 2026-07-19) — claim `<TBD>`
+Status: done (2026-07-19, zcode sub for sonnet) — commit `<TBD>`
 Lane/files: `frontend/public/*`, `frontend/src/index.css`, `frontend/index.html`,
 `frontend/src/App.tsx` (เฉพาะ lazy imports), จุด import ของ `lib/pdf.ts`
 (`pages/ReportsPage.tsx`, `components/repair/RepairRequestModal.tsx`)
@@ -45,3 +45,11 @@ npx playwright test      # 8 passed
 กดพิมพ์ PDF จาก Reports ยังได้ (โหลด chunk pdf ตอนกด)
 
 ## Checkpoint log
+- [2026-07-19] zcode (sub for sonnet): ทำครบ 5 ขั้น
+  - **F6.2 React.lazy**: TrendsPage/CarbonPage/CarbonRollupPage → lazy + Suspense fallback ภาษาไทย. Main chunk 1,255KB → 859KB (-32%)
+  - **F6.3 Dynamic import pdf.ts**: ReportsPage onDownload async + RepairRequestModal printPdf async. Main chunk 859KB → **424KB** (-66% จาก baseline, < 600KB target ✅)
+  - **F6.4 favicon.ico**: PIL สร้าง multi-size ICO (16/32/64) จาก favicon-aura.png. index.html เพิ่ม `<link rel="icon" type="image/x-icon">` (เก็บ PNG เป็น fallback)
+  - **F6.1 Self-host fonts**: ดาวน์โหลด 13 woff2 subsets (Plus Jakarta latin ×5, IBM Plex Sans Thai thai+latin ×8, JetBrains Mono latin ×2) + Material Symbols variable full (3.9MB — subset ของ variable font ทำให้ axes หาย จึงเก็บเต็ม). Replace 2 `@import` ใน index.css ด้วย @font-face blocks + unicode-range per subset.
+  - **Bonus**: dedup `daysSince` — ย้ายจาก local ใน DashboardPage + PFD ไป `lib/utils.ts`
+  - **verify**: npm run build ✅ (main 424KB < 600KB target) · playwright 20/20 ✅
+- **pending Track F (visual verify)**: เปิด dev server → block fonts.googleapis.com + fonts.gstatic.com → reload → ฟอนต์ไทย/icon ยัง render ถูก. กดพิมพ์ PDF จาก Reports ยังได้ (chunk pdf load on demand)

@@ -1,6 +1,8 @@
 import { useState } from "react";
 import { createRepairRequest } from "../../lib/repair";
-import { generateRepairRequest, downloadPDF } from "../../lib/pdf";
+// PDF functions imported on demand inside printPdf — keeps the Dashboard
+// bundle (which always loads this modal) free of jspdf/html2canvas.
+// Type-only imports stay static.
 import { useEquipment } from "../../lib/hooks";
 import { useAuth } from "../AuthProvider";
 import { useToast } from "../ui/Toast";
@@ -65,8 +67,11 @@ export function RepairRequestModal({
     }
   };
 
-  const printPdf = () => {
+  const printPdf = async () => {
     if (!savedCause) return;
+    // Dynamic import — only loads jspdf/html2canvas when the user actually
+    // clicks "พิมพ์ PDF" from the repair modal.
+    const { generateRepairRequest, downloadPDF } = await import("../../lib/pdf");
     const doc = generateRepairRequest({
       date: thaiDate(new Date().toISOString().slice(0, 10)),
       cause: savedCause,

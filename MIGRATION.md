@@ -285,7 +285,6 @@ binding rules are here.
 
 | Chunk | Agent | Claimed | Scope (files) |
 |---|---|---|---|
-| F6 | zcode (sub for sonnet) | 2026-07-19 | `frontend/public/*`, `frontend/src/index.css`, `frontend/index.html`, `App.tsx` (lazy imports), `pages/ReportsPage.tsx`, `components/repair/RepairRequestModal.tsx` |
 
 > **Reopened 2026-07-19 (Fable5 review): P0 `SCHEMA-5-rest-exposure`** — ทุก
 > `.from()` ใน frontend 404 (PGRST205) เพราะ `public` schema ว่างเปล่าและไม่

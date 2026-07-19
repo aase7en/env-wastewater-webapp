@@ -10,16 +10,7 @@ import { AuraCard } from "../components/ui/AuraCard";
 import { Button } from "../components/ui/Button";
 import { MSymbol } from "../components/ui/MSymbol";
 import { RepairRequestModal } from "../components/repair/RepairRequestModal";
-import { fmt, thaiDate } from "../lib/utils";
-
-/** Days between today (local) and a YYYY-MM-DD string (UTC). 0 = today. */
-function daysSince(isoDate: string): number {
-  const today = new Date();
-  today.setHours(0, 0, 0, 0);
-  const d = new Date(isoDate);
-  d.setHours(0, 0, 0, 0);
-  return Math.round((today.getTime() - d.getTime()) / 86_400_000);
-}
+import { fmt, thaiDate, daysSince } from "../lib/utils";
 
 export function DashboardPage() {
   const { data: rows, loading, error, refresh } = useDashboard(14);

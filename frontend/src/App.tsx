@@ -12,8 +12,6 @@ import { AuthCallback } from "./pages/AuthCallback";
 import { NotFoundPage } from "./pages/NotFoundPage";
 import { ReportsPage } from "./pages/ReportsPage";
 import { EquipmentPage } from "./pages/EquipmentPage";
-import { TrendsPage } from "./pages/TrendsPage";
-import { CarbonPage } from "./pages/CarbonPage";
 import { OverviewPage } from "./pages/OverviewPage";
 import { BulkImportPage } from "./pages/BulkImportPage";
 import { WaterSupplyPage } from "./pages/WaterSupplyPage";
@@ -25,9 +23,19 @@ import { SafetyPage } from "./pages/SafetyPage";
 import { FoodPage } from "./pages/FoodPage";
 import { ChemicalPage } from "./pages/ChemicalPage";
 import { RegulationsPage } from "./pages/RegulationsPage";
-import { CarbonRollupPage } from "./pages/CarbonRollupPage";
 import { PDFDesignerPage } from "./pages/PDFDesignerPage";
 import { AttachmentsPage } from "./pages/AttachmentsPage";
+// Lazy-load heavy chart pages + admin (recharts/jspdf pull big bundles).
+// Keeps main chunk lean; loads on first navigation to each route.
+const TrendsPage = lazy(() =>
+  import("./pages/TrendsPage").then((m) => ({ default: m.TrendsPage })),
+);
+const CarbonPage = lazy(() =>
+  import("./pages/CarbonPage").then((m) => ({ default: m.CarbonPage })),
+);
+const CarbonRollupPage = lazy(() =>
+  import("./pages/CarbonRollupPage").then((m) => ({ default: m.CarbonRollupPage })),
+);
 // Lazy-load DBA Console (admin-only, heavy bundle) — keeps main chunk lean.
 const DBAConsolePage = lazy(() =>
   import("./pages/admin/DBAConsolePage").then((m) => ({ default: m.DBAConsolePage })),
@@ -98,7 +106,9 @@ export default function App() {
                     path="/trends"
                     element={
                       <RequireAuth>
-                        <TrendsPage />
+                        <Suspense fallback={<div className="p-8 text-center font-thai text-aura-textMuted">กำลังโหลดแนวโน้ม…</div>}>
+                          <TrendsPage />
+                        </Suspense>
                       </RequireAuth>
                     }
                   />
@@ -106,7 +116,9 @@ export default function App() {
                     path="/carbon"
                     element={
                       <RequireAuth>
-                        <CarbonPage />
+                        <Suspense fallback={<div className="p-8 text-center font-thai text-aura-textMuted">กำลังโหลดคาร์บอน…</div>}>
+                          <CarbonPage />
+                        </Suspense>
                       </RequireAuth>
                     }
                   />
@@ -128,7 +140,7 @@ export default function App() {
                   <Route path="/food" element={<RequireAuth><FoodPage /></RequireAuth>} />
                   <Route path="/chemical" element={<RequireAuth><ChemicalPage /></RequireAuth>} />
                   <Route path="/regulations" element={<RequireAuth><RegulationsPage /></RequireAuth>} />
-                  <Route path="/carbon-rollup" element={<RequireAuth><CarbonRollupPage /></RequireAuth>} />
+                  <Route path="/carbon-rollup" element={<RequireAuth><Suspense fallback={<div className="p-8 text-center font-thai text-aura-textMuted">กำลังโหลด Carbon Rollup…</div>}><CarbonRollupPage /></Suspense></RequireAuth>} />
                   {/* DBA Console — admin-only, lazy-loaded */}
                   <Route
                     path="/admin/db"
