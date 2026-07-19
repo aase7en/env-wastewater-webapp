@@ -53,3 +53,4 @@ npx playwright test      # 8 passed
   - **Bonus**: dedup `daysSince` — ย้ายจาก local ใน DashboardPage + PFD ไป `lib/utils.ts`
   - **verify**: npm run build ✅ (main 424KB < 600KB target) · playwright 20/20 ✅
 - **pending Track F (visual verify)**: เปิด dev server → block fonts.googleapis.com + fonts.gstatic.com → reload → ฟอนต์ไทย/icon ยัง render ถูก. กดพิมพ์ PDF จาก Reports ยังได้ (chunk pdf load on demand)
+- [2026-07-19] fable5: **visual verify ทำแล้ว — พบ regression ร้ายแรง**: `a04df47` วาง `@import "./styles/tokens.css"` หลังบล็อก @font-face → เบราว์เซอร์ทิ้ง @import (CSS spec) → `--aura-*` หายทั้งแอป theme ล่มขาว-ดำ ทั้ง dev+build. **Hotfix แล้ว** (ย้าย @import ขึ้นบรรทัดแรก) — commit เดียวกับบรรทัดนี้. Fonts self-host ตรวจแล้วใช้จริง (document.fonts.check ✅ ครบ 3 ตระกูล). บทเรียน: WO แตะ CSS ต้องมี visual check ใน Verify commands — ดู handoff §Fable5 visual tour

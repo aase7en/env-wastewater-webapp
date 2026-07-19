@@ -364,3 +364,52 @@ graph + A/B/C decision tree ให้ครบ แล้ว:
 FastAPI WO ของคุณออกมาเป็น cheap-ok/mid tier และ Claude ยังติด limit
 GLM รับ execute ต่อได้ทันที.
 ```
+
+---
+
+## Fable5 visual tour ทั้ง 26 หน้า + hotfix theme — 2026-07-19 (หลัง sweep #2)
+
+ตรวจด้วยตาครั้งแรกทั้งแอป (Playwright screenshot tour: หน้า public ใช้ข้อมูลจริง,
+หน้าหลัง login ใช้ seeded session + mock `app_user`) — ทำหน้าที่ pending
+"Track F visual verify" ของ F6 ไปในตัว ผล:
+
+- 🔴 **F6 regression — theme ล่มทั้งแอป (Fable5 แก้แล้วใน commit นี้)**:
+  `a04df47` วาง `@import "./styles/tokens.css"` ไว้**หลัง**บล็อก `@font-face`
+  ใน `index.css` — ผิด CSS spec (@import ต้องมาก่อน rule อื่นทุกชนิด)
+  เบราว์เซอร์จึงทิ้ง @import เงียบ ๆ → `--aura-*` หายหมดทั้ง light/dark
+  (ขาว-ดำทั้งแอป ทั้ง dev และ production build). build ผ่าน + e2e 23/23
+  เขียวเพราะไม่มี assertion เรื่องสีเลย. **Fix**: ย้าย @import ขึ้นบรรทัดแรกสุด.
+  **บทเรียนเข้า WO template**: WO ที่แตะ CSS/theme ต้องมีขั้น visual check
+  (screenshot หรือ computed-style assert `--aura-cyan` ≠ ว่าง) ใน Verify commands
+- 🔴 **StatusBadge กลับด้าน (เปิดใหม่ — รอ WO STAT-1, cheap-ok)**:
+  `StatusBadge` นิยาม prop `status: true = ผิดปกติ` แต่ callsite ส่ง
+  `row.system_operating` (true = ระบบเดินปกติ) ตรง ๆ อย่างน้อย 2 จุด —
+  DashboardPage ตารางประวัติ 14 วัน + ProcessFlowDiagram header → ข้อมูลจริง
+  ทุกวันที่ระบบเดินปกติขึ้นป้ายแดง "ผิดปกติ" ขัดกับ KPI "วันผิดปกติ (14d) 0 วัน"
+  บนหน้าเดียวกัน. Fix: audit callsite ทั้งหมดของ StatusBadge แล้ว negate ที่
+  callsite (`row.system_operating == null ? null : !row.system_operating`)
+  หรือเปลี่ยน prop เป็น `operating` ให้ semantic ตรง — ห้ามแก้สองที่พร้อมกัน
+- 🔴 **Auth refresh-bounce (เปิดใหม่ — รอ WO AUTH-1, Track Z logic)**:
+  `AuthProvider` ตั้ง `loading=false` ทันทีหลัง `getSession()` โดย **ไม่รอ**
+  `loadAppUser` (async) → `isAuthenticated = session && appUser` เป็น false
+  ชั่วขณะ → hard refresh / deep link หน้า RequireAuth ใด ๆ เด้งไป /login
+  เสมอแม้ session ยัง valid และหน้า login ไม่พากลับ. พิสูจน์แล้วด้วย seeded
+  session: request `app_user` ยิงถูกต้อง (id ตรง) แต่ redirect เกิดก่อน response.
+  Fix: คง loading จนกว่า appUser lookup แรกจะ resolve
+- 🟡 **Overview (public) การ์ดพลังงานไฟฟ้า + Carbon Footprint แสดง
+  "โหลดไม่สำเร็จ: permission denied for table meter" สำหรับ anon**: ผลจาก
+  `010b` ที่ re-create `meter` เป็น invoker view (grant เฉพาะ authenticated)
+  แต่หน้า `/` เป็น public. **Ruling Fable5**: ไปทาง definer report view
+  (aggregate ไม่มี PHI — แบบเดียวกับ 4 report views เดิม) สำหรับตัวเลข
+  ที่การ์ด overview ใช้ — รอเขียน WO SCHEMA-6 (cheap-ok, DDL verbatim)
+- ✅ F6 fonts self-host ใช้งานจริง: `public/fonts` 16 ไฟล์ (4.1MB),
+  `document.fonts.check` = true ครบ 3 ตระกูล (Jakarta / Plex Thai / Symbols)
+- ✅ F6 หลัง hotfix: theme กลับมาครบทั้ง light/dark, PFD interactive + halo +
+  panel สวยตาม F5, F7 stale line แสดงถูกทั้ง header + empty card
+  ("บันทึกล่าสุด 4 ก.ค. 2569 (15 วันก่อน)"), MOD-b h1/subtitle มาตามแบบ
+  CarbonPage, DBA Console / AI Admin / PDF designer / Bulk import render ปกติ
+- Screenshot ชุดเต็ม 26 ภาพอยู่ใน scratchpad ของ session (นอก repo) —
+  สร้างใหม่ได้ทุกเมื่อด้วย spec ชั่วคราว (บันทึกวิธีไว้ในส่วนนี้แล้ว: seeded
+  localStorage session + mock app_user + SPA popstate navigation เลี่ยงบั๊ก AUTH-1)
+
+— Fable5 (2026-07-19)
