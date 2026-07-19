@@ -1,5 +1,5 @@
 # WO-MOD-*-b: UI polish สำหรับ 8 module page (WaterSupply/Garbage/Fuel/Garden/Building/Safety/Food/Chemical)
-Status: done (2026-07-19, zcode) — commit `<TBD>`
+Status: done (2026-07-19, zcode) — commit `c87fc81`
 Lane/files: `frontend/src/pages/{WaterSupply,Garbage,Fuel,Garden,Building,Safety,Food,Chemical}Page.tsx`
 Branch: main
 Model tier: **cheap-ok** (GLM — search-and-replace สูตรเดียวทั้ง 8 ไฟล์)
