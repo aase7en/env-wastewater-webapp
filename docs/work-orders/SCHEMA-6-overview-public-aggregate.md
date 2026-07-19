@@ -1,5 +1,5 @@
 # WO-SCHEMA-6: public definer `v_overview_carbon` — anon-safe aggregate สำหรับหน้า `/`
-Status: open
+Status: done (2026-07-20, zcode) — commit pending
 Lane/files: `supabase/migrations/20260720000000_schema6_overview_public_aggregate.sql` (ไฟล์ใหม่),
 `frontend/src/lib/supabase-queries.ts` (เพิ่ม 1 ฟังก์ชัน),
 `frontend/src/lib/overview.ts` (สลับ energy/carbon source)
@@ -227,3 +227,21 @@ cd frontend && npx playwright test    # 26+ passed
   4 report views ใน SCHEMA-5. design decision: aggregate month-only (ไม่ leak
   per-reading) + reuse EMISSION_FACTOR literal 0.4999 + คำนวณ mom% ฝั่ง JS.
   รอ dispatch/claim.
+- [2026-07-20] zcode (GLM): execute ตาม Steps 1-4 — migration + frontend
+  fetchOverviewCarbon + overview.ts rewrite (useOverviewCarbon hook +
+  toCarbonMonths converter + inline momPct). Verify ครบ:
+  - `uv run python scripts/test_split_sql.py` → 8/8 PASS
+  - dry-run split_sql บน migration ใหม่ → 5 statements แยกสะอาด
+  - apply migration ผ่าน Management API → 5/5 OK 0 FAIL (Drive-fallback
+    path ผ่าน scripts/_env.py)
+  - curl anon `/rest/v1/v_overview_carbon?order=month.desc&limit=3` →
+    **HTTP 200** + 3 rows: 2026-07 (4d/19kWh/0.009tCO₂e), 2026-06 (30d/
+    140/0.070), 2026-05 (31d/137/0.068)
+  - curl anon `/rest/v1/carbon_reading?limit=1` → **HTTP 401** (per-reading
+    detail ยัง lock — domain privacy ปกป้อง)
+  - `npm run build` ✅ (TS clean — no leftover useCarbonMonthly ref)
+  - Playwright 23/23 ✅ (smoke #16 OverviewPage ยัง render ได้)
+
+  Nit follow-up (out of scope รอบนี้ — Forbidden ห้ามแตะ carbon.ts):
+  carbon.ts:92 `momPct` เป็น module-private (ไม่ export) → overview.ts
+  inline copy 1 ตัว. Extract ไป lib/utils.ts = chunk เล็ก cheap-ok.

@@ -58,6 +58,34 @@ export async function fetchLatestReadingDate(): Promise<string | null> {
   return (data ?? [])[0]?.reading_date ?? null;
 }
 
+// ─── Overview carbon (SCHEMA-6, anon-safe aggregate) ──────────────────────
+
+/** One row per month (YYYY-MM Gregorian) of carbon/energy aggregates. */
+export interface OverviewCarbonRow {
+  month: string;
+  days: number;
+  kwh_total: number;
+  tco2e: number;
+}
+
+/**
+ * Public overview carbon aggregate (SCHEMA-6) — anon-safe 12-month slice for
+ * the landing-page Energy + Carbon cards. Authenticated CarbonPage keeps
+ * using useCarbonMonthly (per-meter detail from carbon.reading + carbon.meter).
+ *
+ * Returns latest-first (DESC by month). The view already filters to the last
+ * 12 months server-side; we still cap with limit(12) defensively.
+ */
+export async function fetchOverviewCarbon(): Promise<OverviewCarbonRow[]> {
+  const { data, error } = await supabase
+    .from("v_overview_carbon")
+    .select("month, days, kwh_total, tco2e")
+    .order("month", { ascending: false })
+    .limit(12);
+  if (error) throw new Error(error.message);
+  return (data ?? []) as OverviewCarbonRow[];
+}
+
 /** Recent readings list (newest first). Replaces /api/readings. */
 export async function fetchReadings(limit = 30): Promise<{ items: ReadingListItem[]; total: number }> {
   const { data, error, count } = await supabase
