@@ -1,5 +1,5 @@
 # WO-MOD-*-b: UI polish สำหรับ 8 module page (WaterSupply/Garbage/Fuel/Garden/Building/Safety/Food/Chemical)
-Status: in_progress (zcode, 2026-07-19) — claim `<TBD>`
+Status: done (2026-07-19, zcode) — commit `<TBD>`
 Lane/files: `frontend/src/pages/{WaterSupply,Garbage,Fuel,Garden,Building,Safety,Food,Chemical}Page.tsx`
 Branch: main
 Model tier: **cheap-ok** (GLM — search-and-replace สูตรเดียวทั้ง 8 ไฟล์)
@@ -92,3 +92,7 @@ cd frontend && npm run build && npx playwright test   # 20 passed
 
 ## Checkpoint log
 - [2026-07-19] zcode: เขียน WO verbatim สูตร search-and-replace — รอ execute
+- [2026-07-19] zcode: execute ครบ 8 ไฟล์ — container `p-4 space-y-6` → `max-w-5xl mx-auto space-y-5`, h1 เดิม → CarbonPage pattern (font-display tracking-tight + text-aura-textMain + aura-text-gradient), เพิ่ม subtitle 1 บรรทัด. แต่ละไฟล์แตะ 2 จุดบนสุดของ return เท่านั้น — AuraCard/form/list ไม่ถูกแตะ
+  - **verify**: npm run build ✅ · npx playwright test 20/20 ✅
+  - **typo fix bonus**: GarbagePage เดิม "ขย้า / การเก็บขยะ" (พิมพ์ผิด) → "การ จัดการขยะ"
+- **pending Track F (deeper polish)**: EmptyState แทน "ไม่มีข้อมูล" แบบ raw, summary tiles, mobile spacing audit — ไว้สำหรับ Fable5 รอบถัดไป

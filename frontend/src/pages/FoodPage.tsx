@@ -33,8 +33,18 @@ export function FoodPage() {
   }
 
   return (
-    <div className="p-4 space-y-6">
-      <h1 className="text-2xl font-bold font-thai">สุขาภิบาลอาหาร — Coliform</h1>
+    <div className="max-w-5xl mx-auto space-y-5">
+      <header className="flex items-end justify-between gap-3 flex-wrap">
+        <div>
+          <h1 className="text-2xl md:text-3xl font-bold font-display tracking-tight">
+            <span className="text-aura-textMain">ตรวจ</span>
+            <span className="aura-text-gradient"> ครัวและอาหาร</span>
+          </h1>
+          <p className="text-sm text-aura-textMuted font-thai mt-1">
+            ห้องครัวโรงพยาบาล — แหล่งอาหาร / ล้างจาน / ตรวจแลป / reagent
+          </p>
+        </div>
+      </header>
       <AuraCard className="p-4 space-y-3">
         <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
           <Field label="วันที่เก็บตัวอย่าง"><Input type="date" value={form.sample_date} onChange={(e) => set({ sample_date: e.target.value })} /></Field>

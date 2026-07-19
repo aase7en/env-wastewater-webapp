@@ -44,8 +44,18 @@ export function WaterSupplyPage() {
   }
 
   return (
-    <div className="p-4 space-y-6">
-      <h1 className="text-2xl font-bold font-thai">น้ำประปาบาดาล — บันทึกรายวัน</h1>
+    <div className="max-w-5xl mx-auto space-y-5">
+      <header className="flex items-end justify-between gap-3 flex-wrap">
+        <div>
+          <h1 className="text-2xl md:text-3xl font-bold font-display tracking-tight">
+            <span className="text-aura-textMain">น้ำประปา</span>
+            <span className="aura-text-gradient"> บาดาล</span>
+          </h1>
+          <p className="text-sm text-aura-textMuted font-thai mt-1">
+            บันทึกคุณภาพน้ำบาดาลรายวัน — pH / คลอรีน / ความขุ่น / coliform
+          </p>
+        </div>
+      </header>
 
       <AuraCard className="p-4 space-y-3">
         <h2 className="text-lg font-semibold font-thai">กรอกข้อมูล</h2>

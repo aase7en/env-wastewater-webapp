@@ -53,8 +53,18 @@ export function ChemicalPage() {
   }
 
   return (
-    <div className="p-4 space-y-6">
-      <h1 className="text-2xl font-bold font-thai">คลังเคมีภัณฑ์ย่อย</h1>
+    <div className="max-w-5xl mx-auto space-y-5">
+      <header className="flex items-end justify-between gap-3 flex-wrap">
+        <div>
+          <h1 className="text-2xl md:text-3xl font-bold font-display tracking-tight">
+            <span className="text-aura-textMain">คลัง</span>
+            <span className="aura-text-gradient"> เคมี</span>
+          </h1>
+          <p className="text-sm text-aura-textMuted font-thai mt-1">
+            ต้นแบบ / รับเข้า / เบิกออก — ยอดคงคลัง + การเคลื่อนไหว
+          </p>
+        </div>
+      </header>
 
       {lowStock.data.length > 0 && (
         <AuraCard className="p-4 border-l-4 border-yellow-400">

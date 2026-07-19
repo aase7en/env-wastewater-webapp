@@ -285,7 +285,6 @@ binding rules are here.
 
 | Chunk | Agent | Claimed | Scope (files) |
 |---|---|---|---|
-| MOD-*-b batch | zcode | 2026-07-19 | `frontend/src/pages/{WaterSupply,Garbage,Fuel,Garden,Building,Safety,Food,Chemical}Page.tsx` (container + h1 + subtitle only) |
 
 > **Reopened 2026-07-19 (Fable5 review): P0 `SCHEMA-5-rest-exposure`** — ทุก
 > `.from()` ใน frontend 404 (PGRST205) เพราะ `public` schema ว่างเปล่าและไม่

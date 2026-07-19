@@ -32,8 +32,18 @@ export function GarbagePage() {
   }
 
   return (
-    <div className="p-4 space-y-6">
-      <h1 className="text-2xl font-bold font-thai">ขย้า / การเก็บขยะ</h1>
+    <div className="max-w-5xl mx-auto space-y-5">
+      <header className="flex items-end justify-between gap-3 flex-wrap">
+        <div>
+          <h1 className="text-2xl md:text-3xl font-bold font-display tracking-tight">
+            <span className="text-aura-textMain">การ</span>
+            <span className="aura-text-gradient"> จัดการขยะ</span>
+          </h1>
+          <p className="text-sm text-aura-textMuted font-thai mt-1">
+            บันทึกปริมาณขยะแยกตามประเภท — ทั่วไป / ติดเชื้อ / รีไซเคิล
+          </p>
+        </div>
+      </header>
       <AuraCard className="p-4 space-y-3">
         <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
           <Field label="วันที่"><Input type="date" value={form.log_date} onChange={(e) => set({ log_date: e.target.value })} /></Field>
