@@ -147,3 +147,33 @@
 - สรุป B2: **ผ่านแบบมีเงื่อนไข** — จะประทับ Verified เต็มเมื่อ SCHEMA-5 ลงแล้ว curl alias คืน 200 + rows
 
 *Reviewed by Fable5, 2026-07-19 — build ✅ · Playwright 8/8 ✅ · DB audit ✅ · REST probe ❌ (→ SCHEMA-5)*
+
+---
+
+## Fable5 review #2 — 2026-07-19 (GLM sweep 10 commits: `cf7fb5b`→`f5308f7`)
+
+| ข้อตรวจ | ผล |
+|---|---|
+| 1. SCHEMA-5 `4c60805` + fixup | ✅ **Verified เต็ม** — migration ตรง WO DDL verbatim (diff เทียบแล้ว); DB จริงมี 33 views = 29 `security_invoker=on` + 4 definer ตรง design เป๊ะ; meter fixup ถูกต้อง; curl anon: `v_dashboard_14day` 200+row (ล่าสุด 2026-07-04), `equipment`/`meter`/`audit_log` 401 = ถูกต้องตาม design (anon ไม่มี grant บนตารางจริง); **gap "authenticated ต้องมี JWT" ปิดแล้ว** ด้วย DB-level simulation `set local role authenticated` → equipment=10, meter=1, reading=907, carbon_reading=907, dash=907 — grants+RLS+invoker ทำงานครบทั้งเส้นเหมือนที่ PostgREST จะรัน. หมายเหตุ: acceptance ข้อ 2 ใน WO เดิมผมเขียนคาดผล anon=200 ซึ่งผิดเอง (ถูกคือ 401) — GLM รายงานตามจริง ถูกแล้ว |
+| 2. split_sql rewrite `5be1d56` | ✅ state machine ถูกหลัก (dollar-quote/`''` escape/line-comment ไม่หลุดเข้า buf/tail flush); test 8/8 ผ่าน (รันเอง) รวม real-file regression (47 stmt มี meter view); ข้อจำกัดที่ยอมรับ: ไม่รองรับ `/* */` (ไม่มีใช้ใน migrations — grep แล้ว) และ `E'...'` backslash strings |
+| 3. F5 logic-half `130b53d` | ✅ ตรง acceptance ทุกข้อ (useState toggle / tabIndex / role / aria-label+aria-pressed / Enter+Space+preventDefault / strokeWidth 3→5 / panel copy CarbonPage / token classes มีจริงใน tailwind config); scope สะอาด. 2 จุดที่ pending (focus ring, screening "—") **fable5 ปิดแล้วใน visual half วันนี้** |
+| 4. E2E `195b55b`+`f5308f7` | ✅ assertion ถูก; mock ผ่าน `page.route` fulfill = วิธีที่ถูกต้อง (อิสระจาก DB stale); either-or poll กันสอง state ดี. nit: เทสต์ "preserves query in next param" ไม่ได้ assert ส่วน query จริง ๆ. ตอนนี้ suite = **20 เทสต์** (8 smoke + 8 auth + 4 pfd) ไม่ใช่ 19 — นับของ GLM stale หลัง f5308f7 ขยาย pfd |
+| 5. CRB-realtime `f5308f7` | ⚠️ **defect จริง 1 ตัว** — โค้ด hook ถูก (cancelled flag ครบทุก setState path + `removeChannel` + `live` จาก SUBSCRIBED) **แต่ `carbon.reading` ไม่อยู่ใน publication `supabase_realtime`** (มีแค่ wastewater.sensor, sensor_reading — ตรวจ `pg_publication_tables`) → event ไม่มีวันมาถึง และ subscription ยัง SUBSCRIBED สำเร็จ → `live=true` หลอกตลอดกาล = fake-telemetry ที่ ui-brief ห้าม. บวก end-of-month bug `setMonth` ก่อน `setDate(1)` (carbon-rollup.ts:50, food.ts:86). → **WO-CRB-2** (cheap-ok, spec ครบ) ห้ามหน้าไหนใช้ hook นี้จนกว่า CRB-2 ลง |
+| 6. audit_log view `cd27c40` | ✅ invoker=on + anon 401 ถูก; แม่นยำขึ้น: policy จริงมี 3 ตัว (admin ALL / authenticated INSERT / SELECT own `actor=auth.uid()`) — ไม่ใช่ "admin-only-read" ตาม comment แต่ปลอดภัยกว่าที่อ้าง; columns (action/table/row jsonb) อยู่บน env-domain ทั้งหมด ไม่มี PHI |
+| 7. hash backfills ×3 | ✅ ทั้ง 9 hash มีจริงใน history (cat-file ตรวจครบ) |
+
+### Ruling — production question (ข้อ 4): dashboard ว่างเมื่อข้อมูล stale
+
+**Intended, ไม่ใช่ bug** — window 14 วันคือ semantic "สถานะปัจจุบัน" (domain honesty:
+ข้อมูลเก่า 15 วันห้ามแสดงเป็นของสด) **แต่** จอว่างเงียบ ๆ ทำให้แยกไม่ออกว่าระบบพัง
+หรือไม่มีคนกรอก → enhancement ออกแบบแล้ว: **WO-F7-stale-data-fallback** (บรรทัด
+"บันทึกล่าสุด <วันที่ไทย> (N วันก่อน)" ใน empty states — ห้ามเอาข้อมูลเก่าไปวาด chart)
+
+### สรุปรอบนี้
+
+- ✅ **Verified by Fable5 (2026-07-19)** — 9/10 commits ผ่านเต็ม; commit `f5308f7`
+  ผ่านฝั่ง test-hardening แต่ hook realtime ยังใช้ไม่ได้จนกว่า **CRB-2** ลง
+- WO เปิดใหม่: `CRB-2-realtime-publication` (cheap-ok → GLM) ·
+  `F7-stale-data-fallback` (cheap-ok → Sonnet/GLM)
+- F5 ปิดสมบูรณ์ทั้ง 2 ครึ่ง (visual polish โดย fable5 — ดู checkpoint ใน WO)
+- เหลือใน backlog เดิม: F6 production polish (mid)

@@ -54,10 +54,11 @@ Checkpoint (commit hash + เหลืออะไร + กับดัก) → 
 ZCode รับงานที่ค้างบน `track-f`: merge `track-f` เข้า tree ตัวเอง —
 **ห้าม checkout `track-f` ตรง ๆ** (mount อยู่ใน worktree `A:\GitHub\envww-trackf`)
 
-## คิวปัจจุบัน
+## คิวปัจจุบัน (อัปเดต 2026-07-19 หลัง Fable5 review #2)
 
-- **cheap-ok เปิดอยู่**: F4.3 Equipment → F4.4 Reports → F4.5 Auth
-  (`F4-page-conformance.md`) · MOD-*-b UI เมื่อ -a เสร็จ (copy โครง `CarbonPage.tsx`)
-- **mid เปิดอยู่**: F5 PFD interactive · F6 fonts/bundle
+- **cheap-ok เปิดอยู่**: `CRB-2-realtime-publication` (P1 — ปลดล็อก realtime hook)
+  · `F7-stale-data-fallback` · MOD-*-b UI polish (copy โครง `CarbonPage.tsx`/`ReadingsListPage.tsx`)
+- **mid เปิดอยู่**: F6 fonts/bundle (`F6-production-polish.md`)
+- ปิดแล้ว: F4.1–F4.5 · F5 (ทั้ง logic+visual) · SCHEMA-1..5 · DBA-1..10 · MOD-*-a
 - Protocol เต็ม + กติกา 8 ข้อ: MIGRATION.md §Two-track และ A-Wiki
   `docs/protocols/cross-agent-work-orders.md`

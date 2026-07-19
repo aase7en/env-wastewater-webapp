@@ -1,5 +1,5 @@
 # WO-F5: PFD interactive drill-down
-Status: logic-half done (2026-07-19, zcode sub for sonnet) — commit `130b53d`. Visual polish (selected-ring token swap, micro-anim, panel transitions) still pending Track F.
+Status: done (2026-07-19) — logic half `130b53d` (zcode sub for sonnet) + visual half (fable5, commit ดู checkpoint ล่าสุด)
 Lane/files: `frontend/src/components/pfd/ProcessFlowDiagram.tsx` เท่านั้น
 Branch: main
 Model tier: **mid** (opus4.8 — reasoning ปานกลาง, spec ปิดช่องแล้ว)
@@ -63,3 +63,10 @@ npx playwright test    # 8 passed
   - micro-animation เมื่อ panel expand/collapse
   - focus-visible style บน `<g>` (ตอนนี้ `outline:none` เปล่า ๆ — Track F ใส่ focus ring ที่ถูก token)
   - ทดสอบ manual ร่วมกับ visual
+- [2026-07-19] fable5 (visual half — ปิด pending ทั้ง 4 ข้อ):
+  - selected node: คง strokeWidth 5 + เพิ่ม halo ring r=33 `rgb(var(--aura-cyan) / 0.55)` (token — สลับ theme ได้)
+  - focus-visible: `.pfd-node:focus-visible circle` → cyan drop-shadow ×2 ใน `index.css` (`!important` จำเป็นเพราะ glow เดิมเป็น inline style); เอา `outline:none` inline ออก ย้ายไป class
+  - panel: `.pfd-panel` slide/fade-in 220ms + `.pfd-node-halo` fade 200ms; `.pfd-node circle` transition stroke-width 150ms; ทั้งหมดปิดใน `@media (prefers-reduced-motion: reduce)`
+  - screening: เพิ่ม `fallback: "ดูในบันทึกประจำวัน"` (typed `StageField.fallback?`) ตาม mapping เดิมของ WO — เลิกแสดง "—" กำพร้า
+  - Lane ขยายรวม `frontend/src/index.css` (F-lane file ของ fable5 — CSS ของ polish อยู่ที่นั่น)
+  - verify: `npm run build` ✅ · `npx playwright test` 20/20 ✅ · dev-server DOM check ผ่าน javascript_tool (mock route ไม่ได้ใน browser จริง — interaction ครอบโดย pfd.spec 4 เทสต์ mock แล้ว)

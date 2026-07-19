@@ -150,6 +150,28 @@
 .bubble:nth-child(4) { animation-delay: 1.5s; }
 .bubble:nth-child(5) { animation-delay: 2s; }
 
+/* ── F5 interactive: stage-node states + drill-down panel ────────────────
+ * Selected ring is drawn in SVG (token cyan halo); here we handle motion +
+ * keyboard focus. !important is required on focus glow because the stage
+ * glow is an inline style on the circle. */
+.pfd-node { cursor: pointer; outline: none; }
+.pfd-node circle { transition: stroke-width 150ms ease; }
+.pfd-node:focus-visible circle {
+  filter: drop-shadow(0 0 4px rgb(var(--aura-cyan))) drop-shadow(0 0 12px rgb(var(--aura-cyan) / 0.7)) !important;
+}
+.pfd-node-halo { animation: pfd-fade-in 200ms ease-out; }
+.pfd-panel { animation: pfd-panel-in 220ms cubic-bezier(0.16, 1, 0.3, 1); }
+@keyframes pfd-fade-in {
+  from { opacity: 0; }
+}
+@keyframes pfd-panel-in {
+  from { opacity: 0; transform: translateY(6px); }
+}
+@media (prefers-reduced-motion: reduce) {
+  .pfd-node circle { transition: none; }
+  .pfd-node-halo, .pfd-panel { animation: none; }
+}
+
 .status-glow-amber { box-shadow: 0 0 12px rgba(245, 158, 11, 0.6); }
 .status-glow-red {
   box-shadow: 0 0 16px rgba(239, 68, 68, 0.7);

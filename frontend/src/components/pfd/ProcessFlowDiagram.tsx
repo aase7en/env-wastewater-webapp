@@ -66,13 +66,14 @@ export function ProcessFlowDiagram({ row }: { row: DashboardRow | undefined }) {
           className="pfd-flow-line" opacity="0.85" />
 
         {/* Stage nodes — theme surface fill with stage-colored stroke + glow.
-            F5: each <g> is focusable + clickable; selected node stroke is thicker.
-            Track F will swap the static strokeWidth delta for a token-driven ring. */}
+            F5 visual: selected node = thicker stroke + token-cyan halo ring;
+            keyboard focus = cyan glow via .pfd-node:focus-visible (index.css). */}
         {STAGES.map((s, i) => {
           const isSelected = selected === s.key;
           return (
             <g
               key={s.key}
+              className="pfd-node"
               transform={`translate(${80 + i * 160}, 80)`}
               tabIndex={0}
               role="button"
@@ -85,8 +86,11 @@ export function ProcessFlowDiagram({ row }: { row: DashboardRow | undefined }) {
                   setSelected((cur) => (cur === s.key ? null : s.key));
                 }
               }}
-              style={{ cursor: "pointer", outline: "none" }}
             >
+              {isSelected && (
+                <circle r="33" strokeWidth="1.5" fill="none" className="pfd-node-halo"
+                  style={{ stroke: "rgb(var(--aura-cyan) / 0.55)" }} />
+              )}
               <circle r="26" strokeWidth={isSelected ? 5 : 3}
                 style={{
                   fill: "rgb(var(--aura-surface-high))",
@@ -102,10 +106,10 @@ export function ProcessFlowDiagram({ row }: { row: DashboardRow | undefined }) {
         })}
       </svg>
 
-      {/* F5 interactive: selected-stage panel (logic half — markup copied from
-          CarbonPage KPI row. className polish deferred to Track F.) */}
+      {/* F5 interactive: selected-stage panel (markup mirrors CarbonPage KPI row;
+          .pfd-panel = slide/fade-in, reduced-motion safe — index.css) */}
       {selectedStage && (
-        <div className="mt-4 p-4 rounded-xl border border-aura-borderSubtle bg-aura-surfaceHigh/40">
+        <div className="pfd-panel mt-4 p-4 rounded-xl border border-aura-borderSubtle bg-aura-surfaceHigh/40">
           <div className="flex items-baseline justify-between mb-3">
             <h3 className="font-display font-semibold text-aura-textMain font-thai">
               {selectedStage.label}
@@ -115,19 +119,26 @@ export function ProcessFlowDiagram({ row }: { row: DashboardRow | undefined }) {
             </span>
           </div>
           <div className="grid grid-cols-2 sm:grid-cols-3 gap-3">
-            {selectedStage.fields.map((f) => (
-              <div key={f.key} className="flex flex-col">
-                <span className="text-[11px] uppercase tracking-wider font-bold text-aura-textMuted font-thai">
-                  {f.label}
-                </span>
-                <span className="mt-1 text-2xl font-display font-bold text-aura-textMain tabular-nums">
-                  {fmt(num(f.key) ?? null, f.digits)}
-                  {f.unit && (
-                    <span className="text-xs font-normal text-aura-textMuted ml-1">{f.unit}</span>
+            {selectedStage.fields.map((f) => {
+              const v = num(f.key);
+              return (
+                <div key={f.key} className="flex flex-col">
+                  <span className="text-[11px] uppercase tracking-wider font-bold text-aura-textMuted font-thai">
+                    {f.label}
+                  </span>
+                  {v == null && f.fallback ? (
+                    <span className="mt-2 text-sm text-aura-textMuted font-thai">{f.fallback}</span>
+                  ) : (
+                    <span className="mt-1 text-2xl font-display font-bold text-aura-textMain tabular-nums">
+                      {fmt(v ?? null, f.digits)}
+                      {f.unit && (
+                        <span className="text-xs font-normal text-aura-textMuted ml-1">{f.unit}</span>
+                      )}
+                    </span>
                   )}
-                </span>
-              </div>
-            ))}
+                </div>
+              );
+            })}
           </div>
         </div>
       )}
@@ -155,8 +166,27 @@ export function ProcessFlowDiagram({ row }: { row: DashboardRow | undefined }) {
 //
 // F5: each stage carries its field list (key → label + unit + digits) and a
 // one-line description shown in the panel. Fields not yet on DashboardRow
-// are read via the Record helper — missing values render as "—".
-const STAGES = [
+// are read via the Record helper — missing values render as "—", or as the
+// field's `fallback` text when one is declared (e.g. screening points the
+// reader to the daily log instead of a dash).
+interface StageField {
+  key: string;
+  label: string;
+  unit: string;
+  digits: number;
+  fallback?: string;
+}
+
+interface Stage {
+  key: string;
+  label: string;
+  color: string;
+  glow: string;
+  description: string;
+  fields: StageField[];
+}
+
+const STAGES: Stage[] = [
   {
     key: "screening",
     label: "ตะแกรง",
@@ -165,7 +195,7 @@ const STAGES = [
     description: "ตะแกรงดักขยะก่อนเข้าระบบ",
     fields: [
       // Screening has no per-row metric today — operator notes are the source.
-      { key: "screening_washed", label: "การล้างตะแกรง", unit: "", digits: 0 },
+      { key: "screening_washed", label: "การล้างตะแกรง", unit: "", digits: 0, fallback: "ดูในบันทึกประจำวัน" },
     ],
   },
   {
