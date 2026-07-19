@@ -562,3 +562,30 @@ Fable5 visual tour 2026-07-19 flag 🔴 + WO README sync.
 
 *GLM5.2 sweep #3, 2026-07-20 — 4 commits · build ✅ · Playwright 23/23 ·
 migration applied live · anon probe 200 + per-reading 401.*
+
+
+---
+
+## Fable5 review #6 — 2026-07-20 (GLM sweep #3: AUTH-1 + STAT-1 + SCHEMA-6 + docs)
+
+**✅ Verified by Fable5 (2026-07-20) — ผ่านทั้ง 4 commits, ไม่มี defect**
+
+| ข้อตรวจ | ผล |
+|---|---|
+| 1. AUTH-1 `1e9be0c` | ✅ ไล่ race ทุกเส้น: `setAppUserLoading(true)` เกิดก่อน `setSessionLoading(false)` ใน tick เดียว (React batch → ไม่มีหน้าต่าง false-negative); stale guard ownership ถูก (`finally` flip เฉพาะเจ้าของ lookup); logged-out collapse ทันที; lookup fail → bounce (พฤติกรรมเดิม). **พิสูจน์เชิงพฤติกรรม**: probe spec seeded localStorage session + หน่วง `/rest/v1/app_user` 700ms → อยู่ที่ /form ไม่ bounce ✅ (โค้ดก่อน fix จะ bounce ใน window นี้). Nit ไม่ใช่ defect: `appUserLoading` ค้าง true ได้ถ้า sign-out กลาง lookup — ถูก mask ด้วยสูตร derive (`!!session &&`) |
+| 2. STAT-1 `d2f8dfb` | ✅ บั๊กเดิมจริง (system_operating=true เคยขึ้นแดง "ผิดปกติ" ทุกวันปกติ); rename+polarity ถูกทั้ง 7 callsites (grep `status=` = 0); EquipmentPage negate จุดเดียวที่ semantics เป็น alert จริง ✅. **Visual proof (Track F)**: probe render mock 2 แถว → true = เขียว `bg-alert-green` "ปกติ", false = แดง `bg-alert-red` "ผิดปกติ" ✅ |
+| 3. SCHEMA-6 `073a65f` | ✅ DDL ตรง SCHEMA-5 pattern; DB จริง: facade `public.v_overview_carbon` reloptions=null (definer ✅); curl anon เอง: 200 + แถวตรง GLM ทุกตัวเลข (2026-07 4d/19/0.009 · 06 30d/140/0.070 · 05 31d/137/0.068; 0.4999×140/1000=0.070 ✓); `carbon_reading` ยัง 401 ✅; EF 0.4999 ตรง carbon.ts:48; overview.ts: desc+limit12, prev=rows[i+1], null guards ครบ, tco2ePeriod=sum window, F7 fallback คงเดิม, OverviewData shape ไม่เปลี่ยน |
+| 4. Docs `8c89072`+`454f220` | ✅ WO 3 ใบ + README sync + claims released (ตาราง In-progress ว่าง) |
+- Suite ที่ HEAD: **25 passed** (23 tracked + 2 probe แล้วลบ probe) · build ✅
+
+### 🔴 พบใหม่ → WO-E2E-2 (cheap-ok, สูตร verbatim พร้อม dispatch GLM)
+
+e2e.yml prod-smoke run แรกในประวัติ (หลัง CI-1 ปลดบล็อก) ล้ม 6 เทสต์ auth.spec —
+**บั๊ก harness ไม่ใช่แอป**: `page.goto("/form")` resolve กับ ORIGIN ทิ้ง subpath
+ของ baseURL → ยิง `aase7en.github.io/form` (นอก project site). แถม href-exact
+matchers จะไม่ match บน prod (react-router เติม basename). Fix formula ครบใน
+`docs/work-orders/E2E-2-prod-profile-basename.md` (fixture goto rewrite + `href$=`).
+แอปบน prod ตรวจแล้วปกติ (review #5).
+
+*Re-audited by Fable5, 2026-07-20 — probes รันเอง (AUTH-1 race + STAT-1 colors +
+SCHEMA-6 DB/curl) · suite 25/25 · WO-E2E-2 เปิดใหม่*
