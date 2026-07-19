@@ -1,4 +1,4 @@
-import { type ReactNode, createContext, useContext, useEffect, useMemo, useState } from "react";
+import { type ReactNode, createContext, useContext, useEffect, useMemo, useRef, useState } from "react";
 import type { Session, User } from "@supabase/supabase-js";
 import { supabase } from "../lib/supabase";
 
@@ -11,6 +11,11 @@ import { supabase } from "../lib/supabase";
  *
  * `appUser` is the role-bearing row in core.app_user (1:1 with auth.users).
  * It is fetched lazily — null until the lookup resolves.
+ *
+ * AUTH-1 (2026-07-20): `loading` stays true until BOTH the initial session
+ * check completes AND — if a session exists — the matching appUser lookup
+ * resolves. Otherwise RequireAuth would see isAuthenticated=false
+ * momentarily on hard refresh and bounce to /login despite a valid session.
  */
 interface AppUserRow {
   id: string;
@@ -55,25 +60,41 @@ function redirectURL(): string {
 export function AuthProvider({ children }: { children: ReactNode }) {
   const [session, setSession] = useState<Session | null>(null);
   const [appUser, setAppUser] = useState<AppUserRow | null>(null);
-  const [loading, setLoading] = useState(true);
+  // AUTH-1: two loading flags — session check (fast, always runs once) and
+  // appUser lookup (slow, only runs when a session exists). The combined
+  // `loading` exposed to consumers is true until BOTH have settled, so
+  // RequireAuth does not see a momentary false-negative isAuthenticated.
+  const [sessionLoading, setSessionLoading] = useState(true);
+  const [appUserLoading, setAppUserLoading] = useState(false);
+  // Tracks the latest userId we kicked off a lookup for, so a stale lookup
+  // (session changed mid-flight) does not overwrite the in-flight value.
+  const latestUserIdRef = useRef<string | undefined>(undefined);
 
   // Fetch the role-bearing core.app_user row for the current auth.users.id.
   const loadAppUser = async (userId: string | undefined) => {
+    latestUserIdRef.current = userId;
     if (!userId) {
       setAppUser(null);
       return;
     }
-    const { data, error } = await supabase
-      .from("app_user")
-      .select("id, role, display_name")
-      .eq("auth_user_id", userId)
-      .maybeSingle();
-    if (error) {
-      // Most likely RLS — user has an auth.users row but no core.app_user yet.
-      console.warn("app_user lookup failed:", error.message);
-      setAppUser(null);
-    } else {
-      setAppUser(data as AppUserRow | null);
+    setAppUserLoading(true);
+    try {
+      const { data, error } = await supabase
+        .from("app_user")
+        .select("id, role, display_name")
+        .eq("auth_user_id", userId)
+        .maybeSingle();
+      // Stale guard: a newer lookup may have started while we were awaiting.
+      if (latestUserIdRef.current !== userId) return;
+      if (error) {
+        // Most likely RLS — user has an auth.users row but no core.app_user yet.
+        console.warn("app_user lookup failed:", error.message);
+        setAppUser(null);
+      } else {
+        setAppUser(data as AppUserRow | null);
+      }
+    } finally {
+      if (latestUserIdRef.current === userId) setAppUserLoading(false);
     }
   };
 
@@ -82,7 +103,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     supabase.auth.getSession().then(({ data }) => {
       setSession(data.session);
       void loadAppUser(data.session?.user.id);
-      setLoading(false);
+      setSessionLoading(false);
     });
 
     // Subscribe to subsequent auth state changes.
@@ -92,6 +113,10 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     });
     return () => sub.subscription.unsubscribe();
   }, []);
+
+  // Combined loading: true while session is being checked, OR while we have
+  // a session but the matching appUser lookup hasn't resolved yet.
+  const loading = sessionLoading || (!!session && appUserLoading);
 
   const value = useMemo<AuthContextValue>(
     () => ({
@@ -144,7 +169,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         setAppUser(null);
       },
     }),
-    [session, appUser, loading]
+    [session, appUser, sessionLoading, appUserLoading]
   );
 
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;
