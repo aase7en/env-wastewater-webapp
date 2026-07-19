@@ -1,5 +1,5 @@
 # WO-F6: Production polish — fonts/logo/bundle
-Status: open
+Status: in_progress (zcode sub for sonnet, 2026-07-19) — claim `<TBD>`
 Lane/files: `frontend/public/*`, `frontend/src/index.css`, `frontend/index.html`,
 `frontend/src/App.tsx` (เฉพาะ lazy imports), จุด import ของ `lib/pdf.ts`
 (`pages/ReportsPage.tsx`, `components/repair/RepairRequestModal.tsx`)
