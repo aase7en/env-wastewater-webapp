@@ -1,5 +1,5 @@
 # WO-CRB-2: เปิด realtime publication ให้ carbon.reading + แก้ month-cutoff edge
-Status: open
+Status: done (2026-07-19, zcode) — commit `<TBD>`
 Lane/files: `supabase/migrations/<timestamp>_crb2_realtime_publication.sql` (ไฟล์ใหม่),
 `frontend/src/lib/carbon-rollup.ts` (บรรทัด 49–51), `frontend/src/lib/food.ts` (บรรทัด 85–86)
 Branch: main

@@ -83,6 +83,10 @@ export async function fetchReagentUsage(monthsBack = 3): Promise<
   Array<{ chemical_name: string; total_qty: number; unit: string }>
 > {
   const cutoff = new Date();
+  // Pin day-of-month to 1 BEFORE rewinding — guards against the same
+  // 29/30/31 overflow as CRB-2 carbon-rollup fix. This function means
+  // "last N months" so widening to start-of-month is acceptable.
+  cutoff.setDate(1);
   cutoff.setMonth(cutoff.getMonth() - monthsBack);
   const cutoffIso = cutoff.toISOString().slice(0, 10);
 

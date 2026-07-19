@@ -47,8 +47,11 @@ const EXPECTED_SOURCES = [
 
 export async function fetchRollup(months = 12): Promise<RollupSummary> {
   const cutoff = new Date();
-  cutoff.setMonth(cutoff.getMonth() - (months - 1));
+  // Pin day-of-month to 1 BEFORE rewinding months — otherwise the 29/30/31
+  // edge overflows across month boundaries (e.g. 31 Mar − 11 months = 1 May
+  // instead of 1 Apr). CRB-2 fix (Fable5 review of f5308f7).
   cutoff.setDate(1);
+  cutoff.setMonth(cutoff.getMonth() - (months - 1));
   const cutoffIso = cutoff.toISOString().slice(0, 10);
 
   const { data, error } = await supabase
