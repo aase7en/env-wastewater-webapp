@@ -1,5 +1,5 @@
 # WO-F6: Production polish — fonts/logo/bundle
-Status: done (2026-07-19, zcode sub for sonnet) — commit `<TBD>`
+Status: done (2026-07-19, zcode sub for sonnet) — commit a04df47
 Lane/files: `frontend/public/*`, `frontend/src/index.css`, `frontend/index.html`,
 `frontend/src/App.tsx` (เฉพาะ lazy imports), จุด import ของ `lib/pdf.ts`
 (`pages/ReportsPage.tsx`, `components/repair/RepairRequestModal.tsx`)
