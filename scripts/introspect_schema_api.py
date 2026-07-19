@@ -24,21 +24,9 @@ SCHEMAS = ("core", "carbon", "wastewater")
 
 
 def _load_token() -> str:
-    """Read PAT from the Drive-backed .env (or any env source)."""
-    from app.core.config import get_settings
-    s = get_settings()
-    # supabase_access_token isn't on Settings; pull from env file directly.
-    import os
-    tok = os.environ.get("SUPABASE_ACCESS_TOKEN", "")
-    if not tok:
-        # Try reading from the resolved env file
-        from app.core.config import _resolve_env_file
-        p = _resolve_env_file()
-        if p:
-            for line in Path(p).read_text(encoding="utf-8").splitlines():
-                if line.startswith("SUPABASE_ACCESS_TOKEN="):
-                    tok = line.split("=", 1)[1].strip()
-                    break
+    """Read PAT from process env or the Drive-backed .env (scripts/_env.py)."""
+    from _env import load_secret
+    tok = load_secret("SUPABASE_ACCESS_TOKEN")
     if not tok:
         print("SUPABASE_ACCESS_TOKEN not found in env or Drive .env", file=sys.stderr)
         sys.exit(1)

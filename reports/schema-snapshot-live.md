@@ -1,29 +1,34 @@
 # Schema Snapshot — LIVE (P5b.2-live)
 
-> Introspected from ENV_DB on 2026-07-16 via Supabase Management API.
+> Introspected from ENV_DB on 2026-07-19 via Supabase Management API.
 > Schemas: core, carbon, wastewater. GENERATED — re-run `scripts/introspect_schema_api.py`.
 
 ## Tables
 
 | Schema | Table | Rows |
 |---|---|---|
-| `carbon` | `emission_factor` | 0 |
+| `carbon` | `emission_factor` | 12 |
 | `carbon` | `meter` | 1 |
 | `carbon` | `reading` | 907 |
 | `core` | `ai_provider` | 0 |
 | `core` | `ai_query_log` | 0 |
-| `core` | `ai_scope` | 2 |
+| `core` | `ai_scope` | 15 |
 | `core` | `app_user` | 1 |
 | `core` | `attachment` | 0 |
-| `core` | `audit_log` | 0 |
+| `core` | `audit_log` | 23 |
 | `core` | `equipment` | 10 |
 | `core` | `location` | 1 |
-| `core` | `location_category` | 8 |
+| `core` | `location_category` | 16 |
 | `core` | `pdf_template` | 0 |
 | `core` | `personnel` | 9 |
+| `core` | `regulation` | 7 |
 | `core` | `repair_request` | 0 |
+| `core` | `saved_query` | 0 |
 | `wastewater` | `reading` | 907 |
+| `wastewater` | `sensor` | 0 |
+| `wastewater` | `sensor_reading` | 0 |
 | `wastewater` | `threshold` | 0 |
+| `wastewater` | `threshold_alert` | 0 |
 
 ## Columns
 
@@ -87,6 +92,16 @@
 | 7 | `kg_co2e` | `numeric(10,4)` | YES | `` |
 | 8 | `kg_co2e_total` | `numeric` | YES | `` |
 
+### `carbon.v_unified_co2e`
+
+| # | column | type | nullable | default |
+|---|---|---|---|---|
+| 1 | `month` | `date` | YES | `` |
+| 2 | `scope` | `smallint` | YES | `` |
+| 3 | `source` | `text` | YES | `` |
+| 4 | `kg_co2e` | `numeric` | YES | `` |
+| 5 | `row_count` | `bigint` | YES | `` |
+
 ### `core.ai_provider`
 
 | # | column | type | nullable | default |
@@ -99,6 +114,9 @@
 | 6 | `priority` | `integer` | NO | `100` |
 | 7 | `is_enabled` | `boolean` | NO | `true` |
 | 8 | `created_at` | `timestamp with time zone` | NO | `now()` |
+| 9 | `api_url` | `text` | YES | `` |
+| 10 | `key_value` | `text` | YES | `` |
+| 11 | `model_id` | `text` | YES | `` |
 
 ### `core.ai_query_log`
 
@@ -221,6 +239,20 @@
 | 8 | `status` | `text` | YES | `` |
 | 9 | `created_at` | `timestamp with time zone` | NO | `now()` |
 
+### `core.regulation`
+
+| # | column | type | nullable | default |
+|---|---|---|---|---|
+| 1 | `id` | `uuid` | NO | `gen_random_uuid()` |
+| 2 | `name` | `text` | NO | `` |
+| 3 | `citation` | `text` | NO | `` |
+| 4 | `summary_th` | `text` | YES | `` |
+| 5 | `applies_to` | `ARRAY` | NO | `'{}'::text[]` |
+| 6 | `official_url` | `text` | YES | `` |
+| 7 | `effective_date` | `date` | YES | `` |
+| 8 | `is_active` | `boolean` | NO | `true` |
+| 9 | `created_at` | `timestamp with time zone` | NO | `now()` |
+
 ### `core.repair_request`
 
 | # | column | type | nullable | default |
@@ -233,6 +265,34 @@
 | 6 | `status` | `repair_status` | NO | `'open'::core.repair_status` |
 | 7 | `created_at` | `timestamp with time zone` | NO | `now()` |
 | 8 | `resolved_at` | `timestamp with time zone` | YES | `` |
+
+### `core.saved_query`
+
+| # | column | type | nullable | default |
+|---|---|---|---|---|
+| 1 | `id` | `uuid` | NO | `gen_random_uuid()` |
+| 2 | `name` | `text` | NO | `` |
+| 3 | `sql_text` | `text` | NO | `` |
+| 4 | `description` | `text` | YES | `` |
+| 5 | `created_by` | `uuid` | NO | `` |
+| 6 | `is_shared` | `boolean` | NO | `false` |
+| 7 | `tags` | `ARRAY` | NO | `'{}'::text[]` |
+| 8 | `last_run_at` | `timestamp with time zone` | YES | `` |
+| 9 | `run_count` | `integer` | NO | `0` |
+| 10 | `created_at` | `timestamp with time zone` | NO | `now()` |
+
+### `core.v_ai_provider_public`
+
+| # | column | type | nullable | default |
+|---|---|---|---|---|
+| 1 | `id` | `uuid` | YES | `` |
+| 2 | `name` | `text` | YES | `` |
+| 3 | `base_url` | `text` | YES | `` |
+| 4 | `model` | `text` | YES | `` |
+| 5 | `model_id` | `text` | YES | `` |
+| 6 | `api_url` | `text` | YES | `` |
+| 7 | `priority` | `integer` | YES | `` |
+| 8 | `is_enabled` | `boolean` | YES | `` |
 
 ### `wastewater.reading`
 
@@ -279,6 +339,31 @@
 | 39 | `legacy_id` | `text` | YES | `` |
 | 40 | `reported_by_name_legacy` | `text` | YES | `` |
 
+### `wastewater.sensor`
+
+| # | column | type | nullable | default |
+|---|---|---|---|---|
+| 1 | `id` | `uuid` | NO | `gen_random_uuid()` |
+| 2 | `code` | `text` | NO | `` |
+| 3 | `parameter_code` | `text` | NO | `` |
+| 4 | `label_th` | `text` | YES | `` |
+| 5 | `unit` | `text` | NO | `` |
+| 6 | `location_id` | `uuid` | YES | `` |
+| 7 | `is_active` | `boolean` | NO | `true` |
+| 8 | `last_seen_at` | `timestamp with time zone` | YES | `` |
+| 9 | `created_at` | `timestamp with time zone` | NO | `now()` |
+
+### `wastewater.sensor_reading`
+
+| # | column | type | nullable | default |
+|---|---|---|---|---|
+| 1 | `id` | `uuid` | NO | `gen_random_uuid()` |
+| 2 | `sensor_id` | `uuid` | NO | `` |
+| 3 | `taken_at` | `timestamp with time zone` | NO | `now()` |
+| 4 | `value` | `numeric(12,3)` | NO | `` |
+| 5 | `raw` | `jsonb` | YES | `` |
+| 6 | `inserted_at` | `timestamp with time zone` | NO | `now()` |
+
 ### `wastewater.threshold`
 
 | # | column | type | nullable | default |
@@ -289,6 +374,37 @@
 | 4 | `max_value` | `numeric(10,3)` | YES | `` |
 | 5 | `effective_from` | `date` | NO | `CURRENT_DATE` |
 | 6 | `note` | `text` | YES | `` |
+
+### `wastewater.threshold_alert`
+
+| # | column | type | nullable | default |
+|---|---|---|---|---|
+| 1 | `id` | `uuid` | NO | `gen_random_uuid()` |
+| 2 | `reading_id` | `uuid` | NO | `` |
+| 3 | `field` | `text` | NO | `` |
+| 4 | `message` | `text` | NO | `` |
+| 5 | `created_at` | `timestamp with time zone` | NO | `now()` |
+| 6 | `notified_at` | `timestamp with time zone` | YES | `` |
+| 7 | `read_at` | `timestamp with time zone` | YES | `` |
+
+### `wastewater.v_dashboard_14day`
+
+| # | column | type | nullable | default |
+|---|---|---|---|---|
+| 1 | `id` | `uuid` | YES | `` |
+| 2 | `reading_date` | `date` | YES | `` |
+| 3 | `do_average` | `numeric` | YES | `` |
+| 4 | `ph` | `numeric(4,2)` | YES | `` |
+| 5 | `free_chlorine` | `numeric(6,3)` | YES | `` |
+| 6 | `tds_aeration` | `numeric(10,2)` | YES | `` |
+| 7 | `water_used_total` | `numeric(12,2)` | YES | `` |
+| 8 | `wastewater_in` | `numeric(12,2)` | YES | `` |
+| 9 | `system_operating` | `boolean` | YES | `` |
+| 10 | `wastewater_discharged` | `boolean` | YES | `` |
+| 11 | `do_alert` | `boolean` | YES | `` |
+| 12 | `chlorine_alert` | `boolean` | YES | `` |
+| 13 | `ph_alert` | `boolean` | YES | `` |
+| 14 | `date_thai_be` | `integer` | YES | `` |
 
 ### `wastewater.v_monthly_summary`
 
@@ -306,6 +422,18 @@
 | 10 | `total_chlorine_used` | `numeric` | YES | `` |
 | 11 | `total_excess_sludge` | `numeric` | YES | `` |
 | 12 | `total_kg_co2e` | `numeric` | YES | `` |
+
+### `wastewater.v_pending_threshold_alerts`
+
+| # | column | type | nullable | default |
+|---|---|---|---|---|
+| 1 | `id` | `uuid` | YES | `` |
+| 2 | `reading_id` | `uuid` | YES | `` |
+| 3 | `field` | `text` | YES | `` |
+| 4 | `message` | `text` | YES | `` |
+| 5 | `created_at` | `timestamp with time zone` | YES | `` |
+| 6 | `reading_date` | `date` | YES | `` |
+| 7 | `reporter` | `text` | YES | `` |
 
 ### `wastewater.v_reading_detail`
 
@@ -358,6 +486,54 @@
 | 45 | `flag_free_chlorine` | `boolean` | YES | `` |
 | 46 | `flag_ph` | `boolean` | YES | `` |
 
+### `wastewater.v_reading_with_computed`
+
+| # | column | type | nullable | default |
+|---|---|---|---|---|
+| 1 | `id` | `uuid` | YES | `` |
+| 2 | `location_id` | `uuid` | YES | `` |
+| 3 | `reading_date` | `date` | YES | `` |
+| 4 | `reported_by` | `uuid` | YES | `` |
+| 5 | `tds_aeration` | `numeric(10,2)` | YES | `` |
+| 6 | `temp_aeration` | `numeric(5,2)` | YES | `` |
+| 7 | `tds_before_discharge` | `numeric(10,2)` | YES | `` |
+| 8 | `ph` | `numeric(4,2)` | YES | `` |
+| 9 | `do_aeration` | `numeric(6,2)` | YES | `` |
+| 10 | `do_sedimentation` | `numeric(6,2)` | YES | `` |
+| 11 | `do_before_discharge` | `numeric(6,2)` | YES | `` |
+| 12 | `sv30` | `numeric(6,2)` | YES | `` |
+| 13 | `free_chlorine` | `numeric(6,3)` | YES | `` |
+| 14 | `color_desc` | `text` | YES | `` |
+| 15 | `smell_desc` | `text` | YES | `` |
+| 16 | `screen_cleaned_coarse` | `boolean` | YES | `` |
+| 17 | `screen_cleaned_fine` | `boolean` | YES | `` |
+| 18 | `pump1_running` | `boolean` | YES | `` |
+| 19 | `pump2_running` | `boolean` | YES | `` |
+| 20 | `aerator1_running` | `boolean` | YES | `` |
+| 21 | `aerator2_running` | `boolean` | YES | `` |
+| 22 | `sludge_pump1_running` | `boolean` | YES | `` |
+| 23 | `sludge_pump2_running` | `boolean` | YES | `` |
+| 24 | `chlorine_pump1_running` | `boolean` | YES | `` |
+| 25 | `chlorine_pump2_running` | `boolean` | YES | `` |
+| 26 | `system_operating` | `boolean` | YES | `` |
+| 27 | `pump1_meter` | `numeric(12,2)` | YES | `` |
+| 28 | `pump2_meter` | `numeric(12,2)` | YES | `` |
+| 29 | `water_used_total` | `numeric(12,2)` | YES | `` |
+| 30 | `wastewater_in` | `numeric(12,2)` | YES | `` |
+| 31 | `wastewater_discharged` | `boolean` | YES | `` |
+| 32 | `chlorine_used` | `numeric(10,3)` | YES | `` |
+| 33 | `chlorine_mix_ratio` | `text` | YES | `` |
+| 34 | `excess_sludge_removed` | `numeric(10,2)` | YES | `` |
+| 35 | `carbon_reading_id` | `uuid` | YES | `` |
+| 36 | `input_source` | `input_source` | YES | `` |
+| 37 | `note` | `text` | YES | `` |
+| 38 | `created_at` | `timestamp with time zone` | YES | `` |
+| 39 | `legacy_id` | `text` | YES | `` |
+| 40 | `reported_by_name_legacy` | `text` | YES | `` |
+| 41 | `do_average` | `numeric` | YES | `` |
+| 42 | `energy_kwh_estimate` | `numeric` | YES | `` |
+| 43 | `date_thai_be` | `integer` | YES | `` |
+
 ## Enum types
 
 | Schema | Enum | Values |
@@ -374,7 +550,7 @@
 | Schema | Table | Name | Kind | Definition |
 |---|---|---|---|---|
 | `carbon` | `emission_factor` | `emission_factor_pkey` | PK | `PRIMARY KEY (id)` |
-| `carbon` | `emission_factor` | `emission_factor_source_effective_from_key` | UNIQUE | `UNIQUE (source, effective_from)` |
+| `carbon` | `emission_factor` | `emission_factor_source_unit_effective_from_key` | UNIQUE | `UNIQUE (source, unit, effective_from)` |
 | `carbon` | `meter` | `meter_location_id_fkey` | FK | `FOREIGN KEY (location_id) REFERENCES core.location(id)` |
 | `carbon` | `meter` | `meter_pkey` | PK | `PRIMARY KEY (id)` |
 | `carbon` | `reading` | `reading_meter_id_fkey` | FK | `FOREIGN KEY (meter_id) REFERENCES carbon.meter(id)` |
@@ -407,22 +583,31 @@
 | `core` | `pdf_template` | `pdf_template_pkey` | PK | `PRIMARY KEY (id)` |
 | `core` | `personnel` | `personnel_employee_code_key` | UNIQUE | `UNIQUE (employee_code)` |
 | `core` | `personnel` | `personnel_pkey` | PK | `PRIMARY KEY (id)` |
+| `core` | `regulation` | `regulation_pkey` | PK | `PRIMARY KEY (id)` |
 | `core` | `repair_request` | `repair_request_equipment_id_fkey` | FK | `FOREIGN KEY (equipment_id) REFERENCES core.equipment(id)` |
 | `core` | `repair_request` | `repair_request_pkey` | PK | `PRIMARY KEY (id)` |
 | `core` | `repair_request` | `repair_request_reading_id_fkey` | FK | `FOREIGN KEY (reading_id) REFERENCES wastewater.reading(id)` |
 | `core` | `repair_request` | `repair_request_reported_by_fkey` | FK | `FOREIGN KEY (reported_by) REFERENCES core.app_user(id)` |
+| `core` | `saved_query` | `saved_query_pkey` | PK | `PRIMARY KEY (id)` |
 | `wastewater` | `reading` | `reading_carbon_reading_id_fkey` | FK | `FOREIGN KEY (carbon_reading_id) REFERENCES carbon.reading(id)` |
 | `wastewater` | `reading` | `reading_location_id_fkey` | FK | `FOREIGN KEY (location_id) REFERENCES core.location(id)` |
 | `wastewater` | `reading` | `reading_location_id_reading_date_key` | UNIQUE | `UNIQUE (location_id, reading_date)` |
 | `wastewater` | `reading` | `reading_pkey` | PK | `PRIMARY KEY (id)` |
 | `wastewater` | `reading` | `reading_reported_by_fkey` | FK | `FOREIGN KEY (reported_by) REFERENCES core.app_user(id)` |
+| `wastewater` | `sensor` | `sensor_code_key` | UNIQUE | `UNIQUE (code)` |
+| `wastewater` | `sensor` | `sensor_location_id_fkey` | FK | `FOREIGN KEY (location_id) REFERENCES core.location(id)` |
+| `wastewater` | `sensor` | `sensor_pkey` | PK | `PRIMARY KEY (id)` |
+| `wastewater` | `sensor_reading` | `sensor_reading_pkey` | PK | `PRIMARY KEY (id)` |
+| `wastewater` | `sensor_reading` | `sensor_reading_sensor_id_fkey` | FK | `FOREIGN KEY (sensor_id) REFERENCES wastewater.sensor(id) ON DELETE CASCADE` |
 | `wastewater` | `threshold` | `threshold_parameter_code_effective_from_key` | UNIQUE | `UNIQUE (parameter_code, effective_from)` |
 | `wastewater` | `threshold` | `threshold_pkey` | PK | `PRIMARY KEY (id)` |
+| `wastewater` | `threshold_alert` | `threshold_alert_pkey` | PK | `PRIMARY KEY (id)` |
+| `wastewater` | `threshold_alert` | `threshold_alert_reading_id_fkey` | FK | `FOREIGN KEY (reading_id) REFERENCES wastewater.reading(id) ON DELETE CASCADE` |
 
 ## Indexes
 
 - `carbon.emission_factor` **emission_factor_pkey**: `CREATE UNIQUE INDEX emission_factor_pkey ON carbon.emission_factor USING btree (id)`
-- `carbon.emission_factor` **emission_factor_source_effective_from_key**: `CREATE UNIQUE INDEX emission_factor_source_effective_from_key ON carbon.emission_factor USING btree (source, effective_from)`
+- `carbon.emission_factor` **emission_factor_source_unit_effective_from_key**: `CREATE UNIQUE INDEX emission_factor_source_unit_effective_from_key ON carbon.emission_factor USING btree (source, unit, effective_from)`
 - `carbon.meter` **meter_pkey**: `CREATE UNIQUE INDEX meter_pkey ON carbon.meter USING btree (id)`
 - `carbon.reading` **reading_meter_id_reading_date_idx**: `CREATE INDEX reading_meter_id_reading_date_idx ON carbon.reading USING btree (meter_id, reading_date DESC)`
 - `carbon.reading` **reading_meter_id_reading_date_key**: `CREATE UNIQUE INDEX reading_meter_id_reading_date_key ON carbon.reading USING btree (meter_id, reading_date)`
@@ -449,12 +634,24 @@
 - `core.pdf_template` **pdf_template_pkey**: `CREATE UNIQUE INDEX pdf_template_pkey ON core.pdf_template USING btree (id)`
 - `core.personnel` **personnel_employee_code_key**: `CREATE UNIQUE INDEX personnel_employee_code_key ON core.personnel USING btree (employee_code)`
 - `core.personnel` **personnel_pkey**: `CREATE UNIQUE INDEX personnel_pkey ON core.personnel USING btree (id)`
+- `core.regulation` **idx_regulation_applies_to**: `CREATE INDEX idx_regulation_applies_to ON core.regulation USING gin (applies_to)`
+- `core.regulation` **regulation_pkey**: `CREATE UNIQUE INDEX regulation_pkey ON core.regulation USING btree (id)`
 - `core.repair_request` **repair_request_pkey**: `CREATE UNIQUE INDEX repair_request_pkey ON core.repair_request USING btree (id)`
+- `core.saved_query` **idx_saved_query_created_by**: `CREATE INDEX idx_saved_query_created_by ON core.saved_query USING btree (created_by)`
+- `core.saved_query` **idx_saved_query_shared**: `CREATE INDEX idx_saved_query_shared ON core.saved_query USING btree (name, tags) WHERE (is_shared = true)`
+- `core.saved_query` **saved_query_pkey**: `CREATE UNIQUE INDEX saved_query_pkey ON core.saved_query USING btree (id)`
 - `wastewater.reading` **reading_location_id_reading_date_key**: `CREATE UNIQUE INDEX reading_location_id_reading_date_key ON wastewater.reading USING btree (location_id, reading_date)`
 - `wastewater.reading` **reading_pkey**: `CREATE UNIQUE INDEX reading_pkey ON wastewater.reading USING btree (id)`
 - `wastewater.reading` **reading_reading_date_idx**: `CREATE INDEX reading_reading_date_idx ON wastewater.reading USING btree (reading_date DESC)`
+- `wastewater.sensor` **sensor_code_key**: `CREATE UNIQUE INDEX sensor_code_key ON wastewater.sensor USING btree (code)`
+- `wastewater.sensor` **sensor_pkey**: `CREATE UNIQUE INDEX sensor_pkey ON wastewater.sensor USING btree (id)`
+- `wastewater.sensor_reading` **idx_sensor_reading_sensor_time**: `CREATE INDEX idx_sensor_reading_sensor_time ON wastewater.sensor_reading USING btree (sensor_id, taken_at DESC)`
+- `wastewater.sensor_reading` **sensor_reading_pkey**: `CREATE UNIQUE INDEX sensor_reading_pkey ON wastewater.sensor_reading USING btree (id)`
 - `wastewater.threshold` **threshold_parameter_code_effective_from_key**: `CREATE UNIQUE INDEX threshold_parameter_code_effective_from_key ON wastewater.threshold USING btree (parameter_code, effective_from)`
 - `wastewater.threshold` **threshold_pkey**: `CREATE UNIQUE INDEX threshold_pkey ON wastewater.threshold USING btree (id)`
+- `wastewater.threshold_alert` **idx_threshold_alert_pending**: `CREATE INDEX idx_threshold_alert_pending ON wastewater.threshold_alert USING btree (created_at) WHERE (notified_at IS NULL)`
+- `wastewater.threshold_alert` **idx_threshold_alert_unread**: `CREATE INDEX idx_threshold_alert_unread ON wastewater.threshold_alert USING btree (created_at DESC) WHERE (read_at IS NULL)`
+- `wastewater.threshold_alert` **threshold_alert_pkey**: `CREATE UNIQUE INDEX threshold_alert_pkey ON wastewater.threshold_alert USING btree (id)`
 
 ## Row-level security
 
@@ -474,9 +671,14 @@
 | `core` | `location_category` | ✅ |
 | `core` | `pdf_template` | ✅ |
 | `core` | `personnel` | ✅ |
+| `core` | `regulation` | ✅ |
 | `core` | `repair_request` | ✅ |
+| `core` | `saved_query` | ✅ |
 | `wastewater` | `reading` | ✅ |
+| `wastewater` | `sensor` | ✅ |
+| `wastewater` | `sensor_reading` | ✅ |
 | `wastewater` | `threshold` | ✅ |
+| `wastewater` | `threshold_alert` | ✅ |
 
 ## Views
 
@@ -509,6 +711,103 @@ SELECT r.id,
          LIMIT 1) f ON (true));
 ```
 
+### `carbon.v_unified_co2e`
+```sql
+SELECT (date_trunc('month'::text, (r.reading_date)::timestamp with time zone))::date AS month,
+    (2)::smallint AS scope,
+    'electricity'::text AS source,
+    COALESCE((sum(r.consumption) * ef.kg_co2e), (0)::numeric) AS kg_co2e,
+    count(r.id) AS row_count
+   FROM (carbon.reading r
+     LEFT JOIN carbon.emission_factor ef ON (((ef.source = 'electricity'::carbon.source_type) AND (ef.unit = 'kWh'::text) AND (ef.effective_from <= date_trunc('month'::text, (r.reading_date)::timestamp with time zone)))))
+  GROUP BY ((date_trunc('month'::text, (r.reading_date)::timestamp with time zone))::date), ef.kg_co2e
+UNION ALL
+ SELECT (date_trunc('month'::text, (d.log_date)::timestamp with time zone))::date AS month,
+    (1)::smallint AS scope,
+    d.fuel_type AS source,
+    (COALESCE(sum(d.litres), (0)::numeric) * ef.kg_co2e) AS kg_co2e,
+    count(d.id) AS row_count
+   FROM (fuel.dispense_log d
+     LEFT JOIN carbon.emission_factor ef ON (((ef.source = (d.fuel_type)::carbon.source_type) AND (ef.unit = 'L'::text) AND (ef.effective_from <= date_trunc('month'::text, (d.log_date)::timestamp with time zone)))))
+  WHERE (d.litres IS NOT NULL)
+  GROUP BY ((date_trunc('month'::text, (d.log_date)::timestamp with time zone))::date), d.fuel_type, ef.kg_co2e
+UNION ALL
+ SELECT (date_trunc('month'::text, (w.round_date)::timestamp with time zone))::date AS month,
+    (1)::smallint AS scope,
+    'garden_fuel'::text AS source,
+    (COALESCE(sum(w.fuel_used_l), (0)::numeric) * ef.kg_co2e) AS kg_co2e,
+    count(w.id) AS row_count
+   FROM (garden.work_round w
+     LEFT JOIN carbon.emission_factor ef ON (((ef.source = 'gasoline'::carbon.source_type) AND (ef.unit = 'L'::text) AND (ef.effective_from <= date_trunc('month'::text, (w.round_date)::timestamp with time zone)))))
+  WHERE (w.fuel_used_l IS NOT NULL)
+  GROUP BY ((date_trunc('month'::text, (w.round_date)::timestamp with time zone))::date), ef.kg_co2e
+UNION ALL
+ SELECT (date_trunc('month'::text, (c.log_date)::timestamp with time zone))::date AS month,
+    (3)::smallint AS scope,
+    ('waste_'::text || COALESCE(c.waste_type, 'general'::text)) AS source,
+    (COALESCE(sum(c.weight_kg), (0)::numeric) * ef.kg_co2e) AS kg_co2e,
+    count(c.id) AS row_count
+   FROM (garbage.collection_log c
+     LEFT JOIN carbon.emission_factor ef ON (((ef.source = 'other'::carbon.source_type) AND (ef.unit =
+        CASE c.waste_type
+            WHEN 'infectious'::text THEN 'kg (infectious_waste)'::text
+            WHEN 'recyclable'::text THEN 'kg (recyclable)'::text
+            ELSE 'kg (general_waste)'::text
+        END) AND (ef.effective_from <= date_trunc('month'::text, (c.log_date)::timestamp with time zone)))))
+  WHERE (c.weight_kg IS NOT NULL)
+  GROUP BY ((date_trunc('month'::text, (c.log_date)::timestamp with time zone))::date), c.waste_type, ef.kg_co2e
+UNION ALL
+ SELECT (date_trunc('month'::text, (m.movement_date)::timestamp with time zone))::date AS month,
+    (3)::smallint AS scope,
+    ('chemical_'::text || lower(split_part(m.chemical_name, ' '::text, 1))) AS source,
+    (COALESCE(sum(m.quantity), (0)::numeric) * ef.kg_co2e) AS kg_co2e,
+    count(m.id) AS row_count
+   FROM (chemical.movement m
+     LEFT JOIN carbon.emission_factor ef ON (((ef.source = 'other'::carbon.source_type) AND (ef.unit =
+        CASE
+            WHEN ((m.chemical_name ~~* '%chlorine%'::text) OR (m.chemical_name ~~* '%คลอรีน%'::text)) THEN 'kg (chlorine)'::text
+            WHEN ((m.chemical_name ~~* '%alum%'::text) OR (m.chemical_name ~~* '%สารส้ม%'::text)) THEN 'kg (alum)'::text
+            WHEN ((m.chemical_name ~~* '%kmno4%'::text) OR (m.chemical_name ~~* '%ด่างทับทิม%'::text)) THEN 'kg (kmno4)'::text
+            ELSE 'kg (reagent_disposal)'::text
+        END) AND (ef.effective_from <= date_trunc('month'::text, (m.movement_date)::timestamp with time zone)))))
+  WHERE ((m.direction = 'out'::text) AND (m.quantity IS NOT NULL))
+  GROUP BY ((date_trunc('month'::text, (m.movement_date)::timestamp with time zone))::date), m.chemical_name, ef.kg_co2e;
+```
+
+### `core.v_ai_provider_public`
+```sql
+SELECT id,
+    name,
+    base_url,
+    model,
+    model_id,
+    api_url,
+    priority,
+    is_enabled
+   FROM core.ai_provider
+  WHERE (is_enabled = true);
+```
+
+### `wastewater.v_dashboard_14day`
+```sql
+SELECT id,
+    reading_date,
+    wastewater.fn_do_average(do_aeration, do_sedimentation, do_before_discharge) AS do_average,
+    ph,
+    free_chlorine,
+    tds_aeration,
+    water_used_total,
+    wastewater_in,
+    system_operating,
+    wastewater_discharged,
+    ((wastewater.fn_do_average(do_aeration, do_sedimentation, do_before_discharge) IS NOT NULL) AND (wastewater.fn_do_average(do_aeration, do_sedimentation, do_before_discharge) < 2.0)) AS do_alert,
+    ((free_chlorine IS NOT NULL) AND (free_chlorine < 0.5)) AS chlorine_alert,
+    ((ph IS NOT NULL) AND ((ph < 6.5) OR (ph > 8.5))) AS ph_alert,
+    ((EXTRACT(year FROM reading_date))::integer + 543) AS date_thai_be
+   FROM wastewater.reading
+  ORDER BY reading_date DESC;
+```
+
 ### `wastewater.v_monthly_summary`
 ```sql
 SELECT location_id,
@@ -525,6 +824,21 @@ SELECT location_id,
     sum(electricity_kg_co2e) AS total_kg_co2e
    FROM wastewater.v_reading_detail
   GROUP BY location_id, ((date_trunc('month'::text, (reading_date)::timestamp with time zone))::date);
+```
+
+### `wastewater.v_pending_threshold_alerts`
+```sql
+SELECT a.id,
+    a.reading_id,
+    a.field,
+    a.message,
+    a.created_at,
+    r.reading_date,
+    COALESCE(r.reported_by_name_legacy, '(ไม่ระบุ)'::text) AS reporter
+   FROM (wastewater.threshold_alert a
+     LEFT JOIN wastewater.reading r ON ((r.id = a.reading_id)))
+  WHERE (a.notified_at IS NULL)
+  ORDER BY a.created_at;
 ```
 
 ### `wastewater.v_reading_detail`
@@ -607,4 +921,52 @@ SELECT r.id,
           WHERE ((threshold.parameter_code = 'ph'::text) AND (threshold.effective_from <= r.reading_date))
           ORDER BY threshold.effective_from DESC
          LIMIT 1) t_ph ON (true));
+```
+
+### `wastewater.v_reading_with_computed`
+```sql
+SELECT id,
+    location_id,
+    reading_date,
+    reported_by,
+    tds_aeration,
+    temp_aeration,
+    tds_before_discharge,
+    ph,
+    do_aeration,
+    do_sedimentation,
+    do_before_discharge,
+    sv30,
+    free_chlorine,
+    color_desc,
+    smell_desc,
+    screen_cleaned_coarse,
+    screen_cleaned_fine,
+    pump1_running,
+    pump2_running,
+    aerator1_running,
+    aerator2_running,
+    sludge_pump1_running,
+    sludge_pump2_running,
+    chlorine_pump1_running,
+    chlorine_pump2_running,
+    system_operating,
+    pump1_meter,
+    pump2_meter,
+    water_used_total,
+    wastewater_in,
+    wastewater_discharged,
+    chlorine_used,
+    chlorine_mix_ratio,
+    excess_sludge_removed,
+    carbon_reading_id,
+    input_source,
+    note,
+    created_at,
+    legacy_id,
+    reported_by_name_legacy,
+    wastewater.fn_do_average(do_aeration, do_sedimentation, do_before_discharge) AS do_average,
+    (pump2_meter - pump1_meter) AS energy_kwh_estimate,
+    ((EXTRACT(year FROM reading_date))::integer + 543) AS date_thai_be
+   FROM wastewater.reading r;
 ```

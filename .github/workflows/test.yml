@@ -1,9 +1,6 @@
-# Runs the unit test suite on every push/PR to catch regressions early.
-# Integration tests (tests/integration/) skip themselves automatically when
-# SUPABASE_DB_URL is absent, so this workflow needs no secrets to stay green.
-#
-# Add a separate `integration` job later with a read-only DB_URL secret if
-# you want live ENV_DB verification on every PR.
+# Regression gate for the Python script layer. The FastAPI backend (and its
+# pytest suite) was removed on 2026-07-19 — see docs/work-orders/FASTAPI-removal.md;
+# the full app is preserved on the archive/fastapi-backend branch.
 name: test
 
 on:
@@ -13,7 +10,7 @@ on:
     branches: [main]
 
 jobs:
-  unit:
+  scripts:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
@@ -26,18 +23,7 @@ jobs:
       - name: Set up Python
         run: uv python install 3.11
 
-      - name: Install dependencies
-        run: uv pip install --system -e ".[dev]"
-
-      - name: Run tests
-        env:
-          # Placeholder — integration tests read this and skip if it contains
-          # "unset". Unit tests don't touch the DB at all.
-          SUPABASE_DB_URL: postgresql://unset:unset@localhost:5432/unset
-          AUTH_MODE: stub
-          APP_ENV: test
-        run: uv run pytest -q
-
-      - name: Smoke-import the app
-        # Catches import-time regressions that pytest collection might miss.
-        run: uv run python -c "import app.main; print('app imports OK')"
+      - name: split_sql regression suite
+        # Standalone — no DB, no secrets. Guards the statement splitter that
+        # every migration passes through (scripts/apply_migration_api.py).
+        run: uv run python scripts/test_split_sql.py

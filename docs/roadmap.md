@@ -7,11 +7,13 @@
 
 ## Immediate (before/around P6)
 
-### P5b.2-live — blocked on `SUPABASE_DB_URL`
-- **One command when URL arrives**: `uv run python scripts/introspect_schema.py && uv run pytest tests/integration -v`
+### P5b.2-live — done via Management API path
+- **One command**: `uv run python scripts/introspect_schema_api.py` (HTTPS
+  Management API — the direct-DB variant + pytest integration suite were
+  removed with the FastAPI backend, 2026-07-19).
 - Verifies: exact Postgres types, enum values, constraints, view column sets,
   RLS policies — everything local-source reconciliation couldn't confirm.
-- `reports/schema-snapshot-p5.md` records what's verified vs pending.
+- `reports/schema-snapshot-live.md` is the refreshable snapshot.
 
 ### Lock design direction (prerequisite for P6)
 - 4 mockups exist (dashboard ×3 palette variants + mobile daily-entry form).
@@ -24,10 +26,9 @@
 
 ## Frontend era (P6)
 
-### Typed API client from OpenAPI
-- Generate with `openapi-typescript` or `orval` from `/openapi.json`.
-- Frontend type-safe against P5 contract from day one — prevents drift.
-- Add a CI job that regenerates + fails if the client diverges from schema.
+### ~~Typed API client from OpenAPI~~ (retired with the FastAPI backend)
+- ADR-0004 pivot: the frontend types against Supabase directly
+  (`frontend/src/lib/types.ts`); no `/openapi.json` exists anymore.
 
 ### Real users + flip `AUTH_MODE=jwt`
 - Create `core.app_user` rows for the 9 seeded personnel + Supabase Auth.
@@ -39,15 +40,18 @@
 - Add once P6 has a runnable UI.
 
 ### Write-path integration tests with disposable schema
-- Current `tests/integration/` is read-only (safe against production data).
-- For POST/PUT/DELETE: transactional rollback fixture, or a separate test
-  schema in ENV_DB, gated behind an explicit env flag.
+- (The FastAPI-era read-only `tests/integration/` was removed 2026-07-19.)
+- For write coverage now: Playwright e2e against an authenticated session,
+  or SQL-level checks via the Management API — separate test schema in
+  ENV_DB, gated behind an explicit env flag.
 
 ## Medium horizon (v1.1+)
 
 ### Telegram/LINE alert delivery
-- `app/core/alert.py` already returns the alert list; just plug a notifier.
-- SPEC marks threshold alerts out-of-v1, but infra is ready — low effort.
+- Threshold logic now lives in SQL views + frontend badges; a notifier would
+  be a Supabase Edge Function / cron over the same views. (The Python
+  reference implementation `app/core/alert.py` is on `archive/fastapi-backend`.)
+- SPEC marks threshold alerts out-of-v1 — design before building.
 
 ### PDF rendering engine
 - `core.pdf_template` stores layout JSON; the engine (layout JSON + data

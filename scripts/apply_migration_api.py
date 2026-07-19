@@ -14,7 +14,7 @@ are reported but do not abort the whole migration — re-running idempotent
 migrations is the expected recovery path.
 
 Requires SUPABASE_ACCESS_TOKEN in env (resolved from Drive secrets — see
-app.core.config._resolve_env_file).
+scripts/_env.py).
 """
 from __future__ import annotations
 
@@ -31,15 +31,10 @@ API = f"https://api.supabase.com/v1/projects/{PROJECT_REF}/database/query"
 
 
 def _load_token() -> str:
-    tok = os.environ.get("SUPABASE_ACCESS_TOKEN", "")
-    if not tok:
-        from app.core.config import _resolve_env_file
-        p = _resolve_env_file()
-        if p:
-            for line in Path(p).read_text(encoding="utf-8").splitlines():
-                if line.startswith("SUPABASE_ACCESS_TOKEN="):
-                    tok = line.split("=", 1)[1].strip()
-                    break
+    # Lazy import: test_split_sql.py imports this module and must stay free
+    # of env-resolution side effects at import time.
+    from _env import load_secret
+    tok = load_secret("SUPABASE_ACCESS_TOKEN")
     if not tok:
         print("SUPABASE_ACCESS_TOKEN not found", file=sys.stderr)
         sys.exit(1)

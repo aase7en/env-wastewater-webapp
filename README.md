@@ -7,42 +7,36 @@ monitoring webapp for โรงพยาบาลอุทัย's environmental
   design, ENV concepts) this repo builds against — see `AGENTS.md` for details.
 - **Status**: Production live at **https://aase7en.github.io/env-wastewater-webapp/**
   — frontend talks to Supabase directly (P11 auth + P12 Supabase-first pivot
-  per ADR-0004; FastAPI retained as reference, not deployed). All v1 pages
-  shipped on the UTH[AI]-EVN Aura Edition design system.
+  per ADR-0004). All v1 pages shipped on the UTH[AI]-EVN Aura Edition design
+  system. The retired FastAPI backend was removed 2026-07-19 and is preserved
+  on the `archive/fastapi-backend` branch (see
+  `docs/work-orders/FASTAPI-removal.md`).
 - **Data**: `data/raw/` is gitignored — source exports never get committed.
 
-## Running the backend
+## Python scripts (migrations / schema introspection)
 
-Requires Python ≥3.11 and [uv](https://docs.astral.sh/uv/).
+Requires Python ≥3.11 and [uv](https://docs.astral.sh/uv/). Python in this
+repo is scripts-only:
 
 ```bash
-# 1. Install deps
-uv venv && uv pip install -e ".[dev]"
+# Apply a SQL migration to ENV_DB via the Supabase Management API
+uv run python scripts/apply_migration_api.py db/migrations/<file>.sql
 
-# 2. Configure secrets (never commit .env)
-cp .env.example .env
-#   fill in SUPABASE_DB_URL (and SUPABASE_JWT_SECRET for real auth)
+# Refresh reports/schema-snapshot-live.md (read-only introspection)
+uv run python scripts/introspect_schema_api.py
 
-# 3. Run the dev server
-uv run uvicorn app.main:app --reload
-#   API:    http://127.0.0.1:8000/api/health
-#   Docs:   http://127.0.0.1:8000/docs
-
-# 4. Tests (run without a DB — stub auth + mocked session)
-uv run pytest
+# Regression suite for the SQL statement splitter (no DB, no secrets)
+uv run python scripts/test_split_sql.py
 ```
 
-Without a `.env`, the app still boots for health checks (`AUTH_MODE=stub`,
-DB engine built lazily). Any endpoint that queries will fail loudly until
-`SUPABASE_DB_URL` is set.
-
-See `docs/adr/0003-fastapi-sqlalchemy-async-supabase-jwt.md` for why the
-backend uses SQLAlchemy async + JWT verification instead of supabase-py.
+Both API scripts read `SUPABASE_ACCESS_TOKEN` from the environment or the
+Drive-backed `.env` — resolution logic lives in `scripts/_env.py` (see
+CONTRIBUTING.md "Secret storage across devices").
 
 ## Running the frontend
 
-The frontend (P10) is a React + Vite + TypeScript + Tailwind app wired to
-the backend's `/api/*` endpoints. Start the backend first (above), then:
+The frontend is a React + Vite + TypeScript + Tailwind app that talks to
+Supabase directly (supabase-js + RLS; no local backend needed):
 
 ```bash
 cd frontend
@@ -52,8 +46,9 @@ npm run dev
 #   Build/lint:  npm run build
 ```
 
-Vite proxies `/api` → `http://127.0.0.1:8000`, so no backend URL needs to be
-configured in the frontend — it talks to FastAPI via the same origin.
+Supabase URL + publishable key live in `frontend/.env` (gitignored; see
+`frontend/.env.example` if present, or `frontend/src/lib/supabase.ts` for
+the expected `VITE_*` variable names).
 
 **Design direction — UTH[AI]-EVN Aura Edition** (locked in P10.6, see
 `design/uth_ai_evn_system_design_aura_edition.md` + `design/DESIGN.md`):

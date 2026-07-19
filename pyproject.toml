@@ -1,43 +1,14 @@
 [project]
 name = "env-wastewater-webapp"
-version = "0.1.0"
-description = "FastAPI backend for โรงพยาบาลอุทัย wastewater-treatment monitoring (Supabase ENV_DB)"
+version = "0.2.0"
+description = "Supabase-first wastewater monitoring webapp for โรงพยาบาลอุทัย — Python layer is repo scripts only (migrations + schema introspection via the Supabase Management API); the retired FastAPI backend lives on the archive/fastapi-backend branch"
 requires-python = ">=3.11"
 readme = "README.md"
 dependencies = [
-    # Web framework
-    "fastapi>=0.110",
-    "uvicorn[standard]>=0.29",
-    # DB layer — SQLAlchemy 2.0 async + asyncpg driver against Supabase Postgres
-    "sqlalchemy[asyncio]>=2.0.29",
-    "asyncpg>=0.29",
-    # Settings + validation
-    "pydantic>=2.6",
-    "pydantic-settings>=2.2",
-    "python-dotenv>=1.0",
-    # HTTP (Supabase user lookup, future integrations)
+    # HTTP client for the Supabase Management API
+    # (scripts/apply_migration_api.py, scripts/introspect_schema_api.py)
     "httpx>=0.27",
 ]
-
-[project.optional-dependencies]
-dev = [
-    "pytest>=8.1",
-    "pytest-asyncio>=0.23",
-    "anyio>=4.3",
-    "httpx>=0.27", # for FastAPI TestClient
-]
-
-[build-system]
-requires = ["hatchling"]
-build-backend = "hatchling.build"
-
-[tool.hatch.build.targets.wheel]
-packages = ["app"]
-
-[tool.pytest.ini_options]
-asyncio_mode = "auto"
-testpaths = ["tests", "tests/integration"]
-pythonpath = ["."]
 
 [tool.uv]
 package = false
