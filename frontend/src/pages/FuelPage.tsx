@@ -42,7 +42,7 @@ export function FuelPage() {
         <div>
           <h1 className="text-2xl md:text-3xl font-bold font-display tracking-tight">
             <span className="text-aura-textMain">การ</span>
-            <span className="aura-text-gradient"> ใช้เชื้อเพลิง</span>
+            <span className="aura-text-gradient">ใช้เชื้อเพลิง</span>
           </h1>
           <p className="text-sm text-aura-textMuted font-thai mt-1">
             บันทึกการจ่ายน้ำมัน — ดีเซล / เบนซิน / LPG (Scope 1 carbon source)

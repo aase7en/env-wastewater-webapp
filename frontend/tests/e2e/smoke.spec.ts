@@ -68,8 +68,15 @@ test.describe("Aura SPA smoke", () => {
     await page.goto("/dashboard");
     // Update this list when NAV grows. Order matters less than presence.
     // F2: "ตั้งค่า" removed (dead link — no /settings route exists);
-    // "นำเข้าข้อมูล" is admin-only and hidden when unauthenticated.
-    const navLabels = ["ภาพรวม", "บ่อบำบัด", "บันทึกประจำวัน", "ประวัติ", "แนวโน้ม", "คาร์บอน", "อุปกรณ์", "เอกสาร"];
+    // admin-only entries (นำเข้าข้อมูล / ออกแบบ PDF / DBA / AI) are hidden
+    // when unauthenticated — asserted in modules.spec.ts instead.
+    // F8: module section + previously-orphan routes added.
+    const navLabels = [
+      "ภาพรวม", "บ่อบำบัด", "บันทึกประจำวัน", "ประวัติ", "แนวโน้ม",
+      "คาร์บอน", "คาร์บอนรวม", "อุปกรณ์", "เอกสาร", "ไฟล์แนบ",
+      "น้ำประปาบาดาล", "จัดการขยะ", "เชื้อเพลิง", "สวนภูมิทัศน์",
+      "อาคารสถานที่", "ความปลอดภัย", "ครัวอาหาร", "คลังเคมี", "กฎหมาย ENV",
+    ];
     for (const label of navLabels) {
       await expect(page.locator(`nav a:has-text("${label}")`).first()).toBeVisible();
     }

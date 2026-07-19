@@ -37,7 +37,7 @@ export function GardenPage() {
         <div>
           <h1 className="text-2xl md:text-3xl font-bold font-display tracking-tight">
             <span className="text-aura-textMain">งาน</span>
-            <span className="aura-text-gradient"> สวนและภูมิทัศน์</span>
+            <span className="aura-text-gradient">สวนและภูมิทัศน์</span>
           </h1>
           <p className="text-sm text-aura-textMuted font-thai mt-1">
             บันทึกรอบตรวจและดูแลพื้นที่สีเขียว — ปุ๋ย / ยาฆ่าแมลง / อุปกรณ์

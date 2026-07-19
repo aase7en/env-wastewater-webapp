@@ -285,8 +285,6 @@ binding rules are here.
 
 | Chunk | Agent | Claimed | Scope (files) |
 |---|---|---|---|
-| CI-1 npm-ci/node fix | fable5 | 2026-07-19 | `.github/workflows/deploy-frontend.yml`, `.github/workflows/e2e.yml` |
-| F8 NAV pass + polish nits | fable5 | 2026-07-19 | `frontend/src/components/layout/AppShell.tsx`, 8 module pages (h1 space only), `frontend/src/pages/DashboardPage.tsx` (row key), `frontend/src/index.css` + `frontend/public/fonts/*` (dedupe), `frontend/tests/e2e/{smoke,modules}.spec.ts`, WO/handoff docs |
 
 > **Reopened 2026-07-19 (Fable5 review): P0 `SCHEMA-5-rest-exposure`** — ทุก
 > `.from()` ใน frontend 404 (PGRST205) เพราะ `public` schema ว่างเปล่าและไม่

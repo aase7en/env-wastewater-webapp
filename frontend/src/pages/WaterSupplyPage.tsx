@@ -49,7 +49,7 @@ export function WaterSupplyPage() {
         <div>
           <h1 className="text-2xl md:text-3xl font-bold font-display tracking-tight">
             <span className="text-aura-textMain">น้ำประปา</span>
-            <span className="aura-text-gradient"> บาดาล</span>
+            <span className="aura-text-gradient">บาดาล</span>
           </h1>
           <p className="text-sm text-aura-textMuted font-thai mt-1">
             บันทึกคุณภาพน้ำบาดาลรายวัน — pH / คลอรีน / ความขุ่น / coliform

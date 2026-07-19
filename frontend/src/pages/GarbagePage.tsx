@@ -37,7 +37,7 @@ export function GarbagePage() {
         <div>
           <h1 className="text-2xl md:text-3xl font-bold font-display tracking-tight">
             <span className="text-aura-textMain">การ</span>
-            <span className="aura-text-gradient"> จัดการขยะ</span>
+            <span className="aura-text-gradient">จัดการขยะ</span>
           </h1>
           <p className="text-sm text-aura-textMuted font-thai mt-1">
             บันทึกปริมาณขยะแยกตามประเภท — ทั่วไป / ติดเชื้อ / รีไซเคิล

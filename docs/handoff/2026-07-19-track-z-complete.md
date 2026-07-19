@@ -442,3 +442,47 @@ FASTAPI-WO · backfill `4e3edc7`/`688e457`) + hotfix `c995ac0` ของ session
 
 *Reviewed + executed by Fable5, 2026-07-19 — build ✅ · Playwright 26/26 ✅ ·
 FASTAPI removal C done (`c6fc72a`) · dist CSS token-order ✅*
+
+
+---
+
+## Fable5 review #5 — 2026-07-19 (re-audit dispatch #2 + CI-1 + F8)
+
+Dispatch #2 ที่ได้รับเขียนจาก state `1f9d077` — แต่ origin/main ล้ำไปแล้ว 4 commits
+(`c995ac0` F6.5 · `0841078` claim · `c6fc72a` FASTAPI removal · `3d7a292` review #4)
+→ รอบนี้จึงเป็น **independent re-verification ของสิ่งที่ landed แล้ว** + งานใหม่ 2 chunk
+
+| ข้อตรวจซ้ำ (รันเองทุกรายการ ไม่อ้าง doc) | ผล |
+|---|---|
+| SCHEMA-5 REST chain | ✅ curl anon: dash 200 (ล่าสุด 2026-07-04) / equipment·meter·audit_log 401 (42501); DB sim `set local role authenticated`: eq=10 · meter=1 · reading=907 · dash=907 |
+| CRB-2 realtime + cutoff | ✅ `pg_publication_tables` = carbon.reading + wastewater.sensor + sensor_reading; `setDate(1)` ก่อน `setMonth` ทั้ง carbon-rollup.ts:53 และ food.ts:89 |
+| split_sql @ HEAD | ✅ 8/8 (รวม real-file 47 stmt หลัง FASTAPI removal) |
+| FASTAPI removal `c6fc72a` | ✅ tokenless probe → `_env.py` เดิน Drive chain เต็มเส้น (`0 OK, 0 FAIL`); grep `app.` imports สะอาด; `archive/fastapi-backend`=`0841078` มี app/ ครบ; CI test เขียว. Nuance ที่ยืนยันการ port ว่าเป็น bug fix จริง: `import app` จาก scripts เคยรอดเพราะ editable `.pth` ค้างใน `.venv` (machine state) — fresh clone จะพังตั้งแต่แรก |
+| F6/F6.5/MOD-b/e2e | ✅ dist CSS: tokens inline + ไม่มี literal `@import` (สอดคล้อง review #4); Vite rebase `/fonts/` ตาม base จริง (ทดสอบ build ด้วย `GH_PAGES_BASE`); MD5 fonts ซ้ำยืนยันเองแล้ว; e2e local 23/23 ก่อน F8 |
+
+### 🚨 พบใหม่ (P0-infra) → CI-1
+
+**deploy-frontend + e2e workflows แดง 40/40 ตลอดประวัติ repo** — `npm ci` บน
+Node 20 (npm 10) reify optional peer (`tsconfck` → `typescript ^5`) แล้ว reject
+lockfile ที่ gen ด้วย npm 11: `Missing: typescript@5.9.3 from lock file`.
+Production Pages จึงค้าง bundle เก่า — งานวันนี้ทั้งหมด (F5/F6/F6.5/MOD-b) ไม่เคยถึง user.
+**Fix `69aa8dd` chunk(CI-1)**: Node 20 → 24 ทั้ง 2 workflow (ตรง env ที่ verify จริงทุกวัน;
+`npm ci --dry-run` npm 11 ผ่านกับ lock เดิม) → **deploy เขียวครั้งแรกในประวัติ (43s)**
+
+### F8 — Track F NAV pass (ruling จาก review #4 ข้อ 5)
+
+- AppShell NAV: +13 รายการ, 2 section (`โมดูล ENV` ×9 · `ผู้ดูแล` ×4 adminOnly) —
+  ปิด orphan routes ทั้งหมด (8 modules + regulations + carbon-rollup + attachments +
+  pdf-designer + admin/db + admin/ai)
+- h1 gradient: ตัด space กลางคำไทย 8 module pages (space มาจาก pattern อังกฤษของ CarbonPage)
+- DashboardPage tbody: `key={r.id ?? r.reading_date}` (กัน mock ไม่มี id — warning ใน e2e log)
+- Fonts dedupe: Jakarta 5→1 + JetBrains 2→1 @font-face (weight-range บน variable font),
+  `git rm` 5 ไฟล์ MD5 ซ้ำ (~100KB×5 ประหยัดโหลดแรก)
+- Sidebar tests: smoke.spec assert ครบ 19 label · modules.spec assert module+orphan hrefs
+  ปรากฏ + admin ทั้ง 4 ซ่อนเมื่อไม่ login
+
+Backlog คงเหลือ: `introspect_schema_api::SCHEMAS` 3→11 (cheap-ok) · Material Symbols
+subset แบบ keep-axes (cheap-ok) · E2E authenticated profile (P11)
+
+*Re-audited by Fable5, 2026-07-19 — probes รันเองครบ · CI-1 deploy เขียวแรก ·
+F8 landed (ดู commit)*

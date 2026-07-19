@@ -1,4 +1,4 @@
-import { type ReactNode } from "react";
+import { Fragment, type ReactNode } from "react";
 import { Link, useLocation } from "react-router-dom";
 import { useAuth } from "../AuthProvider";
 import { MSymbol } from "../ui/MSymbol";
@@ -9,16 +9,42 @@ import { cn } from "../../lib/utils";
 // Nav per the design/ suite sidebar (Material Symbols names taken from the
 // suite exports). Only routes that actually exist are listed — no dead links.
 // adminOnly entries render only for admin users (route is admin-guarded too).
-const NAV = [
+// `section` renders a small group header above the item (desktop sidebar
+// only — the mobile icon strip stays flat).
+type NavItem = {
+  to: string;
+  label: string;
+  icon: string;
+  adminOnly?: boolean;
+  section?: string;
+};
+
+const NAV: NavItem[] = [
   { to: "/", label: "ภาพรวม", icon: "dashboard" },
   { to: "/dashboard", label: "บ่อบำบัด", icon: "water_drop" },
   { to: "/form", label: "บันทึกประจำวัน", icon: "edit_note" },
   { to: "/readings", label: "ประวัติ", icon: "history" },
   { to: "/trends", label: "แนวโน้ม", icon: "monitoring" },
   { to: "/carbon", label: "คาร์บอน", icon: "co2" },
+  { to: "/carbon-rollup", label: "คาร์บอนรวม", icon: "insights" },
   { to: "/equipment", label: "อุปกรณ์", icon: "medical_services" },
   { to: "/reports", label: "เอกสาร", icon: "description" },
-  { to: "/import", label: "นำเข้าข้อมูล", icon: "upload_file", adminOnly: true },
+  { to: "/attachments", label: "ไฟล์แนบ", icon: "attach_file" },
+  // F8: 8 module pages + regulations — were reachable only by typing the
+  // URL (flagged in tests/e2e/modules.spec.ts).
+  { section: "โมดูล ENV", to: "/water-supply", label: "น้ำประปาบาดาล", icon: "water_full" },
+  { to: "/garbage", label: "จัดการขยะ", icon: "recycling" },
+  { to: "/fuel", label: "เชื้อเพลิง", icon: "local_gas_station" },
+  { to: "/garden", label: "สวนภูมิทัศน์", icon: "park" },
+  { to: "/building", label: "อาคารสถานที่", icon: "apartment" },
+  { to: "/safety", label: "ความปลอดภัย", icon: "health_and_safety" },
+  { to: "/food", label: "ครัวอาหาร", icon: "restaurant" },
+  { to: "/chemical", label: "คลังเคมี", icon: "science" },
+  { to: "/regulations", label: "กฎหมาย ENV", icon: "gavel" },
+  { section: "ผู้ดูแล", to: "/import", label: "นำเข้าข้อมูล", icon: "upload_file", adminOnly: true },
+  { to: "/pdf-designer", label: "ออกแบบ PDF", icon: "picture_as_pdf", adminOnly: true },
+  { to: "/admin/db", label: "DBA Console", icon: "database", adminOnly: true },
+  { to: "/admin/ai", label: "AI Admin", icon: "smart_toy", adminOnly: true },
 ];
 
 /** Brand lockup — UTH[AI]-ENV with the [AI] neon highlight (suite §1). */
@@ -103,20 +129,26 @@ export function AppShell({ children }: { children: ReactNode }) {
         </div>
 
         <nav className="flex-1 overflow-y-auto flex flex-col gap-1">
-          {items.map(({ to, label, icon }) => (
-            <Link
-              key={to}
-              to={to}
-              className={cn(
-                "flex items-center gap-4 px-6 py-3.5 font-thai text-sm transition-all duration-200 active:scale-[0.98]",
-                active(to)
-                  ? "bg-aura-surfaceHighest/50 text-aura-cyan border-l-4 border-aura-cyan font-semibold"
-                  : "text-aura-textMuted border-l-4 border-transparent hover:bg-aura-surfaceHigh/50 hover:text-aura-textMain"
+          {items.map(({ to, label, icon, section }) => (
+            <Fragment key={to}>
+              {section && (
+                <div className="px-6 pt-5 pb-1 text-[10px] font-bold uppercase tracking-[0.15em] text-aura-textMuted/70 font-thai">
+                  {section}
+                </div>
               )}
-            >
-              <MSymbol name={icon} fill={active(to)} />
-              {label}
-            </Link>
+              <Link
+                to={to}
+                className={cn(
+                  "flex items-center gap-4 px-6 py-3.5 font-thai text-sm transition-all duration-200 active:scale-[0.98]",
+                  active(to)
+                    ? "bg-aura-surfaceHighest/50 text-aura-cyan border-l-4 border-aura-cyan font-semibold"
+                    : "text-aura-textMuted border-l-4 border-transparent hover:bg-aura-surfaceHigh/50 hover:text-aura-textMain"
+                )}
+              >
+                <MSymbol name={icon} fill={active(to)} />
+                {label}
+              </Link>
+            </Fragment>
           ))}
         </nav>
 

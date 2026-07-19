@@ -114,7 +114,7 @@ export function DashboardPage() {
             </thead>
             <tbody className="divide-y divide-aura-borderSubtle/50">
               {(readings?.items || []).map((r) => (
-                <tr key={r.id} className="hover:bg-aura-cyan/5 transition-colors">
+                <tr key={r.id ?? r.reading_date} className="hover:bg-aura-cyan/5 transition-colors">
                   <td className="px-4 py-2 text-aura-textMain font-thai">{thaiDate(r.reading_date)}</td>
                   <td className="px-4 py-2 font-mono text-aura-textMain">{fmt(r.do_average, 2)}</td>
                   <td className="px-4 py-2 font-mono text-aura-textMain">{fmt(r.ph, 1)}</td>

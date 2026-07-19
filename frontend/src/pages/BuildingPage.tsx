@@ -36,7 +36,7 @@ export function BuildingPage() {
         <div>
           <h1 className="text-2xl md:text-3xl font-bold font-display tracking-tight">
             <span className="text-aura-textMain">ตรวจ</span>
-            <span className="aura-text-gradient"> อาคารสถานที่</span>
+            <span className="aura-text-gradient">อาคารสถานที่</span>
           </h1>
           <p className="text-sm text-aura-textMuted font-thai mt-1">
             รอบตรวจอาคาร — พื้น / ฝาผนัง / ไฟ / น้ำ / สุขภัณฑ์ → repair_request

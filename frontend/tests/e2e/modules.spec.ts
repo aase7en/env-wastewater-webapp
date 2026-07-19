@@ -30,18 +30,22 @@ test("DBA Console + AI Admin routes bounce to /login", async ({ page }) => {
   await expect(page).toHaveURL(/\/login\?next=%2Fadmin%2Fai/);
 });
 
-test("sidebar exposes the legacy nav set (modules pending Track F)", async ({ page }) => {
-  // Sidebar NAV list (AppShell.tsx) currently surfaces only legacy routes.
-  // The 8 new module routes + DBA Console + AI Admin are reachable via
-  // direct URL only — adding them to the sidebar is a Track F gap,
-  // flagged here so a future Track F pass knows to add them.
+test("sidebar exposes module + orphan routes; admin entries stay hidden (F8)", async ({ page }) => {
+  // F8 Track F NAV pass closed the gap this test used to flag: the 8 module
+  // routes plus the previously-orphan /carbon-rollup, /attachments and
+  // /regulations now live in the sidebar. Admin-only entries render only
+  // for admin users, so an unauthenticated visitor must see none of them.
   await page.goto("/dashboard");
-  const expectedLegacy = [
+  const expectedNav = [
     "/", "/dashboard", "/form", "/readings",
-    "/trends", "/carbon", "/equipment", "/reports",
+    "/trends", "/carbon", "/carbon-rollup", "/equipment", "/reports",
+    "/attachments", ...MODULE_ROUTES, "/regulations",
   ];
-  for (const href of expectedLegacy) {
+  for (const href of expectedNav) {
     // Both desktop + mobile sidebars render — at least one link per route.
     await expect(page.locator(`nav a[href="${href}"]`).first()).toBeVisible();
+  }
+  for (const href of ["/import", "/pdf-designer", "/admin/db", "/admin/ai"]) {
+    await expect(page.locator(`nav a[href="${href}"]`)).toHaveCount(0);
   }
 });

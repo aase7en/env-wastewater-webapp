@@ -58,7 +58,7 @@ export function ChemicalPage() {
         <div>
           <h1 className="text-2xl md:text-3xl font-bold font-display tracking-tight">
             <span className="text-aura-textMain">คลัง</span>
-            <span className="aura-text-gradient"> เคมี</span>
+            <span className="aura-text-gradient">เคมี</span>
           </h1>
           <p className="text-sm text-aura-textMuted font-thai mt-1">
             ต้นแบบ / รับเข้า / เบิกออก — ยอดคงคลัง + การเคลื่อนไหว

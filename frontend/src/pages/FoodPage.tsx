@@ -38,7 +38,7 @@ export function FoodPage() {
         <div>
           <h1 className="text-2xl md:text-3xl font-bold font-display tracking-tight">
             <span className="text-aura-textMain">ตรวจ</span>
-            <span className="aura-text-gradient"> ครัวและอาหาร</span>
+            <span className="aura-text-gradient">ครัวและอาหาร</span>
           </h1>
           <p className="text-sm text-aura-textMuted font-thai mt-1">
             ห้องครัวโรงพยาบาล — แหล่งอาหาร / ล้างจาน / ตรวจแลป / reagent
