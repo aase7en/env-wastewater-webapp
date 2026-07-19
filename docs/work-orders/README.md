@@ -54,21 +54,18 @@ Checkpoint (commit hash + เหลืออะไร + กับดัก) → 
 ZCode รับงานที่ค้างบน `track-f`: merge `track-f` เข้า tree ตัวเอง —
 **ห้าม checkout `track-f` ตรง ๆ** (mount อยู่ใน worktree `A:\GitHub\envww-trackf`)
 
-## คิวปัจจุปัน (อัปเดต 2026-07-20 — post F8/CI-1/FastAPI-removal/F6.5)
+## คิวปัจจุบัน (อัปเดต 2026-07-20 — post GLM sweep #3: AUTH-1 + STAT-1 + SCHEMA-6)
 
-- **cheap-ok/mid เปิดอยู่ (GLM sweep รอบนี้)**:
-  - `STAT-1-status-badge-polarity` (mid — rename prop `status`→`operating`, 4 callsites + stories)
-  - `AUTH-1-auth-loading-race` (cheap-ok/mid — refresh-bounce login; async ordering fix)
-  - `SCHEMA-6-overview-public-aggregate` (cheap-ok — public definer view สำหรับหน้า `/` anon)
-- **cheap-ok เปิดอยู่ (backlog รอบถัดไป)**:
-  - `introspect_schema_api::SCHEMAS` ขยาย 3→11 domain schemas (1 บรรทัด)
-  - Material Symbols subset แบบ keep-axes (ฟอนต์ 3.9MB → subset)
-  - E2E authenticated integration profile (P11 follow-up — ต้องมี real seeded session)
-- **mid เปิดอยู่**: (ว่าง — F6 ปิดแล้วในรอบ #2)
+- **cheap-ok/mid เปิดอยู่ (backlog)**:
+  - `introspect_schema_api::SCHEMAS` ขยาย 3→11 domain schemas (1 บรรทัด — Fable5 review #4 nit)
+  - `lib/utils.ts::momPct` extract (carbon.ts:92 module-private → utils.ts shared; overview.ts inline copy 1 ตัวใน SCHEMA-6)
+  - Material Symbols subset แบบ keep-axes (ฟอนต์ 3.9MB → subset — Fable5 review #5 nit)
+  - E2E authenticated integration profile (P11 follow-up — ต้องมี real seeded session + ส่ง Fable5/Sonnet ทำ)
+- **mid เปิดอยู่**: (ว่าง — F6 ปิดแล้ว)
 - **ปิดแล้ว (ประวัติ)**: F1 · F2 · F3 · F4.1–F4.5 · F5 (ทั้ง logic+visual) ·
-  F6 (+ F6.5 hotfix + F8 NAV pass) · SCHEMA-1..5 (+ audit_log addendum) ·
-  DBA-1..10 · MOD-*-a · MOD-*-b · CRB-2-realtime · F7-stale-data ·
-  FASTAPI-removal (Approach C) · CI-1 (Node 24) · V1a..V4b · AI-1..3 ·
-  IMP-1..3 · PDF-1..3 · DOC-3
+  F6 (+ F6.5 hotfix + F8 NAV pass) · SCHEMA-1..6 · DBA-1..10 · MOD-*-a ·
+  MOD-*-b · CRB-2-realtime · F7-stale-data · FASTAPI-removal (Approach C) ·
+  CI-1 (Node 24) · AUTH-1 · STAT-1 · V1a..V4b · AI-1..3 · IMP-1..3 ·
+  PDF-1..3 · DOC-3
 - Protocol เต็ม + กติกา 8 ข้อ: MIGRATION.md §Two-track และ A-Wiki
   `docs/protocols/cross-agent-work-orders.md`

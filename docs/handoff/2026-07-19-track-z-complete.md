@@ -486,3 +486,79 @@ subset แบบ keep-axes (cheap-ok) · E2E authenticated profile (P11)
 
 *Re-audited by Fable5, 2026-07-19 — probes รันเองครบ · CI-1 deploy เขียวแรก ·
 F8 landed (ดู commit)*
+
+---
+
+## GLM sweep #3 — 2026-07-20 (post-F8/CI-1/FastAPI-removal: 3 bug fixes)
+
+Claude ยังติด 5hr limit. GLM5.2 รับ Track Z sweep รอบใหม่ — 3 bug ที่
+Fable5 visual tour 2026-07-19 flag 🔴 + WO README sync.
+
+### Commit สรุป
+
+| Chunk | Commit | Tier | Files |
+|---|---|---|---|
+| WO specs + claim + README sync + .gitignore | `8c89072` | docs | `docs/work-orders/AUTH-1-*.md`, `STAT-1-*.md`, `SCHEMA-6-*.md`, `docs/work-orders/README.md`, `MIGRATION.md`, `.gitignore` |
+| AUTH-1 — auth loading race | `1e9be0c` | cheap-ok/mid | `frontend/src/components/AuthProvider.tsx` |
+| STAT-1 — StatusBadge prop rename | `d2f8dfb` | mid | `StatusBadge.tsx`, `ProcessFlowDiagram.tsx`, `DashboardPage.tsx`, `ReadingsListPage.tsx`, `EquipmentPage.tsx`, `aura.stories.tsx` |
+| SCHEMA-6 — anon-safe v_overview_carbon | `073a65f` | cheap-ok | `supabase/migrations/20260720000000_schema6_*.sql`, `frontend/src/lib/supabase-queries.ts`, `overview.ts` |
+
+### GLM self-verify (รันเองครบทุกข้อ)
+
+| Chunk | Build | Playwright | สิ่งอื่น |
+|---|---|---|---|
+| AUTH-1 | ✅ | 23/23 ✅ | auth guard 8 tests ผ่านหมด — bounce behavior ไม่พัง |
+| STAT-1 | ✅ | 23/23 ✅ | TS catch rename ครบ (no leftover `status=`) |
+| SCHEMA-6 | ✅ | 23/23 ✅ | split_sql 8/8 · apply migration 5/5 OK · curl anon `/rest/v1/v_overview_carbon` 200 + rows sane (2026-07 4d/19kWh/0.009tCO₂e partial, 2026-06 30d/140/0.070, 2026-05 31d/137/0.068) · curl anon `/rest/v1/carbon_reading` ยัง 401 (per-reading locked ✅) |
+
+### ส่งต่อ Fable5 — ตรวจ 4 commits นี้
+
+**สิ่งที่ต้องตรวจเป็นพิเศษ:**
+
+1. **AUTH-1 (`1e9be0c`)** — logic fix เท่านั้น ไม่แตะ className:
+   - ทดสอบจริงด้วย seeded localStorage session (เหมือนที่คุณ tour): refresh หน้า
+     RequireAuth ใด ๆ ต้องไม่ bounce ไป /login ถ้า session valid + appUser resolve
+   - Edge case ที่ GLM ระบุ: session==null (logged out) ต้อง collapse loading
+     ทันที; appUser lookup ล้มเหลว (RLS/network) ต้องไป /login (preserve
+     existing behavior, ไม่ทำให้ worse); session เปลี่ยนกลาง lookup → stale
+     guard ป้องกัน setState ทับค่าใหม่ (`latestUserIdRef`)
+   - derived loading = `sessionLoading || (!!session && appUserLoading)` —
+     ใช่มั้ยว่า collapse ได้ถูกเวลา
+
+2. **STAT-1 (`d2f8dfb`)** — interface refactor (user-approved rename):
+   - StatusBadge polarity flip + prop rename (`status` → `operating`)
+   - 3 callsites ที่ส่ง `system_operating` ใช้ไม่ต้อง negate (system semantics
+     = operating semantics)
+   - EquipmentPage (`open.length === 0`) negate 1 จุดเพราะ callsite นั้นใช้
+     alert semantics จริง ๆ — semantic ถูกบอกเป็นคำเฉย ๆ (negate = explicit)
+   - ด้วยตา: row `system_operating=true` ขึ้นสีเขียว "ปกติ" + `false` ขึ้นแดง
+     "ผิดปกติ" + null "—" เทา ใน PFD/Dashboard/Readings + EquipmentPage
+     (open>0 = แดง "มีการแจ้งซ่อม")
+   - **className ไม่ถูกแตะ** (color classes `bg-alert-green`/`bg-alert-red`
+     คงเดิม) — เป็น Track F scope
+
+3. **SCHEMA-6 (`073a65f`)** — SQL DDL + frontend switch:
+   - 2-layer definer-style pattern (`carbon.v_overview_carbon` + `public.v_overview_carbon`)
+     ตรง pattern SCHEMA-5:57-61 (v_dashboard_14day ฯลฯ)
+   - ใช่มั้ยว่า layer public ไม่มี `security_invoker=on` (default = definer →
+     runs as owner → bypass base-table RLS → anon อ่านได้)
+   - emission factor 0.4999 sync กับ `carbon.ts:48 EMISSION_FACTOR_KGCO2E_PER_KWH`
+     — ถ้า TGO ออกปีใหม่ ต้องแก้ 2 ที่
+   - overview.ts: `useOverviewCarbon` hook + `toCarbonMonths` converter +
+     inline `momPct` (carbon.ts:92 module-private — extract to utils.ts =
+     nit แยก). OverviewData shape ไม่เปลี่ยน (OverviewPage ไม่ต้องแก้)
+   - CarbonPage ยังคงใช้ `useCarbonMonthly` (auth-only, per-meter detail)
+
+4. **WO README sync (`8c89072` รวมในนั้น + final sync ใน commit ถัดไป)** —
+   แค่ housekeeping; ตรวจฉลาด ๆ ว่า "ปิดแล้ว" list ตรง git log
+
+### Nit follow-up (รอบถัดไป — backlog เปิดใหม่)
+
+- `lib/utils.ts::momPct` extract (carbon.ts:92 module-private → shared) —
+  overview.ts inline copy 1 ตัวจาก SCHEMA-6
+- `introspect_schema_api::SCHEMAS` ขยาย 3→11 domain schemas (Fable5 review #4)
+- Material Symbols subset แบบ keep-axes (Fable5 review #5)
+- E2E authenticated profile (P11 follow-up — Sonnet/Fable5 tier)
+
+*GLM5.2 sweep #3, 2026-07-20 — 4 commits · build ✅ · Playwright 23/23 ·
+migration applied live · anon probe 200 + per-reading 401.*
