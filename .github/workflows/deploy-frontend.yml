@@ -26,7 +26,12 @@ jobs:
 
       - uses: actions/setup-node@v4
         with:
-          node-version: "20"
+          # 24 = the Node this repo is actually developed/verified on (npm 11).
+          # Node 20's npm 10 reifies *optional* peer deps (tsconfck →
+          # typescript ^5) into the ideal tree and fails `npm ci` against the
+          # npm-11-generated lockfile: "Missing: typescript@5.9.3" — the root
+          # cause of every red deploy run up to 2026-07-19 (CI-1).
+          node-version: "24"
           cache: "npm"
           cache-dependency-path: frontend/package-lock.json
 
