@@ -589,3 +589,93 @@ matchers จะไม่ match บน prod (react-router เติม basename).
 
 *Re-audited by Fable5, 2026-07-20 — probes รันเอง (AUTH-1 race + STAT-1 colors +
 SCHEMA-6 DB/curl) · suite 25/25 · WO-E2E-2 เปิดใหม่*
+
+---
+
+## GLM sweep #4 — next queue (2026-07-20, planning only — not executed)
+
+> Fable5 review #6 (`272b25b`) ปิด GLM sweep #3 ทั้ง 3 chunks (AUTH-1/STAT-1/
+> SCHEMA-6) ผ่านครบ + เปิด WO-E2E-2 (Fable5 เขียนสูตร verbatim แล้ว). รอบ
+> ถัดไปของ GLM = 4 chunks เรียงตามลำดับนี้:
+
+### Q1 — WO-E2E-2 (test harness, prod CI เขียวครั้งแรก)
+
+- **WO file**: `docs/work-orders/E2E-2-prod-profile-basename.md` (Fable5 เขียน
+  Steps verbatim ครบ — **ไม่ต้องเขียน WO ใหม่**)
+- **Tier**: cheap-ok
+- **Scope (Lane/files)**: `frontend/tests/e2e/fixtures.ts` (new), `*.spec.ts`
+  (import swap + href matchers), `frontend/playwright.config.ts` (baseURL
+  normalize 1 บรรทัด)
+- **Why now**: CI-1 (`69aa8dd`) ปลดบล็อก e2e.yml ครั้งแรกในประวัติ repo →
+  run แรกเผยบั๊ก harness (goto "/x" ทิ้ง subpath ของ baseURL; href-exact
+  matchers ไม่ match basename). แอปปกติ — pure test fix
+- **Verify**: local `npx playwright test` ผ่านครบ + push → e2e.yml เขียวใน CI
+- **Forbidden**: ห้ามแตะ app code / RequireAuth / AuthProvider / `.github/`
+- **Deps**: ไม่มี — execute ได้เลย
+
+### Q2 — momPct extract (lib refactor, dedupe 2 copies → 1)
+
+- **WO file**: ยังไม่มี — เขียนใหม่ `docs/work-orders/UTILS-1-mompct-extract.md`
+- **Tier**: cheap-ok
+- **Scope**: `frontend/src/lib/utils.ts` (+ `momPct`), `frontend/src/lib/carbon.ts:92`
+  (export inline → import), `frontend/src/lib/overview.ts:18` (inline → import)
+- **Why now**: SCHEMA-6 ทำให้มี copy ที่ 2 ของ `momPct` (overview.ts inline) —
+  carbon.ts:92 module-private. Dedupe → deep module (1 def + 2 callers)
+- **Verify**: `npm run build` + Playwright 25/25 + (manual) CarbonPage + `/`
+  cards ยังคำนวณ MoM% ถูก
+- **Forbidden**: ห้ามเปลี่ยน logic; ห้ามแตะ className
+- **Deps**: ไม่มี
+
+### Q3 — introspect_schema_api::SCHEMAS 3→11 (Python, 1 บรรทัด)
+
+- **WO file**: ยังไม่มี — เขียนใหม่ `docs/work-orders/INTROSPECT-1-schemas-extend.md`
+- **Tier**: cheap-ok
+- **Scope**: `scripts/introspect_schema_api.py:23` (extend tuple)
+- **Why now**: SCHEMA-1..6 เพิ่ม 11 domain schemas (core/carbon/wastewater +
+  food/fuel/garbage/garden/safety/building/chemical/water_supply + ใหม่ล่าสุด
+  regulation ใน core) — `reports/schema-snapshot-live.md` ปัจจุบัน cover แค่ 3
+  (nit จาก Fable5 review #4). Snapshot stale → verify migration ไม่ได้
+- **Verify**: `uv run python scripts/introspect_schema_api.py` → snapshot
+  อัปเดต (ครอบ 11 schemas) + diff เทียบ `core.app_user` row count ตรง DB
+- **Forbidden**: ห้ามแตะ logic introspect; ห้าม commit stale snapshot
+- **Deps**: ไม่มี
+
+### Q4 — Material Symbols subset keep-axes (asset + index.css — Track F!)
+
+- **WO file**: ยังไม่มี — **ต้อง Fable5 ออกแบบสูตรก่อน** (pyftsubset args +
+  glyph list ที่ MSymbol ใช้จริง)
+- **Tier**: cheap-ok **ถ้า** Fable5 เขียนสูตร verbatim; มิฉะนั้น **mid/Track F**
+- **Scope (Lane/files)**: `frontend/public/fonts/material-symbols-outlined.woff2`
+  (3.9MB → ~200KB subset), `frontend/src/index.css:38-46` (@font-face block)
+- **Why now**: Fable5 review #5 nit — font 3.9MB = icon blank นานบนเน็ตช้า
+- **⚠ Track F scope**: asset ใน `public/` + `index.css` อยู่ใน Lane ห้ามของ
+  GLM ตาม MIGRATION.md Two-track rule 4. **GLM ทำได้เฉพาะถ้า Fable5 เขียน
+  WO แบบ F6/MOD-*-b** (verbatim formula + Reference pattern + diff check).
+  ไม่งั้น → queue ไว้ให้ Sonnet/Fable5 tier
+- **Verify**: dev server → block network → reload → icon ยัง render + bundle
+  -3.7MB + `font-display: block` ป้องกัน flash
+- **Deps**: Fable5 WO (suspended until Fable5 on limit)
+
+### Out of GLM scope (Sonnet/Fable5 tier — listed for completeness)
+
+- **E2E authenticated integration profile** (P11 follow-up): ต้องมี real
+  seeded session + auth.users integration test. Sonnet/Fable5 tier.
+
+### ลำดับ execution (recommended)
+
+1. **Q1** WO-E2E-2 (5 นาที — WO พร้อม execute) → prod CI เขียวครั้งแรก
+2. **Q2** momPct extract (10 นาที) → dedupe
+3. **Q3** introspect SCHEMAS (5 นาที) → snapshot refresh
+4. **Q4** Material Symbols subset — **block on Fable5 WO** (15 นาที execute
+   เมื่อ WO ลง)
+
+**Total Q1-Q3: ~20 นาที / 3 commits + 1 claim commit + 1 release commit = 5 commits**
+
+### Guardrails (carried from sweep #3)
+
+- ทุก chunk: `git pull --ff-only` ก่อน, `npm run build` ผ่านก่อน push
+- ห้าม `git reset --hard` / `git checkout -- .` / `git clean` (rule 6)
+- PHI boundary: ไม่ route ผ่าน Z.ai cloud
+- วันที่ = พ.ศ. เสมอ
+- แตะ Track F scope (asset + index.css) เฉพาะเมื่อมี Fable5 WO verbatim
+- ถ้า verify fail → checkpoint + ไม่ push + แจ้ง user
