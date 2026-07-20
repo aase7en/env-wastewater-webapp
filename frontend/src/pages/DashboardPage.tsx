@@ -7,6 +7,7 @@ import { ProcessFlowDiagram } from "../components/pfd/ProcessFlowDiagram";
 import { KpiTile } from "../components/KpiTile";
 import { StatusBadge } from "../components/pfd/StatusBadge";
 import { AuraCard } from "../components/ui/AuraCard";
+import { CardGridSkeleton } from "../components/ui/Skeleton";
 import { Button } from "../components/ui/Button";
 import { MSymbol } from "../components/ui/MSymbol";
 import { RepairRequestModal } from "../components/repair/RepairRequestModal";
@@ -76,7 +77,7 @@ export function DashboardPage() {
       <RepairRequestModal open={repairOpen} onClose={() => setRepairOpen(false)} />
 
       {/* Loading / error */}
-      {loading && <div className="text-aura-textMuted font-thai">กำลังโหลด…</div>}
+      {loading && <CardGridSkeleton cards={4} />}
       {error && (
         <div className="rounded-2xl border border-alert-red/40 bg-alert-red/10 p-4 text-sm text-alert-red font-thai">
           โหลดข้อมูลไม่สำเร็จ: {error}

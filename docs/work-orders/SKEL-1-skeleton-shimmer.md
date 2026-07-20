@@ -1,5 +1,5 @@
 # WO-SKEL-1: Skeleton Screen + Shimmer — ซ่อม sweep ที่พัง + ขยาย Core 4 หน้า/infra
-Status: open
+Status: executed-pending-polish (2026-07-20, zcode) — Steps 1-8 + Verify 1-3 ผ่าน; Verify 4 (prod CI) รอ push; Verify 5 (screenshot polish) ยกให้ Fable5
 Lane/files: `frontend/src/index.css` (+`.skeleton` block), `frontend/src/styles/tokens.css` (+`--skeleton-sheen` ×2 + reduced-motion), `frontend/src/components/ui/Skeleton.tsx` (rewrite เต็มไฟล์), `frontend/src/pages/DashboardPage.tsx`, `frontend/src/pages/OverviewPage.tsx`, `frontend/src/components/RequireAuth.tsx`, `frontend/src/App.tsx`, `frontend/tests/e2e/skeleton.spec.ts` (new)
 Branch: main
 Model tier: **cheap-ok** (สูตร verbatim ครบ — GLM execute ได้; Fable5 visual polish ปิดท้ายเป็นรอบแยก)
@@ -339,3 +339,22 @@ test("reduced-motion: skeleton sweep is disabled", async ({ page }) => {
   Backlog ต่อ (นอก scope ใบนี้): **SKEL-2** = 8 module pages + Regulations +
   CarbonRollup + DailyForm + Attachments + PDFDesigner + AIAdmin +
   NotificationBell (copy pattern เดิม, cheap-ok, เปิดหลัง SKEL-1 + polish ผ่าน)
+- [2026-07-20] zcode (GLM): execute Steps 1-8 verbatim — tokens.css +2 theme
+  sheen + reduced-motion expand · index.css `.skeleton` core block
+  (anti-flash 200ms + sweep via `::after` transform) · Skeleton.tsx rewrite
+  (primitive + Table + CardGrid + new PageSkeleton) · DashboardPage swap
+  loading arm → CardGridSkeleton · OverviewPage 4 edits (drop waterChip
+  loading arm, skeleton chips/metrics ×3) · RequireAuth PageSkeleton +
+  sr-only · App.tsx 5 Suspense fallbacks → PageSkeleton · skeleton.spec.ts
+  2 tests (delayed mock + reduced-motion freeze).
+
+  **Verify 1-3 ผ่านครบ**:
+  - `npm run build` ✅ (25.64s)
+  - Playwright **25/25 passed** (23 เดิม + 2 ใหม่)
+  - `grep "animate-" Skeleton.tsx` = 0 hit (drop `animate-[flow…]` + hardcoded
+    dark gradient ออกหมด)
+
+  **Verify 4 (prod CI)**: รอ push แล้วดู deploy-frontend + e2e.yml
+  **Verify 5 (screenshot polish)**: ยกให้ Fable5 รอบถัดไป (จูน sheen/duration/
+  ขนาด h-9 w-28 + zero-CLS + ทดสอบ CardGridSkeleton ที่ `aura-card` +
+  `overflow-hidden` อาจ clip conic ring) — ห้าม GLM ทำแทน

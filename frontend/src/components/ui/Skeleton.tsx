@@ -1,17 +1,14 @@
 import { cn } from "../../lib/utils";
 
-/** Animated placeholder shimmer for loading states. Aura-themed. */
+/**
+ * Skeleton placeholders (SKEL-1). Motion + colors live in the `.skeleton`
+ * class (index.css) + `--skeleton-sheen` token (tokens.css) — neutral grey
+ * box with a light sweep, dual-theme, frozen under prefers-reduced-motion,
+ * invisible for the first 200ms (anti-flash). `data-skeleton` is the e2e
+ * hook (tests/e2e/skeleton.spec.ts) — keep it on the primitive only.
+ */
 export function Skeleton({ className }: { className?: string }) {
-  return (
-    <div
-      className={cn(
-        "rounded-lg bg-aura-surfaceHigh/50 animate-pulse",
-        "bg-[linear-gradient(90deg,rgba(20,46,51,0.4)_25%,rgba(0,240,255,0.08)_50%,rgba(20,46,51,0.4)_75%)]",
-        "bg-[length:200%_100%] animate-[flow_1.5s_linear_infinite]",
-        className
-      )}
-    />
-  );
+  return <div data-skeleton aria-hidden="true" className={cn("skeleton rounded-lg", className)} />;
 }
 
 /** Table row skeleton — N rows matching the readings list columns. */
@@ -36,6 +33,19 @@ export function CardGridSkeleton({ cards = 4 }: { cards?: number }) {
       {Array.from({ length: cards }).map((_, i) => (
         <Skeleton key={i} className="h-20 aura-card p-4" />
       ))}
+    </div>
+  );
+}
+
+/** Full-page placeholder (SKEL-1) — header line + KPI tiles + content block.
+ * Used by RequireAuth while the auth/appUser check settles and as the
+ * Suspense fallback for lazy routes. */
+export function PageSkeleton() {
+  return (
+    <div className="max-w-6xl mx-auto space-y-6">
+      <Skeleton className="h-8 w-64" />
+      <CardGridSkeleton cards={4} />
+      <Skeleton className="h-72" />
     </div>
   );
 }

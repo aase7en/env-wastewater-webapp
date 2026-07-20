@@ -219,3 +219,27 @@
   box-shadow: 0 0 16px rgba(239, 68, 68, 0.7);
   animation: pulse 1.2s ease-in-out infinite;
 }
+
+/* ── SKEL-1: skeleton shimmer ─────────────────────────────────────────────
+ * Neutral grey box + light sweep (MUI-wave pattern: transform on ::after —
+ * GPU-friendly, no background-size math). Dual-theme via tokens.
+ * Anti-flash: the box stays invisible for the first 200ms, so fetches that
+ * resolve faster never flash a skeleton. Reduced-motion freeze lives in
+ * tokens.css next to the other motion kill-switches. */
+.skeleton {
+  position: relative;
+  overflow: hidden;
+  background: rgb(var(--aura-surface-high) / 0.55);
+  opacity: 0;
+  animation: skeleton-appear 0s linear 200ms forwards;
+}
+.skeleton::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  transform: translateX(-100%);
+  background: linear-gradient(90deg, transparent, var(--skeleton-sheen), transparent);
+  animation: skeleton-sweep 1.6s linear 0.2s infinite;
+}
+@keyframes skeleton-appear { to { opacity: 1; } }
+@keyframes skeleton-sweep { 100% { transform: translateX(100%); } }

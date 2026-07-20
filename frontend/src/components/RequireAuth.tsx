@@ -1,6 +1,7 @@
 import { type ReactNode } from "react";
 import { Navigate, useLocation } from "react-router-dom";
 import { useAuth } from "./AuthProvider";
+import { PageSkeleton } from "./ui/Skeleton";
 
 /**
  * Route guard — wraps protected routes. If not authenticated, bounce to
@@ -21,11 +22,9 @@ export function RequireAuth({
 
   if (loading) {
     return (
-      <div className="min-h-[60vh] flex items-center justify-center">
-        <div className="flex items-center gap-3 text-aura-textMuted font-thai">
-          <span className="w-5 h-5 border-2 border-aura-cyan border-t-transparent rounded-full animate-spin" />
-          กำลังตรวจสอบสิทธิ์…
-        </div>
+      <div aria-busy="true">
+        <span className="sr-only">กำลังตรวจสอบสิทธิ์…</span>
+        <PageSkeleton />
       </div>
     );
   }

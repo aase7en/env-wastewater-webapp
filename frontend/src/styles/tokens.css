@@ -54,6 +54,7 @@
   --aura-focus: #006b5a;
   --aura-focus-glow: rgba(0, 209, 178, 0.30);
   --aura-placeholder: #6b7a75;
+  --skeleton-sheen: rgba(255, 255, 255, 0.65); /* SKEL-1: shimmer highlight (neutral) */
 
   color-scheme: light;
 }
@@ -102,6 +103,7 @@
   --aura-focus: #00F0FF;
   --aura-focus-glow: rgba(0, 240, 255, 0.30);
   --aura-placeholder: #6B7A75;
+  --skeleton-sheen: rgba(255, 255, 255, 0.06); /* SKEL-1: shimmer highlight (neutral) */
 
   color-scheme: dark;
 }
@@ -115,4 +117,7 @@
   .bubble {
     animation: none !important;
   }
+  /* SKEL-1: skeleton freezes to a plain grey box — no sweep, no delayed appear. */
+  .skeleton { animation: none !important; opacity: 1 !important; }
+  .skeleton::after { animation: none !important; }
 }

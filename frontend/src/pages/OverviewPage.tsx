@@ -1,6 +1,7 @@
 import { type ReactNode } from "react";
 import { Link } from "react-router-dom";
 import { AuraCard } from "../components/ui/AuraCard";
+import { Skeleton } from "../components/ui/Skeleton";
 import { MSymbol } from "../components/ui/MSymbol";
 import { useOverview } from "../lib/overview";
 import { cn, fmt, thaiDate } from "../lib/utils";
@@ -16,9 +17,8 @@ import { cn, fmt, thaiDate } from "../lib/utils";
 export function OverviewPage() {
   const { water, energy, carbon } = useOverview();
 
-  const waterChip = water.loading
-    ? { label: "กำลังโหลด…", cls: "text-aura-textMuted border-aura-borderSubtle" }
-    : water.status === false || water.anyAlert
+  const waterChip =
+    water.status === false || water.anyAlert
       ? { label: "ผิดปกติ", cls: "text-alert-red border-alert-red/50 bg-alert-red/10" }
       : water.status === true
         ? { label: "ปกติ", cls: "text-alert-green border-alert-green/50 bg-alert-green/10" }
@@ -44,7 +44,13 @@ export function OverviewPage() {
           icon="water_drop"
           title="บ่อบำบัดน้ำเสีย"
           attention={water.status === false || water.anyAlert}
-          chip={<Chip className={waterChip.cls}>{waterChip.label}</Chip>}
+          chip={
+            water.loading ? (
+              <Skeleton className="h-6 w-24 rounded-full shrink-0" />
+            ) : (
+              <Chip className={waterChip.cls}>{waterChip.label}</Chip>
+            )
+          }
           error={water.error}
         >
           <Metric
@@ -68,11 +74,14 @@ export function OverviewPage() {
           }
           error={energy.error}
         >
-          <Metric
-            value={energy.loading ? "…" : fmt(energy.latest?.kwh_total, 0)}
-            unit="kWh"
-            caption="เดือนล่าสุด"
-          />
+          {energy.loading ? (
+            <div className="space-y-1.5">
+              <Skeleton className="h-9 w-28" />
+              <Skeleton className="h-3 w-24" />
+            </div>
+          ) : (
+            <Metric value={fmt(energy.latest?.kwh_total, 0)} unit="kWh" caption="เดือนล่าสุด" />
+          )}
         </SystemCard>
 
         {/* ── Carbon ── */}
@@ -96,11 +105,14 @@ export function OverviewPage() {
           }
           error={carbon.error}
         >
-          <Metric
-            value={carbon.loading ? "…" : fmt(carbon.latest?.tco2e, 4)}
-            unit="tCO₂e"
-            caption="เดือนล่าสุด"
-          />
+          {carbon.loading ? (
+            <div className="space-y-1.5">
+              <Skeleton className="h-9 w-28" />
+              <Skeleton className="h-3 w-24" />
+            </div>
+          ) : (
+            <Metric value={fmt(carbon.latest?.tco2e, 4)} unit="tCO₂e" caption="เดือนล่าสุด" />
+          )}
         </SystemCard>
       </div>
 

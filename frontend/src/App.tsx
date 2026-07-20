@@ -3,6 +3,7 @@ import { lazy, Suspense } from "react";
 import { AuthProvider } from "./components/AuthProvider";
 import { RequireAuth } from "./components/RequireAuth";
 import { ToastProvider } from "./components/ui/Toast";
+import { PageSkeleton } from "./components/ui/Skeleton";
 import { AppShell } from "./components/layout/AppShell";
 import { DashboardPage } from "./pages/DashboardPage";
 import { DailyFormPage } from "./pages/DailyFormPage";
@@ -106,7 +107,7 @@ export default function App() {
                     path="/trends"
                     element={
                       <RequireAuth>
-                        <Suspense fallback={<div className="p-8 text-center font-thai text-aura-textMuted">กำลังโหลดแนวโน้ม…</div>}>
+                        <Suspense fallback={<PageSkeleton />}>
                           <TrendsPage />
                         </Suspense>
                       </RequireAuth>
@@ -116,7 +117,7 @@ export default function App() {
                     path="/carbon"
                     element={
                       <RequireAuth>
-                        <Suspense fallback={<div className="p-8 text-center font-thai text-aura-textMuted">กำลังโหลดคาร์บอน…</div>}>
+                        <Suspense fallback={<PageSkeleton />}>
                           <CarbonPage />
                         </Suspense>
                       </RequireAuth>
@@ -140,13 +141,13 @@ export default function App() {
                   <Route path="/food" element={<RequireAuth><FoodPage /></RequireAuth>} />
                   <Route path="/chemical" element={<RequireAuth><ChemicalPage /></RequireAuth>} />
                   <Route path="/regulations" element={<RequireAuth><RegulationsPage /></RequireAuth>} />
-                  <Route path="/carbon-rollup" element={<RequireAuth><Suspense fallback={<div className="p-8 text-center font-thai text-aura-textMuted">กำลังโหลด Carbon Rollup…</div>}><CarbonRollupPage /></Suspense></RequireAuth>} />
+                  <Route path="/carbon-rollup" element={<RequireAuth><Suspense fallback={<PageSkeleton />}><CarbonRollupPage /></Suspense></RequireAuth>} />
                   {/* DBA Console — admin-only, lazy-loaded */}
                   <Route
                     path="/admin/db"
                     element={
                       <RequireAuth requireAdmin>
-                        <Suspense fallback={<div className="p-8 text-center font-thai text-aura-textMuted">กำลังโหลด DBA Console…</div>}>
+                        <Suspense fallback={<PageSkeleton />}>
                           <DBAConsolePage />
                         </Suspense>
                       </RequireAuth>
@@ -156,7 +157,7 @@ export default function App() {
                     path="/admin/ai"
                     element={
                       <RequireAuth requireAdmin>
-                        <Suspense fallback={<div className="p-8 text-center font-thai text-aura-textMuted">กำลังโหลด AI Admin…</div>}>
+                        <Suspense fallback={<PageSkeleton />}>
                           <AIAdminPage />
                         </Suspense>
                       </RequireAuth>
