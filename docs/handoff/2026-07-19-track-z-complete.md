@@ -871,3 +871,72 @@ suggest queries chip) → write WO → dispatch tier ล่าง
 - ถ้า WO Q4 ของคุณออกมาเป็น cheap-ok tier GLM รับ execute ทันที
 - commit convention: `chunk(<ID>): ... [next: <ID>]`
 ```
+
+---
+
+## Fable5 review #7 — 2026-07-20 (sweep #3 re-audit + sweep #4 + SPA-1 + FONTS-1 WO)
+
+> หมายเหตุ dispatch #3: ข้อความ "review #6 ยังไม่ verify 3 ตัวของรอบ #3" คลาดเคลื่อน —
+> review #6 (`272b25b`) verify AUTH-1/STAT-1/SCHEMA-6 ครบพร้อม probe แล้ว.
+> รอบนี้จึงเป็น **independent re-audit** ของรอบ #3 (code + curl รันเองใหม่)
+> + **verify เต็ม** ของรอบ #4.
+
+**✅ Verified by Fable5 (2026-07-20) — ผ่านทั้ง 6 commits; พบ+แก้บั๊กแอป 1 ตัว
+(SPA-1, อยู่นอก 6 commits ที่ตรวจ)**
+
+| ข้อตรวจ | ผล |
+|---|---|
+| 1. AUTH-1 `1e9be0c` (re-audit) | ✅ ยืนคำ review #6 — ไล่ code ใหม่: `setAppUserLoading(true)` เป็น synchronous ก่อน `await` → batch เดียวกับ `setSessionLoading(false)` ไม่มีหน้าต่าง false-negative; stale guard ownership ถูก (`finally` flip เฉพาะเจ้าของ); logged-out early-return ก่อน try → collapse ทันที; lookup fail → bounce (พฤติกรรมเดิม); useMemo deps ครอบ ingredients ของ derived loading ครบ |
+| 2. STAT-1 `d2f8dfb` (re-audit) | ✅ callsites ครบ 5+2 stories, grep `status=` = 0, className/color classes ไม่ถูกแตะ. **Nit แฝง (ไม่ bounce)**: text branch เช็ค `operating === null` อย่างเดียว แต่ color branch เช็ค null+undefined → `operating={undefined}` จะได้ badge เทา + text "ผิดปกติ" ขัดกัน — วันนี้ไม่มี callsite ไหนส่ง undefined (ทุกจุด `?? null` / boolean) → latent เท่านั้น; แก้เป็น `operating == null` ในรอบ cleanup ได้ |
+| 3. SCHEMA-6 `073a65f` (re-audit) | ✅ DDL ตรง pattern SCHEMA-5:58 (façade ไม่มี invoker) + :73 (grant anon,authenticated); curl anon เอง: `v_overview_carbon` **200 + 12 เดือนเต็ม** ตัวเลขตรง GLM ทุกค่า (2026-07 4d/19/0.009 · 06 30d/140/0.070 — 140×0.4999/1000=0.06999 ✓ · 05 31d/137/0.068), `carbon_reading` **401** ✓; EF 0.4999 ตรง `carbon.ts:49` (เลขบรรทัดใน commit msg คลาด 1 — สาระถูก); CarbonPage ยังใช้ useCarbonMonthly ไม่ถูกแตะ |
+| 4. E2E-2 `0d1f636` | ✅ **harness fix ถูกต้องครบตาม WO Steps 1-4** — probe ยืนยัน: `goto("./form")` + baseURL normalize resolve เป็น `…/env-wastewater-webapp/form` ตามออกแบบ; `href$=` + ตัด root "/" ถูก (suffix "/form" ไม่ false-match "-form"; root ครอบด้วย label ใน smoke); local dev ไม่พัง (23/23). **แต่ prod CI run 29709454444 แดง 8 เทสต์** — root cause ไม่ใช่ harness → SPA-1 ด้านล่าง |
+| 5. UTILS-1 `2477d78` | ✅ `utils.momPct` = shape carbon.ts เป๊ะ, 2 callers import แล้ว, ไม่มี copy เหลือ; display เดิม (round(round(x,1),1) = round(x,1) ที่ precision เดียวกัน). **Edge ที่ disproof ของ GLM ไม่ cover**: OverviewPage:87,92 ใช้ `mom_change_pct > 0` เลือกสี/"+"/ลูกศรด้วย — band |pct|<0.05 เดิม pre-round เป็น 0 (no-change) ตอนนี้เป็น ±จิ๋ว → แสดง "+0.0%" ได้. Cosmetic, vanishing edge (ข้อมูลจริง MoM หลัก %), และถือว่าถูกกว่าเดิม (0.04% เพิ่มจริงคือเพิ่ม) — ไม่ bounce, จดไว้เฉย ๆ |
+| 6. INTROSPECT-1 `ff81e16` | ✅ tuple 11 schemas เรียงตรง grant line SCHEMA-5 (`4c60805`) เป๊ะ, ไม่แตะ logic อื่น; snapshot regenerate จริง — row counts ตรงทุกตัวที่ dispatch ระบุ (907+907, eq 10, personnel 9, EF 12, loc_cat 16, regulation 7, audit 23, app_user 1, meter 1) + module ใหม่ 0 rows ตามคาด. Nit: GLM อ้าง "30 tables" — นับจริงใน snapshot = **31** (ตกนับ `wastewater.threshold`); prose off-by-one, artifact ถูก |
+
+### 🔴→🟢 SPA-1 — บั๊กแอปที่ prod CI run แรกเผย (พบระหว่างข้อ 4 → แก้ landed แล้ว)
+
+- **กลไก** (reproduce ได้ 100% จากเครื่อง): deep link บน Pages → 404.html
+  snippet stash pathname เต็ม + bounce ไป SPA root → `main.tsx` restore แบบ
+  strip-and-rejoin: `slice(basename.length)` กิน "/" นำหน้าของส่วนที่เหลือ →
+  rejoin ได้ `/env-wastewater-webappform` → BrowserRouter (basename
+  `/env-wastewater-webapp/`) match ไม่ได้ → **จอเปล่าทุก prod deep link รวม
+  `/auth/callback` = OAuth login พังบน prod**
+- **ที่มา**: `fc30a4c fix(P13)` (ZCode, ก่อน sweep #3/#4 — ไม่ใช่ฝีมือ 6 commits
+  ที่ตรวจ); latent ตลอดเพราะ deploy แดง 40/40 จน CI-1 ปลดล็อก 2026-07-19 →
+  บั๊กเพิ่ง live วันเดียวก่อนถูกจับ. Diagnosis เดิมใน WO-E2E-2 ("แอปบน prod
+  ปกติ") แคบไป — review #5 ตรวจแค่ root/assets ไม่เคย deep-link
+- **Fix `fcd2a16`**: restore stash verbatim (stash คือ pathname+search+hash
+  จาก site เดียวกัน มี basename ครบอยู่แล้ว — ไม่มีอะไรต้อง strip/rejoin)
+- **ผล**: e2e.yml run `29711714159` = **23 passed — เขียวครั้งแรกในประวัติ
+  repo สำหรับ prod profile** ✓ + รัน `npm run e2e:prod` จากเครื่องกับ site
+  ที่ deploy จริงซ้ำ = 23 passed ✓ (acceptance "e2e.yml เขียว" ของ WO-E2E-2
+  ปิดที่ chunk นี้ — จดไว้ใน WO checkpoint แล้ว)
+- **Deploy แดง 2 run ก่อนหน้า** (ที่ push E2E-2/UTILS-1) = GitHub Pages API
+  **503 outage ชั่วคราว** ("No server is currently available") — ไม่เกี่ยวกับ
+  commit ใด; deploy ที่ SPA-1 push เขียว (54s) → prod เสิร์ฟ bundle ล่าสุดแล้ว
+- **บทเรียน**: (1) e2e prod smoke ที่ deep-link จริงคือ regression net ตัวเดียว
+  ที่จับบั๊กคลาสนี้ได้ — คุ้มแล้วที่ลงทุน E2E-2; (2) SPA-fallback restore
+  ห้าม reconstruct URL — restore verbatim เท่านั้น
+
+### Part 2 — FONTS-1 WO ✓ (Q4 ปลดบล็อกแล้ว)
+
+`docs/work-orders/FONTS-1-material-symbols-subset.md` — **cheap-ok, GLM execute
+ได้ทันที**. จุดสำคัญ: ทางที่ถูกคือ **css2 `icon_names=` server-side subset**
+(validate จริงรอบนี้: 3 icons = 4,648 bytes, fvar ครบ `FILL 0..1 / GRAD -50..200
+/ opsz 20..48 / wght 100..700` — ล้มข้ออ้าง F6 ที่ว่า "subset แล้ว axes หาย");
+pyftsubset local เป็นทางตัน (GSUB closure เห็น a-z+_ จะลาก ligature ทั้ง font
+กลับมา). Inventory 48 icon names scan ครบ 3 รูปแบบ (`name="…"` / `icon: "…"` /
+literal ใน `name={…}`) + regen script + drift check + verify commands ครบใน WO.
+คาด **3.9MB → <150KB (−3.75MB+)**.
+
+### Part 3 — deferred (เจตนา ไม่ใช่ลืม)
+
+P4 design (AI NL→SQL modal / audit log viewer / suggest queries) ต้องการ
+grill scope + ui-brief pass จริงจัง — ยกไป session ถัดไปแบบมีสมาธิ ดีกว่ายัด
+ท้าย session verify. คิวที่เหลือตอนนี้: **FONTS-1 (GLM, พร้อม)** →
+**E2E authenticated profile** (Sonnet tier, P11 follow-up) → P4 design (Fable5).
+
+*Re-audited + fixed by Fable5, 2026-07-20 — probes รันเองครบ (curl anon ×2 ·
+goto-resolution probe · fvar probe) · build ✅ · Playwright local 23/23 ✅ ·
+**prod CI 23/23 เขียวแรก** ✅ · local e2e:prod 23/23 ✅ · SPA-1 landed
+(`4779c9e`+`fcd2a16`) · WO-FONTS-1 เปิดใหม่*
