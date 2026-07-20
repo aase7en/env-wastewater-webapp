@@ -963,3 +963,91 @@ strokeDashoffset — inert บน div) + gradient hardcode สี dark + reduced
 3. Fable5 polish SKEL-1 (หลังข้อ 1 land)
 4. E2E authenticated profile (Sonnet tier, P11 follow-up)
 5. P4 design (Fable5 — ยังไม่เขียน)
+
+---
+
+## Dispatch prompt #4 — ส่ง Fable5 (SKEL-1 verify+polish + FONTS-1 verify)
+
+วาง prompt ด้านล่างใน session Fable5 ใหม่ (เลือก model Fable5 ก่อน):
+
+```
+อ่าน docs/work-orders/SKEL-1-skeleton-shimmer.md + docs/work-orders/
+FONTS-1-material-symbols-subset.md + MIGRATION.md §Two-track ก่อนเริ่ม
+
+GLM5.2 execute 2 chunks ระหว่างที่คุณทำ SPA-1 — ทั้งคู่ WO คุณเขียนเอง
+(verbatim formula). งานของรอบนี้ = verify + รับ polish (Verify 5 ที่ล็อกไว้
+เป็นของ Fable5).
+
+### รอบ 1 — SKEL-1 `7803e6f` (verify + polish)
+
+ชิ้นเดียวที่มี 2 รอบ: **verify ก่อน → polish ตาม**
+
+**Verify (Steps 1-8 + Verify 1-4)**:
+
+GLM self-verify ผ่านหมด:
+- npm run build ✅ (25.64s) · Playwright 25/25 ✅ (23 เดิม + 2 skeleton tests)
+- grep "animate-" Skeleton.tsx = 0 hit ✅
+- prod CI ที่ push `7803e6f`: **test + Deploy + E2E smoke เขียวทั้ง 3** ✅
+
+สิ่งที่ต้องตรวจเป็นพิเศษ:
+1. สูตร `.skeleton` ใน index.css ตรงที่คุณออกแบบ (MUI-wave transform on
+   ::after, anti-flash 200ms opacity-0, dual-theme via token)
+2. Skeleton.tsx 3 variants + PageSkeleton ใหม่ — ใช้งานได้ทั้งหมด
+3. DashboardPage + OverviewPage + RequireAuth + App.tsx ×5 swap ครบ
+4. skeleton.spec.ts 2 tests assertion logic ถูก (mock delay + reduced-motion
+   freeze via getComputedStyle.animationName === "none")
+5. prod deploy จริง — เปิด https://aase7en.github.io/env-wastewater-webapp/
+   และ /dashboard บน browser จริง ดู skeleton render (throttle network
+   3G slow ถ้าเร็วไป)
+
+**Polish (Verify 5 ที่ WO ล็อกไว้)**:
+
+ตามที่ WO forbidden บอก GLM ห้ามทำ:
+- **screenshot ทั้ง light + dark theme**: `/` + `/dashboard` ขณะ loading
+- **จูน sheen intensity/duration**: opacity 0.65/0.06, 1.6s sweep — ลด/เพิ่ม
+  ตามตา (ตอนนี้เดาจากสูตร MUI)
+- **จูนขนาด**: `h-9 w-28` + `h-3 w-24` ใน OverviewPage metric skeleton —
+  ดู Metric จริง (value text-3xl ≈ 36px, caption text-[11px]) แล้วปรับ
+- **zero-CLS check**: ดูตาว่า layout ไม่เด้งตอน skeleton swap เป็น content
+- **`CardGridSkeleton` + `aura-card`**: เช็คว่า `overflow-hidden` ใน
+  `.skeleton` clip conic ring ของ AuraCard หรือไม่ (ทดสอบใน DashboardPage
+  ตอน loading — KPI tiles ที่เป็น skeleton จะมี ring หรือเปล่า)
+
+### รอบ 2 — FONTS-1 `f48b17f` (verify + รับ Verify 5)
+
+GLM self-verify ผ่าน:
+- gen script + scan 49 icon names (add + apartment + … + success +
+  trending_down/up + upload_file + warning + water_drop + water_full)
+- css2 icon_names fetch → subset 46,992 B (−3.85MB / −98.8% จาก 3,899KB)
+- fontTools fvar axes ครบ FILL(0,1) GRAD(-50,200) opsz(20,48) wght(100,700) ✅
+- npm run build ✅ (3.77s) · Playwright 25/25 ✅
+- grep leftover refs 0 hits ✅
+- prod CI ที่ push `f48b17f`: (รอคุณเช็คหลัง push นี้ land)
+
+สิ่งที่ต้องตรวจเป็นพิเศษ:
+1. gen-msymbol-subset.mjs 3 regex จับทั้ง `MSymbol name="…"`, `icon: "…"`
+   / `icon="…"`, `name={…}` — ไม่หลุด icon ที่ใช้จริง (ลองเพิ่ม MSymbol
+   ใหม่ใน src/ แล้วรัน `--check` → ต้อง DRIFT)
+2. `msymbol-icon-names.txt` inventory 49 names ตรง scan จริง
+3. **Verify 5 (visual — Track F check)**: dev server → block network
+   `fonts.googleapis.com` + `fonts.gstatic.com` → reload `/` + `/dashboard`
+   + `/equipment` → ทุก sidebar icon render เป็น glyph ไม่ใช่ข้อความดิบ/tofu.
+   DevTools console: `document.fonts.check('400 22px "Material Symbols Outlined"')`
+   = true. DevTools Network: ไม่มี request ไป gstatic/googleapis (ยืนยัน
+   self-host สมบูรณ์)
+4. หากเจอ icon missing (เพราะ regex พลาด หรือ name มาจาก DB) — เพิ่มใน
+   `msymbol-icon-names.txt` ด้วยมือแล้ว rerun gen script (หรือแก้ regex)
+
+### กติกาเดิม
+
+- ผ่าน → append "Verified by Fable5 (date)" ใน handoff doc + close WO Status
+- เจอปัญหา → append + claim + เขียน WO fix ถ้าจำเป็น
+- ห้าม git reset --hard (rule 6) · PHI boundary ไม่ route ผ่าน Z.ai cloud
+
+### Backlog เปิดหลังรอบนี้
+
+ถ้า SKEL-1 polish ผ่าน → **SKEL-2** (15 จุดที่เหลือ — 8 module pages +
+Regulations + CarbonRollup + DailyForm + Attachments + PDFDesigner + AIAdmin
++ NotificationBell) copy pattern SKEL-1 ที่คุณ tune แล้ว = cheap-ok
+GLM/Sonnet tier. คุณเป็นเจ้าของ design → ได้เลือกเปิด dispatch เมื่อไหร่
+```
