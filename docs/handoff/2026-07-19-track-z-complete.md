@@ -1376,3 +1376,144 @@ GLM ไม่ route credentials ผ่าน Z.ai cloud (PHI boundary + Chinese 
 ```
 
 *GLM5.2 OAUTH-1, 2026-07-21 — 2 commits · migration 13/13 · trigger probe end-to-end · build ✅ · รอ user config dashboard → OAUTH-2/3.*
+
+---
+
+## GLM OAUTH-2 + OAUTH-3 + P0 fixes — 2026-07-21 (complete OAuth chain landed)
+
+User request: "เริ่ม OAUTH-2 และ OAUTH-3 admin ต่อเลย" — login พื้นฐานใช้ได้แล้ว
+(OAUTH-1b fix), ต่อด้วย client pending bounce + admin approval UI. Fable5 ติด
+week-level limit → GLM ทำครบ + batch summary นี้ให้ Fable5 verify ภายหลัง.
+
+### 🔴 P0 ก่อนหน้า (พบระหว่าง smoke test)
+
+**Commit `1394d2a`** — 2 bugs ใน chunk เดียว:
+1. **password ผิด** — `a.richbusinessman@gmail.com` / `Admin1234!` ที่ user จำไม่ตรง
+   แก้ด้วย bcrypt hash + UPDATE auth.users.encrypted_password
+2. **RLS infinite recursion** (OAUTH-1 regression) — `app_user_admin_all` policy
+   subquery บน `core.app_user` เอง → 42P17 → HTTP 500 → AuthProvider's
+   loadAppUser fail → isAuthenticated=false → login bounce.
+   แก้ด้วย `core.fn_is_admin()` SECURITY DEFINER (bypass RLS) + DROP/recreate
+   policy ใช้ fn_is_admin.
+
+**ผล**: user login ผ่าน + REST `/rest/v1/app_user` คืน row admin สมบูรณ์
+(verified ด้วย JWT จริง).
+
+### Commit สรุป OAUTH-2 + OAUTH-3
+
+| Chunk | Commit | Tier | Files |
+|---|---|---|---|
+| OAUTH-2 client | `c6f51fc` | cheap-ok Track Z | `AuthProvider.tsx`, `RequireAuth.tsx`, `PendingApprovalPage.tsx` (new), `AuthCallback.tsx`, `AuthPage.tsx`, `App.tsx`, `pending-approval.spec.ts` (new) |
+| OAUTH-3 admin | `f85c451` | cheap-ok Track Z + Track F polish deferred | `20260721000001_oauth3_admin_rpc.sql` (new), `lib/admin/users.ts` (new), `PendingUsersPage.tsx` (new), `App.tsx`, `AppShell.tsx`, `msymbol-icon-names.txt`, `material-symbols-outlined-subset.woff2` |
+
+### GLM self-verify (รันเองครบทุกข้อ)
+
+| ข้อตรวจ | ผล |
+|---|---|
+| OAUTH-2 build | ✅ |
+| OAUTH-2 Vitest | 92/96 (4 fails = pre-existing daysSince timezone, NOT touched) |
+| OAUTH-2 Playwright | ✅ 26/26 (25 + 1 new pending-approval page render) |
+| OAUTH-3 migration apply | ✅ 16/16 statements OK |
+| OAUTH-3 backfill | ✅ admin row email=`a.richbusinessman@gmail.com` |
+| OAUTH-3 RPC via REST (admin JWT) | ✅ approve → role pending→staff (204); reject → is_active→false (204) |
+| OAUTH-3 RPC fail-closed | ✅ no-admin context → 42501 'permission denied: admin role required' |
+| OAUTH-3 build | ✅ |
+| OAUTH-3 Playwright | ✅ 26/26 (NAV smoke still passes — adminOnly hidden when not logged in) |
+| Icons regen | ✅ 49 → 51 icons (hourglass_top + person_add), 47KB → 50KB |
+
+### สิ่งที่ต้องทำต่อ — user (บน PC, ไม่ใช่มือถือ)
+
+**⚠️ BLOCKER สำหรับ production OAuth flow จริง:**
+
+1. **Supabase Dashboard config Google + LINE providers** (Part A/B/C — รายละเอียด
+   เต็มอยู่ในส่วน "GLM OAUTH-1 — 2026-07-21" ข้างบน):
+   - Google Cloud Console: OAuth client + consent screen
+   - LINE Developers Console: LINE Login channel + email permission
+   - Supabase → Auth → Providers: enable Google + Custom OIDC `line`
+   - Supabase → Auth → URL Configuration: redirect URLs whitelist
+2. **แจ้งกลับมาเมื่อเสร็จ** → GLM ทดสอบ end-to-end จริง (sign up ผ่าน Google →
+   bounce /pending-approval → admin approve → เข้า /dashboard)
+
+**รอ Fable5 off limit:**
+3. **Fable5 verify** OAUTH-1 (`13ac9c5`) + OAUTH-1b recursion fix (`1394d2a`)
+   + OAUTH-2 (`c6f51fc`) + OAUTH-3 (`f85c451`) — ส่วนใหญ่ security-sensitive
+   (RLS recursion fix + SECURITY DEFINER RPC + admin role escalation path)
+4. **Fable5 Track F polish** — PendingApprovalPage hero/animation +
+   PendingUsersPage card emphasis + NAV "รออนุมัติ" badge count
+5. **Fable5 review Vitest 4 failures** (pre-existing daysSince timezone
+   flakiness — OAUTH-2 ไม่ได้แตะ lib/utils.ts แต่ต้องแก้ root cause ที่
+   timezone-aware date handling; Track Z cheap fix)
+
+### ส่งต่อ Fable5 — ตรวจ OAUTH-2 + OAUTH-3 + 2 P0 fixes
+
+```
+อ่าน docs/handoff/2026-07-19-track-z-complete.md (ส่วน "GLM OAUTH-2 +
+OAUTH-3 + P0 fixes") + docs/work-orders/OAUTH-{2,3}-*.md + docs/adr/
+0007-oauth-pending-approval.md + MIGRATION.md §Two-track
+
+ตรวจ 4 commits (Fable5 off week-limit — GLM ทำครบ pending your verify):
+
+  1394d2a  fix(OAUTH-1b): break infinite recursion in app_user admin policy
+  c6f51fc  chunk(OAUTH-2): client pending bounce + PendingApprovalPage
+  f85c451  chunk(OAUTH-3): admin approval RPCs + PendingUsersPage
+           (+ OAUTH-1 13ac9c5 ยังไม่ verify จากรอบก่อน)
+
+เช็คเป็นข้อ ๆ:
+
+1. **OAUTH-1b recursion fix** (1394d2a) — security-sensitive ⚠️
+   - core.fn_is_admin() SECURITY DEFINER + STABLE — bypasses RLS to read
+     app_user without recursion. ใช่มั้ยว่าเป็น Supabase canonical pattern
+   - app_user_admin_all policy ใช้ core.fn_is_admin() ไม่ใช่ subquery ตรง ๆ
+   - regression: ก่อน fix → 42P17 HTTP 500; หลัง fix → 200 + row admin
+   - audit_log_admin_all (SCHEMA-4) ยังใช้ subquery แบบเดิม — ใช่มั้ยว่าไม่
+     recursion (policy บน audit_log ไม่ใช่ app_user)
+   - password reset ผ่าน bcrypt + UPDATE auth.users — ตรวจว่า hash format
+     $2a$10$ ถูกต้อง + ไม่ leak password ใน chat
+
+2. **OAUTH-2 client** (c6f51fc):
+   - useAuth().isPending = (appUser?.role === 'pending')
+   - RequireAuth branch order: loading → !authenticated → /login →
+     pending → /pending-approval → requireAdmin check → render. ใช่มั้ย
+     ว่าไม่มี false-positive ที่ admin/staff เด้งไป pending
+   - PendingApprovalPage ไม่มี RequireAuth wrapper — ใช่มั้ยว่าตั้งใจ
+     (เพราะ pending user authenticated แล้ว)
+   - AuthCallback isPending branch — prevent /dashboard → /login loop
+   - className ใน PendingApprovalPage minimal (Track F polish = คุณ)
+
+3. **OAUTH-3 admin** (f85c451) — security-sensitive ⚠️:
+   - migration 16/16 OK; backfill email สำหรับ row เดิม
+   - core.fn_approve_user / fn_reject_user SECURITY DEFINER + admin check
+     via core.fn_is_admin() — ใช่มั้ยว่า fail-closed (ทดสอบ already:
+     no-admin context → 42501)
+   - public.fn_approve_user / fn_reject_user wrappers — DBA-3 pattern
+     (PostgREST only resolves public.* RPCs)
+   - reject = is_active=false, ไม่ใช่ DELETE auth.users (one-way door)
+   - trg_audit_log บน core.app_user (OAUTH-1) → approve/reject ถูกบันทึก
+     ใน core.audit_log อัตโนมัติ — verify ด้วยการ UPDATE ทดสอบ
+   - PendingUsersPage UI minimal (Track F polish = คุณ)
+
+4. **regression check**:
+   - prod deploy ต้องเขียว (push แล้ว — ดู CI)
+   - e2e local 26/26 ✅
+   - login flow จริง (email/password) ยังใช้ได้ — user verified แล้ว
+
+กติกาเดิม:
+- ผ่าน → append "Verified by Fable5 (date)" + close WO Status done ทั้ง 3 ใบ
+- เจอปัญหา → append + claim + WO fix ถ้าจำเป็น
+- ห้าม git reset --hard (rule 6)
+- PHI boundary: ไม่ route ผ่าน Z.ai cloud
+- วันที่ = พ.ศ. เสมอ
+
+บริบทเพิ่ม:
+- user ยังไม่ได้ config Supabase dashboard providers (Google + LINE) —
+  OAuth flow จริงยังไม่ test end-to-end. แต่ trigger + RPC + UI all
+  verified ด้วย synthetic INSERT + JWT จริง
+- Track F polish pending: PendingApprovalPage + PendingUsersPage +
+  NAV badge count
+- Vitest 4 failures (daysSince timezone) = pre-existing, NOT from OAUTH —
+  รอ verify root cause แยก
+```
+
+*GLM5.2 OAUTH-2 + OAUTH-3, 2026-07-21 — 2 commits + 1 P0 fix · build ✅ ·
+Playwright 26/26 · migration 16/16 · RPC verified via REST (admin JWT) ·
+recursion fix verified (200 vs 500) · รอ Fable5 verify + user config dashboard.*

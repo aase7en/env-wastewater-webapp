@@ -285,8 +285,6 @@ binding rules are here.
 
 | Chunk | Agent | Claimed | Scope (files) |
 |---|---|---|---|
-| OAUTH-2 | zcode | 2026-07-21 | `frontend/src/components/AuthProvider.tsx`, `RequireAuth.tsx`, `pages/PendingApprovalPage.tsx` (new), `pages/AuthCallback.tsx`, `pages/AuthPage.tsx`, `App.tsx`, `tests/e2e/pending.spec.ts` (new) |
-| OAUTH-3 | zcode | 2026-07-21 | `supabase/migrations/20260721000001_oauth3_admin_rpc.sql` (new), `frontend/src/lib/admin/users.ts` (new), `pages/admin/PendingUsersPage.tsx` (new), `App.tsx`, `components/layout/AppShell.tsx`, `scripts/msymbol-icon-names.txt`, `public/fonts/material-symbols-outlined-subset.woff2` |
 
 > **P1 ใหม่ 2026-07-21 (user request): OAUTH — Google + LINE login** —
 > `AuthPage` มีปุ่ม Google/LINE แต่ไม่ทำงาน (provider ยังไม่ config) +
