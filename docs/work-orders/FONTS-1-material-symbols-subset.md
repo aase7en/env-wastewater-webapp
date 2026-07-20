@@ -1,5 +1,5 @@
 # WO-FONTS-1: Material Symbols subset — keep-axes, icon_names server-side
-Status: executed-pending-polish (2026-07-20, zcode) — Verify 1-4 + 6 ผ่าน; Verify 5 (visual) ยกให้ Fable5
+Status: done (2026-07-20) — GLM execute + Fable5 verify ครบทุกข้อรวม Verify 5 (visual, dev+prod)
 Lane/files: `frontend/scripts/gen-msymbol-subset.mjs` (new), `frontend/scripts/msymbol-icon-names.txt` (generated, committed), `frontend/public/fonts/material-symbols-outlined-subset.woff2` (new), `frontend/public/fonts/material-symbols-outlined.woff2` (**delete**), `frontend/src/index.css` (1 บรรทัด src), `frontend/src/components/ui/MSymbol.tsx` (docstring note เท่านั้น)
 Branch: main
 Model tier: **cheap-ok** (สูตร verbatim ครบ — GLM execute ได้; ถ้า network ถึง fonts.googleapis.com ไม่ได้ → ยกให้ Sonnet/Fable5 รันเฉพาะ Step 2 แล้วทำต่อตามเดิม)
@@ -165,3 +165,26 @@ git rm frontend/public/fonts/material-symbols-outlined.woff2
 
   **Verify 5 (visual)**: ยกให้ Fable5 (Track F scope — block network → reload
   → glyph render check + DevTools fonts.check). รอบถัดไป.
+- [2026-07-20] fable5: **verify ครบทุกข้อ — WO ปิด**. รันเองซ้ำ: `--check` no
+  drift (49 names) · fvar 4 แกนครบ · 46,992B · grep leftover 0 · build +
+  Playwright 25/25 · prod CI ที่ `f48b17f` เขียวทั้ง 3.
+  เพิ่มจาก checklist:
+  - **Drift-detection เชิงพฤติกรรม**: inject `MSymbol name="rocket_launch"`
+    ชั่วคราว → `--check` = DRIFT + exit 1; ลบ → no drift ✓ (regex ทั้ง 3 จับจริง)
+  - **`success` (name ที่ 49 ที่เกิน inventory 48)**: มาจาก `DailyFormPage.tsx:217`
+    ternary `banner.kind === "success" ? "check_circle" : "warning"` — regex 3
+    (`name={…}` inner strings) จับ string ทุกตัวใน braces = false positive ที่
+    **เจตนา over-inclusive** (จับ icon จริงใน ternary ได้ ยอมแลก +ไม่กี่ร้อย bytes;
+    css2 API ignore ชื่อที่ไม่มี) — ไม่ใช่ defect
+  - **Verify 5 (visual)**: probe ผ่าน Playwright (browser จริง) แทน DevTools —
+    dev: `.msym` ทุกตัวกว้าง **22px เป๊ะ** (ligature glyph, ไม่ใช่ text ดิบ),
+    `document.fonts.check` = true ทั้ง 3 ตระกูล, **network listener จับทั้ง
+    lifecycle: 0 requests ไป googleapis/gstatic** (แรงกว่า block-network:
+    พิสูจน์ว่าไม่มีแม้แต่ attempt) + screenshots light/dark จาก SKEL-1 polish
+    round ยืนยัน sidebar glyphs ด้วยตา
+  - **Prod probe** (`aase7en.github.io/env-wastewater-webapp/`): fonts.check
+    true ×3 · subset โหลดจาก `/env-wastewater-webapp/fonts/…-subset.woff2`
+    (Vite rebase ถูก) · glyph 22px · external 0 — self-host สมบูรณ์บน prod
+  หมายเหตุ environment: browser-pane tab ของ session รายงาน fonts.check=false
+  + msym กว้าง 90px — เป็น renderer ของ tab นั้นพิการ (screenshot timeout ทุกครั้ง);
+  Playwright + prod ยืนยันแอปปกติ. อย่าใช้ browser-pane tab เดิมตัดสิน font rendering.

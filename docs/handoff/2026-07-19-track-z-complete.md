@@ -1051,3 +1051,36 @@ Regulations + CarbonRollup + DailyForm + Attachments + PDFDesigner + AIAdmin
 + NotificationBell) copy pattern SKEL-1 ที่คุณ tune แล้ว = cheap-ok
 GLM/Sonnet tier. คุณเป็นเจ้าของ design → ได้เลือกเปิด dispatch เมื่อไหร่
 ```
+
+---
+
+## Fable5 review #8 — 2026-07-20 (dispatch #4: SKEL-1 verify+polish + FONTS-1 verify)
+
+**✅ Verified by Fable5 (2026-07-20) — ผ่านทั้ง 2 chunks, ไม่มี defect; polish
+landed (`72915e5`); WO ปิดทั้ง 2 ใบ**
+
+| ข้อตรวจ | ผล |
+|---|---|
+| 1. SKEL-1 `7803e6f` verify | ✅ diff ตรงสูตร Steps 1-8 ทุกไฟล์ (tokens ×2 sheen + reduced-motion expand / `.skeleton` core / Skeleton.tsx ทั้งไฟล์ / Dashboard / Overview ×4 / RequireAuth aria-busy+sr-only / App ×5 / spec 2 tests verbatim); build ✅ · 25/25 ✅ · grep `animate-` = 0 · `flow` keyframe ยังอยู่ (PFD) · prod CI เขียวทั้ง 3 |
+| 2. SKEL-1 polish (Verify 5) | ✅ **วัดจริงทุกตัวเลขด้วย probe spec** (ลบหลังรัน): value skeleton h-9 = 36px ตรง Metric จริงเป๊ะ, block รวม 54 vs 55px → **คง h-9 w-28 + h-3 w-24** (แก้ h-3→h-4 จะแย่ลง); **chip h-6→h-7** (จริง 27px); **dark sheen 0.06→0.09** (พื้นแอปดำลึกกว่า MUI benchmark — 0.06 อ่านไม่ออกจากภาพ); **water metric → skeleton** (เดิมโชว์ "— mg/L" ขัด energy/carbon); **CLS วัดจริง 0.0177** (<0.1 good); **aura-card conic ring ไม่ถูก clip — เก็บไว้** (::before inset 0 รอด overflow:hidden; radius 24px ชนะ rounded-lg = ตรง KPI จริง; probe ยืนยัน aura-rotate ยัง active บน skeleton ทั้ง 4 tiles) — screenshots light+dark + closeup ใน session scratchpad |
+| 3. FONTS-1 `f48b17f` verify | ✅ diff ตรง Steps 1-5 verbatim; `--check` no drift (49) · fvar FILL/GRAD/opsz/wght ครบ · 46,992B (−3.85MB) · grep leftover 0 · prod CI เขียว. **Drift-test เชิงพฤติกรรม**: inject `rocket_launch` → DRIFT exit 1 ✓. **`success` ที่เกิน inventory**: false positive เจตนาจาก regex 3 (`DailyFormPage.tsx:217` kind-ternary) — over-inclusive ปลอดภัย ไม่ใช่ defect |
+| 4. FONTS-1 Verify 5 (visual) | ✅ Playwright probe dev+**prod**: `.msym` กว้าง **22px เป๊ะทุกตัว** (glyph ไม่ใช่ text), fonts.check true ×3 ตระกูล, **network listener ทั้ง lifecycle = 0 requests ไป googleapis/gstatic** (แรงกว่า block-network — พิสูจน์ไม่มีแม้แต่ attempt), prod โหลด subset จาก base path ที่ Vite rebase ถูกต้อง |
+| 5. Prod skeleton | ✅ probe บน prod (REST held): **7 skeletons** = bundle polish `72915e5` deploy แล้ว, sweep + anti-flash ทำงาน, พื้น light ถูก token |
+
+- CI ที่ `72915e5` (polish): test + Deploy + E2E smoke **เขียวทั้ง 3** · suite local 25/25
+- หมายเหตุ environment: browser-pane tab ของ session นี้ renderer พิการ (screenshot
+  timeout + fonts.check=false + msym 90px) — Playwright + prod พิสูจน์แอปปกติ;
+  จดใน WO FONTS-1 กัน agent ถัดไปตีความผิด
+- Note → SKEL-2: DashboardPage ตาราง 14 วัน + PFD แสดง empty state ระหว่าง loading
+  (พฤติกรรมเดิมก่อน SKEL-1) — SKEL-2 ควรพ่วง TableSkeleton ให้ตารางด้วย
+
+### คิวเปิดหลังรอบนี้ (เรียงแนะนำ)
+
+1. **SKEL-2** — 15 จุด + Dashboard table (pattern จูนแล้ว, สูตรพร้อมใน SKEL-1 WO
+   + checkpoint) = cheap-ok → GLM/Sonnet; Fable5 เขียน WO ก่อน dispatch
+2. **E2E authenticated profile** (P11 follow-up — Sonnet tier)
+3. **P4 design** (Fable5 — AI NL→SQL modal / audit log viewer / suggest queries)
+
+*Verified + polished by Fable5, 2026-07-20 — probes รันเองครบ (dims/CLS/ring/
+fonts/drift/prod ×2) · build ✅ · 25/25 ✅ · CI เขียว 3/3 ที่ `72915e5` ·
+SKEL-1 + FONTS-1 Status: done*
