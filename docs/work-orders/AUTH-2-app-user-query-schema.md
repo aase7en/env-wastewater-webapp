@@ -1,6 +1,6 @@
 # WO-AUTH-2: แก้ AuthProvider query ผิด schema — login block ทั้งแอป
 
-Status: open → in-progress (2026-07-19, zcode)
+Status: done (2026-07-19, zcode) — commit pending verify by Fable5
 Lane/files:
 - `frontend/src/components/AuthProvider.tsx` (query + interface)
 - `frontend/src/components/layout/AppShell.tsx` (display_name fallback)
@@ -93,4 +93,30 @@ cd frontend && npm run build && npx playwright test
 
 ## Checkpoint / ปิดท้าย
 
-(none yet — execute in progress)
+**GLM self-verify (รันเองครบทุกข้อ 2026-07-19):**
+
+| ข้อตรวจ | ผล |
+|---|---|
+| Build | ✅ `npm run build` 5.07s |
+| Vitest | ✅ 96/96 (19 utils + 48 db-query + 29 csv-import) |
+| Playwright | ✅ 25/25 (8 smoke + 8 auth + 4 pfd + 2 skeleton + 3 modules) |
+| Migration apply | ✅ 4/4 statements OK (ALTER + COMMENT + CREATE OR REPLACE VIEW + UPDATE) |
+| Schema snapshot refresh | ✅ `core.app_user` row 6 = `display_name text` |
+| DB probe — backfill | ✅ admin row = `{role:'admin', display_name:'a.richbusinessman', is_active:true}` |
+| DB probe — view recreate | ✅ `public.app_user` definition ตอนนี้รวม `display_name` |
+| DB probe — AuthProvider query | ✅ exact query คืน row สมบูรณ์ (PAT runs as admin, RLS bypass) |
+
+**DISCOVERY ระหว่าง apply (สำคัญ):** PostgreSQL view cache column list ตอน
+CREATE — `select * from core.app_user` ใน `public.app_user` façade (SCHEMA-5)
+ไม่ expand column ใหม่อัตโนมัติ. ต้อง `CREATE OR REPLACE VIEW`. Migration ปัจจุบัน
+ครอบแล้ว (statement 3). หากไม่ recreate, query ใหม่ของ AuthProvider ยังคง PGRST204.
+
+**Acceptance ค้าง (รอ user/Fable5 verify จริง):**
+- Login จริงใน browser ด้วย email/password ที่ถูกต้อง → navigate ไป /dashboard โดยไม่ bounce
+- JWT round-trip จริง (Fable5 review #6 ยัง pending สำหรับ authenticated REST smoke)
+
+**Edge case ที่รักษาพฤติกรรมเดิม:**
+- `app_user` row missing → `appUser=null` → bounce /login (เหมือนเดิม)
+- `is_active=false` → ตอนนี้ reject explicit + log warn (ใหม่ — ปลอดภัยกว่าเดิมที่อนุญาต disabled account)
+- session==null → collapse ทันที (AUTH-1)
+- session เปลี่ยนกลาง lookup → stale guard (AUTH-1)

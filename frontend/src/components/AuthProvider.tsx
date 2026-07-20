@@ -21,6 +21,9 @@ interface AppUserRow {
   id: string;
   role: "admin" | "staff";
   display_name: string | null;
+  /** AUTH-2: account-active flag — false means the account was disabled
+   *  (left the unit, suspended). Treat as not-authenticated upstream. */
+  is_active: boolean;
 }
 
 interface AuthContextValue {
@@ -71,6 +74,12 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const latestUserIdRef = useRef<string | undefined>(undefined);
 
   // Fetch the role-bearing core.app_user row for the current auth.users.id.
+  //
+  // AUTH-2 (2026-07-19): previous query was broken — it filtered on
+  // `auth_user_id` (no such column; the FK is on `id` directly) and selected
+  // `display_name` before the column existed. PostgREST returned PGRST204,
+  // catch → setAppUser(null) → isAuthenticated=false → login bounced back
+  // to /login every time despite a valid session. Now matches schema.
   const loadAppUser = async (userId: string | undefined) => {
     latestUserIdRef.current = userId;
     if (!userId) {
@@ -81,14 +90,19 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     try {
       const { data, error } = await supabase
         .from("app_user")
-        .select("id, role, display_name")
-        .eq("auth_user_id", userId)
+        .select("id, role, display_name, is_active")
+        .eq("id", userId)
         .maybeSingle();
       // Stale guard: a newer lookup may have started while we were awaiting.
       if (latestUserIdRef.current !== userId) return;
       if (error) {
-        // Most likely RLS — user has an auth.users row but no core.app_user yet.
-        console.warn("app_user lookup failed:", error.message);
+        // PGRST204 (schema mismatch) or RLS deny — both mean we can't trust
+        // isAuthenticated. Surface the message for debugging.
+        console.warn("app_user lookup failed:", error.code, error.message);
+        setAppUser(null);
+      } else if (data && data.is_active === false) {
+        // AUTH-2: account explicitly disabled — treat as not-authenticated.
+        console.warn("app_user is_active=false:", data.id);
         setAppUser(null);
       } else {
         setAppUser(data as AppUserRow | null);
