@@ -3,6 +3,7 @@ import { useNavigate } from "react-router-dom";
 import { useAuth } from "../AuthProvider";
 import { useThresholdAlerts } from "../../lib/alerts";
 import { MSymbol } from "./MSymbol";
+import { Skeleton } from "./Skeleton";
 import { cn } from "../../lib/utils";
 import { thaiDate } from "../../lib/utils";
 
@@ -78,7 +79,17 @@ function BellInner({ className }: { className?: string }) {
           </div>
           <div className="max-h-80 overflow-y-auto">
             {loading && alerts.length === 0 ? (
-              <div className="px-4 py-6 text-sm text-aura-textMuted font-thai text-center">กำลังโหลด…</div>
+              <div className="p-2 space-y-1">
+                {Array.from({ length: 3 }).map((_, i) => (
+                  <div key={i} className="flex items-start gap-2.5 px-2 py-3">
+                    <Skeleton className="h-[18px] w-[18px] rounded-md mt-0.5" />
+                    <div className="flex-1 space-y-1.5">
+                      <Skeleton className="h-3.5 w-3/4" />
+                      <Skeleton className="h-2.5 w-1/3" />
+                    </div>
+                  </div>
+                ))}
+              </div>
             ) : alerts.length === 0 ? (
               <div className="px-4 py-6 text-sm text-aura-textMuted font-thai text-center">ไม่มีการแจ้งเตือน</div>
             ) : (

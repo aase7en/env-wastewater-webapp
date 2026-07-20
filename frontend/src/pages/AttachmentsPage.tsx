@@ -10,6 +10,7 @@
 import { useState, useEffect } from "react";
 import { useToast } from "../components/ui/Toast";
 import { AuraCard } from "../components/ui/AuraCard";
+import { TableSkeleton } from "../components/ui/Skeleton";
 import { Field, Select, Input } from "../components/ui/Input";
 import {
   fetchAttachments, uploadAttachment, deleteAttachment, attachmentUrl,
@@ -89,7 +90,7 @@ export function AttachmentsPage() {
       </Field>
 
       <AuraCard className="p-4">
-        {loading ? <p className="font-thai">กำลังโหลด…</p> : items.length === 0 ? (
+        {loading ? <TableSkeleton rows={5} cols={5} /> : items.length === 0 ? (
           <p className="text-aura-textMuted font-thai">ยังไม่มีเอกสาร</p>
         ) : (
           <table className="w-full text-sm">

@@ -4,6 +4,7 @@
  * total + "ข้อมูล incomplete" flag for sources without data yet.
  */
 import { AuraCard } from "../components/ui/AuraCard";
+import { PageSkeleton } from "../components/ui/Skeleton";
 import { useCarbonRollup } from "../lib/carbon-rollup";
 
 const SCOPE_NAMES: Record<number, string> = {
@@ -15,7 +16,7 @@ const SCOPE_NAMES: Record<number, string> = {
 export function CarbonRollupPage() {
   const { data, loading, error } = useCarbonRollup(12);
 
-  if (loading) return <div className="p-8 text-center font-thai text-aura-textMuted">กำลังโหลด…</div>;
+  if (loading) return <div className="p-4"><PageSkeleton /></div>;
   if (error) return <div className="p-8 text-center text-red-400 font-thai">{error}</div>;
   if (!data) return null;
 

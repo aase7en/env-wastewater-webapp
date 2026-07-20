@@ -8,6 +8,7 @@ import { useState, useEffect, useCallback } from "react";
 import { useToast } from "../../components/ui/Toast";
 import { AuraCard } from "../../components/ui/AuraCard";
 import { Button } from "../../components/ui/Button";
+import { TableSkeleton } from "../../components/ui/Skeleton";
 import { Input, Field } from "../../components/ui/Input";
 import { Toggle } from "../../components/ui/Toggle";
 import {
@@ -117,7 +118,7 @@ export function AIAdminPage() {
 
       <AuraCard className="p-4">
         <h2 className="font-semibold mb-2 font-thai">Providers ({providers.length})</h2>
-        {loading ? <p className="font-thai">กำลังโหลด…</p> : (
+        {loading ? <TableSkeleton rows={5} cols={5} /> : (
           <table className="w-full text-sm">
             <thead><tr><th className="text-left p-2">ชื่อ</th><th className="text-left p-2">Model</th><th className="text-right p-2">Priority</th><th className="text-left p-2">เปิด</th><th></th></tr></thead>
             <tbody>

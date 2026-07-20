@@ -10,6 +10,7 @@ import { useState, useEffect, useCallback } from "react";
 import { useToast } from "../components/ui/Toast";
 import { AuraCard } from "../components/ui/AuraCard";
 import { Button } from "../components/ui/Button";
+import { TableSkeleton } from "../components/ui/Skeleton";
 import { Input, Field, Select, Textarea } from "../components/ui/Input";
 import {
   fetchTemplates, saveTemplate, deleteTemplate, type PdfTemplate, type PdfLayout,
@@ -120,7 +121,7 @@ export function PDFDesignerPage() {
 
       <AuraCard className="p-4">
         <h2 className="font-semibold mb-2 font-thai">Templates ({templates.length})</h2>
-        {loading ? <p className="font-thai">กำลังโหลด…</p> : (
+        {loading ? <TableSkeleton rows={5} cols={4} /> : (
           <table className="w-full text-sm">
             <thead><tr><th className="text-left p-2">ชื่อ</th><th className="text-left p-2">Data source</th><th className="text-left p-2">ขนาด</th><th></th></tr></thead>
             <tbody>

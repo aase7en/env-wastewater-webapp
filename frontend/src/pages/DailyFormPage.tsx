@@ -3,6 +3,7 @@ import { useNavigate, useParams } from "react-router-dom";
 import { AccordionSection } from "../components/ui/Accordion";
 import { MSymbol } from "../components/ui/MSymbol";
 import { Button } from "../components/ui/Button";
+import { Skeleton } from "../components/ui/Skeleton";
 import { Field, Input, NumberInput, Textarea } from "../components/ui/Input";
 import { Toggle } from "../components/ui/Toggle";
 import { useCreateReading, useDeleteReading, useEquipment, useReading, useUpdateReading } from "../lib/hooks";
@@ -184,7 +185,14 @@ export function DailyFormPage() {
   };
 
   if (loadingExisting) {
-    return <div className="text-aura-textMuted font-thai p-8">กำลังโหลดรายการ…</div>;
+    return (
+      <div className="max-w-3xl mx-auto space-y-4">
+        <Skeleton className="h-9 w-56" />
+        <Skeleton className="h-40 w-full" />
+        <Skeleton className="h-40 w-full" />
+        <Skeleton className="h-40 w-full" />
+      </div>
+    );
   }
 
   const submitting = createMut.loading || updateMut.loading;

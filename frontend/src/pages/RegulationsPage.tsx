@@ -4,6 +4,7 @@
  */
 import { useState } from "react";
 import { AuraCard } from "../components/ui/AuraCard";
+import { Skeleton } from "../components/ui/Skeleton";
 import { Field, Select } from "../components/ui/Input";
 import { useRegulations } from "../lib/regulations";
 
@@ -35,7 +36,15 @@ export function RegulationsPage() {
       </Field>
 
       <div className="space-y-3">
-        {loading ? <p className="font-thai">กำลังโหลด…</p>
+        {loading ? (
+          Array.from({ length: 4 }).map((_, i) => (
+            <AuraCard key={i} className="p-4 space-y-2">
+              <Skeleton className="h-5 w-1/2" />
+              <Skeleton className="h-3 w-1/3" />
+              <Skeleton className="h-4 w-full" />
+            </AuraCard>
+          ))
+        )
          : error ? <p className="text-red-400 font-thai">{error}</p>
          : data.length === 0 ? <p className="text-aura-textMuted font-thai">ไม่มีกฎหมายสำหรับโมดูลนี้</p>
          : data.map((r) => (
