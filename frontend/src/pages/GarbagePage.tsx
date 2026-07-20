@@ -5,6 +5,7 @@ import { useState } from "react";
 import { useToast } from "../components/ui/Toast";
 import { AuraCard } from "../components/ui/AuraCard";
 import { Button } from "../components/ui/Button";
+import { TableSkeleton } from "../components/ui/Skeleton";
 import { Input, NumberInput, Field, Select, Textarea } from "../components/ui/Input";
 import { useGarbageLogs, createGarbageLog, deleteGarbageLog, type GarbageInput } from "../lib/garbage";
 
@@ -65,7 +66,7 @@ export function GarbagePage() {
       </AuraCard>
 
       <AuraCard className="p-4">
-        {loading ? <p className="font-thai">กำลังโหลด…</p> : error ? <p className="text-red-400">{error}</p> : (
+        {loading ? <TableSkeleton rows={5} cols={5} /> : error ? <p className="text-red-400">{error}</p> : (
           <table className="w-full text-sm">
             <thead><tr><th className="text-left p-2">วันที่</th><th className="text-left p-2">ประเภท</th><th className="text-right p-2">kg</th><th className="text-left p-2">กำจัด</th><th></th></tr></thead>
             <tbody>

@@ -6,6 +6,7 @@ import { useState } from "react";
 import { useToast } from "../components/ui/Toast";
 import { AuraCard } from "../components/ui/AuraCard";
 import { Button } from "../components/ui/Button";
+import { TableSkeleton } from "../components/ui/Skeleton";
 import { Input, NumberInput, Field } from "../components/ui/Input";
 import {
   useWaterSupplyDaily,
@@ -96,7 +97,7 @@ export function WaterSupplyPage() {
 
       <AuraCard className="p-4">
         <h2 className="text-lg font-semibold mb-3 font-thai">บันทึกล่าสุด 30 วัน</h2>
-        {loading ? <p className="font-thai">กำลังโหลด…</p> : error ? <p className="text-red-400 font-thai">{error}</p> : (
+        {loading ? <TableSkeleton rows={5} cols={6} /> : error ? <p className="text-red-400 font-thai">{error}</p> : (
           <div className="overflow-x-auto">
             <table className="w-full text-sm">
               <thead><tr><th className="text-left p-2">วันที่</th><th className="text-right p-2">pH</th><th className="text-right p-2">Cl</th><th className="text-right p-2">NTU</th><th className="text-left p-2">Coliform</th><th></th></tr></thead>

@@ -5,6 +5,7 @@ import { useState } from "react";
 import { useToast } from "../components/ui/Toast";
 import { AuraCard } from "../components/ui/AuraCard";
 import { Button } from "../components/ui/Button";
+import { TableSkeleton } from "../components/ui/Skeleton";
 import { Input, NumberInput, Field, Select, Textarea } from "../components/ui/Input";
 import { useFuelLogs, createFuelLog, deleteFuelLog, computeDelta, type FuelInput } from "../lib/fuel";
 
@@ -75,7 +76,7 @@ export function FuelPage() {
       </AuraCard>
 
       <AuraCard className="p-4">
-        {loading ? <p className="font-thai">กำลังโหลด…</p> : error ? <p className="text-red-400">{error}</p> : (
+        {loading ? <TableSkeleton rows={5} cols={6} /> : error ? <p className="text-red-400">{error}</p> : (
           <table className="w-full text-sm">
             <thead><tr><th className="text-left p-2">วันที่</th><th className="text-left p-2">ประเภท</th><th className="text-right p-2">L</th><th className="text-left p-2">รถ</th><th className="text-right p-2">ราคา</th><th></th></tr></thead>
             <tbody>

@@ -6,6 +6,7 @@ import { useState } from "react";
 import { useToast } from "../components/ui/Toast";
 import { AuraCard } from "../components/ui/AuraCard";
 import { Button } from "../components/ui/Button";
+import { TableSkeleton } from "../components/ui/Skeleton";
 import { Input, Field, Textarea, Select, NumberInput } from "../components/ui/Input";
 import { useFoodLabTests, createFoodLabTest, deleteFoodLabTest, type FoodInput } from "../lib/food";
 
@@ -76,7 +77,7 @@ export function FoodPage() {
       </AuraCard>
 
       <AuraCard className="p-4">
-        {loading ? <p className="font-thai">กำลังโหลด…</p> : error ? <p className="text-red-400">{error}</p> : (
+        {loading ? <TableSkeleton rows={5} cols={6} /> : error ? <p className="text-red-400">{error}</p> : (
           <table className="w-full text-sm">
             <thead><tr><th className="text-left p-2">วันเก็บ</th><th className="text-left p-2">ตัวอย่าง</th><th className="text-left p-2">การทดสอบ</th><th className="text-left p-2">ผล</th><th className="text-left p-2">วันรายงาน</th><th></th></tr></thead>
             <tbody>

@@ -6,6 +6,7 @@ import { useState } from "react";
 import { useToast } from "../components/ui/Toast";
 import { AuraCard } from "../components/ui/AuraCard";
 import { Button } from "../components/ui/Button";
+import { TableSkeleton } from "../components/ui/Skeleton";
 import { Input, NumberInput, Field, Select, Textarea } from "../components/ui/Input";
 import {
   useChemicalStock, useChemicalMovements, useLowStockChemicals,
@@ -112,7 +113,7 @@ export function ChemicalPage() {
 
       <AuraCard className="p-4">
         <h2 className="text-lg font-semibold mb-3 font-thai">สต็อกปัจจุบัน</h2>
-        {stock.loading ? <p className="font-thai">กำลังโหลด…</p> : (
+        {stock.loading ? <TableSkeleton rows={5} cols={5} /> : (
           <table className="w-full text-sm">
             <thead><tr><th className="text-left p-2">ชื่อ</th><th className="text-right p-2">คงเหลือ</th><th className="text-right p-2">Reorder</th><th className="text-left p-2">หน่วย</th><th></th></tr></thead>
             <tbody>
@@ -132,7 +133,7 @@ export function ChemicalPage() {
 
       <AuraCard className="p-4">
         <h2 className="text-lg font-semibold mb-3 font-thai">ประวัติการเคลื่อนไหว (50 ล่าสุด)</h2>
-        {moves.loading ? <p className="font-thai">กำลังโหลด…</p> : (
+        {moves.loading ? <TableSkeleton rows={5} cols={6} /> : (
           <table className="w-full text-sm">
             <thead><tr><th className="text-left p-2">วันที่</th><th className="text-left p-2">เคมี</th><th className="text-left p-2">ทิศ</th><th className="text-right p-2">จำนวน</th><th className="text-left p-2">วัตถุประสงค์</th><th></th></tr></thead>
             <tbody>
