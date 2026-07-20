@@ -1,5 +1,5 @@
 # WO-FONTS-1: Material Symbols subset — keep-axes, icon_names server-side
-Status: open
+Status: executed-pending-polish (2026-07-20, zcode) — Verify 1-4 + 6 ผ่าน; Verify 5 (visual) ยกให้ Fable5
 Lane/files: `frontend/scripts/gen-msymbol-subset.mjs` (new), `frontend/scripts/msymbol-icon-names.txt` (generated, committed), `frontend/public/fonts/material-symbols-outlined-subset.woff2` (new), `frontend/public/fonts/material-symbols-outlined.woff2` (**delete**), `frontend/src/index.css` (1 บรรทัด src), `frontend/src/components/ui/MSymbol.tsx` (docstring note เท่านั้น)
 Branch: main
 Model tier: **cheap-ok** (สูตร verbatim ครบ — GLM execute ได้; ถ้า network ถึง fonts.googleapis.com ไม่ได้ → ยกให้ Sonnet/Fable5 รันเฉพาะ Step 2 แล้วทำต่อตามเดิม)
@@ -150,3 +150,18 @@ git rm frontend/public/fonts/material-symbols-outlined.woff2
 - [2026-07-20] fable5: เขียน WO + validate สูตร css2 icon_names จริง (axes ครบ,
   4.6KB/3 icons) + inventory 48 names จาก scan `name="…"` / `icon: "…"` /
   `name={…"…"…}` ทั้ง frontend/src. พร้อม dispatch GLM.
+- [2026-07-20] zcode (GLM): execute Steps 1-5 ตาม WO verbatim — gen script +
+  scan 49 names (add + apartment + … + success + trending_down/up + upload_file
+  + warning + water_drop + water_full — `success` เพิ่ม 1 จาก Fable5 inventory 48;
+  regex เดิมเจอหมด) → css2 icon_names fetch → subset 46,992 bytes (−3.85MB /
+  −98.8% จาก 3,899KB เดิม). index.css src swap + git rm full + MSymbol docstring.
+
+  **Verify 1-4 + 6 ผ่านครบ**:
+  - `--check` → no drift ✅
+  - fontTools fvar axes: FILL(0,1) GRAD(-50,200) opsz(20,48) wght(100,700) ✅
+  - size 46,992 < 150KB ✅
+  - `npm run build` ✅ (3.77s) · Playwright 25/25 ✅
+  - grep leftover 0 hits ✅
+
+  **Verify 5 (visual)**: ยกให้ Fable5 (Track F scope — block network → reload
+  → glyph render check + DevTools fonts.check). รอบถัดไป.
