@@ -10,6 +10,9 @@
     "preview": "vite preview",
     "e2e": "playwright test",
     "e2e:prod": "cross-env E2E_BASE_URL=https://aase7en.github.io/env-wastewater-webapp/ playwright test",
+    "test": "vitest run",
+    "test:watch": "vitest",
+    "test:ui": "vitest --ui",
     "ladle": "ladle serve",
     "ladle:build": "ladle build"
   },
@@ -38,12 +41,14 @@
     "@types/react": "^19.2.17",
     "@types/react-dom": "^19.2.3",
     "@vitejs/plugin-react": "^6.0.3",
+    "@vitest/ui": "^4.1.10",
     "autoprefixer": "^10.5.4",
     "cross-env": "^10.1.0",
     "oxlint": "^1.71.0",
     "postcss": "^8.5.19",
     "tailwindcss": "^3.4.19",
     "typescript": "~6.0.2",
-    "vite": "^8.1.1"
+    "vite": "^8.1.1",
+    "vitest": "^4.1.10"
   }
 }
