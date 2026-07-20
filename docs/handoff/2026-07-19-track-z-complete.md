@@ -679,3 +679,70 @@ SCHEMA-6 DB/curl) · suite 25/25 · WO-E2E-2 เปิดใหม่*
 - วันที่ = พ.ศ. เสมอ
 - แตะ Track F scope (asset + index.css) เฉพาะเมื่อมี Fable5 WO verbatim
 - ถ้า verify fail → checkpoint + ไม่ push + แจ้ง user
+
+---
+
+## GLM sweep #4 — executed (2026-07-20): Q1 + Q2 + Q3 done; Q4 blocked
+
+Q1-Q3 of the queue above landed. Q4 (Material Symbols subset) remains
+blocked on a Fable5 WO (Track F scope).
+
+### Commit สรุป
+
+| Chunk | Commit | Tier | Files |
+|---|---|---|---|
+| Q1 E2E-2 — prod basename | `0d1f636` | cheap-ok | `frontend/tests/e2e/fixtures.ts` (new), 4 spec files (import swap + href matchers), `frontend/playwright.config.ts` (baseURL normalize) |
+| Q2 UTILS-1 — momPct extract | `2477d78` | cheap-ok | `frontend/src/lib/utils.ts`, `carbon.ts`, `overview.ts` |
+| Q3 INTROSPECT-1 — SCHEMAS 3→11 | `ff81e16` | cheap-ok | `scripts/introspect_schema_api.py`, `reports/schema-snapshot-live.md` (regenerated) |
+
+### GLM self-verify
+
+| Chunk | Build | Playwright | สิ่งอื่น |
+|---|---|---|---|
+| Q1 E2E-2 | ✅ | 23/23 ✅ | prod CI smoke รอ push — คาดว่าจะเขียวครั้งแรก (WO Fable5 verbatim รันตาม Steps 1-4) |
+| Q2 UTILS-1 | ✅ | 23/23 ✅ | behavior preserved (double-rounding idempotent for display); momPct now single source in utils.ts |
+| Q3 INTROSPECT-1 | ✅ | (n/a) | snapshot 30 tables, 11 schemas; migration integrity (907+907 rows carbon/wastewater.reading) intact |
+
+### ส่งต่อ Fable5 — ตรวจ 3 commits
+
+**สิ่งที่ต้องตรวจเป็นพิเศษ:**
+
+1. **Q1 E2E-2 (`0d1f636`)** — pure test harness fix:
+   - รัน `npx playwright test` local ผ่าน — แต่ prod CI smoke รอ push
+     แล้วดู e2e.yml run เขียว (ควรเป็นครั้งแรกในประวัติ prod profile)
+   - fixture.ts override `page.goto` rewrite `/x` → `./x` — verify
+     ถูกต้องไหมว่า relative-resolves กับ baseURL directory
+   - modules.spec.ts href matchers `href$=` (ends-with) + ตัด "/" ออก
+     จาก expectedNav — boundary case: root "/" href บน prod = basename
+     dir + "/" → smoke.spec "sidebar nav" (label-based) ครอบแทน
+   - playwright.config.ts baseURL normalize — ตรวจว่าไม่ break local
+     dev profile (`localhost:5173` → `localhost:5173/`)
+
+2. **Q2 UTILS-1 (`2477d78`)** — pure helper refactor:
+   - `momPct` extracted จาก carbon.ts:92 + overview.ts:65 (มี subtle diff:
+     carbon.ts unrounded, overview.ts pre-rounded 1 decimal). Disproof:
+     both display sites ใช้ `fmt(…, 1)` อยู่แล้ว → pre-rounding redundant
+     → ใช้ carbon.ts shape เป็น canonical (rounding = presentation)
+   - ตรวจ CarbonPage + OverviewPage chips render identical (12.3% เท่าเดิม)
+
+3. **Q3 INTROSPECT-1 (`ff81e16`)** — tuple extend + snapshot regenerate:
+   - `scripts/introspect_schema_api.py:23` — tuple 11 schemas ตรง SCHEMA-5
+     grant line
+   - `reports/schema-snapshot-live.md` regenerated — spot-check ว่า
+     30 tables ครอบทุก domain + row counts ตรง migration history
+     (907+907 carbon/wastewater.reading, 10 equipment, 9 personnel, etc.)
+   - ไม่แตะ logic introspect อื่น (tuple เดียว)
+
+### Q4 — Material Symbols subset (ยัง block)
+
+ยังรอ Fable5 WO verbatim (Track F scope: asset + index.css). GLM จะ
+execute ได้ทันทีเมื่อ WO ลง — formula: pyftsubset args + glyph list
+ที่ MSymbol ใช้จริง. ไม่งั้น → queue Sonnet/Fable5 tier.
+
+### ลำดับ queue ถัดไป (หลัง Q4)
+
+- **E2E authenticated integration profile** (P11 follow-up) — Sonnet/
+  Fable5 tier (ต้องมี real seeded session)
+
+*GLM5.2 sweep #4, 2026-07-20 — 3 commits · build ✅ · Playwright 23/23 ·
+snapshot 11 schemas verified · Q4 blocked on Fable5 WO.*
