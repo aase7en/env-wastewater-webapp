@@ -285,6 +285,15 @@ binding rules are here.
 
 | Chunk | Agent | Claimed | Scope (files) |
 |---|---|---|---|
+| OAUTH-1 | zcode | 2026-07-21 | `supabase/migrations/20260721000000_oauth1_pending_role.sql` (new), `reports/schema-snapshot-live.md` |
+
+> **P1 ใหม่ 2026-07-21 (user request): OAUTH — Google + LINE login** —
+> `AuthPage` มีปุ่ม Google/LINE แต่ไม่ทำงาน (provider ยังไม่ config) +
+> ไม่มี auto-provisioning (race AUTH-2 ซ้ำ) + ไม่มี role pending (PHI risk
+> ถ้า auto-approve). Plan = 3 chunks (OAUTH-1 schema → OAUTH-2 client →
+> OAUTH-3 admin) + user config dashboard. ADR-0007 captures the design.
+> WO: `docs/work-orders/OAUTH-{1,2,3}-*.md`. GLM execute OAUTH-1 ก่อน;
+> OAUTH-2/3 รอ user config dashboard เสร็จ.
 
 > **P0 ใหม่ 2026-07-19 (user smoke test): `AUTH-2-app-user-query-schema`** —
 > `AuthProvider.loadAppUser()` query ผิด schema (`auth_user_id` + `display_name`
