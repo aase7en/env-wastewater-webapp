@@ -20,7 +20,8 @@ OUT_PATH = REPO_ROOT / "reports/schema-snapshot-live.md"
 PROJECT_REF = "gllqtbyofrcjzmbnfoeh"
 API = f"https://api.supabase.com/v1/projects/{PROJECT_REF}/database/query"
 
-SCHEMAS = ("core", "carbon", "wastewater")
+SCHEMAS = ("core", "wastewater", "carbon", "food", "fuel", "garbage",
+           "garden", "safety", "building", "chemical", "water_supply")
 
 
 def _load_token() -> str:

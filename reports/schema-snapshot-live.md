@@ -1,15 +1,18 @@
 # Schema Snapshot — LIVE (P5b.2-live)
 
-> Introspected from ENV_DB on 2026-07-19 via Supabase Management API.
-> Schemas: core, carbon, wastewater. GENERATED — re-run `scripts/introspect_schema_api.py`.
+> Introspected from ENV_DB on 2026-07-20 via Supabase Management API.
+> Schemas: core, wastewater, carbon, food, fuel, garbage, garden, safety, building, chemical, water_supply. GENERATED — re-run `scripts/introspect_schema_api.py`.
 
 ## Tables
 
 | Schema | Table | Rows |
 |---|---|---|
+| `building` | `inspection_round` | 0 |
 | `carbon` | `emission_factor` | 12 |
 | `carbon` | `meter` | 1 |
 | `carbon` | `reading` | 907 |
+| `chemical` | `master` | 0 |
+| `chemical` | `movement` | 0 |
 | `core` | `ai_provider` | 0 |
 | `core` | `ai_query_log` | 0 |
 | `core` | `ai_scope` | 15 |
@@ -24,13 +27,39 @@
 | `core` | `regulation` | 7 |
 | `core` | `repair_request` | 0 |
 | `core` | `saved_query` | 0 |
+| `food` | `lab_test` | 0 |
+| `fuel` | `dispense_log` | 0 |
+| `garbage` | `collection_log` | 0 |
+| `garden` | `work_round` | 0 |
+| `safety` | `monthly_check` | 0 |
 | `wastewater` | `reading` | 907 |
 | `wastewater` | `sensor` | 0 |
 | `wastewater` | `sensor_reading` | 0 |
 | `wastewater` | `threshold` | 0 |
 | `wastewater` | `threshold_alert` | 0 |
+| `water_supply` | `daily_check` | 0 |
 
 ## Columns
+
+### `building.inspection_round`
+
+| # | column | type | nullable | default |
+|---|---|---|---|---|
+| 1 | `id` | `uuid` | NO | `gen_random_uuid()` |
+| 2 | `round_date` | `date` | NO | `CURRENT_DATE` |
+| 3 | `location_id` | `uuid` | YES | `` |
+| 4 | `inspector` | `text` | YES | `` |
+| 5 | `findings` | `text` | YES | `` |
+| 6 | `issues_found` | `boolean` | NO | `false` |
+| 7 | `repair_needed` | `boolean` | NO | `false` |
+| 8 | `recorded_by` | `uuid` | YES | `` |
+| 9 | `note` | `text` | YES | `` |
+| 10 | `created_at` | `timestamp with time zone` | NO | `now()` |
+| 11 | `round_type` | `text` | YES | `` |
+| 12 | `checklist` | `jsonb` | YES | `` |
+| 13 | `photos` | `ARRAY` | YES | `` |
+| 14 | `severity` | `text` | YES | `` |
+| 15 | `assigned_to` | `text` | YES | `` |
 
 ### `carbon.emission_factor`
 
@@ -79,6 +108,15 @@
 | 3 | `total_consumption` | `numeric` | YES | `` |
 | 4 | `total_kg_co2e` | `numeric` | YES | `` |
 
+### `carbon.v_overview_carbon`
+
+| # | column | type | nullable | default |
+|---|---|---|---|---|
+| 1 | `month` | `text` | YES | `` |
+| 2 | `days` | `integer` | YES | `` |
+| 3 | `kwh_total` | `numeric` | YES | `` |
+| 4 | `tco2e` | `numeric` | YES | `` |
+
 ### `carbon.v_reading_co2e`
 
 | # | column | type | nullable | default |
@@ -101,6 +139,41 @@
 | 3 | `source` | `text` | YES | `` |
 | 4 | `kg_co2e` | `numeric` | YES | `` |
 | 5 | `row_count` | `bigint` | YES | `` |
+
+### `chemical.master`
+
+| # | column | type | nullable | default |
+|---|---|---|---|---|
+| 1 | `id` | `uuid` | NO | `gen_random_uuid()` |
+| 2 | `name` | `text` | NO | `` |
+| 3 | `cas_no` | `text` | YES | `` |
+| 4 | `hazard_class` | `text` | YES | `` |
+| 5 | `unit` | `text` | NO | `'kg'::text` |
+| 6 | `reorder_point` | `numeric(10,3)` | YES | `` |
+| 7 | `current_balance` | `numeric(10,3)` | NO | `0` |
+| 8 | `is_active` | `boolean` | NO | `true` |
+| 9 | `created_at` | `timestamp with time zone` | NO | `now()` |
+
+### `chemical.movement`
+
+| # | column | type | nullable | default |
+|---|---|---|---|---|
+| 1 | `id` | `uuid` | NO | `gen_random_uuid()` |
+| 2 | `movement_date` | `date` | NO | `CURRENT_DATE` |
+| 3 | `chemical_name` | `text` | NO | `` |
+| 4 | `direction` | `text` | NO | `` |
+| 5 | `quantity` | `numeric(10,3)` | NO | `` |
+| 6 | `unit` | `text` | NO | `'kg'::text` |
+| 7 | `balance_after` | `numeric(10,3)` | YES | `` |
+| 8 | `purpose` | `text` | YES | `` |
+| 9 | `recorded_by` | `uuid` | YES | `` |
+| 10 | `note` | `text` | YES | `` |
+| 11 | `created_at` | `timestamp with time zone` | NO | `now()` |
+| 12 | `lot_no` | `text` | YES | `` |
+| 13 | `expiry_date` | `date` | YES | `` |
+| 14 | `supplier` | `text` | YES | `` |
+| 15 | `unit_cost` | `numeric(10,2)` | YES | `` |
+| 16 | `master_id` | `uuid` | YES | `` |
 
 ### `core.ai_provider`
 
@@ -293,6 +366,106 @@
 | 6 | `api_url` | `text` | YES | `` |
 | 7 | `priority` | `integer` | YES | `` |
 | 8 | `is_enabled` | `boolean` | YES | `` |
+
+### `food.lab_test`
+
+| # | column | type | nullable | default |
+|---|---|---|---|---|
+| 1 | `id` | `uuid` | NO | `gen_random_uuid()` |
+| 2 | `sample_date` | `date` | NO | `CURRENT_DATE` |
+| 3 | `sample_type` | `text` | YES | `` |
+| 4 | `test_type` | `text` | YES | `` |
+| 5 | `result` | `text` | YES | `` |
+| 6 | `reported_date` | `date` | YES | `` |
+| 7 | `technician` | `text` | YES | `` |
+| 8 | `recorded_by` | `uuid` | YES | `` |
+| 9 | `note` | `text` | YES | `` |
+| 10 | `created_at` | `timestamp with time zone` | NO | `now()` |
+| 11 | `sample_point` | `text` | YES | `` |
+| 12 | `mpn_value` | `numeric(10,2)` | YES | `` |
+| 13 | `reagent_used` | `jsonb` | YES | `` |
+| 14 | `reported_by_lab_tech` | `text` | YES | `` |
+| 15 | `follow_up_action` | `text` | YES | `` |
+
+### `fuel.dispense_log`
+
+| # | column | type | nullable | default |
+|---|---|---|---|---|
+| 1 | `id` | `uuid` | NO | `gen_random_uuid()` |
+| 2 | `log_date` | `date` | NO | `CURRENT_DATE` |
+| 3 | `fuel_type` | `text` | YES | `` |
+| 4 | `litres` | `numeric(10,2)` | YES | `` |
+| 5 | `meter_before` | `numeric(12,2)` | YES | `` |
+| 6 | `meter_after` | `numeric(12,2)` | YES | `` |
+| 7 | `vehicle_or_use` | `text` | YES | `` |
+| 8 | `recorded_by` | `uuid` | YES | `` |
+| 9 | `note` | `text` | YES | `` |
+| 10 | `created_at` | `timestamp with time zone` | NO | `now()` |
+| 11 | `vehicle_id` | `text` | YES | `` |
+| 12 | `odometer` | `numeric(10,1)` | YES | `` |
+| 13 | `purpose` | `text` | YES | `` |
+| 14 | `cost_baht` | `numeric(10,2)` | YES | `` |
+| 15 | `supplier` | `text` | YES | `` |
+
+### `garbage.collection_log`
+
+| # | column | type | nullable | default |
+|---|---|---|---|---|
+| 1 | `id` | `uuid` | NO | `gen_random_uuid()` |
+| 2 | `log_date` | `date` | NO | `CURRENT_DATE` |
+| 3 | `location_id` | `uuid` | YES | `` |
+| 4 | `waste_type` | `text` | YES | `` |
+| 5 | `weight_kg` | `numeric(10,2)` | YES | `` |
+| 6 | `disposal_route` | `text` | YES | `` |
+| 7 | `recorded_by` | `uuid` | YES | `` |
+| 8 | `note` | `text` | YES | `` |
+| 9 | `created_at` | `timestamp with time zone` | NO | `now()` |
+| 10 | `segregation_type` | `text` | YES | `` |
+| 11 | `contractor` | `text` | YES | `` |
+| 12 | `vehicle_plate` | `text` | YES | `` |
+| 13 | `manifest_no` | `text` | YES | `` |
+| 14 | `destination` | `text` | YES | `` |
+
+### `garden.work_round`
+
+| # | column | type | nullable | default |
+|---|---|---|---|---|
+| 1 | `id` | `uuid` | NO | `gen_random_uuid()` |
+| 2 | `round_date` | `date` | NO | `CURRENT_DATE` |
+| 3 | `location_id` | `uuid` | YES | `` |
+| 4 | `work_type` | `text` | YES | `` |
+| 5 | `area_sqm` | `numeric(10,2)` | YES | `` |
+| 6 | `worker_count` | `integer` | YES | `` |
+| 7 | `fuel_used_l` | `numeric(10,2)` | YES | `` |
+| 8 | `recorded_by` | `uuid` | YES | `` |
+| 9 | `note` | `text` | YES | `` |
+| 10 | `created_at` | `timestamp with time zone` | NO | `now()` |
+| 11 | `duration_hours` | `numeric(5,2)` | YES | `` |
+| 12 | `equipment_used` | `text` | YES | `` |
+| 13 | `waste_collected_kg` | `numeric(10,2)` | YES | `` |
+| 14 | `photo_path` | `text` | YES | `` |
+
+### `safety.monthly_check`
+
+| # | column | type | nullable | default |
+|---|---|---|---|---|
+| 1 | `id` | `uuid` | NO | `gen_random_uuid()` |
+| 2 | `check_date` | `date` | NO | `CURRENT_DATE` |
+| 3 | `location_id` | `uuid` | YES | `` |
+| 4 | `extinguisher_inspected` | `boolean` | NO | `false` |
+| 5 | `exit_light_functional` | `boolean` | NO | `false` |
+| 6 | `issues_found` | `text` | YES | `` |
+| 7 | `recorded_by` | `uuid` | YES | `` |
+| 8 | `note` | `text` | YES | `` |
+| 9 | `created_at` | `timestamp with time zone` | NO | `now()` |
+| 10 | `extinguisher_count` | `integer` | YES | `` |
+| 11 | `extinguisher_expired_count` | `integer` | YES | `` |
+| 12 | `exit_light_count` | `integer` | YES | `` |
+| 13 | `exit_light_broken_count` | `integer` | YES | `` |
+| 14 | `fire_alarm_tested` | `boolean` | YES | `false` |
+| 15 | `sprinkler_tested` | `boolean` | YES | `false` |
+| 16 | `apd_aed_checked` | `boolean` | YES | `false` |
+| 17 | `next_check_due` | `date` | YES | `` |
 
 ### `wastewater.reading`
 
@@ -534,6 +707,26 @@
 | 42 | `energy_kwh_estimate` | `numeric` | YES | `` |
 | 43 | `date_thai_be` | `integer` | YES | `` |
 
+### `water_supply.daily_check`
+
+| # | column | type | nullable | default |
+|---|---|---|---|---|
+| 1 | `id` | `uuid` | NO | `gen_random_uuid()` |
+| 2 | `check_date` | `date` | NO | `CURRENT_DATE` |
+| 3 | `location_id` | `uuid` | YES | `` |
+| 4 | `recorded_by` | `uuid` | YES | `` |
+| 5 | `note` | `text` | YES | `` |
+| 6 | `created_at` | `timestamp with time zone` | NO | `now()` |
+| 7 | `ph` | `numeric(4,2)` | YES | `` |
+| 8 | `free_chlorine_residual` | `numeric(6,3)` | YES | `` |
+| 9 | `turbidity` | `numeric(6,2)` | YES | `` |
+| 10 | `total_coliform` | `text` | YES | `` |
+| 11 | `fecal_coliform` | `text` | YES | `` |
+| 12 | `iron` | `numeric(6,3)` | YES | `` |
+| 13 | `manganese` | `numeric(6,3)` | YES | `` |
+| 14 | `hardness` | `numeric(8,2)` | YES | `` |
+| 15 | `tds` | `numeric(8,2)` | YES | `` |
+
 ## Enum types
 
 | Schema | Enum | Values |
@@ -549,6 +742,8 @@
 
 | Schema | Table | Name | Kind | Definition |
 |---|---|---|---|---|
+| `building` | `inspection_round` | `inspection_round_location_id_fkey` | FK | `FOREIGN KEY (location_id) REFERENCES core.location(id)` |
+| `building` | `inspection_round` | `inspection_round_pkey` | PK | `PRIMARY KEY (id)` |
 | `carbon` | `emission_factor` | `emission_factor_pkey` | PK | `PRIMARY KEY (id)` |
 | `carbon` | `emission_factor` | `emission_factor_source_unit_effective_from_key` | UNIQUE | `UNIQUE (source, unit, effective_from)` |
 | `carbon` | `meter` | `meter_location_id_fkey` | FK | `FOREIGN KEY (location_id) REFERENCES core.location(id)` |
@@ -557,6 +752,10 @@
 | `carbon` | `reading` | `reading_meter_id_reading_date_key` | UNIQUE | `UNIQUE (meter_id, reading_date)` |
 | `carbon` | `reading` | `reading_pkey` | PK | `PRIMARY KEY (id)` |
 | `carbon` | `reading` | `reading_recorded_by_fkey` | FK | `FOREIGN KEY (recorded_by) REFERENCES core.app_user(id)` |
+| `chemical` | `master` | `master_name_key` | UNIQUE | `UNIQUE (name)` |
+| `chemical` | `master` | `master_pkey` | PK | `PRIMARY KEY (id)` |
+| `chemical` | `movement` | `movement_master_id_fkey` | FK | `FOREIGN KEY (master_id) REFERENCES chemical.master(id)` |
+| `chemical` | `movement` | `movement_pkey` | PK | `PRIMARY KEY (id)` |
 | `core` | `ai_provider` | `ai_provider_name_key` | UNIQUE | `UNIQUE (name)` |
 | `core` | `ai_provider` | `ai_provider_pkey` | PK | `PRIMARY KEY (id)` |
 | `core` | `ai_query_log` | `ai_query_log_actor_fkey` | FK | `FOREIGN KEY (actor) REFERENCES core.app_user(id)` |
@@ -589,6 +788,14 @@
 | `core` | `repair_request` | `repair_request_reading_id_fkey` | FK | `FOREIGN KEY (reading_id) REFERENCES wastewater.reading(id)` |
 | `core` | `repair_request` | `repair_request_reported_by_fkey` | FK | `FOREIGN KEY (reported_by) REFERENCES core.app_user(id)` |
 | `core` | `saved_query` | `saved_query_pkey` | PK | `PRIMARY KEY (id)` |
+| `food` | `lab_test` | `lab_test_pkey` | PK | `PRIMARY KEY (id)` |
+| `fuel` | `dispense_log` | `dispense_log_pkey` | PK | `PRIMARY KEY (id)` |
+| `garbage` | `collection_log` | `collection_log_location_id_fkey` | FK | `FOREIGN KEY (location_id) REFERENCES core.location(id)` |
+| `garbage` | `collection_log` | `collection_log_pkey` | PK | `PRIMARY KEY (id)` |
+| `garden` | `work_round` | `work_round_location_id_fkey` | FK | `FOREIGN KEY (location_id) REFERENCES core.location(id)` |
+| `garden` | `work_round` | `work_round_pkey` | PK | `PRIMARY KEY (id)` |
+| `safety` | `monthly_check` | `monthly_check_location_id_fkey` | FK | `FOREIGN KEY (location_id) REFERENCES core.location(id)` |
+| `safety` | `monthly_check` | `monthly_check_pkey` | PK | `PRIMARY KEY (id)` |
 | `wastewater` | `reading` | `reading_carbon_reading_id_fkey` | FK | `FOREIGN KEY (carbon_reading_id) REFERENCES carbon.reading(id)` |
 | `wastewater` | `reading` | `reading_location_id_fkey` | FK | `FOREIGN KEY (location_id) REFERENCES core.location(id)` |
 | `wastewater` | `reading` | `reading_location_id_reading_date_key` | UNIQUE | `UNIQUE (location_id, reading_date)` |
@@ -603,15 +810,21 @@
 | `wastewater` | `threshold` | `threshold_pkey` | PK | `PRIMARY KEY (id)` |
 | `wastewater` | `threshold_alert` | `threshold_alert_pkey` | PK | `PRIMARY KEY (id)` |
 | `wastewater` | `threshold_alert` | `threshold_alert_reading_id_fkey` | FK | `FOREIGN KEY (reading_id) REFERENCES wastewater.reading(id) ON DELETE CASCADE` |
+| `water_supply` | `daily_check` | `daily_check_location_id_fkey` | FK | `FOREIGN KEY (location_id) REFERENCES core.location(id)` |
+| `water_supply` | `daily_check` | `daily_check_pkey` | PK | `PRIMARY KEY (id)` |
 
 ## Indexes
 
+- `building.inspection_round` **inspection_round_pkey**: `CREATE UNIQUE INDEX inspection_round_pkey ON building.inspection_round USING btree (id)`
 - `carbon.emission_factor` **emission_factor_pkey**: `CREATE UNIQUE INDEX emission_factor_pkey ON carbon.emission_factor USING btree (id)`
 - `carbon.emission_factor` **emission_factor_source_unit_effective_from_key**: `CREATE UNIQUE INDEX emission_factor_source_unit_effective_from_key ON carbon.emission_factor USING btree (source, unit, effective_from)`
 - `carbon.meter` **meter_pkey**: `CREATE UNIQUE INDEX meter_pkey ON carbon.meter USING btree (id)`
 - `carbon.reading` **reading_meter_id_reading_date_idx**: `CREATE INDEX reading_meter_id_reading_date_idx ON carbon.reading USING btree (meter_id, reading_date DESC)`
 - `carbon.reading` **reading_meter_id_reading_date_key**: `CREATE UNIQUE INDEX reading_meter_id_reading_date_key ON carbon.reading USING btree (meter_id, reading_date)`
 - `carbon.reading` **reading_pkey**: `CREATE UNIQUE INDEX reading_pkey ON carbon.reading USING btree (id)`
+- `chemical.master` **master_name_key**: `CREATE UNIQUE INDEX master_name_key ON chemical.master USING btree (name)`
+- `chemical.master` **master_pkey**: `CREATE UNIQUE INDEX master_pkey ON chemical.master USING btree (id)`
+- `chemical.movement` **movement_pkey**: `CREATE UNIQUE INDEX movement_pkey ON chemical.movement USING btree (id)`
 - `core.ai_provider` **ai_provider_name_key**: `CREATE UNIQUE INDEX ai_provider_name_key ON core.ai_provider USING btree (name)`
 - `core.ai_provider` **ai_provider_pkey**: `CREATE UNIQUE INDEX ai_provider_pkey ON core.ai_provider USING btree (id)`
 - `core.ai_query_log` **ai_query_log_actor_asked_at_idx**: `CREATE INDEX ai_query_log_actor_asked_at_idx ON core.ai_query_log USING btree (actor, asked_at DESC)`
@@ -640,6 +853,11 @@
 - `core.saved_query` **idx_saved_query_created_by**: `CREATE INDEX idx_saved_query_created_by ON core.saved_query USING btree (created_by)`
 - `core.saved_query` **idx_saved_query_shared**: `CREATE INDEX idx_saved_query_shared ON core.saved_query USING btree (name, tags) WHERE (is_shared = true)`
 - `core.saved_query` **saved_query_pkey**: `CREATE UNIQUE INDEX saved_query_pkey ON core.saved_query USING btree (id)`
+- `food.lab_test` **lab_test_pkey**: `CREATE UNIQUE INDEX lab_test_pkey ON food.lab_test USING btree (id)`
+- `fuel.dispense_log` **dispense_log_pkey**: `CREATE UNIQUE INDEX dispense_log_pkey ON fuel.dispense_log USING btree (id)`
+- `garbage.collection_log` **collection_log_pkey**: `CREATE UNIQUE INDEX collection_log_pkey ON garbage.collection_log USING btree (id)`
+- `garden.work_round` **work_round_pkey**: `CREATE UNIQUE INDEX work_round_pkey ON garden.work_round USING btree (id)`
+- `safety.monthly_check` **monthly_check_pkey**: `CREATE UNIQUE INDEX monthly_check_pkey ON safety.monthly_check USING btree (id)`
 - `wastewater.reading` **reading_location_id_reading_date_key**: `CREATE UNIQUE INDEX reading_location_id_reading_date_key ON wastewater.reading USING btree (location_id, reading_date)`
 - `wastewater.reading` **reading_pkey**: `CREATE UNIQUE INDEX reading_pkey ON wastewater.reading USING btree (id)`
 - `wastewater.reading` **reading_reading_date_idx**: `CREATE INDEX reading_reading_date_idx ON wastewater.reading USING btree (reading_date DESC)`
@@ -652,14 +870,18 @@
 - `wastewater.threshold_alert` **idx_threshold_alert_pending**: `CREATE INDEX idx_threshold_alert_pending ON wastewater.threshold_alert USING btree (created_at) WHERE (notified_at IS NULL)`
 - `wastewater.threshold_alert` **idx_threshold_alert_unread**: `CREATE INDEX idx_threshold_alert_unread ON wastewater.threshold_alert USING btree (created_at DESC) WHERE (read_at IS NULL)`
 - `wastewater.threshold_alert` **threshold_alert_pkey**: `CREATE UNIQUE INDEX threshold_alert_pkey ON wastewater.threshold_alert USING btree (id)`
+- `water_supply.daily_check` **daily_check_pkey**: `CREATE UNIQUE INDEX daily_check_pkey ON water_supply.daily_check USING btree (id)`
 
 ## Row-level security
 
 | Schema | Table | RLS enabled |
 |---|---|---|
+| `building` | `inspection_round` | ✅ |
 | `carbon` | `emission_factor` | ✅ |
 | `carbon` | `meter` | ✅ |
 | `carbon` | `reading` | ✅ |
+| `chemical` | `master` | ✅ |
+| `chemical` | `movement` | ✅ |
 | `core` | `ai_provider` | ✅ |
 | `core` | `ai_query_log` | ✅ |
 | `core` | `ai_scope` | ✅ |
@@ -674,11 +896,17 @@
 | `core` | `regulation` | ✅ |
 | `core` | `repair_request` | ✅ |
 | `core` | `saved_query` | ✅ |
+| `food` | `lab_test` | ✅ |
+| `fuel` | `dispense_log` | ✅ |
+| `garbage` | `collection_log` | ✅ |
+| `garden` | `work_round` | ✅ |
+| `safety` | `monthly_check` | ✅ |
 | `wastewater` | `reading` | ✅ |
 | `wastewater` | `sensor` | ✅ |
 | `wastewater` | `sensor_reading` | ✅ |
 | `wastewater` | `threshold` | ✅ |
 | `wastewater` | `threshold_alert` | ✅ |
+| `water_supply` | `daily_check` | ✅ |
 
 ## Views
 
@@ -690,6 +918,17 @@ SELECT (date_trunc('month'::text, (reading_date)::timestamp with time zone))::da
     sum(kg_co2e_total) AS total_kg_co2e
    FROM carbon.v_reading_co2e
   GROUP BY ((date_trunc('month'::text, (reading_date)::timestamp with time zone))::date), source;
+```
+
+### `carbon.v_overview_carbon`
+```sql
+SELECT to_char(date_trunc('month'::text, (reading_date)::timestamp with time zone), 'YYYY-MM'::text) AS month,
+    (count(*))::integer AS days,
+    sum(consumption) AS kwh_total,
+    round(((sum(consumption) * 0.4999) / (1000)::numeric), 3) AS tco2e
+   FROM carbon.reading r
+  WHERE (reading_date >= ((date_trunc('month'::text, now()) - '11 mons'::interval))::date)
+  GROUP BY (to_char(date_trunc('month'::text, (reading_date)::timestamp with time zone), 'YYYY-MM'::text));
 ```
 
 ### `carbon.v_reading_co2e`
