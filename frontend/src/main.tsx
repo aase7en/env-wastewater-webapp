@@ -16,9 +16,12 @@ const basename = import.meta.env.BASE_URL || "/";
 const spaRedirect = sessionStorage.getItem("gh-pages-spa-redirect");
 if (spaRedirect) {
   sessionStorage.removeItem("gh-pages-spa-redirect");
-  // Strip the basename prefix if present (the stash stores the full path).
-  const target = spaRedirect.startsWith(basename) ? spaRedirect.slice(basename.length) : spaRedirect;
-  window.history.replaceState(null, "", basename.replace(/\/$/, "") + target);
+  // SPA-1: restore the stash verbatim. It is window.location.pathname
+  // (+search+hash) captured on the SAME site, so it already carries the
+  // basename — no strip-and-rejoin. (The old rejoin sliced off the "/"
+  // after the basename and produced "/env-wastewater-webappform", which
+  // BrowserRouter cannot match → blank app on every prod deep link.)
+  window.history.replaceState(null, "", spaRedirect);
 }
 
 createRoot(document.getElementById("root")!).render(

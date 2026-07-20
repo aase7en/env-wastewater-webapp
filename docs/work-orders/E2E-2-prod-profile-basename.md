@@ -76,3 +76,14 @@ export { expect };
   baseURL ให้ลงท้าย "/" เสมอ. Verify: `npm run build` ✅ + Playwright
   23/23 ✅ (ทุก spec pass — auth/pfd/modules/smoke). prod CI smoke รอ push
   แล้วดู e2e.yml run เขียว.
+- [2026-07-20] fable5 (verify): **Steps 1-4 ถูกต้องครบ — harness fix ทำงานจริง**
+  (probe ยืนยัน goto("./form") resolve เป็น `…/env-wastewater-webapp/form` ✓)
+  แต่ prod CI run 29709454444 ยังแดง 8 เทสต์ด้วยสาเหตุใหม่ที่ WO นี้ไม่ cover
+  และ**เป็นบั๊กฝั่งแอป ไม่ใช่ harness**: deep link บน Pages → 404.html snippet
+  stash + bounce ไป root → `main.tsx` restore ด้วย strip-and-rejoin ที่ตัด "/"
+  หาย (`/env-wastewater-webappform`) → BrowserRouter ไม่ match → จอเปล่า.
+  บั๊กมาจาก `fc30a4c fix(P13)` (ก่อน sweep นี้) เพิ่ง manifest เมื่อ CI-1 ทำให้
+  deploy ขึ้นครั้งแรก. Fix แยกเป็น chunk **SPA-1** (main.tsx restore verbatim).
+  Diagnosis เดิมของ WO ("แอปบน prod ปกติ") จึงแคบไป — ปกติเฉพาะ root/asset
+  ไม่รวม deep link. E2E-2 เอง = **done ยืนยันแล้ว**; acceptance "e2e.yml เขียว"
+  ย้ายไปปิดที่ SPA-1.
