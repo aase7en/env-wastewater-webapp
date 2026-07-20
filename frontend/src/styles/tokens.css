@@ -103,7 +103,7 @@
   --aura-focus: #00F0FF;
   --aura-focus-glow: rgba(0, 240, 255, 0.30);
   --aura-placeholder: #6B7A75;
-  --skeleton-sheen: rgba(255, 255, 255, 0.06); /* SKEL-1: shimmer highlight (neutral) */
+  --skeleton-sheen: rgba(255, 255, 255, 0.09); /* SKEL-1: shimmer highlight (neutral; 0.06→0.09 fable5 polish — app surface is deeper than MUI dark, sweep needed more contrast) */
 
   color-scheme: dark;
 }

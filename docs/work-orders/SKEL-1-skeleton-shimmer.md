@@ -1,5 +1,5 @@
 # WO-SKEL-1: Skeleton Screen + Shimmer — ซ่อม sweep ที่พัง + ขยาย Core 4 หน้า/infra
-Status: executed-pending-polish (2026-07-20, zcode) — Steps 1-8 + Verify 1-3 ผ่าน; Verify 4 (prod CI) รอ push; Verify 5 (screenshot polish) ยกให้ Fable5
+Status: done (2026-07-20) — GLM execute + Fable5 verify (Verify 1-4) + polish (Verify 5) ครบทุกข้อ
 Lane/files: `frontend/src/index.css` (+`.skeleton` block), `frontend/src/styles/tokens.css` (+`--skeleton-sheen` ×2 + reduced-motion), `frontend/src/components/ui/Skeleton.tsx` (rewrite เต็มไฟล์), `frontend/src/pages/DashboardPage.tsx`, `frontend/src/pages/OverviewPage.tsx`, `frontend/src/components/RequireAuth.tsx`, `frontend/src/App.tsx`, `frontend/tests/e2e/skeleton.spec.ts` (new)
 Branch: main
 Model tier: **cheap-ok** (สูตร verbatim ครบ — GLM execute ได้; Fable5 visual polish ปิดท้ายเป็นรอบแยก)
@@ -358,3 +358,26 @@ test("reduced-motion: skeleton sweep is disabled", async ({ page }) => {
   **Verify 5 (screenshot polish)**: ยกให้ Fable5 รอบถัดไป (จูน sheen/duration/
   ขนาด h-9 w-28 + zero-CLS + ทดสอบ CardGridSkeleton ที่ `aura-card` +
   `overflow-hidden` อาจ clip conic ring) — ห้าม GLM ทำแทน
+- [2026-07-20] fable5: **Verify 1-4 + polish (Verify 5) — WO ปิด**.
+  Verify: diff `7803e6f` ตรงสูตร Steps 1-8 ทุกไฟล์ · build ✅ · Playwright 25/25 ✅ ·
+  grep animate- = 0 · `flow` keyframe ยังอยู่ (PFD) · prod CI เขียวทั้ง 3 (test/
+  Deploy/E2E ที่ `7803e6f`).
+  Polish (probe spec ชั่วคราว — วัดจริงทุกตัวเลข, screenshots light+dark เก็บใน
+  session scratchpad):
+  - **Metric skeleton คงเดิม h-9 w-28 + h-3 w-24** — วัดจริง: value h=36px ตรง h-9
+    เป๊ะ; block รวม 54px vs Metric จริง 55px → แทบ zero-CLS อยู่แล้ว (แก้ h-3→h-4
+    จะแย่ลงเป็น 58px — ไม่แก้)
+  - **Chip skeleton h-6 → h-7** — chip จริงสูง 27px, h-7 (28px) คลาด 1px แทน 3px
+  - **Dark sheen 0.06 → 0.09** — พื้นการ์ดแอปดำลึกกว่า MUI dark benchmark,
+    0.06 อ่านแทบไม่ออกจากภาพจริง; light 0.65 + duration 1.6s คงเดิม (ตรง MUI wave)
+  - **Water card metric → skeleton ด้วย** (consistency — สูตรเดิมให้ skeleton เฉพาะ
+    chip ทำให้ water โชว์ "— mg/L" ระหว่างโหลด ขัดกับ energy/carbon)
+  - **aura-card ring: ไม่ถูก clip — เก็บไว้** (`::before` inset 0 อยู่ในกรอบ box จึง
+    รอด `overflow:hidden`; radius 24px ของ aura-card ชนะ rounded-lg = มุมตรง KPI
+    จริง; ring หมุน on-brand ระหว่างโหลด) — probe: conic-gradient + aura-rotate
+    ยัง active บน `.skeleton.aura-card` ทั้ง 4 tiles
+  - **CLS วัดจริง 0.0177** (PerformanceObserver ข้าม skeleton→content swap ด้วย
+    delayed-continue mock 900ms) — < 0.1 "good"
+  Note (นอก scope ใบนี้ → SKEL-2): DashboardPage ตาราง 14 วัน + PFD แสดง empty
+  state ("ไม่มีข้อมูล") ระหว่าง loading — พฤติกรรมเดิมก่อน SKEL-1; SKEL-2 ควรพ่วง
+  TableSkeleton ให้ตาราง Dashboard ด้วย

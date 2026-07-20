@@ -46,18 +46,25 @@ export function OverviewPage() {
           attention={water.status === false || water.anyAlert}
           chip={
             water.loading ? (
-              <Skeleton className="h-6 w-24 rounded-full shrink-0" />
+              <Skeleton className="h-7 w-24 rounded-full shrink-0" />
             ) : (
               <Chip className={waterChip.cls}>{waterChip.label}</Chip>
             )
           }
           error={water.error}
         >
-          <Metric
-            value={fmt(water.today?.do_average, 2)}
-            unit="mg/L"
-            caption="DO เฉลี่ยล่าสุด"
-          />
+          {water.loading ? (
+            <div className="space-y-1.5">
+              <Skeleton className="h-9 w-28" />
+              <Skeleton className="h-3 w-24" />
+            </div>
+          ) : (
+            <Metric
+              value={fmt(water.today?.do_average, 2)}
+              unit="mg/L"
+              caption="DO เฉลี่ยล่าสุด"
+            />
+          )}
         </SystemCard>
 
         {/* ── Energy ── */}
