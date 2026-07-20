@@ -10,6 +10,7 @@ import { DailyFormPage } from "./pages/DailyFormPage";
 import { ReadingsListPage } from "./pages/ReadingsListPage";
 import { AuthPage } from "./pages/AuthPage";
 import { AuthCallback } from "./pages/AuthCallback";
+import { PendingApprovalPage } from "./pages/PendingApprovalPage";
 import { NotFoundPage } from "./pages/NotFoundPage";
 import { ReportsPage } from "./pages/ReportsPage";
 import { EquipmentPage } from "./pages/EquipmentPage";
@@ -53,6 +54,7 @@ export default function App() {
           {/* Public: login + OAuth callback */}
           <Route path="/login" element={<AuthPage />} />
           <Route path="/auth/callback" element={<AuthCallback />} />
+          <Route path="/pending-approval" element={<PendingApprovalPage />} />
 
           {/* Authenticated app shell */}
           <Route

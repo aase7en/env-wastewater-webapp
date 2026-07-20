@@ -164,6 +164,13 @@ export function AuthPage() {
               LINE
             </Button>
           </div>
+
+          {/* OAUTH-2: notice so users don't get stuck if a provider is not
+              yet configured in the Supabase dashboard. One line, no
+              styling decisions — Track F can polish later. */}
+          <p className="text-xs text-aura-textMuted text-center font-thai">
+            หากเข้าสู่ระบบด้วย Google/LINE ไม่ได้ อาจยังไม่ได้เปิดใช้งาน — โปรดแจ้งผู้ดูแล
+          </p>
         </AuraCard>
       </div>
     </div>

@@ -9,6 +9,10 @@ import { PageSkeleton } from "./ui/Skeleton";
  * wanted after a successful login.
  *
  * `requireAdmin` further gates admin-only routes (delete reading, etc.).
+ *
+ * OAUTH-2 (2026-07-21): pending role (OAuth user awaiting admin approval)
+ * bounces to /pending-approval. They can authenticate (Supabase session
+ * is valid) but cannot access any data route until an admin promotes them.
  */
 export function RequireAuth({
   children,
@@ -17,7 +21,7 @@ export function RequireAuth({
   children: ReactNode;
   requireAdmin?: boolean;
 }) {
-  const { loading, isAuthenticated, isAdmin } = useAuth();
+  const { loading, isAuthenticated, isAdmin, isPending } = useAuth();
   const loc = useLocation();
 
   if (loading) {
@@ -32,6 +36,10 @@ export function RequireAuth({
   if (!isAuthenticated) {
     const next = encodeURIComponent(loc.pathname + loc.search);
     return <Navigate to={`/login?next=${next}`} replace />;
+  }
+
+  if (isPending) {
+    return <Navigate to="/pending-approval" replace />;
   }
 
   if (requireAdmin && !isAdmin) {

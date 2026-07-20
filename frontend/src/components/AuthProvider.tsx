@@ -19,7 +19,7 @@ import { supabase } from "../lib/supabase";
  */
 interface AppUserRow {
   id: string;
-  role: "admin" | "staff";
+  role: "admin" | "staff" | "pending";
   display_name: string | null;
   /** AUTH-2: account-active flag — false means the account was disabled
    *  (left the unit, suspended). Treat as not-authenticated upstream. */
@@ -39,6 +39,9 @@ interface AuthContextValue {
   isAuthenticated: boolean;
   /** True iff appUser.role === "admin". */
   isAdmin: boolean;
+  /** OAUTH-2: True iff appUser.role === "pending" (OAuth user awaiting
+   *  admin approval — RequireAuth bounces these to /pending-approval). */
+  isPending: boolean;
   /** Email/password helpers — return {error} on failure. */
   signInWithEmail: (email: string, password: string) => Promise<{ error: string | null }>;
   signUpWithEmail: (email: string, password: string) => Promise<{ error: string | null }>;
@@ -140,6 +143,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       loading,
       isAuthenticated: !!session && !!appUser,
       isAdmin: appUser?.role === "admin",
+      isPending: appUser?.role === "pending",
 
       async signInWithEmail(email, password) {
         const { error } = await supabase.auth.signInWithPassword({ email, password });
