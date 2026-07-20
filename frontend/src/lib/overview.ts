@@ -2,6 +2,7 @@ import { useEffect, useState } from "react";
 import { useDashboard } from "./hooks";
 import { type CarbonMonth } from "./carbon";
 import { fetchLatestReadingDate, fetchOverviewCarbon, type OverviewCarbonRow } from "./supabase-queries";
+import { momPct } from "./utils";
 import type { DashboardRow } from "./types";
 
 /**
@@ -40,12 +41,8 @@ export interface OverviewData {
  * useOverviewCarbon — anon-safe 12-month aggregate from public.v_overview_carbon
  * (SCHEMA-6). Returns latest-first rows; converts to the CarbonMonth shape
  * (meters=[] since the overview cards don't need per-meter detail) and
- * computes mom_change_pct client-side from the previous row.
- *
- * momPct is inlined here because carbon.ts:92 keeps it module-private (not
- * exported). The follow-up nit (WO Forbidden prevents touching carbon.ts in
- * this chunk): extract momPct into lib/utils.ts, then both carbon.ts and
- * overview.ts import from there. That is a separate cheap-ok chunk.
+ * computes mom_change_pct client-side from the previous row using the shared
+ * momPct helper (extracted to lib/utils.ts in UTILS-1).
  */
 function useOverviewCarbon() {
   const [rows, setRows] = useState<OverviewCarbonRow[] | null>(null);
@@ -62,12 +59,9 @@ function useOverviewCarbon() {
   return { rows, loading, error };
 }
 
-function momPct(curr: number, prev: number | null): number | null {
-  if (prev == null || prev === 0) return null;
-  return Math.round(((curr - prev) / prev) * 1000) / 10;
-}
-
-/** Convert flat OverviewCarbonRow[] → CarbonMonth[] (latest-first). */
+/** Convert flat OverviewCarbonRow[] → CarbonMonth[] (latest-first).
+ *  momPct comes from lib/utils.ts (UTILS-1 extract) — unrounded, callers
+ *  display via fmt(…, 1) at render time. */
 function toCarbonMonths(rows: OverviewCarbonRow[]): CarbonMonth[] {
   return rows.map((r, i) => {
     const prev = i + 1 < rows.length ? rows[i + 1].tco2e : null;

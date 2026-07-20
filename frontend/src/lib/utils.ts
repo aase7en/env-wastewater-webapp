@@ -33,3 +33,13 @@ export function daysSince(isoDate: string): number {
   d.setHours(0, 0, 0, 0);
   return Math.round((today.getTime() - d.getTime()) / 86_400_000);
 }
+
+/** Month-over-month % change. null when prev is 0/missing (no baseline).
+ *  Returns the raw float — callers round at display time via fmt(…, digits).
+ *  UTILS-1: extracted from carbon.ts:92 + overview.ts:65 (was duplicated;
+ *  carbon.ts version is canonical — overview.ts pre-rounding was redundant
+ *  because both display sites wrap with fmt(…, 1)). */
+export function momPct(curr: number, prev: number | null | undefined): number | null {
+  if (prev === null || prev === undefined || prev === 0) return null;
+  return ((curr - prev) / prev) * 100;
+}

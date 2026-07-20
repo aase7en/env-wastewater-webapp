@@ -29,6 +29,7 @@
 
 import { useEffect, useState } from "react";
 import { supabase } from "./supabase";
+import { momPct } from "./utils";
 
 // ─── Config ──────────────────────────────────────────────────────────────
 
@@ -88,11 +89,6 @@ function num(v: unknown): number {
   return Number.isFinite(n) ? n : 0;
 }
 
-/** Compute month-over-month % change. Returns null if previous is 0/missing. */
-function momPct(curr: number, prev: number | null | undefined): number | null {
-  if (prev === null || prev === undefined || prev === 0) return null;
-  return ((curr - prev) / prev) * 100;
-}
 
 // ─── Async functions ─────────────────────────────────────────────────────
 
