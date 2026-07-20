@@ -1246,3 +1246,133 @@ MIGRATION.md §Two-track ก่อนเริ่ม
   AUTH-2 fix แล้ว user จะเห็น interaction ที่เหลือเองหลัง login ได้
 - Track Z backlog หลัง AUTH-2: E2E authenticated integration profile (Sonnet)
 ```
+
+---
+
+## GLM OAUTH-1 — 2026-07-21 (pending role + provisioning trigger — schema layer)
+
+User request: "ทำให้การ login ด้วย google gmail และ การ login ผ่าน Line ใช้งานได้จริง"
+
+ผ่าน `/a-plan` + grill 4 ข้อ → อนุมัติแผน 3 chunks (OAUTH-1 schema → OAUTH-2 client → OAUTH-3 admin) + ADR-0007 + user owns dashboard config.
+
+### Commit สรุป
+
+| Chunk | Commit | Tier | Files |
+|---|---|---|---|
+| WO + ADR-0007 + claim | `cbd741c` | docs | `docs/adr/0007-*.md`, `docs/work-orders/OAUTH-{1,2,3}-*.md`, `MIGRATION.md` |
+| OAUTH-1 schema | `13ac9c5` | cheap-ok Track Z | `supabase/migrations/20260721000000_oauth1_pending_role.sql` (new), `reports/schema-snapshot-live.md`, WO Status flip |
+
+### GLM self-verify
+
+| ข้อตรวจ | ผล |
+|---|---|
+| Migration apply | ✅ 13/13 OK |
+| Snapshot refresh | ✅ enum `user_role = admin, staff, pending` |
+| View `public.app_user` | ✅ definition รวม `display_name` (PG cache refreshed) |
+| Trigger `trg_provision_app_user` | ✅ on `auth.users` AFTER INSERT |
+| Trigger `trg_audit_log` | ✅ on `core.app_user` (INSERT/UPDATE/DELETE) — SCHEMA-4 gap closed |
+| Policy `app_user_read` | ✅ own-row only (was `using(true)` — too broad, tightened) |
+| Policy `app_user_admin_all` | ✅ FOR ALL + admin EXISTS check |
+| **Trigger fires end-to-end** | ✅ INSERT test `auth.users` row → auto-creates `core.app_user` role=pending display_name='ทดสอบ trigger' (from metadata) is_active=true. Cleanup done. |
+| Build (sanity) | ✅ frontend ไม่ถูกแตะ |
+
+### สิ่งที่ต้องทำต่อ (user — ขั้นสำคัญที่จะปลดบล็อก OAUTH-2/3)
+
+GLM ไม่ route credentials ผ่าน Z.ai cloud (PHI boundary + Chinese law) — user ต้อง config dashboard เอง:
+
+**Part A: Google OAuth**
+
+1. https://console.cloud.google.com → สร้าง/เลือก project (เช่น `uthai-env-oauth`)
+2. APIs & Services → **OAuth consent screen**:
+   - User type: **External**
+   - App name: `UTH[AI]-ENV`
+   - Support email: อีเมล รพ.
+   - Authorized domains: `aase7en.github.io`
+   - Save → Add scope: `email`, `profile`, `openid`
+3. APIs & Services → **Credentials** → Create Credentials → **OAuth client ID**:
+   - Application type: **Web application**
+   - Authorized redirect URIs: `https://gllqtbyofrcjzmbnfoeh.supabase.co/auth/v1/callback`
+   - คัดลอก **Client ID** + **Client Secret**
+
+4. https://supabase.com/dashboard/project/gllqtbyofrcjzmbnfoeh/auth/providers:
+   - **Google** → enable
+   - วาง Client ID + Client Secret
+   - Save
+
+**Part B: LINE Login (custom OIDC — Supabase ไม่มี built-in LINE provider)**
+
+5. https://developers.line.biz/console/:
+   - สร้าง Provider (เช่น `UTHAI`)
+   - สร้าง Channel: **LINE Login** (ไม่ใช่ Messaging API)
+   - Channel type: Web
+   - Callback URL: `https://gllqtbyofrcjzmbnfoeh.supabase.co/auth/v1/callback`
+   - OpenID Connect: **Apply for email permission** (LINE เปิด email scope ต้องขอ)
+   - คัดลอก **Channel ID** + **Channel Secret**
+
+6. Supabase dashboard → Configuration → **Custom OIDC Providers** (หรือ Auth → Providers → Custom):
+   - Add provider, name: `line`
+   - Client ID = Channel ID, Client Secret = Channel Secret
+   - Issuer URL: `https://access.line.me/oauth2/v2.1` (LINE's OIDC discovery)
+   - Scopes: `openid profile email`
+
+**Part C: redirect URL whitelist**
+
+7. Supabase → Auth → **URL Configuration**:
+   - Site URL: `https://aase7en.github.io/env-wastewater-webapp`
+   - Redirect URLs (add):
+     - `https://aase7en.github.io/env-wastewater-webapp/auth/callback`
+     - `http://localhost:5173/auth/callback` (dev)
+
+**เสร็จแล้วแจ้งกลับมา** — GLM จะ execute OAUTH-2 (client pending bounce) + OAUTH-3 (admin approve page).
+
+### ส่งต่อ Fable5 — ตรวจ OAUTH-1 (`cbd741c` + `13ac9c5`)
+
+```
+อ่าน docs/handoff/2026-07-19-track-z-complete.md (ส่วน "GLM OAUTH-1")
++ docs/work-orders/OAUTH-1-schema.md + docs/adr/0007-oauth-pending-approval.md
++ MIGRATION.md §Two-track ก่อนเริ่ม
+
+ตรวจ 2 commits:
+
+  cbd741c  docs(WO): OAUTH plan — ADR-0007 + 3 chunks + claim OAUTH-1
+  13ac9c5  chunk(OAUTH-1): pending role + auto-provisioning trigger + audit
+
+เช็คเป็นข้อ ๆ:
+
+1. enum extension ถูกไหม
+   - ALTER TYPE core.user_role ADD VALUE IF NOT EXISTS 'pending'
+   - snapshot ยืนยัน enum = admin, staff, pending
+
+2. provisioning trigger ถูกไหม
+   - core.fn_provision_app_user SECURITY DEFINER + ON CONFLICT (id) DO NOTHING
+   - trg_provision_app_user on auth.users AFTER INSERT
+   - INSERT test auth.users → core.app_user auto role=pending (GLM ทดสอบแล้ว ✅)
+   - display_name extracted from raw_user_meta_data->>'name' (Google ส่ง name; LINE อาจส่ง displayName — verify ตอน OAuth จริง)
+
+3. RLS tightening — app_user_read เดิม using(true) → ตอนนี้ id = auth.uid()
+   - regression check: grep from('app_user') ทุก callsite ต้อง query own row
+     (AuthProvider.tsx loadAppUser ใช่ — .eq('id', userId); ไม่มี list-all callsite)
+   - app_user_admin_all FOR ALL + admin EXISTS check — admin list ใน OAUTH-3 ใช้ผ่าน RPC SECURITY DEFINER ข้าม policy
+
+4. audit trigger บน core.app_user (SCHEMA-4 gap closed)
+   - ทดสอบ: UPDATE core.app_user SET role='staff' WHERE id=<test> → ดู core.audit_log row
+   - ใช่มั้ยว่า approve action ในอนาคต (OAUTH-3) จะถูก audit อัตโนมัติ
+
+5. pending user ไม่สามารถเข้า data tables ผ่าน RLS อื่น ๆ ใช่มั้ย
+   - spot check 1-2 transactional policy (เช่น wastewater.reading) ว่าใช้ role='admin' OR role='staff' เท่านั้น
+   - หรือ authenticated ทั่วไป = pending ก็ผ่าน? ถ้าผ่าน = policy gap ที่ต้องเพิ่ม (อาจเป็น OAUTH-4 ถัดไป)
+
+กติกาเดิม:
+- ผ่าน → append "Verified by Fable5 (date)" + close WO Status done
+- เจอปัญหา → append + claim + WO fix ถ้าจำเป็น
+- ห้าม git reset --hard (rule 6) · PHI boundary ไม่ route ผ่าน Z.ai cloud
+- วันที่ = พ.ศ. เสมอ
+
+บริบทเพิ่ม:
+- user กำลัง config Google Cloud + LINE Console + Supabase dashboard
+  อยู่ — เมื่อเสร็จจะสั่งให้ GLM execute OAUTH-2 + OAUTH-3
+- OAUTH-2/3 WO verbatim อยู่ใน docs/work-orders/ พร้อม execute
+- Track F (PendingApprovalPage / PendingUsersPage styling polish) = Fable5
+```
+
+*GLM5.2 OAUTH-1, 2026-07-21 — 2 commits · migration 13/13 · trigger probe end-to-end · build ✅ · รอ user config dashboard → OAUTH-2/3.*
