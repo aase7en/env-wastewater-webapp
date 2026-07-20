@@ -746,3 +746,128 @@ execute ได้ทันทีเมื่อ WO ลง — formula: pyftsubse
 
 *GLM5.2 sweep #4, 2026-07-20 — 3 commits · build ✅ · Playwright 23/23 ·
 snapshot 11 schemas verified · Q4 blocked on Fable5 WO.*
+
+---
+
+## Dispatch prompt #3 — ส่ง Fable5 (verify sweep #3+#4 + Q4 WO design)
+
+วาง prompt ด้านล่างใน session Fable5 ใหม่ (เลือก model Fable5 ก่อน):
+
+```
+อ่าน docs/handoff/2026-07-19-track-z-complete.md (ส่วน "GLM sweep #3" +
+"GLM sweep #4 — executed" + Fable5 review #6 ด้านบน) + MIGRATION.md
+§Two-track ก่อนเริ่ม
+
+สถานะ: Claude ติด 5hr limit มา 2 รอบ → GLM5.2 รับ Track Z sweep 2 รอบ
+(#3 + #4) รวม 7 chunks ที่รอคุณ verify ในบทบาท verifier ปกติ
+
+### Part 1 — ตรวจ diff 7 commits
+
+รอบ #3 (Fable5 review #6 เคยเปิด WO-E2E-2 แต่ยังไม่ verify 3 ตัวนี้):
+
+  1e9be0c  chunk(AUTH-1): fix auth loading race — wait for appUser before unloading
+  d2f8dfb  chunk(STAT-1): rename StatusBadge prop status → operating
+  073a65f  chunk(SCHEMA-6): public definer v_overview_carbon — anon-safe aggregates
+
+รอบ #4 (ทั้งหมดยังไม่ verify):
+
+  0d1f636  chunk(E2E-2): basename-aware goto + href matchers — prod CI smoke ready
+  2477d78  chunk(UTILS-1): extract momPct to lib/utils.ts — dedupe 2 copies → 1 source
+  ff81e16  chunk(INTROSPECT-1): extend SCHEMAS tuple 3→11 + refresh snapshot
+
+เช็คเป็นข้อ ๆ:
+
+1. **AUTH-1** (1e9be0c) — async ordering bug fix แท้ (0 className):
+   - ทดสอบจริงด้วย seeded localStorage session (เหมือน tour): refresh หน้า
+     RequireAuth ใด ๆ ต้องไม่ bounce ไป /login ถ้า session valid + appUser resolve
+   - derived loading = `sessionLoading || (!!session && appUserLoading)` —
+     collapse ได้ถูกเวลามั้ย
+   - Edge cases ที่ GLM ระบุ: session==null (logged out) collapse ทันที;
+     appUser lookup fail → /login (preserve existing behavior); session
+     เปลี่ยนกลาง lookup → stale guard `latestUserIdRef` กัน setState ทับ
+
+2. **STAT-1** (d2f8dfb) — interface refactor (user-approved rename):
+   - StatusBadge prop `status` → `operating`, polarity flip
+   - 3 callsites (PFD/Dashboard/Readings) rename only; EquipmentPage negate
+     1 จุด (`operating={open.length === 0}`) เพราะ callsite นั้นใช้ alert
+     semantics จริง ๆ
+   - ด้วยตา: `system_operating=true` ขึ้นเขียว "ปกติ", `false` ขึ้นแดง
+     "ผิดปกติ", null "—" เทา — ทั้ง PFD/Dashboard/Readings/EquipmentPage
+   - className ไม่ถูกแตะ (Track F scope)
+
+3. **SCHEMA-6** (073a65f) — SQL DDL + frontend switch:
+   - 2-layer definer-style (carbon.v_overview_carbon + public.v_overview_carbon
+     façade) ตรง pattern SCHEMA-5:57-61
+   - public façade NO security_invoker → runs as owner → bypass base-table
+     RLS → anon อ่านได้ (เหมือน v_dashboard_14day)
+   - emission factor 0.4999 sync กับ carbon.ts:48
+   - curl anon `/rest/v1/v_overview_carbon` → 200 + rows (GLM probe แล้ว:
+     2026-07 4d/19kWh/0.009tCO₂e, 2026-06 30d/140/0.070, 2026-05 31d/137/0.068)
+   - curl anon `/rest/v1/carbon_reading` → ยัง 401 (per-reading locked)
+   - CarbonPage ยังใช้ useCarbonMonthly (auth + per-meter detail) — ไม่แตะ
+
+4. **E2E-2** (0d1f636) — pure test harness fix (WO คุณเขียนเอง):
+   - ตาม Steps 1-4 ใน WO-E2E-2-prod-profile-basename.md ครบมั้ย
+   - **prod CI**: ดู GitHub Actions → e2e.yml run ล่าสุด (trigger จาก push
+     b6ccc8b หรือใหม่กว่า) — คาดว่าเขียวครั้งแรกในประวัติ repo สำหรับ
+     prod profile. ถ้าแดง → วิเคราะห์ edge case ที่ WO ไม่ cover
+   - modules.spec.ts `href$=` ends-with + ตัด "/" ออกจาก expectedNav —
+     boundary case ที่ต้องเช็ค: root "/" href บน prod
+   - playwright.config.ts baseURL normalize — ไม่ break local dev มั้ย
+     (`localhost:5173` → `localhost:5173/`)
+
+5. **UTILS-1** (2477d78) — pure helper refactor:
+   - momPct extract จาก carbon.ts:92 + overview.ts:65 → utils.ts
+   - **Subtle diff ที่ GLM พบ**: carbon.ts unrounded, overview.ts pre-rounded
+     1 decimal. Disproof: ทั้งคู่ render ผ่าน fmt(…, 1) → pre-rounding
+     redundant → ใช้ carbon.ts shape เป็น canonical (rounding = presentation
+     concern ของ fmt)
+   - ตรวจ CarbonPage + OverviewPage chips render identical (12.3% เท่าเดิม)
+   - signature เดิม `momPct(curr, prev)` — callers ไม่ต้องแก้
+
+6. **INTROSPECT-1** (ff81e16) — tuple extend + snapshot regenerate:
+   - scripts/introspect_schema_api.py:23 — tuple 11 schemas ตรง SCHEMA-5
+     grant line (4c60805:21)
+   - reports/schema-snapshot-live.md — spot-check ว่า 30 tables ครอบทุก
+     domain + row counts ตรง migration history (907+907 carbon/wastewater.
+     reading, 10 equipment, 9 personnel, 12 emission_factor, 16
+     location_category, 7 regulation, 23 audit_log)
+   - ไม่แตะ logic introspect อื่น (tuple เดียว)
+
+กติกาเดิม:
+- ผ่าน → append "Verified by Fable5 (date)" ใน handoff doc
+- เจอปัญหา → append ใน handoff doc + claim ใน MIGRATION.md In-progress
+  table + เขียน WO fix แยกถ้าจำเป็น
+- ห้าม git reset --hard (rule 6)
+- PHI boundary: ไม่ route ผ่าน Z.ai cloud
+
+### Part 2 — Q4 WO design (unblock Material Symbols subset)
+
+หลัง verify Part 1 เสร็จ (หรือระหว่างรอ prod CI run) — เขียน WO สำหรับ
+Material Symbols subset keep-axes (Fable5 review #5 nit):
+
+- asset: frontend/public/fonts/material-symbols-outlined.woff2 (3.9MB →
+  subset ~200KB)
+- Lane: Track F scope (asset + index.css:38-46)
+- GLM execute ได้ถ้าคุณเขียน WO แบบ F6/MOD-*-b (formula verbatim +
+  Reference pattern + diff check)
+- สิ่งที่ต้องระบุใน WO:
+  - pyftsubset args ที่ preserve variable axes (FILL/wght/GRAD/opsz)
+  - glyph list ที่ `<MSymbol name="...">` ใช้จริงใน codebase (grep
+    MSymbol name="..." ทั้ง frontend/src)
+  - verify: block network fonts.gstatic.com → reload → icon ยัง render
+  - bundle -3.7MB + `font-display: block` ป้องกัน flash
+- output: `docs/work-orders/FONTS-1-material-symbols-subset.md`
+
+### Part 3 (optional หลัง Part 1+2) — P4 design
+
+ถ้าเหลือเวลา: design P4 ideas (AI NL→SQL modal, audit log viewer,
+suggest queries chip) → write WO → dispatch tier ล่าง
+
+บริบทเพิ่ม:
+- ตอนนี้ GLM5.2 Track Z + Track F (sub for Sonnet) หมดแล้ว — Track Z
+  scope เปิดค้างเฉพาะ Q4 (block on คุณ) + authenticated profile
+  (Sonnet tier out of GLM scope)
+- ถ้า WO Q4 ของคุณออกมาเป็น cheap-ok tier GLM รับ execute ทันที
+- commit convention: `chunk(<ID>): ... [next: <ID>]`
+```
