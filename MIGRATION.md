@@ -285,6 +285,14 @@ binding rules are here.
 
 | Chunk | Agent | Claimed | Scope (files) |
 |---|---|---|---|
+| AUTH-2 | zcode | 2026-07-19 | `frontend/src/components/AuthProvider.tsx`, `AppShell.tsx`, `RepairRequestModal.tsx`, `supabase/migrations/20260719000013_auth2_app_user_display_name.sql` (new), `reports/schema-snapshot-live.md` |
+
+> **P0 ใหม่ 2026-07-19 (user smoke test): `AUTH-2-app-user-query-schema`** —
+> `AuthProvider.loadAppUser()` query ผิด schema (`auth_user_id` + `display_name`
+> ไม่มีใน `core.app_user`) → PGRST204 → `appUser=null` → `isAuthenticated=false`
+> → RequireAuth bounce /login ทุกครั้ง แม้ session valid. **Login block ทั้งแอป.**
+> Fix: migration เพิ่ม `display_name` column + query `.eq("id", userId)`. WO:
+> `docs/work-orders/AUTH-2-app-user-query-schema.md` (cheap-ok → GLM execute).
 
 > **Reopened 2026-07-19 (Fable5 review): P0 `SCHEMA-5-rest-exposure`** — ทุก
 > `.from()` ใน frontend 404 (PGRST205) เพราะ `public` schema ว่างเปล่าและไม่
