@@ -285,6 +285,7 @@ binding rules are here.
 
 | Chunk | Agent | Claimed | Scope (files) |
 |---|---|---|---|
+| SKEL-1-polish + FONTS-1-verify | fable5 | 2026-07-20 | `frontend/src/index.css` (.skeleton block), `frontend/src/pages/OverviewPage.tsx` (skeleton sizes), `frontend/src/components/ui/Skeleton.tsx`, `docs/work-orders/SKEL-1-*.md`, `docs/work-orders/FONTS-1-*.md`, `docs/handoff/2026-07-19-track-z-complete.md` |
 
 > **Reopened 2026-07-19 (Fable5 review): P0 `SCHEMA-5-rest-exposure`** — ทุก
 > `.from()` ใน frontend 404 (PGRST205) เพราะ `public` schema ว่างเปล่าและไม่
