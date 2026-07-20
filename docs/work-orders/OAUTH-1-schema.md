@@ -1,6 +1,6 @@
 # WO-OAUTH-1: schema migration — pending role + provisioning trigger + audit
 
-Status: open (2026-07-21, queued for GLM execute)
+Status: done (2026-07-21, zcode) — commit pending verify by Fable5
 Lane/files:
 - `supabase/migrations/20260721000000_oauth1_pending_role.sql` (NEW)
 - `reports/schema-snapshot-live.md` (regenerate)
@@ -181,4 +181,35 @@ cd frontend && npm run build
 
 ## Checkpoint / ปิดท้าย
 
-(none yet — execute pending)
+**GLM self-verify (รันเองครบทุกข้อ 2026-07-21):**
+
+| ข้อตรวจ | ผล |
+|---|---|
+| Migration apply | ✅ 13/13 statements OK |
+| Snapshot refresh | ✅ `core.user_role` enum = `admin, staff, pending` |
+| `public.app_user` view | ✅ definition รวม `display_name` (PG cache refreshed) |
+| Trigger `trg_provision_app_user` | ✅ exists on `auth.users` (event_object_table=users, INSERT) |
+| Trigger `trg_audit_log` | ✅ exists on `core.app_user` (INSERT/UPDATE/DELETE) |
+| Policy `app_user_read` | ✅ SELECT own row (`id = auth.uid()`) |
+| Policy `app_user_admin_all` | ✅ FOR ALL + admin EXISTS check |
+| **Trigger fires end-to-end** | ✅ INSERT test `auth.users` row → `core.app_user` auto-created role=pending display_name extracted from `raw_user_meta_data->>'name'` ('ทดสอบ trigger') is_active=true |
+| Build (sanity) | ✅ `npm run build` ผ่าน (frontend ไม่ถูกแตะ) |
+| Cleanup test row | ✅ DELETE ทั้งคู่ (no leftover test data) |
+
+**Pending Fable5 verify:**
+- Trigger behavior with real OAuth callback (not just synthetic INSERT)
+- Audit log writes on approve action (covered in OAUTH-3)
+- RLS tightening regression check: previously `app_user_read` was
+  `using (true)` (all authenticated could read all rows); now own-row
+  only. Confirm no existing frontend code relied on broad read (grep
+  shows no `from('app_user')` callsite other than AuthProvider loadAppUser,
+  which queries own row by id — safe).
+
+**Edge case notes:**
+- Existing admin row (the seed) is untouched — trigger fires only AFTER
+  INSERT on auth.users; pre-existing rows did not re-fire.
+- The OAUTH-3 migration will recreate `public.app_user` again when it
+  adds the `email` column (same PG cache pattern).
+- Trigger is `SECURITY DEFINER` so it can write to `core.app_user` even
+  though auth.users INSERTs happen as the postgres owner (Supabase Auth
+  internals), not as an authenticated role.

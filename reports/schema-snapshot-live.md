@@ -737,7 +737,7 @@
 | `core` | `orientation` | portrait, landscape |
 | `core` | `paper_size` | a4, a5 |
 | `core` | `repair_status` | open, in_progress, resolved, cancelled |
-| `core` | `user_role` | admin, staff |
+| `core` | `user_role` | admin, staff, pending |
 
 ## Constraints
 
