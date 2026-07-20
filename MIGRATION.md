@@ -285,6 +285,7 @@ binding rules are here.
 
 | Chunk | Agent | Claimed | Scope (files) |
 |---|---|---|---|
+| SPA-1 GitHub Pages SPA-restore slash fix (P1 — prod deep links + OAuth callback broken) | fable5 | 2026-07-20 | `frontend/src/main.tsx` (restore block only), `docs/work-orders/E2E-2-prod-profile-basename.md` (checkpoint note) |
 
 > **Reopened 2026-07-19 (Fable5 review): P0 `SCHEMA-5-rest-exposure`** — ทุก
 > `.from()` ใน frontend 404 (PGRST205) เพราะ `public` schema ว่างเปล่าและไม่
