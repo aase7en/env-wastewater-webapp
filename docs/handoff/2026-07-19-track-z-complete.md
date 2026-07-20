@@ -1084,3 +1084,165 @@ landed (`72915e5`); WO ปิดทั้ง 2 ใบ**
 *Verified + polished by Fable5, 2026-07-20 — probes รันเองครบ (dims/CLS/ring/
 fonts/drift/prod ×2) · build ✅ · 25/25 ✅ · CI เขียว 3/3 ที่ `72915e5` ·
 SKEL-1 + FONTS-1 Status: done*
+
+---
+
+## GLM AUTH-2 — 2026-07-19 (login block ทั้งแอป — P0 จริงจาก user smoke test)
+
+User: "ฉัน login เข้าไปเล่นจริงไม่ได้ ทั้งที่ email, password มีใน supabase แล้ว"
+
+### Root cause (verified 100%)
+
+`AuthProvider.loadAppUser()` (`frontend/src/components/AuthProvider.tsx:82-86`)
+query `core.app_user` ผิด schema 2 จุด:
+
+```ts
+.select("id, role, display_name")   // ❌ display_name ไม่มีใน schema
+.eq("auth_user_id", userId)          // ❌ auth_user_id ไม่มี — id คือ FK ตรงไป auth.users.id
+```
+
+PostgREST คืน `PGRST204` → catch → `setAppUser(null)` →
+`isAuthenticated = !!session && !!appUser = false` → RequireAuth bounce /login
+ตลอดกาล แม้ session valid.
+
+**ทำไม AUTH-1 ไม่เจอ**: AUTH-1 (`1e9be0c`) แก้ race condition ของ `loading` แต่
+**ไม่ได้แตะ query**. Handoff review #3 บันทึกว่า "request `app_user` ยิงถูกต้อง
+(id ตรง)" — จริง ๆ แล้ว query ผิดอยู่ก่อน AUTH-1 เลย แต่ Fable5 verify ด้วย seeded
+mock `app_user` ใน localStorage (ไม่ได้ผ่าน REST จริง) จึงไม่เห็น. User เจอเพราะ
+login จริง = REST จริง = PGRST204 = bounce.
+
+### DISCOVERY ระหว่าง execute (สำคัญ — ป้องกันการเข้าใจผิดในรอบถัดไป)
+
+หลัง apply `ALTER TABLE ADD COLUMN display_name` query ใหม่ของ AuthProvider
+**ยังคงพัง** — เพราะ `public.app_user` เป็น view ที่ SCHEMA-5 (`20260719000010`)
+สร้างไว้ด้วย `select * from core.app_user`. **PostgreSQL cache column list ของ
+view ตอน CREATE** — `*` ไม่ expand ใหม่อัตโนมัติเมื่อ base table เพิ่ม column.
+
+→ ต้อง `CREATE OR REPLACE VIEW public.app_user` ใน migration เดียวกัน
+(statement 3). Migration ปัจจุบันครอบแล้ว.
+
+### Commit สรุป
+
+| Chunk | Commit | Tier | Files |
+|---|---|---|---|
+| AUTH-2 claim | `dc6c7f0` | docs | `docs/work-orders/AUTH-2-app-user-query-schema.md`, `MIGRATION.md` |
+| AUTH-2 fix | `f2b7527` | cheap-ok | `supabase/migrations/20260719000013_*.sql` (new), `frontend/src/components/AuthProvider.tsx`, `reports/schema-snapshot-live.md`, WO Status flip |
+
+### GLM self-verify (รันเองครบ)
+
+| ข้อตรวจ | ผล |
+|---|---|
+| Build | ✅ `npm run build` 5.07s |
+| Vitest | ✅ 96/96 (19 utils + 48 db-query + 29 csv-import) |
+| Playwright | ✅ 25/25 (8 smoke + 8 auth + 4 pfd + 2 skeleton + 3 modules) |
+| Migration apply | ✅ 4/4 statements OK |
+| Schema snapshot | ✅ `core.app_user` row 6 = `display_name text` |
+| DB probe — backfill | ✅ admin row `{role:'admin', display_name:'a.richbusinessman', is_active:true}` |
+| DB probe — view recreate | ✅ `public.app_user` definition รวม `display_name` |
+| DB probe — AuthProvider query | ✅ exact query คืน row สมบูรณ์ (PAT admin) |
+
+### ส่งต่อ Fable5 — ตรวจ AUTH-2 (`dc6c7f0` + `f2b7527`)
+
+**สิ่งที่ต้องตรวจเป็นพิเศษ:**
+
+1. **Query fix ที่ AuthProvider.tsx** — `loadAppUser`:
+   - `.eq("id", userId)` ตรง PK ไม่ใช่ `auth_user_id` ใช่มั้ย
+   - `.select("id, role, display_name, is_active")` ตรง schema snapshot row 1,2,4,6
+   - `is_active === false` reject เป็น branch ใหม่ + console.warn — ยอมรับได้มั้ย
+     (behavior เดิม silently accept disabled account = ไม่ปลอดภัยกว่า)
+2. **Migration idempotent** — re-run ไม่พัง (ALTER IF NOT EXISTS + CREATE OR
+   REPLACE + UPDATE WHERE NULL)
+3. **View recreate สำคัญ** — ตรวจ migration statement 3 กันลืมว่าถ้าไม่ recreate
+   จะ PGRST204 ต่อไป (เหมือน SCHEMA-5 meter fixup pattern)
+4. **JWT round-trip จริง** — login จริงใน browser ด้วย email/password admin
+   → navigate /dashboard ไม่ bounce. นี่คือ acceptance สุดท้ายที่ GLM ทำเองไม่ได้
+   (GLM ไม่ route password ผ่าน Z.ai cloud — PHI boundary + Chinese law).
+   ทางเลือก: คุณ login จริง, grab JWT จาก sessionStorage, curl ด้วย Bearer JWT
+   ตรง `/rest/v1/app_user` ดู 200 + row
+
+### Edge case ที่รักษาพฤติกรรมเดิม (ไม่ทำให้ worse)
+
+- `app_user` row missing → `appUser=null` → bounce /login (เหมือนเดิม)
+- `is_active=false` → reject explicit + log warn (ใหม่ — ปลอดภัยกว่าเดิม)
+- session==null → collapse ทันที (AUTH-1)
+- session เปลี่ยนกลาง lookup → stale guard (AUTH-1)
+
+*GLM5.2 AUTH-2, 2026-07-19 — 2 commits · build ✅ · Vitest 96/96 · Playwright
+25/25 · migration applied live (4/4) · DB probe ครบ · รอ Fable5 JWT verify.*
+
+---
+
+## Dispatch prompt #5 — ส่ง Fable5 (verify AUTH-2)
+
+วาง prompt ด้านล่างใน session Fable5 ใหม่ (เลือก model Fable5 ก่อน):
+
+```
+อ่าน docs/handoff/2026-07-19-track-z-complete.md (ส่วน "GLM AUTH-2 —
+2026-07-19") + docs/work-orders/AUTH-2-app-user-query-schema.md +
+MIGRATION.md §Two-track ก่อนเริ่ม
+
+สถานะ: user smoke test เจอ P0 จริง — login block ทั้งแอป. GLM5.2 fix แล้ว
+2 commits รอคุณ verify (cheap-ok tier, pure Track Z ไม่แตะ className)
+
+### ตรวจ 2 commits
+
+  dc6c7f0  claim(AUTH-2): AuthProvider query broken — login blocks entire app
+  f2b7527  chunk(AUTH-2): fix app_user query schema mismatch + add display_name
+
+เช็คเป็นข้อ ๆ:
+
+1. Root cause diagnosis ถูกไหม
+   - อ่าน schema snapshot `core.app_user` (reports/schema-snapshot-live.md)
+     ยืนยันว่า pre-fix มี columns: id, role, employee_id, is_active,
+     created_at (ไม่มี auth_user_id ไม่มี display_name)
+   - ดู FK constraint `app_user_id_fkey` (snapshot row 767) ยืนยัน id =
+     auth.users.id โดยตรง ไม่ใช่ผ่าน auth_user_id
+   - สรุปใช่มั้ยว่า query เดิม PGRST204 ทุกครั้ง = login block ทั้งแอป
+
+2. Migration `20260719000013_auth2_app_user_display_name.sql` ถูกไหม
+   - 4 statements: ALTER + COMMENT + CREATE OR REPLACE VIEW + UPDATE
+   - Idempotent (re-run ปลอดภัย)
+   - **DISCOVERY สำคัญ**: statement 3 recreate view — ถ้าไม่มี, query ใหม่
+     ยังคง PGRST204 เพราะ PostgreSQL cache view column list. ตรวจว่า GLM
+     capture lesson นี้ถูก
+   - Backfill UPDATE ใช้ split_part(email, '@', 1) — ปลอดภัยมั้ย (single row
+     admin วันนี้; future row มาจาก form/sign-up flow)
+
+3. AuthProvider.tsx query fix ถูกไหม
+   - `.eq("id", userId)` ตรง PK
+   - `.select("id, role, display_name, is_active")` ตรง schema ใหม่
+   - `is_active === false` branch ใหม่ + console.warn — ยอมรับได้มั้ย
+     (behavior เดิม silently accept = ไม่ปลอดภัยกว่า)
+   - ไม่ได้ลบ AUTH-1 race fix (stale guard คงอยู่)
+   - className/colors/fonts ไม่ถูกแตะ (Track F clean)
+
+4. **JWT round-trip จริง (acceptance สุดท้าย)** — GLM ทำเองไม่ได้
+   (PHI boundary + Chinese law: ไม่ route password ผ่าน Z.ai cloud).
+   ทางเลือก:
+   - login จริงใน browser ด้วย email/password admin → navigate /dashboard
+     ไม่ bounce
+   - หรือ login จริง → grab JWT จาก sessionStorage → curl
+     `/rest/v1/app_user?id=eq.<uuid>` ด้วย Bearer JWT ดู 200 + row
+   - สำคัญที่สุด: user สั่งให้ login ได้ — นี่คือ close เงื่อนไขเดียวที่จะ
+     ปิด acceptance
+
+5. AppShell + RepairRequestModal ใช้ appUser?.display_name อยู่แล้ว —
+   ไม่ต้องแก้ logic, แค่ schema มี column แล้ว. fallback chain
+   `display_name || email || "ผู้ใช้"` ครบ.
+
+กติกาเดิม:
+- ผ่าน → append "Verified by Fable5 (date)" + close WO Status done
+- เจอปัญหา → append + claim + WO fix ถ้าจำเป็น
+- ห้าม git reset --hard (rule 6) · PHI boundary ไม่ route ผ่าน Z.ai cloud
+- วันที่ = พ.ศ. เสมอ
+
+บริบทเพิ่ม:
+- user ยังเห็น "ขอบ border ไม่มี animation" — เป็น by-design (AuraCard default
+  aura-card--static เพื่อ battery บนมือถือที่สระ; aura="animated" สำหรับ
+  attention cards เท่านั้น). Track F decision ของคุณ — อยากเปิด animated ring
+  บนหน้าไหนได้เลย (Track F scope คุณเป็นเจ้าของ)
+- "interaction ไม่ครบ" — หลายอย่างเกิดหลัง login (sidebar collapse, admin
+  menu, PFD drill-down F5) ตอนนี้ login block = user เห็นแค่ public + /login.
+  AUTH-2 fix แล้ว user จะเห็น interaction ที่เหลือเองหลัง login ได้
+- Track Z backlog หลัง AUTH-2: E2E authenticated integration profile (Sonnet)
+```
