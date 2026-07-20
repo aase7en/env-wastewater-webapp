@@ -1,5 +1,5 @@
 # WO-E2E-2: prod-profile URL handling — basename-aware goto + href matchers
-Status: open
+Status: done (2026-07-20, zcode) — commit pending
 Lane/files: `frontend/tests/e2e/fixtures.ts` (new), `frontend/tests/e2e/*.spec.ts` (import swap + href matchers), `frontend/playwright.config.ts` (baseURL normalize 1 บรรทัด)
 Branch: main
 Model tier: **cheap-ok** (สูตร verbatim ครบ — GLM execute ได้เลย)
@@ -68,3 +68,11 @@ export { expect };
 ## Checkpoint log
 - [2026-07-20] fable5: เขียน WO หลัง diagnose run 29694290054 (รายละเอียดใน
   handoff review #6). Root cause = URL resolution ไม่ใช่ flakiness/race.
+- [2026-07-20] zcode (GLM): execute ตาม Steps 1-4 — `frontend/tests/e2e/
+  fixtures.ts` ใหม่ (page.goto rewrite "/x" → "./x"), 4 spec files swap
+  import จาก `@playwright/test` → `./fixtures`, modules.spec.ts href
+  matchers `href=` → `href$=` (ends-with) + ตัด "/" ออกจาก expectedNav
+  (basename dir ลงท้าย "/" จะ false-match), playwright.config.ts normalize
+  baseURL ให้ลงท้าย "/" เสมอ. Verify: `npm run build` ✅ + Playwright
+  23/23 ✅ (ทุก spec pass — auth/pfd/modules/smoke). prod CI smoke รอ push
+  แล้วดู e2e.yml run เขียว.

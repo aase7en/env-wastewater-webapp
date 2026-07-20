@@ -12,7 +12,11 @@ import { defineConfig, devices } from "@playwright/test";
  * Authenticated routes (/form, /readings) are skipped in smoke tests —
  * they bounce to /login, which itself is the smoke we test.
  */
-const baseURL = process.env.E2E_BASE_URL || "http://localhost:5173";
+// E2E-2: ensure baseURL ends with "/" so "./x" in fixtures.ts resolves
+// relative to the directory (not as origin-relative). Without this, an
+// E2E_BASE_URL without a trailing slash would break relative goto rewrites.
+const rawBaseURL = process.env.E2E_BASE_URL || "http://localhost:5173";
+const baseURL = rawBaseURL.endsWith("/") ? rawBaseURL : rawBaseURL + "/";
 
 export default defineConfig({
   testDir: "./tests/e2e",

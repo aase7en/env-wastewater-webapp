@@ -1,4 +1,4 @@
-import { test, expect } from "@playwright/test";
+import { test, expect } from "./fixtures";
 
 /**
  * Module route smoke tests — guard + sidebar nav.
@@ -36,16 +36,20 @@ test("sidebar exposes module + orphan routes; admin entries stay hidden (F8)", a
   // /regulations now live in the sidebar. Admin-only entries render only
   // for admin users, so an unauthenticated visitor must see none of them.
   await page.goto("/dashboard");
+  // E2E-2: ends-with matcher — prod serves under a basename
+  // (/env-wastewater-webapp/), so react-router renders href with the basename
+  // prefix. Root "/" excluded because the basename dir itself ends with "/"
+  // and would false-match — its presence is covered by smoke.spec's brand check.
   const expectedNav = [
-    "/", "/dashboard", "/form", "/readings",
+    "/dashboard", "/form", "/readings",
     "/trends", "/carbon", "/carbon-rollup", "/equipment", "/reports",
     "/attachments", ...MODULE_ROUTES, "/regulations",
   ];
   for (const href of expectedNav) {
     // Both desktop + mobile sidebars render — at least one link per route.
-    await expect(page.locator(`nav a[href="${href}"]`).first()).toBeVisible();
+    await expect(page.locator(`nav a[href$="${href}"]`).first()).toBeVisible();
   }
   for (const href of ["/import", "/pdf-designer", "/admin/db", "/admin/ai"]) {
-    await expect(page.locator(`nav a[href="${href}"]`)).toHaveCount(0);
+    await expect(page.locator(`nav a[href$="${href}"]`)).toHaveCount(0);
   }
 });
