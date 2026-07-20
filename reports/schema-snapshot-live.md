@@ -18,7 +18,7 @@
 | `core` | `ai_scope` | 15 |
 | `core` | `app_user` | 1 |
 | `core` | `attachment` | 0 |
-| `core` | `audit_log` | 23 |
+| `core` | `audit_log` | 26 |
 | `core` | `equipment` | 10 |
 | `core` | `location` | 1 |
 | `core` | `location_category` | 16 |
@@ -225,6 +225,7 @@
 | 4 | `is_active` | `boolean` | NO | `true` |
 | 5 | `created_at` | `timestamp with time zone` | NO | `now()` |
 | 6 | `display_name` | `text` | YES | `` |
+| 7 | `email` | `text` | YES | `` |
 
 ### `core.attachment`
 

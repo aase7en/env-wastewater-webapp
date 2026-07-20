@@ -45,6 +45,9 @@ const DBAConsolePage = lazy(() =>
 const AIAdminPage = lazy(() =>
   import("./pages/admin/AIAdminPage").then((m) => ({ default: m.AIAdminPage })),
 );
+const PendingUsersPage = lazy(() =>
+  import("./pages/admin/PendingUsersPage").then((m) => ({ default: m.PendingUsersPage })),
+);
 
 export default function App() {
   return (
@@ -161,6 +164,16 @@ export default function App() {
                       <RequireAuth requireAdmin>
                         <Suspense fallback={<PageSkeleton />}>
                           <AIAdminPage />
+                        </Suspense>
+                      </RequireAuth>
+                    }
+                  />
+                  <Route
+                    path="/admin/users"
+                    element={
+                      <RequireAuth requireAdmin>
+                        <Suspense fallback={<PageSkeleton />}>
+                          <PendingUsersPage />
                         </Suspense>
                       </RequireAuth>
                     }

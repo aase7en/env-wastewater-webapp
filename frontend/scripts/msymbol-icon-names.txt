@@ -20,6 +20,7 @@ error
 gavel
 health_and_safety
 history
+hourglass_top
 info
 insights
 key
@@ -31,6 +32,7 @@ medical_services
 monitoring
 notifications
 park
+person_add
 picture_as_pdf
 print
 recycling

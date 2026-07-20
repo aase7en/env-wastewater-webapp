@@ -45,6 +45,7 @@ const NAV: NavItem[] = [
   { to: "/pdf-designer", label: "ออกแบบ PDF", icon: "picture_as_pdf", adminOnly: true },
   { to: "/admin/db", label: "DBA Console", icon: "database", adminOnly: true },
   { to: "/admin/ai", label: "AI Admin", icon: "smart_toy", adminOnly: true },
+  { to: "/admin/users", label: "รออนุมัติ", icon: "person_add", adminOnly: true },
 ];
 
 /** Brand lockup — UTH[AI]-ENV with the [AI] neon highlight (suite §1). */
