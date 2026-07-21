@@ -1,6 +1,6 @@
 # WO-P4-audit-viewer: Audit-log viewer admin page (read-only + basic filters)
 
-Status: open
+Status: done (primary-verified 2026-07-21 — see Checkpoint log)
 Lane/files: `frontend/src/lib/admin/audit-log.ts` (new) · `frontend/src/pages/admin/AuditLogPage.tsx` (new) · `frontend/src/App.tsx` (route) · `frontend/src/components/layout/AppShell.tsx` (NAV entry)
 Branch: main
 Depends on: SCHEMA-4 audit trigger (`20260719000003`), SCHEMA-5 addendum façade `public.audit_log` (`20260719000011`) — both shipped. **No new SQL/migration.**
@@ -102,6 +102,18 @@ export async function fetchAuditLog(f?: AuditLogFilter): Promise<AuditLogRow[]>;
    `action=UPDATE` + date filter → list narrows; expand a row → old/new JSON renders.
 
 ## Checkpoint log
+
+- **2026-07-21 — primary verify (Opus 4.8):** shipped `2a62146`. `npm run build` ✓,
+  `vitest` 96/96 ✓, `playwright` 26/26 ✓. Anon REST probe `GET /rest/v1/audit_log`
+  → `401 / 42501 permission denied` ✓ (admin-gate holds; façade + RLS working, no new SQL).
+  **Column-name gap closed:** this WO's draft named the time column `created_at`; GLM
+  corrected the lib to `changed_at` against `reports/schema-snapshot-live.md`.
+  Independently confirmed against the live snapshot — col #6 `changed_at timestamptz NOT
+  NULL default now()`, plus index `audit_log_table_name_changed_at_idx`. This was the one
+  gap no green gate covered (the anon probe 401s *before* PostgREST resolves columns).
+  Low-sev nit (not fixed, queued cheap-ok): the `to` filter hardcodes `…T23:59:59.999Z`
+  (UTC), so a Thai-local (UTC+7) day boundary is off by ~7h — same family as FIX-1.
+  Manual admin walkthrough still pending (needs admin login). **PASS (with noted nit).**
 
 - 2026-07-21 (GLM execute, commit `<TBD>`): lib + page + route + NAV shipped.
   - **Column contract divergence from this WO's draft**: live snapshot

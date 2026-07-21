@@ -125,26 +125,99 @@ export async function annotateRow(
 }
 
 /**
+ * Tables exposed to the AI as schema context (DBA-8/9 grounding). This is the
+ * union of the transactional tables covered by the SCHEMA-4 audit trigger +
+ * the public-domain reference tables. Format is `schema.table` to match
+ * `core.ai_scope.view_name` (the dynamic PHI filter source).
+ *
+ * PHI boundary: tables flagged `patient_safe=false` in `core.ai_scope`
+ * (currently `core.app_user`, `core.personnel`) are filtered out at runtime
+ * by `loadPhiDenySet` + `filterPhiTables` — see AISQL-phi-filter (ADR-0009 §2
+ * follow-up). Even though some appear in this list, they never reach the
+ * provider unless `ai_scope` is unreadable (then we keep the historical
+ * hardcoded env-only subset as a defensive fallback).
+ */
+const SCHEMA_CONTEXT_TABLES = [
+  "wastewater.reading", "carbon.reading", "carbon.emission_factor",
+  "water_supply.daily_check", "garbage.collection_log", "fuel.dispense_log",
+  "garden.work_round", "building.inspection_round", "safety.monthly_check",
+  "food.lab_test", "chemical.master", "chemical.movement",
+  "core.repair_request", "core.personnel", "core.app_user",
+];
+
+/**
+ * Pure helper: filter a list of `schema.table` names against a deny-set.
+ * Extracted from `buildSchemaContext` so it can be unit-tested without
+ * mocking the supabase client.
+ *
+ * Deny-set membership is exact-match on `schema.table`. Tables not present
+ * in the deny-set pass through. Returns a new array (does not mutate input).
+ */
+export function filterPhiTables(
+  tables: readonly string[],
+  denySet: ReadonlySet<string>,
+): string[] {
+  return tables.filter((t) => !denySet.has(t));
+}
+
+/**
+ * Pure helper: render the schema-context text block from a list of
+ * `{ table, count }` rows. Mirrors the historical format
+ * "Tables (approx row counts):\n<table>: ~<n> rows\n…" so existing AI
+ * prompts see no change. Extracted for unit testing.
+ */
+export function formatSchemaContext(
+  rows: ReadonlyArray<{ table: string; count: number | null }>,
+): string {
+  const lines = rows.map((r) => `${r.table}: ~${r.count ?? 0} rows`);
+  return "Tables (approx row counts):\n" + lines.join("\n");
+}
+
+/**
+ * Load the set of `schema.table` names flagged PHI-adjacent
+ * (`patient_safe=false AND is_enabled=true`) from `core.ai_scope`.
+ *
+ * The `ai_scope_read` RLS policy (`USING true`) lets any authenticated user
+ * SELECT — the DBA Console is behind `RequireAuth requireAdmin`, so the
+ * admin's session has access. Returns an empty Set on error so callers can
+ * proceed with the full table list (defensive fallback — better a working
+ * feature than a broken one; the PHI boundary is structurally enforced by
+ * the review-gate + DBA-2/DBA-3 whitelist on the *execute* path anyway).
+ */
+export async function loadPhiDenySet(): Promise<Set<string>> {
+  try {
+    const { data, error } = await supabase
+      .from("ai_scope")
+      .select("view_name")
+      .eq("is_enabled", true)
+      .eq("patient_safe", false);
+    if (error) return new Set();
+    return new Set((data ?? []).map((r) => (r as { view_name: string }).view_name));
+  } catch {
+    return new Set();
+  }
+}
+
+/**
  * Build a schema context string for the AI from current table list +
  * row counts (used by DBA-8/9 to give the model useful grounding).
+ *
+ * AISQL-phi-filter (ADR-0009 §2 follow-up): PHI-adjacent tables are
+ * dynamically dropped via `core.ai_scope` before row counts are fetched,
+ * so the provider never even sees them in the catalog.
  */
 export async function buildSchemaContext(): Promise<string> {
-  const tables = [
-    "wastewater.reading", "carbon.reading", "carbon.emission_factor",
-    "water_supply.daily_check", "garbage.collection_log", "fuel.dispense_log",
-    "garden.work_round", "building.inspection_round", "safety.monthly_check",
-    "food.lab_test", "chemical.master", "chemical.movement",
-    "core.repair_request", "core.personnel",
-  ];
-  const lines: string[] = [];
+  const denySet = await loadPhiDenySet();
+  const tables = filterPhiTables(SCHEMA_CONTEXT_TABLES, denySet);
+  const rows: { table: string; count: number | null }[] = [];
   for (const t of tables) {
     const name = t.split(".")[1];
     try {
       const { count } = await supabase.from(name!).select("*", { count: "exact", head: true });
-      lines.push(`${t}: ~${count ?? 0} rows`);
+      rows.push({ table: t, count });
     } catch {
-      lines.push(`${t}: ?`);
+      rows.push({ table: t, count: null });
     }
   }
-  return "Tables (approx row counts):\n" + lines.join("\n");
+  return formatSchemaContext(rows);
 }

@@ -1,6 +1,6 @@
 # WO-P4-suggest-chip: AiSuggestions — schema-aware query-suggestion chips in DBA Console
 
-Status: open
+Status: done (primary-verified 2026-07-21 — see Checkpoint log)
 Lane/files: `frontend/src/components/admin/AiSuggestions.tsx` (new) · `frontend/src/pages/admin/DBAConsolePage.tsx` (wire-in only)
 Branch: main
 Depends on: DBA-9 lib (`lib/admin/ai-sql.ts::suggestQueries` — shipped `ec4bc0d`), and ideally `P4-nl-sql` landed first (shares the `onUseSql` seam)
@@ -64,6 +64,13 @@ setMode("raw"); setRawSql(sql); }} />`. Reuse the exact `onUseSql` handler from
    → 0 hits (proves the component never executes).
 
 ## Checkpoint log
+
+- **2026-07-21 — primary verify (Opus 4.8):** shipped `704c56a`. `npm run build` ✓,
+  `vitest` 96/96 ✓, `playwright` 26/26 ✓. Guard `git grep -E "\.rpc\(|runRawQuery|runQuery"`
+  on `AiSuggestions.tsx` → 0 matches (never executes). Scrutinize read: chip click →
+  `onUseSql(s.sql)` only; loads on mount via the lib's 5-min cache (no second cache added);
+  provider error → empty state + toast. Review-gate holds. Manual chip flow needs a live
+  AI provider (user `/admin/ai` config). **PASS.**
 
 - 2026-07-21 (GLM execute, commit `<TBD>`): AiSuggestions shipped + wired
   below AiQueryBox, reusing the same `useAiSql` seam hoisted in P4-nl-sql.

@@ -9,7 +9,7 @@
  *   - คัดลอก SQL             → navigator.clipboard
  *   - ปิด / ถามใหม่           → clears the result panel
  *
- * There is intentionally NO `[รันเลย]` button. ADB-0009 §1: the admin must
+ * There is intentionally NO `[รันเลย]` button. ADR-0009 §1: the admin must
  * be the executor — the AI only proposes. The actual run still flows through
  * DBA-2 `isStatementAllowed()` + DBA-3 `admin_run_query`, unchanged.
  *

@@ -1,6 +1,6 @@
 # WO-P4-nl-sql: AiQueryBox — NL→SQL modal in DBA Console (review-gate)
 
-Status: open
+Status: done (primary-verified 2026-07-21 — see Checkpoint log)
 Lane/files: `frontend/src/components/admin/AiQueryBox.tsx` (new) · `frontend/src/pages/admin/DBAConsolePage.tsx` (wire-in only)
 Branch: main
 Depends on: DBA-8 lib (`lib/admin/ai-sql.ts` — shipped `ec4bc0d`), DBA-2 (`db-query.ts`), DBA-3 Edge Function (`admin_run_query`) for the *run* step
@@ -80,6 +80,14 @@ supersedes the DBA-8 WO's original draft).
    (proves no auto-run button).
 
 ## Checkpoint log
+
+- **2026-07-21 — primary verify (Opus 4.8):** shipped `4bf82e0`. `npm run build` ✓,
+  `vitest` 96/96 ✓, `playwright` 26/26 ✓. Guard `git grep "รันเลย"` → only a doc
+  comment stating the button is intentionally absent (no run control). Scrutinize read
+  of `AiQueryBox.tsx`: no `.rpc`/`runRawQuery`/`isStatementAllowed` call path, empty
+  question guarded, sends only `buildSchemaContext()` (no rows) → review-gate holds.
+  Fixed a stray `ADB-0009`→`ADR-0009` comment typo. Manual NL→SQL flow still needs a
+  live AI provider (user `/admin/ai` config). **PASS.**
 
 - 2026-07-21 (GLM execute, commit `<TBD>`): AiQueryBox.tsx shipped — review-gate
   (no run button, verified via `git grep -n "รันเลย" → 0 hits`). Seam hoisted

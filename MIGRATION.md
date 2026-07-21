@@ -314,6 +314,18 @@ binding rules are here.
 > **P4 trio complete.** 3/3 chunks shipped on `main`. Manual end-to-end
 > verify (admin login + AI provider configured in `/admin/ai`) still
 > owed — blocked on user dashboard config (Google/LINE providers).
+
+> **AISQL-phi-filter GLM execute done 2026-07-21** — closes the ADR-0009 §2
+> known limitation. `buildSchemaContext()` now reads `core.ai_scope`
+> (`is_enabled=true AND patient_safe=false`) into a deny-set and drops
+> PHI-adjacent tables before row-count fetches — provider never sees
+> `core.app_user` or `core.personnel` in the catalog. Pure helpers
+> (`filterPhiTables`, `formatSchemaContext`, `loadPhiDenySet`) extracted
+> for testability; defensive fallback (empty deny-set) keeps the feature
+> working if `ai_scope` is unreadable. Vitest 96→105 (+9 new unit tests) ·
+> build ✅ · Playwright 26/26 · live DB probe confirms `core.app_user` +
+> `core.personnel` filtered (13/15 tables reach AI). ADR-0009 §2 + §3
+> synced (`changed_at`/`bigint` correction + §2 marked Resolved).
 > already-shipped infrastructure. `lib/admin/ai-sql.ts` (nlToSql +
 > suggestQueries + buildSchemaContext) shipped in `ec4bc0d`; the
 > `public.audit_log` façade shipped in SCHEMA-5 (`20260719000011`).
