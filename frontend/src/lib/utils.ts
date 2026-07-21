@@ -25,13 +25,22 @@ export function thaiDate(d: string | Date): string {
 
 /** Whole days between today (local, midnight) and a YYYY-MM-DD string.
  * 0 when the date is today; positive for past dates.
- * Used by F7 stale-data fallback ("N วันก่อน"). */
+ * Used by F7 stale-data fallback ("N วันก่อน").
+ *
+ * FIX-1 (2026-07-21): previously used `new Date(isoDate)` which parses a
+ * bare "YYYY-MM-DD" as **UTC midnight** (per ES spec). Then setHours(0,0,0,0)
+ * shifts it back to local midnight, which — for positive tz offsets (e.g.
+ * Asia/Bangkok UTC+7) — moved the input date one day earlier, so daysSince
+ * returned N+1 instead of N. Tests that pin "today" via toISOString() (which
+ * is UTC) hit the same off-by-one. Parse the date-only string as local
+ * explicitly by splitting on '-' and using new Date(y, m-1, d). */
 export function daysSince(isoDate: string): number {
   const today = new Date();
   today.setHours(0, 0, 0, 0);
-  const d = new Date(isoDate);
-  d.setHours(0, 0, 0, 0);
-  return Math.round((today.getTime() - d.getTime()) / 86_400_000);
+  const [y, m, d] = isoDate.split("-").map(Number);
+  const input = new Date(y, m - 1, d);
+  input.setHours(0, 0, 0, 0);
+  return Math.round((today.getTime() - input.getTime()) / 86_400_000);
 }
 
 /** Month-over-month % change. null when prev is 0/missing (no baseline).

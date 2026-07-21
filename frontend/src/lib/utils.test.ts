@@ -80,22 +80,34 @@ describe("thaiDate", () => {
 
 // ─── daysSince ──────────────────────────────────────────────────────────
 
+// FIX-1 (2026-07-21): helper to format a Date as a local YYYY-MM-DD string.
+// The previous tests used toISOString().slice(0,10) which is UTC — under a
+// positive tz offset (e.g. Asia/Bangkok UTC+7) that means "today UTC" can
+// land on yesterday's date when re-parsed as local, producing off-by-one.
+// Production callers feed dates that are already local YYYY-MM-DD (e.g.
+// from thaiDate() or DB columns), so the test must mirror that.
+function localIso(d: Date): string {
+  const y = d.getFullYear();
+  const m = String(d.getMonth() + 1).padStart(2, "0");
+  const day = String(d.getDate()).padStart(2, "0");
+  return `${y}-${m}-${day}`;
+}
+
 describe("daysSince", () => {
   it("returns 0 for today's date", () => {
-    const today = new Date().toISOString().slice(0, 10);
-    expect(daysSince(today)).toBe(0);
+    expect(daysSince(localIso(new Date()))).toBe(0);
   });
 
   it("returns 1 for yesterday", () => {
     const d = new Date();
     d.setDate(d.getDate() - 1);
-    expect(daysSince(d.toISOString().slice(0, 10))).toBe(1);
+    expect(daysSince(localIso(d))).toBe(1);
   });
 
   it("returns N for N days ago", () => {
     const d = new Date();
     d.setDate(d.getDate() - 15);
-    expect(daysSince(d.toISOString().slice(0, 10))).toBe(15);
+    expect(daysSince(localIso(d))).toBe(15);
   });
 
   it("computes N days back accurately across month boundary", () => {
@@ -105,7 +117,7 @@ describe("daysSince", () => {
     const today = new Date();
     // Pin to 35 days back so it crosses at least one 30/31-day month end.
     today.setDate(today.getDate() - 35);
-    expect(daysSince(today.toISOString().slice(0, 10))).toBe(35);
+    expect(daysSince(localIso(today))).toBe(35);
   });
 });
 
