@@ -285,7 +285,6 @@ binding rules are here.
 
 | Chunk | Agent | Claimed | Scope (files) |
 |---|---|---|---|
-| P4-suggest-chip | GLM (Track Z) | 2026-07-21 | `frontend/src/components/admin/AiSuggestions.tsx` (new) · `frontend/src/pages/admin/DBAConsolePage.tsx` (wire-in only, reuses `useAiSql` seam) |
 
 > **P4 ใหม่ 2026-07-21 (ADR-0009): AI-SQL UI trio** — three WOs over
 > already-shipped infrastructure. `lib/admin/ai-sql.ts` (nlToSql +
@@ -307,7 +306,14 @@ binding rules are here.
 > corrected from WO draft against live snapshot**: `id bigint` (not
 > uuid) + `changed_at` (not `created_at`). Material Symbols subset
 > regen 51→52. anon GET `/rest/v1/audit_log` → `401/42501`. build ✅ ·
-> Vitest 96/96 · Playwright 26/26. [next: P4-suggest-chip].
+> Vitest 96/96 · Playwright 26/26.
+> **P4-suggest-chip GLM execute done 2026-07-21** — AiSuggestions panel
+> reusing the same `useAiSql` seam hoisted in P4-nl-sql · build ✅ ·
+> Vitest 96/96 · Playwright 26/26 · `git grep -nE "\.rpc\(|runRawQuery|
+> runQuery" → 0 hits` (review-gate holds).
+> **P4 trio complete.** 3/3 chunks shipped on `main`. Manual end-to-end
+> verify (admin login + AI provider configured in `/admin/ai`) still
+> owed — blocked on user dashboard config (Google/LINE providers).
 > already-shipped infrastructure. `lib/admin/ai-sql.ts` (nlToSql +
 > suggestQueries + buildSchemaContext) shipped in `ec4bc0d`; the
 > `public.audit_log` façade shipped in SCHEMA-5 (`20260719000011`).

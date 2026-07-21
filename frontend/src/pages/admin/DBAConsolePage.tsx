@@ -32,6 +32,7 @@ import {
   type SavedQuery,
 } from "../../lib/admin/saved-query";
 import { AiQueryBox } from "../../components/admin/AiQueryBox";
+import { AiSuggestions } from "../../components/admin/AiSuggestions";
 
 const TABLES = [
   "wastewater.reading", "carbon.reading", "carbon.emission_factor",
@@ -175,6 +176,7 @@ export function DBAConsolePage() {
       <h1 className="text-2xl font-bold font-thai">DBA Console — จัดการ database</h1>
 
       <AiQueryBox onUseSql={useAiSql} />
+      <AiSuggestions onUseSql={useAiSql} />
 
       <div className="flex gap-2">
         <Button variant={mode === "builder" ? "primary" : "secondary"} onClick={() => setMode("builder")}>Builder</Button>

@@ -64,3 +64,10 @@ setMode("raw"); setRawSql(sql); }} />`. Reuse the exact `onUseSql` handler from
    → 0 hits (proves the component never executes).
 
 ## Checkpoint log
+
+- 2026-07-21 (GLM execute, commit `<TBD>`): AiSuggestions shipped + wired
+  below AiQueryBox, reusing the same `useAiSql` seam hoisted in P4-nl-sql.
+  No second cache (relies on the lib's 5-min TTL). รีเฟรช button for manual
+  reload. Verify: build ✅ · Vitest 96/96 · Playwright 26/26 · `git grep
+  -nE "\.rpc\(|runRawQuery|runQuery" → 0 hits` (review-gate holds — chip
+  click loads into editor only, never executes).
