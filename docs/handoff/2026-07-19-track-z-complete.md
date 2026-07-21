@@ -1572,3 +1572,97 @@ GLM พร้อมพัก / รอคำสั่งใหม่.
 
 *GLM5.2 FIX-1 + DOCS-4, 2026-07-21 — 2 commits · Vitest 96/96 green ·
 ADR-0008 recursion lesson captured · รอ Fable5 verify + Opus execute FastAPI/P4.*
+
+---
+
+## GLM P4 trio execute — 2026-07-21 (commits 4bf82e0, 2a62146, 704c56a)
+
+User dispatched the 3 P4 WOs (NL→SQL → audit-viewer → suggest-chip) written
+in commit `95e23d9` (ADR-0009 review-gate AI-SQL UI). All 3 chunks shipped
+back-to-back on `main`. **No FastAPI, no new SQL, no new auth surface — all
+three reuse infrastructure that already landed.**
+
+### Commits
+
+| Chunk | Commit | Result |
+|---|---|---|
+| P4-nl-sql | `4bf82e0` | `AiQueryBox.tsx` (new) + `DBAConsolePage` wire-in. Hoisted `useAiSql(sql)` seam for P4-suggest-chip reuse. |
+| P4-audit-viewer | `2a62146` | `lib/admin/audit-log.ts` + `AuditLogPage.tsx` + `/admin/audit` route + NAV entry (`history_edu`). |
+| P4-suggest-chip | `704c56a` | `AiSuggestions.tsx` (new) + `DBAConsolePage` wire-in (reuses `useAiSql`). |
+
+### Verify (all 3 chunks)
+
+- build ✅ · Vitest **96/96** ✅ · Playwright **26/26** ✅
+- P4-nl-sql: `git grep "รันเลย" → 0 hits` (no auto-run button)
+- P4-audit-viewer: **column-contract correction against live snapshot** —
+  `core.audit_log.id` is `bigint` (not `uuid`) and the time column is
+  `changed_at` (not `created_at`); WO's draft list was wrong, corrected in lib.
+- P4-audit-viewer: anon GET `/rest/v1/audit_log?limit=1` → **HTTP 401/42501**
+  "permission denied for table audit_log" (admin gate holds at DB layer)
+- P4-audit-viewer: extended `modules.spec.ts` to assert `/admin/users` +
+  `/admin/audit` hidden for anon (regression guard)
+- P4-suggest-chip: `git grep -nE "\.rpc\(|runRawQuery|runQuery" → 0 hits`
+  (review-gate holds — chip loads into editor only)
+- Material Symbols subset regen 51→52 icons (`history_edu` added by
+  `gen-msymbol-subset.mjs` auto-scan from src)
+
+### ADR-0009 review-gate — confirmed structurally
+
+The AI never executes SQL. The integration seam is identical for both AI
+components: `setMode("raw"); setRawSql(generatedSql)` — the admin then clicks
+the existing รัน button which still routes through `isStatementAllowed` →
+`runRawQuery` → `admin_run_query` (DBA-3 Edge Function, unchanged).
+
+### ส่งต่อ Fable5 — verify P4 trio + polish
+
+Verify (Track Z review):
+1. **P4-nl-sql review-gate** — grep `AiQueryBox.tsx` for any execute call;
+   confirm `onUseSql` only loads into editor.
+2. **P4-audit-viewer column contract** — confirm `id bigint` + `changed_at`
+   is the live reality (cross-check `reports/schema-snapshot-live.md`);
+   flag if a future snapshot script regen sees different columns.
+3. **P4-suggest-chip seam reuse** — confirm `AiSuggestions` and `AiQueryBox`
+   share the same `useAiSql` callback (no duplicated state plumbing).
+
+Polish (Track F):
+4. `AiQueryBox` — the result panel could use animation on appearance; the
+   warnings block could use a stronger amber emphasis.
+5. `AiSuggestions` — chip hover is minimal; track-f could lift it (cyan
+   glow on hover, subtle scale).
+6. `AuditLogPage` — the expand row is plain; could use a slide-down
+   animation + better JSON syntax emphasis.
+7. NAV "บันทึกตรวจสอบ" — the new `history_edu` icon sits next to "รออนุมัติ"
+   in the ผู้ดูแล section; verify the section reads well visually.
+
+### ส่งต่อ user — manual end-to-end smoke test
+
+P4 features need an AI provider configured (`/admin/ai` page) + admin login
+to test the NL→SQL + suggestion chip path end-to-end. This is the same
+dashboard-config prerequisite as the OAUTH trio — so once Google/LINE are
+configured and `a.richbusinessman@gmail.com` can log in:
+1. Visit `/admin/ai` → confirm a provider is enabled (OpenRouter free tier
+   already configured?).
+2. Visit `/admin/db` → AiQueryBox (top) — type
+   `แสดงค่า DO ที่ต่ำกว่า 2 ล่าสุด 30 วัน` → expect SQL + explanation.
+3. Click **ส่ง SQL ไปที่ Editor** → editor flips to raw mode with the SQL.
+4. Click existing **รัน** → if DBA-3 Edge Function is deployed, results
+   render; otherwise expected `PGRST202` "RPC not found" (ADR-0009
+   §Consequences).
+5. Below AiQueryBox: AiSuggestions panel — 3-5 chips render on mount.
+6. `/admin/audit` — recent audit rows show (filter by action=UPDATE,
+   expand a row → JSON renders).
+
+### GLM Track Z backlog — แห้งอีกครั้ง
+
+หลัง P4 trio land, งานที่เหลือทั้งหมด blocked เหมือนเดิม:
+- user config dashboard (PC) → OAUTH end-to-end test → AI provider check
+- Fable5 (week-limit) → verify P4 trio + OAUTH commits + FastAPI removal
+- Opus 4.8 → FastAPI removal (Approach C) — prompt ส่งออกแล้ว
+- A-Wiki entity fill → ต้องเช็ค `../A-Wiki` mount
+- AISQL-phi-filter follow-up (cheap-ok, deferred per ADR-0009 §2) — only
+  matters once a PHI-adjacent table lands in ENV_DB
+
+GLM พร้อมพัก / รอคำสั่งใหม่.
+
+*GLM5.2 P4 trio, 2026-07-21 — 3 commits · Vitest 96/96 · Playwright 26/26 ·
+ADR-0009 review-gate structurally confirmed · รอ Fable5 verify + user smoke.*
