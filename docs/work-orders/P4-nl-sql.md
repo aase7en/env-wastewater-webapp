@@ -80,3 +80,8 @@ supersedes the DBA-8 WO's original draft).
    (proves no auto-run button).
 
 ## Checkpoint log
+
+- 2026-07-21 (GLM execute, commit `<TBD>`): AiQueryBox.tsx shipped — review-gate
+  (no run button, verified via `git grep -n "รันเลย" → 0 hits`). Seam hoisted
+  to `DBAConsolePage::useAiSql(sql)` for P4-suggest-chip to reuse. Ctrl/Cmd+Enter
+  submits (generates only — never runs). Build ✅ · Vitest 96/96 · Playwright 26/26.

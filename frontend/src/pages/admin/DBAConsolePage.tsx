@@ -31,6 +31,7 @@ import {
   incrementRunCount,
   type SavedQuery,
 } from "../../lib/admin/saved-query";
+import { AiQueryBox } from "../../components/admin/AiQueryBox";
 
 const TABLES = [
   "wastewater.reading", "carbon.reading", "carbon.emission_factor",
@@ -63,6 +64,16 @@ export function DBAConsolePage() {
   // Raw SQL state
   const [rawSql, setRawSql] = useState("SELECT * FROM carbon.reading LIMIT 5;");
   const [explainText, setExplainText] = useState<string | null>(null);
+
+  // P4 (ADR-0009 review-gate): shared seam for AiQueryBox + AiSuggestions.
+  // Loads generated/suggested SQL into the raw editor for human review —
+  // never executes. The admin still clicks the existing รัน button, which
+  // routes through DBA-2 `isStatementAllowed` + DBA-3 `admin_run_query`.
+  function useAiSql(sql: string) {
+    setMode("raw");
+    setRawSql(sql);
+    toast("info", "โหลด SQL ลง Editor แล้ว — ตรวจสอบก่อนกดรัน");
+  }
 
   useEffect(() => {
     listSavedQueries().then(setSaved).catch((e: Error) => {
@@ -162,6 +173,8 @@ export function DBAConsolePage() {
   return (
     <div className="p-4 space-y-4">
       <h1 className="text-2xl font-bold font-thai">DBA Console — จัดการ database</h1>
+
+      <AiQueryBox onUseSql={useAiSql} />
 
       <div className="flex gap-2">
         <Button variant={mode === "builder" ? "primary" : "secondary"} onClick={() => setMode("builder")}>Builder</Button>

@@ -285,7 +285,6 @@ binding rules are here.
 
 | Chunk | Agent | Claimed | Scope (files) |
 |---|---|---|---|
-| P4-nl-sql | GLM (Track Z) | 2026-07-21 | `frontend/src/components/admin/AiQueryBox.tsx` (new), `frontend/src/pages/admin/DBAConsolePage.tsx` (wire-in only) |
 
 > **P4 ใหม่ 2026-07-21 (ADR-0009): AI-SQL UI trio** — three WOs over
 > already-shipped infrastructure. `lib/admin/ai-sql.ts` (nlToSql +
@@ -298,8 +297,10 @@ binding rules are here.
 > through DBA-2 whitelist + DBA-3 Edge Function). Three chunks:
 > P4-nl-sql (mid) → P4-audit-viewer (mid) → P4-suggest-chip (cheap-ok).
 > WO: `docs/work-orders/P4-{nl-sql,audit-viewer,suggest-chip}.md`.
-> **P4-nl-sql GLM execute in-progress 2026-07-21** — AiQueryBox +
-> wire-in. [next: P4-audit-viewer].
+> **P4-nl-sql GLM execute done 2026-07-21** — AiQueryBox shipped +
+> wired into DBAConsolePage (hoisted `useAiSql` seam for P4-suggest-chip
+> reuse) · build ✅ · Vitest 96/96 · Playwright 26/26 · `git grep รันเลย
+> → 0 hits`. [next: P4-audit-viewer].
 
 > **P1 ใหม่ 2026-07-21 (user request): OAUTH — Google + LINE login** —
 > `AuthPage` มีปุ่ม Google/LINE แต่ไม่ทำงาน (provider ยังไม่ config) +
