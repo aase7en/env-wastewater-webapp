@@ -285,6 +285,7 @@ binding rules are here.
 
 | Chunk | Agent | Claimed | Scope (files) |
 |---|---|---|---|
+| P4-suggest-chip | GLM (Track Z) | 2026-07-21 | `frontend/src/components/admin/AiSuggestions.tsx` (new) · `frontend/src/pages/admin/DBAConsolePage.tsx` (wire-in only, reuses `useAiSql` seam) |
 
 > **P4 ใหม่ 2026-07-21 (ADR-0009): AI-SQL UI trio** — three WOs over
 > already-shipped infrastructure. `lib/admin/ai-sql.ts` (nlToSql +
