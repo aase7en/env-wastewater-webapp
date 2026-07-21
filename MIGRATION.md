@@ -285,6 +285,7 @@ binding rules are here.
 
 | Chunk | Agent | Claimed | Scope (files) |
 |---|---|---|---|
+| P4-audit-viewer | GLM (Track Z) | 2026-07-21 | `frontend/src/lib/admin/audit-log.ts` (new) · `frontend/src/pages/admin/AuditLogPage.tsx` (new) · `frontend/src/App.tsx` (route) · `frontend/src/components/layout/AppShell.tsx` (single NAV entry, Track F-mechanical) |
 
 > **P4 ใหม่ 2026-07-21 (ADR-0009): AI-SQL UI trio** — three WOs over
 > already-shipped infrastructure. `lib/admin/ai-sql.ts` (nlToSql +
