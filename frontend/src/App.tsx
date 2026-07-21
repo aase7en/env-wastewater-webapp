@@ -48,6 +48,9 @@ const AIAdminPage = lazy(() =>
 const PendingUsersPage = lazy(() =>
   import("./pages/admin/PendingUsersPage").then((m) => ({ default: m.PendingUsersPage })),
 );
+const AuditLogPage = lazy(() =>
+  import("./pages/admin/AuditLogPage").then((m) => ({ default: m.AuditLogPage })),
+);
 
 export default function App() {
   return (
@@ -174,6 +177,16 @@ export default function App() {
                       <RequireAuth requireAdmin>
                         <Suspense fallback={<PageSkeleton />}>
                           <PendingUsersPage />
+                        </Suspense>
+                      </RequireAuth>
+                    }
+                  />
+                  <Route
+                    path="/admin/audit"
+                    element={
+                      <RequireAuth requireAdmin>
+                        <Suspense fallback={<PageSkeleton />}>
+                          <AuditLogPage />
                         </Suspense>
                       </RequireAuth>
                     }

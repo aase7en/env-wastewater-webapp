@@ -102,3 +102,16 @@ export async function fetchAuditLog(f?: AuditLogFilter): Promise<AuditLogRow[]>;
    `action=UPDATE` + date filter → list narrows; expand a row → old/new JSON renders.
 
 ## Checkpoint log
+
+- 2026-07-21 (GLM execute, commit `<TBD>`): lib + page + route + NAV shipped.
+  - **Column contract divergence from this WO's draft**: live snapshot
+    `reports/schema-snapshot-live.md` `core.audit_log` shows `id bigint`
+    (not `uuid`) and `changed_at timestamptz` (not `created_at`). Both
+    corrected in `lib/admin/audit-log.ts` (the WO's own contract-check note
+    flagged this — verify step caught it).
+  - Read-only enforced (no edit/delete controls on the page).
+  - Verify: build ✅ · Vitest 96/96 · Playwright 26/26 (incl. extended
+    modules.spec — `/admin/users` + `/admin/audit` hidden for anon) ·
+    anon GET `/rest/v1/audit_log?limit=1` → `401/42501` (admin gate holds).
+  - Side effect: regen Material Symbols subset (51→52 icons, `history_edu`
+    added by `gen-msymbol-subset.mjs` auto-scan).

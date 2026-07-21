@@ -285,9 +285,28 @@ binding rules are here.
 
 | Chunk | Agent | Claimed | Scope (files) |
 |---|---|---|---|
-| P4-audit-viewer | GLM (Track Z) | 2026-07-21 | `frontend/src/lib/admin/audit-log.ts` (new) · `frontend/src/pages/admin/AuditLogPage.tsx` (new) · `frontend/src/App.tsx` (route) · `frontend/src/components/layout/AppShell.tsx` (single NAV entry, Track F-mechanical) |
 
 > **P4 ใหม่ 2026-07-21 (ADR-0009): AI-SQL UI trio** — three WOs over
+> already-shipped infrastructure. `lib/admin/ai-sql.ts` (nlToSql +
+> suggestQueries + buildSchemaContext) shipped in `ec4bc0d`; the
+> `public.audit_log` façade shipped in SCHEMA-5 (`20260719000011`).
+> **But the UI was never built** (`frontend/src/components/admin/` does
+> not exist). ADR-0009 sets the design: **review-gate** — the AI never
+> runs SQL, it lands the generated statement into the existing DBA
+> Console raw-SQL editor for human review (existing รัน button routes
+> through DBA-2 whitelist + DBA-3 Edge Function). Three chunks:
+> P4-nl-sql (mid) → P4-audit-viewer (mid) → P4-suggest-chip (cheap-ok).
+> WO: `docs/work-orders/P4-{nl-sql,audit-viewer,suggest-chip}.md`.
+> **P4-nl-sql GLM execute done 2026-07-21** — AiQueryBox shipped +
+> wired into DBAConsolePage (hoisted `useAiSql` seam for P4-suggest-chip
+> reuse) · build ✅ · Vitest 96/96 · Playwright 26/26 · `git grep รันเลย
+> → 0 hits`.
+> **P4-audit-viewer GLM execute done 2026-07-21** — lib + page + route
+> + NAV (`/admin/audit`, icon `history_edu`) shipped. **Column contract
+> corrected from WO draft against live snapshot**: `id bigint` (not
+> uuid) + `changed_at` (not `created_at`). Material Symbols subset
+> regen 51→52. anon GET `/rest/v1/audit_log` → `401/42501`. build ✅ ·
+> Vitest 96/96 · Playwright 26/26. [next: P4-suggest-chip].
 > already-shipped infrastructure. `lib/admin/ai-sql.ts` (nlToSql +
 > suggestQueries + buildSchemaContext) shipped in `ec4bc0d`; the
 > `public.audit_log` façade shipped in SCHEMA-5 (`20260719000011`).

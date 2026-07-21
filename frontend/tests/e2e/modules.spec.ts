@@ -49,7 +49,7 @@ test("sidebar exposes module + orphan routes; admin entries stay hidden (F8)", a
     // Both desktop + mobile sidebars render — at least one link per route.
     await expect(page.locator(`nav a[href$="${href}"]`).first()).toBeVisible();
   }
-  for (const href of ["/import", "/pdf-designer", "/admin/db", "/admin/ai"]) {
+  for (const href of ["/import", "/pdf-designer", "/admin/db", "/admin/ai", "/admin/users", "/admin/audit"]) {
     await expect(page.locator(`nav a[href$="${href}"]`)).toHaveCount(0);
   }
 });
