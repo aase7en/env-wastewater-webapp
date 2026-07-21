@@ -1517,3 +1517,58 @@ OAUTH-3 + P0 fixes") + docs/work-orders/OAUTH-{2,3}-*.md + docs/adr/
 *GLM5.2 OAUTH-2 + OAUTH-3, 2026-07-21 — 2 commits + 1 P0 fix · build ✅ ·
 Playwright 26/26 · migration 16/16 · RPC verified via REST (admin JWT) ·
 recursion fix verified (200 vs 500) · รอ Fable5 verify + user config dashboard.*
+
+---
+
+## GLM FIX-1 + DOCS-4 — 2026-07-21 (Vitest green + recursion lesson captured)
+
+User request: "ทำงานของ GLM ที่เหลือต่อเลย" — Opus 4.8 prompt ส่งออกแล้ว
+รอ execute. GLM รับ Track Z chunks ที่เหลือ (Vitest fix + ADR-0008).
+
+### Commit สรุป
+
+| Chunk | Commit | Tier | Files |
+|---|---|---|---|
+| FIX-1 daysSince UTC fix | `ec706f6` | cheap-ok Track Z | `frontend/src/lib/utils.ts`, `frontend/src/lib/utils.test.ts` |
+| DOCS-4 ADR-0008 recursion pattern | `2048485` | docs | `docs/adr/0008-rls-self-reference-recursion.md` (new) |
+
+### GLM self-verify
+
+| ข้อตรวจ | ผล |
+|---|---|
+| FIX-1 root cause | ✅ `new Date('YYYY-MM-DD')` parses as UTC; `setHours(0,0,0,0)` shifts to local midnight → +1 day off for tz+7 |
+| FIX-1 production code | ✅ `daysSince` parse date-only string as LOCAL via `new Date(y, m-1, d)` |
+| FIX-1 test code | ✅ add `localIso()` helper (mirror what production actually receives) |
+| FIX-1 Vitest | ✅ **96/96 (was 92/96)** — 4 pre-existing failures all green now |
+| FIX-1 build | ✅ |
+| DOCS-4 ADR | ✅ capture root cause + fix + alternatives + "when this applies" rule |
+
+### ส่งต่อ Fable5 — verify รวม FIX-1 + DOCS-4
+
+รวมเข้า dispatch #7 ข้างบน (เพิ่ม 2 commits):
+
+```
++ ec706f6  fix(FIX-1): daysSince UTC-vs-local off-by-one
++ 2048485 docs(adr): 0008-rls-self-reference-recursion (OAUTH-1b lesson)
+```
+
+เช็คเพิ่ม:
+1. **FIX-1** — root cause analysis ถูกไหม (ES spec ระบุ date-only string = UTC)
+2. **FIX-1 regression** — `thaiDate()` + F7 stale-line ใช้ `daysSince` — display
+   behavior เปลี่ยนไหม (ไม่ควร เพราะ production เดิมก็ feed local อยู่แล้ว
+   bug อยู่ที่ test เดิมใช้ UTC pin)
+3. **ADR-0008** — pattern ถูกไหม (SECURITY DEFINER bypass RLS = canonical
+   Supabase pattern), "when this applies" rule ครบไหม
+
+### GLM Track Z backlog — แห้งอีกครั้ง
+
+หลัง FIX-1 + DOCS-4 land, งานที่เหลือทั้งหมด blocked:
+- user config dashboard (PC) → OAUTH end-to-end test
+- Fable5 (week-limit) → verify 4 OAUTH commits + FastAPI removal + P4 design
+- Opus 4.8 → FastAPI removal + P4 design (prompt ส่งออกแล้ว)
+- A-Wiki entity fill → ต้องเช็ค `../A-Wiki` mount
+
+GLM พร้อมพัก / รอคำสั่งใหม่.
+
+*GLM5.2 FIX-1 + DOCS-4, 2026-07-21 — 2 commits · Vitest 96/96 green ·
+ADR-0008 recursion lesson captured · รอ Fable5 verify + Opus execute FastAPI/P4.*
