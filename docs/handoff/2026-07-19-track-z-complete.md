@@ -1666,3 +1666,52 @@ GLM พร้อมพัก / รอคำสั่งใหม่.
 
 *GLM5.2 P4 trio, 2026-07-21 — 3 commits · Vitest 96/96 · Playwright 26/26 ·
 ADR-0009 review-gate structurally confirmed · รอ Fable5 verify + user smoke.*
+
+---
+
+## GLM AISQL-phi-filter — 2026-07-21 (commit e7d666c)
+
+Closes the ADR-0009 §2 "known limitation" the P4 trio left open. `buildSchemaContext()` now reads `core.ai_scope` (`is_enabled=true AND patient_safe=false`) into a deny-set and drops PHI-adjacent tables **before** any row count is fetched — the provider never sees `core.app_user` or `core.personnel` in the catalog.
+
+### What changed
+
+- **`lib/admin/ai-sql.ts`**: 3 pure helpers extracted — `filterPhiTables(tables, denySet)`, `formatSchemaContext(rows)`, `loadPhiDenySet()` (async). `buildSchemaContext()` rewritten to use them. `SCHEMA_CONTEXT_TABLES` now includes `core.app_user` (filtered out at runtime). Defensive fallback: `loadPhiDenySet` returns `∅` on any error so the feature still works.
+- **`lib/admin/ai-sql.test.ts`** (new): 9 unit tests — deny-set exact-match + substring no-match + immutability + format + null/0/empty cases.
+- **`docs/adr/0009-*.md`**: §2 marked Resolved with implementation note; §3 column-name correction (`created_at`→`changed_at`, `uuid`→`bigint` per live snapshot).
+
+### Verify
+
+- build ✅ · Vitest **96→105** (+9) ✅ · Playwright **26/26** ✅
+- Live DB probe (via Supabase Management API + PAT) confirms end-to-end:
+  `ai_scope WHERE is_enabled=true AND patient_safe=false` → `{core.app_user, core.personnel}`.
+  After filter: 13/15 tables reach the AI. Both PHI tables absent from the
+  visible list — boundary holds structurally, not by convention.
+
+### ส่งต่อ Fable5
+
+Verify (Track Z review):
+1. **`filterPhiTables` exact-match contract** — the test pins this (substring
+   `core.app_user` ≠ `core.app_user_log`). If the implementation ever moves
+   to substring matching for "convenience", the PHI boundary silently breaks
+   — keep the exact-match.
+2. **Defensive fallback is correct direction** — error returns `∅` (=no
+   filtering), not `*` (=filter everything). The execute-path whitelist +
+   review-gate remain the structural backstop, so a broken `ai_scope` read
+   should degrade to "feature works" not "feature broken".
+3. **`core.app_user` is now in `SCHEMA_CONTEXT_TABLES`** — confirm this
+   doesn't surprise anyone in code review; it's intentional (filtered out
+   at runtime; makes the list self-documenting vs an implicit allowlist).
+
+### GLM Track Z backlog — แห้งอีกครั้ง (จริง ๆ ครั้งที่ 3)
+
+AISQL-phi-filter was the last deferred cheap-ok in ADR-0009. After this
+lands, the open Track Z items are all blocked:
+- user config dashboard (PC) → OAUTH + AI provider smoke
+- Fable5 (week-limit) → verify P4 trio + AISQL + OAUTH + FastAPI
+- Opus 4.8 → FastAPI removal (prompt sent)
+- A-Wiki entity sync — needs `../A-Wiki` mount check
+
+GLM พร้อมพัก / รอคำสั่งใหม่.
+
+*GLM5.2 AISQL-phi-filter, 2026-07-21 — 1 commit · Vitest 105/105 ·
+Playwright 26/26 · ADR-0009 §2 closed · live DB probe confirms PHI boundary.*
