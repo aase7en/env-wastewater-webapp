@@ -5,7 +5,7 @@
  * pure filter + format logic is what these tests lock down.
  */
 import { describe, it, expect } from "vitest";
-import { filterPhiTables, formatSchemaContext } from "./ai-sql";
+import { filterPhiTables, formatSchemaContext, STATIC_PHI_DENY } from "./ai-sql";
 
 describe("filterPhiTables", () => {
   it("drops tables present in the deny-set (exact schema.table match)", () => {
@@ -14,9 +14,18 @@ describe("filterPhiTables", () => {
     expect(filterPhiTables(tables, deny)).toEqual(["wastewater.reading", "carbon.reading"]);
   });
 
-  it("passes everything through when the deny-set is empty (defensive fallback)", () => {
+  it("passes everything through when the deny-set is empty", () => {
     const tables = ["a.b", "c.d"];
     expect(filterPhiTables(tables, new Set())).toEqual(["a.b", "c.d"]);
+  });
+
+  it("STATIC_PHI_DENY (fail-closed fallback) hides both people-tables", () => {
+    // REVIEW-9: when core.ai_scope is unreadable, loadPhiDenySet falls back
+    // to this set — an ai_scope outage must never widen provider visibility.
+    const tables = ["wastewater.reading", "core.app_user", "core.personnel"];
+    expect(filterPhiTables(tables, STATIC_PHI_DENY)).toEqual(["wastewater.reading"]);
+    expect(STATIC_PHI_DENY.has("core.app_user")).toBe(true);
+    expect(STATIC_PHI_DENY.has("core.personnel")).toBe(true);
   });
 
   it("returns a new array — does not mutate the input", () => {

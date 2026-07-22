@@ -1715,3 +1715,37 @@ GLM พร้อมพัก / รอคำสั่งใหม่.
 
 *GLM5.2 AISQL-phi-filter, 2026-07-21 — 1 commit · Vitest 105/105 ·
 Playwright 26/26 · ADR-0009 §2 closed · live DB probe confirms PHI boundary.*
+
+---
+
+## Fable5 review #9 — 2026-07-22 (verify backlog: AUTH-2 + OAuth chain + P4 trio + AISQL-phi-filter)
+
+ตรวจทุก commit หลัง review #8 (AUTH-2 `f2b7527`, OAUTH-1/1b/2/3 `13ac9c5`/`1394d2a`/`c6f51fc`/`f85c451`, FIX-1 `ec706f6`, P4 trio `4bf82e0`/`2a62146`/`704c56a`, AISQL-phi-filter `e7d666c` + migrations 000013/000000/000001/000002) — อ่าน diff จริง + live SQL probes + visual spot-check 4 หน้าใหม่
+
+### ผล: ผ่านทั้งหมด — defect 1 (แก้แล้วใน commit นี้) + nit 1 (แก้แล้ว) + note 2
+
+**Security probes (Supabase MCP, `begin…rollback` ทุกตัว — ไม่แตะข้อมูลจริง):**
+1. Catalog: `app_user_admin_all` ใช้ `core.fn_is_admin()` (non-recursive) จริง; `app_user_read` = own-row; trigger `trg_provision_app_user` (auth.users) + `trg_audit_log` (core.app_user) มีครบ ✓
+2. Non-admin (fake sub): เห็น 0 แถว + `UPDATE role='staff'` บนแถว admin โดน RLS กรอง = 0 rows — **enumerate ไม่ได้ / escalate ไม่ได้** ✓
+3. Non-admin เรียก `public.fn_approve_user` ตรง → `42501 permission denied: admin role required` — **fail-closed** ✓ (แม้ EXECUTE จะ grant ถึง ก็ติดเช็คใน body)
+4. Admin sub จริง: `fn_is_admin()=true`, เห็นครบทุกแถว ✓
+5. `core.ai_scope`: 15 แถว, `core.app_user`+`core.personnel` = `patient_safe=false` ✓
+6. Provisioning trigger: role hardcode `'pending'` — metadata จาก OAuth คุมได้แค่ display_name; `fn_approve_user` promote ได้แค่ `staff` (ไม่มีทาง →admin ผ่าน RPC) ✓
+
+**Client:** AUTH-1 dual-loading + stale-guard ถูกต้อง; AUTH-2 query ตรง schema + `is_active=false` → not-authenticated ✓; RequireAuth pending → `/pending-approval` ✓; AiQueryBox review-gate ไม่มี execute path — hand-off ไป editor ที่ผ่าน `isStatementAllowed` + server re-check ✓
+
+**Regression:** Vitest 105→106/106 · build ✓ · Playwright 26/26 · prod e2e (e2e.yml) เขียวถึง `e7d666c` ✓
+
+**Visual (Playwright seeded-session tour — screenshot 4 หน้าใหม่):** pending user deep-link `/readings` → เด้ง `/pending-approval` ถูก (ไม่ใช่ /login — AUTH-1 พิสูจน์ด้วยตา); `/admin/users` คิว 2 แถว + อนุมัติ/ปฏิเสธ ✓; `/admin/audit` filters + read-only ✓; `/admin/db` AI box ครบ ✓
+
+### แก้ใน commit นี้ (Fable5 direct — เล็กเกินกว่าจะออก WO)
+
+- 🔴→✅ **AISQL fail-open fallback**: `loadPhiDenySet` เดิมคืน `Set()` ว่างเมื่อ `ai_scope` อ่านไม่ได้ = fail-open (ขัด doc comment ของ `SCHEMA_CONTEXT_TABLES` ที่อ้างว่ามี env-only fallback — ไม่มีจริง) → เพิ่ม `STATIC_PHI_DENY = {core.app_user, core.personnel}` เป็น fallback **fail-closed** + unit test lock ไว้ (Vitest 106) — ตอบข้อ 2 ในโน้ต GLM: ได้ทั้ง "feature works" (env tables ยังครบ) และ "boundary holds"
+- 🟡→✅ **AiSuggestions auto-load on mount**: `useEffect(load)` ยิง AI provider + N count-queries ทันทีที่เปิด DBA Console (เห็น error toast ×2 ใน tour เมื่อไม่มี provider) ขัด caption "คลิกเพื่อโหลด" + cost-first → ตัด auto-load, ต้องกด "รีเฟรช" เอง + แยก empty-state (ยังไม่โหลด vs โหลดแล้วว่าง)
+
+### Notes (ไม่ต้องแก้)
+
+- Migration timestamp order nit: `000001` (OAUTH-3 อ้าง `fn_is_admin`) มาก่อน `000002` (สร้าง `fn_is_admin`) — replay-safe เพราะ plpgsql ไม่ resolve body ตอน CREATE; บันทึกไว้เฉย ๆ
+- FastAPI removal ยังเปิด (มอบ Opus 4.8 — ยังไม่มี commit ให้ตรวจ)
+
+— Fable5 review #9, 2026-07-22 · dispatch #5/#6/#7 + P4/AISQL closes = **ปิดครบ**

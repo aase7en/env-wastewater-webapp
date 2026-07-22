@@ -17,7 +17,7 @@
  * Track Z: minimal markup. Track F owns polish (chip hover animation,
  * layout/grid emphasis).
  */
-import { useEffect, useState } from "react";
+import { useState } from "react";
 import { useToast } from "../ui/Toast";
 import { AuraCard } from "../ui/AuraCard";
 import { Button } from "../ui/Button";
@@ -51,9 +51,10 @@ export function AiSuggestions({ onUseSql }: AiSuggestionsProps) {
     }
   }
 
-  // Load on mount. The lib's 5-min cache means re-mounts within that window
-  // don't re-call the provider.
-  useEffect(() => { void load(); }, []);
+  // REVIEW-9: no auto-load on mount. Loading calls the paid AI provider
+  // (plus N row-count queries) — that egress must be an explicit admin
+  // action, matching the "คลิกเพื่อโหลด" caption and the cost-first rule.
+  // The lib's 5-min cache still dedupes repeat clicks within the window.
 
   return (
     <AuraCard className="p-4 space-y-3">
@@ -76,9 +77,13 @@ export function AiSuggestions({ onUseSql }: AiSuggestionsProps) {
             </div>
           ))}
         </div>
-      ) : !items || items.length === 0 ? (
+      ) : items === null ? (
         <div className="text-sm text-aura-textMuted font-thai">
-          ยังไม่มีคำแนะนำ — ลองรัน query หรือ save query ก่อน
+          กด "รีเฟรช" เพื่อขอคำแนะนำจาก AI (เรียก provider เมื่อสั่งเท่านั้น)
+        </div>
+      ) : items.length === 0 ? (
+        <div className="text-sm text-aura-textMuted font-thai">
+          ยังไม่มีคำแนะนำ — ลองรัน query หรือ save query ก่อน แล้วรีเฟรชใหม่
         </div>
       ) : (
         <ul className="space-y-2">

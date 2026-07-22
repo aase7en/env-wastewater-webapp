@@ -133,9 +133,8 @@ export async function annotateRow(
  * PHI boundary: tables flagged `patient_safe=false` in `core.ai_scope`
  * (currently `core.app_user`, `core.personnel`) are filtered out at runtime
  * by `loadPhiDenySet` + `filterPhiTables` — see AISQL-phi-filter (ADR-0009 §2
- * follow-up). Even though some appear in this list, they never reach the
- * provider unless `ai_scope` is unreadable (then we keep the historical
- * hardcoded env-only subset as a defensive fallback).
+ * follow-up). When `ai_scope` is unreadable the filter fails CLOSED via
+ * `STATIC_PHI_DENY`, so the people-tables never reach the provider on error.
  */
 const SCHEMA_CONTEXT_TABLES = [
   "wastewater.reading", "carbon.reading", "carbon.emission_factor",
@@ -174,15 +173,26 @@ export function formatSchemaContext(
 }
 
 /**
+ * Static fallback deny-set — the people-tables known PHI-adjacent at build
+ * time. Used only when `core.ai_scope` is unreadable, so the filter fails
+ * CLOSED: an outage of the scope table must never widen what the provider
+ * sees (REVIEW-9 fix — the previous fallback was an empty set = fail-open,
+ * contradicting the SCHEMA_CONTEXT_TABLES doc comment).
+ */
+export const STATIC_PHI_DENY: ReadonlySet<string> = new Set([
+  "core.app_user",
+  "core.personnel",
+]);
+
+/**
  * Load the set of `schema.table` names flagged PHI-adjacent
  * (`patient_safe=false AND is_enabled=true`) from `core.ai_scope`.
  *
  * The `ai_scope_read` RLS policy (`USING true`) lets any authenticated user
  * SELECT — the DBA Console is behind `RequireAuth requireAdmin`, so the
- * admin's session has access. Returns an empty Set on error so callers can
- * proceed with the full table list (defensive fallback — better a working
- * feature than a broken one; the PHI boundary is structurally enforced by
- * the review-gate + DBA-2/DBA-3 whitelist on the *execute* path anyway).
+ * admin's session has access. On error, falls back to `STATIC_PHI_DENY`
+ * (fail-closed) — the feature keeps working with the env tables while the
+ * people-tables stay hidden from the provider.
  */
 export async function loadPhiDenySet(): Promise<Set<string>> {
   try {
@@ -191,10 +201,10 @@ export async function loadPhiDenySet(): Promise<Set<string>> {
       .select("view_name")
       .eq("is_enabled", true)
       .eq("patient_safe", false);
-    if (error) return new Set();
+    if (error) return new Set(STATIC_PHI_DENY);
     return new Set((data ?? []).map((r) => (r as { view_name: string }).view_name));
   } catch {
-    return new Set();
+    return new Set(STATIC_PHI_DENY);
   }
 }
 
