@@ -55,3 +55,45 @@ jobs:
           name: playwright-results
           path: frontend/test-results/
           retention-days: 7
+
+  # ─────────────────────────────────────────────────────────────────
+  # Telegram notify — failure on main + every PR result.
+  #
+  # e2e.yml triggers on frontend/** changes + PRs, so notifying every
+  # success would be noisy. Choice: stay silent on push+pass, alert on
+  # push+fail AND on every PR (success + failure) so PR status is visible
+  # real-time without opening GitHub.
+  #
+  # Defensive gate: GitHub forbids `secrets.*` in job-level `if:` (logs may
+  # leak the expression), so secrets are hoisted to env vars and checked in
+  # the step. Workflow stays green until you set TELEGRAM_BOT_TOKEN +
+  # TELEGRAM_CHAT_ID in repo Secrets. Setup: docs/handoff/2026-07-19-
+  # track-z-complete.md "Telegram alert setup" section.
+  # ─────────────────────────────────────────────────────────────────
+  notify:
+    needs: smoke
+    if: always() && (github.event_name == 'pull_request' || failure())
+    runs-on: ubuntu-latest
+    env:
+      BOT_TOKEN: ${{ secrets.TELEGRAM_BOT_TOKEN }}
+      CHAT_ID: ${{ secrets.TELEGRAM_CHAT_ID }}
+    steps:
+      - name: Skip if Telegram secrets not configured
+        if: env.BOT_TOKEN == '' || env.CHAT_ID == ''
+        run: echo "::notice::Telegram secrets not set — skipping notify (set TELEGRAM_BOT_TOKEN + TELEGRAM_CHAT_ID in repo Secrets to enable)"
+
+      - name: Telegram notify
+        if: env.BOT_TOKEN != '' && env.CHAT_ID != ''
+        uses: appleboy/telegram-action@master
+        with:
+          to: ${{ env.CHAT_ID }}
+          token: ${{ env.BOT_TOKEN }}
+          format: html
+          message: |
+            <b>${{ github.repository }}</b> — E2E smoke tests
+            <b>ผล:</b> ${{ needs.smoke.result }}
+            <b>Event:</b> ${{ github.event_name }}
+            <b>Commit:</b> <code>${{ github.sha }}</code>
+            <b>Author:</b> ${{ github.actor }}
+            <b>Message:</b> ${{ github.event.head_commit.message }}
+            <b>Run:</b> <a href="${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}">view logs</a>
