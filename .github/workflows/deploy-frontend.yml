@@ -85,3 +85,47 @@ jobs:
     steps:
       - id: deployment
         uses: actions/deploy-pages@v4
+
+  # ─────────────────────────────────────────────────────────────────
+  # Telegram notify on deploy result (success OR failure).
+  #
+  # always() → รันเสมอ ไม่ว่า build/deploy จะผ่านหรือ fail
+  # Defensive: skips silently if TELEGRAM_BOT_TOKEN / TELEGRAM_CHAT_ID
+  # aren't configured yet — workflow stays green until you set them up
+  # (Settings → Secrets and variables → Actions → New repository secret).
+  # Setup how-to: docs/handoff/2026-07-19-track-z-complete.md
+  # "Telegram alert setup" section.
+  #
+  # GitHub Actions forbids `secrets.*` in job-level `if:` (logs may leak
+  # the expression). The standard pattern is env-var indirection: hoist
+  # the secret to an env var on the job, then check the env var in the
+  # step instead. The job itself runs unconditionally via `always()`.
+  # ─────────────────────────────────────────────────────────────────
+  notify:
+    needs: [build, deploy]
+    if: always()
+    runs-on: ubuntu-latest
+    env:
+      BOT_TOKEN: ${{ secrets.TELEGRAM_BOT_TOKEN }}
+      CHAT_ID: ${{ secrets.TELEGRAM_CHAT_ID }}
+    steps:
+      - name: Skip if Telegram secrets not configured
+        id: gate
+        if: ${{ env.BOT_TOKEN == '' || env.CHAT_ID == '' }}
+        run: echo "::notice::Telegram secrets not set — skipping notify (set TELEGRAM_BOT_TOKEN + TELEGRAM_CHAT_ID in repo Secrets to enable)"
+
+      - name: Telegram notify
+        if: ${{ env.BOT_TOKEN != '' && env.CHAT_ID != '' }}
+        uses: appleboy/telegram-action@master
+        with:
+          to: ${{ env.CHAT_ID }}
+          token: ${{ env.BOT_TOKEN }}
+          format: html
+          message: |
+            <b>${{ github.repository }}</b> — Deploy
+            <b>ผล:</b> ${{ needs.deploy.result }}
+            <b>Commit:</b> <code>${{ github.sha }}</code>
+            <b>Author:</b> ${{ github.actor }}
+            <b>Message:</b> ${{ github.event.head_commit.message }}
+            <b>Run:</b> <a href="${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}">view logs</a>
+
