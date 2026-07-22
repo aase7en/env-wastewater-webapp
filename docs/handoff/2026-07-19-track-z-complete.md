@@ -1749,3 +1749,83 @@ Playwright 26/26 · ADR-0009 §2 closed · live DB probe confirms PHI boundary.*
 - FastAPI removal ยังเปิด (มอบ Opus 4.8 — ยังไม่มี commit ให้ตรวจ)
 
 — Fable5 review #9, 2026-07-22 · dispatch #5/#6/#7 + P4/AISQL closes = **ปิดครบ**
+
+---
+
+## CI Telegram Alert — 2026-07-22 (commit 2535d82)
+
+เปิดใช้งาน Telegram notify ใน `.github/workflows/deploy-frontend.yml` —
+แจ้งผล deploy (success/failure) ไป Telegram แทน email เพื่อแก้ปัญหา email
+spam ที่ user เจอ
+
+### Defensive design
+Job `notify` ใช้ env-var indirection pattern (GitHub Actions ห้าม `secrets.*`
+ใน job-level `if:` — security restriction):
+- `always()` รันเสมอไม่ว่า build/deploy จะผ่านหรือ fail
+- env `BOT_TOKEN` + `CHAT_ID` โหลดจาก secrets
+- step แรก `Skip if Telegram secrets not configured` → ถ้ายังไม่มี
+  secret พิมพ์ notice + skip silently
+- step สอง `Telegram notify` → ยิง message จริงเมื่อมี secret ครบ
+
+ผล: workflow เขียวแม้ก่อน user ตั้ง secret — พร้อม activate ทันทีที่ตั้งค่า
+
+### Verify หลัง commit 2535d82
+- Run `29884010540`: build ✅ · deploy ✅ · notify ✅ (gate fired correctly
+  — notice "Telegram secrets not set — skipping notify" + skip Telegram
+  notify step)
+- Run ก่อนหน้า `29883810485` (commit 2d9b569): fail ทันที 0s เพราะใช้
+  `secrets.X != ''` ใน job-level `if:` → แก้ด้วย env-var indirection
+
+### 📱 Telegram setup steps (for user — ใช้เวลา ~10 นาที)
+
+#### 1. สร้าง Telegram Bot
+1. เปิด Telegram → ค้นหา `@BotFather`
+2. พิมพ์ `/newbot`
+3. ตั้งชื่อ: `ENV Wastewater CI`
+4. ตั้ง username: `env_wastewater_ci_bot` (ต้องลงท้ายด้วย `_bot`)
+5. BotFather จะส่ง **token** มาให้ — copy เก็บไว้ (รูปแบบ
+   `1234567890:ABCdefGHIjklMNOpqrSTUvwxYZ`)
+
+#### 2. หา chat_id
+1. เปิดแชต์กับ bot ที่สร้าง → ส่งข้อความอะไรก็ได้ (เช่น `/start`)
+2. เปิดเบราว์เซอร์ไปที่ (แทน `<TOKEN>` ด้วย token จากขั้น 1):
+   ```
+   https://api.telegram.org/bot<TOKEN>/getUpdates
+   ```
+3. หาบรรทัด `"chat":{"id":XXXXXXXXX,"first_name":...}`
+4. `XXXXXXXXX` คือ **chat_id** ของคุณ — copy เก็บไว้
+
+#### 3. เพิ่ม GitHub Secrets
+ไปที่:
+```
+https://github.com/aase7en/env-wastewater-webapp/settings/secrets/actions
+```
+- กด **"New repository secret"** → Name: `TELEGRAM_BOT_TOKEN` → Value: token
+  จากขั้น 1 → Add secret
+- กด **"New repository secret"** → Name: `TELEGRAM_CHAT_ID` → Value: chat_id
+  จากขั้น 2 → Add secret
+
+#### 4. ทดสอบ
+push commit อะไรก็ได้ (หรือแก้ frontend) → deploy run → Telegram จะได้:
+```
+📢 aase7en/env-wastewater-webapp — Deploy
+
+ผล: success
+Commit: abc1234...
+Author: aase7en
+Message: ...
+Run: view logs
+```
+
+ถ้า deploy fail → แจ้ง `ผล: failure` ทันที + link ไป log
+
+### ส่วนขยาย (deferred)
+- เพิ่ม alert ใน `test.yml` + `e2e.yml` (เดี๋ยวนี้มีแค่ deploy) — copy
+  pattern `notify` block ไปแปะได้
+- Auto-rollback เมื่อ smoke test fail (ADR/follow-up: ดู
+  `.github/workflows/_example_auto_rollback.yml` — ลบไปแล้วตอน cleanup
+  แต่โครงสร้างอยู่ใน handoff section ก่อนหน้า)
+- Custom domain `env.uthai.go.th` — ต้องประสาน IT รพ. ขอ DNS access
+
+*GLM5.2 CI Telegram alert, 2026-07-22 — workflow green + defensive gate
+verified · รอ user ตั้ง 2 secrets ที่ repo settings.*
