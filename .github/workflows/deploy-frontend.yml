@@ -85,3 +85,33 @@ jobs:
     steps:
       - id: deployment
         uses: actions/deploy-pages@v4
+
+  # ─────────────────────────────────────────────────────────────────
+  # Telegram notify on deploy result (success OR failure).
+  #
+  # always() → รันเสมอ ไม่ว่า build/deploy จะผ่านหรือ fail
+  # Defensive: skips silently if TELEGRAM_BOT_TOKEN / TELEGRAM_CHAT_ID
+  # aren't configured yet — workflow stays green until you set them up
+  # (Settings → Secrets and variables → Actions → New repository secret).
+  # Setup how-to: docs/handoff/2026-07-19-track-z-complete.md
+  # "Telegram alert setup" section.
+  # ─────────────────────────────────────────────────────────────────
+  notify:
+    needs: [build, deploy]
+    if: always() && secrets.TELEGRAM_BOT_TOKEN != '' && secrets.TELEGRAM_CHAT_ID != ''
+    runs-on: ubuntu-latest
+    steps:
+      - name: Telegram notify
+        uses: appleboy/telegram-action@master
+        with:
+          to: ${{ secrets.TELEGRAM_CHAT_ID }}
+          token: ${{ secrets.TELEGRAM_BOT_TOKEN }}
+          format: html
+          message: |
+            <b>${{ github.repository }}</b> — Deploy
+            <b>ผล:</b> ${{ needs.deploy.result }}
+            <b>Commit:</b> <code>${{ github.sha }}</code>
+            <b>Author:</b> ${{ github.actor }}
+            <b>Message:</b> ${{ github.event.head_commit.message }}
+            <b>Run:</b> <a href="${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}">view logs</a>
+
