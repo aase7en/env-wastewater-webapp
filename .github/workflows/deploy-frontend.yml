@@ -95,17 +95,31 @@ jobs:
   # (Settings → Secrets and variables → Actions → New repository secret).
   # Setup how-to: docs/handoff/2026-07-19-track-z-complete.md
   # "Telegram alert setup" section.
+  #
+  # GitHub Actions forbids `secrets.*` in job-level `if:` (logs may leak
+  # the expression). The standard pattern is env-var indirection: hoist
+  # the secret to an env var on the job, then check the env var in the
+  # step instead. The job itself runs unconditionally via `always()`.
   # ─────────────────────────────────────────────────────────────────
   notify:
     needs: [build, deploy]
-    if: always() && secrets.TELEGRAM_BOT_TOKEN != '' && secrets.TELEGRAM_CHAT_ID != ''
+    if: always()
     runs-on: ubuntu-latest
+    env:
+      BOT_TOKEN: ${{ secrets.TELEGRAM_BOT_TOKEN }}
+      CHAT_ID: ${{ secrets.TELEGRAM_CHAT_ID }}
     steps:
+      - name: Skip if Telegram secrets not configured
+        id: gate
+        if: ${{ env.BOT_TOKEN == '' || env.CHAT_ID == '' }}
+        run: echo "::notice::Telegram secrets not set — skipping notify (set TELEGRAM_BOT_TOKEN + TELEGRAM_CHAT_ID in repo Secrets to enable)"
+
       - name: Telegram notify
+        if: ${{ env.BOT_TOKEN != '' && env.CHAT_ID != '' }}
         uses: appleboy/telegram-action@master
         with:
-          to: ${{ secrets.TELEGRAM_CHAT_ID }}
-          token: ${{ secrets.TELEGRAM_BOT_TOKEN }}
+          to: ${{ env.CHAT_ID }}
+          token: ${{ env.BOT_TOKEN }}
           format: html
           message: |
             <b>${{ github.repository }}</b> — Deploy
