@@ -87,6 +87,126 @@ jobs:
         uses: actions/deploy-pages@v4
 
   # ─────────────────────────────────────────────────────────────────
+  # Smoke-test production URL after deploy.
+  #
+  # Hits the live GitHub Pages URL (post-CDN-propagation) to confirm:
+  #   1. GET / returns 200
+  #   2. GET /login returns a body containing `<div id="root">` (SPA
+  #      fallback via 404.html is working — body loads even though the
+  #      HTTP status may be 404 for the deep link)
+  #   3. The JS asset referenced by index.html is reachable (200)
+  #
+  # PHI-safe: only fetches the public static HTML; no auth, no DB, no
+  # patient data ever flows through these checks. continue-on-error so
+  # the rollback job can react to a failure without the workflow going
+  # red in an uncontrolled way.
+  # ─────────────────────────────────────────────────────────────────
+  smoke-test:
+    needs: deploy
+    runs-on: ubuntu-latest
+    env:
+      BASE_URL: https://aase7en.github.io/env-wastewater-webapp/
+    steps:
+      - name: Wait for CDN propagation
+        run: sleep 30
+
+      - name: Smoke checks
+        id: checks
+        continue-on-error: true
+        run: |
+          set -e
+          # 1. Root must return 200.
+          CODE=$(curl -s -o /dev/null -w "%{http_code}" "$BASE_URL")
+          echo "GET / → $CODE"
+          [ "$CODE" = "200" ] || { echo "::error::root not 200"; exit 1; }
+
+          # 2. Deep link /login — status may be 404 (404.html fallback)
+          #    but the body MUST contain the SPA root mount point.
+          BODY=$(curl -s "$BASE_URL/login")
+          echo "$BODY" | grep -q '<div id="root"' \
+            || { echo "::error::/login body missing #root (SPA fallback broken)"; exit 1; }
+          echo "GET /login → SPA fallback OK"
+
+          # 3. The JS asset referenced by index.html must be reachable.
+          JS=$(curl -s "$BASE_URL" | grep -oE '/env-wastewater-webapp/assets/[^"]+\.js' | head -1)
+          [ -n "$JS" ] || { echo "::error::no JS asset found in index.html"; exit 1; }
+          JSCODE=$(curl -s -o /dev/null -w "%{http_code}" "https://aase7en.github.io$JS")
+          echo "GET $JS → $JSCODE"
+          [ "$JSCODE" = "200" ] || { echo "::error::JS asset not 200"; exit 1; }
+
+          echo "::notice::All smoke checks passed"
+
+      - name: Propagate smoke result (fail the job if checks failed)
+        if: steps.checks.outcome == 'failure'
+        run: |
+          echo "::error::Smoke test failed — triggering rollback if enabled"
+          exit 1
+
+  # ─────────────────────────────────────────────────────────────────
+  # Auto-rollback when smoke-test fails.
+  #
+  # DEFENSIVE: disabled unless repo variable ENABLE_AUTO_ROLLBACK=true.
+  # Set it at Settings → Secrets and variables → Actions → Variables.
+  # This is a one-way-door action (creates + pushes a revert commit on
+  # main) so it MUST be opt-in. With it off, a smoke failure just fails
+  # the workflow (and notify fires the Hermes failure alert).
+  #
+  # Mechanism: `git revert HEAD --no-edit` (NOT reset — rule 6 forbids
+  # reset in the shared tree). The revert commit triggers a fresh push
+  # → redeploy of the previous (last-known-good) version automatically.
+  #
+  # Loop guard: skips if the previous commit message already starts with
+  # "Revert " (would mean the last deploy also failed and we already
+  # rolled back once — escalating further could cascade). In that case
+  # the failure surfaces as a normal notify and a human investigates.
+  #
+  # Permissions: needs `contents: write` (added at workflow top).
+  # ─────────────────────────────────────────────────────────────────
+  rollback:
+    needs: smoke-test
+    if: ${{ failure() && vars.ENABLE_AUTO_ROLLBACK == 'true' }}
+    runs-on: ubuntu-latest
+    # Scoped override: only this job can push to the repo (revert commit).
+    # The workflow-level default stays `contents: read` so smoke-test +
+    # notify jobs have least privilege.
+    permissions:
+      contents: write
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 2
+
+      - name: Check rollback loop guard
+        id: loopguard
+        run: |
+          # If the commit we just deployed (HEAD) is itself a revert,
+          # the previous version was ALSO broken — bailing prevents a
+          # rollback cascade. Surface it; let notify flag it for humans.
+          if git log -1 --format='%s' HEAD | grep -q '^Revert '; then
+            echo "::error::HEAD is already a revert — previous deploy also failed. Bailing to prevent rollback cascade."
+            echo "bail=true" >> $GITHUB_OUTPUT
+          else
+            echo "bail=false" >> $GITHUB_OUTPUT
+          fi
+
+      - name: Revert the failing commit
+        if: steps.loopguard.outputs.bail != 'true'
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+          git revert HEAD --no-edit
+          git push
+
+      - name: Rollback summary
+        if: always()
+        run: |
+          if [ "${{ steps.loopguard.outputs.bail }}" = "true" ]; then
+            echo "::notice::Rollback skipped (loop guard) — manual investigation needed"
+          else
+            echo "::notice::Revert pushed — next push will redeploy the previous version"
+          fi
+
+  # ─────────────────────────────────────────────────────────────────
   # Telegram notify on deploy result (success OR failure).
   #
   # Two layers, one message (chat-spam friendly):
@@ -107,9 +227,12 @@ jobs:
   # GitHub Actions forbids `secrets.*` in job-level `if:` (logs may leak
   # the expression), so secrets are hoisted to env vars and checked in
   # steps instead.
+  #
+  # Depends on smoke-test + rollback so the reported result reflects the
+  # final outcome (rolled-back counts as a distinct error_class).
   # ─────────────────────────────────────────────────────────────────
   notify:
-    needs: [build, deploy]
+    needs: [build, deploy, smoke-test, rollback]
     if: always()
     runs-on: ubuntu-latest
     env:
@@ -122,30 +245,37 @@ jobs:
         if: ${{ env.BOT_TOKEN == '' || env.CHAT_ID == '' }}
         run: echo "::notice::Telegram secrets not set — skipping notify (set TELEGRAM_BOT_TOKEN + TELEGRAM_CHAT_ID in repo Secrets to enable)"
 
-      # Build the Hermes-parseable JSON payload + HMAC signature.
-      # Zero-data: only fixed metadata + a curated error_class enum —
-      # never raw error text, log lines, or file paths from content.
-      # Output: PAYLOAD_JSON (canonical, sorted keys) + SIG (hex HMAC-
-      # SHA256 over the payload) + PAYLOAD_INLINE (the <code> block for
-      # the Telegram message, or empty if HMAC_SECRET unset).
+      # Compute the effective outcome from smoke-test + rollback:
+      #   smoke OK      → deploy-ok
+      #   smoke fail, rollback ran   → rolled-back
+      #   smoke fail, rollback skipped/disabled → smoke-failed
+      #   deploy failed              → deploy-failed (build/deploy broken)
+      # error_class stays a SAFE enum — never raw error text.
       - name: Build Hermes payload + HMAC
         id: payload
         if: ${{ env.BOT_TOKEN != '' && env.CHAT_ID != '' }}
         env:
           WORKFLOW_NAME: Deploy frontend to GitHub Pages
           DEPLOY_RESULT: ${{ needs.deploy.result }}
+          SMOKE_RESULT: ${{ needs.smoke-test.result }}
+          ROLLBACK_RESULT: ${{ needs.rollback.result }}
         run: |
           python3 - <<'PY'
-          import json, hmac, hashlib, os, sys
-          # error_class is a SAFE enum — never raw error text.
-          # Derived only from the job result + workflow identity.
-          result = os.environ["DEPLOY_RESULT"]
-          error_class = {
-            "success":  "deploy-ok",
-            "failure":  "deploy-failed",
-            "cancelled":"cancelled",
-            "skipped":  "skipped",
-          }.get(result, "unknown")
+          import json, hmac, hashlib, os
+          deploy = os.environ["DEPLOY_RESULT"]
+          smoke = os.environ["SMOKE_RESULT"]
+          rollback = os.environ["ROLLBACK_RESULT"]
+
+          if deploy != "success":
+              result, error_class = deploy, "deploy-failed"
+          elif smoke == "success":
+              result, error_class = "success", "deploy-ok"
+          elif rollback == "success":
+              result, error_class = "failure", "rolled-back"
+          else:
+              # smoke failed and rollback was skipped or disabled
+              result, error_class = "failure", "smoke-failed"
+
           payload = {
             "v": 1,
             "source": "github-ci",
@@ -158,9 +288,6 @@ jobs:
             "actor": os.environ["GITHUB_ACTOR"],
             "result": result,
             "error_class": error_class,
-            # failing_step intentionally omitted for deploy — the whole
-            # job either passed or the build/deploy step failed; Hermes
-            # can infer from error_class. Added per-workflow if granular.
           }
           canon = json.dumps(payload, sort_keys=True, separators=(",", ":"))
           secret = os.environ.get("HMAC_SECRET", "")
@@ -171,7 +298,7 @@ jobs:
                   inline = f"\n<code>{canon}</code>\n<!--sig:{sig}-->"
                   out.write(f"SIG={sig}\n")
                   out.write(f"PAYLOAD_INLINE<<EOF\n{inline}\nEOF\n")
-                  print("::notice::Hermes payload signed (HMAC_SECRET configured)")
+                  print(f"::notice::Hermes payload signed (error_class={error_class})")
               else:
                   out.write("SIG=\n")
                   out.write("PAYLOAD_INLINE=\n")
@@ -188,9 +315,9 @@ jobs:
           message: |
             <b>${{ github.repository }}</b> — Deploy
             <b>ผล:</b> ${{ needs.deploy.result }}
+            <b>Smoke:</b> ${{ needs.smoke-test.result }}
+            <b>Rollback:</b> ${{ needs.rollback.result }}
             <b>Commit:</b> <code>${{ github.sha }}</code>
             <b>Author:</b> ${{ github.actor }}
             <b>Message:</b> ${{ github.event.head_commit.message }}
             <b>Run:</b> <a href="${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}">view logs</a>${{ steps.payload.outputs.PAYLOAD_INLINE }}
-
-
