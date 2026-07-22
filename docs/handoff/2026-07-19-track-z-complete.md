@@ -1746,7 +1746,7 @@ Playwright 26/26 · ADR-0009 §2 closed · live DB probe confirms PHI boundary.*
 ### Notes (ไม่ต้องแก้)
 
 - Migration timestamp order nit: `000001` (OAUTH-3 อ้าง `fn_is_admin`) มาก่อน `000002` (สร้าง `fn_is_admin`) — replay-safe เพราะ plpgsql ไม่ resolve body ตอน CREATE; บันทึกไว้เฉย ๆ
-- FastAPI removal ยังเปิด (มอบ Opus 4.8 — ยังไม่มี commit ให้ตรวจ)
+- ~~FastAPI removal ยังเปิด (มอบ Opus 4.8 — ยังไม่มี commit ให้ตรวจ)~~ **[SUPERSEDED — ปิดแล้วจริง `c6fc72a` (2026-07-19); Opus 4.8 sync 2026-07-22 — ดู "FastAPI removal reconciliation" ท้ายไฟล์]**
 
 — Fable5 review #9, 2026-07-22 · dispatch #5/#6/#7 + P4/AISQL closes = **ปิดครบ**
 
@@ -1829,3 +1829,31 @@ Run: view logs
 
 *GLM5.2 CI Telegram alert, 2026-07-22 — workflow green + defensive gate
 verified · รอ user ตั้ง 2 secrets ที่ repo settings.*
+
+---
+
+## FastAPI removal reconciliation — 2026-07-22 (Opus 4.8)
+
+**สรุป: FastAPI removal ปิดแล้วจริง — ไม่มีงานค้าง.** review #9 note (บรรทัด 1749) +
+dispatch เก่าบรรทัด 1568/1660/1711 ที่เขียน `Opus 4.8 → FastAPI removal (prompt sent)`
+เป็น **stale forward-looking** — เขียนตอนยังไม่ได้ execute แล้วไม่ได้ปิดหลัง commit ลง.
+Superseded โดย `c6fc72a` มาตั้งแต่ 2026-07-19.
+
+หลักฐาน (ตรวจ git สดวันนี้บน main HEAD):
+
+| เช็ค | ผล |
+|---|---|
+| `c6fc72a chunk(FASTAPI-removal): Approach C` | ✅ อยู่บน main — ลบ backend 39 ไฟล์ + port `scripts/_env.py` |
+| `git ls-files app/` | ✅ **0 tracked** (removal effective) |
+| `docs/work-orders/FASTAPI-removal.md` | ✅ `Status: done` |
+| `archive/fastapi-backend` branch | ✅ มีทั้ง local + `remotes/origin/` (backend เก็บครบ) |
+| `pyproject.toml` | ✅ `0.2.0` + description ชี้ archive branch |
+| verified | ✅ Fable5 review #4 (2026-07-19) |
+| `app/` on disk | ✅ ล้าง pycache leftover แล้ว (2026-07-22) |
+
+**ไม่มี action สำหรับ Opus 4.8.** ของจริงที่ยังเปิด = user dashboard config (OAuth
+provider + AI provider key — user กรอก key เอง; ผมทำแทนไม่ได้ตามนโยบายความปลอดภัย).
+สถานะ verify งาน = ปิดครบตาม review #9.
+
+*Opus 4.8 status-sync, 2026-07-22 — git probes รันเอง · handoff บรรทัด 1749 marked
+superseded · MIGRATION.md เพิ่ม RESOLVED — FastAPI removal.*

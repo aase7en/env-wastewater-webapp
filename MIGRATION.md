@@ -139,6 +139,15 @@ correct since every row is still NULL).
 
 ## RESOLVED — FastAPI backend (closed 2026-07-16, chunk P5)
 
+> ⚠️ **REMOVED 2026-07-19 (`c6fc72a`, Approach C).** The app went direct-to-Supabase;
+> this FastAPI backend was retired as dead code. Source preserved on branch
+> `archive/fastapi-backend`; `scripts/_env.py` (stdlib-only) took over the env
+> resolver the scripts still needed; `pyproject.toml` → `0.2.0`. WO
+> `docs/work-orders/FASTAPI-removal.md` = `Status: done`, verified in Fable5
+> review #4. The section below documents what the backend *was* — kept for
+> history. (Any handoff line saying "FastAPI removal still open / assigned to
+> Opus 4.8" is stale — reconciled 2026-07-22, see handoff doc tail.)
+
 The backend is scaffolded and all v1 endpoints are live. Built in five
 sub-chunks (P5a–P5e), each its own commit on branch `claude/webapp-p5-fastapi`.
 
