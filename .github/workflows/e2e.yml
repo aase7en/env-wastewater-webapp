@@ -64,6 +64,11 @@ jobs:
   # push+fail AND on every PR (success + failure) so PR status is visible
   # real-time without opening GitHub.
   #
+  # Two layers in one message (chat-spam friendly): human-readable HTML
+  # body + embedded `<code>{...JSON...}</code>` payload + HMAC signature
+  # for Hermes (Pi5) — see docs/integrations/ci-hermes-protocol.md +
+  # ADR-0010. Zero-data: payload carries metadata ONLY.
+  #
   # Defensive gate: GitHub forbids `secrets.*` in job-level `if:` (logs may
   # leak the expression), so secrets are hoisted to env vars and checked in
   # the step. Workflow stays green until you set TELEGRAM_BOT_TOKEN +
@@ -77,10 +82,58 @@ jobs:
     env:
       BOT_TOKEN: ${{ secrets.TELEGRAM_BOT_TOKEN }}
       CHAT_ID: ${{ secrets.TELEGRAM_CHAT_ID }}
+      HMAC_SECRET: ${{ secrets.HERMES_HMAC_SECRET }}
     steps:
       - name: Skip if Telegram secrets not configured
         if: env.BOT_TOKEN == '' || env.CHAT_ID == ''
         run: echo "::notice::Telegram secrets not set — skipping notify (set TELEGRAM_BOT_TOKEN + TELEGRAM_CHAT_ID in repo Secrets to enable)"
+
+      - name: Build Hermes payload + HMAC
+        id: payload
+        if: env.BOT_TOKEN != '' && env.CHAT_ID != ''
+        env:
+          WORKFLOW_NAME: E2E smoke tests
+          SMOKE_RESULT: ${{ needs.smoke.result }}
+          EVENT_NAME: ${{ github.event_name }}
+        run: |
+          python3 - <<'PY'
+          import json, hmac, hashlib, os
+          result = os.environ["SMOKE_RESULT"]
+          error_class = {
+            "success":  "e2e-ok",
+            "failure":  "e2e-failed",
+            "cancelled":"cancelled",
+            "skipped":  "skipped",
+          }.get(result, "unknown")
+          payload = {
+            "v": 1,
+            "source": "github-ci",
+            "event": "workflow_finished",
+            "repo": os.environ["GITHUB_REPOSITORY"],
+            "workflow": os.environ["WORKFLOW_NAME"],
+            "run_id": os.environ["GITHUB_RUN_ID"],
+            "commit": os.environ["GITHUB_SHA"][:7],
+            "branch": os.environ.get("GITHUB_REF_NAME", "main"),
+            "actor": os.environ["GITHUB_ACTOR"],
+            "trigger": os.environ["EVENT_NAME"],
+            "result": result,
+            "error_class": error_class,
+          }
+          canon = json.dumps(payload, sort_keys=True, separators=(",", ":"))
+          secret = os.environ.get("HMAC_SECRET", "")
+          with open(os.environ["GITHUB_OUTPUT"], "a") as out:
+              out.write(f"PAYLOAD_JSON<<EOF\n{canon}\nEOF\n")
+              if secret:
+                  sig = hmac.new(secret.encode(), canon.encode(), hashlib.sha256).hexdigest()
+                  inline = f"\n<code>{canon}</code>\n<!--sig:{sig}-->"
+                  out.write(f"SIG={sig}\n")
+                  out.write(f"PAYLOAD_INLINE<<EOF\n{inline}\nEOF\n")
+                  print("::notice::Hermes payload signed (HMAC_SECRET configured)")
+              else:
+                  out.write("SIG=\n")
+                  out.write("PAYLOAD_INLINE=\n")
+                  print("::notice::Hermes payload skipped (HERMES_HMAC_SECRET not set — human-only HTML)")
+          PY
 
       - name: Telegram notify
         if: env.BOT_TOKEN != '' && env.CHAT_ID != ''
@@ -96,4 +149,4 @@ jobs:
             <b>Commit:</b> <code>${{ github.sha }}</code>
             <b>Author:</b> ${{ github.actor }}
             <b>Message:</b> ${{ github.event.head_commit.message }}
-            <b>Run:</b> <a href="${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}">view logs</a>
+            <b>Run:</b> <a href="${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}">view logs</a>${{ steps.payload.outputs.PAYLOAD_INLINE }}
