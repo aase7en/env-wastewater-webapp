@@ -1,0 +1,105 @@
+# REFERENCE ONLY — does NOT trigger (leading `_`).
+#
+# Sketch for the FUTURE L4 level of the CI Alert → Hermes protocol
+# (docs/integrations/ci-hermes-protocol.md). At L4, Hermes (on the Pi5)
+# receives a signed CI failure alert, diagnoses, and opens a PR with a
+# proposed fix — human reviews and merges.
+#
+# This file is NOT wired into the repo's CI. It exists to document what
+# the next level looks like and what gates must be in place first.
+#
+# GATES BEFORE ENABLING L4 (see ADR-0010 §"L3+ requirements"):
+#   1. PHI scrubber on the Pi5 (regex: 13-digit IDs, Thai names,
+#      reports/phase2-batch-* paths, reported_by* columns) — MUST run
+#      before any log/diff reaches the cloud LLM.
+#   2. Fail-closed: unclassifiable lines are redacted, not forwarded.
+#   3. Cooldown: max 3 fix attempts per run_id, then escalate to human.
+#   4. PR-only: never push directly to main.
+#
+# The Pi5-side Hermes flow (NOT this file) would be roughly:
+#   parse_ci_alert(msg, secret)  →  payload
+#   if payload.event == "workflow_failed":
+#       log = gh_run_view(payload.run_id)        # PHI-scrubbed
+#       diagnosis = llm_diagnose(payload, log)    # cloud LLM, post-scrub
+#       patch = llm_propose_patch(diagnosis)      # diff in chat for review
+#       # L4 only:
+#       branch = f"fix/ci-{payload.run_id}"
+#       git_checkout_branch(branch)
+#       apply_patch(patch)
+#       git_commit_push(branch)
+#       gh_pr_create(branch, body=diagnosis)      # human merges
+#
+# This reference workflow below shows what the GitHub-side companion would
+# look like IF we wanted GitHub Actions (rather than Hermes) to drive the
+# PR creation — kept here for design symmetry, not for use today.
+
+name: "[REFERENCE] Hermes L4 auto-PR on CI failure"
+
+on:
+  # Would trigger on a workflow_run completion of test/e2e/deploy, OR
+  # be invoked by Hermes via repository_dispatch. NOT enabled today.
+  repository_dispatch:
+    types: [hermes-l4-fix]
+  workflow_dispatch:
+
+permissions:
+  contents: write   # to push the fix branch
+  pull-requests: write  # to open the PR
+
+jobs:
+  apply-hermes-fix:
+    if: ${{ github.event_name == 'repository_dispatch' }}
+    runs-on: ubuntu-latest
+    env:
+      HMAC_SECRET: ${{ secrets.HERMES_HMAC_SECRET }}
+      # Hermes would send a signed payload in the dispatch client_payload:
+      # { sig, payload: { run_id, branch_base, patch_diff, diagnosis } }
+    steps:
+      - name: Verify Hermes dispatch signature
+        # FAIL-CLOSED: reject if the dispatch didn't come from a holder
+        # of HERMES_HMAC_SECRET. This is the symmetric gate to the
+        # notify-side signing — without it, anyone with repo dispatch
+        # rights could trigger an auto-PR.
+        run: |
+          python3 - <<'PY'
+          import json, hmac, hashlib, os, sys
+          cp = json.loads(os.environ["DISPATCH_PAYLOAD"])
+          canon = cp["payload_canon"]
+          sig = cp["sig"]
+          expected = hmac.new(os.environ["HMAC_SECRET"].encode(),
+                              canon.encode(), hashlib.sha256).hexdigest()
+          if not hmac.compare_digest(sig, expected):
+              print("::error::Hermes dispatch signature mismatch — rejecting")
+              sys.exit(1)
+          print("signature OK")
+          PY
+        env:
+          DISPATCH_PAYLOAD: ${{ toJson(github.event.client_payload) }}
+
+      - uses: actions/checkout@v4
+
+      - name: Apply patch on a fix branch
+        # patch_diff MUST have been PHI-scrubbed on the Pi5 before Hermes
+        # signed it. GitHub Actions trusts the signature, not the content.
+        run: |
+          BRANCH="fix/ci-${{ github.event.client_payload.payload.run_id }}"
+          git checkout -b "$BRANCH"
+          printf '%s' '${{ github.event.client_payload.payload.patch_diff }}' | git apply --
+          git config user.name "hermes-bot"
+          git config user.email "hermes-bot@users.noreply.github.com"
+          git commit -m "fix(hermes-l4): ${{ github.event.client_payload.payload.diagnosis_title }}"
+          git push origin "$BRANCH"
+
+      - name: Open PR
+        # Human merges — NEVER auto-merge at L4.
+        run: |
+          gh pr create \
+            --title "fix(hermes-l4): ${{ github.event.client_payload.payload.diagnosis_title }}" \
+            --body "${{ github.event.client_payload.payload.diagnosis }}" \
+            --base main \
+            --head "fix/ci-${{ github.event.client_payload.payload.run_id }}"
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+# ⚠️ NOT ENABLED. To activate: rename this file (drop the `_` prefix) AND
+# ensure the Pi5 PHI scrubber + cooldown gates (ADR-0010 §L3+) are live.
