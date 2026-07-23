@@ -1927,3 +1927,52 @@ Reference workflow `_example_hermes_l4_auto_pr.yml` sketches the shape.
 *GLM5.2 CI-Hermes protocol, 2026-07-22 — 2 commits · all 3 workflows green ·
 HMAC parity verified · ADR-0010 + protocol spec + L4 reference shipped ·
 Pi5 deploy is user's task.*
+
+---
+
+## A-Debug multi-dimension audit — 2026-07-23 (commit 015538f)
+
+User: "ตรวจหาจุดบกพร่องทุกมิติอีกที" via a-debug skill. Audited the 6 commits from 2026-07-22 (CI/Hermes/research work) across 7 dimensions: CI correctness, logic, security/PHI, regression, cross-workflow consistency, supply-chain, permissions. Self-found + council (security subagent) review.
+
+### Ledger (a-debug handoff contract)
+
+```yaml
+stage: root-cause-first
+input: "6 commits from 2026-07-22 (deploy-frontend.yml 5-job pipeline, test.yml/e2e.yml notify, Hermes protocol docs, research report)"
+hypotheses: 7 (H1-H7) + council added 5 more (A1-A5)
+evidence:
+  - traced rollback trigger logic (deploy-frontend.yml:104-207)
+  - GitHub Actions failure() semantics: returns true if ANY needs job failed
+  - verified Thai checksum on real repo values (2122222222029 FAILS — placeholder)
+  - appleboy/telegram-action@master is moving tag (gh api confirmed)
+finding: "4 real bugs (1 blocker self-found, 3 major council-found) + 2 confirmed SAFE"
+```
+
+### Bugs found + fixed (commit 015538f)
+
+| Severity | Bug | Root cause | Fix |
+|---|---|---|---|
+| **BLOCKER** (self-found) | build-fail triggers wrong rollback | `if: failure()` fires on ANY needs-job failure; build fail → deploy/smoke-test skipped → but `failure()` still true → revert HEAD (the commit that never deployed, punishing the prior good commit) | Narrowed to `needs.smoke-test.result == 'failure'` (only legit rollback trigger) |
+| MAJOR (council A1) | appleboy/telegram-action@master unpinned | moving tag in job holding BOT_TOKEN = supply-chain risk | pinned to SHA `78c9ef35` (v1.1.0, 2026-07-18) |
+| MAJOR (council H4) | notify runs on fork PRs with no explicit gate | relied on implicit GitHub secret redaction; fragile to future refactor (pull_request_target) | added fork check to notify if: in test.yml + e2e.yml |
+| MAJOR (council A5) | test.yml/e2e.yml no permissions block | inherited repo-default (could be contents:write) | added `permissions: contents: read` |
+| MINOR (council H6) | misleading "Revert pushed" log when revert failed | summary step ran `if: always()` + only checked bail, not revert success | capture revert outcome, report accurately |
+
+### Confirmed SAFE (no fix — council disproved)
+
+- **H7 HMAC fail-open**: gate airtight — empty secret → `if secret:` false → no sig written → no `<code>` block → verifier returns None
+- **H2 HMAC canonicalization**: verifier extracts `<code>` block verbatim (no re-serialize), hmac.compare_digest timing-safe — no forgery without secret
+- **H1/H2 rollback trigger logic**: smoke-test `continue-on-error: true` on the check step + separate `Propagate smoke result` step that `exit 1` → job fails correctly → `failure()` (now `needs.smoke-test.result=='failure'`) fires rollback as designed
+- **H3 secret leakage**: no echo/print of HMAC_SECRET/BOT_TOKEN/CHAT_ID; all env-bound (GitHub masks)
+
+### Verify post-fix (run 29989954999 deploy / 29989954982 test / 29989954954 e2e)
+- test: scripts success, notify skipped (push+pass, by design) ✓
+- deploy: build ✅ deploy ✅ smoke-test ✅ rollback skipped (smoke passed) notify ✅ ✓
+- e2e: smoke ✅ notify skipped (push+pass) ✓
+- scrutinize: all 3 scenarios (build-fail / smoke-fail / smoke-pass) + fork-gate 4 cases traced → correct outcomes
+
+### Lesson captured
+- **`failure()` vs `needs.X.result == 'failure'`**: `failure()` is workflow-wide (any needs job), `needs.X.result` is job-specific. For rollback gates, ALWAYS use the job-specific form — rollback should only fire on the specific job whose failure means "deployed something broken", not on upstream build/deploy failures (which mean "nothing deployed, nothing to roll back").
+- **Supply-chain for actions holding secrets**: pin to SHA, not tag. `@master`/`@v1` are mutable; a compromised upstream executes with your secrets in env.
+
+*GLM5.2 a-debug audit, 2026-07-23 — 1 commit · 4 bugs fixed · all 3 workflows green · council disproved 3 hypotheses as SAFE.*
