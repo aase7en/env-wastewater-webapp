@@ -1976,3 +1976,24 @@ finding: "4 real bugs (1 blocker self-found, 3 major council-found) + 2 confirme
 - **Supply-chain for actions holding secrets**: pin to SHA, not tag. `@master`/`@v1` are mutable; a compromised upstream executes with your secrets in env.
 
 *GLM5.2 a-debug audit, 2026-07-23 — 1 commit · 4 bugs fixed · all 3 workflows green · council disproved 3 hypotheses as SAFE.*
+
+---
+
+## GLM runbook — dashboard config (OAuth + AI provider) — 2026-07-23
+
+User: "เริ่ม dashboard config (เพื่อ unlock OAuth + AI provider smoke)".
+
+งานเป็น user-owned (Google Cloud / LINE Console credentials ของ user เอง — GLM ทำแทนไม่ได้ตามนโยบายความปลอดภัย). สิ่งที่ทำได้และมีค่าที่สุด = รวบ Parts A/B/C ที่กระจายอยู่ในเอกสารนี้ (1283-1325) + เพิ่ม Part D (AI provider smoke) ให้เป็น runbook เดียว ทำตามได้บนจอสอง ไม่ต้องเลื่อนหาในเอกสารยาว 1855 บรรทัด.
+
+### ไฟล์ใหม่
+- **`docs/runbooks/dashboard-config-oauth-ai.md`** — 4 console (Google Cloud / LINE / Supabase × 2) + smoke checklist 8 ข้อ + "เมื่อเสร็จ → แจ้ง GLM" handoff. ค่าตายตัว (project ref / URLs / issuer / admin email) รวบในตารางเดียว copy-paste ได้.
+
+### สิ่งที่ต้องทำต่อ — user (บน PC)
+1. ทำตาม runbook Part A → B → C → D ตามลำดับ
+2. Smoke checklist 8 ข้อ ตามด้านล่าง runbook
+3. แจ้งกลับ "config แล้ว" → GLM ทดสอบ end-to-end จริง + ยืนยัน provisioning trigger + ตรวจ RLS recursion
+
+### GLM Track Z backlog — ยังแห้ง
+งาน Track Z ที่เหลือยัง blocked เหมือนเดิม — ทั้งหมดรอ user dashboard config + Fable5 off limit + Opus dispatch. Runbook นี้คือ prep สุดท้ายที่ทำได้โดยไม่ต้องรอใคร.
+
+*GLM5.2 runbook, 2026-07-23 — 1 file (runbook) · 0 code · clean tree · รอ user config.*
