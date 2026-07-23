@@ -12,6 +12,11 @@ on:
       - "frontend/**"
   workflow_dispatch:
 
+# Least privilege: this workflow reads code, builds, runs Playwright against
+# a prod URL. No write surface needed.
+permissions:
+  contents: read
+
 jobs:
   smoke:
     runs-on: ubuntu-latest
@@ -77,7 +82,12 @@ jobs:
   # ─────────────────────────────────────────────────────────────────
   notify:
     needs: smoke
-    if: always() && (github.event_name == 'pull_request' || failure())
+    # Fork-PR gate: GitHub redacts secrets.* for fork PRs anyway, but we
+    # also skip the notify job explicitly so a fork PR never runs the
+    # payload step. Belt-and-suspenders against any future refactor that
+    # might switch to pull_request_target (which DOES expose secrets to
+    # forks).
+    if: always() && (github.event_name != 'pull_request' || github.event.pull_request.head.repo.full_name == github.repository) && (github.event_name == 'pull_request' || failure())
     runs-on: ubuntu-latest
     env:
       BOT_TOKEN: ${{ secrets.TELEGRAM_BOT_TOKEN }}
@@ -137,7 +147,7 @@ jobs:
 
       - name: Telegram notify
         if: env.BOT_TOKEN != '' && env.CHAT_ID != ''
-        uses: appleboy/telegram-action@master
+        uses: appleboy/telegram-action@78c9ef35ffccfe74d3b32e26efcd34c2e283238a  # v1.1.0, pinned 2026-07-23 — @master is a moving tag; this job holds BOT_TOKEN so pin to SHA (supply-chain hygiene)
         with:
           to: ${{ env.CHAT_ID }}
           token: ${{ env.BOT_TOKEN }}

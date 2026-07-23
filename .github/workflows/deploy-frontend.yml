@@ -164,7 +164,15 @@ jobs:
   # ─────────────────────────────────────────────────────────────────
   rollback:
     needs: smoke-test
-    if: ${{ failure() && vars.ENABLE_AUTO_ROLLBACK == 'true' }}
+    # GATE: only revert when smoke-test SPECIFICALLY failed (its checks
+    # ran against a deployed site and found it broken). NOT when build or
+    # deploy failed upstream — those mean nothing was deployed, so there
+    # is nothing to roll back, and reverting HEAD would punish the prior
+    # good commit for a build it had nothing to do with. `failure()` alone
+    # would fire on any needs-job failure including skipped cascades from
+    # a build failure; pinning to needs.smoke-test.result == 'failure'
+    # narrows to the only legitimate rollback trigger.
+    if: ${{ needs.smoke-test.result == 'failure' && vars.ENABLE_AUTO_ROLLBACK == 'true' }}
     runs-on: ubuntu-latest
     # Scoped override: only this job can push to the repo (revert commit).
     # The workflow-level default stays `contents: read` so smoke-test +
@@ -190,20 +198,32 @@ jobs:
           fi
 
       - name: Revert the failing commit
+        id: revert
         if: steps.loopguard.outputs.bail != 'true'
         run: |
           git config user.name "github-actions[bot]"
           git config user.email "github-actions[bot]@users.noreply.github.com"
-          git revert HEAD --no-edit
-          git push
+          # git revert can fail on conflict; under GHA's default `set -e`
+          # that exits non-zero before `git push`, so no broken state is
+          # pushed. Capture the outcome for the summary step below.
+          if git revert HEAD --no-edit; then
+            git push
+            echo "reverted=true" >> $GITHUB_OUTPUT
+          else
+            echo "::error::git revert HEAD failed (conflict?) — no push, manual cleanup needed"
+            echo "reverted=false" >> $GITHUB_OUTPUT
+            exit 1
+          fi
 
       - name: Rollback summary
         if: always()
         run: |
           if [ "${{ steps.loopguard.outputs.bail }}" = "true" ]; then
             echo "::notice::Rollback skipped (loop guard) — manual investigation needed"
-          else
+          elif [ "${{ steps.revert.outputs.reverted }}" = "true" ]; then
             echo "::notice::Revert pushed — next push will redeploy the previous version"
+          else
+            echo "::warning::Revert attempted but did not push (conflict or error) — manual cleanup needed"
           fi
 
   # ─────────────────────────────────────────────────────────────────
@@ -307,7 +327,7 @@ jobs:
 
       - name: Telegram notify
         if: ${{ env.BOT_TOKEN != '' && env.CHAT_ID != '' }}
-        uses: appleboy/telegram-action@master
+        uses: appleboy/telegram-action@78c9ef35ffccfe74d3b32e26efcd34c2e283238a  # v1.1.0, pinned 2026-07-23 — @master is a moving tag; this job holds BOT_TOKEN so pin to SHA (supply-chain hygiene)
         with:
           to: ${{ env.CHAT_ID }}
           token: ${{ env.BOT_TOKEN }}
