@@ -295,6 +295,20 @@ binding rules are here.
 | Chunk | Agent | Claimed | Scope (files) |
 |---|---|---|---|
 
+> **OAUTH-4 deny-pending-rls GLM execute done 2026-07-24 (ADR-0012)** —
+> tightens the RLS belt to match OAUTH-1's intent. 11 transactional tables
+> (`water_supply.daily_check`, `garbage.collection_log`, `fuel.dispense_log`,
+> `garden.work_round`, `building.inspection_round`, `safety.monthly_check`,
+> `food.lab_test`, `chemical.movement`, `chemical.master`,
+> `wastewater.threshold_alert`, `core.regulation`) repolicied from
+> `TO authenticated USING(true)` → `USING(core.fn_is_staff_or_admin())`.
+> New SECURITY DEFINER helper mirrors `core.fn_is_admin()` (ADR-0008
+> recursion lesson). `scripts/test_oauth4_rls_probe.py` pins the contract:
+> helper logic 3/3 roles (pending→deny, staff/admin→allow) + policy bodies
+> 11/11 reference helper in USING + WITH CHECK. Migration 24/24 OK live.
+> **Should land before user opens Google OAuth** — otherwise pending users
+> touch transactional data during the signup→approve window.
+
 > **P4 ใหม่ 2026-07-21 (ADR-0009): AI-SQL UI trio** — three WOs over
 > already-shipped infrastructure. `lib/admin/ai-sql.ts` (nlToSql +
 > suggestQueries + buildSchemaContext) shipped in `ec4bc0d`; the

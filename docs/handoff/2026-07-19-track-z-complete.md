@@ -1997,3 +1997,60 @@ User: "เริ่ม dashboard config (เพื่อ unlock OAuth + AI provi
 งาน Track Z ที่เหลือยัง blocked เหมือนเดิม — ทั้งหมดรอ user dashboard config + Fable5 off limit + Opus dispatch. Runbook นี้คือ prep สุดท้ายที่ทำได้โดยไม่ต้องรอใคร.
 
 *GLM5.2 runbook, 2026-07-23 — 1 file (runbook) · 0 code · clean tree · รอ user config.*
+
+---
+
+## GLM OAUTH-4 — deny pending-role on transactional RLS — 2026-07-24
+
+User: "เริ่ม OAUTH-4 เลย" — หลัง a-plan analysis เจอว่า 8-11 transactional
+tables ใช้ `TO authenticated USING(true)` → pending user แตะ data ได้ก่อน
+admin approve (แม้ RequireAuth bounce อยู่ฝั่ง frontend แล้ว — frontend
+= defense-in-depth, RLS = belt of trust).
+
+### สิ่งที่ทำ (a-debug chain: RED → fix → GREEN → scrutinize)
+
+1. **RED**: `scripts/test_oauth4_rls_probe.py` — confirm `core.fn_is_staff_or_admin()`
+   ไม่มีอยู่ → exit 1. Iron Law #1 satisfied.
+2. **Migration**: `20260724000000_oauth4_deny_pending_rls.sql` — mirror
+   `core.fn_is_admin()` SECURITY DEFINER pattern (ADR-0008 recursion lesson)
+   เป็น `core.fn_is_staff_or_admin()` คู่หู, repolicy 11 tables:
+   `water_supply.daily_check`, `garbage.collection_log`, `fuel.dispense_log`,
+   `garden.work_round`, `building.inspection_round`, `safety.monthly_check`,
+   `food.lab_test`, `chemical.movement`, `chemical.master`,
+   `wastewater.threshold_alert`, `core.regulation`.
+3. **Apply live**: 24/24 statements OK via Management API.
+4. **GREEN**: probe 2 layers —
+   - helper logic: pending→false / staff→true / admin→true (3/3 PASS)
+   - policy bodies: 11/11 tables reference helper in BOTH USING + WITH CHECK
+     (guards future loosening regression)
+
+### ส่งต่อ Fable5 — verify (Track Z review)
+
+1. **`fn_is_staff_or_admin` SECURITY DEFINER + STABLE + search_path** —
+   mirror ของ `fn_is_admin`. ยืนยันว่าไม่มีทาง recurse (bypass RLS เหมือนเดิม)
+2. **11 tables repolicied complete** — ตรวจ pg_policies ว่าไม่มี table
+   ไหนตกหล่น (probe script ตรวจแล้ว 11/11 แต่ Fable5 ควร confirm อิสระ)
+3. **`core.ai_query_log` ปล่อยผ่านโดยเจตนา** — INSERT-only telemetry, no PHI
+   (ไม่ใช่ gap; scoped out ใน WO + ADR-0012)
+4. **probe script shape** — ทดสอบ helper logic ผ่าน virtual CTE rows (ไม่
+   seed auth.users เพราะ FK constraint) + policy bodies ผ่าน pg_policies.
+   pattern นี้ใช้ซ้ำได้สำหรับ RLS audit ในอนาคต
+5. **regression callsite** — frontend ทุก transactional page อยู่ใต้
+   `<RequireAuth>` (App.tsx) ซึ่ง bounce pending → /pending-approval.
+   RLS tightening ไม่ break callsite ใด (admin/staff ยังผ่านได้)
+
+### สถานะ dashboard config runbook
+
+OAUTH-4 ควร land **ก่อน** user เปิด Google OAuth จริง — ไม่งั้นมี window
+ที่ pending user แตะ transactional data ก่อน approve. Runbook ใน
+`docs/runbooks/dashboard-config-oauth-ai.md` พร้อมแล้ว; OAUTH-4 ปิดช่อง
+นี้ให้ก่อนคนเข้าระบบจริง.
+
+### GLM Track Z backlog — ยังแห้ง
+
+OAUTH-4 คืองานสุดท้ายที่ทำได้ก่อน user dashboard config. หลังนี้จริง ๆ ทุก
+อย่าง blocked: user Part A-D → OAUTH end-to-end test → AI provider smoke;
+Fable5 (week-limit) verify; Opus dispatch.
+
+*GLM5.2 OAUTH-4, 2026-07-24 — 1 migration (24/24 OK) · 1 probe (3+11 PASS) ·
+ADR-0012 · RLS belt ตรง OAUTH-1 intent แล้ว · รอ user dashboard config.*
