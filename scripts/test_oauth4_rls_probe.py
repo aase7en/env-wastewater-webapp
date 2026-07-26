@@ -71,25 +71,23 @@ def exec_sql(token: str, query: str):
         return {"_raw": r.text}
 
 
-# ─── Expectations ────────────────────────────────────────────────────────────
-# (role, expected fn_is_staff_or_admin verdict)
-ROLE_EXPECTATIONS = [
-    ("pending", False),
-    ("staff", True),
-    ("admin", True),
-]
-
-
 def probe_helper(token: str) -> int:
     """Probe core.fn_is_staff_or_admin() + every repolicied table's policy.
 
-    Two sub-probes:
-      1. Helper verdict contract — virtual CTE rows (one per role enum value)
-         fed through the function's own boolean expression. Pins the contract:
-         role IN ('staff','admin') = true; 'pending' = false.
+    Three sub-probes:
+      1. Helper function BODY contract — assert the deployed function's
+         source (via pg_get_functiondef) contains the role IN ('staff','admin')
+         contract. NOT a mirror expression: reads the actual deployed body so
+         a future edit to the function that loosens the contract is caught.
+         (Opus review D2: the original probe mirrored the expression via a CTE,
+         which tested Postgres `IN` semantics — not the function. Useless as a
+         regression guard.)
       2. Policy bodies — every transactional table's _authenticated_rw policy
          must reference the helper in BOTH qual (USING) and with_check.
          Guards against a future migration loosening one back to (true).
+      3. ai_query_log INSERT policy — must gate WITH CHECK on actor=auth.uid()
+         so pending users cannot write + actor cannot be spoofed. (Opus review
+         D3: read-side was already correct, INSERT-side was WITH CHECK (true).)
     """
     # First: does the function exist? (RED-first gate — fails before migration)
     exists = exec_sql(
@@ -106,59 +104,88 @@ def probe_helper(token: str) -> int:
               "(expected before OAUTH-4 migration).", file=sys.stderr)
         return 1
 
-    # Function exists — probe its verdict logic using virtual rows in a CTE.
-    # We cannot seed real core.app_user rows here because of the FK to
-    # auth.users (would need test auth accounts). Instead we feed virtual
-    # (role) tuples into the SAME boolean expression the function uses, so
-    # we're testing the function's contract (role IN ('staff','admin'))
-    # against all 3 enum values without touching auth.users.
-    helper_failures = _probe_helper_logic(token)
+    # Function exists — assert its deployed body matches the contract.
+    helper_failures = _probe_helper_body(token)
 
     # Second probe: every transactional policy must reference the helper in
     # BOTH its USING AND WITH CHECK. This guards against a future migration
     # loosening one policy back to `USING (true)`. Reads pg_policies.
     policy_failures = _probe_policy_bodies(token)
 
-    return 0 if (helper_failures + policy_failures) == 0 else 1
+    # Third probe: ai_query_log INSERT must gate WITH CHECK on actor=auth.uid().
+    aiq_failures = _probe_ai_query_log_insert(token)
+
+    return 0 if (helper_failures + policy_failures + aiq_failures) == 0 else 1
 
 
-def _probe_helper_logic(token: str) -> int:
-    """Assert the function's verdict contract per role via virtual CTE rows.
+def _probe_helper_body(token: str) -> int:
+    """Assert the DEPLOYED function body matches the role contract.
 
-    The function body is `EXISTS(... role IN ('staff','admin'))`. We mirror
-    that exact expression over a virtual row set, so a future change to the
-    function's logic (e.g. adding 'viewer') would also need to update this
-    probe — that's the point: the contract is pinned.
+    Reads pg_get_functiondef (the actual deployed source) and asserts it
+    contains `role IN ('staff', 'admin')`. This is a real regression guard —
+    unlike the original CTE-mirror probe, which tested Postgres `IN` semantics
+    and would still PASS if the function body were silently edited to allow
+    'pending' or 'viewer'. (Opus review D2.)
     """
-    # Virtual rows: one per enum value. The verdict expression mirrors the
-    # function body verbatim.
-    probe = """
-    WITH roles(r) AS (VALUES ('pending'::core.user_role),
-                             ('staff'::core.user_role),
-                             ('admin'::core.user_role))
-    SELECT r AS role,
-           (r IN ('staff', 'admin')) AS verdict
-    FROM roles
-    ORDER BY array_position(ARRAY['pending','staff','admin']::core.user_role[], r);
-    """
-    res = exec_sql(token, probe)
+    res = exec_sql(
+        token,
+        "SELECT pg_get_functiondef('core.fn_is_staff_or_admin()'::regprocedure) AS def;",
+    )
     if isinstance(res, dict) and res.get("_error"):
-        print(f"FAIL probing helper logic: {res['_error']}", file=sys.stderr)
+        print(f"FAIL reading function def: {res['_error']}", file=sys.stderr)
         return 1
     rows = res if isinstance(res, list) else []
-    verdict_map = {row["role"]: bool(row["verdict"]) for row in rows} if rows else {}
+    defn = rows[0].get("def", "") if rows else ""
 
+    # Contract assertions on the deployed body. Each must be present.
+    required = [
+        ("SECURITY DEFINER", "must be SECURITY DEFINER (bypass RLS — no recursion)"),
+        ("role IN ('staff', 'admin')", "must gate on role IN ('staff', 'admin')"),
+        ("STABLE", "must be STABLE (pure read — query planner hint)"),
+    ]
+    print(f"\n{'contract':<40} {'present':<10} {'status'}")
+    print("-" * 60)
     failures = 0
-    print(f"\n{'role':<10} {'expected':<10} {'actual':<10} {'status'}")
-    print("-" * 45)
-    for role, expected in ROLE_EXPECTATIONS:
-        actual = verdict_map.get(role)
-        ok = actual == expected
-        print(f"{role:<10} {str(expected):<10} {str(actual):<10} "
-              f"{'PASS' if ok else 'FAIL'}")
-        if not ok:
+    for needle, why in required:
+        present = needle in defn
+        print(f"{needle:<40} {'yes' if present else 'NO':<10} "
+              f"{'PASS' if present else 'FAIL'}")
+        if not present:
+            print(f"          → {why}", file=sys.stderr)
             failures += 1
     return failures
+
+
+def _probe_ai_query_log_insert(token: str) -> int:
+    """Assert ai_query_log INSERT policy gates WITH CHECK on actor=auth.uid().
+
+    The read-side policy (owner_select) was already correct, but the
+    INSERT-side was `WITH CHECK (true)` — so any authenticated user (including
+    pending) could write a row, and the `actor` column could be spoofed to a
+    different uid (then the spoofed victim's owner_select would surface it).
+    Fix: WITH CHECK (actor = auth.uid()). (Opus review D3.)
+    """
+    q = (
+        "SELECT with_check FROM pg_policies "
+        "WHERE schemaname = 'core' AND tablename = 'ai_query_log' "
+        "AND policyname = 'ai_query_log_authenticated_insert';"
+    )
+    res = exec_sql(token, q)
+    if isinstance(res, dict) and res.get("_error"):
+        print(f"FAIL probing ai_query_log INSERT: {res['_error']}", file=sys.stderr)
+        return 1
+    rows = res if isinstance(res, list) else []
+    print(f"\n{'policy':<45} {'gate':<12} {'status'}")
+    print("-" * 65)
+    if not rows:
+        print(f"{'ai_query_log_authenticated_insert':<45} {'missing':<12} FAIL")
+        return 1
+    check = rows[0].get("with_check") or ""
+    gated = "actor = auth.uid()" in check
+    print(f"{'ai_query_log_authenticated_insert':<45} "
+          f"{'actor=uid' if gated else 'OPEN (' + check.strip() + ')':<12} "
+          f"{'PASS' if gated else 'FAIL'}")
+    return 0 if gated else 1
 
 
 # All transactional tables that OAUTH-4 repolicied. Any policy on these

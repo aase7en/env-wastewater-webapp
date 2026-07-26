@@ -221,3 +221,44 @@ that doesn't exist), STOP — that's Track Z, hand back to GLM with note.
   ให้สะท้อนสถานะปัจจุบัน (P4 trio, OAUTH-1/2/3/4, AISQL, CI-Hermes).
 
 ถ้าอยากให้ผมทำ STEP 3 บอกได้เลยหลัง dispatch Opus5 + Fable5 ออกไปแล้ว.
+
+---
+
+### GLM Track Z — D1-D4 fixes (2026-07-25, after Opus STEP 1 review)
+
+Opus 5 STEP 1 verify complete (commit `410bc5d`): OAUTH-4 RLS + rollback
+gate independently confirmed PASS. 4 LOW defects handed back → GLM fixed
+all 4 in this chunk per a-debug chain (RED → fix → GREEN where testable).
+
+| # | fix | how verified | status |
+|---|---|---|---|
+| D1 | telegram-action comment SHA: `# v1.1.0` → `# v1.0.1-era commit, pinned 2026-07-23` (SHA `78c9ef35…` is untagged commit ahead 10 of v1.0.1; v1.1.0 doesn't exist upstream) | grep all 3 workflows | ✅ comment corrected (NOT repinned — same SHA, accurate label) |
+| D2 | probe `_probe_helper_logic` (mirrored `IN` expr via CTE — tested Postgres, not fn) → `_probe_helper_body` (asserts on `pg_get_functiondef` of deployed fn) | probe run: 3/3 contract clauses PASS | ✅ real regression guard now |
+| D3 | `ai_query_log_authenticated_insert` WITH CHECK: `(true)` → `(actor = auth.uid())` | migration 2/2 OK + probe RED (`OPEN (true)`) → GREEN (`actor=uid`) | ✅ |
+| D4 | escape commit msg in Telegram HTML: `${{ github.event.head_commit.message }}` → `${{ steps.payload.outputs.COMMIT_MSG_ESC }}` (html.escape + first-line + 160-char truncate); added `COMMIT_MSG` env + Python escape in payload step of all 3 workflows | YAML validate 3/3 + grep (head_commit only in env: now) | ✅ |
+
+**a-debug chain (D3 — the only code-fix with a real RED)**:
+1. RED: extended probe with `_probe_ai_query_log_insert` → reported
+   `ai_query_log_authenticated_insert OPEN (true) FAIL`
+2. FIX: migration `20260725000000_d3_ai_query_log_insert_gate.sql`
+3. GREEN: same probe → `actor=uid PASS`
+
+D1/D2/D4 are comment/probe/CI-config — no DB state, no unit test possible
+(CI logic runs only in runner). Verified by YAML parse + grep + live probe
+re-run (all 3 sub-probes GREEN: helper body 3 + 11 policy bodies +
+ai_query_log INSERT).
+
+**Files this chunk**:
+- `supabase/migrations/20260725000000_d3_ai_query_log_insert_gate.sql` (new, D3)
+- `scripts/test_oauth4_rls_probe.py` (D2 rewrite + D3 assertion added)
+- `.github/workflows/deploy-frontend.yml` (D4 + D1)
+- `.github/workflows/test.yml` (D4 + D1)
+- `.github/workflows/e2e.yml` (D4 + D1)
+- `docs/handoff/dispatch-prompts-opus5-fable5.md` (this close note)
+
+**Still open (handoff for user)**:
+- Telegram HTML parse-mode test with trailing `<!--sig:…-->` comment — needs
+  `curl` sendMessage probe before enabling HERMES_HMAC_SECRET (Opus flagged
+  ~55% uncertainty). Not code — runtime verification only.
+
+*GLM5.2 D1-D4, 2026-07-25 — 4 defects closed · a-debug chain on D3 · probe 3+11+1 PASS · CI YAML 3/3 valid.*

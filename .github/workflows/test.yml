@@ -79,6 +79,7 @@ jobs:
           WORKFLOW_NAME: test
           SCRIPTS_RESULT: ${{ needs.scripts.result }}
           EVENT_NAME: ${{ github.event_name }}
+          COMMIT_MSG: ${{ github.event.head_commit.message }}
         run: |
           python3 - <<'PY'
           import json, hmac, hashlib, os
@@ -105,7 +106,14 @@ jobs:
           }
           canon = json.dumps(payload, sort_keys=True, separators=(",", ":"))
           secret = os.environ.get("HMAC_SECRET", "")
+          # D4 (Opus review): HTML-escape the commit message before it lands
+          # in the Telegram HTML body. A `<`/`>`/`&` in a commit subject
+          # breaks Telegram's HTML parse mode and silently drops the alert.
+          import html as _html
+          raw_msg = os.environ.get("COMMIT_MSG", "")
+          commit_msg_esc = _html.escape(raw_msg.splitlines()[0][:160]) if raw_msg else ""
           with open(os.environ["GITHUB_OUTPUT"], "a") as out:
+              out.write(f"COMMIT_MSG_ESC={commit_msg_esc}\n")
               out.write(f"PAYLOAD_JSON<<EOF\n{canon}\nEOF\n")
               if secret:
                   sig = hmac.new(secret.encode(), canon.encode(), hashlib.sha256).hexdigest()
@@ -121,7 +129,7 @@ jobs:
 
       - name: Telegram notify
         if: env.BOT_TOKEN != '' && env.CHAT_ID != ''
-        uses: appleboy/telegram-action@78c9ef35ffccfe74d3b32e26efcd34c2e283238a  # v1.1.0, pinned 2026-07-23 — @master is a moving tag; this job holds BOT_TOKEN so pin to SHA (supply-chain hygiene)
+        uses: appleboy/telegram-action@78c9ef35ffccfe74d3b32e26efcd34c2e283238a  # v1.0.1-era commit, pinned 2026-07-23 — @master is a moving tag; this job holds BOT_TOKEN so pin to SHA (supply-chain hygiene)
         with:
           to: ${{ env.CHAT_ID }}
           token: ${{ env.BOT_TOKEN }}
@@ -132,5 +140,5 @@ jobs:
             <b>Event:</b> ${{ github.event_name }}
             <b>Commit:</b> <code>${{ github.sha }}</code>
             <b>Author:</b> ${{ github.actor }}
-            <b>Message:</b> ${{ github.event.head_commit.message }}
+            <b>Message:</b> ${{ steps.payload.outputs.COMMIT_MSG_ESC }}
             <b>Run:</b> <a href="${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}">view logs</a>${{ steps.payload.outputs.PAYLOAD_INLINE }}
