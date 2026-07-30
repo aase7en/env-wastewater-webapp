@@ -17,6 +17,32 @@
         }
       })();
     </script>
+    <script>
+      // AUTH-6 (2026-07-30): restore the GitHub-Pages SPA-redirect stash
+      // BEFORE any module loads. The 404.html fallback (see
+      // scripts/github-pages-spa-redirect.html) hard-replaces the URL to
+      // the SPA root for deep links like /auth/callback, stashing the
+      // original path (+?code= /#access_token=) in sessionStorage. The old
+      // restore lived in main.tsx — but main.tsx runs AFTER module imports
+      // resolve, and `import { supabase }` triggers createClient() with
+      // detectSessionInUrl:true at import time. By then the URL had already
+      // been hard-replaced to the root, so the OAuth token/code was gone —
+      // Supabase never detected the session, and login looped back to
+      // /login. Moving the restore to an inline head script guarantees it
+      // runs before the module graph executes.
+      (function () {
+        try {
+          var stash = sessionStorage.getItem("gh-pages-spa-redirect");
+          if (stash) {
+            sessionStorage.removeItem("gh-pages-spa-redirect");
+            window.history.replaceState(null, "", stash);
+          }
+        } catch (e) {
+          // sessionStorage may be unavailable (private mode); fall through —
+          // deep-link restore is best-effort, not a hard requirement.
+        }
+      })();
+    </script>
     <link rel="icon" type="image/x-icon" href="/favicon.ico" />
     <link rel="icon" type="image/png" href="/favicon-aura.png" />
     <link rel="manifest" href="/manifest.webmanifest" />
