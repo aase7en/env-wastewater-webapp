@@ -1,6 +1,6 @@
 # Schema Snapshot — LIVE (P5b.2-live)
 
-> Introspected from ENV_DB on 2026-07-21 via Supabase Management API.
+> Introspected from ENV_DB on 2026-07-31 via Supabase Management API.
 > Schemas: core, wastewater, carbon, food, fuel, garbage, garden, safety, building, chemical, water_supply. GENERATED — re-run `scripts/introspect_schema_api.py`.
 
 ## Tables
@@ -16,9 +16,9 @@
 | `core` | `ai_provider` | 0 |
 | `core` | `ai_query_log` | 0 |
 | `core` | `ai_scope` | 15 |
-| `core` | `app_user` | 1 |
+| `core` | `app_user` | 2 |
 | `core` | `attachment` | 0 |
-| `core` | `audit_log` | 26 |
+| `core` | `audit_log` | 36 |
 | `core` | `equipment` | 10 |
 | `core` | `location` | 1 |
 | `core` | `location_category` | 16 |
