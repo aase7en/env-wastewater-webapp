@@ -75,5 +75,39 @@ export const test = base.extend({
     baseURLAwareGoto(page);
     await use(page);
   },
+
+  /** Authenticated ADMIN page — installs a fake admin session before
+   *  navigation. Use for specs that need admin-only UI (PendingUsersBell,
+   *  /admin/* routes). The app_user lookup returns role='admin'. */
+  authedAdmin: async ({ page }, use) => {
+    const session = {
+      access_token: "fake-admin-access-token",
+      refresh_token: "fake-admin-refresh-token",
+      token_type: "bearer",
+      expires_in: 3600,
+      expires_at: Math.floor(Date.now() / 1000) + 3600,
+      user: {
+        id: STAFF_UID,
+        app_metadata: { provider: "email", providers: ["email"] },
+        user_metadata: { email: "admin@example.test", full_name: "E2E Admin" },
+        aud: "authenticated",
+        email: "admin@example.test",
+      },
+    };
+    await page.addInitScript((sess) => {
+      localStorage.setItem("sb-gllqtbyofrcjzmbnfoeh-auth-token", JSON.stringify(sess));
+    }, session);
+    await page.route("**/rest/v1/app_user**", async (route) => {
+      await route.fulfill({
+        status: 200,
+        contentType: "application/json",
+        body: JSON.stringify([
+          { id: STAFF_UID, role: "admin", display_name: "E2E Admin", is_active: true },
+        ]),
+      });
+    });
+    baseURLAwareGoto(page);
+    await use(page);
+  },
 });
 export { expect };

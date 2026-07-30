@@ -3,6 +3,7 @@ import { Link, useLocation } from "react-router-dom";
 import { useAuth } from "../AuthProvider";
 import { MSymbol } from "../ui/MSymbol";
 import { NotificationBell } from "../ui/NotificationBell";
+import { PendingUsersBell } from "../ui/PendingUsersBell";
 import { ThemeToggle } from "../ui/ThemeToggle";
 import { cn } from "../../lib/utils";
 
@@ -27,6 +28,7 @@ const NAV: NavItem[] = [
   { to: "/trends", label: "แนวโน้ม", icon: "monitoring" },
   { to: "/carbon", label: "คาร์บอน", icon: "co2" },
   { to: "/carbon-rollup", label: "คาร์บอนรวม", icon: "insights" },
+  { to: "/sensors", label: "เซนเซอร์ Live", icon: "sensors" },
   { to: "/equipment", label: "อุปกรณ์", icon: "medical_services" },
   { to: "/reports", label: "เอกสาร", icon: "description" },
   { to: "/attachments", label: "ไฟล์แนบ", icon: "attach_file" },
@@ -175,6 +177,7 @@ export function AppShell({ children }: { children: ReactNode }) {
               ระบบติดตามบ่อบำบัดน้ำเสีย
             </span>
             <NotificationBell />
+            <PendingUsersBell />
           </div>
         </header>
 
@@ -201,6 +204,7 @@ export function AppShell({ children }: { children: ReactNode }) {
             ))}
           </nav>
           <NotificationBell className="shrink-0" />
+          <PendingUsersBell className="shrink-0" />
           <ThemeToggle className="shrink-0" />
         </header>
 
