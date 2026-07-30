@@ -21,10 +21,15 @@ export function RequireAuth({
   children: ReactNode;
   requireAdmin?: boolean;
 }) {
-  const { loading, isAuthenticated, isAdmin, isPending } = useAuth();
+  const { loading, appUserResolved, isAuthenticated, isAdmin, isPending } = useAuth();
   const loc = useLocation();
 
-  if (loading) {
+  // AUTH-4: gate on BOTH `loading` AND `appUserResolved`. The original
+  // `loading`-only gate left a one-render gap where session had arrived but
+  // appUserLoading was still false → loading=false → isAuthenticated read
+  // from a null appUser (false) → a freshly-logged-in user was bounced to
+  // /login mid-resolution, causing the "login ไม่ผ่านแต่เข้าแอปได้บางส่วน" flicker.
+  if (loading || !appUserResolved) {
     return (
       <div aria-busy="true">
         <span className="sr-only">กำลังตรวจสอบสิทธิ์…</span>

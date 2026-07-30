@@ -36,6 +36,13 @@ interface AuthContextValue {
   appUser: AppUserRow | null;
   /** True until the initial session check completes. */
   loading: boolean;
+  /** AUTH-4: True once the appUser lookup has settled (resolved to a row OR
+   *  confirmed absent). Distinct from `loading`: there is a one-render gap
+   *  where a freshly-arrived session is set while `appUserLoading` is still
+   *  false (it flips true inside loadAppUser, which runs after setSession).
+   *  AuthCallback must wait for THIS flag — not just `!loading` — before
+   *  reading isPending, otherwise a pending user is misrouted to /dashboard. */
+  appUserResolved: boolean;
   /** Convenience: authenticated AND appUser loaded. */
   isAuthenticated: boolean;
   /** True iff appUser.role === "admin". */
@@ -70,6 +77,12 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   // RequireAuth does not see a momentary false-negative isAuthenticated.
   const [sessionLoading, setSessionLoading] = useState(true);
   const [appUserLoading, setAppUserLoading] = useState(false);
+  // AUTH-4: tracks whether the appUser lookup has settled for the CURRENT
+  // session. Reset to false whenever a new userId is requested (so a session
+  // change re-enters the "wait" state). `appUserLoading` alone isn't enough:
+  // it starts false and only flips inside loadAppUser (after setSession),
+  // leaving a one-render gap where loading=false but appUser is stale/null.
+  const [appUserResolved, setAppUserResolved] = useState(false);
   // Tracks the latest userId we kicked off a lookup for, so a stale lookup
   // (session changed mid-flight) does not overwrite the in-flight value.
   const latestUserIdRef = useRef<string | undefined>(undefined);
@@ -85,8 +98,14 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     latestUserIdRef.current = userId;
     if (!userId) {
       setAppUser(null);
+      // No session → lookup is trivially "resolved" (there's nothing to fetch).
+      setAppUserResolved(true);
       return;
     }
+    // AUTH-4: mark unresolved the moment we accept a new userId, BEFORE the
+    // await. This closes the one-render gap where setSession(newSession) has
+    // fired but appUserLoading is still false.
+    setAppUserResolved(false);
     setAppUserLoading(true);
     try {
       const { data, error } = await supabase
@@ -109,7 +128,10 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         setAppUser(data as AppUserRow | null);
       }
     } finally {
-      if (latestUserIdRef.current === userId) setAppUserLoading(false);
+      if (latestUserIdRef.current === userId) {
+        setAppUserLoading(false);
+        setAppUserResolved(true);
+      }
     }
   };
 
@@ -139,6 +161,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       user: session?.user ?? null,
       appUser,
       loading,
+      appUserResolved,
       isAuthenticated: !!session && !!appUser,
       isAdmin: appUser?.role === "admin",
       isPending: appUser?.role === "pending",
@@ -185,7 +208,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         setAppUser(null);
       },
     }),
-    [session, appUser, sessionLoading, appUserLoading]
+    [session, appUser, sessionLoading, appUserLoading, appUserResolved]
   );
 
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;
