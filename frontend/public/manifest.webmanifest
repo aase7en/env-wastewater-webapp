@@ -1,6 +1,6 @@
 {
-  "name": "UTH[AI]-EVN — ระบบบำบัดน้ำเสีย รพ.อุทัย",
-  "short_name": "UTH-EVN",
+  "name": "UTH[AI]-ENV — ระบบบำบัดน้ำเสีย รพ.อุทัย",
+  "short_name": "UTH-ENV",
   "description": "ระบบบันทึกและติดตามคุณภาพน้ำทิ้ง ระบบบำบัดน้ำเสีย โรงพยาบาลอุทัย",
   "lang": "th",
   "dir": "ltr",
@@ -13,16 +13,34 @@
   "categories": ["productivity", "medical", "utilities"],
   "icons": [
     {
-      "src": "/env-wastewater-webapp/favicon.svg",
-      "sizes": "any",
-      "type": "image/svg+xml",
+      "src": "/env-wastewater-webapp/icon-192.png",
+      "sizes": "192x192",
+      "type": "image/png",
       "purpose": "any"
+    },
+    {
+      "src": "/env-wastewater-webapp/icon-512.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "any"
+    },
+    {
+      "src": "/env-wastewater-webapp/icon-192.png",
+      "sizes": "192x192",
+      "type": "image/png",
+      "purpose": "maskable"
+    },
+    {
+      "src": "/env-wastewater-webapp/icon-512.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "maskable"
     },
     {
       "src": "/env-wastewater-webapp/favicon.svg",
       "sizes": "any",
       "type": "image/svg+xml",
-      "purpose": "maskable"
+      "purpose": "any"
     }
   ],
   "shortcuts": [
@@ -31,13 +49,13 @@
       "short_name": "บันทึก",
       "description": "กรอกค่าคุณภาพน้ำประจำวัน",
       "url": "/env-wastewater-webapp/form",
-      "icons": [{ "src": "/env-wastewater-webapp/favicon.svg", "sizes": "any" }]
+      "icons": [{ "src": "/env-wastewater-webapp/icon-192.png", "sizes": "192x192" }]
     },
     {
       "name": "แดชบอร์ด",
       "short_name": "แดชบอร์ด",
       "url": "/env-wastewater-webapp/dashboard",
-      "icons": [{ "src": "/env-wastewater-webapp/favicon.svg", "sizes": "any" }]
+      "icons": [{ "src": "/env-wastewater-webapp/icon-192.png", "sizes": "192x192" }]
     }
   ]
 }
