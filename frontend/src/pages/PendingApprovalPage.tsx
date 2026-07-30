@@ -12,6 +12,7 @@
  * UI is minimal (Track Z logic): Track F polish (animations, AuraCard
  * emphasis, hero icon) is deferred to Fable5.
  */
+import { useNavigate } from "react-router-dom";
 import { useAuth } from "../components/AuthProvider";
 import { AuraCard } from "../components/ui/AuraCard";
 import { Button } from "../components/ui/Button";
@@ -19,6 +20,17 @@ import { MSymbol } from "../components/ui/MSymbol";
 
 export function PendingApprovalPage() {
   const { user, signOut } = useAuth();
+  const navigate = useNavigate();
+
+  // AUTH-7 (2026-07-30): pending-approval is a PUBLIC route (no RequireAuth),
+  // so the auth state going null after signOut does NOT auto-bounce anywhere
+  // — unlike AppShell's footer button, which sits behind RequireAuth and
+  // gets bounced to /login for free. Without an explicit navigate here the
+  // button looks dead ("ไม่ทำงาน") even though the session was cleared.
+  async function handleSignOut() {
+    await signOut();
+    navigate("/login", { replace: true });
+  }
 
   return (
     <div className="min-h-screen flex items-center justify-center p-4">
@@ -48,7 +60,7 @@ export function PendingApprovalPage() {
             หรือรอการอนุมัติแล้วเข้าสู่ระบบอีกครั้ง
           </p>
           <Button
-            onClick={() => void signOut()}
+            onClick={() => void handleSignOut()}
             variant="secondary"
             size="lg"
             className="w-full"
