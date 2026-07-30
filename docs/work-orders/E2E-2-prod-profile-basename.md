@@ -87,3 +87,12 @@ export { expect };
   Diagnosis เดิมของ WO ("แอปบน prod ปกติ") จึงแคบไป — ปกติเฉพาะ root/asset
   ไม่รวม deep link. E2E-2 เอง = **done ยืนยันแล้ว**; acceptance "e2e.yml เขียว"
   ย้ายไปปิดที่ SPA-1.
+- [2026-07-31] glm (close-note follow-up): **SPA-1 resolved — verify, not a code
+  fix needed here.** AUTH-6 (commit `6bd1fa2`, 2026-07-30) moved the SPA
+  redirect-restore out of `main.tsx` (which ran *after* the supabase
+  `createClient` import-time `detectSessionInUrl`) into an inline `<head>`
+  script in `index.html` that restores verbatim before any module loads. This
+  closes the strip-and-rejoin race that SPA-1 tracked. Verified against prod CI:
+  `gh run list --workflow=e2e.yml` shows 12 consecutive green runs
+  (`b420202` 2026-07-22 → `4b6c6ea` 2026-07-30), latest run `30589684080`
+  reports **31 passed**. E2E-2 acceptance ("e2e.yml เขียว") now satisfied.

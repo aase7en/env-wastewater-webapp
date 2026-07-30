@@ -1,6 +1,6 @@
 # WO-OAUTH-3: admin approval — RPC + PendingUsersPage + NAV badge
 
-Status: open (2026-07-21, queued after OAUTH-2)
+Status: done (2026-07-30, shipped via AUTH-3→7 chain)
 Lane/files:
 - `supabase/migrations/20260721000001_oauth3_admin_rpc.sql` (NEW)
 - `frontend/src/lib/admin/users.ts` (NEW)
@@ -221,4 +221,16 @@ cd frontend && npm run build && npx vitest run && npx playwright test
 
 ## Checkpoint / ปิดท้าย
 
-(none yet — execute pending)
+- [2026-07-30] glm (status close — deliverables verified on disk): **DONE.**
+  All OAUTH-3 deliverables shipped:
+  - `supabase/migrations/20260721000001_oauth3_admin_rpc.sql` — applied live
+  - `frontend/src/lib/admin/users.ts` — built incl. `countPendingUsers()` +
+    `usePendingUsers()` poll hook (added for the bell, `b948b10`)
+  - `frontend/src/pages/admin/PendingUsersPage.tsx` — built + routed
+    (`/admin/users`, `RequireAuth requireAdmin`)
+  - NAV entry present; badge delivered as `PendingUsersBell.tsx` component
+    (`b948b10`) rather than a static NAV badge — admin sees a bell with count
+    + dropdown from any page, which supersedes the original NAV-badge design
+  - build ✅, Vitest 115/115, Playwright 31/31 (incl. 5 bell specs)
+  Live DB drift confirmed: `core.app_user` 1→2 + `core.audit_log` 26→36
+  (approve RPC exercised during testing — see `62021ad` snapshot regen).

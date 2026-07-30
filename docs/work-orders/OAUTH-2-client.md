@@ -1,6 +1,6 @@
 # WO-OAUTH-2: client — pending bounce + PendingApprovalPage + AuthPage config banner
 
-Status: open (2026-07-21, queued after OAUTH-1)
+Status: done (2026-07-30, shipped via AUTH-3→7 chain)
 Lane/files:
 - `frontend/src/components/RequireAuth.tsx` (pending bounce logic)
 - `frontend/src/pages/PendingApprovalPage.tsx` (NEW)
@@ -170,4 +170,15 @@ cd frontend && npm run build && npx vitest run && npx playwright test
 
 ## Checkpoint / ปิดท้าย
 
-(none yet — execute pending)
+- [2026-07-30] glm (status close — deliverables verified on disk): **DONE.**
+  All OAUTH-2 deliverables shipped via the AUTH-3→7 debug chain (session
+  2026-07-30), not as a single OAUTH-2 chunk:
+  - `PendingApprovalPage.tsx` — built (AUTH-4) + signOut fix (AUTH-7, `4ec5e70`)
+  - `RequireAuth.tsx` pending-bounce + `appUserResolved` gate (AUTH-4/5, `2c3065f`/`63c265d`)
+  - `AuthCallback.tsx` post-OAuth target via `decideAuthCallbackTarget` (AUTH-4)
+  - `/pending-approval` route in `App.tsx` (AUTH-5)
+  - `AuthProvider.tsx` exposes `isPending` + `appUserResolved` (AUTH-4)
+  - `auth-redirect.ts` `buildRedirectURL` + `auth-callback-target.ts` pure helpers
+  - All under `RequireAuth`; build ✅, Vitest 115/115, Playwright 31/31.
+  The "AuthPage config banner" sub-item (warn when OAuth provider unconfigured)
+  is the only piece not explicitly built — track separately if still wanted.
