@@ -1,6 +1,7 @@
 import { type ReactNode, createContext, useContext, useEffect, useMemo, useRef, useState } from "react";
 import type { Session, User } from "@supabase/supabase-js";
 import { supabase } from "../lib/supabase";
+import { buildRedirectURL } from "../lib/auth-redirect";
 
 /**
  * Auth context — exposes the Supabase session + helper methods.
@@ -54,13 +55,10 @@ interface AuthContextValue {
 
 const AuthContext = createContext<AuthContextValue | undefined>(undefined);
 
-/** Public URL for OAuth redirects — origin + /auth/callback hash route. */
+/** Public URL for OAuth redirects — origin + /auth/callback hash route.
+ *  Delegates to lib/auth-redirect (pure + unit-tested). */
 function redirectURL(): string {
-  // Vite dev: http://localhost:5173/auth/callback
-  // GitHub Pages: https://<user>.github.io/<repo>/auth/callback
-  const origin = window.location.origin;
-  const path = import.meta.env.BASE_URL || "/";
-  return `${origin}${path === "/" ? "" : path}/auth/callback`;
+  return buildRedirectURL(window.location.origin, import.meta.env.BASE_URL || "/");
 }
 
 export function AuthProvider({ children }: { children: ReactNode }) {
