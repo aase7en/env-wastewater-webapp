@@ -68,9 +68,28 @@ export default function App() {
             element={
               <AppShell>
                 <Routes>
-                  {/* V4b: unified overview replaces the old redirect-to-dashboard */}
-                  <Route path="/" element={<OverviewPage />} />
-                  <Route path="/dashboard" element={<DashboardPage />} />
+                  {/* V4b: unified overview replaces the old redirect-to-dashboard.
+                      AUTH-5 (2026-07-30): both / and /dashboard previously had NO
+                      RequireAuth — a pending (or even anon) user could land on the
+                      data overview directly, then hit RLS 401s + RequireAuth
+                      bounces on every other tab ("login ไม่ผ่านแต่เข้าแอปได้บางส่วน").
+                      Now gated like every other data route. */}
+                  <Route
+                    path="/"
+                    element={
+                      <RequireAuth>
+                        <OverviewPage />
+                      </RequireAuth>
+                    }
+                  />
+                  <Route
+                    path="/dashboard"
+                    element={
+                      <RequireAuth>
+                        <DashboardPage />
+                      </RequireAuth>
+                    }
+                  />
                   <Route
                     path="/form"
                     element={

@@ -7,31 +7,27 @@ import { test, expect } from "./fixtures";
  */
 
 test.describe("Aura SPA smoke", () => {
-  test("root renders the unified overview (V4b)", async ({ page }) => {
+  test("root bounces to /login (AUTH-5: overview is auth-gated)", async ({ page }) => {
+    // AUTH-5 (2026-07-30): / is now RequireAuth-gated (it's a data overview,
+    // not a public landing). Unauthenticated visitors bounce to /login.
     await page.goto("/");
-    // No redirect anymore — "/" is the Unified Command landing page.
-    await expect(page.locator("h1", { hasText: "ภาพรวมระบบ" })).toBeVisible();
+    await expect(page).toHaveURL(/\/login/);
   });
 
-  test("dashboard renders brand + Aura theme", async ({ page }) => {
+  test("dashboard bounces to /login (AUTH-5)", async ({ page }) => {
+    // AUTH-5: /dashboard now RequireAuth-gated. (Previously public — that
+    // let a pending/anon user land on the data dashboard, the root cause of
+    // the "login ไม่ผ่านแต่เข้าแอปได้บางส่วน" symptom.)
     await page.goto("/dashboard");
-    // Brand lockup — UTH[AI]-ENV (F2: wordmark corrected EVN → ENV per
-    // design/water_management_dark_mode_fix). Multiple lockups exist
-    // (sidebar + top bars), so assert on the first.
+    await expect(page).toHaveURL(/\/login/);
+  });
+
+  test("login page renders brand + Aura theme (moved from dashboard, now public)", async ({ page }) => {
+    // AUTH-5: brand/Aura-theme assertions moved here since /dashboard now
+    // bounces anon. The login page carries the same brand lockup.
+    await page.goto("/login");
     await expect(page.locator("text=UTH").first()).toBeVisible();
     await expect(page.locator("text=-ENV").first()).toBeVisible();
-    // Header — should contain "แดชบอร์ด"
-    await expect(page.locator("h1", { hasText: "แดชบอร์ด" })).toBeVisible();
-  });
-
-  test("dashboard shows the header (KPIs only render after a successful query)", async ({ page }) => {
-    await page.goto("/dashboard");
-    // The KPI grid is conditional on a successful data fetch (not loading,
-    // not error). When Supabase env isn't configured in the test, the grid
-    // may be hidden — but the dashboard header + log section are always there.
-    await expect(page.locator("h1", { hasText: "แดชบอร์ด" })).toBeVisible();
-    // The 14-day log table title always renders.
-    await expect(page.locator("text=ประวัติ 14 วัน")).toBeVisible();
   });
 
   test("protected route bounces to /login when unauthenticated", async ({ page }) => {
@@ -64,21 +60,14 @@ test.describe("Aura SPA smoke", () => {
     await expect(page.locator("text=กลับหน้าแดชบอร์ด")).toBeVisible();
   });
 
-  test("sidebar nav has the full set of items", async ({ page }) => {
+  test("sidebar nav is hidden when unauthenticated (AUTH-5 — app shell is auth-gated)", async ({ page }) => {
+    // AUTH-5: the sidebar (AppShell) only renders inside the auth-gated
+    // route tree. An unauthenticated visitor lands on /login, which has no
+    // sidebar. The full NAV item set is verified under an authenticated
+    // fixture (TODO: authenticated e2e profile — see handoff). Here we just
+    // confirm anon sees no module nav.
     await page.goto("/dashboard");
-    // Update this list when NAV grows. Order matters less than presence.
-    // F2: "ตั้งค่า" removed (dead link — no /settings route exists);
-    // admin-only entries (นำเข้าข้อมูล / ออกแบบ PDF / DBA / AI) are hidden
-    // when unauthenticated — asserted in modules.spec.ts instead.
-    // F8: module section + previously-orphan routes added.
-    const navLabels = [
-      "ภาพรวม", "บ่อบำบัด", "บันทึกประจำวัน", "ประวัติ", "แนวโน้ม",
-      "คาร์บอน", "คาร์บอนรวม", "อุปกรณ์", "เอกสาร", "ไฟล์แนบ",
-      "น้ำประปาบาดาล", "จัดการขยะ", "เชื้อเพลิง", "สวนภูมิทัศน์",
-      "อาคารสถานที่", "ความปลอดภัย", "ครัวอาหาร", "คลังเคมี", "กฎหมาย ENV",
-    ];
-    for (const label of navLabels) {
-      await expect(page.locator(`nav a:has-text("${label}")`).first()).toBeVisible();
-    }
+    await expect(page).toHaveURL(/\/login/);
+    await expect(page.locator("nav")).toHaveCount(0);
   });
 });

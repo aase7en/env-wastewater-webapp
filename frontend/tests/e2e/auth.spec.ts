@@ -39,12 +39,15 @@ test.describe("auth guard", () => {
     await expect(page).toHaveURL(/\/login\?next=%2Freadings/);
   });
 
-  test("public routes do NOT bounce — /, /dashboard, /login stay put", async ({ page }) => {
+  test("/ and /dashboard are auth-gated too (AUTH-5)", async ({ page }) => {
+    // AUTH-5 (2026-07-30): previously / and /dashboard had NO RequireAuth — a
+    // pending/anon user could land on the data overview directly, then hit
+    // RLS 401s + RequireAuth bounces on every other tab. Now gated like the
+    // rest. (The old test asserted these stayed put — it was asserting the
+    // bug, not the contract.)
     for (const path of ["/", "/dashboard"]) {
       await page.goto(path);
-      // Should not redirect to /login (dashboard is readable publicly; the
-      // data fetch will just return empty/error without a session).
-      await expect(page).not.toHaveURL(/\/login/);
+      await expect(page).toHaveURL(/\/login/);
     }
   });
 });
@@ -68,14 +71,15 @@ test.describe("login page", () => {
     await expect(page.locator("[role='alert']")).toHaveCount(0);
   });
 
-  test("/auth/callback resolves to dashboard when no stashed next path", async ({ page }) => {
-    // AuthCallback waits for the session to settle then navigates to
-    // /dashboard (or the stashed next path). In a test environment with
-    // no OAuth flow, it lands on /dashboard — which is then public-readable
-    // so no further bounce happens. This documents current production
-    // behaviour; if AuthCallback is later hardened to detect missing
-    // session and bounce to /login, flip this assertion.
+  test("/auth/callback with no session → /login (AUTH-4 + AUTH-5)", async ({ page }) => {
+    // AUTH-4: AuthCallback waits for appUserResolved before navigating.
+    // AUTH-5: /dashboard is now RequireAuth-gated. With no session (test env),
+    // AuthCallback never gets a role to branch on — and even if it fell
+    // through to /dashboard, RequireAuth would bounce to /login. So the
+    // observable end-state for an unauthenticated /auth/callback visit is
+    // /login, not /dashboard. (The old test asserted /dashboard — it relied
+    // on /dashboard being public, which AUTH-5 closed.)
     await page.goto("/auth/callback");
-    await expect(page).toHaveURL(/\/dashboard/);
+    await expect(page).toHaveURL(/\/login/);
   });
 });

@@ -13,12 +13,15 @@ import { test, expect } from "./fixtures";
  * *behaviour*: either the 5 interactive nodes (when today row exists) or
  * the empty-state card (when it doesn't). A test that needs the nodes
  * MUST mock the dashboard response.
+ *
+ * AUTH-5 (2026-07-30): /dashboard is now RequireAuth-gated, so these tests
+ * use the `authed` fixture (fake staff session + intercepted app_user).
  */
 
 const STAGE_DESCRIPTION = "ถังเติมอากาศ — จุลินทรีย์ย่อยสารอินทรีย์";
 
 test.describe("PFD interactive drill-down", () => {
-  test("dashboard renders either the PFD nodes or the empty-state fallback", async ({ page }) => {
+  test("dashboard renders either the PFD nodes or the empty-state fallback", async ({ authed: page }) => {
     await page.goto("/dashboard");
     // Two valid states — both must render one of these, not neither.
     const nodes = page.locator("svg g[role='button']");
@@ -30,7 +33,7 @@ test.describe("PFD interactive drill-down", () => {
     }, { timeout: 10_000 }).toBeGreaterThan(0);
   });
 
-  test("with mocked today row: 5 stage nodes render with Thai aria-labels", async ({ page }) => {
+  test("with mocked today row: 5 stage nodes render with Thai aria-labels", async ({ authed: page }) => {
     // Mock v_dashboard_14day to return one recent row so the PFD mounts.
     await page.route("**/rest/v1/v_dashboard_14day**", async (route) => {
       await route.fulfill({
@@ -67,7 +70,7 @@ test.describe("PFD interactive drill-down", () => {
     expect(labels.some((l) => l.startsWith("ระบาย"))).toBeTruthy();
   });
 
-  test("with mocked today row: clicking a stage node toggles the panel", async ({ page }) => {
+  test("with mocked today row: clicking a stage node toggles the panel", async ({ authed: page }) => {
     await page.route("**/rest/v1/v_dashboard_14day**", async (route) => {
       await route.fulfill({
         status: 200,
@@ -94,7 +97,7 @@ test.describe("PFD interactive drill-down", () => {
     await expect(page.getByText(STAGE_DESCRIPTION)).toHaveCount(0);
   });
 
-  test("with mocked today row: keyboard Enter on focused stage node selects it", async ({ page }) => {
+  test("with mocked today row: keyboard Enter on focused stage node selects it", async ({ authed: page }) => {
     await page.route("**/rest/v1/v_dashboard_14day**", async (route) => {
       await route.fulfill({
         status: 200,

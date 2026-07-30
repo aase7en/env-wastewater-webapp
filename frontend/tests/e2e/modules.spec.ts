@@ -30,11 +30,14 @@ test("DBA Console + AI Admin routes bounce to /login", async ({ page }) => {
   await expect(page).toHaveURL(/\/login\?next=%2Fadmin%2Fai/);
 });
 
-test("sidebar exposes module + orphan routes; admin entries stay hidden (F8)", async ({ page }) => {
+test("sidebar exposes module + orphan routes; admin entries stay hidden (F8)", async ({ authed: page }) => {
   // F8 Track F NAV pass closed the gap this test used to flag: the 8 module
   // routes plus the previously-orphan /carbon-rollup, /attachments and
   // /regulations now live in the sidebar. Admin-only entries render only
   // for admin users, so an unauthenticated visitor must see none of them.
+  // AUTH-5 (2026-07-30): /dashboard is auth-gated; use `authed` (fake staff
+  // session) so the AppShell + sidebar render. Staff role → adminOnly NAV
+  // entries stay hidden (the assertion still holds).
   await page.goto("/dashboard");
   // E2E-2: ends-with matcher — prod serves under a basename
   // (/env-wastewater-webapp/), so react-router renders href with the basename
