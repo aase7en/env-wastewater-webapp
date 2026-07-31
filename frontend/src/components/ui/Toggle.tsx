@@ -25,7 +25,11 @@ export function Toggle({
   return (
     <label
       className={cn(
-        "flex items-center gap-3 cursor-pointer select-none",
+        // min-h-[--touch-min] matters here specifically: this is the control
+        // staff tap 10+ times per reading, on a phone, standing at the pond.
+        // The switch itself is only 24px tall, so without this the row was
+        // under the 44px target.
+        "flex items-center gap-3 cursor-pointer select-none min-h-[var(--touch-min)]",
         disabled && "opacity-50 cursor-not-allowed"
       )}
     >
@@ -40,7 +44,13 @@ export function Toggle({
       />
       <span
         className={cn(
-          "relative inline-flex h-6 w-11 shrink-0 items-center rounded-full transition-colors",
+          "relative inline-flex h-6 w-11 shrink-0 items-center rounded-full",
+          "transition-colors duration-[var(--duration-switch)] ease-[var(--ease-smooth)]",
+          // ON keeps the accent gradient rather than the design's
+          // var(--aura-gradient). That token is the SURFACE ramp, which light
+          // mode holds deliberately pale (#E2EFF4 → #45DAB1) — the white knob
+          // sits at the right-hand stop and would drop to ~1.9:1 against it.
+          // cyan→lime reads correctly in both themes.
           isOn
             ? "bg-gradient-to-r from-aura-cyan to-aura-lime shadow-aura-glow-cyan"
             : "bg-aura-surfaceHigh border border-aura-borderSubtle"
@@ -48,7 +58,8 @@ export function Toggle({
       >
         <span
           className={cn(
-            "inline-block h-4 w-4 transform rounded-full bg-white transition-transform",
+            "inline-block h-4 w-4 transform rounded-full bg-white",
+            "transition-transform duration-[var(--duration-switch)] ease-[var(--ease-smooth)]",
             isOn ? "translate-x-6" : "translate-x-1"
           )}
         />
