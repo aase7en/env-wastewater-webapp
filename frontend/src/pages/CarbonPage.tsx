@@ -76,7 +76,7 @@ export function CarbonPage() {
               className={cn(
                 "px-3 py-1.5 rounded-lg text-xs font-thai font-medium border transition-colors",
                 months === m
-                  ? "aura-bg-gradient border-transparent"
+                  ? "bg-aura-cyan text-aura-onAccent border-transparent"
                   : "bg-aura-bg/40 border-aura-borderSubtle text-aura-textMuted hover:text-aura-textMain"
               )}
             >

@@ -67,7 +67,7 @@ function QuickChips({ options, value, onPick }: { options: string[]; value: stri
           className={cn(
             "px-3.5 py-1.5 rounded-full text-xs font-thai border transition-colors min-h-[36px]",
             value === o
-              ? "aura-bg-gradient border-transparent font-semibold"
+              ? "bg-aura-cyan text-aura-onAccent border-transparent font-semibold"
               : "bg-aura-surfaceHigh/40 border-aura-borderSubtle text-aura-textMuted hover:text-aura-textMain hover:border-aura-cyan/40"
           )}
         >

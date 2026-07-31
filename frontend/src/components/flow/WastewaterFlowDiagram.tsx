@@ -1,5 +1,6 @@
 import { Droplets } from "lucide-react";
 import { AuraCard } from "../ui/AuraCard";
+import { Chip } from "../ui/Chip";
 import { StatusBadge } from "../pfd/StatusBadge";
 import { fmt, thaiDate, cn } from "../../lib/utils";
 import {
@@ -306,26 +307,15 @@ function FlowLegend() {
 
 /** Dummy data must never be mistaken for a real measurement. */
 function SourceBadge({ source }: { source: FlowDiagramData["source"] }) {
-  const style =
-    source === "dummy"
-      ? "bg-alert-amber/15 text-alert-amber border-alert-amber/40"
-      : "bg-aura-cyan/10 text-aura-cyan border-aura-cyan/40";
   const label =
     source === "dummy"
       ? "ข้อมูลตัวอย่าง"
       : source === "live-sensor"
         ? "เซนเซอร์ Live"
         : "บันทึกประจำวัน";
-  return (
-    <span
-      className={cn(
-        "inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium border font-thai",
-        style,
-      )}
-    >
-      {label}
-    </span>
-  );
+  // Amber for the fixture — it should read as "not a real reading", not as
+  // just another accent chip.
+  return <Chip tone={source === "dummy" ? "amber" : "cyan"}>{label}</Chip>;
 }
 
 const STATE_DOT: Record<EquipmentState, string> = {

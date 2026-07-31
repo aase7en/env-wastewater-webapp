@@ -119,7 +119,7 @@ export function TrendsPage() {
               className={
                 "px-3 py-1.5 rounded-lg text-xs font-thai font-medium border transition-colors " +
                 (days === d
-                  ? "aura-bg-gradient text-aura-bg border-transparent"
+                  ? "bg-aura-cyan text-aura-onAccent border-transparent"
                   : "bg-aura-bg/40 border-aura-borderSubtle text-aura-textMuted hover:text-aura-textMain")
               }
             >
