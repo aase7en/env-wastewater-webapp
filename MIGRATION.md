@@ -294,6 +294,7 @@ binding rules are here.
 
 | Chunk | Agent | Claimed | Scope (files) |
 |---|---|---|---|
+| `F-DESIGN-1..3` | Fable5/Claude (Track F) | 2026-07-31 | `frontend/src/styles/*`, `frontend/src/index.css`, `frontend/tailwind.config.js`, `frontend/src/components/{ui,pfd,data,layout}/*`, `frontend/src/pages/*` (className only) — WO `docs/work-orders/DESIGN-import-aura-design-system.md` |
 
 > **OAUTH-4 deny-pending-rls GLM execute done 2026-07-24 (ADR-0012)** —
 > tightens the RLS belt to match OAUTH-1's intent. 11 transactional tables
