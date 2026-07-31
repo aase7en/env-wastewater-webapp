@@ -42,6 +42,7 @@ restaurant
 save
 schedule
 science
+sensors
 smart_toy
 success
 trending_down

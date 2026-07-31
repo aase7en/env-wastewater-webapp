@@ -38,11 +38,12 @@ const CarbonPage = lazy(() =>
 const CarbonRollupPage = lazy(() =>
   import("./pages/CarbonRollupPage").then((m) => ({ default: m.CarbonRollupPage })),
 );
-// SensorsPage (P20d.2) — temporarily commented during AUTH-6 deploy cycle
-// (file is stashed; will be restored + route re-added when P20d.2 lands).
-// const SensorsPage = lazy(() =>
-//   import("./pages/SensorsPage").then((m) => ({ default: m.SensorsPage })),
-// );
+// SensorsPage (P20d.2) — lazy like the other recharts pages. Re-enabled
+// 2026-07-31: the AppShell nav has linked /sensors since b948b10, so with the
+// route commented out that menu item was a live 404.
+const SensorsPage = lazy(() =>
+  import("./pages/SensorsPage").then((m) => ({ default: m.SensorsPage })),
+);
 // Lazy-load DBA Console (admin-only, heavy bundle) — keeps main chunk lean.
 const DBAConsolePage = lazy(() =>
   import("./pages/admin/DBAConsolePage").then((m) => ({ default: m.DBAConsolePage })),
@@ -174,8 +175,16 @@ export default function App() {
                   <Route path="/chemical" element={<RequireAuth><ChemicalPage /></RequireAuth>} />
                   <Route path="/regulations" element={<RequireAuth><RegulationsPage /></RequireAuth>} />
                   <Route path="/carbon-rollup" element={<RequireAuth><Suspense fallback={<PageSkeleton />}><CarbonRollupPage /></Suspense></RequireAuth>} />
-                  {/* /sensors (P20d.2) — temporarily commented during AUTH-6
-                      deploy cycle; restored when P20d.2 lands. */}
+                  <Route
+                    path="/sensors"
+                    element={
+                      <RequireAuth>
+                        <Suspense fallback={<PageSkeleton />}>
+                          <SensorsPage />
+                        </Suspense>
+                      </RequireAuth>
+                    }
+                  />
                   {/* DBA Console — admin-only, lazy-loaded */}
                   <Route
                     path="/admin/db"
