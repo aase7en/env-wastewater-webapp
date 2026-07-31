@@ -29,7 +29,24 @@ test.describe("skeleton (authed)", () => {
     await page.goto("/dashboard");
     const sk = page.locator("[data-skeleton]").first();
     await expect(sk).toBeVisible();
-    const anim = await sk.evaluate((el) => getComputedStyle(el, "::after").animationName);
-    expect(anim).toBe("none");
+    // FLAKE-1 (2026-07-31): this used to read animationName once, straight
+    // after toBeVisible(), and failed ~3 runs in 4 with Received: "".
+    // An empty string is not "the sweep is still running" — it is Chrome
+    // handing back an empty CSSStyleDeclaration because the ::after box has
+    // not had its style resolved yet. The CSS was always correct; the read
+    // raced it. (Measured on a stash of the F-DESIGN-1 chunk: 1 pass/3 fail
+    // before that chunk, 1 pass/2 fail after — the flake predates it.)
+    //
+    // Two fixes, both needed: touch layout first so the pseudo-element's
+    // style is computed, and poll so a slow first paint retries instead of
+    // failing outright.
+    await expect
+      .poll(() =>
+        sk.evaluate((el) => {
+          el.getBoundingClientRect();
+          return getComputedStyle(el, "::after").animationName;
+        }),
+      )
+      .toBe("none");
   });
 });
