@@ -72,7 +72,7 @@ export function ToastProvider({ children }: { children: ReactNode }) {
               <div
                 key={t.id}
                 className={cn(
-                  "pointer-events-auto flex items-start gap-2 rounded-xl border px-4 py-3 text-sm font-thai shadow-lg backdrop-blur-md animate-[aura-pulse-dot_0.4s_ease-out]",
+                  "pointer-events-auto flex items-start gap-2 rounded-xl border px-4 py-3 text-sm font-thai shadow-lg backdrop-blur-md toast-in",
                   COLORS[t.kind]
                 )}
                 role="status"

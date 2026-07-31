@@ -5,9 +5,16 @@ type Variant = "primary" | "secondary" | "danger" | "ghost";
 type Size = "sm" | "md" | "lg";
 
 const VARIANTS: Record<Variant, string> = {
-  // Primary: cyan→lime gradient, deep-teal text (max contrast per DESIGN.md).
+  // Primary: SOLID accent fill + on-accent text, hover darkens (light) or
+  // brightens (dark) via --aura-accent-hover.
+  //
+  // Was `aura-bg-gradient`. That now resolves to the *surface* ramp, which
+  // light mode deliberately keeps pale (#E2EFF4 → #45DAB1) — a primary CTA
+  // filled with it reads as a disabled chip. The accent pair is also the
+  // contrast-checked one: white on #006b5a ≈ 7.5:1, and on the hover shade
+  // #005446 it is 8.91:1.
   primary:
-    "aura-bg-gradient font-semibold hover:shadow-aura-glow-cyan active:scale-[0.98]",
+    "bg-aura-cyan text-aura-onAccent font-semibold hover:bg-aura-accentHover hover:shadow-aura-glow-cyan active:scale-[0.98]",
   // Secondary: outlined, neon cyan border on translucent surface.
   secondary:
     "bg-transparent border border-aura-cyan/60 text-aura-cyan hover:bg-aura-cyan/10 hover:shadow-aura-glow-cyan",
@@ -36,7 +43,11 @@ export const Button = forwardRef<HTMLButtonElement, ButtonProps>(
       ref={ref}
       disabled={disabled || loading}
       className={cn(
-        "inline-flex items-center justify-center gap-2 font-medium transition-all",
+        // Token-driven timing: --duration-base / --ease-smooth are the
+        // system's "state switch" pair, and motion.css zeroes the duration
+        // under prefers-reduced-motion, so this needs no media query.
+        "inline-flex items-center justify-center gap-2 font-medium",
+        "transition-all duration-[var(--duration-base)] ease-[var(--ease-smooth)]",
         "disabled:opacity-50 disabled:cursor-not-allowed disabled:active:scale-100",
         VARIANTS[variant],
         SIZES[size],

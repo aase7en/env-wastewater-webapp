@@ -241,6 +241,16 @@
   animation: aura-pulse 2s cubic-bezier(0.4, 0, 0.6, 1) infinite;
 }
 
+/* Toast entrance — one-shot fade + rise.
+ * Replaces `animate-[aura-pulse-dot_0.4s_ease-out]`, which named a keyframe
+ * that does not exist: the keyframe is `aura-pulse` (and it is a LOOPING
+ * attention pulse, wrong for an entrance either way), while `aura-pulse-dot`
+ * is a class name. Toasts have therefore always appeared with a hard cut. */
+@keyframes toast-in {
+  from { opacity: 0; transform: translateY(8px) scale(0.98); }
+}
+.toast-in { animation: toast-in var(--duration-base) var(--ease-smooth); }
+
 /* Typewriter caret (TypeCycle). */
 @keyframes type-blink { 0%, 45% { opacity: 1; } 55%, 100% { opacity: 0; } }
 .type-cursor {
@@ -299,6 +309,7 @@ a:hover { color: var(--aura-accent-hover); }
   .pfd-node-halo,
   .pfd-panel,
   .type-cursor,
+  .toast-in,
   .bubble {
     animation: none !important;
   }
