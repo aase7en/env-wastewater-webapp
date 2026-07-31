@@ -8,11 +8,17 @@ verdict per role, every repolicied table inherits the correct behavior
 
 Two probe modes:
 
-  1. ``helper`` (default) — probe ``core.fn_is_staff_or_admin()`` directly
-     by impersonating each role via a temp test app_user row. This is the
-     RED-first test: before the OAUTH-4 migration, the function does not
-     exist → import fails → exit non-zero. After the migration, the
-     function exists and returns the expected verdict for each role.
+  1. ``helper`` (default) — four sub-probes:
+     a. ``core.fn_is_staff_or_admin()`` body contract (SECURITY DEFINER +
+        role IN ('staff','admin') + STABLE) via pg_get_functiondef.
+     b. Every OAUTH-4 transactional table's ``_authenticated_rw`` policy
+        references the helper in BOTH USING + WITH CHECK.
+     c. ``ai_query_log`` INSERT gates WITH CHECK on actor=auth.uid().
+     d. The 5 SCHEMA5b reference tables (personnel/attachment/location/
+        sensor/sensor_reading) gate on the helper (these kept the schema5
+        ``USING (true)`` until SCHEMA5b closed the gap — same OAUTH-1 intent).
+     This is the RED-first test: before the respective migrations apply,
+     each sub-probe fails → exit non-zero.
 
   2. ``live`` — probe a live REST row-read on a sample transactional table
      using a forged JWT per role. Heavier; needs test auth.users rows.
@@ -115,7 +121,13 @@ def probe_helper(token: str) -> int:
     # Third probe: ai_query_log INSERT must gate WITH CHECK on actor=auth.uid().
     aiq_failures = _probe_ai_query_log_insert(token)
 
-    return 0 if (helper_failures + policy_failures + aiq_failures) == 0 else 1
+    # Fourth probe: the 5 reference tables (SCHEMA5b) that OAUTH-4 missed —
+    # personnel/attachment/location/sensor/sensor_reading were left on the
+    # schema5 `(true)` policy, so a pending user could read the staff roster
+    # (PHI-adjacent) and write attachments. Must now gate on the helper.
+    ref_failures = _probe_reference_policy_bodies(token)
+
+    return 0 if (helper_failures + policy_failures + aiq_failures + ref_failures) == 0 else 1
 
 
 def _probe_helper_body(token: str) -> int:
@@ -238,6 +250,65 @@ def _probe_policy_bodies(token: str) -> int:
         ok = using_ok and check_ok
         print(f"{schema}.{table:<33} "
               f"{'yes' if using_ok else 'NO':<8} {'yes' if check_ok else 'NO':<8} "
+              f"{'PASS' if ok else 'FAIL'}")
+        if not ok:
+            failures += 1
+    return failures
+
+
+# The 5 reference tables that OAUTH-4 missed — they kept the schema5
+# `USING (true)` / `WITH CHECK (true)` policy and were therefore reachable by
+# a pending user. SCHEMA5b repolicied them onto the same helper. Unlike the
+# transactional tables these use SELECT-only policies (except attachment, which
+# stays FOR ALL), and their policy names differ (`personnel_read`, not
+# `personnel_authenticated_rw`). Tuple shape: (schema, table, policyname, cmd)
+# where cmd is "SELECT" (assert USING only) or "ALL" (assert USING + WITH CHECK).
+REFERENCE_TABLES = [
+    ("core", "personnel", "personnel_read", "SELECT"),
+    ("core", "attachment", "attachment_rw", "ALL"),
+    ("core", "location", "location_read", "SELECT"),
+    ("wastewater", "sensor", "sensor_read", "SELECT"),
+    ("wastewater", "sensor_reading", "sensor_reading_read", "SELECT"),
+]
+
+
+def _probe_reference_policy_bodies(token: str) -> int:
+    """Assert the 5 reference tables gate their policy on the helper.
+
+    RED-first: before SCHEMA5b applies, these policies still carry the schema5
+    `USING (true)` → the helper string is absent → FAIL. After SCHEMA5b the
+    qual (and, for attachment, the with_check) reference the helper → PASS.
+    SELECT-only tables assert USING only; the FOR-ALL attachment asserts both.
+    """
+    print(f"\n{'reference table':<40} {'using':<8} {'check':<8} {'status'}")
+    print("-" * 70)
+    failures = 0
+    for schema, table, policyname, cmd in REFERENCE_TABLES:
+        q = (
+            "SELECT qual, with_check FROM pg_policies "
+            f"WHERE schemaname = '{schema}' AND tablename = '{table}' "
+            f"AND policyname = '{policyname}';"
+        )
+        res = exec_sql(token, q)
+        if isinstance(res, dict) and res.get("_error"):
+            print(f"{schema}.{table:<36} ERROR: {res['_error']}", file=sys.stderr)
+            failures += 1
+            continue
+        rows = res if isinstance(res, list) else []
+        if not rows:
+            print(f"{schema}.{table:<36} —      —      FAIL (policy missing)")
+            failures += 1
+            continue
+        row = rows[0]
+        qual = row.get("qual") or ""
+        check = row.get("with_check") or ""
+        using_ok = "fn_is_staff_or_admin" in qual
+        # SELECT-only policies have no WITH CHECK — only assert it for FOR ALL.
+        check_ok = True if cmd == "SELECT" else "fn_is_staff_or_admin" in check
+        ok = using_ok and check_ok
+        print(f"{schema}.{table:<33} "
+              f"{'yes' if using_ok else 'NO':<8} "
+              f"{'—' if cmd == 'SELECT' else ('yes' if check_ok else 'NO'):<8} "
               f"{'PASS' if ok else 'FAIL'}")
         if not ok:
             failures += 1
