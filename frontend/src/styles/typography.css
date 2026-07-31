@@ -1,0 +1,51 @@
+/* ════════════════════════════════════════════════════════════════════════
+ * Type tokens — ported from the claude.ai/design project
+ * (tokens/typography.css).
+ *
+ * Plus Jakarta Sans everywhere, IBM Plex Sans Thai as the Thai fallback —
+ * Plus Jakarta has NO Thai glyphs, so it must ALWAYS be followed by IBM Plex
+ * in every stack. JetBrains Mono for telemetry numbers.
+ *
+ * TOKENS ONLY. The design's file also carries `body`, `h1..h4`, `.font-thai`
+ * and `.font-mono-data` rules; those are deliberately not ported:
+ *   · body / h1..h4  → already in index.css @layer base
+ *   · .font-thai     → Tailwind generates it from fontFamily in
+ *                      tailwind.config.js. A hand-written duplicate would
+ *                      race the utility on source order.
+ * ════════════════════════════════════════════════════════════════════════ */
+
+:root {
+  --font-display: "Plus Jakarta Sans", "IBM Plex Sans Thai", system-ui, sans-serif;
+  --font-body: "Plus Jakarta Sans", "IBM Plex Sans Thai", system-ui, sans-serif;
+  --font-thai: "IBM Plex Sans Thai", "Plus Jakarta Sans", system-ui, sans-serif;
+  --font-mono: "JetBrains Mono", monospace;
+
+  /* Suite scale (boost/luminous DESIGN.md) — marketing/hero sizes. */
+  --text-hero: 72px;          /* hero-title, 700, -0.04em */
+  --text-section: 48px;       /* section-title, 600, -0.02em */
+  --text-headline-md: 32px;
+  --text-data-display: 32px;  /* big telemetry figure, 500 */
+  --text-card-title: 24px;    /* card-title, 600 */
+  --text-body-lg: 18px;
+  --text-body: 16px;
+  --text-label: 14px;         /* label-md, 600 */
+  --text-label-sm: 12px;      /* label-caps / label-sm, 700, 0.1em */
+  --text-micro: 11px;
+  --text-micro-2: 10px;       /* uppercase tracked eyebrow */
+
+  /* In-app scale (as actually used in the shipped pages). */
+  --text-page-title: 24px;    /* h1, md:30px */
+  --text-page-title-md: 30px;
+  --text-card-value: 18px;    /* KPI figure */
+  --text-ui: 14px;            /* body / table default */
+  --text-ui-sm: 12px;
+
+  --leading-tight: 1.1;
+  --leading-snug: 1.3;
+  --leading-normal: 1.6;
+
+  --tracking-tight: -0.02em;
+  --tracking-hero: -0.04em;
+  --tracking-caps: 0.1em;
+  --tracking-caps-wide: 0.15em;
+}

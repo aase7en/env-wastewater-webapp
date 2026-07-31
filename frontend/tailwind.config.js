@@ -26,6 +26,11 @@ export default {
           textMain: "rgb(var(--aura-text-main) / <alpha-value>)",
           textMuted: "rgb(var(--aura-text-muted) / <alpha-value>)",
           onSurface: "rgb(var(--aura-on-surface) / <alpha-value>)",
+          // Full CSS values, not RGB triplets — these two must resolve
+          // per-theme, so they cannot be literals. Trade-off: NO opacity
+          // modifier (text-aura-onAccent/50 will not work).
+          onAccent: "var(--aura-on-accent)",
+          accentHover: "var(--aura-accent-hover)",
         },
         glass: {
           // Theme-aware glass fill (preferred) + fixed legacy fills.
@@ -33,7 +38,16 @@ export default {
           dark: "rgba(0, 22, 27, 0.65)",
           white: "rgba(255, 255, 255, 0.70)", // Luminous Mint variant
         },
+        // Literal hex, NOT var() — Tailwind can only inject an alpha channel
+        // into a literal, and `bg-alert-amber/15` / `border-alert-amber/40`
+        // are both in use. Mirrored as --alert-* in styles/tokens.css for
+        // hand-written CSS; keep the two in sync.
         alert: { amber: "#f59e0b", red: "#ef4444", green: "#22c55e" },
+        // PFD flow-line legend — BINDING in every theme (design/ui-brief.md
+        // §1): 🔵 water 🤍 air 🟤 sludge. Operators read the diagram by these,
+        // so no theme or accent change may restyle them. Mirrored as
+        // --flow-* in styles/tokens.css; keep the two in sync.
+        flow: { water: "#38bdf8", air: "#ffffff", sludge: "#92400e" },
         // ── Legacy PFD palette (pre-Aura) — kept only for old stories/tests;
         // do not use in new code.
         teal: {
@@ -78,6 +92,14 @@ export default {
         "aura-rotate": "aura-rotate 4s linear infinite",
         "aura-pulse-dot": "aura-pulse 2s cubic-bezier(0.4,0,0.6,1) infinite",
       },
+      // WARNING: a keyframe declared here is emitted ONLY if the matching
+      // `animate-*` utility appears in the content scan. Everything below is
+      // driven from hand-written CSS instead, so these entries produced no
+      // output at all — aura-rotate/flow/bubble/aura-pulse are therefore
+      // ALSO declared in src/index.css, which is what actually runs. Keep
+      // both copies in sync. (`gauge-fill` and `pulse-slow` have no consumer
+      // in src/ at all — left here rather than deleted in case a utility
+      // wants them, but they render nothing today.)
       keyframes: {
         flow: { "0%": { strokeDashoffset: "20" }, "100%": { strokeDashoffset: "0" } },
         bubble: {

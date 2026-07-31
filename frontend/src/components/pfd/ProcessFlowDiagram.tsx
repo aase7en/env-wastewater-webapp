@@ -73,15 +73,13 @@ export function ProcessFlowDiagram({
 
       {/* SVG: horizontal flow with animated dashed line */}
       <svg viewBox="0 0 800 160" className="w-full h-auto" preserveAspectRatio="xMidYMid meet">
-        <defs>
-          {/* Accent gradient stroke — follows the theme via tokens */}
-          <linearGradient id="pfd-flow-grad" x1="0" y1="0" x2="1" y2="0">
-            <stop offset="0%" style={{ stopColor: "var(--aura-gradient-from)" }} />
-            <stop offset="100%" style={{ stopColor: "var(--aura-gradient-to)" }} />
-          </linearGradient>
-        </defs>
-        {/* Flow line: screening → aeration → sedimentation → chlorination → discharge */}
-        <path d="M 40 80 L 760 80" fill="none" stroke="url(#pfd-flow-grad)" strokeWidth="6"
+        {/* Flow line: screening → aeration → sedimentation → chlorination → discharge.
+            Stroke is --flow-water, NOT the accent gradient. Two reasons:
+            design/ui-brief.md §1 binds water flow to blue in every theme so
+            operators can read the diagram at a glance, and the accent ramp is
+            now deliberately pale in light mode (#E2EFF4 →) — it would have
+            faded this line into the card. */}
+        <path d="M 40 80 L 760 80" fill="none" stroke="var(--flow-water)" strokeWidth="6"
           className="pfd-flow-line" opacity="0.85" />
 
         {/* Stage nodes — theme surface fill with stage-colored stroke + glow.

@@ -1,0 +1,45 @@
+/* ════════════════════════════════════════════════════════════════════════
+ * Spacing, radius, layout — ported from the claude.ai/design project
+ * (tokens/spacing.css). 8px base, per both suite DESIGN.md files.
+ *
+ * Tailwind's own spacing scale still drives utility classes; these tokens
+ * exist for the hand-written component CSS in index.css, which cannot reach
+ * Tailwind's scale from inside a plain rule.
+ * ════════════════════════════════════════════════════════════════════════ */
+
+:root {
+  --space-xs: 4px;
+  --space-1: 8px;
+  --space-sm: 12px;
+  --space-2: 16px;
+  --space-md: 24px;
+  --space-3: 32px;
+  --space-lg: 48px;
+  --space-xl: 80px;
+
+  --gutter: 24px;
+  --margin-mobile: 16px;
+  --margin-desktop: 40px;
+
+  --container-max: 1280px;       /* Luminous Mint light */
+  --container-max-dark: 1440px;  /* Boost dark */
+  --container-app: 1152px;       /* max-w-6xl — the shipped page width */
+  --sidebar-w: 288px;            /* w-72 desktop sidebar (F2) */
+  --topbar-h: 56px;              /* h-14 sticky top bar */
+
+  /* Radius — 24px aura card is the signature; 12px inner UI; pill buttons. */
+  --radius-sm: 4px;
+  --radius-DEFAULT: 8px;
+  --radius-md: 12px;
+  --radius-lg: 16px;
+  --radius-xl: 24px;
+  --radius-aura: 24px;
+  --radius-full: 9999px;
+
+  /* Touch — staff fill the daily form on phones, standing at the pond. */
+  --touch-min: 44px;
+
+  /* PFD status glows — consumed by .status-glow-* in index.css. */
+  --shadow-status-amber: 0 0 12px rgba(245, 158, 11, 0.6);
+  --shadow-status-red: 0 0 16px rgba(239, 68, 68, 0.7);
+}

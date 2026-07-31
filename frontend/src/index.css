@@ -2,6 +2,9 @@
  * silently — tokens.css defines every --aura-* custom property, so a
  * misplaced import collapses the whole theme to unstyled black-on-white. */
 @import "./styles/tokens.css";
+@import "./styles/motion.css";
+@import "./styles/spacing.css";
+@import "./styles/typography.css";
 
 /* ─── Self-hosted fonts ────────────────────────────────────────────────
  * Hospital network can be slow or block googleapis.com — self-host all
@@ -57,6 +60,32 @@
   initial-value: 0deg;
 }
 
+/* ── Keyframes ────────────────────────────────────────────────────────────
+ * These MUST be declared here, not only in tailwind.config.js.
+ *
+ * Tailwind emits a `@keyframes` block only when the matching `animate-*`
+ * utility turns up in the content scan. Every animation below is referenced
+ * from hand-written CSS instead, so the config entries alone produced NO
+ * output: verified against dist/assets/*.css, which contained only `pulse`
+ * and `spin` (Tailwind's own). The rotating aura ring, the PFD flow line and
+ * the aeration bubbles were all pointing at undefined keyframe names and had
+ * silently never animated. Keep these in sync with tailwind.config.js. */
+@keyframes aura-rotate { to { --aura-angle: 360deg; } }
+@keyframes aura-hue { to { background-position: 300% 50%; } }
+@keyframes aura-pulse {
+  0%, 100% { opacity: 1; transform: scale(1); }
+  50% { opacity: 0.5; transform: scale(1.1); }
+}
+@keyframes flow {
+  0% { stroke-dashoffset: 20; }
+  100% { stroke-dashoffset: 0; }
+}
+@keyframes bubble {
+  0% { transform: translateY(0) scale(0.5); opacity: 0; }
+  30% { opacity: 0.8; }
+  100% { transform: translateY(-40px) scale(1); opacity: 0; }
+}
+
 @layer base {
   html {
     /* Thai wraps through IBM Plex Sans Thai when Plus Jakarta Sans lacks glyphs. */
@@ -84,42 +113,58 @@
  * Card spec: design/ suite (.glass-card in water_management code.html)
  * ════════════════════════════════════════════════════════════════════════ */
 
-/* 3D glass card + animated conic aura border (masked ::before). */
+/* 3D glass card + conic aura border (masked ::before).
+ * The gradient is clipped to a 1px ring by the two-layer mask so it never
+ * bleeds into the content area; the glass fill + backdrop-filter stay on the
+ * card itself so the blur samples the PAGE behind it (real glassmorphism). */
 .aura-card {
   position: relative;
   background: var(--aura-glass);
   backdrop-filter: blur(var(--aura-glass-blur));
   -webkit-backdrop-filter: blur(var(--aura-glass-blur));
-  border-radius: 24px;
+  border-radius: var(--radius-aura);
   box-shadow: var(--aura-card-shadow);
   z-index: 1;
 }
-/* Rotating aura stroke — masked so it only paints on the 1.5px border ring. */
+/* Three-stop ring at 9s (was a 2-stop 4s sweep). The extra stop and the
+ * slower period turn a visible "spinner" into ambient drift. */
 .aura-card::before {
   content: "";
   position: absolute;
   inset: 0;
   border-radius: inherit;
-  padding: 1.5px;
+  padding: 1px;
   background: conic-gradient(
     from var(--aura-angle),
-    transparent 20%,
-    var(--aura-ring-1) 40%,
-    var(--aura-ring-2) 50%,
-    var(--aura-ring-1) 60%,
-    transparent 80%
+    var(--aura-ring-1),
+    var(--aura-ring-2),
+    var(--aura-ring-3),
+    var(--aura-ring-1)
   );
   -webkit-mask:
     linear-gradient(#fff 0 0) content-box,
     linear-gradient(#fff 0 0);
   -webkit-mask-composite: xor;
+          mask: linear-gradient(#fff 0 0) content-box, linear-gradient(#fff 0 0);
           mask-composite: exclude;
-  animation: aura-rotate 4s linear infinite;
+  animation: aura-rotate 9s linear infinite;
   pointer-events: none;
+}
+/* Fallback for engines that cannot animate a registered custom property:
+ * rotate the ring element instead. */
+@supports not (background: paint(something)) {
+  @keyframes aura-rotate-fallback { to { transform: rotate(360deg); } }
+  .aura-card::before { animation: aura-rotate-fallback 9s linear infinite; }
 }
 /* Dim/turn off the aura on inactive cards (set .aura-card--idle). */
 .aura-card--idle::before { animation: none; opacity: 0.25; }
-/* Static ring (no rotation) — default for non-attention cards. */
+/* Static ring (no rotation) — DEFAULT for non-attention cards.
+ *
+ * NOTE: the design system ships `aura="animated"` as AuraCard's default (every
+ * card rotates). We deliberately keep `static`: rotation is reserved for cards
+ * needing operator attention, which holds GPU/battery cost down on the phones
+ * staff use at the pond and stops the dashboard strobing. Timing/geometry
+ * above are adopted from the design; the default is not. */
 .aura-card--static::before { animation: none; }
 
 /* Glass input — theme fill, subtle border, focus glow. ≥44px touch target. */
@@ -127,9 +172,13 @@
   background: var(--aura-input-bg);
   border: 1px solid var(--aura-input-border);
   color: rgb(var(--aura-text-main));
-  border-radius: 12px;
-  min-height: 44px;
-  transition: border-color 0.15s ease, box-shadow 0.15s ease;
+  border-radius: var(--radius-md);
+  min-height: var(--touch-min);
+  transition:
+    border-color var(--duration-base) var(--ease-smooth),
+    box-shadow var(--duration-base) var(--ease-smooth);
+  font-family: inherit;
+  font-size: 14px;
 }
 .glass-input::placeholder { color: var(--aura-placeholder); }
 .glass-input:focus {
@@ -139,17 +188,30 @@
 }
 .glass-input:disabled { opacity: 0.5; cursor: not-allowed; }
 
-/* Accent gradient text (cyan→lime dark, mint pair light). */
+/* Accent gradient text + primary CTA surface.
+ *
+ * TWO tokens, and the distinction matters:
+ *   --aura-gradient           → SURFACES (buttons, toggles, swatches)
+ *   --aura-gradient-text-ramp → TEXT FILL (.aura-text-gradient)
+ * In light mode the surface ramp is deliberately pale (#E2EFF4→#45DAB1) and is
+ * unreadable clipped into glyphs, so the text ramp runs its own WCAG-checked
+ * multi-hue set. Never point .aura-text-gradient at --aura-gradient.
+ *
+ * The ramp loops (first stop == last), so sliding a 300%-wide background
+ * drifts through colour forever without a visible jump. */
 .aura-text-gradient {
-  background: linear-gradient(90deg, var(--aura-gradient-from) 0%, var(--aura-gradient-to) 100%);
+  background-image: var(--aura-gradient-text-ramp);
+  background-size: 300% 100%;
+  background-position: 0% 50%;
   -webkit-background-clip: text;
   background-clip: text;
   -webkit-text-fill-color: transparent;
   color: transparent;
+  animation: aura-hue var(--duration-hue) linear infinite;
 }
 /* Primary CTA gradient surface. */
 .aura-bg-gradient {
-  background: linear-gradient(90deg, var(--aura-gradient-from) 0%, var(--aura-gradient-to) 100%);
+  background: var(--aura-gradient);
   color: var(--aura-gradient-text);
 }
 
@@ -173,11 +235,27 @@
 
 /* Pulsing dot for attention badges. */
 .aura-pulse-dot {
-  width: 8px; height: 8px; border-radius: 9999px;
+  width: 8px; height: 8px; border-radius: var(--radius-full);
   background: rgb(var(--aura-cyan));
   box-shadow: 0 0 8px var(--aura-focus-glow);
   animation: aura-pulse 2s cubic-bezier(0.4, 0, 0.6, 1) infinite;
 }
+
+/* Typewriter caret (TypeCycle). */
+@keyframes type-blink { 0%, 45% { opacity: 1; } 55%, 100% { opacity: 0; } }
+.type-cursor {
+  display: inline-block;
+  width: 2px;
+  height: 1em;
+  margin-left: 3px;
+  vertical-align: -0.12em;
+  background: rgb(var(--aura-cyan));
+  animation: type-blink 1s steps(1, end) infinite;
+}
+
+/* Links — brand accent, per-theme. */
+a { color: rgb(var(--aura-cyan)); text-decoration: none; }
+a:hover { color: var(--aura-accent-hover); }
 
 /* ════════════════════════════════════════════════════════════════════════
  * PFD animations (flow lines + aeration bubbles)
@@ -197,7 +275,7 @@
  * keyboard focus. !important is required on focus glow because the stage
  * glow is an inline style on the circle. */
 .pfd-node { cursor: pointer; outline: none; }
-.pfd-node circle { transition: stroke-width 150ms ease; }
+.pfd-node circle { transition: stroke-width var(--duration-base) var(--ease-smooth); }
 .pfd-node:focus-visible circle {
   filter: drop-shadow(0 0 4px rgb(var(--aura-cyan))) drop-shadow(0 0 12px rgb(var(--aura-cyan) / 0.7)) !important;
 }
@@ -209,14 +287,32 @@
 @keyframes pfd-panel-in {
   from { opacity: 0; transform: translateY(6px); }
 }
+/* Motion accessibility — single consolidated kill-switch.
+ * Moved here from styles/tokens.css (which is now pure tokens) and merged
+ * with the PFD-interaction rules that used to sit further up this file.
+ * The duration-zeroing half lives in styles/motion.css. */
 @media (prefers-reduced-motion: reduce) {
+  .aura-card::before,
+  .aura-pulse-dot,
+  .aura-text-gradient,
+  .pfd-flow-line,
+  .pfd-node-halo,
+  .pfd-panel,
+  .type-cursor,
+  .bubble {
+    animation: none !important;
+  }
   .pfd-node circle { transition: none; }
-  .pfd-node-halo, .pfd-panel { animation: none; }
+  /* SKEL-1: skeleton freezes to a plain grey box — no sweep, no delayed appear. */
+  .skeleton { animation: none !important; opacity: 1 !important; }
+  .skeleton::after { animation: none !important; }
+  /* KPI tiles keep their hover value-flip (that is information) but stop lifting. */
+  .aura-kpi { transform: none !important; }
 }
 
-.status-glow-amber { box-shadow: 0 0 12px rgba(245, 158, 11, 0.6); }
+.status-glow-amber { box-shadow: var(--shadow-status-amber); }
 .status-glow-red {
-  box-shadow: 0 0 16px rgba(239, 68, 68, 0.7);
+  box-shadow: var(--shadow-status-red);
   animation: pulse 1.2s ease-in-out infinite;
 }
 
@@ -232,6 +328,7 @@
   background: rgb(var(--aura-surface-high) / 0.55);
   opacity: 0;
   animation: skeleton-appear 0s linear 200ms forwards;
+  border-radius: var(--radius-DEFAULT);
 }
 .skeleton::after {
   content: "";

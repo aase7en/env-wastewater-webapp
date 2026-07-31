@@ -35,17 +35,46 @@
   /* Composites */
   --aura-glass: rgba(255, 255, 255, 0.70);
   --aura-glass-blur: 12px;
+  /* Soft neumorphic elevation: light from top-left, shadow bottom-right,
+     plus an inner highlight. Reads as a raised physical card on the mint
+     background, where a single flat drop shadow read as a floating rectangle. */
   --aura-card-shadow:
-    0 4px 20px rgba(0, 43, 54, 0.08),
-    0 0 15px rgba(0, 209, 178, 0.10);
+    8px 8px 16px rgba(0, 43, 54, 0.07),
+    -8px -8px 16px rgba(255, 255, 255, 0.85),
+    inset 1px 1px 2px rgba(255, 255, 255, 0.9),
+    0 22px 44px -20px rgba(0, 43, 54, 0.13);
   --aura-glow-cyan: 0 0 15px rgba(0, 209, 178, 0.25);
   --aura-glow-lime: 0 0 15px rgba(0, 209, 178, 0.20);
   --aura-glow-red: 0 0 18px rgba(186, 26, 26, 0.35);
-  --aura-gradient-from: #006b5a;
-  --aura-gradient-to: #00d1b2;
-  --aura-gradient-text: #ffffff;
-  --aura-ring-1: rgba(0, 209, 178, 0.55);   /* conic aura ring stops */
-  --aura-ring-2: rgba(0, 107, 90, 0.65);
+
+  /* Accent ramp for SURFACES (buttons, toggles, swatches) — deliberately
+     pale in light mode. Do NOT clip this into glyphs; see the text ramp. */
+  --aura-gradient-from: #E2EFF4;
+  --aura-gradient-mid: #98DFD6;
+  --aura-gradient-to: #45DAB1;
+  --aura-gradient-angle: 180deg;
+  --aura-gradient: linear-gradient(180deg, #E2EFF4 0%, #98DFD6 50%, #45DAB1 100%);
+  /* Separate ramp for .aura-text-gradient: the surface ramp above is far too
+     pale to clip into glyphs (its top stop is 1.12:1 on the light background,
+     against the 3:1 WCAG floor for large text).
+     This is a LOOPING multi-hue ramp — .aura-text-gradient slides it slowly
+     (--duration-hue) so the wordmark and page titles drift through colour
+     instead of sitting flat. Three rules it must keep:
+       · every stop clears 3:1 on #f3fbf7, so no hue sinks into the page
+         (teal-blue 3.50 · blue 4.87 · violet 5.42 · pink 4.44 · emerald 3.58)
+       · first stop == last stop, or the loop visibly jumps
+       · saturated mid-darks only — pastels disappear on a light background */
+  --aura-gradient-text-ramp: linear-gradient(90deg, #0891B2 0%, #2563EB 22%, #7C3AED 44%, #DB2777 66%, #059669 86%, #0891B2 100%);
+  --aura-gradient-text: #00332b;
+  --aura-ring-1: #0891B2;                /* conic aura ring stops — teal-blue */
+  --aura-ring-2: #45DAB1;                /* mint */
+  --aura-ring-3: #6366F1;                /* indigo */
+  --aura-on-accent: #ffffff;             /* text on a solid accent surface */
+  /* Accent hover MUST move away from the text colour, and the direction is
+     per-theme: light darkens (white text stays legible), dark brightens.
+     Never reuse --aura-cyan-dim for this — it is LIGHTER in light mode and
+     DARKER in dark mode, so one token cannot serve both. */
+  --aura-accent-hover: #005446;          /* white on it = 8.91:1 */
   --aura-ambient-1: rgba(0, 209, 178, 0.06);
   --aura-ambient-2: rgba(0, 107, 90, 0.04);
   --aura-body-bg: #f3fbf7;
@@ -55,6 +84,22 @@
   --aura-focus-glow: rgba(0, 209, 178, 0.30);
   --aura-placeholder: #6b7a75;
   --skeleton-sheen: rgba(255, 255, 255, 0.65); /* SKEL-1: shimmer highlight (neutral) */
+
+  /* ── Theme-independent semantics ──────────────────────────────────────
+     Declared once here, deliberately NOT redeclared in .dark: both selectors
+     match <html>, so an undeclared token simply carries through. */
+
+  /* Traffic-light status — identical in both themes. */
+  --alert-green: #22c55e;
+  --alert-amber: #f59e0b;
+  --alert-red: #ef4444;
+
+  /* PFD flow-line legend — BINDING in every theme (design/ui-brief.md §1).
+     Operators read the diagram by these colours, so neon accents and theme
+     swaps never restyle them. Not decorative: 🔵 water 🤍 air 🟤 sludge. */
+  --flow-water: #38bdf8;   /* influent / effluent */
+  --flow-air: #ffffff;     /* blower air, aeration bubbles */
+  --flow-sludge: #92400e;  /* RAS / WAS */
 
   color-scheme: light;
 }
@@ -84,17 +129,29 @@
   --aura-glass: rgba(0, 22, 27, 0.65);
   --aura-glass-blur: 16px;
   --aura-card-shadow:
-    inset 0 1px 1px rgba(255, 255, 255, 0.10),
+    inset 0 1px 0 rgba(255, 255, 255, 0.12),
     inset 0 -1px 1px rgba(0, 0, 0, 0.30),
-    0 10px 30px rgba(0, 0, 0, 0.50);
+    0 8px 20px -6px rgba(0, 0, 0, 0.45),
+    0 24px 48px -16px rgba(0, 0, 0, 0.55);
   --aura-glow-cyan: 0 0 20px rgba(0, 240, 255, 0.35);
   --aura-glow-lime: 0 0 20px rgba(204, 255, 0, 0.30);
   --aura-glow-red: 0 0 18px rgba(239, 68, 68, 0.55);
+
+  /* In dark mode the surface ramp and the text ramp are both the neon
+     cyan→lime family, so they read as one system; the text ramp still loops
+     (first stop == last) and adds indigo so the drift is visible. */
   --aura-gradient-from: #00F0FF;
+  --aura-gradient-mid: #66F780;
   --aura-gradient-to: #CCFF00;
+  --aura-gradient-angle: 90deg;
+  --aura-gradient: linear-gradient(90deg, #00F0FF 0%, #66F780 50%, #CCFF00 100%);
+  --aura-gradient-text-ramp: linear-gradient(90deg, #00F0FF 0%, #66F780 28%, #CCFF00 52%, #818CF8 78%, #00F0FF 100%);
   --aura-gradient-text: #00161B;
-  --aura-ring-1: rgba(0, 240, 255, 0.60);
-  --aura-ring-2: rgba(204, 255, 0, 0.80);
+  --aura-ring-1: #00F0FF;                /* neon cyan */
+  --aura-ring-2: #CCFF00;                /* neon lime */
+  --aura-ring-3: #818CF8;                /* soft indigo */
+  --aura-on-accent: #00161B;             /* text on a solid accent surface */
+  --aura-accent-hover: #00DBE9;          /* dark text on it = 10.89:1 */
   --aura-ambient-1: rgba(0, 240, 255, 0.05);
   --aura-ambient-2: rgba(204, 255, 0, 0.03);
   --aura-body-bg: #03181C;
@@ -108,16 +165,5 @@
   color-scheme: dark;
 }
 
-/* Motion accessibility — the design exports ship none of this; added per
- * Track F rules. Stops the rotating aura, pulse dots, and PFD loops. */
-@media (prefers-reduced-motion: reduce) {
-  .aura-card::before,
-  .aura-pulse-dot,
-  .pfd-flow-line,
-  .bubble {
-    animation: none !important;
-  }
-  /* SKEL-1: skeleton freezes to a plain grey box — no sweep, no delayed appear. */
-  .skeleton { animation: none !important; opacity: 1 !important; }
-  .skeleton::after { animation: none !important; }
-}
+/* Motion accessibility lives with the classes it disables, in index.css;
+ * the duration-zeroing half is in motion.css. This file stays pure tokens. */
