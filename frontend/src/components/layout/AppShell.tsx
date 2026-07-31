@@ -117,7 +117,9 @@ export function AppShell({ children }: { children: ReactNode }) {
   return (
     <div className="min-h-screen flex">
       {/* ── Desktop sidebar (suite: fixed w-72, brand, nav, user footer) ── */}
-      <aside className="hidden md:flex w-72 h-screen sticky top-0 shrink-0 flex-col bg-aura-bg/80 backdrop-blur-2xl border-r border-aura-borderSubtle">
+      {/* shadow-[…cyan/0.05] is the design's sidebar edge glow — separates the
+          rail from the page without adding a second hard border. */}
+      <aside className="hidden md:flex w-72 h-screen sticky top-0 shrink-0 flex-col bg-aura-bg/80 backdrop-blur-2xl border-r border-aura-borderSubtle shadow-[0_0_20px_rgb(var(--aura-cyan)/0.05)]">
         <div className="px-6 py-8">
           <Link to="/dashboard" className="flex items-center gap-3">
             <img

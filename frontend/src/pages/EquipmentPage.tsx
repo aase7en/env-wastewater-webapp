@@ -2,6 +2,7 @@ import { useEffect, useState } from "react";
 import { Link } from "react-router-dom";
 import { AuraCard } from "../components/ui/AuraCard";
 import { Button } from "../components/ui/Button";
+import { Chip, type ChipTone } from "../components/ui/Chip";
 import { EmptyState } from "../components/ui/EmptyState";
 import { MSymbol } from "../components/ui/MSymbol";
 import { Skeleton } from "../components/ui/Skeleton";
@@ -28,17 +29,24 @@ interface RepairRow {
   resolved_at: string | null;
 }
 
-/** Status badge style for repair requests. */
-function repairBadge(status: RepairRow["status"]) {
+/** Status badge style for repair requests.
+ * `tone` drives the shared <Chip>; `color` stays for the expanded detail card,
+ * which is a panel rather than a capsule and needs the raw classes. */
+function repairBadge(status: RepairRow["status"]): {
+  label: string;
+  icon: string;
+  tone: ChipTone;
+  color: string;
+} {
   switch (status) {
     case "open":
-      return { label: "รอดำเนินการ", icon: "schedule", color: "text-alert-amber border-alert-amber/40 bg-alert-amber/10" };
+      return { label: "รอดำเนินการ", icon: "schedule", tone: "amber", color: "text-alert-amber border-alert-amber/40 bg-alert-amber/10" };
     case "in_progress":
-      return { label: "กำลังซ่อม", icon: "build", color: "text-aura-cyan border-aura-cyan/40 bg-aura-cyan/10" };
+      return { label: "กำลังซ่อม", icon: "build", tone: "cyan", color: "text-aura-cyan border-aura-cyan/40 bg-aura-cyan/10" };
     case "resolved":
-      return { label: "ซ่อมเสร็จ", icon: "check_circle", color: "text-alert-green border-alert-green/40 bg-alert-green/10" };
+      return { label: "ซ่อมเสร็จ", icon: "check_circle", tone: "green", color: "text-alert-green border-alert-green/40 bg-alert-green/10" };
     case "cancelled":
-      return { label: "ยกเลิก", icon: "cancel", color: "text-aura-textMuted border-aura-borderSubtle bg-aura-surfaceHigh/40" };
+      return { label: "ยกเลิก", icon: "cancel", tone: "neutral", color: "text-aura-textMuted border-aura-borderSubtle bg-aura-surfaceHigh/40" };
   }
 }
 
@@ -194,9 +202,9 @@ export function EquipmentPage() {
                     <tr key={r.id} className="hover:bg-aura-cyan/5">
                       <td className="px-4 py-2 text-aura-textMain font-thai">{thaiDate(r.created_at)}</td>
                       <td className="px-4 py-2">
-                        <span className={cn("inline-flex items-center gap-1 px-2 py-0.5 rounded-md text-xs font-thai border", b.color)}>
+                        <Chip tone={b.tone}>
                           <MSymbol name={b.icon} className="text-[12px]" /> {b.label}
-                        </span>
+                        </Chip>
                       </td>
                       <td className="px-4 py-2 text-aura-textMain font-thai max-w-md truncate">{r.cause}</td>
                     </tr>
