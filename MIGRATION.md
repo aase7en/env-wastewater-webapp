@@ -294,7 +294,24 @@ binding rules are here.
 
 | Chunk | Agent | Claimed | Scope (files) |
 |---|---|---|---|
-| `SCHEMA5b` | GLM (Track Z) | 2026-07-31 | `supabase/migrations/20260730000000_schema5b_deny_pending_rls.sql` (NEW), `scripts/test_oauth4_rls_probe.py`, `reports/schema-snapshot-live.md`, this file |
+
+> **SCHEMA5b deny-pending-rls GLM execute done 2026-08-01** — closes the
+> bug-hunt-recon finding that OAUTH-4 missed 5 reference tables. OAUTH-4
+> repolicied 11 transactional tables but `schema5_rest_exposure.sql:8-17`
+> had left 5 more on `USING(true)` / `WITH CHECK(true)`, reachable by a
+> pending user via PostgREST: `core.personnel` (PHI-adjacent staff roster),
+> `core.attachment` (was world-writable), `core.location`,
+> `wastewater.sensor`, `wastewater.sensor_reading`. Migration
+> `20260730000000_schema5b_deny_pending_rls.sql` mirrors the OAUTH-4 DROP +
+> CREATE pattern exactly, reusing the existing `core.fn_is_staff_or_admin()`
+> SECURITY DEFINER helper (ADR-0008 recursion lesson). `scripts/test_oauth4_rls_probe.py`
+> extended with `_probe_reference_policy_bodies` + `REFERENCE_TABLES`;
+> RED→GREEN verified (exit 1 before apply → exit 0 after, 16/16 tables PASS).
+> Independent live verify via direct `pg_policies` query confirms qual =
+> `core.fn_is_staff_or_admin()` on all 5. Zero caller-break (all callers
+> behind `<RequireAuth>` staff+admin gate; helper admits staff).
+> **Should land alongside OAUTH-4 before OAuth users reach prod data** — same
+> PHI-belt intent, just the table set OAUTH-4 didn't cover.
 
 > **OAUTH-4 deny-pending-rls GLM execute done 2026-07-24 (ADR-0012)** —
 > tightens the RLS belt to match OAUTH-1's intent. 11 transactional tables
