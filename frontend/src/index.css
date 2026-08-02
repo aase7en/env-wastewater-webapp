@@ -331,6 +331,11 @@ a:hover { color: var(--aura-accent-hover); }
   .pfd-panel,
   .type-cursor,
   .toast-in,
+  /* STATUS-1: the abnormal-status glow was the one infinite animation with no
+     kill switch — and it is the one most likely to sit on screen pulsing for
+     a long stretch, which is exactly what vestibular sensitivity reacts to.
+     The red glow itself stays; only the pulsing stops. */
+  .status-glow-red,
   .bubble {
     animation: none !important;
   }
@@ -342,10 +347,18 @@ a:hover { color: var(--aura-accent-hover); }
   .aura-kpi { transform: none !important; }
 }
 
+/* STATUS-1 (2026-08-02): this used `animation: pulse`, relying on Tailwind's
+ * built-in `pulse` keyframe. That keyframe is only emitted because ONE line in
+ * an admin page (ChatPanel.tsx, `animate-pulse` on the "AI กำลังคิด…" label)
+ * happens to use the utility. Delete or reword that line and @keyframes pulse
+ * stops being generated, and the abnormal-status glow silently stops pulsing
+ * app-wide — the same failure that left aura-rotate/flow/bubble dead before
+ * F-DESIGN-1. Own keyframe, no cross-file dependency. */
+@keyframes status-pulse { 0%, 100% { opacity: 1; } 50% { opacity: 0.5; } }
 .status-glow-amber { box-shadow: var(--shadow-status-amber); }
 .status-glow-red {
   box-shadow: var(--shadow-status-red);
-  animation: pulse 1.2s ease-in-out infinite;
+  animation: status-pulse 1.2s ease-in-out infinite;
 }
 
 /* ── SKEL-1: skeleton shimmer ─────────────────────────────────────────────

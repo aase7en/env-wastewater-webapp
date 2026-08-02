@@ -23,7 +23,7 @@ export function Gauge({ label, value, unit, fraction = 0, alert, size = "md" }: 
   // Token-driven: accent arc follows the theme (neon cyan in dark, readable
   // teal in light); red + glow when alerting. SVG colors go through the
   // style prop because CSS var() does not resolve in presentation attributes.
-  const arcColor = alert ? "#ef4444" : "rgb(var(--aura-cyan))";
+  const arcColor = alert ? "var(--alert-red)" : "rgb(var(--aura-cyan))";
 
   return (
     <div className={cn("flex flex-col items-center gap-1", alert && "status-glow-red rounded-full")}>
