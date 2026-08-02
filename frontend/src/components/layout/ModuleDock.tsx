@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
-import { Link, useLocation } from "react-router-dom";
+import { Link, useLocation, useNavigate } from "react-router-dom";
 import { MSymbol } from "../ui/MSymbol";
 import { cn } from "../../lib/utils";
 import { readDock, writeDock, reorder } from "./dock-prefs";
@@ -27,6 +27,22 @@ const RANGE = 2.2;     // falloff radius, in slots
  *  fire during ordinary hesitation before a tap; 900 leaves room to pause. */
 const HOLD_MS = 900;
 const PRESS_SLOP = 8;  // px of travel before a hold is reclassified as a drag
+/**
+ * Empty space reserved ABOVE the icon row, inside the scrolling box.
+ *
+ * The row needs `overflow-x: auto` to scroll, and per spec that forces
+ * `overflow-y` from `visible` to `auto` — there is no way to clip one axis and
+ * not the other. So a magnified icon had its top sliced off and the name tag,
+ * which sits above the icon, was cut away entirely. Reserving headroom inside
+ * the same box gives both room to exist without being clipped, and the pill
+ * behind them is drawn to cover only the bottom strip so the icons still read
+ * as rising out of it.
+ *
+ * Budget: icon growth 48×0.6 ≈ 29 · gap 10 · tag ≈ 26 → 76 with slack.
+ */
+const HEADROOM = 76;
+/** How far above the slot the name tag sits — must clear a fully grown icon. */
+const TIP_OFFSET = ITEM * (MAX_SCALE - 1) + 10;
 
 /** Smoothstep — the ease that makes neighbours fall off gently instead of
  *  stepping. Straight linear falloff reads as mechanical. */
@@ -37,6 +53,7 @@ function falloff(distanceInSlots: number): number {
 
 export function ModuleDock({ nav, isAdmin }: { nav: DockItem[]; isAdmin: boolean }) {
   const loc = useLocation();
+  const navigate = useNavigate();
   const barRef = useRef<HTMLDivElement>(null);
 
   /** Everything this user is allowed to reach. */
@@ -152,6 +169,9 @@ export function ModuleDock({ nav, isAdmin }: { nav: DockItem[]; isAdmin: boolean
    * long-press, or a deliberate drag trips into edit mode after 500ms. */
   const pressTimer = useRef<number | null>(null);
   const pressOrigin = useRef<{ x: number; y: number } | null>(null);
+  /** Did this gesture move? Decides tap (Link handles it) vs drag-release
+   *  (we navigate to whatever it ended on). */
+  const travelled = useRef(false);
   /* ── Edge auto-scroll ────────────────────────────────────────────────────
    * Dragging the pointer to either end of the row scrolls it, so the modules
    * that overflow off the end stay reachable with one continuous gesture.
@@ -224,8 +244,11 @@ export function ModuleDock({ nav, isAdmin }: { nav: DockItem[]; isAdmin: boolean
   };
   const pressMoved = (x: number, y: number) => {
     const o = pressOrigin.current;
-    if (!o || pressTimer.current === null) return;
-    if (Math.hypot(x - o.x, y - o.y) > PRESS_SLOP) clearPress();
+    if (!o) return;
+    if (Math.hypot(x - o.x, y - o.y) > PRESS_SLOP) {
+      travelled.current = true;
+      clearPress();
+    }
   };
 
   // Escape leaves edit mode; so does clicking anywhere outside the dock.
@@ -303,12 +326,16 @@ export function ModuleDock({ nav, isAdmin }: { nav: DockItem[]; isAdmin: boolean
             attention; the running ring is reserved for alert states. */}
         <div
           aria-hidden="true"
-          className="dock-pill aura-card aura-card--static !absolute inset-y-0 left-1/2 -translate-x-1/2 rounded-full !p-0"
+          // Bottom strip only, not inset-y-0: the wrapper is now tall enough
+          // to hold the headroom, and the pill must stay the height of the
+          // resting row so magnified icons visibly rise out of it.
+          className="dock-pill aura-card aura-card--static !absolute bottom-0 left-1/2 -translate-x-1/2 rounded-full !p-0"
           // Clamped to the same width the row is, or on a phone the pill
           // would run off-screen while the row inside it scrolls.
           style={{
             width: baseWidth + totalGrowth,
             maxWidth: "calc(100vw - 6rem)",
+            height: ITEM + 2 * PAD,
           }}
         />
         <div
@@ -321,7 +348,12 @@ export function ModuleDock({ nav, isAdmin }: { nav: DockItem[]; isAdmin: boolean
           className="dock-bar relative z-10 flex items-end max-w-[calc(100vw-6rem)] overflow-x-auto"
           style={{
             gap: GAP,
-            padding: PAD,
+            paddingLeft: PAD,
+            paddingRight: PAD,
+            paddingBottom: PAD,
+            // Room for the magnified icon and its name tag to exist without
+            // overflow-y clipping them. See HEADROOM.
+            paddingTop: HEADROOM,
             // `none`, never `pan-x`. Handing horizontal panning to the browser
             // makes it claim the gesture and fire pointercancel, after which
             // no pointermove reaches us — which is exactly why magnification
@@ -336,6 +368,12 @@ export function ModuleDock({ nav, isAdmin }: { nav: DockItem[]; isAdmin: boolean
             // edge-scroll zone sits INSIDE the bar, so the pointer never has
             // to leave the element for the gesture to work.
             setMouseX(e.clientX);
+            travelled.current = false;
+            // Also seed the origin when the press starts on padding rather
+            // than on a slot, so dragging from a gap still counts as travel.
+            if (!pressOrigin.current) {
+              pressOrigin.current = { x: e.clientX, y: e.clientY };
+            }
           }}
           onPointerMove={(e) => {
             setMouseX(e.clientX);
@@ -359,6 +397,19 @@ export function ModuleDock({ nav, isAdmin }: { nav: DockItem[]; isAdmin: boolean
             clearPress();
           }}
           onPointerUp={() => {
+            // Release-to-select: after dragging along the dock, lifting picks
+            // whatever the pointer ended on. Only when the pointer actually
+            // TRAVELLED — a stationary tap is left to the Link's own click, so
+            // this never double-navigates. Suppressed in edit mode, where a
+            // drag means "reorder".
+            if (!editing && travelled.current && hoverIndex !== null) {
+              if (hoverIndex >= items.length) {
+                setPickerOpen((v) => !v);
+              } else {
+                navigate(items[hoverIndex].to);
+              }
+            }
+            travelled.current = false;
             setDragFrom(null);
             clearPress();
             stopEdgeScroll();
@@ -446,8 +497,9 @@ function DockSlot({
           it twice is noise for a screen reader. */}
       <span
         aria-hidden="true"
+        style={{ bottom: "100%", marginBottom: TIP_OFFSET }}
         className={cn(
-          "dock-tip pointer-events-none absolute left-1/2 bottom-full mb-3",
+          "dock-tip pointer-events-none absolute left-1/2",
           "whitespace-nowrap rounded-lg px-2.5 py-1 text-xs font-thai",
           "bg-aura-surfaceHighest text-aura-textMain border border-aura-borderSubtle",
           "shadow-aura-card",
@@ -477,7 +529,10 @@ function DockSlot({
           settling && "dock-slot--settling",
           active
             ? "text-aura-cyan border-aura-cyan/50 bg-aura-cyan/10 shadow-aura-glow-cyan"
-            : "text-aura-textMuted border-transparent hover:text-aura-textMain",
+            : "text-aura-textMuted border-transparent",
+          // Highlight travels with the pointer, not just the size. Driven by
+          // the same state as the name tag so a finger gets it too.
+          showTip && !active && "text-aura-textMain bg-aura-surfaceHighest/60",
           editing && "dock-jiggle cursor-grab",
           dragging && "opacity-60 cursor-grabbing",
         )}
