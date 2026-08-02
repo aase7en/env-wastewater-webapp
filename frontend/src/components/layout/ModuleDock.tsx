@@ -72,26 +72,78 @@ export function ModuleDock({ nav, isAdmin }: { nav: DockItem[]; isAdmin: boolean
   const isActive = (to: string) =>
     loc.pathname === to || (to !== "/" && loc.pathname.startsWith(to + "/"));
 
-  /** Pointer x → per-item scale. Null cursor (or reduced motion) = flat. */
-  const scaleFor = (i: number): number => {
-    if (mouseX === null || editing) return 1;
-    const rect = barRef.current?.getBoundingClientRect();
-    if (!rect) return 1;
-    const centre = rect.left + PAD + i * (ITEM + GAP) + ITEM / 2;
-    return 1 + (MAX_SCALE - 1) * falloff(Math.abs(mouseX - centre) / (ITEM + GAP));
-  };
+  /* ── Magnification + displacement ────────────────────────────────────────
+   * Two passes. First the scale of every slot from its distance to the
+   * cursor; then how far each slot has to shift so that a grown neighbour
+   * PUSHES it aside instead of overlapping it — the part that makes this read
+   * as the macOS dock rather than as icons that merely inflate.
+   *
+   * Slot i's centre moves by the total extra width of every slot before it,
+   * plus half of its own (scale is about its own centre, so its growth is
+   * symmetric). Subtracting half the total growth keeps the row centred, so
+   * the dock expands evenly both ways instead of creeping rightward.
+   *
+   * The picker button is the last slot, hence `slots = items.length + 1`. */
+  const slots = items.length + 1;
+  const barLeft = barRef.current?.getBoundingClientRect().left ?? null;
 
-  // ── Long-press → edit mode ───────────────────────────────────────────────
+  const scales: number[] = [];
+  for (let i = 0; i < slots; i++) {
+    if (mouseX === null || editing || barLeft === null) {
+      scales.push(1);
+      continue;
+    }
+    const centre = barLeft + PAD + i * (ITEM + GAP) + ITEM / 2;
+    scales.push(
+      1 + (MAX_SCALE - 1) * falloff(Math.abs(mouseX - centre) / (ITEM + GAP)),
+    );
+  }
+
+  const totalGrowth = scales.reduce((sum, s) => sum + ITEM * (s - 1), 0);
+  const offsets: number[] = [];
+  let accumulated = 0;
+  for (const s of scales) {
+    offsets.push(accumulated + (ITEM * (s - 1)) / 2 - totalGrowth / 2);
+    accumulated += ITEM * (s - 1);
+  }
+
+  /** Resting width of the pill, before any magnification. */
+  const baseWidth = 2 * PAD + slots * ITEM + (slots - 1) * GAP;
+
+  const slotStyle = (i: number) => ({
+    transform: `translateX(${offsets[i].toFixed(2)}px) scale(${scales[i].toFixed(3)})`,
+  });
+
+  /* ── Press gestures ──────────────────────────────────────────────────────
+   * Two gestures share one pointerdown, told apart by whether the pointer
+   * MOVES:
+   *   press + drag       → pan the dock (native overflow scroll; touch-action
+   *                        pan-x lets the browser own it, which keeps the
+   *                        momentum feel)
+   *   press + hold still → edit mode
+   * So any movement past a small slop radius has to cancel the pending
+   * long-press, or a deliberate drag trips into edit mode after 500ms. */
+  const PRESS_SLOP = 8; // px before a hold counts as a drag
   const pressTimer = useRef<number | null>(null);
+  const pressOrigin = useRef<{ x: number; y: number } | null>(null);
+
   const clearPress = () => {
     if (pressTimer.current !== null) {
       window.clearTimeout(pressTimer.current);
       pressTimer.current = null;
     }
+    pressOrigin.current = null;
   };
-  const startPress = () => {
+  const startPress = (x: number, y: number) => {
     clearPress();
+    pressOrigin.current = { x, y };
     pressTimer.current = window.setTimeout(() => setEditing(true), 500);
+  };
+  /** Cancel the pending hold once the pointer has travelled far enough. */
+  const pressMoved = (x: number, y: number) => {
+    const o = pressOrigin.current;
+    if (!o || pressTimer.current === null) return;
+    if (Math.hypot(x - o.x, y - o.y) > PRESS_SLOP) clearPress();
   };
 
   // Escape leaves edit mode; so does clicking anywhere outside the dock.
@@ -154,18 +206,42 @@ export function ModuleDock({ nav, isAdmin }: { nav: DockItem[]; isAdmin: boolean
         />
       )}
 
-      <div className="aura-card rounded-full !p-0">
+      {/* The pill is its own absolutely-positioned layer so that widening it
+          to swallow the displacement never reflows the icons — the icon row
+          stays a pure transform, no layout on pointermove. */}
+      <div className="relative flex justify-center">
+        {/* `!absolute` is not decoration: .aura-card sets `position: relative`
+            and `z-index: 1`, and it is declared after @tailwind utilities, so
+            the plain utility loses the cascade. Same reason the row below
+            takes z-10 — otherwise the pill paints over its own icons.
+            --static because the dock is chrome, not a card asking for
+            attention; the running ring is reserved for alert states. */}
+        <div
+          aria-hidden="true"
+          className="dock-pill aura-card aura-card--static !absolute inset-y-0 left-1/2 -translate-x-1/2 rounded-full !p-0"
+          // Clamped to the same width the row is, or on a phone the pill
+          // would run off-screen while the row inside it scrolls.
+          style={{
+            width: baseWidth + totalGrowth,
+            maxWidth: "calc(100vw - 2rem)",
+          }}
+        />
         <div
           ref={barRef}
-          // 8 default pins at 48px overflow a 375px phone, so the bar scrolls
-          // horizontally rather than pushing off-screen. Doing this clips the
-          // magnified icon and the name tag at the edges — acceptable because
-          // both are hover-only effects and a touch device has no hover. The
-          // scrollbar itself is hidden; the dock is short enough to swipe.
-          className="dock-bar flex items-end max-w-[calc(100vw-2rem)] overflow-x-auto"
-          style={{ gap: GAP, padding: PAD }}
+          // 8 default pins at 48px overflow a 375px phone, so the row scrolls
+          // horizontally rather than running off-screen. touch-action pan-x
+          // hands horizontal panning to the browser (momentum, rubber-band)
+          // while leaving vertical page scroll alone; in edit mode it becomes
+          // `none` so a drag reorders instead of scrolling.
+          className="dock-bar relative z-10 flex items-end max-w-[calc(100vw-2rem)] overflow-x-auto"
+          style={{
+            gap: GAP,
+            padding: PAD,
+            touchAction: editing ? "none" : "pan-x",
+          }}
           onPointerMove={(e) => {
             setMouseX(e.clientX);
+            pressMoved(e.clientX, e.clientY);
             if (dragFrom !== null) {
               const to = slotAt(e.clientX);
               if (to !== dragFrom) {
@@ -176,25 +252,22 @@ export function ModuleDock({ nav, isAdmin }: { nav: DockItem[]; isAdmin: boolean
           }}
           onPointerLeave={() => { setMouseX(null); clearPress(); }}
           onPointerUp={() => { setDragFrom(null); clearPress(); }}
+          onPointerCancel={() => { setDragFrom(null); clearPress(); }}
         >
-          {items.map((item, i) => {
-            const active = isActive(item.to);
-            const scale = scaleFor(i);
-            return (
-              <DockSlot
-                key={item.to}
-                item={item}
-                active={active}
-                scale={scale}
-                editing={editing}
-                dragging={dragFrom === i}
-                onPressStart={startPress}
-                onPressEnd={clearPress}
-                onDragStart={() => editing && setDragFrom(i)}
-                onUnpin={() => commit(order.filter((p) => p !== item.to))}
-              />
-            );
-          })}
+          {items.map((item, i) => (
+            <DockSlot
+              key={item.to}
+              item={item}
+              active={isActive(item.to)}
+              style={slotStyle(i)}
+              editing={editing}
+              dragging={dragFrom === i}
+              onPressStart={startPress}
+              onPressEnd={clearPress}
+              onDragStart={() => editing && setDragFrom(i)}
+              onUnpin={() => commit(order.filter((p) => p !== item.to))}
+            />
+          ))}
 
           {/* Always present, so every module stays reachable even when the
               dock is pinned down to a handful. */}
@@ -208,11 +281,7 @@ export function ModuleDock({ nav, isAdmin }: { nav: DockItem[]; isAdmin: boolean
               "text-aura-textMuted hover:text-aura-cyan",
               "border border-dashed border-aura-borderSubtle",
             )}
-            style={{
-              width: ITEM,
-              height: ITEM,
-              transform: `scale(${scaleFor(items.length)})`,
-            }}
+            style={{ width: ITEM, height: ITEM, ...slotStyle(items.length) }}
           >
             <MSymbol name="add" />
           </button>
@@ -225,7 +294,7 @@ export function ModuleDock({ nav, isAdmin }: { nav: DockItem[]; isAdmin: boolean
 function DockSlot({
   item,
   active,
-  scale,
+  style,
   editing,
   dragging,
   onPressStart,
@@ -235,10 +304,11 @@ function DockSlot({
 }: {
   item: DockItem;
   active: boolean;
-  scale: number;
+  /** translateX + scale, computed by the parent from cursor distance. */
+  style: { transform: string };
   editing: boolean;
   dragging: boolean;
-  onPressStart: () => void;
+  onPressStart: (x: number, y: number) => void;
   onPressEnd: () => void;
   onDragStart: () => void;
   onUnpin: () => void;
@@ -267,7 +337,7 @@ function DockSlot({
         // Edit mode is a rearranging mode, not a navigating one.
         onClick={(e) => editing && e.preventDefault()}
         onPointerDown={(e) => {
-          onPressStart();
+          onPressStart(e.clientX, e.clientY);
           if (editing) {
             e.preventDefault();
             onDragStart();
@@ -284,7 +354,7 @@ function DockSlot({
           editing && "dock-jiggle cursor-grab",
           dragging && "opacity-60 cursor-grabbing",
         )}
-        style={{ transform: `scale(${scale})` }}
+        style={style}
       >
         <MSymbol name={item.icon} fill={active} />
       </Link>
