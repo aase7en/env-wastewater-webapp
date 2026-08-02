@@ -127,7 +127,13 @@ def probe_helper(token: str) -> int:
     # (PHI-adjacent) and write attachments. Must now gate on the helper.
     ref_failures = _probe_reference_policy_bodies(token)
 
-    return 0 if (helper_failures + policy_failures + aiq_failures + ref_failures) == 0 else 1
+    # Fifth probe: audit_log INSERT must gate WITH CHECK on actor=auth.uid().
+    # Same forgery class as D3 (ai_query_log): the trigger sets actor correctly
+    # but a direct PostgREST POST bypasses the trigger and can forge another
+    # user's uid — surfacing as that victim in the admin audit viewer.
+    aud_failures = _probe_audit_log_insert(token)
+
+    return 0 if (helper_failures + policy_failures + aiq_failures + ref_failures + aud_failures) == 0 else 1
 
 
 def _probe_helper_body(token: str) -> int:
@@ -195,6 +201,44 @@ def _probe_ai_query_log_insert(token: str) -> int:
     check = rows[0].get("with_check") or ""
     gated = "actor = auth.uid()" in check
     print(f"{'ai_query_log_authenticated_insert':<45} "
+          f"{'actor=uid' if gated else 'OPEN (' + check.strip() + ')':<12} "
+          f"{'PASS' if gated else 'FAIL'}")
+    return 0 if gated else 1
+
+
+def _probe_audit_log_insert(token: str) -> int:
+    """Assert audit_log INSERT policy gates WITH CHECK on actor=auth.uid().
+
+    The trigger (core.fn_audit_log) always sets actor = auth.uid() server-side,
+    so tightening WITH CHECK does NOT break the trigger path — both sides
+    agree. The hole this closes: a direct PostgREST POST to /rest/v1/audit_log
+    bypasses the trigger and, under the old WITH CHECK (true), could forge
+    another user's uid as actor. That forged row then surfaced in the admin
+    audit viewer via audit_log_admin_all. Fix mirrors D3: WITH CHECK
+    (actor = auth.uid()). (2026-08-03 recon I1.)
+
+    Note: service-role inserts with actor = NULL bypass RLS entirely
+    (BYPASSRLS), so this gate does not affect the system-action logging path
+    documented in v2_audit_trigger.sql lines 11-12.
+    """
+    q = (
+        "SELECT with_check FROM pg_policies "
+        "WHERE schemaname = 'core' AND tablename = 'audit_log' "
+        "AND policyname = 'audit_log_authenticated_insert';"
+    )
+    res = exec_sql(token, q)
+    if isinstance(res, dict) and res.get("_error"):
+        print(f"FAIL probing audit_log INSERT: {res['_error']}", file=sys.stderr)
+        return 1
+    rows = res if isinstance(res, list) else []
+    print(f"\n{'policy':<45} {'gate':<12} {'status'}")
+    print("-" * 65)
+    if not rows:
+        print(f"{'audit_log_authenticated_insert':<45} {'missing':<12} FAIL")
+        return 1
+    check = rows[0].get("with_check") or ""
+    gated = "actor = auth.uid()" in check
+    print(f"{'audit_log_authenticated_insert':<45} "
           f"{'actor=uid' if gated else 'OPEN (' + check.strip() + ')':<12} "
           f"{'PASS' if gated else 'FAIL'}")
     return 0 if gated else 1
