@@ -269,10 +269,17 @@
  *
  * transform-origin: bottom — icons grow UPWARD out of the bar, which is what
  * makes it read as a dock rather than as buttons that get fat. */
+/* DOCK-3: NO transition while the cursor is over the dock. macOS tracks the
+ * pointer frame-for-frame; easing every update means the icon is always
+ * chasing a target it never reaches, which reads as soft and laggy rather
+ * than magnetic. The transition is added back only on the way out
+ * (.dock-slot--settling), so the row still eases down instead of snapping. */
 .dock-slot {
   transform-origin: bottom center;
   will-change: transform;
-  transition: transform var(--duration-fast) var(--ease-smooth);
+}
+.dock-slot--settling {
+  transition: transform var(--duration-base) var(--ease-smooth);
 }
 /* Scrollable on narrow screens without a visible scrollbar eating 8px of a
  * 48px-tall bar. */
@@ -308,7 +315,7 @@
   /* Magnification is an inline style set from JS, so it needs !important to
      be overridden here. The dock stays fully usable — every icon simply
      keeps its resting size, and the name tag still appears. */
-  .dock-slot { transform: none !important; transition: none; }
+  .dock-slot, .dock-slot--settling { transform: none !important; transition: none; }
   .dock-tip { transition: none; }
   .dock-jiggle { animation: none; }
 }

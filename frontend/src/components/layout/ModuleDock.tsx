@@ -23,6 +23,10 @@ const GAP = 6;         // gap between slots
 const PAD = 10;        // dock inner padding
 const MAX_SCALE = 1.6; // magnification at the cursor
 const RANGE = 2.2;     // falloff radius, in slots
+/** How long a STILL press takes to open edit mode. 500ms was short enough to
+ *  fire during ordinary hesitation before a tap; 900 leaves room to pause. */
+const HOLD_MS = 900;
+const PRESS_SLOP = 8;  // px of travel before a hold is reclassified as a drag
 
 /** Smoothstep — the ease that makes neighbours fall off gently instead of
  *  stepping. Straight linear falloff reads as mechanical. */
@@ -113,6 +117,8 @@ export function ModuleDock({ nav, isAdmin }: { nav: DockItem[]; isAdmin: boolean
   const slotStyle = (i: number) => ({
     transform: `translateX(${offsets[i].toFixed(2)}px) scale(${scales[i].toFixed(3)})`,
   });
+  /** Ease only on the way out; track the cursor instantly while over the bar. */
+  const settling = mouseX === null;
 
   /* ── Press gestures ──────────────────────────────────────────────────────
    * Two gestures share one pointerdown, told apart by whether the pointer
@@ -123,9 +129,10 @@ export function ModuleDock({ nav, isAdmin }: { nav: DockItem[]; isAdmin: boolean
    *   press + hold still → edit mode
    * So any movement past a small slop radius has to cancel the pending
    * long-press, or a deliberate drag trips into edit mode after 500ms. */
-  const PRESS_SLOP = 8; // px before a hold counts as a drag
   const pressTimer = useRef<number | null>(null);
   const pressOrigin = useRef<{ x: number; y: number } | null>(null);
+  /** Horizontal pan state for mouse drag (touch is handled by the browser). */
+  const pan = useRef<{ x: number; scrollLeft: number } | null>(null);
 
   const clearPress = () => {
     if (pressTimer.current !== null) {
@@ -134,12 +141,20 @@ export function ModuleDock({ nav, isAdmin }: { nav: DockItem[]; isAdmin: boolean
     }
     pressOrigin.current = null;
   };
-  const startPress = (x: number, y: number) => {
+  /**
+   * @param index slot being held. When the hold completes we go straight into
+   *   dragging THAT slot — otherwise the finger is already down, edit mode
+   *   opens, and nothing moves until you lift and press again, which feels
+   *   broken. iOS does the same: hold, wobble, keep dragging.
+   */
+  const startPress = (x: number, y: number, index: number) => {
     clearPress();
     pressOrigin.current = { x, y };
-    pressTimer.current = window.setTimeout(() => setEditing(true), 500);
+    pressTimer.current = window.setTimeout(() => {
+      setEditing(true);
+      setDragFrom(index);
+    }, HOLD_MS);
   };
-  /** Cancel the pending hold once the pointer has travelled far enough. */
   const pressMoved = (x: number, y: number) => {
     const o = pressOrigin.current;
     if (!o || pressTimer.current === null) return;
@@ -181,9 +196,12 @@ export function ModuleDock({ nav, isAdmin }: { nav: DockItem[]; isAdmin: boolean
   return (
     // <nav> wraps the picker as well as the bar — every module link, pinned or
     // not, has to live inside the navigation landmark.
+    // bottom-8 (was bottom-4): the bar was sitting almost on the screen edge.
+    // The row is also held well inside the viewport — see max-w on .dock-bar —
+    // so it reads as a floating object rather than a fixed footer.
     <nav
       aria-label="โมดูล"
-      className="fixed bottom-4 left-1/2 -translate-x-1/2 z-40 flex flex-col items-center gap-2"
+      className="fixed bottom-8 left-1/2 -translate-x-1/2 z-40 flex flex-col items-center gap-3"
     >
       {editing && (
         <div className="flex items-center gap-2 text-[11px] font-thai text-aura-textMuted bg-aura-surfaceHigh/80 backdrop-blur-md border border-aura-borderSubtle rounded-full px-3 py-1">
@@ -223,7 +241,7 @@ export function ModuleDock({ nav, isAdmin }: { nav: DockItem[]; isAdmin: boolean
           // would run off-screen while the row inside it scrolls.
           style={{
             width: baseWidth + totalGrowth,
-            maxWidth: "calc(100vw - 2rem)",
+            maxWidth: "calc(100vw - 6rem)",
           }}
         />
         <div
@@ -233,11 +251,19 @@ export function ModuleDock({ nav, isAdmin }: { nav: DockItem[]; isAdmin: boolean
           // hands horizontal panning to the browser (momentum, rubber-band)
           // while leaving vertical page scroll alone; in edit mode it becomes
           // `none` so a drag reorders instead of scrolling.
-          className="dock-bar relative z-10 flex items-end max-w-[calc(100vw-2rem)] overflow-x-auto"
+          className="dock-bar relative z-10 flex items-end max-w-[calc(100vw-6rem)] overflow-x-auto"
           style={{
             gap: GAP,
             padding: PAD,
             touchAction: editing ? "none" : "pan-x",
+          }}
+          onPointerDown={(e) => {
+            // Mouse drag-to-pan. Touch gets this free from touch-action:pan-x,
+            // but a browser will not pan an overflow container on mouse drag,
+            // so it is wired by hand.
+            if (!editing && e.pointerType === "mouse" && barRef.current) {
+              pan.current = { x: e.clientX, scrollLeft: barRef.current.scrollLeft };
+            }
           }}
           onPointerMove={(e) => {
             setMouseX(e.clientX);
@@ -248,18 +274,25 @@ export function ModuleDock({ nav, isAdmin }: { nav: DockItem[]; isAdmin: boolean
                 commit(reorder(order, dragFrom, to));
                 setDragFrom(to);
               }
+              return;
+            }
+            if (pan.current && e.buttons === 1 && barRef.current) {
+              barRef.current.scrollLeft =
+                pan.current.scrollLeft - (e.clientX - pan.current.x);
             }
           }}
-          onPointerLeave={() => { setMouseX(null); clearPress(); }}
-          onPointerUp={() => { setDragFrom(null); clearPress(); }}
-          onPointerCancel={() => { setDragFrom(null); clearPress(); }}
+          onPointerLeave={() => { setMouseX(null); clearPress(); pan.current = null; }}
+          onPointerUp={() => { setDragFrom(null); clearPress(); pan.current = null; }}
+          onPointerCancel={() => { setDragFrom(null); clearPress(); pan.current = null; }}
         >
           {items.map((item, i) => (
             <DockSlot
               key={item.to}
               item={item}
+              index={i}
               active={isActive(item.to)}
               style={slotStyle(i)}
+              settling={settling}
               editing={editing}
               dragging={dragFrom === i}
               onPressStart={startPress}
@@ -293,8 +326,10 @@ export function ModuleDock({ nav, isAdmin }: { nav: DockItem[]; isAdmin: boolean
 
 function DockSlot({
   item,
+  index,
   active,
   style,
+  settling,
   editing,
   dragging,
   onPressStart,
@@ -303,12 +338,14 @@ function DockSlot({
   onUnpin,
 }: {
   item: DockItem;
+  index: number;
   active: boolean;
   /** translateX + scale, computed by the parent from cursor distance. */
   style: { transform: string };
+  settling: boolean;
   editing: boolean;
   dragging: boolean;
-  onPressStart: (x: number, y: number) => void;
+  onPressStart: (x: number, y: number, index: number) => void;
   onPressEnd: () => void;
   onDragStart: () => void;
   onUnpin: () => void;
@@ -337,7 +374,7 @@ function DockSlot({
         // Edit mode is a rearranging mode, not a navigating one.
         onClick={(e) => editing && e.preventDefault()}
         onPointerDown={(e) => {
-          onPressStart(e.clientX, e.clientY);
+          onPressStart(e.clientX, e.clientY, index);
           if (editing) {
             e.preventDefault();
             onDragStart();
@@ -346,8 +383,8 @@ function DockSlot({
         onPointerUp={onPressEnd}
         onPointerCancel={onPressEnd}
         className={cn(
-          "dock-slot grid place-items-center w-full h-full rounded-2xl",
-          "border transition-colors",
+          "dock-slot grid place-items-center w-full h-full rounded-2xl border",
+          settling && "dock-slot--settling",
           active
             ? "text-aura-cyan border-aura-cyan/50 bg-aura-cyan/10 shadow-aura-glow-cyan"
             : "text-aura-textMuted border-transparent hover:text-aura-textMain",
@@ -400,9 +437,9 @@ function ModulePicker({
   onClose: () => void;
 }) {
   return (
-    <div className="aura-card rounded-2xl max-w-[min(92vw,560px)] max-h-[50vh] overflow-y-auto">
-      <div className="flex items-center justify-between mb-2">
-        <h2 className="text-sm font-semibold font-thai text-aura-textMain">
+    <div className="aura-card rounded-3xl w-[min(94vw,860px)] max-h-[70vh] overflow-y-auto">
+      <div className="flex items-center justify-between mb-3">
+        <h2 className="text-base font-semibold font-thai text-aura-textMain">
           ทุกโมดูล
         </h2>
         <button
@@ -419,16 +456,16 @@ function ModulePicker({
           ปักครบทุกโมดูลแล้ว
         </p>
       ) : (
-        <div className="grid grid-cols-3 sm:grid-cols-4 gap-2">
+        <div className="grid grid-cols-3 sm:grid-cols-4 md:grid-cols-5 gap-3">
           {items.map((n) => (
             <div key={n.to} className="relative">
               <Link
                 to={n.to}
                 onClick={onClose}
-                className="flex flex-col items-center gap-1 p-2 rounded-xl border border-aura-borderSubtle text-aura-textMuted hover:text-aura-cyan hover:border-aura-cyan/40 transition-colors"
+                className="flex flex-col items-center gap-2 p-4 rounded-2xl border border-aura-borderSubtle text-aura-textMuted hover:text-aura-cyan hover:border-aura-cyan/40 transition-colors"
               >
-                <MSymbol name={n.icon} />
-                <span className="text-[10px] font-thai text-center leading-tight">
+                <MSymbol name={n.icon} className="text-[28px]" />
+                <span className="text-[11px] font-thai text-center leading-tight">
                   {n.label}
                 </span>
               </Link>
