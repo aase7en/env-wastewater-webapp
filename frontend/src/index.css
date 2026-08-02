@@ -298,7 +298,10 @@
     opacity var(--duration-fast) var(--ease-smooth),
     transform var(--duration-fast) var(--ease-smooth);
 }
-.dock-item:hover > .dock-tip,
+/* Shown from state (.dock-tip--show) so a finger gets labels too — :hover
+ * alone meant the names never appeared on a touch screen at all. Keyboard
+ * focus keeps its own CSS rule since that never goes through the pointer. */
+.dock-tip--show,
 .dock-item:focus-within > .dock-tip {
   opacity: 1;
   transform: translate(-50%, 0);

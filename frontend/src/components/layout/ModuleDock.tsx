@@ -54,7 +54,13 @@ export function ModuleDock({ nav, isAdmin }: { nav: DockItem[]; isAdmin: boolean
   );
 
   const [order, setOrder] = useState<string[]>(() => readDock(validPaths));
+  /** Pointer x in viewport px. Set for touch as well as mouse — the dock owns
+   *  its gesture, so a finger acts exactly like a cursor. */
   const [mouseX, setMouseX] = useState<number | null>(null);
+  /** Mirrors barRef.scrollLeft. Slot centres are screen coordinates, so they
+   *  MUST subtract this or magnification targets the wrong icon the moment
+   *  the row has been scrolled. */
+  const [scrollX, setScrollX] = useState(0);
   const [editing, setEditing] = useState(false);
   const [dragFrom, setDragFrom] = useState<number | null>(null);
   const [pickerOpen, setPickerOpen] = useState(false);
@@ -97,11 +103,26 @@ export function ModuleDock({ nav, isAdmin }: { nav: DockItem[]; isAdmin: boolean
       scales.push(1);
       continue;
     }
-    const centre = barLeft + PAD + i * (ITEM + GAP) + ITEM / 2;
+    const centre = barLeft + PAD + i * (ITEM + GAP) + ITEM / 2 - scrollX;
     scales.push(
       1 + (MAX_SCALE - 1) * falloff(Math.abs(mouseX - centre) / (ITEM + GAP)),
     );
   }
+
+  /** Which slot the pointer is over — drives the name tag. Derived rather
+   *  than left to CSS :hover, because a finger never triggers :hover and the
+   *  labels simply never appeared on a touch screen. */
+  const hoverIndex =
+    mouseX === null || barLeft === null
+      ? null
+      : (() => {
+          const raw = Math.round(
+            (mouseX - barLeft - PAD - ITEM / 2 + scrollX) / (ITEM + GAP),
+          );
+          const i = Math.max(0, Math.min(slots - 1, raw));
+          const centre = barLeft + PAD + i * (ITEM + GAP) + ITEM / 2 - scrollX;
+          return Math.abs(mouseX - centre) <= ITEM ? i : null;
+        })();
 
   const totalGrowth = scales.reduce((sum, s) => sum + ITEM * (s - 1), 0);
   const offsets: number[] = [];
@@ -131,8 +152,54 @@ export function ModuleDock({ nav, isAdmin }: { nav: DockItem[]; isAdmin: boolean
    * long-press, or a deliberate drag trips into edit mode after 500ms. */
   const pressTimer = useRef<number | null>(null);
   const pressOrigin = useRef<{ x: number; y: number } | null>(null);
-  /** Horizontal pan state for mouse drag (touch is handled by the browser). */
-  const pan = useRef<{ x: number; scrollLeft: number } | null>(null);
+  /* ── Edge auto-scroll ────────────────────────────────────────────────────
+   * Dragging the pointer to either end of the row scrolls it, so the modules
+   * that overflow off the end stay reachable with one continuous gesture.
+   * Replaces drag-to-pan: panning moved the content under a stationary
+   * finger, which fought the magnification (the finger would end up over a
+   * different icon than the one it started on). */
+  const EDGE = 56;      // px from the end where scrolling kicks in
+  const EDGE_SPEED = 14; // px per frame at the very edge
+  const edgeRaf = useRef<number | null>(null);
+  const edgeVel = useRef(0);
+
+  const stopEdgeScroll = () => {
+    if (edgeRaf.current !== null) {
+      cancelAnimationFrame(edgeRaf.current);
+      edgeRaf.current = null;
+    }
+    edgeVel.current = 0;
+  };
+
+  const runEdgeScroll = useCallback(() => {
+    const bar = barRef.current;
+    if (!bar || edgeVel.current === 0) {
+      edgeRaf.current = null;
+      return;
+    }
+    bar.scrollLeft += edgeVel.current;
+    setScrollX(bar.scrollLeft);
+    edgeRaf.current = requestAnimationFrame(runEdgeScroll);
+  }, []);
+
+  /** Set the scroll velocity from how deep into the edge zone the pointer is. */
+  const updateEdgeScroll = (clientX: number) => {
+    const bar = barRef.current;
+    if (!bar) return;
+    const r = bar.getBoundingClientRect();
+    let v = 0;
+    if (clientX < r.left + EDGE) {
+      v = -EDGE_SPEED * Math.min(1, (r.left + EDGE - clientX) / EDGE);
+    } else if (clientX > r.right - EDGE) {
+      v = EDGE_SPEED * Math.min(1, (clientX - (r.right - EDGE)) / EDGE);
+    }
+    edgeVel.current = v;
+    if (v !== 0 && edgeRaf.current === null) {
+      edgeRaf.current = requestAnimationFrame(runEdgeScroll);
+    }
+  };
+
+  useEffect(() => stopEdgeScroll, []);
 
   const clearPress = () => {
     if (pressTimer.current !== null) {
@@ -255,35 +322,52 @@ export function ModuleDock({ nav, isAdmin }: { nav: DockItem[]; isAdmin: boolean
           style={{
             gap: GAP,
             padding: PAD,
-            touchAction: editing ? "none" : "pan-x",
+            // `none`, never `pan-x`. Handing horizontal panning to the browser
+            // makes it claim the gesture and fire pointercancel, after which
+            // no pointermove reaches us — which is exactly why magnification
+            // did not follow a finger. The dock scrolls itself instead.
+            touchAction: "none",
           }}
+          onScroll={(e) => setScrollX(e.currentTarget.scrollLeft)}
           onPointerDown={(e) => {
-            // Mouse drag-to-pan. Touch gets this free from touch-action:pan-x,
-            // but a browser will not pan an overflow container on mouse drag,
-            // so it is wired by hand.
-            if (!editing && e.pointerType === "mouse" && barRef.current) {
-              pan.current = { x: e.clientX, scrollLeft: barRef.current.scrollLeft };
-            }
+            // Deliberately NOT setPointerCapture. Capturing on the bar
+            // re-targets the synthesised click to the bar itself, so taps
+            // stopped opening modules at all. It is not needed either: the
+            // edge-scroll zone sits INSIDE the bar, so the pointer never has
+            // to leave the element for the gesture to work.
+            setMouseX(e.clientX);
           }}
           onPointerMove={(e) => {
             setMouseX(e.clientX);
             pressMoved(e.clientX, e.clientY);
+            // Pressed (or hovering with a mouse) near an end → keep scrolling.
+            if (e.buttons === 1 || e.pointerType === "touch") {
+              updateEdgeScroll(e.clientX);
+            }
             if (dragFrom !== null) {
               const to = slotAt(e.clientX);
               if (to !== dragFrom) {
                 commit(reorder(order, dragFrom, to));
                 setDragFrom(to);
               }
-              return;
-            }
-            if (pan.current && e.buttons === 1 && barRef.current) {
-              barRef.current.scrollLeft =
-                pan.current.scrollLeft - (e.clientX - pan.current.x);
             }
           }}
-          onPointerLeave={() => { setMouseX(null); clearPress(); pan.current = null; }}
-          onPointerUp={() => { setDragFrom(null); clearPress(); pan.current = null; }}
-          onPointerCancel={() => { setDragFrom(null); clearPress(); pan.current = null; }}
+          onPointerLeave={(e) => {
+            // A finger "leaving" mid-gesture is just capture doing its job —
+            // only reset when nothing is pressed.
+            if (e.buttons === 0) { setMouseX(null); stopEdgeScroll(); }
+            clearPress();
+          }}
+          onPointerUp={() => {
+            setDragFrom(null);
+            clearPress();
+            stopEdgeScroll();
+          }}
+          onPointerCancel={() => {
+            setDragFrom(null);
+            clearPress();
+            stopEdgeScroll();
+          }}
         >
           {items.map((item, i) => (
             <DockSlot
@@ -293,6 +377,7 @@ export function ModuleDock({ nav, isAdmin }: { nav: DockItem[]; isAdmin: boolean
               active={isActive(item.to)}
               style={slotStyle(i)}
               settling={settling}
+              showTip={hoverIndex === i}
               editing={editing}
               dragging={dragFrom === i}
               onPressStart={startPress}
@@ -330,6 +415,7 @@ function DockSlot({
   active,
   style,
   settling,
+  showTip,
   editing,
   dragging,
   onPressStart,
@@ -343,6 +429,9 @@ function DockSlot({
   /** translateX + scale, computed by the parent from cursor distance. */
   style: { transform: string };
   settling: boolean;
+  /** Parent decides, from pointer position — not CSS :hover, which a finger
+   *  never fires. */
+  showTip: boolean;
   editing: boolean;
   dragging: boolean;
   onPressStart: (x: number, y: number, index: number) => void;
@@ -358,10 +447,11 @@ function DockSlot({
       <span
         aria-hidden="true"
         className={cn(
-          "dock-tip pointer-events-none absolute left-1/2 -translate-x-1/2 bottom-full mb-3",
+          "dock-tip pointer-events-none absolute left-1/2 bottom-full mb-3",
           "whitespace-nowrap rounded-lg px-2.5 py-1 text-xs font-thai",
           "bg-aura-surfaceHighest text-aura-textMain border border-aura-borderSubtle",
           "shadow-aura-card",
+          showTip && "dock-tip--show",
         )}
       >
         {item.label}
