@@ -1,6 +1,6 @@
 # Schema Snapshot — LIVE (P5b.2-live)
 
-> Introspected from ENV_DB on 2026-08-01 via Supabase Management API.
+> Introspected from ENV_DB on 2026-08-03 via Supabase Management API.
 > Schemas: core, wastewater, carbon, food, fuel, garbage, garden, safety, building, chemical, water_supply. GENERATED — re-run `scripts/introspect_schema_api.py`.
 
 ## Tables
@@ -26,6 +26,7 @@
 | `core` | `personnel` | 9 |
 | `core` | `regulation` | 7 |
 | `core` | `repair_request` | 0 |
+| `core` | `role_module_visibility` | 0 |
 | `core` | `saved_query` | 0 |
 | `food` | `lab_test` | 0 |
 | `fuel` | `dispense_log` | 0 |
@@ -340,6 +341,16 @@
 | 6 | `status` | `repair_status` | NO | `'open'::core.repair_status` |
 | 7 | `created_at` | `timestamp with time zone` | NO | `now()` |
 | 8 | `resolved_at` | `timestamp with time zone` | YES | `` |
+
+### `core.role_module_visibility`
+
+| # | column | type | nullable | default |
+|---|---|---|---|---|
+| 1 | `role` | `text` | NO | `` |
+| 2 | `module_key` | `text` | NO | `` |
+| 3 | `visible` | `boolean` | NO | `true` |
+| 4 | `updated_by` | `uuid` | YES | `` |
+| 5 | `updated_at` | `timestamp with time zone` | NO | `now()` |
 
 ### `core.saved_query`
 
@@ -789,6 +800,9 @@
 | `core` | `repair_request` | `repair_request_pkey` | PK | `PRIMARY KEY (id)` |
 | `core` | `repair_request` | `repair_request_reading_id_fkey` | FK | `FOREIGN KEY (reading_id) REFERENCES wastewater.reading(id)` |
 | `core` | `repair_request` | `repair_request_reported_by_fkey` | FK | `FOREIGN KEY (reported_by) REFERENCES core.app_user(id)` |
+| `core` | `role_module_visibility` | `role_module_visibility_pkey` | PK | `PRIMARY KEY (role, module_key)` |
+| `core` | `role_module_visibility` | `role_module_visibility_role_check` | CHECK | `CHECK ((role = ANY (ARRAY['admin'::text, 'staff'::text, 'pending'::text])))` |
+| `core` | `role_module_visibility` | `role_module_visibility_updated_by_fkey` | FK | `FOREIGN KEY (updated_by) REFERENCES core.app_user(id)` |
 | `core` | `saved_query` | `saved_query_pkey` | PK | `PRIMARY KEY (id)` |
 | `food` | `lab_test` | `lab_test_pkey` | PK | `PRIMARY KEY (id)` |
 | `fuel` | `dispense_log` | `dispense_log_pkey` | PK | `PRIMARY KEY (id)` |
@@ -852,6 +866,7 @@
 - `core.regulation` **idx_regulation_applies_to**: `CREATE INDEX idx_regulation_applies_to ON core.regulation USING gin (applies_to)`
 - `core.regulation` **regulation_pkey**: `CREATE UNIQUE INDEX regulation_pkey ON core.regulation USING btree (id)`
 - `core.repair_request` **repair_request_pkey**: `CREATE UNIQUE INDEX repair_request_pkey ON core.repair_request USING btree (id)`
+- `core.role_module_visibility` **role_module_visibility_pkey**: `CREATE UNIQUE INDEX role_module_visibility_pkey ON core.role_module_visibility USING btree (role, module_key)`
 - `core.saved_query` **idx_saved_query_created_by**: `CREATE INDEX idx_saved_query_created_by ON core.saved_query USING btree (created_by)`
 - `core.saved_query` **idx_saved_query_shared**: `CREATE INDEX idx_saved_query_shared ON core.saved_query USING btree (name, tags) WHERE (is_shared = true)`
 - `core.saved_query` **saved_query_pkey**: `CREATE UNIQUE INDEX saved_query_pkey ON core.saved_query USING btree (id)`
@@ -897,6 +912,7 @@
 | `core` | `personnel` | ✅ |
 | `core` | `regulation` | ✅ |
 | `core` | `repair_request` | ✅ |
+| `core` | `role_module_visibility` | ✅ |
 | `core` | `saved_query` | ✅ |
 | `food` | `lab_test` | ✅ |
 | `fuel` | `dispense_log` | ✅ |

@@ -295,6 +295,24 @@ binding rules are here.
 | Chunk | Agent | Claimed | Scope (files) |
 |---|---|---|---|
 
+> **DOCK role-module-visibility GLM execute done 2026-08-03** — admin-
+> configurable dock icon visibility per role (per docs/work-orders/DOCK-
+> role-module-visibility.md). New table `core.role_module_visibility`
+> (role, module_key, visible, default true) + RLS (own-role SELECT via
+> inline subquery on core.app_user with enum→text cast — ADR-0008 safe;
+> admin INSERT/UPDATE/DELETE via core.fn_is_admin) + public. PostgREST
+> façade. Frontend: `lib/role-module-visibility.ts` (useHiddenModules
+> one-shot read + useAllVisibility admin matrix), ModuleDock filter
+> extended (adminOnly AND not-hidden, with '/' + '/dashboard' locked
+> visible per WO "Do not"), new `RoleVisibilitySheet` (roles × modules
+> toggles, opened from the formerly-disabled toolbar button).
+> **Presentation only — NOT a security boundary** (route guards + RLS
+> remain authoritative; this controls what the dock OFFERS). Migration
+> 11/11 OK live; build ✅, Vitest 123/123, Playwright 31/31. Note: first
+> apply hit an operator-does-not-exist error (text vs user_role enum) —
+> fixed by keeping `role` as text + casting the enum in the policy; DO-
+> block ALTER approach was abandoned (split_sql mishandles nested $$).
+
 > **SCHEMA5b deny-pending-rls GLM execute done 2026-08-01** — closes the
 > bug-hunt-recon finding that OAUTH-4 missed 5 reference tables. OAUTH-4
 > repolicied 11 transactional tables but `schema5_rest_exposure.sql:8-17`

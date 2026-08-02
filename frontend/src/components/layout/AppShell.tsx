@@ -120,7 +120,7 @@ function UserFooter() {
  * Wordmark uses -ENV (water_management_dark_mode_fix corrected the EVN typo).
  */
 export function AppShell({ children }: { children: ReactNode }) {
-  const { isAdmin } = useAuth();
+  const { isAdmin, appUser } = useAuth();
 
   return (
     <div className="min-h-screen flex flex-col">
@@ -159,7 +159,7 @@ export function AppShell({ children }: { children: ReactNode }) {
         {children}
       </main>
 
-      <ModuleDock nav={NAV} isAdmin={isAdmin} />
+      <ModuleDock nav={NAV} isAdmin={isAdmin} role={appUser?.role ?? null} />
     </div>
   );
 }

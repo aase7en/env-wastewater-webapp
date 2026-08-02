@@ -21,6 +21,11 @@ import {
   type DockPrefs,
   type IconSize,
 } from "./dock-prefs";
+import {
+  useHiddenModules,
+  type AppRole,
+} from "../../lib/role-module-visibility";
+import { RoleVisibilitySheet } from "./RoleVisibilitySheet";
 
 export interface DockItem {
   to: string;
@@ -65,15 +70,39 @@ function falloff(distanceInSlots: number): number {
   return t * t * (3 - 2 * t);
 }
 
-export function ModuleDock({ nav, isAdmin }: { nav: DockItem[]; isAdmin: boolean }) {
+export function ModuleDock({
+  nav,
+  isAdmin,
+  role,
+}: {
+  nav: DockItem[];
+  isAdmin: boolean;
+  role: AppRole | null;
+}) {
   const loc = useLocation();
   const navigate = useNavigate();
   const barRef = useRef<HTMLDivElement>(null);
   const rootRef = useRef<HTMLElement>(null);
 
+  // DOCK role-visibility: admin-configurable hidden-module set for the
+  // caller's own role. Presentation only — NOT a security boundary (route
+  // guards + RLS remain authoritative; see docs/work-orders/DOCK-role-
+  // module-visibility.md "Do not"). '/' and '/dashboard' are never hidden
+  // (stranding a user off the landing page). Loading state is folded into
+  // the filter: until the set resolves, show everything (default visible).
+  const { hidden: hiddenModules } = useHiddenModules(role);
+  const [visSheetOpen, setVisSheetOpen] = useState(false);
+
   const allowed = useMemo(
-    () => nav.filter((n) => !n.adminOnly || isAdmin),
-    [nav, isAdmin],
+    () =>
+      nav.filter(
+        (n) =>
+          (!n.adminOnly || isAdmin) &&
+          // Never hide the landing page — stranding a user is worse than
+          // over-showing. (WO "Do not".)
+          (n.to === "/" || n.to === "/dashboard" || !hiddenModules.has(n.to)),
+      ),
+    [nav, isAdmin, hiddenModules],
   );
   const byPath = useMemo(() => new Map(allowed.map((n) => [n.to, n])), [allowed]);
   const validPaths = useMemo(() => new Set(allowed.map((n) => n.to)), [allowed]);
@@ -480,11 +509,19 @@ export function ModuleDock({ nav, isAdmin }: { nav: DockItem[]; isAdmin: boolean
             onAutoArrange={autoArrange}
             onCycleSize={cycleSize}
             onReset={resetDock}
+            onOpenVisibility={() => setVisSheetOpen(true)}
             onDone={() => {
               setEditing(false);
               setPickerFor(null);
               setOpenFolder(null);
             }}
+          />
+        )}
+
+        {visSheetOpen && (
+          <RoleVisibilitySheet
+            nav={nav}
+            onClose={() => setVisSheetOpen(false)}
           />
         )}
 
@@ -657,6 +694,7 @@ function DockToolbar({
   onAutoArrange,
   onCycleSize,
   onReset,
+  onOpenVisibility,
   onDone,
 }: {
   iconSize: IconSize;
@@ -667,6 +705,7 @@ function DockToolbar({
   onAutoArrange: () => void;
   onCycleSize: () => void;
   onReset: () => void;
+  onOpenVisibility: () => void;
   onDone: () => void;
 }) {
   const [confirmReset, setConfirmReset] = useState(false);
@@ -710,9 +749,8 @@ function DockToolbar({
       {isAdmin && (
         <Tool
           icon="admin_panel_settings"
-          label="สิทธิ์การมองเห็น (รอ Track Z)"
-          onClick={() => {}}
-          disabled
+          label="สิทธิ์การมองเห็น"
+          onClick={onOpenVisibility}
         />
       )}
       <span className="w-px h-6 bg-aura-borderSubtle mx-1" />
