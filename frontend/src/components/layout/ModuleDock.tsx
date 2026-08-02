@@ -392,6 +392,21 @@ export function ModuleDock({ nav, isAdmin }: { nav: DockItem[]; isAdmin: boolean
     // bottom-8 (was bottom-4): the bar was sitting almost on the screen edge.
     // The row is also held well inside the viewport — see max-w on .dock-bar —
     // so it reads as a floating object rather than a fixed footer.
+    <>
+      {/* Scrim. Rendered as a SIBLING of the dock, never inside it: .dock-root
+          carries a transform, and a transformed ancestor becomes the
+          containing block for its position:fixed descendants — the scrim
+          would have been trapped inside the dock instead of covering the
+          page. z-[35] sits above the top bar (z-30) and below the dock (z-40)
+          so the sheet stays lit while everything else recedes. */}
+      {pickerOpen && (
+        <div
+          aria-hidden="true"
+          onClick={() => setPickerOpen(false)}
+          className="dock-scrim fixed inset-0 z-[35] bg-aura-bgDeep/50 backdrop-blur-sm"
+        />
+      )}
+
     <nav
       ref={rootRef}
       aria-label="โมดูล"
@@ -565,6 +580,7 @@ export function ModuleDock({ nav, isAdmin }: { nav: DockItem[]; isAdmin: boolean
         </div>
       </div>
     </nav>
+    </>
   );
 }
 
@@ -704,9 +720,13 @@ function ModulePicker({
        Height is bounded against the VIEWPORT (not 70vh) because this sheet
        stacks above a ~170px dock: on a short screen 70vh + dock overflowed
        the top of the display and the header went off-screen. */
+    /* p-5 is NOT optional here. .aura-card is only the glass surface + ring —
+       the padding every other card gets comes from the <AuraCard> COMPONENT,
+       which adds `p-5`. This sheet uses the raw class, so it had zero padding:
+       the heading sat flush against the edge and the 24px corner radius cut
+       across it, which is the top-left text that kept "escaping the frame". */
     <div
-      className="aura-card rounded-3xl w-[min(84vw,560px)] flex flex-col"
-      style={{ maxHeight: "calc(100vh - 15rem)" }}
+      className="aura-card p-5 rounded-3xl w-[min(84vw,560px)] flex flex-col"
     >
       <div className="flex items-center justify-between mb-3 shrink-0">
         <h2 className="text-base font-semibold font-thai text-aura-textMain">
@@ -722,13 +742,24 @@ function ModulePicker({
         </button>
       </div>
       {items.length === 0 ? (
-        <p className="text-xs text-aura-textMuted font-thai py-2">
+        // Same fixed height as the grid, so pinning the last module does not
+        // make the sheet collapse.
+        <p
+          className="text-xs text-aura-textMuted font-thai grid place-items-center"
+          style={{ height: "min(46vh, 340px)" }}
+        >
           ปักครบทุกโมดูลแล้ว
         </p>
       ) : (
         // The only scrolling element. -mx-1/px-1 keeps focus rings from being
         // shaved off at the edges of the scroll box.
-        <div className="overflow-y-auto -mx-1 px-1 pb-1 grid grid-cols-3 sm:grid-cols-4 gap-2">
+        // FIXED height, not max-height: the sheet must not shrink as modules
+        // get pinned out of it, or it resizes under the user's finger while
+        // they are still picking. Empty space at the bottom is the point.
+        <div
+          className="overflow-y-auto -mx-1 px-1 pb-1 grid grid-cols-3 sm:grid-cols-4 gap-2 content-start"
+          style={{ height: "min(46vh, 340px)" }}
+        >
           {items.map((n) => (
             <div key={n.to} className="relative min-w-0">
               <Link
