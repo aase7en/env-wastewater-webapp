@@ -41,9 +41,21 @@ const GAP = 6;
 const PAD = 10;
 const MAX_SCALE = 1.6; // magnification directly under the pointer
 const RANGE = 2.2;     // falloff radius, in slots
-/** How long a STILL press takes to open edit mode. */
-const HOLD_MS = 900;
-const PRESS_SLOP = 8;  // px of travel before a hold is reclassified as a drag
+/* ── Gesture model ─────────────────────────────────────────────────────────
+ * One pointerdown, three outcomes, separated by time and movement:
+ *
+ *   move straight away        → PAN. The strip scrolls with the finger. With
+ *                               this many modules, flicking through them has
+ *                               to be the cheapest gesture.
+ *   hold MAGNIFY_MS, then move → BROWSE. Icons magnify under the finger and
+ *                               releasing picks one.
+ *   hold HOLD_MS, still       → EDIT.
+ *
+ * Browsing is deliberately behind a short hold: it used to trigger the instant
+ * a finger landed, which made every attempt to scroll turn into a selection. */
+const MAGNIFY_MS = 500;
+const HOLD_MS = 1900;
+const PRESS_SLOP = 8;  // px of travel before a press counts as a drag
 const EDGE = 56;       // px from either end where auto-scroll starts
 const EDGE_SPEED = 14; // px per frame at the very edge
 
@@ -75,6 +87,18 @@ export function ModuleDock({ nav, isAdmin }: { nav: DockItem[]; isAdmin: boolean
   /** null = closed · "dock" = pin to top level · otherwise a folder id. */
   const [pickerFor, setPickerFor] = useState<string | null>(null);
   const [openFolder, setOpenFolder] = useState<string | null>(null);
+  /** Pointer is down. While down, magnification waits for `armed`. */
+  const [pressed, setPressed] = useState(false);
+  /** The MAGNIFY_MS hold completed — browse mode. */
+  const [armed, setArmed] = useState(false);
+  /** The press moved before arming — the strip is being flicked. */
+  const [panning, setPanning] = useState(false);
+  /**
+   * Magnification is free on a hovering mouse — it costs nothing and is the
+   * usual desktop affordance — but a pressed pointer has to earn it, or every
+   * attempt to flick the strip would select something instead.
+   */
+  const magnifyOn = !pressed || armed;
 
   // Re-filter once admin status resolves, or an admin's pinned admin entries
   // would be dropped on first paint.
@@ -115,7 +139,7 @@ export function ModuleDock({ nav, isAdmin }: { nav: DockItem[]; isAdmin: boolean
 
   const scales: number[] = [];
   for (let i = 0; i < slots; i++) {
-    if (mouseX === null || barLeft === null) {
+    if (mouseX === null || barLeft === null || !magnifyOn) {
       scales.push(1);
       continue;
     }
@@ -127,7 +151,7 @@ export function ModuleDock({ nav, isAdmin }: { nav: DockItem[]; isAdmin: boolean
   /** Slot under the pointer — drives the name tag and the highlight. Derived,
    *  not CSS :hover, because a finger never fires :hover. */
   const hoverIndex =
-    mouseX === null || barLeft === null
+    mouseX === null || barLeft === null || !magnifyOn
       ? null
       : (() => {
           const raw = Math.round(
@@ -171,34 +195,67 @@ export function ModuleDock({ nav, isAdmin }: { nav: DockItem[]; isAdmin: boolean
     mouseX === null || (editing && dragFrom !== null && i !== dragFrom);
 
   /* ── Press gestures ────────────────────────────────────────────────────── */
-  const pressTimer = useRef<number | null>(null);
+  const magnifyTimer = useRef<number | null>(null);
+  const editTimer = useRef<number | null>(null);
   const pressOrigin = useRef<{ x: number; y: number } | null>(null);
-  const travelled = useRef(false);
+  const panStart = useRef<{ x: number; scrollLeft: number } | null>(null);
 
-  const clearPress = () => {
-    if (pressTimer.current !== null) {
-      window.clearTimeout(pressTimer.current);
-      pressTimer.current = null;
-    }
+  const clearTimers = () => {
+    if (magnifyTimer.current !== null) window.clearTimeout(magnifyTimer.current);
+    if (editTimer.current !== null) window.clearTimeout(editTimer.current);
+    magnifyTimer.current = null;
+    editTimer.current = null;
+  };
+  const endPress = () => {
+    clearTimers();
     pressOrigin.current = null;
+    panStart.current = null;
+    setPressed(false);
+    setArmed(false);
+    setPanning(false);
   };
   const startPress = (x: number, y: number, index: number) => {
-    clearPress();
+    clearTimers();
     pressOrigin.current = { x, y };
-    pressTimer.current = window.setTimeout(() => {
-      setEditing(true);
-      setDragFrom(index);
-      setDropIndex(index);
-    }, HOLD_MS);
-  };
-  const pressMoved = (x: number, y: number) => {
-    const o = pressOrigin.current;
-    if (!o) return;
-    if (Math.hypot(x - o.x, y - o.y) > PRESS_SLOP) {
-      travelled.current = true;
-      clearPress();
+    panStart.current = { x, scrollLeft: barRef.current?.scrollLeft ?? 0 };
+    setPressed(true);
+    setArmed(false);
+    setPanning(false);
+    magnifyTimer.current = window.setTimeout(() => setArmed(true), MAGNIFY_MS);
+    // index < 0 means the press landed on padding rather than a slot. That
+    // can still pan or browse, but there is nothing to pick up, so no edit.
+    if (index >= 0) {
+      editTimer.current = window.setTimeout(() => {
+        setEditing(true);
+        setArmed(true);
+        setDragFrom(index);
+        setDropIndex(index);
+      }, HOLD_MS);
     }
   };
+
+  /**
+   * Movement always ends the still-hold, so a drag can never fall into edit
+   * mode. Whether it becomes a pan or a browse depends on whether the magnify
+   * hold had already completed.
+   */
+  const pressMoved = (x: number, y: number) => {
+    const o = pressOrigin.current;
+    if (!o || editing) return;
+    if (Math.hypot(x - o.x, y - o.y) <= PRESS_SLOP) return;
+    if (editTimer.current !== null) {
+      window.clearTimeout(editTimer.current);
+      editTimer.current = null;
+    }
+    if (!armed) {
+      if (magnifyTimer.current !== null) {
+        window.clearTimeout(magnifyTimer.current);
+        magnifyTimer.current = null;
+      }
+      setPanning(true);
+    }
+  };
+
 
   /* ── Edge auto-scroll ──────────────────────────────────────────────────── */
   const edgeRaf = useRef<number | null>(null);
@@ -232,7 +289,7 @@ export function ModuleDock({ nav, isAdmin }: { nav: DockItem[]; isAdmin: boolean
       edgeRaf.current = requestAnimationFrame(runEdgeScroll);
   };
   useEffect(() => stopEdgeScroll, []);
-  useEffect(() => clearPress, []);
+  useEffect(() => clearTimers, []);
 
   const sheetOpen = pickerFor !== null || openFolder !== null;
 
@@ -480,16 +537,28 @@ export function ModuleDock({ nav, isAdmin }: { nav: DockItem[]; isAdmin: boolean
             }}
             onScroll={(e) => setScrollX(e.currentTarget.scrollLeft)}
             onPointerDown={(e) => {
+              // The press begins on the bar even when it lands between slots,
+              // so a flick started on padding still pans.
+              if (!pressOrigin.current) startPress(e.clientX, e.clientY, -1);
               setMouseX(e.clientX);
-              travelled.current = false;
-              if (!pressOrigin.current)
-                pressOrigin.current = { x: e.clientX, y: e.clientY };
             }}
             onPointerMove={(e) => {
-              setMouseX(e.clientX);
               pressMoved(e.clientX, e.clientY);
-              if (e.buttons === 1 || e.pointerType === "touch")
-                updateEdgeScroll(e.clientX);
+
+              // PAN — the strip follows the finger. Deliberately not
+              // magnifying: this gesture is for covering distance quickly.
+              if (panning && panStart.current && barRef.current) {
+                const bar = barRef.current;
+                bar.scrollLeft =
+                  panStart.current.scrollLeft - (e.clientX - panStart.current.x);
+                setScrollX(bar.scrollLeft);
+                return;
+              }
+
+              setMouseX(e.clientX);
+              // Edge auto-scroll only helps once browsing or rearranging; while
+              // panning the finger is already doing the scrolling.
+              if (armed || editing) updateEdgeScroll(e.clientX);
               if (dragFrom !== null) setDropIndex(slotAt(e.clientX));
             }}
             onPointerLeave={(e) => {
@@ -497,9 +566,9 @@ export function ModuleDock({ nav, isAdmin }: { nav: DockItem[]; isAdmin: boolean
                 setMouseX(null);
                 stopEdgeScroll();
               }
-              clearPress();
+              endPress();
             }}
-            onPointerUp={() => {
+            onPointerUp={(e) => {
               if (
                 editing &&
                 dragFrom !== null &&
@@ -507,23 +576,27 @@ export function ModuleDock({ nav, isAdmin }: { nav: DockItem[]; isAdmin: boolean
                 dropIndex !== dragFrom
               ) {
                 setEntries(reorder(entries, dragFrom, dropIndex));
-              } else if (!editing && travelled.current && hoverIndex !== null) {
-                // Release-to-select. Only after real travel — a stationary tap
-                // is left to the slot's own click, so this never double-fires.
+              } else if (!editing && armed && hoverIndex !== null) {
+                // Release-to-select, and only from BROWSE mode. A pan must not
+                // navigate, and a plain tap is left to the slot's own click so
+                // this never double-fires.
                 if (hoverIndex >= entries.length) setPickerFor("dock");
                 else activate(entries[hoverIndex]);
               }
-              travelled.current = false;
+              // A finger that has lifted is no longer pointing at anything;
+              // leaving mouseX set would freeze the icons mid-magnification.
+              // A mouse is still hovering, so it keeps its position.
+              if (e.pointerType !== "mouse") setMouseX(null);
               setDragFrom(null);
               setDropIndex(null);
-              clearPress();
+              endPress();
               stopEdgeScroll();
             }}
             onPointerCancel={() => {
-              travelled.current = false;
+              setMouseX(null);
               setDragFrom(null);
               setDropIndex(null);
-              clearPress();
+              endPress();
               stopEdgeScroll();
             }}
           >
@@ -542,7 +615,7 @@ export function ModuleDock({ nav, isAdmin }: { nav: DockItem[]; isAdmin: boolean
                 editing={editing}
                 dragging={dragFrom === i}
                 onPressStart={startPress}
-                onPressEnd={clearPress}
+                onPressEnd={endPress}
                 onDragStart={() => {
                   if (editing) {
                     setDragFrom(i);
