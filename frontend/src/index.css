@@ -262,6 +262,57 @@
   animation: aura-pulse 2s cubic-bezier(0.4, 0, 0.6, 1) infinite;
 }
 
+/* ── Module dock (macOS-style) ────────────────────────────────────────────
+ * Magnification itself is inline `transform: scale()` set from JS, because it
+ * is a continuous function of cursor distance. Everything that is a discrete
+ * state lives here.
+ *
+ * transform-origin: bottom — icons grow UPWARD out of the bar, which is what
+ * makes it read as a dock rather than as buttons that get fat. */
+.dock-slot {
+  transform-origin: bottom center;
+  will-change: transform;
+  transition: transform var(--duration-fast) var(--ease-smooth);
+}
+/* Scrollable on narrow screens without a visible scrollbar eating 8px of a
+ * 48px-tall bar. */
+.dock-bar { scrollbar-width: none; }
+.dock-bar::-webkit-scrollbar { display: none; }
+/* Name tag: hidden until the slot is hovered or keyboard-focused. Focus is
+ * included deliberately — the dock is icon-only, so a keyboard user would
+ * otherwise get no visible label at all.
+ * Driven from the WRAPPER (.dock-item), not the link: the tip precedes the
+ * link in DOM order so it paints above, and a sibling combinator cannot
+ * select backwards. */
+.dock-tip {
+  opacity: 0;
+  transform: translate(-50%, 4px);
+  transition:
+    opacity var(--duration-fast) var(--ease-smooth),
+    transform var(--duration-fast) var(--ease-smooth);
+}
+.dock-item:hover > .dock-tip,
+.dock-item:focus-within > .dock-tip {
+  opacity: 1;
+  transform: translate(-50%, 0);
+}
+
+@keyframes dock-jiggle {
+  0%, 100% { rotate: -1.4deg; }
+  50%      { rotate: 1.4deg; }
+}
+/* Edit mode wobble — the "you can rearrange now" cue. */
+.dock-jiggle { animation: dock-jiggle 0.32s ease-in-out infinite; }
+
+@media (prefers-reduced-motion: reduce) {
+  /* Magnification is an inline style set from JS, so it needs !important to
+     be overridden here. The dock stays fully usable — every icon simply
+     keeps its resting size, and the name tag still appears. */
+  .dock-slot { transform: none !important; transition: none; }
+  .dock-tip { transition: none; }
+  .dock-jiggle { animation: none; }
+}
+
 /* Toast entrance — one-shot fade + rise.
  * Replaces `animate-[aura-pulse-dot_0.4s_ease-out]`, which named a keyframe
  * that does not exist: the keyframe is `aura-pulse` (and it is a LOOPING

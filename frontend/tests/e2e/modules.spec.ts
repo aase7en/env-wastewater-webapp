@@ -30,7 +30,7 @@ test("DBA Console + AI Admin routes bounce to /login", async ({ page }) => {
   await expect(page).toHaveURL(/\/login\?next=%2Fadmin%2Fai/);
 });
 
-test("sidebar exposes module + orphan routes; admin entries stay hidden (F8)", async ({ authed: page }) => {
+test("dock exposes module + orphan routes; admin entries stay hidden (F8)", async ({ authed: page }) => {
   // F8 Track F NAV pass closed the gap this test used to flag: the 8 module
   // routes plus the previously-orphan /carbon-rollup, /attachments and
   // /regulations now live in the sidebar. Admin-only entries render only
@@ -39,6 +39,13 @@ test("sidebar exposes module + orphan routes; admin entries stay hidden (F8)", a
   // session) so the AppShell + sidebar render. Staff role → adminOnly NAV
   // entries stay hidden (the assertion still holds).
   await page.goto("/dashboard");
+  // DOCK-1 (2026-08-02): the sidebar became a macOS-style dock that shows only
+  // the PINNED modules; everything else lives behind the "ทุกโมดูล" sheet. The
+  // contract this test protects is unchanged — every module must be reachable
+  // and admin entries must stay hidden from staff — so open the sheet first
+  // and then assert exactly as before. Pinned items are in the bar, the rest
+  // in the sheet; both render inside the same <nav>, so one locator covers it.
+  await page.getByRole("button", { name: "ทุกโมดูล" }).click();
   // E2E-2: ends-with matcher — prod serves under a basename
   // (/env-wastewater-webapp/), so react-router renders href with the basename
   // prefix. Root "/" excluded because the basename dir itself ends with "/"

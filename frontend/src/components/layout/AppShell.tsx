@@ -1,10 +1,11 @@
-import { Fragment, type ReactNode } from "react";
-import { Link, useLocation } from "react-router-dom";
+import { type ReactNode } from "react";
+import { Link } from "react-router-dom";
 import { useAuth } from "../AuthProvider";
 import { MSymbol } from "../ui/MSymbol";
 import { NotificationBell } from "../ui/NotificationBell";
 import { PendingUsersBell } from "../ui/PendingUsersBell";
 import { ThemeToggle } from "../ui/ThemeToggle";
+import { ModuleDock } from "./ModuleDock";
 import { cn } from "../../lib/utils";
 
 // Nav per the design/ suite sidebar (Material Symbols names taken from the
@@ -79,11 +80,19 @@ function UserFooter() {
   const name = appUser?.display_name || user.email || "ผู้ใช้";
   const initial = name.charAt(0).toUpperCase();
   return (
-    <div className="flex items-center gap-3 px-2">
-      <div className="w-9 h-9 rounded-full bg-aura-surfaceHighest border border-aura-borderSubtle flex items-center justify-center text-sm font-semibold text-aura-cyan shrink-0">
+    <div className="flex items-center gap-2 md:gap-3">
+      <div
+        title={name}
+        aria-label={name}
+        className="w-8 h-8 rounded-full bg-aura-surfaceHighest border border-aura-borderSubtle flex items-center justify-center text-sm font-semibold text-aura-cyan shrink-0"
+      >
         {initial}
       </div>
-      <div className="min-w-0 flex-1">
+      {/* DOCK-1: name/role hidden below lg — this block now lives in the top
+          bar rather than a 288px sidebar footer, so it has to yield space to
+          the bells on narrow screens. The avatar and logout stay at all
+          widths, and the avatar carries the name via title/aria. */}
+      <div className="hidden lg:block min-w-0 max-w-[12rem]">
         <div className="text-sm text-aura-textMain font-thai truncate">{name}</div>
         <div className="text-[10px] uppercase tracking-widest text-aura-textMuted">
           {appUser?.role === "admin" ? "ADMIN" : "STAFF"}
@@ -103,115 +112,54 @@ function UserFooter() {
 }
 
 /**
- * UTH[AI]-ENV app shell per the design/ suite (F2):
- * desktop = fixed w-72 sidebar (brand + nav + user footer) + sticky top bar;
- * mobile = sticky top row with brand, icon nav, and theme toggle.
+ * UTH[AI]-ENV app shell.
+ *
+ * DOCK-1 (2026-08-02): one sticky top bar (brand · context · bells · theme ·
+ * user) plus a floating <ModuleDock/> for navigation, at every breakpoint.
+ * Replaces the w-72 desktop sidebar and the separate mobile icon strip.
  * Wordmark uses -ENV (water_management_dark_mode_fix corrected the EVN typo).
  */
 export function AppShell({ children }: { children: ReactNode }) {
-  const loc = useLocation();
   const { isAdmin } = useAuth();
-  const items = NAV.filter((n) => !n.adminOnly || isAdmin);
-  const active = (to: string) => loc.pathname === to || loc.pathname.startsWith(to + "/");
 
   return (
-    <div className="min-h-screen flex">
-      {/* ── Desktop sidebar (suite: fixed w-72, brand, nav, user footer) ── */}
-      {/* shadow-[…cyan/0.05] is the design's sidebar edge glow — separates the
-          rail from the page without adding a second hard border. */}
-      <aside className="hidden md:flex w-72 h-screen sticky top-0 shrink-0 flex-col bg-aura-bg/80 backdrop-blur-2xl border-r border-aura-borderSubtle shadow-[0_0_20px_rgb(var(--aura-cyan)/0.05)]">
-        <div className="px-6 py-8">
-          <Link to="/dashboard" className="flex items-center gap-3">
-            <img
-              src={`${import.meta.env.BASE_URL}logo-aura.png`}
-              alt=""
-              className="w-9 h-9 rounded-xl shrink-0"
-            />
-            <BrandWordmark className="text-xl" />
-          </Link>
-          <p className="mt-1 text-[10px] font-bold uppercase tracking-[0.1em] text-aura-textMuted">
-            Environmental Department
-          </p>
-        </div>
-
-        <nav className="flex-1 overflow-y-auto flex flex-col gap-1">
-          {items.map(({ to, label, icon, section }) => (
-            <Fragment key={to}>
-              {section && (
-                <div className="px-6 pt-5 pb-1 text-[10px] font-bold uppercase tracking-[0.15em] text-aura-textMuted/70 font-thai">
-                  {section}
-                </div>
-              )}
-              <Link
-                to={to}
-                className={cn(
-                  "flex items-center gap-4 px-6 py-3.5 font-thai text-sm transition-all duration-200 active:scale-[0.98]",
-                  active(to)
-                    ? "bg-aura-surfaceHighest/50 text-aura-cyan border-l-4 border-aura-cyan font-semibold"
-                    : "text-aura-textMuted border-l-4 border-transparent hover:bg-aura-surfaceHigh/50 hover:text-aura-textMain"
-                )}
-              >
-                <MSymbol name={icon} fill={active(to)} />
-                {label}
-              </Link>
-            </Fragment>
-          ))}
-        </nav>
-
-        <div className="p-4 border-t border-aura-borderSubtle flex flex-col gap-3">
-          <UserFooter />
-          <div className="flex items-center justify-between px-2">
-            <span className="text-xs text-aura-textMuted font-thai">โรงพยาบาลอุทัย · 2569</span>
-            <ThemeToggle />
-          </div>
-        </div>
-      </aside>
-
-      {/* ── Main column ── */}
-      <div className="flex-1 flex flex-col min-w-0">
-        {/* Desktop top bar (suite: sticky, brand gradient, context right) */}
-        <header className="hidden md:flex sticky top-0 z-30 h-14 items-center justify-between px-8 bg-aura-bgDeep/80 backdrop-blur-md border-b border-aura-borderSubtle">
-          <span className="font-display font-extrabold text-sm aura-text-gradient tracking-tight">
-            UTH[AI]-ENV
+    <div className="min-h-screen flex flex-col">
+      {/* DOCK-1 (2026-08-02): the w-72 sidebar and the mobile icon strip were
+          both replaced by <ModuleDock/>, a floating macOS-style dock. One nav
+          for both breakpoints. Brand, user chip and theme toggle moved up into
+          the top bar, which the sidebar footer used to hold.
+          The bells KEEP their slot — top-bar right-hand action area, same
+          order (NotificationBell then PendingUsersBell) as before. */}
+      {/* ── Top bar — one bar for every breakpoint now that the dock is the
+             nav. Holds what the sidebar footer used to: brand, user, theme. ── */}
+      <header className="sticky top-0 z-30 h-14 shrink-0 flex items-center justify-between gap-3 px-4 md:px-8 bg-aura-bgDeep/80 backdrop-blur-md border-b border-aura-borderSubtle">
+        <Link to="/dashboard" className="flex items-center gap-2.5 min-w-0">
+          <img
+            src={`${import.meta.env.BASE_URL}logo-aura.png`}
+            alt=""
+            className="w-8 h-8 rounded-lg shrink-0"
+          />
+          <BrandWordmark className="text-base md:text-lg" />
+        </Link>
+        <div className="flex items-center gap-3 shrink-0">
+          <span className="hidden xl:inline text-xs text-aura-textMuted font-thai">
+            ระบบติดตามบ่อบำบัดน้ำเสีย
           </span>
-          <div className="flex items-center gap-4">
-            <span className="text-xs text-aura-textMuted font-thai">
-              ระบบติดตามบ่อบำบัดน้ำเสีย
-            </span>
-            <NotificationBell />
-            <PendingUsersBell />
-          </div>
-        </header>
+          {/* Bell slot — unchanged position and order (AUTH constraint). */}
+          <NotificationBell />
+          <PendingUsersBell />
+          <ThemeToggle />
+          <UserFooter />
+        </div>
+      </header>
 
-        {/* Mobile top bar: brand + icon nav + toggle */}
-        <header className="md:hidden sticky top-0 z-30 bg-aura-bg/85 backdrop-blur-xl border-b border-aura-borderSubtle px-3 py-2 flex items-center gap-2">
-          <Link to="/dashboard" className="shrink-0">
-            <BrandWordmark className="text-base" />
-          </Link>
-          <nav className="flex-1 flex gap-1 overflow-x-auto">
-            {items.map(({ to, label, icon }) => (
-              <Link
-                key={to}
-                to={to}
-                aria-label={label}
-                className={cn(
-                  "flex items-center justify-center w-10 h-10 rounded-xl shrink-0 transition-all",
-                  active(to)
-                    ? "bg-aura-surfaceHighest/60 text-aura-cyan shadow-aura-glow-cyan"
-                    : "text-aura-textMuted hover:text-aura-textMain"
-                )}
-              >
-                <MSymbol name={icon} fill={active(to)} />
-              </Link>
-            ))}
-          </nav>
-          <NotificationBell className="shrink-0" />
-          <PendingUsersBell className="shrink-0" />
-          <ThemeToggle className="shrink-0" />
-        </header>
+      {/* pb-28: the dock floats over the page, so the last row of content
+          needs clearance or it sits underneath and cannot be read. */}
+      <main className="flex-1 p-4 md:p-8 pb-28 max-w-full overflow-x-hidden">
+        {children}
+      </main>
 
-        <main className="flex-1 p-4 md:p-8 max-w-full overflow-x-hidden">{children}</main>
-      </div>
+      <ModuleDock nav={NAV} isAdmin={isAdmin} />
     </div>
   );
 }
