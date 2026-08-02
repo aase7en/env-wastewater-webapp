@@ -1,4 +1,5 @@
 add
+admin_panel_settings
 apartment
 arrow_forward
 attach_file
@@ -9,6 +10,7 @@ cancel
 check_circle
 close
 co2
+create_new_folder
 dashboard
 database
 delete
@@ -17,6 +19,7 @@ download
 edit
 edit_note
 error
+format_size
 gavel
 health_and_safety
 history
@@ -36,14 +39,17 @@ park
 person_add
 picture_as_pdf
 print
+push_pin
 recycling
 refresh
+restart_alt
 restaurant
 save
 schedule
 science
 sensors
 smart_toy
+sort
 success
 trending_down
 trending_up

@@ -1,20 +1,43 @@
 /**
- * Dock preferences — which modules are pinned, and in what order.
+ * Dock preferences — what is on the dock, in what order, and how big.
  *
  * Lives beside the component rather than in `src/lib/` on purpose: this is
- * presentation state (icon order), not app data, so it stays inside Track F's
- * scope. Nothing here touches Supabase.
+ * presentation state, not app data, so it stays inside Track F's scope.
+ * Nothing here touches Supabase.
  *
- * Storage is localStorage, i.e. PER DEVICE. Making the arrangement follow the
- * user across devices needs a `core.app_user` column or a prefs table — that
- * is a Track Z job (schema + RLS). `readDock`/`writeDock` are the seam: swap
- * their bodies for a query and every call site keeps working.
+ * Storage is localStorage, i.e. PER DEVICE. Making the arrangement follow a
+ * user across devices needs a prefs table + RLS, which is Track Z work.
+ * `readDock`/`writeDock` are the seam: swap their bodies for a query and every
+ * call site keeps working.
+ *
+ * NOT a permission boundary. Hiding an icon here hides a shortcut, nothing
+ * more — anyone can still type the URL. Real access control is RLS plus the
+ * `RequireAuth requireAdmin` route guards. See
+ * docs/work-orders/DOCK-role-module-visibility.md.
  */
 
-const STORAGE_KEY = "dock:v1";
+const STORAGE_KEY = "dock:v1"; // key name kept; the payload is versioned inside
 
-/** Paths shown by default, before the user rearranges anything. */
-export const DEFAULT_DOCK: readonly string[] = [
+/** A dock slot: either one module, or a folder holding several. */
+export type DockEntry =
+  | { kind: "module"; to: string }
+  | { kind: "folder"; id: string; name: string; items: string[] };
+
+export type IconSize = "sm" | "md" | "lg";
+
+/**
+ * Slot sizes. `lg` is not decoration — staff read this at arm's length on a
+ * phone, outdoors, sometimes in gloves, and some of them are long-sighted.
+ */
+export const ICON_PX: Record<IconSize, number> = { sm: 40, md: 48, lg: 60 };
+
+export interface DockPrefs {
+  entries: DockEntry[];
+  iconSize: IconSize;
+}
+
+/** Paths shown before the user rearranges anything. */
+export const DEFAULT_PATHS: readonly string[] = [
   "/",
   "/dashboard",
   "/form",
@@ -25,44 +48,94 @@ export const DEFAULT_DOCK: readonly string[] = [
   "/reports",
 ];
 
-export interface DockPrefs {
-  /** Ordered list of nav `to` paths. Order in the array = order in the dock. */
-  order: string[];
+const defaults = (): DockPrefs => ({
+  entries: DEFAULT_PATHS.map((to) => ({ kind: "module", to })),
+  iconSize: "md",
+});
+
+export function newFolderId(): string {
+  return `f${Date.now().toString(36)}${Math.random().toString(36).slice(2, 6)}`;
+}
+
+/** Every module path on the dock, whether loose or inside a folder. */
+export function pinnedPaths(entries: readonly DockEntry[]): Set<string> {
+  const s = new Set<string>();
+  for (const e of entries) {
+    if (e.kind === "module") s.add(e.to);
+    else e.items.forEach((p) => s.add(p));
+  }
+  return s;
 }
 
 /**
- * @param valid every `to` the current user may see. Anything stored but no
- *   longer valid (route removed, or an admin-only item read by a non-admin)
- *   is dropped here rather than rendering a dead icon.
+ * Drop anything the user can no longer reach and anything stored twice, then
+ * hand back a tree that is safe to render.
+ *
+ * @param valid every `to` this user may see. A path that has gone (route
+ *   removed, or an admin-only entry read by a non-admin) is dropped here
+ *   rather than rendering a dead icon.
  */
-export function readDock(valid: ReadonlySet<string>): string[] {
-  let stored: string[] | null = null;
-  try {
-    const raw = localStorage.getItem(STORAGE_KEY);
-    if (raw) {
-      const parsed: unknown = JSON.parse(raw);
-      if (
-        typeof parsed === "object" &&
-        parsed !== null &&
-        Array.isArray((parsed as DockPrefs).order)
-      ) {
-        stored = (parsed as DockPrefs).order.filter((p) => typeof p === "string");
-      }
+function sanitize(entries: DockEntry[], valid: ReadonlySet<string>): DockEntry[] {
+  const seen = new Set<string>();
+  const out: DockEntry[] = [];
+  for (const e of entries) {
+    if (e.kind === "module") {
+      if (!valid.has(e.to) || seen.has(e.to)) continue;
+      seen.add(e.to);
+      out.push(e);
+    } else {
+      const items = e.items.filter((p) => valid.has(p) && !seen.has(p));
+      items.forEach((p) => seen.add(p));
+      // An empty folder is a dead end — it cannot be opened to anything.
+      if (items.length === 0) continue;
+      out.push({ ...e, items });
     }
-  } catch {
-    // Private mode, quota, or hand-edited garbage — fall through to defaults.
   }
-  const source = stored ?? DEFAULT_DOCK;
-  // De-dupe as well as filter: a bad write should never render one icon twice.
-  return [...new Set(source)].filter((p) => valid.has(p));
+  return out;
 }
 
-export function writeDock(order: string[]): void {
+export function readDock(valid: ReadonlySet<string>): DockPrefs {
   try {
-    localStorage.setItem(STORAGE_KEY, JSON.stringify({ order } satisfies DockPrefs));
+    const raw = localStorage.getItem(STORAGE_KEY);
+    if (!raw) return { ...defaults(), entries: sanitize(defaults().entries, valid) };
+    const parsed: unknown = JSON.parse(raw);
+    if (typeof parsed !== "object" || parsed === null) throw new Error("shape");
+
+    const obj = parsed as Record<string, unknown>;
+
+    // v1 payload was { order: string[] } — migrate rather than discard, or a
+    // user's arrangement silently resets the first time they load this build.
+    if (Array.isArray(obj.order)) {
+      const entries: DockEntry[] = (obj.order as unknown[])
+        .filter((p): p is string => typeof p === "string")
+        .map((to) => ({ kind: "module", to }));
+      return { entries: sanitize(entries, valid), iconSize: "md" };
+    }
+
+    const entries = Array.isArray(obj.entries) ? (obj.entries as DockEntry[]) : [];
+    const size = obj.iconSize;
+    return {
+      entries: sanitize(entries, valid),
+      iconSize: size === "sm" || size === "lg" ? size : "md",
+    };
+  } catch {
+    // Private mode, quota, or hand-edited garbage — fall through to defaults.
+    return { ...defaults(), entries: sanitize(defaults().entries, valid) };
+  }
+}
+
+export function writeDock(prefs: DockPrefs): void {
+  try {
+    localStorage.setItem(STORAGE_KEY, JSON.stringify({ v: 2, ...prefs }));
   } catch {
     // Preference loss is survivable; never break navigation over it.
   }
+}
+
+/** Fresh defaults, ignoring anything stored. Backs the "reset" tool. */
+export function defaultPrefs(valid: ReadonlySet<string>): DockPrefs {
+  const d = defaults();
+  return { ...d, entries: sanitize(d.entries, valid) };
 }
 
 /** Move `from` to `to` in a copy of the array. Used by drag-reorder. */
