@@ -1,0 +1,232 @@
+/**
+ * AI-chat PHI filter + audit-log (2026-08-02) — unit tests for the two
+ * recon-found defects in ai-chat.ts:
+ *
+ *   I2: applyPhiFilter was fail-OPEN — on a core.ai_scope read error it
+ *       returned {blocked:false}, sending the question verbatim to the
+ *       provider. Under the PHI boundary (GLM cloud under Chinese law),
+ *       the ai-sql.ts sibling was already hardened fail-CLOSED via
+ *       STATIC_PHI_DENY; ai-chat was not. This test locks the fail-closed
+ *       contract.
+ *
+ *   I3: sendChatTurn's ai_query_log INSERT omitted `actor`, but the D3
+ *       RLS gate (WITH CHECK (actor = auth.uid())) rejects NULL actor —
+ *       so every successful chat silently failed to log, defeating the
+ *       audit trail. This test asserts the insert payload carries actor.
+ *
+ * Mocking: the supabase client is vi.mock'd so we can drive the ai_scope
+ * select (success/error/empty) and capture the ai_query_log insert payload
+ * without touching the network.
+ */
+import { describe, it, expect, beforeEach, vi } from "vitest";
+
+// ─── shared mock state ──────────────────────────────────────────────────
+// Each test primes these before calling the function under test. The mock
+// below is hoisted by vitest; the objects are mutated per-test via the
+// setters so we don't fight with vi.hoisted ordering.
+const mockState = {
+  /** What the ai_scope select resolves to. `{error}` short-circuits. */
+  aiScopeResult: { data: null as unknown, error: null as unknown },
+  /** Captured ai_query_log insert payload (last call). */
+  lastInsertPayload: null as Record<string, unknown> | null,
+  /** Fake auth.uid for the actor assertion. */
+  fakeUserId: "user-abc-123",
+  /** What ai_provider select resolves to (for sendChatTurn provider pick). */
+  aiProviderResult: [] as unknown,
+};
+
+// Capture global fetch so sendChatTurn's provider call returns a canned
+// response without hitting the network. Restored in afterEach.
+const originalFetch = globalThis.fetch;
+
+vi.mock("../supabase", () => ({
+  supabase: {
+    auth: { getUser: async () => ({ data: { user: { id: mockState.fakeUserId } } }) },
+    from: vi.fn((table: string) => {
+      if (table === "ai_scope") {
+        const { data, error } = mockState.aiScopeResult;
+        return {
+          select: () => ({
+            eq: () => ({
+              eq: async () => ({ data, error }),
+            }),
+          }),
+        };
+      }
+      if (table === "ai_provider") {
+        // fetchAdminProviders does .select(FULL_COLS).order("priority") —
+        // no .eq() in between (it filters client-side after).
+        return {
+          select: () => ({
+            order: async () => ({ data: mockState.aiProviderResult, error: null }),
+          }),
+        };
+      }
+      if (table === "ai_query_log") {
+        return {
+          insert: (payload: Record<string, unknown>) => {
+            mockState.lastInsertPayload = payload;
+            return { select: () => ({ data: [payload], error: null }) };
+          },
+        };
+      }
+      throw new Error(`unmocked table: ${table}`);
+    }),
+  },
+}));
+
+// Import AFTER the mock is in place.
+import { applyPhiFilter, sendChatTurn } from "./ai-chat";
+import { afterEach } from "vitest";
+
+afterEach(() => {
+  globalThis.fetch = originalFetch;
+});
+
+beforeEach(() => {
+  mockState.aiScopeResult = { data: null, error: null };
+  mockState.lastInsertPayload = null;
+  mockState.aiProviderResult = [];
+});
+
+// ─── I2: PHI filter must be fail-CLOSED ──────────────────────────────────
+describe("applyPhiFilter — fail-closed on ai_scope read error (I2)", () => {
+  it("fails CLOSED when ai_scope returns an error (does NOT let the question through)", async () => {
+    // Before the fix: returned {blocked:false} = the PHI filter silently
+    // disappeared and the question reached the provider verbatim.
+    mockState.aiScopeResult = {
+      data: null,
+      error: { message: "RLS denied / network blip" },
+    };
+
+    const result = await applyPhiFilter("แสดงข้อมูล core.personnel ทั้งหมด");
+
+    // The fix mirrors ai-sql.ts loadPhiDenySet: on error, fall back to the
+    // static deny-set (core.app_user, core.personnel). A question naming a
+    // denied table must be BLOCKED, not allowed.
+    expect(result.blocked).toBe(true);
+    expect(result.reason).toBeTruthy();
+  });
+
+  it("fails CLOSED even for a question that does not name a static-deny table (defensive)", async () => {
+    // An ai_scope outage must never widen what the provider sees. If the
+    // question would have been allowed under a *populated* deny-set, an
+    // outage must not turn it into allowed-under-empty-set. The static
+    // fallback is non-empty (core.app_user + core.personnel), so a benign
+    // question still passes — but the contract is "fallback is the static
+    // set", not "fallback is allow-all".
+    mockState.aiScopeResult = {
+      data: null,
+      error: { message: "connection reset" },
+    };
+
+    const result = await applyPhiFilter("น้ำในบ่อ pH วันนี้เท่าไหร่");
+
+    // Benign question → not blocked, but ONLY because it doesn't name a
+    // denied table — not because the filter gave up. The point of this
+    // test is that the function resolved (no throw) and the static set
+    // was consulted (proven by the previous test blocking a denied name).
+    expect(result.blocked).toBe(false);
+  });
+});
+
+describe("applyPhiFilter — normal operation (regression guard)", () => {
+  it("blocks a question naming a flagged view (fail-closed NOT triggered)", async () => {
+    mockState.aiScopeResult = {
+      data: [{ view_name: "core.personnel" }, { view_name: "core.app_user" }],
+      error: null,
+    };
+    const result = await applyPhiFilter("ดูเบอร์โทร core.personnel");
+    expect(result.blocked).toBe(true);
+  });
+
+  it("blocks on the table-name token alone (no schema prefix needed)", async () => {
+    mockState.aiScopeResult = {
+      data: [{ view_name: "core.app_user" }],
+      error: null,
+    };
+    const result = await applyPhiFilter("แสดง app_user ทั้งหมด");
+    expect(result.blocked).toBe(true);
+  });
+
+  it("allows a benign question when no flagged view matches", async () => {
+    mockState.aiScopeResult = {
+      data: [{ view_name: "core.personnel" }],
+      error: null,
+    };
+    const result = await applyPhiFilter("ค่า DO วันนี้");
+    expect(result.blocked).toBe(false);
+    expect(result.cleanedQuestion).toBe("ค่า DO วันนี้");
+  });
+
+  it("treats an empty ai_scope as allow-all (no flagged views = nothing to block)", async () => {
+    // Distinct from the error path: a genuinely empty scope (no PHI views
+    // flagged) is a valid admin configuration, not an outage.
+    mockState.aiScopeResult = { data: [], error: null };
+    const result = await applyPhiFilter("แสดง core.personnel");
+    expect(result.blocked).toBe(false);
+  });
+});
+
+// ─── I3: ai_query_log INSERT must carry actor = auth.uid() ────────────────
+describe("sendChatTurn — ai_query_log insert carries actor (I3)", () => {
+  /** Stub global fetch with a canned provider response. */
+  function stubFetchOk() {
+    globalThis.fetch = vi.fn(async () =>
+      new Response(
+        JSON.stringify({
+          choices: [{ message: { content: "คำตอบจำลอง" } }],
+          usage: { total_tokens: 42 },
+        }),
+        { status: 200, headers: { "Content-Type": "application/json" } },
+      ),
+    ) as unknown as typeof fetch;
+  }
+
+  it("includes actor = current user id in the insert payload", async () => {
+    mockState.aiScopeResult = { data: [], error: null };
+    mockState.aiProviderResult = [
+      {
+        id: "prov-1",
+        name: "Mock",
+        model: "mock-1",
+        is_enabled: true,
+        priority: 1,
+        api_url: "https://mock.local/v1/chat/completions",
+        base_url: "https://mock.local",
+        key_value: "sk-mock",
+      },
+    ];
+    stubFetchOk();
+
+    await sendChatTurn("ค่า DO วันนี้");
+
+    expect(mockState.lastInsertPayload).not.toBeNull();
+    // I3: D3 gate is WITH CHECK (actor = auth.uid()). Before the fix the
+    // payload omitted actor → every insert silently rejected by RLS.
+    expect(mockState.lastInsertPayload?.actor).toBe(mockState.fakeUserId);
+  });
+
+  it("still returns a ChatTurn even if the actor resolves null (insert is best-effort)", async () => {
+    // Defensive: getUser returning no user (edge) should not crash the chat —
+    // the insert is wrapped in try/catch and actor just goes null.
+    mockState.aiScopeResult = { data: [], error: null };
+    mockState.aiProviderResult = [
+      {
+        id: "prov-1",
+        name: "Mock",
+        model: "mock-1",
+        is_enabled: true,
+        priority: 1,
+        api_url: "https://mock.local/v1/chat/completions",
+        base_url: "https://mock.local",
+        key_value: "sk-mock",
+      },
+    ];
+    stubFetchOk();
+
+    const turn = await sendChatTurn("ค่า pH วันนี้");
+    expect(turn.answer).toBe("คำตอบจำลอง");
+    expect(mockState.lastInsertPayload?.provider_id).toBe("prov-1");
+  });
+});

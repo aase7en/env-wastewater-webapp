@@ -23,6 +23,7 @@
 
 import { supabase } from "../supabase";
 import { fetchAdminProviders, type AiProviderFull } from "./ai-providers";
+import { STATIC_PHI_DENY } from "./ai-sql";
 
 export interface ChatMessage {
   role: "system" | "user" | "assistant";
@@ -55,13 +56,35 @@ export async function applyPhiFilter(question: string): Promise<PhiFilterResult>
     .eq("patient_safe", false)
     .eq("is_enabled", true);
   if (error) {
-    // Fail-open on filter error — log but allow.
-    console.warn("PHI filter read failed:", error.message);
+    // Fail-CLOSED (2026-08-02 recon I2): an ai_scope outage must never widen
+    // what the provider sees. The previous fail-open return let the question
+    // through verbatim — contradicting the PHI boundary (GLM cloud under
+    // Chinese law). Mirrors the ai-sql.ts loadPhiDenySet fix (STATIC_PHI_DENY
+    // = core.app_user + core.personnel). A question naming a static-deny
+    // table is blocked even when the live scope is unreadable.
+    console.warn("PHI filter read failed — falling back to STATIC_PHI_DENY:", error.message);
+    const blockedStatic = checkAgainstDenySet(question, STATIC_PHI_DENY);
+    if (blockedStatic) return blockedStatic;
     return { blocked: false, cleanedQuestion: question };
   }
-  const flagged = (data ?? []) as Array<{ view_name: string }>;
-  for (const { view_name } of flagged) {
-    // Match schema.table or just table token in the question.
+  const flagged = new Set(((data ?? []) as Array<{ view_name: string }>).map((r) => r.view_name));
+  const blockedLive = checkAgainstDenySet(question, flagged);
+  if (blockedLive) return blockedLive;
+  return { blocked: false, cleanedQuestion: question };
+}
+
+/**
+ * Check a question against a deny-set of `schema.table` names. Returns a
+ * block result if any name (or its bare-table token) appears as a
+ * word-boundary match in the question; otherwise null. Shared by the
+ * live-read path and the static fail-closed fallback so both apply the
+ * identical matching rule.
+ */
+function checkAgainstDenySet(
+  question: string,
+  deny: ReadonlySet<string>,
+): PhiFilterResult | null {
+  for (const view_name of deny) {
     const token = view_name.split(".").pop() ?? view_name;
     const re = new RegExp(`\\b${escapeRegex(token)}\\b`, "i");
     if (re.test(question)) {
@@ -72,7 +95,7 @@ export async function applyPhiFilter(question: string): Promise<PhiFilterResult>
       };
     }
   }
-  return { blocked: false, cleanedQuestion: question };
+  return null;
 }
 
 function escapeRegex(s: string): string {
@@ -157,13 +180,19 @@ export async function sendChatTurn(
   const tokens = data.usage?.total_tokens ?? null;
 
   // Log to ai_query_log (best-effort — don't fail chat on log error).
+  // I3 (2026-08-02 recon): the payload must carry `actor = auth.uid()` —
+  // the D3 RLS gate (core.ai_query_log WITH CHECK (actor = auth.uid()))
+  // rejects NULL actor, so the previous omit-actor form silently failed
+  // every insert, defeating the audit trail.
   try {
+    const { data: userData } = await supabase.auth.getUser();
     await supabase.from("ai_query_log").insert({
       question: phi.cleanedQuestion.slice(0, 4000),
       answer: answer.slice(0, 8000),
       provider_id: provider.id,
       scope_used: opts.schemaContext ? "schema-context" : null,
       token_usage: tokens,
+      actor: userData.user?.id ?? null,
     });
   } catch (e) {
     console.warn("ai_query_log insert failed:", (e as Error).message);
