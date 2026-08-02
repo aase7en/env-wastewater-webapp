@@ -55,6 +55,8 @@ export function ModuleDock({ nav, isAdmin }: { nav: DockItem[]; isAdmin: boolean
   const loc = useLocation();
   const navigate = useNavigate();
   const barRef = useRef<HTMLDivElement>(null);
+  /** The whole dock, incl. the picker — used to ignore its own scrolls. */
+  const rootRef = useRef<HTMLElement>(null);
 
   /** Everything this user is allowed to reach. */
   const allowed = useMemo(
@@ -79,7 +81,10 @@ export function ModuleDock({ nav, isAdmin }: { nav: DockItem[]; isAdmin: boolean
    *  the row has been scrolled. */
   const [scrollX, setScrollX] = useState(0);
   const [editing, setEditing] = useState(false);
+  /** Index the drag STARTED from. Fixed for the whole gesture. */
   const [dragFrom, setDragFrom] = useState<number | null>(null);
+  /** Slot the dragged icon would drop into right now. */
+  const [dropIndex, setDropIndex] = useState<number | null>(null);
   const [pickerOpen, setPickerOpen] = useState(false);
 
   // Re-filter if the user's admin status resolves after first paint —
@@ -155,6 +160,24 @@ export function ModuleDock({ nav, isAdmin }: { nav: DockItem[]; isAdmin: boolean
   /** Resting width of the pill, before any magnification. */
   const baseWidth = 2 * PAD + slots * ITEM + (slots - 1) * GAP;
 
+  /**
+   * How far slot `i` shifts to make room while something is being dragged.
+   *
+   * The order array is NOT mutated during a drag — it used to be rewritten on
+   * every pointermove, which made the whole row churn under the finger. Now
+   * the row just opens: everything between the slot the icon left and the slot
+   * it is heading for steps one place toward the gap, so the hole closes
+   * behind the icon and a slot opens ahead of it. Same as dragging an app
+   * across an iOS home screen. The array is rewritten once, on drop.
+   */
+  const gapShift = (i: number): number => {
+    if (dragFrom === null || dropIndex === null || i === dragFrom) return 0;
+    const step = ITEM + GAP;
+    if (dragFrom < dropIndex && i > dragFrom && i <= dropIndex) return -step;
+    if (dropIndex < dragFrom && i >= dropIndex && i < dragFrom) return step;
+    return 0;
+  };
+
   const slotStyle = (i: number): CSSProperties => {
     // The slot being dragged leaves the row and rides the pointer: offset it
     // by however far the pointer is from where it would rest, lift it clear,
@@ -167,11 +190,17 @@ export function ModuleDock({ nav, isAdmin }: { nav: DockItem[]; isAdmin: boolean
       };
     }
     return {
-      transform: `translateX(${offsets[i].toFixed(2)}px) scale(${scales[i].toFixed(3)})`,
+      transform: `translateX(${(offsets[i] + gapShift(i)).toFixed(2)}px) scale(${scales[i].toFixed(3)})`,
     };
   };
-  /** Ease only on the way out; track the cursor instantly while over the bar. */
-  const settling = mouseX === null;
+  /**
+   * Ease only when it should NOT track the pointer frame-for-frame: on the way
+   * out, and for the slots stepping aside during a drag — a gap that opens
+   * instantly reads as a glitch, whereas one that slides reads as making room.
+   * The icon riding the finger is never eased; it must stay glued to it.
+   */
+  const isSettling = (i: number) =>
+    mouseX === null || (editing && dragFrom !== null && i !== dragFrom);
 
   /* ── Press gestures ──────────────────────────────────────────────────────
    * Two gestures share one pointerdown, told apart by whether the pointer
@@ -245,24 +274,53 @@ export function ModuleDock({ nav, isAdmin }: { nav: DockItem[]; isAdmin: boolean
    * the thing being interacted with out from under the user. */
   const [hidden, setHidden] = useState(false);
   const lastY = useRef(0);
+  const upAccum = useRef(0);
 
   useEffect(() => {
     if (editing || pickerOpen) {
       setHidden(false);
       return;
     }
-    const onScroll = () => {
-      const y = window.scrollY;
+    const onScroll = (e: Event) => {
+      const t = e.target as Node | Document | null;
+      // The dock's own row scrolls horizontally, and so does the picker —
+      // neither should drive this.
+      if (t instanceof Node && rootRef.current?.contains(t)) return;
+
+      // Capture phase, because the scroller is not necessarily `window`:
+      // <main> carries overflow-x-hidden, and per spec a non-visible value on
+      // one axis promotes the other from `visible` to `auto`, which can make
+      // main itself the scrolling box. Reading whichever element fired keeps
+      // this working either way.
+      const y =
+        t === document || t === document.documentElement || t === document.body
+          ? window.scrollY
+          : t instanceof HTMLElement
+            ? t.scrollTop
+            : window.scrollY;
+
       const dy = y - lastY.current;
-      if (Math.abs(dy) < 6) return; // ignore jitter / rubber-banding
-      if (y < 80) setHidden(false);
-      else if (dy > 0) setHidden(true);
-      else setHidden(false);
       lastY.current = y;
+      if (Math.abs(dy) < 4) return;
+
+      if (y < 80) {
+        upAccum.current = 0;
+        setHidden(false);
+      } else if (dy > 0) {
+        upAccum.current = 0;
+        setHidden(true);
+      } else {
+        // Stay hidden until the user has genuinely scrolled UP a little; a
+        // few px of rubber-band or momentum wobble must not flick it back.
+        upAccum.current += -dy;
+        if (upAccum.current > 24) setHidden(false);
+      }
     };
     lastY.current = window.scrollY;
-    window.addEventListener("scroll", onScroll, { passive: true });
-    return () => window.removeEventListener("scroll", onScroll);
+    upAccum.current = 0;
+    window.addEventListener("scroll", onScroll, { capture: true, passive: true });
+    return () =>
+      window.removeEventListener("scroll", onScroll, { capture: true });
   }, [editing, pickerOpen]);
 
   const clearPress = () => {
@@ -284,6 +342,7 @@ export function ModuleDock({ nav, isAdmin }: { nav: DockItem[]; isAdmin: boolean
     pressTimer.current = window.setTimeout(() => {
       setEditing(true);
       setDragFrom(index);
+      setDropIndex(index);
     }, HOLD_MS);
   };
   const pressMoved = (x: number, y: number) => {
@@ -334,6 +393,7 @@ export function ModuleDock({ nav, isAdmin }: { nav: DockItem[]; isAdmin: boolean
     // The row is also held well inside the viewport — see max-w on .dock-bar —
     // so it reads as a floating object rather than a fixed footer.
     <nav
+      ref={rootRef}
       aria-label="โมดูล"
       className={cn(
         "dock-root fixed bottom-8 left-1/2 z-40 flex flex-col items-center gap-3",
@@ -429,13 +489,8 @@ export function ModuleDock({ nav, isAdmin }: { nav: DockItem[]; isAdmin: boolean
             if (e.buttons === 1 || e.pointerType === "touch") {
               updateEdgeScroll(e.clientX);
             }
-            if (dragFrom !== null) {
-              const to = slotAt(e.clientX);
-              if (to !== dragFrom) {
-                commit(reorder(order, dragFrom, to));
-                setDragFrom(to);
-              }
-            }
+            // Only track where it WOULD land; the order is rewritten on drop.
+            if (dragFrom !== null) setDropIndex(slotAt(e.clientX));
           }}
           onPointerLeave={(e) => {
             // A finger "leaving" mid-gesture is just capture doing its job —
@@ -456,13 +511,19 @@ export function ModuleDock({ nav, isAdmin }: { nav: DockItem[]; isAdmin: boolean
                 navigate(items[hoverIndex].to);
               }
             }
+            // Drop: one write, at the end of the gesture.
+            if (dragFrom !== null && dropIndex !== null && dropIndex !== dragFrom) {
+              commit(reorder(order, dragFrom, dropIndex));
+            }
             travelled.current = false;
             setDragFrom(null);
+            setDropIndex(null);
             clearPress();
             stopEdgeScroll();
           }}
           onPointerCancel={() => {
             setDragFrom(null);
+            setDropIndex(null);
             clearPress();
             stopEdgeScroll();
           }}
@@ -474,13 +535,13 @@ export function ModuleDock({ nav, isAdmin }: { nav: DockItem[]; isAdmin: boolean
               index={i}
               active={isActive(item.to)}
               style={slotStyle(i)}
-              settling={settling}
+              settling={isSettling(i)}
               showTip={hoverIndex === i}
               editing={editing}
               dragging={dragFrom === i}
               onPressStart={startPress}
               onPressEnd={clearPress}
-              onDragStart={() => editing && setDragFrom(i)}
+              onDragStart={() => { if (editing) { setDragFrom(i); setDropIndex(i); } }}
               onUnpin={() => commit(order.filter((p) => p !== item.to))}
             />
           ))}
@@ -574,12 +635,18 @@ function DockSlot({
         className={cn(
           "dock-slot grid place-items-center w-full h-full rounded-2xl border",
           settling && "dock-slot--settling",
-          active
-            ? "text-aura-cyan border-aura-cyan/50 bg-aura-cyan/10 shadow-aura-glow-cyan"
-            : "text-aura-textMuted border-transparent",
-          // Highlight travels with the pointer, not just the size. Driven by
-          // the same state as the name tag so a finger gets it too.
-          showTip && !active && "text-aura-textMain bg-aura-surfaceHighest/60",
+          // Order matters. The STRONG cyan highlight belongs to whatever the
+          // pointer is on, not to the current route — with release-to-select,
+          // that slot is the pending choice, so the highlight has to travel
+          // with the finger. It previously carried `!active`, which pinned it
+          // to the current page's icon and made it look stuck.
+          // The current route keeps a quieter tint plus its pip underneath, so
+          // "where I am" is still legible while dragging.
+          showTip
+            ? "text-aura-cyan border-aura-cyan/60 bg-aura-cyan/15 shadow-aura-glow-cyan"
+            : active
+              ? "text-aura-cyan border-aura-cyan/25 bg-aura-cyan/5"
+              : "text-aura-textMuted border-transparent",
           editing && "dock-jiggle cursor-grab",
           dragging && "opacity-60 cursor-grabbing",
         )}
@@ -638,7 +705,7 @@ function ModulePicker({
        stacks above a ~170px dock: on a short screen 70vh + dock overflowed
        the top of the display and the header went off-screen. */
     <div
-      className="aura-card rounded-3xl w-[min(92vw,820px)] flex flex-col"
+      className="aura-card rounded-3xl w-[min(84vw,560px)] flex flex-col"
       style={{ maxHeight: "calc(100vh - 15rem)" }}
     >
       <div className="flex items-center justify-between mb-3 shrink-0">
@@ -661,19 +728,20 @@ function ModulePicker({
       ) : (
         // The only scrolling element. -mx-1/px-1 keeps focus rings from being
         // shaved off at the edges of the scroll box.
-        <div className="overflow-y-auto -mx-1 px-1 pb-1 grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-3">
+        <div className="overflow-y-auto -mx-1 px-1 pb-1 grid grid-cols-3 sm:grid-cols-4 gap-2">
           {items.map((n) => (
-            <div key={n.to} className="relative">
+            <div key={n.to} className="relative min-w-0">
               <Link
                 to={n.to}
                 onClick={onClose}
-                // pr-8 keeps the label clear of the pin button in the corner;
-                // min-h + leading give two-line Thai names room to breathe
-                // instead of being squeezed.
-                className="flex flex-col items-center justify-center gap-2 p-4 pr-8 min-h-[104px] rounded-2xl border border-aura-borderSubtle text-aura-textMuted hover:text-aura-cyan hover:border-aura-cyan/40 transition-colors"
+                className="flex flex-col items-center justify-center gap-1.5 p-2 pt-3 min-h-[82px] rounded-xl border border-aura-borderSubtle text-aura-textMuted hover:text-aura-cyan hover:border-aura-cyan/40 transition-colors overflow-hidden"
               >
-                <MSymbol name={n.icon} className="text-[28px]" />
-                <span className="text-xs font-thai text-center leading-snug">
+                <MSymbol name={n.icon} className="text-[22px]" />
+                {/* Thai has no inter-word spaces, so a long label is ONE
+                    unbreakable token — it was punching straight out of the
+                    tile and past the popup edge. `anywhere` lets it wrap
+                    mid-word, which for Thai is what a reader expects. */}
+                <span className="w-full text-[11px] font-thai text-center leading-tight [overflow-wrap:anywhere]">
                   {n.label}
                 </span>
               </Link>
@@ -682,7 +750,7 @@ function ModulePicker({
                 aria-label={`ปัก ${n.label} ลง Dock`}
                 title="ปักลง Dock"
                 onClick={() => onPick(n.to)}
-                className="absolute top-1 right-1 grid place-items-center w-5 h-5 rounded-full text-aura-textMuted hover:text-aura-cyan hover:bg-aura-cyan/10"
+                className="absolute top-0.5 right-0.5 grid place-items-center w-5 h-5 rounded-full bg-aura-surface/80 text-aura-textMuted hover:text-aura-cyan hover:bg-aura-cyan/10"
               >
                 <MSymbol name="add" className="text-[14px]" />
               </button>
