@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState, type CSSProperties } from "react";
 import { Link, useLocation, useNavigate } from "react-router-dom";
 import { MSymbol } from "../ui/MSymbol";
 import { cn } from "../../lib/utils";
@@ -116,7 +116,10 @@ export function ModuleDock({ nav, isAdmin }: { nav: DockItem[]; isAdmin: boolean
 
   const scales: number[] = [];
   for (let i = 0; i < slots; i++) {
-    if (mouseX === null || editing || barLeft === null) {
+    // Magnification stays live in edit mode too: while an icon rides the
+    // finger, the ones it passes over still swell and fall off by distance,
+    // which is what shows you where it will land.
+    if (mouseX === null || barLeft === null) {
       scales.push(1);
       continue;
     }
@@ -152,9 +155,21 @@ export function ModuleDock({ nav, isAdmin }: { nav: DockItem[]; isAdmin: boolean
   /** Resting width of the pill, before any magnification. */
   const baseWidth = 2 * PAD + slots * ITEM + (slots - 1) * GAP;
 
-  const slotStyle = (i: number) => ({
-    transform: `translateX(${offsets[i].toFixed(2)}px) scale(${scales[i].toFixed(3)})`,
-  });
+  const slotStyle = (i: number): CSSProperties => {
+    // The slot being dragged leaves the row and rides the pointer: offset it
+    // by however far the pointer is from where it would rest, lift it clear,
+    // and put it above its neighbours so it reads as picked up.
+    if (editing && dragFrom === i && mouseX !== null && barLeft !== null) {
+      const rest = barLeft + PAD + i * (ITEM + GAP) + ITEM / 2 - scrollX;
+      return {
+        transform: `translateX(${(mouseX - rest).toFixed(2)}px) translateY(-20px) scale(1.18)`,
+        zIndex: 20,
+      };
+    }
+    return {
+      transform: `translateX(${offsets[i].toFixed(2)}px) scale(${scales[i].toFixed(3)})`,
+    };
+  };
   /** Ease only on the way out; track the cursor instantly while over the bar. */
   const settling = mouseX === null;
 
@@ -220,6 +235,35 @@ export function ModuleDock({ nav, isAdmin }: { nav: DockItem[]; isAdmin: boolean
   };
 
   useEffect(() => stopEdgeScroll, []);
+
+  /* ── Hide on scroll down, show on scroll up ──────────────────────────────
+   * The dock floats over the page, so on form pages it sat on top of the save
+   * button at the bottom of the screen and there was no way to reach it.
+   * Scrolling DOWN (reading/filling in) tucks it away; scrolling UP (looking
+   * for navigation) brings it back. Always visible at the top of the page,
+   * and never hidden mid-edit or with the sheet open, since that would yank
+   * the thing being interacted with out from under the user. */
+  const [hidden, setHidden] = useState(false);
+  const lastY = useRef(0);
+
+  useEffect(() => {
+    if (editing || pickerOpen) {
+      setHidden(false);
+      return;
+    }
+    const onScroll = () => {
+      const y = window.scrollY;
+      const dy = y - lastY.current;
+      if (Math.abs(dy) < 6) return; // ignore jitter / rubber-banding
+      if (y < 80) setHidden(false);
+      else if (dy > 0) setHidden(true);
+      else setHidden(false);
+      lastY.current = y;
+    };
+    lastY.current = window.scrollY;
+    window.addEventListener("scroll", onScroll, { passive: true });
+    return () => window.removeEventListener("scroll", onScroll);
+  }, [editing, pickerOpen]);
 
   const clearPress = () => {
     if (pressTimer.current !== null) {
@@ -291,7 +335,10 @@ export function ModuleDock({ nav, isAdmin }: { nav: DockItem[]; isAdmin: boolean
     // so it reads as a floating object rather than a fixed footer.
     <nav
       aria-label="โมดูล"
-      className="fixed bottom-8 left-1/2 -translate-x-1/2 z-40 flex flex-col items-center gap-3"
+      className={cn(
+        "dock-root fixed bottom-8 left-1/2 z-40 flex flex-col items-center gap-3",
+        hidden && "dock-root--hidden",
+      )}
     >
       {editing && (
         <div className="flex items-center gap-2 text-[11px] font-thai text-aura-textMuted bg-aura-surfaceHigh/80 backdrop-blur-md border border-aura-borderSubtle rounded-full px-3 py-1">
@@ -478,7 +525,7 @@ function DockSlot({
   index: number;
   active: boolean;
   /** translateX + scale, computed by the parent from cursor distance. */
-  style: { transform: string };
+  style: CSSProperties;
   settling: boolean;
   /** Parent decides, from pointer position — not CSS :hover, which a finger
    *  never fires. */
@@ -582,8 +629,19 @@ function ModulePicker({
   onClose: () => void;
 }) {
   return (
-    <div className="aura-card rounded-3xl w-[min(94vw,860px)] max-h-[70vh] overflow-y-auto">
-      <div className="flex items-center justify-between mb-3">
+    /* Two boxes, not one. Scrolling used to be on the .aura-card itself, and
+       its ring is an inset:0 ::before — inside a scroll box that anchors to
+       the padding box and rides the content, so the frame drifted over the
+       heading and clipped the top-left text. The card is now a fixed shell
+       and only the grid inside it scrolls.
+       Height is bounded against the VIEWPORT (not 70vh) because this sheet
+       stacks above a ~170px dock: on a short screen 70vh + dock overflowed
+       the top of the display and the header went off-screen. */
+    <div
+      className="aura-card rounded-3xl w-[min(92vw,820px)] flex flex-col"
+      style={{ maxHeight: "calc(100vh - 15rem)" }}
+    >
+      <div className="flex items-center justify-between mb-3 shrink-0">
         <h2 className="text-base font-semibold font-thai text-aura-textMain">
           ทุกโมดูล
         </h2>
@@ -601,16 +659,21 @@ function ModulePicker({
           ปักครบทุกโมดูลแล้ว
         </p>
       ) : (
-        <div className="grid grid-cols-3 sm:grid-cols-4 md:grid-cols-5 gap-3">
+        // The only scrolling element. -mx-1/px-1 keeps focus rings from being
+        // shaved off at the edges of the scroll box.
+        <div className="overflow-y-auto -mx-1 px-1 pb-1 grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-3">
           {items.map((n) => (
             <div key={n.to} className="relative">
               <Link
                 to={n.to}
                 onClick={onClose}
-                className="flex flex-col items-center gap-2 p-4 rounded-2xl border border-aura-borderSubtle text-aura-textMuted hover:text-aura-cyan hover:border-aura-cyan/40 transition-colors"
+                // pr-8 keeps the label clear of the pin button in the corner;
+                // min-h + leading give two-line Thai names room to breathe
+                // instead of being squeezed.
+                className="flex flex-col items-center justify-center gap-2 p-4 pr-8 min-h-[104px] rounded-2xl border border-aura-borderSubtle text-aura-textMuted hover:text-aura-cyan hover:border-aura-cyan/40 transition-colors"
               >
                 <MSymbol name={n.icon} className="text-[28px]" />
-                <span className="text-[11px] font-thai text-center leading-tight">
+                <span className="text-xs font-thai text-center leading-snug">
                   {n.label}
                 </span>
               </Link>

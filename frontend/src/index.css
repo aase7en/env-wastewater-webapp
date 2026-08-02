@@ -274,6 +274,21 @@
  * chasing a target it never reaches, which reads as soft and laggy rather
  * than magnetic. The transition is added back only on the way out
  * (.dock-slot--settling), so the row still eases down instead of snapping. */
+/* Centring lives here, not in a -translate-x-1/2 utility, because hiding the
+ * dock needs a translateY on the SAME transform — a utility would replace the
+ * whole property and knock it off-centre. */
+.dock-root {
+  transform: translateX(-50%);
+  transition:
+    transform var(--duration-base) var(--ease-smooth),
+    opacity var(--duration-base) var(--ease-smooth);
+}
+.dock-root--hidden {
+  transform: translateX(-50%) translateY(calc(100% + 2rem));
+  opacity: 0;
+  pointer-events: none;
+}
+
 .dock-slot {
   transform-origin: bottom center;
   will-change: transform;
