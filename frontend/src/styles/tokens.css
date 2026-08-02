@@ -94,11 +94,18 @@
   --alert-amber: #f59e0b;
   --alert-red: #ef4444;
 
-  /* PFD flow-line legend — BINDING in every theme (design/ui-brief.md §1).
-     Operators read the diagram by these colours, so neon accents and theme
-     swaps never restyle them. Not decorative: 🔵 water 🤍 air 🟤 sludge. */
+  /* PFD flow-line legend (design/ui-brief.md §1). Operators read the diagram
+     by these, so accents and theme swaps never repurpose them:
+     🔵 water · ⚪ air · 🟤 sludge.
+
+     FLOW-1 (2026-08-02): air is the one exception to "identical in both
+     themes", and it has to be. The brief specifies white, which works on the
+     dark plant background but is invisible on the light theme's #f3fbf7 page
+     — the air line simply vanished. A line nobody can see defeats the rule
+     harder than a shade change does, so air is the neutral/pale CHANNEL and
+     its value is per-theme. Water and sludge stay fixed. */
   --flow-water: #38bdf8;   /* influent / effluent */
-  --flow-air: #ffffff;     /* blower air, aeration bubbles */
+  --flow-air: #64748b;     /* blower air — slate, readable on the mint page */
   --flow-sludge: #92400e;  /* RAS / WAS */
 
   color-scheme: light;
@@ -161,6 +168,11 @@
   --aura-focus-glow: rgba(0, 240, 255, 0.30);
   --aura-placeholder: #6B7A75;
   --skeleton-sheen: rgba(255, 255, 255, 0.09); /* SKEL-1: shimmer highlight (neutral; 0.06→0.09 fable5 polish — app surface is deeper than MUI dark, sweep needed more contrast) */
+
+  /* FLOW-1: air reverts to the brief's white on the dark plant background,
+     where it reads as intended. See the :root note for why this one token is
+     theme-scoped while water and sludge are not. */
+  --flow-air: #ffffff;
 
   color-scheme: dark;
 }

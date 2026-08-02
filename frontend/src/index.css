@@ -126,8 +126,18 @@
   box-shadow: var(--aura-card-shadow);
   z-index: 1;
 }
-/* Three-stop ring at 9s (was a 2-stop 4s sweep). The extra stop and the
- * slower period turn a visible "spinner" into ambient drift. */
+/* A single multi-hue highlight that sweeps the border — NOT a fully lit ring.
+ *
+ * RING-1 (2026-08-02): F-DESIGN-1 took the design system's stop list verbatim
+ * (ring-1 → ring-2 → ring-3 → ring-1, no transparency), which lights all 360°
+ * of the border at full saturation and spins it. In dark mode that is neon
+ * cyan → lime → indigo the whole way round: an "RGB gaming" frame, reported
+ * as a bug. The transparent bookends below are what make this read as a
+ * highlight travelling around a mostly-invisible ring, which is the effect
+ * the card was designed for. Keep them.
+ *
+ * The design's 3 hues and 9s period are retained — only the transparency is
+ * restored. */
 .aura-card::before {
   content: "";
   position: absolute;
@@ -136,10 +146,11 @@
   padding: 1px;
   background: conic-gradient(
     from var(--aura-angle),
-    var(--aura-ring-1),
-    var(--aura-ring-2),
-    var(--aura-ring-3),
-    var(--aura-ring-1)
+    transparent 15%,
+    var(--aura-ring-1) 35%,
+    var(--aura-ring-2) 50%,
+    var(--aura-ring-3) 65%,
+    transparent 85%
   );
   -webkit-mask:
     linear-gradient(#fff 0 0) content-box,
@@ -150,12 +161,22 @@
   animation: aura-rotate 9s linear infinite;
   pointer-events: none;
 }
-/* Fallback for engines that cannot animate a registered custom property:
- * rotate the ring element instead. */
-@supports not (background: paint(something)) {
-  @keyframes aura-rotate-fallback { to { transform: rotate(360deg); } }
-  .aura-card::before { animation: aura-rotate-fallback 9s linear infinite; }
-}
+/* RING-2 (2026-08-02): removed the `@supports not (background: paint(something))`
+ * fallback that F-DESIGN-1 ported in. It was wrong twice over.
+ *
+ * It gated on Houdini's paint() — which only Chromium ships — as a proxy for
+ * "can this engine animate a registered custom property". Those are unrelated:
+ * Safari 16.4+ and Firefox 128+ both support @property and animate
+ * --aura-angle correctly, but neither has paint(), so the condition was TRUE
+ * and the fallback fired in exactly the browsers that did not need it.
+ *
+ * And the fallback itself was worse than the problem: `transform: rotate()`
+ * on an inset:0 rounded rectangle spins the whole masked box, so the border
+ * visibly tumbles with its corners sweeping outside the card.
+ *
+ * Correct degradation for an engine that genuinely cannot animate the angle
+ * is simply a STATIC ring — which is already what every non-attention card
+ * shows, so it looks intentional. No fallback needed. */
 /* Dim/turn off the aura on inactive cards (set .aura-card--idle). */
 .aura-card--idle::before { animation: none; opacity: 0.25; }
 /* Static ring (no rotation) — DEFAULT for non-attention cards.

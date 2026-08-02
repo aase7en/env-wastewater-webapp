@@ -43,11 +43,17 @@ export default {
         // are both in use. Mirrored as --alert-* in styles/tokens.css for
         // hand-written CSS; keep the two in sync.
         alert: { amber: "#f59e0b", red: "#ef4444", green: "#22c55e" },
-        // PFD flow-line legend — BINDING in every theme (design/ui-brief.md
-        // §1): 🔵 water 🤍 air 🟤 sludge. Operators read the diagram by these,
-        // so no theme or accent change may restyle them. Mirrored as
-        // --flow-* in styles/tokens.css; keep the two in sync.
-        flow: { water: "#38bdf8", air: "#ffffff", sludge: "#92400e" },
+        // PFD flow-line legend (design/ui-brief.md §1): 🔵 water ⚪ air
+        // 🟤 sludge. Operators read the diagram by these, so no accent change
+        // may repurpose them.
+        // var() not literals — FLOW-1 made --flow-air theme-scoped (white on
+        // the dark plant background, slate on the light page, where white was
+        // invisible). Trade-off: no opacity modifier on these three.
+        flow: {
+          water: "var(--flow-water)",
+          air: "var(--flow-air)",
+          sludge: "var(--flow-sludge)",
+        },
         // ── Legacy PFD palette (pre-Aura) — kept only for old stories/tests;
         // do not use in new code.
         teal: {

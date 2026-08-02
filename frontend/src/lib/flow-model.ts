@@ -222,11 +222,20 @@ export interface FlowStage {
  */
 export type FlowKind = "water" | "air" | "sludge";
 
-/** 🔵 water in/out · ⚪ air from blower · 🟤 RAS/WAS sludge. */
+/**
+ * 🔵 water in/out · ⚪ air from blower · 🟤 RAS/WAS sludge.
+ *
+ * FLOW-1 (2026-08-02): these were hardcoded hex, which broke two ways — air
+ * was near-white and therefore invisible on the light theme's #f3fbf7 page,
+ * and sludge had drifted to #b45309 while tokens.css said #92400e. Both now
+ * point at the CSS variables, so styles/tokens.css is the single source and
+ * air can be theme-scoped. SVG `stroke` and CSS `background` both accept
+ * var(), so no call site changes.
+ */
 export const FLOW_KIND_COLORS: Record<FlowKind, string> = {
-  water: "#38bdf8",
-  air: "rgba(255,255,255,0.85)",
-  sludge: "#b45309",
+  water: "var(--flow-water)",
+  air: "var(--flow-air)",
+  sludge: "var(--flow-sludge)",
 };
 
 export interface FlowLink {
