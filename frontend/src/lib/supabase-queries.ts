@@ -43,6 +43,35 @@ export async function fetchDashboard(days = 14): Promise<DashboardRow[]> {
   return (data ?? []) as DashboardRow[];
 }
 
+/** Dashboard rows for a specific calendar month (YYYY-MM), oldest first.
+ *
+ * Fixes the Reports-page "cap 60 days" bug: ReportsPage previously filtered
+ * a useDashboard(60) client-side cache by month, so any month older than 60
+ * days came back empty (toast "ไม่มีข้อมูล") even when the DB had the rows.
+ * This fetches the exact month directly, so any historical month works.
+ *
+ * monthYear is the `<input type="month">` value "YYYY-MM".
+ */
+export async function fetchDashboardByMonth(monthYear: string): Promise<DashboardRow[]> {
+  const { data, error } = await supabase
+    .from("v_dashboard_14day")
+    .select(
+      "reading_date, do_average, ph, free_chlorine, tds_aeration, water_used_total, wastewater_in, system_operating, wastewater_discharged, do_alert, chlorine_alert, ph_alert"
+    )
+    .gte("reading_date", `${monthYear}-01`)
+    .lt("reading_date", nextMonthStart(monthYear))
+    .order("reading_date", { ascending: true });
+  if (error) throw new Error(error.message);
+  return (data ?? []) as DashboardRow[];
+}
+
+/** Compute "YYYY-MM-01" for the month AFTER the given YYYY-MM. */
+function nextMonthStart(monthYear: string): string {
+  const [y, m] = monthYear.split("-").map(Number);
+  const next = new Date(y, m, 1); // m is 1-12; new Date(y, 12, 1) rolls to next Jan correctly
+  return toLocalISODate(next);
+}
+
 /**
  * Latest reading date across all time (no 14-day window) — used by F7
  * stale-data fallback. When fetchDashboard returns [] because the newest

@@ -175,10 +175,16 @@ export async function fetchCarbonMonthly(months = 12): Promise<CarbonSummary> {
     a.month < b.month ? -1 : a.month > b.month ? 1 : 0,
   );
 
-  // 6. Compute MoM% (oldest = null baseline).
-  for (let i = 0; i < sortedMonths.length; i++) {
-    const curr = sortedMonths[i];
-    const prev = i > 0 ? sortedMonths[i - 1].tco2e : null;
+  // 6. Compute MoM% vs the CALENDAR-previous month (not the index-previous
+  //    month that happens to have data). If the prior calendar month is
+  //    absent (gap in data), baseline is null → momPct returns null, which
+  //    is the honest answer ("no comparable baseline"); the previous logic
+  //    silently compared across the gap to an older month, mislabelling the
+  //    delta as "vs last month".
+  const byMonthKey = new Map(sortedMonths.map((m) => [m.month, m]));
+  for (const curr of sortedMonths) {
+    const prevKey = prevCalendarMonth(curr.month);
+    const prev = byMonthKey.get(prevKey)?.tco2e ?? null;
     curr.mom_change_pct = momPct(curr.tco2e, prev);
   }
 
@@ -206,4 +212,11 @@ export function useCarbonMonthly(months = 12) {
   }, [months]);
 
   return { data, loading, error };
+}
+
+/** Previous calendar month for a YYYY-MM key (handles January rollover). */
+function prevCalendarMonth(monthYear: string): string {
+  const [y, m] = monthYear.split("-").map(Number);
+  const prev = new Date(y, m - 2, 1); // m is 1-12; m-2 = previous month (Jan → last Dec)
+  return `${prev.getFullYear()}-${String(prev.getMonth() + 1).padStart(2, "0")}`;
 }

@@ -158,8 +158,34 @@ export function useCarbonRollupRealtime(months = 12) {
         setLive(status === "SUBSCRIBED");
       });
 
+    // Resilience (2026-08-03): the status callback fires only on status
+    // CHANGES. Supabase's socket layer auto-reconnects, but on a transient
+    // drop+recover the callback can stay silent, leaving `live=false`
+    // forever even though the channel is secretly healthy again. Poll the
+    // channel's binding state every 10s as a backstop — if it has resubscribed
+    // (REALTIME_SUBSCRIBE_STATES.SUBSCRIBED) flip `live` back to true, and if
+    // the socket is dead we refetch on a timer so data isn't silently stale.
+    // Cheap: one property read + at most one fetch when offline.
+    const state = setInterval(() => {
+      if (cancelled) return;
+      // Supabase v2 channel exposes the raw binding state. SUBSCRIBED there
+      // is the same enum the subscribe callback reports.
+      const bound = (channel as unknown as { state?: string }).state;
+      if (bound === "SUBSCRIBED") {
+        setLive(true);
+        return;
+      }
+      // Offline: refetch on the timer so the page shows fresh-ish data even
+      // while the realtime layer is down (no silent staleness).
+      setLive(false);
+      fetchRollup(months)
+        .then((d) => { if (!cancelled) { setData(d); setError(null); } })
+        .catch(() => { /* swallow — poll will retry */ });
+    }, 10_000);
+
     return () => {
       cancelled = true;
+      clearInterval(state);
       supabase.removeChannel(channel);
       setLive(false);
     };

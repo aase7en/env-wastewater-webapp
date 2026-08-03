@@ -114,7 +114,7 @@ function BellInner({ className }: { className?: string }) {
                         {a.message}
                       </div>
                       <div className="text-[11px] text-aura-textMuted font-thai mt-0.5">
-                        {thaiDate(a.created_at.slice(0, 10))}
+                        {thaiDate(a.created_at)}
                       </div>
                     </div>
                   </div>

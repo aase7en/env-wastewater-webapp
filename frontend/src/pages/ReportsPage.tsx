@@ -5,7 +5,7 @@ import { Button } from "../components/ui/Button";
 import { MSymbol } from "../components/ui/MSymbol";
 import { Field, Input, Select, Textarea } from "../components/ui/Input";
 import { useToast } from "../components/ui/Toast";
-import { useDashboard } from "../lib/hooks";
+import { fetchDashboardByMonth } from "../lib/supabase-queries";
 // Type-only import stays static (no runtime bundle cost). Functions are
 // dynamically imported inside onDownload so jspdf/html2canvas only load
 // when the user actually clicks "ดาวน์โหลด PDF".
@@ -50,8 +50,11 @@ export function ReportsPage() {
   const toast = useToast();
   const [selected, setSelected] = useState<TemplateKey>("ts1");
   const [month, setMonth] = useState(THIS_MONTH);
-  // Pull the latest ~60 days of dashboard rows so we have at least 1–2 months.
-  const { data: rows } = useDashboard(60);
+  // C3 follow-up (2026-08-03): the previous useDashboard(60) capped the page
+  // at the latest 60 days, so any month older than ~2 months came back empty
+  // ("ไม่มีข้อมูล") even when the DB had the rows. Fetch the exact month on
+  // download instead — any historical month works now.
+  const [downloading, setDownloading] = useState(false);
 
   // Repair request form state
   const [repair, setRepair] = useState<RepairRequestInput>({
@@ -63,9 +66,13 @@ export function ReportsPage() {
   });
 
   const onDownload = async () => {
+    if (downloading) return;
+    setDownloading(true);
     try {
-      // Filter dashboard rows to the selected month (YYYY-MM).
-      const monthRows = rows.filter((r) => r.reading_date.startsWith(month));
+      // Fetch the exact selected month (YYYY-MM) — no rolling-window cap.
+      const monthRows = (selected === "ts1" || selected === "ts2")
+        ? await fetchDashboardByMonth(month)
+        : [];
       if ((selected === "ts1" || selected === "ts2") && monthRows.length === 0) {
         toast.warning(`ไม่มีข้อมูลในเดือน ${monthLabel(month)}`);
         return;
@@ -91,6 +98,8 @@ export function ReportsPage() {
       }
     } catch (e) {
       toast.error(`สร้าง PDF ไม่สำเร็จ: ${e instanceof Error ? e.message : String(e)}`);
+    } finally {
+      setDownloading(false);
     }
   };
 
@@ -203,7 +212,7 @@ export function ReportsPage() {
             : "ข้อมูลมาจาก wastewater.reading ของเดือนที่เลือก — รวมเฉพาะวันที่มีบันทึกจริง"}
         </div>
 
-        <Button size="lg" className="w-full" onClick={onDownload}>
+        <Button size="lg" className="w-full" onClick={onDownload} disabled={downloading}>
           <MSymbol name="download" className="text-[18px]" /> ดาวน์โหลด PDF
         </Button>
       </AuraCard>

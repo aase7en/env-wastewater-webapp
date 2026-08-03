@@ -94,7 +94,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   // `display_name` before the column existed. PostgREST returned PGRST204,
   // catch → setAppUser(null) → isAuthenticated=false → login bounced back
   // to /login every time despite a valid session. Now matches schema.
-  const loadAppUser = async (userId: string | undefined) => {
+  const loadAppUser = async (userId: string | undefined, opts?: { urgent?: boolean }) => {
     latestUserIdRef.current = userId;
     if (!userId) {
       setAppUser(null);
@@ -105,8 +105,20 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     // AUTH-4: mark unresolved the moment we accept a new userId, BEFORE the
     // await. This closes the one-render gap where setSession(newSession) has
     // fired but appUserLoading is still false.
-    setAppUserResolved(false);
-    setAppUserLoading(true);
+    //
+    // TOKEN_REFRESHED fix (2026-08-03): Supabase fires onAuthStateChange on
+    // every ~hourly token refresh with the SAME userId. The previous code
+    // unconditionally flipped resolved=false + loading=true, which made
+    // every protected route unmount + render PageSkeleton for the round-trip
+    // — an hourly ~200ms flash mid-task. The `urgent` flag is false for
+    // same-user refreshes: we still refetch (to catch server-side role/is_active
+    // changes) but without unmounting the UI. Only the initial load and a
+    // genuine userId change (sign-in as a different user) stay urgent.
+    const urgent = opts?.urgent ?? true;
+    if (urgent) {
+      setAppUserResolved(false);
+      setAppUserLoading(true);
+    }
     try {
       const { data, error } = await supabase
         .from("app_user")
@@ -122,8 +134,15 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         setAppUser(null);
       } else if (data && data.is_active === false) {
         // AUTH-2: account explicitly disabled — treat as not-authenticated.
-        console.warn("app_user is_active=false:", data.id);
+        // Soft-lock fix (2026-08-03): previously we set appUser=null but
+        // left the Supabase session in localStorage, so RequireAuth bounced
+        // the user to /login while their session was still technically
+        // valid — re-login attempts would re-detect is_active=false and
+        // bounce again (zombie loop). Sign out so the session is cleared
+        // and the user sees the login form cleanly without a stale token.
+        console.warn("app_user is_active=false — signing out:", data.id);
         setAppUser(null);
+        void supabase.auth.signOut();
       } else {
         setAppUser(data as AppUserRow | null);
       }
@@ -144,9 +163,17 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     });
 
     // Subscribe to subsequent auth state changes.
-    const { data: sub } = supabase.auth.onAuthStateChange((_event, newSession) => {
+    const { data: sub } = supabase.auth.onAuthStateChange((event, newSession) => {
       setSession(newSession);
-      void loadAppUser(newSession?.user.id);
+      // TOKEN_REFRESHED / USER_UPDATED fire ~hourly with the SAME userId.
+      // Treat those as non-urgent (background refetch, no skeleton flash);
+      // only SIGNED_IN / INITIAL_SESSION / PASSWORD_RECOVERY stay urgent.
+      const urgent =
+        event === "SIGNED_IN" ||
+        event === "INITIAL_SESSION" ||
+        event === "PASSWORD_RECOVERY" ||
+        newSession?.user.id !== latestUserIdRef.current; // different user
+      void loadAppUser(newSession?.user.id, { urgent });
     });
     return () => sub.subscription.unsubscribe();
   }, []);
