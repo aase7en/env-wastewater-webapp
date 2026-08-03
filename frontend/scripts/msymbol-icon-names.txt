@@ -19,6 +19,7 @@ download
 edit
 edit_note
 error
+folder
 format_size
 gavel
 health_and_safety

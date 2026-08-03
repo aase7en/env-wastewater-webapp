@@ -333,6 +333,13 @@
 /* Shown from state (.dock-tip--show) so a finger gets labels too — :hover
  * alone meant the names never appeared on a touch screen at all. Keyboard
  * focus keeps its own CSS rule since that never goes through the pointer. */
+/* DOCK-20: the toolbar's tips are the one place still driven by CSS. The dock
+ * slots switched to state (.dock-tip--show) so a finger gets labels too, and
+ * the :hover rule was dropped with them — which left a tool only naming itself
+ * once CLICKED, via :focus-within. .dock-tool restores hover for the toolbar
+ * without re-introducing it for the slots, where it would light the icon under
+ * the pointer during a drag as well as the one on the finger. */
+.dock-tool:hover > .dock-tip,
 .dock-tip--show,
 .dock-item:focus-within > .dock-tip {
   opacity: 1;

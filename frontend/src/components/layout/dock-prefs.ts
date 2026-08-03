@@ -18,10 +18,37 @@
 
 const STORAGE_KEY = "dock:v1"; // key name kept; the payload is versioned inside
 
+/**
+ * Folder tint. Stored as a KEY, never a colour value — the palette resolves
+ * per theme, so a folder picked in dark mode still reads correctly in light.
+ */
+export type FolderColor =
+  | "cyan"
+  | "lime"
+  | "indigo"
+  | "amber"
+  | "green"
+  | "red";
+
+export const FOLDER_COLORS: Record<FolderColor, string> = {
+  cyan: "rgb(var(--aura-cyan))",
+  lime: "rgb(var(--aura-lime))",
+  indigo: "var(--aura-ring-3)",
+  amber: "var(--alert-amber)",
+  green: "var(--alert-green)",
+  red: "var(--alert-red)",
+};
+
 /** A dock slot: either one module, or a folder holding several. */
 export type DockEntry =
   | { kind: "module"; to: string }
-  | { kind: "folder"; id: string; name: string; items: string[] };
+  | {
+      kind: "folder";
+      id: string;
+      name: string;
+      items: string[];
+      color?: FolderColor;
+    };
 
 export type IconSize = "sm" | "md" | "lg";
 

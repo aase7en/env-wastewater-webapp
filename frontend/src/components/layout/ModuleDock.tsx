@@ -18,7 +18,9 @@ import {
   reorder,
   writeDock,
   type DockEntry,
+  FOLDER_COLORS,
   type DockPrefs,
+  type FolderColor,
   type IconSize,
 } from "./dock-prefs";
 import {
@@ -417,6 +419,12 @@ export function ModuleDock({
   // visSheetOpen belongs here too: it drives the scrim, the escape key and
   // the tap-outside handler. Left out, the role sheet rendered over an
   // unblurred page and was hard to read against the dashboard behind it.
+  const closePickerRef = useRef<() => void>(() => {});
+  closePickerRef.current = () => {
+    setEntries(entries.filter((e) => e.kind !== "folder" || e.items.length > 0));
+    setPickerFor(null);
+  };
+
   const sheetOpen =
     pickerFor !== null || openFolder !== null || visSheetOpen;
 
@@ -425,14 +433,14 @@ export function ModuleDock({
     if (!editing && !sheetOpen) return;
     const onKey = (e: KeyboardEvent) => {
       if (e.key !== "Escape") return;
-      setPickerFor(null);
+      closePickerRef.current();
       setOpenFolder(null);
       setVisSheetOpen(false);
       setEditing(false);
     };
     const onDown = (e: PointerEvent) => {
       if (rootRef.current?.contains(e.target as Node)) return;
-      setPickerFor(null);
+      closePickerRef.current();
       setOpenFolder(null);
       setVisSheetOpen(false);
       setEditing(false);
@@ -554,13 +562,38 @@ export function ModuleDock({
     );
 
   /* ── Tools ─────────────────────────────────────────────────────────────── */
+  /**
+   * DOCK-20: pressing this repeatedly used to leave a blank slot per press.
+   * The folder was created empty and only removed by sanitize() on the NEXT
+   * page load, so every unfinished attempt sat on the dock rendering nothing.
+   * Now an existing empty folder is reused instead of stacking another, and
+   * closePicker() deletes one that was never filled.
+   */
   const createFolder = () => {
+    const existing = entries.find(
+      (e) => e.kind === "folder" && e.items.length === 0,
+    );
+    if (existing && existing.kind === "folder") {
+      setPickerFor(existing.id);
+      return;
+    }
     const id = newFolderId();
     setEntries([...entries, { kind: "folder", id, name: "โฟลเดอร์ใหม่", items: [] }]);
-    // Straight into the picker: an empty folder cannot be opened to anything,
-    // and sanitize() drops it on next load, so it must be filled now.
     setPickerFor(id);
   };
+
+  /** Close the picker, discarding a folder that was opened but left empty. */
+  const closePicker = () => {
+    setEntries(entries.filter((e) => e.kind !== "folder" || e.items.length > 0));
+    setPickerFor(null);
+  };
+
+  const setFolderColor = (folderId: string, color: FolderColor) =>
+    setEntries(
+      entries.map((e) =>
+        e.kind === "folder" && e.id === folderId ? { ...e, color } : e,
+      ),
+    );
 
   const pinCurrent = () => {
     const here = allowed.find((n) => isActive(n.to));
@@ -598,7 +631,7 @@ export function ModuleDock({
         <div
           aria-hidden="true"
           onClick={() => {
-            setPickerFor(null);
+            closePicker();
             setOpenFolder(null);
             setVisSheetOpen(false);
           }}
@@ -648,6 +681,7 @@ export function ModuleDock({
             isActive={isActive}
             onClose={() => setOpenFolder(null)}
             onRename={(name) => renameFolder(folder.id, name)}
+            onColor={(c) => setFolderColor(folder.id, c)}
             onLiftOut={(to) => liftOut(folder.id, to)}
             onAdd={() => setPickerFor(folder.id)}
           />
@@ -672,7 +706,7 @@ export function ModuleDock({
             title={pickerFor === "dock" ? "ทุกโมดูล" : "เพิ่มลงโฟลเดอร์"}
             navigable={pickerFor === "dock"}
             onPick={(to) => addTo(pickerFor, to)}
-            onClose={() => setPickerFor(null)}
+            onClose={closePicker}
           />
         )}
 
@@ -874,7 +908,7 @@ function Tool({
   // browser's own tooltip, which looks nothing like the rest of the dock and
   // never appears on touch.
   return (
-    <span className="dock-item relative inline-flex">
+    <span className="dock-item dock-tool relative inline-flex">
       <span
         aria-hidden="true"
         className="dock-tip pointer-events-none absolute left-1/2 bottom-full mb-2 whitespace-nowrap rounded-lg px-2.5 py-1 text-xs font-thai bg-aura-surfaceHighest text-aura-textMain border border-aura-borderSubtle shadow-aura-card"
@@ -951,13 +985,23 @@ function DockSlot({
   // The transform belongs to the wrapper; only the countdown duration needs to
   // reach the slot itself (its ::after reads the variable).
   const holdStyle: CSSProperties = style;
+  /**
+   * A folder's tint colours its glyph and its border — but only when the slot
+   * is not already wearing the pointer highlight or the current-route tint,
+   * or the tint would override the very states that tell you where you are.
+   */
+  const tint =
+    entry.kind === "folder" && entry.color && !showTip && !active
+      ? FOLDER_COLORS[entry.color]
+      : null;
+
   const holdVars: CSSProperties = holding
     ? ({ ["--dock-hold-ms" as string]: `${holdMs}ms` } as CSSProperties)
     : {};
 
   const body =
     entry.kind === "folder" ? (
-      <FolderGlyph entry={entry} byPath={byPath} />
+      <FolderGlyph entry={entry} />
     ) : (
       <MSymbol name={item?.icon ?? "description"} fill={active} />
     );
@@ -1029,7 +1073,7 @@ function DockSlot({
           aria-label={label}
           onClick={() => !editing && onActivate()}
           className={slotClass}
-          style={holdVars}
+          style={tint ? { ...holdVars, color: tint, borderColor: tint } : holdVars}
           {...handlers}
         >
           {body}
@@ -1085,23 +1129,25 @@ function DockSlot({
   );
 }
 
-/** Folder icon: a 2×2 peek at what is inside, like an iOS folder. */
+/**
+ * Folder icon. A filled folder glyph rather than the old 2×2 peek at its
+ * contents: at 48px four sub-icons were too small to identify anyway, and a
+ * folder with one item looked like a rendering fault. The count carries the
+ * "how much is in here" signal instead.
+ */
 function FolderGlyph({
   entry,
-  byPath,
 }: {
   entry: Extract<DockEntry, { kind: "folder" }>;
-  byPath: Map<string, DockItem>;
 }) {
   return (
-    <span className="grid grid-cols-2 gap-px place-items-center w-[62%] h-[62%]">
-      {entry.items.slice(0, 4).map((p) => (
-        <MSymbol
-          key={p}
-          name={byPath.get(p)?.icon ?? "description"}
-          className="text-[11px] leading-none"
-        />
-      ))}
+    <span className="relative grid place-items-center">
+      <MSymbol name="folder" fill />
+      {entry.items.length > 0 && (
+        <span className="absolute -bottom-1 text-[9px] font-bold leading-none tabular-nums opacity-80">
+          {entry.items.length}
+        </span>
+      )}
     </span>
   );
 }
@@ -1135,6 +1181,7 @@ function FolderSheet({
   isActive,
   onClose,
   onRename,
+  onColor,
   onLiftOut,
   onAdd,
 }: {
@@ -1144,6 +1191,7 @@ function FolderSheet({
   isActive: (to: string) => boolean;
   onClose: () => void;
   onRename: (name: string) => void;
+  onColor: (c: FolderColor) => void;
   onLiftOut: (to: string) => void;
   onAdd: () => void;
 }) {
@@ -1194,6 +1242,26 @@ function FolderSheet({
             <span className="text-[10px] text-aura-textMuted tabular-nums">
               {folder.name.length}/{FOLDER_NAME_MAX}
             </span>
+          </div>
+          <div className="flex items-center gap-1.5 mb-2">
+            <span className="text-[10px] uppercase tracking-wider font-bold text-aura-textMuted font-thai mr-1">
+              สี
+            </span>
+            {(Object.keys(FOLDER_COLORS) as FolderColor[]).map((c) => (
+              <button
+                key={c}
+                type="button"
+                aria-label={`สีโฟลเดอร์ ${c}`}
+                onClick={() => onColor(c)}
+                className={cn(
+                  "w-5 h-5 rounded-full border-2 transition-transform",
+                  (folder.color ?? "cyan") === c
+                    ? "scale-110 border-aura-textMain"
+                    : "border-transparent",
+                )}
+                style={{ background: FOLDER_COLORS[c] }}
+              />
+            ))}
           </div>
           <div className="flex flex-wrap gap-1.5">
             {FOLDER_NAME_SUGGESTIONS.map((name) => (
