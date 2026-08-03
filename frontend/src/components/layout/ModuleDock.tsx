@@ -396,7 +396,11 @@ export function ModuleDock({
     };
   }, [pressed]);
 
-  const sheetOpen = pickerFor !== null || openFolder !== null;
+  // visSheetOpen belongs here too: it drives the scrim, the escape key and
+  // the tap-outside handler. Left out, the role sheet rendered over an
+  // unblurred page and was hard to read against the dashboard behind it.
+  const sheetOpen =
+    pickerFor !== null || openFolder !== null || visSheetOpen;
 
   /* Escape / tap-outside leaves edit mode and closes sheets. */
   useEffect(() => {
@@ -405,12 +409,14 @@ export function ModuleDock({
       if (e.key !== "Escape") return;
       setPickerFor(null);
       setOpenFolder(null);
+      setVisSheetOpen(false);
       setEditing(false);
     };
     const onDown = (e: PointerEvent) => {
       if (rootRef.current?.contains(e.target as Node)) return;
       setPickerFor(null);
       setOpenFolder(null);
+      setVisSheetOpen(false);
       setEditing(false);
     };
     window.addEventListener("keydown", onKey);
@@ -477,13 +483,27 @@ export function ModuleDock({
     else navigate(e.to);
   };
 
+  /**
+   * Put `to` in `target`, taking it out of wherever it currently lives first.
+   * A module must exist in exactly ONE place — loose on the dock or inside a
+   * single folder — or the same icon appears twice and it stops being obvious
+   * which one the folder actually holds.
+   */
   const addTo = (target: string, to: string) => {
+    const without = entries
+      .map((e) =>
+        e.kind === "folder" ? { ...e, items: e.items.filter((p) => p !== to) } : e,
+      )
+      .filter((e) => !(e.kind === "module" && e.to === to))
+      // A folder emptied by the move has nothing left to open.
+      .filter((e) => e.kind !== "folder" || e.items.length > 0);
+
     if (target === "dock") {
-      setEntries([...entries, { kind: "module", to }]);
+      setEntries([...without, { kind: "module", to }]);
       return;
     }
     setEntries(
-      entries.map((e) =>
+      without.map((e) =>
         e.kind === "folder" && e.id === target
           ? { ...e, items: [...e.items, to] }
           : e,
@@ -562,6 +582,7 @@ export function ModuleDock({
           onClick={() => {
             setPickerFor(null);
             setOpenFolder(null);
+            setVisSheetOpen(false);
           }}
           className="fixed inset-0 z-[35] bg-aura-bgDeep/50 backdrop-blur-sm"
         />
@@ -616,7 +637,20 @@ export function ModuleDock({
 
         {pickerFor !== null && (
           <ModulePicker
-            items={unpinned}
+            // Filling a FOLDER offers everything not already in that folder,
+            // including modules currently sitting loose on the dock — moving
+            // one in is the whole point, and addTo() takes it out of its old
+            // home. Filling the DOCK only offers what is not pinned anywhere.
+            items={
+              pickerFor === "dock"
+                ? unpinned
+                : allowed.filter((n) => {
+                    const f = entries.find(
+                      (e) => e.kind === "folder" && e.id === pickerFor,
+                    );
+                    return !(f?.kind === "folder" && f.items.includes(n.to));
+                  })
+            }
             title={pickerFor === "dock" ? "ทุกโมดูล" : "เพิ่มลงโฟลเดอร์"}
             navigable={pickerFor === "dock"}
             onPick={(to) => addTo(pickerFor, to)}
@@ -817,22 +851,33 @@ function Tool({
   onClick: () => void;
   disabled?: boolean;
 }) {
+  // .dock-item / .dock-tip are the same pair the dock slots use, so a tool
+  // names itself exactly the way an icon does instead of falling back to the
+  // browser's own tooltip, which looks nothing like the rest of the dock and
+  // never appears on touch.
   return (
-    <button
-      type="button"
-      onClick={onClick}
-      disabled={disabled}
-      title={label}
-      aria-label={label}
-      className={cn(
-        "h-9 px-2 rounded-xl grid place-items-center transition-colors",
-        disabled
-          ? "text-aura-textMuted/40 cursor-not-allowed"
-          : "text-aura-textMuted hover:text-aura-cyan hover:bg-aura-cyan/10",
-      )}
-    >
-      <MSymbol name={icon} className="text-[20px]" />
-    </button>
+    <span className="dock-item relative inline-flex">
+      <span
+        aria-hidden="true"
+        className="dock-tip pointer-events-none absolute left-1/2 bottom-full mb-2 whitespace-nowrap rounded-lg px-2.5 py-1 text-xs font-thai bg-aura-surfaceHighest text-aura-textMain border border-aura-borderSubtle shadow-aura-card"
+      >
+        {label}
+      </span>
+      <button
+        type="button"
+        onClick={onClick}
+        disabled={disabled}
+        aria-label={label}
+        className={cn(
+          "h-9 px-2 rounded-xl grid place-items-center transition-colors",
+          disabled
+            ? "text-aura-textMuted/40 cursor-not-allowed"
+            : "text-aura-textMuted hover:text-aura-cyan hover:bg-aura-cyan/10",
+        )}
+      >
+        <MSymbol name={icon} className="text-[20px]" />
+      </button>
+    </span>
   );
 }
 
@@ -988,9 +1033,12 @@ function DockSlot({
           type="button"
           aria-label={`เอา ${label} ออกจาก Dock`}
           onClick={onRemove}
-          className="absolute -top-1 -right-1 z-10 grid place-items-center w-5 h-5 rounded-full bg-alert-red text-white shadow-lg"
+          // Matches the × in the sheets: quiet by default, red only on
+          // hover. The solid red badge read as an error state and crowded a
+          // 48px icon.
+          className="absolute -top-1 -right-1 z-10 grid place-items-center w-4 h-4 rounded-full bg-aura-surface/90 border border-aura-borderSubtle text-aura-textMuted hover:text-alert-red transition-colors"
         >
-          <MSymbol name="close" className="text-[13px]" />
+          <MSymbol name="close" className="text-[11px]" />
         </button>
       )}
     </div>
@@ -1022,6 +1070,24 @@ function FolderGlyph({
 
 const SHEET_BODY_H = "min(46vh, 340px)";
 
+/** Long enough for a real Thai group name, short enough to stay on one line
+ *  in the folder sheet header and under a 48px icon. */
+const FOLDER_NAME_MAX = 24;
+
+/** Starting points, grouped the way this app's nav already is, so a folder
+ *  gets a name that matches the language of the rest of the system instead of
+ *  "โฟลเดอร์ใหม่". Free text still wins — these are only shortcuts. */
+const FOLDER_NAME_SUGGESTIONS = [
+  "โมดูล ENV",
+  "งานประจำวัน",
+  "ตรวจวัด & แนวโน้ม",
+  "คาร์บอน",
+  "รายงาน & เอกสาร",
+  "ความปลอดภัย",
+  "คลังข้อมูล",
+  "ผู้ดูแลระบบ",
+];
+
 function FolderSheet({
   folder,
   byPath,
@@ -1047,8 +1113,10 @@ function FolderSheet({
         {editing ? (
           <input
             value={folder.name}
-            onChange={(e) => onRename(e.target.value)}
+            onChange={(e) => onRename(e.target.value.slice(0, FOLDER_NAME_MAX))}
+            maxLength={FOLDER_NAME_MAX}
             aria-label="ชื่อโฟลเดอร์"
+            placeholder="ตั้งชื่อโฟลเดอร์"
             className="glass-input flex-1 min-w-0 px-3 font-thai text-sm"
           />
         ) : (
@@ -1077,9 +1145,39 @@ function FolderSheet({
         </button>
       </div>
 
+      {editing && (
+        <div className="shrink-0 mb-3">
+          <div className="flex items-center justify-between mb-1.5">
+            <span className="text-[10px] uppercase tracking-wider font-bold text-aura-textMuted font-thai">
+              ชื่อที่แนะนำ
+            </span>
+            <span className="text-[10px] text-aura-textMuted tabular-nums">
+              {folder.name.length}/{FOLDER_NAME_MAX}
+            </span>
+          </div>
+          <div className="flex flex-wrap gap-1.5">
+            {FOLDER_NAME_SUGGESTIONS.map((name) => (
+              <button
+                key={name}
+                type="button"
+                onClick={() => onRename(name)}
+                className={cn(
+                  "px-2.5 py-1 rounded-full text-[11px] font-thai border transition-colors",
+                  folder.name === name
+                    ? "border-aura-cyan/60 text-aura-cyan bg-aura-cyan/10"
+                    : "border-aura-borderSubtle text-aura-textMuted hover:text-aura-cyan hover:border-aura-cyan/40",
+                )}
+              >
+                {name}
+              </button>
+            ))}
+          </div>
+        </div>
+      )}
+
       <div
         className="overflow-y-auto -mx-1 px-1 pb-1 grid grid-cols-3 sm:grid-cols-4 gap-2 content-start"
-        style={{ height: SHEET_BODY_H }}
+        style={{ height: editing ? "min(32vh, 240px)" : SHEET_BODY_H }}
       >
         {folder.items.map((p) => {
           const n = byPath.get(p);
