@@ -3,6 +3,7 @@
  * Legal monthly requirement (พ.ร.บ. ป้องกันอัคคีภัย 2542).
  */
 import { useState } from "react";
+import { toLocalISODate } from "../lib/utils";
 import { useToast } from "../components/ui/Toast";
 import { AuraCard } from "../components/ui/AuraCard";
 import { Button } from "../components/ui/Button";
@@ -16,9 +17,9 @@ const NUM = (v: string) => (v === "" ? null : Number(v));
 export function SafetyPage() {
   const { data, loading, error, refresh } = useSafetyMonthly(12);
   const { toast } = useToast();
-  const today = new Date().toISOString().slice(0, 10);
+  const today = toLocalISODate();
   const nextMonth = new Date(); nextMonth.setMonth(nextMonth.getMonth() + 1);
-  const nextDue = nextMonth.toISOString().slice(0, 10);
+  const nextDue = toLocalISODate(nextMonth);
   const [form, setForm] = useState<SafetyInput>({
     check_date: today, location_id: null, extinguisher_inspected: false,
     exit_light_functional: false, issues_found: null,

@@ -3,6 +3,7 @@
  * ⚠️ PHI boundary: water/food/environment samples only, NOT patient samples.
  */
 import { useState } from "react";
+import { toLocalISODate } from "../lib/utils";
 import { useToast } from "../components/ui/Toast";
 import { AuraCard } from "../components/ui/AuraCard";
 import { Button } from "../components/ui/Button";
@@ -15,7 +16,7 @@ const NUM = (v: string) => (v === "" ? null : Number(v));
 export function FoodPage() {
   const { data, loading, error, refresh } = useFoodLabTests(30);
   const { toast } = useToast();
-  const today = new Date().toISOString().slice(0, 10);
+  const today = toLocalISODate();
   const [form, setForm] = useState<FoodInput>({
     sample_date: today, sample_type: "น้ำประปา", test_type: "total_coliform",
     result: null, reported_date: null, technician: null, sample_point: null,

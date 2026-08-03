@@ -29,7 +29,7 @@
 
 import { useEffect, useState } from "react";
 import { supabase } from "./supabase";
-import { momPct } from "./utils";
+import { momPct, toLocalISODate } from "./utils";
 
 // ─── Config ──────────────────────────────────────────────────────────────
 
@@ -117,12 +117,14 @@ export async function fetchCarbonMonthly(months = 12): Promise<CarbonSummary> {
   );
 
   // 2. Date range: cover the last N whole months back from current month.
-  //    Use ISO dates; Supabase compares text correctly for YYYY-MM-DD.
+  //    Month boundaries are tz-stable (day=1), but format via toLocalISODate
+  //    so the YYYY-MM-DD we send matches the local reading_date column's
+  //    representation (C3 — avoid the UTC-slice off-by-one).
   const now = new Date();
-  const endExclusive = new Date(Date.UTC(now.getUTCFullYear(), now.getUTCMonth() + 1, 1));
-  const startInclusive = new Date(Date.UTC(now.getUTCFullYear(), now.getUTCMonth() - (months - 1), 1));
-  const startDate = startInclusive.toISOString().slice(0, 10);
-  const endDate = endExclusive.toISOString().slice(0, 10);
+  const endExclusive = new Date(now.getFullYear(), now.getMonth() + 1, 1);
+  const startInclusive = new Date(now.getFullYear(), now.getMonth() - (months - 1), 1);
+  const startDate = toLocalISODate(startInclusive);
+  const endDate = toLocalISODate(endExclusive);
 
   // 3. Fetch daily rows for the window. ~365 rows max — cheap.
   const { data: rows, error: rErr } = await supabase

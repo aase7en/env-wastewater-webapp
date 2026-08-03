@@ -1,4 +1,5 @@
 import { useState } from "react";
+import { toLocalISODate } from "../lib/utils";
 import { AuraCard } from "../components/ui/AuraCard";
 import { Button } from "../components/ui/Button";
 import { MSymbol } from "../components/ui/MSymbol";
@@ -54,7 +55,7 @@ export function ReportsPage() {
 
   // Repair request form state
   const [repair, setRepair] = useState<RepairRequestInput>({
-    date: new Date().toISOString().slice(0, 10),
+    date: toLocalISODate(),
     cause: "",
     equipment: "",
     reporter: "",

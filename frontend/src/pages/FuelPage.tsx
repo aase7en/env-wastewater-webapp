@@ -2,6 +2,7 @@
  * MOD-FU — Fuel dispense page skeleton. Scope 1 carbon feed.
  */
 import { useState } from "react";
+import { toLocalISODate } from "../lib/utils";
 import { useToast } from "../components/ui/Toast";
 import { AuraCard } from "../components/ui/AuraCard";
 import { Button } from "../components/ui/Button";
@@ -14,7 +15,7 @@ const NUM = (v: string) => (v === "" ? null : Number(v));
 export function FuelPage() {
   const { data, loading, error, refresh } = useFuelLogs(30);
   const { toast } = useToast();
-  const today = new Date().toISOString().slice(0, 10);
+  const today = toLocalISODate();
   const [form, setForm] = useState<FuelInput>({
     log_date: today, fuel_type: "diesel", litres: null,
     meter_before: null, meter_after: null, vehicle_or_use: null,

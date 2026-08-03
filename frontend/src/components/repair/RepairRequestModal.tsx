@@ -9,7 +9,7 @@ import { useToast } from "../ui/Toast";
 import { Button } from "../ui/Button";
 import { MSymbol } from "../ui/MSymbol";
 import { Field, Textarea } from "../ui/Input";
-import { thaiDate } from "../../lib/utils";
+import { thaiDate, toLocalISODate } from "../../lib/utils";
 
 /**
  * แจ้งเหตุผิดปกติ → core.repair_request (WO-V1b, closes SPEC §6 loop).
@@ -73,13 +73,13 @@ export function RepairRequestModal({
     // clicks "พิมพ์ PDF" from the repair modal.
     const { generateRepairRequest, downloadPDF } = await import("../../lib/pdf");
     const doc = generateRepairRequest({
-      date: thaiDate(new Date().toISOString().slice(0, 10)),
+      date: thaiDate(toLocalISODate()),
       cause: savedCause,
       equipment: savedEquipment,
       reporter: appUser?.display_name || user?.email || null,
       status: "open",
     });
-    downloadPDF(doc, `repair-request-${new Date().toISOString().slice(0, 10)}.pdf`);
+    downloadPDF(doc, `repair-request-${toLocalISODate()}.pdf`);
   };
 
   return (

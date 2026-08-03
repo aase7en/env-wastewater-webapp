@@ -23,6 +23,28 @@ export function thaiDate(d: string | Date): string {
   return `${date.getDate()} ${months[date.getMonth()]} ${be}`;
 }
 
+/** Format a Date as a LOCAL YYYY-MM-DD string (not UTC).
+ *
+ * This is the fix for the off-by-one that hit every `new Date().toISOString().slice(0,10)`
+ * site: toISOString() is UTC, but the DB's `reading_date` / `movement_date` /
+ * form-default columns are local YYYY-MM-DD (entered by staff in ICT). At
+ * 00:00–06:59 ICT, "today UTC" is still yesterday — so `.toISOString().slice(0,10)`
+ * returned yesterday's date, dropping today's reading from the dashboard window
+ * and pre-filling forms with the wrong day.
+ *
+ * Same root cause as daysSince's FIX-1; same local-parsing remedy. Callers
+ * that compare against a local DB date column, or pre-fill a form's "today",
+ * must use this instead of the UTC slice.
+ *
+ * Accepts a Date (defaults to now). Returns YYYY-MM-DD in the host's local tz.
+ */
+export function toLocalISODate(d: Date = new Date()): string {
+  const y = d.getFullYear();
+  const m = String(d.getMonth() + 1).padStart(2, "0");
+  const day = String(d.getDate()).padStart(2, "0");
+  return `${y}-${m}-${day}`;
+}
+
 /** Whole days between today (local, midnight) and a YYYY-MM-DD string.
  * 0 when the date is today; positive for past dates.
  * Used by F7 stale-data fallback ("N วันก่อน").

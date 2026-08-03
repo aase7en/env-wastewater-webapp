@@ -9,6 +9,7 @@
  */
 import { useEffect, useState } from "react";
 import { supabase } from "./supabase";
+import { toLocalISODate } from "./utils";
 
 export interface FoodLabTest {
   id: string;
@@ -88,7 +89,7 @@ export async function fetchReagentUsage(monthsBack = 3): Promise<
   // "last N months" so widening to start-of-month is acceptable.
   cutoff.setDate(1);
   cutoff.setMonth(cutoff.getMonth() - monthsBack);
-  const cutoffIso = cutoff.toISOString().slice(0, 10);
+  const cutoffIso = toLocalISODate(cutoff);
 
   const { data, error } = await supabase
     .from("movement")

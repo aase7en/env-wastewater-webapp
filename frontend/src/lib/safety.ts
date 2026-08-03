@@ -6,6 +6,7 @@
  */
 import { useEffect, useState } from "react";
 import { supabase } from "./supabase";
+import { toLocalISODate } from "./utils";
 
 export interface SafetyMonthlyCheck {
   id: string;
@@ -85,7 +86,7 @@ export function useUpcomingSafetyChecks(days = 30) {
   useEffect(() => {
     const cutoff = new Date();
     cutoff.setDate(cutoff.getDate() + days);
-    const cutoffIso = cutoff.toISOString().slice(0, 10);
+    const cutoffIso = toLocalISODate(cutoff);
 
     supabase
       .from("monthly_check")

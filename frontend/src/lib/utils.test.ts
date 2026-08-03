@@ -1,5 +1,5 @@
 import { describe, it, expect } from "vitest";
-import { fmt, thaiDate, daysSince, momPct } from "./utils";
+import { fmt, thaiDate, daysSince, momPct, toLocalISODate } from "./utils";
 
 /**
  * TEST-1: unit tests for the pure helpers in lib/utils.ts.
@@ -75,6 +75,47 @@ describe("thaiDate", () => {
 
   it("handles single-digit days without leading zero", () => {
     expect(thaiDate("2026-01-05")).toBe("5 ม.ค. 2569");
+  });
+});
+
+// ─── toLocalISODate ─────────────────────────────────────────────────────
+// C3 (2026-08-03): the fix for the dashboard/forms off-by-one. Every
+// `new Date().toISOString().slice(0,10)` site that compares against a local
+// DB date column (reading_date / movement_date / next_check_due) or pre-fills
+// a form's "today" was off-by-one between 00:00–06:59 ICT: toISOString() is
+// UTC, so "today UTC" was still yesterday's local date. toLocalISODate
+// formats the host's LOCAL calendar date as YYYY-MM-DD instead.
+
+describe("toLocalISODate", () => {
+  it("matches the local calendar date, not UTC (regression guard for the off-by-one)", () => {
+    // Build a Date at a local moment where UTC and local disagree: 01:00
+    // local on a known day. Under UTC+N (any positive offset), that moment's
+    // UTC date is the PREVIOUS calendar day. toLocalISODate must return the
+    // local day; toISOString().slice(0,10) would return the day before.
+    const d = new Date(2026, 5, 15, 1, 0, 0); // 2026-06-15 01:00 LOCAL
+    const local = toLocalISODate(d);
+    expect(local).toBe("2026-06-15");
+    // Contrast the UTC slice — this is what the bug looked like. Guard that
+    // the divergence is real so this test actually exercises the off-by-one
+    // (under UTC+N tz; under UTC+0 or negative offsets it's a no-op, so the
+    // assertion is belt-and-braces only there).
+    const utcSlice = d.toISOString().slice(0, 10);
+    if (d.getTimezoneOffset() < 0) {
+      expect(utcSlice).toBe("2026-06-14"); // UTC behind local → yesterday UTC
+      expect(local).not.toBe(utcSlice);
+    }
+  });
+
+  it("zero-pads month and day", () => {
+    expect(toLocalISODate(new Date(2026, 0, 5))).toBe("2026-01-05");
+    expect(toLocalISODate(new Date(2026, 10, 9))).toBe("2026-11-09");
+  });
+
+  it("accepts a Date argument; defaults to now when omitted", () => {
+    const explicit = toLocalISODate(new Date(2026, 2, 10));
+    expect(explicit).toBe("2026-03-10");
+    // now: just assert shape YYYY-MM-DD, not the exact day.
+    expect(toLocalISODate()).toMatch(/^\d{4}-\d{2}-\d{2}$/);
   });
 });
 

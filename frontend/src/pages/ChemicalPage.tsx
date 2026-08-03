@@ -3,6 +3,7 @@
  * Master catalog + movement log. Balance auto-recomputed by trigger.
  */
 import { useState } from "react";
+import { toLocalISODate } from "../lib/utils";
 import { useToast } from "../components/ui/Toast";
 import { AuraCard } from "../components/ui/AuraCard";
 import { Button } from "../components/ui/Button";
@@ -22,7 +23,7 @@ export function ChemicalPage() {
   const moves = useChemicalMovements(50);
   const lowStock = useLowStockChemicals();
   const { toast } = useToast();
-  const today = new Date().toISOString().slice(0, 10);
+  const today = toLocalISODate();
 
   const [master, setMaster] = useState<ChemicalMasterInput>({
     name: "", cas_no: null, hazard_class: null, unit: "kg",

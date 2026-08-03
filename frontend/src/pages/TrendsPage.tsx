@@ -16,7 +16,7 @@ import { EmptyState } from "../components/ui/EmptyState";
 import { supabase } from "../lib/supabase";
 import { cssVar, cssVarRGB } from "../lib/theme";
 import { useAuraTheme } from "../lib/useAuraTheme";
-import { fmt, thaiDate } from "../lib/utils";
+import { fmt, thaiDate, toLocalISODate } from "../lib/utils";
 
 interface ReadingPoint {
   reading_date: string;
@@ -75,7 +75,7 @@ export function TrendsPage() {
     supabase
       .from("v_dashboard_14day")
       .select("reading_date, do_average, ph, free_chlorine, wastewater_in, water_used_total, tds_aeration")
-      .gte("reading_date", cutoff.toISOString().slice(0, 10))
+      .gte("reading_date", toLocalISODate(cutoff))
       .order("reading_date", { ascending: true })
       .then(({ data, error }) => {
         if (error) setError(error.message);

@@ -2,6 +2,7 @@
  * MOD-WA — Waste / Garbage page skeleton.
  */
 import { useState } from "react";
+import { toLocalISODate } from "../lib/utils";
 import { useToast } from "../components/ui/Toast";
 import { AuraCard } from "../components/ui/AuraCard";
 import { Button } from "../components/ui/Button";
@@ -14,7 +15,7 @@ const NUM = (v: string) => (v === "" ? null : Number(v));
 export function GarbagePage() {
   const { data, loading, error, refresh } = useGarbageLogs(30);
   const { toast } = useToast();
-  const today = new Date().toISOString().slice(0, 10);
+  const today = toLocalISODate();
   const [form, setForm] = useState<GarbageInput>({
     log_date: today, location_id: null, waste_type: "ทั่วไป",
     weight_kg: null, disposal_route: null, segregation_type: "general",

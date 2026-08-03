@@ -3,6 +3,7 @@
  * repair_needed=true seeds core.repair_request via app-layer (future -b).
  */
 import { useState } from "react";
+import { toLocalISODate } from "../lib/utils";
 import { useToast } from "../components/ui/Toast";
 import { AuraCard } from "../components/ui/AuraCard";
 import { Button } from "../components/ui/Button";
@@ -14,7 +15,7 @@ import { useBuildingRounds, createBuildingRound, deleteBuildingRound, type Build
 export function BuildingPage() {
   const { data, loading, error, refresh } = useBuildingRounds(30);
   const { toast } = useToast();
-  const today = new Date().toISOString().slice(0, 10);
+  const today = toLocalISODate();
   const [form, setForm] = useState<BuildingInput>({
     round_date: today, location_id: null, inspector: null, findings: null,
     issues_found: false, repair_needed: false, round_type: "monthly",

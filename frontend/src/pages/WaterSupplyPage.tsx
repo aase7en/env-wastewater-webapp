@@ -3,6 +3,7 @@
  * Track Z scope: logic + minimal markup. Track F owns polish (WO MOD-WS-b).
  */
 import { useState } from "react";
+import { toLocalISODate } from "../lib/utils";
 import { useToast } from "../components/ui/Toast";
 import { AuraCard } from "../components/ui/AuraCard";
 import { Button } from "../components/ui/Button";
@@ -20,7 +21,7 @@ const NUM = (v: string) => (v === "" ? null : Number(v));
 export function WaterSupplyPage() {
   const { data, loading, error, refresh } = useWaterSupplyDaily(30);
   const { toast } = useToast();
-  const today = new Date().toISOString().slice(0, 10);
+  const today = toLocalISODate();
   const [form, setForm] = useState<WaterSupplyInput>({
     check_date: today, location_id: null, ph: null,
     free_chlorine_residual: null, turbidity: null, total_coliform: null,

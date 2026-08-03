@@ -10,6 +10,7 @@
  * supabase/migrations/20260718000000_p12_frontend_views.sql).
  */
 import { supabase } from "./supabase";
+import { toLocalISODate } from "./utils";
 import type {
   DashboardRow,
   EquipmentOut,
@@ -28,12 +29,15 @@ import type {
 export async function fetchDashboard(days = 14): Promise<DashboardRow[]> {
   const cutoff = new Date();
   cutoff.setDate(cutoff.getDate() - days);
+  // C3 (2026-08-03): compare against the DB's local reading_date column,
+  // not a UTC slice — otherwise at 00:00–06:59 ICT "today UTC" is still
+  // yesterday and today's reading falls outside the window.
   const { data, error } = await supabase
     .from("v_dashboard_14day")
     .select(
       "reading_date, do_average, ph, free_chlorine, tds_aeration, water_used_total, wastewater_in, system_operating, wastewater_discharged, do_alert, chlorine_alert, ph_alert"
     )
-    .gte("reading_date", cutoff.toISOString().slice(0, 10))
+    .gte("reading_date", toLocalISODate(cutoff))
     .order("reading_date", { ascending: false });
   if (error) throw new Error(error.message);
   return (data ?? []) as DashboardRow[];

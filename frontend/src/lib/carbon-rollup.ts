@@ -11,6 +11,7 @@
  */
 import { useEffect, useState } from "react";
 import { supabase } from "./supabase";
+import { toLocalISODate } from "./utils";
 
 export interface RollupRow {
   month: string;       // YYYY-MM-01
@@ -52,7 +53,7 @@ export async function fetchRollup(months = 12): Promise<RollupSummary> {
   // instead of 1 Apr). CRB-2 fix (Fable5 review of f5308f7).
   cutoff.setDate(1);
   cutoff.setMonth(cutoff.getMonth() - (months - 1));
-  const cutoffIso = cutoff.toISOString().slice(0, 10);
+  const cutoffIso = toLocalISODate(cutoff);
 
   const { data, error } = await supabase
     .from("v_unified_co2e")

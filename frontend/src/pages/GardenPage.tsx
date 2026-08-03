@@ -2,6 +2,7 @@
  * MOD-GA — Garden / Landscaping page skeleton. Track Z minimal markup.
  */
 import { useState } from "react";
+import { toLocalISODate } from "../lib/utils";
 import { useToast } from "../components/ui/Toast";
 import { AuraCard } from "../components/ui/AuraCard";
 import { Button } from "../components/ui/Button";
@@ -14,7 +15,7 @@ const NUM = (v: string) => (v === "" ? null : Number(v));
 export function GardenPage() {
   const { data, loading, error, refresh } = useGardenRounds(30);
   const { toast } = useToast();
-  const today = new Date().toISOString().slice(0, 10);
+  const today = toLocalISODate();
   const [form, setForm] = useState<GardenInput>({
     round_date: today, location_id: null, work_type: "ตัดหญ้า",
     area_sqm: null, worker_count: null, fuel_used_l: null,

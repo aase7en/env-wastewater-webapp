@@ -12,6 +12,7 @@
  */
 import { useState, useCallback } from "react";
 import { fetchTemplate, type PdfLayout } from "./pdf-template";
+import { toLocalISODate } from "./utils";
 
 type PrintResult = { ok: true; bytes: number } | { ok: false; error: string };
 
@@ -67,7 +68,7 @@ export function usePrintReport() {
         });
       }
 
-      const name = filename ?? `${tpl.name}-${new Date().toISOString().slice(0, 10)}.pdf`;
+      const name = filename ?? `${tpl.name}-${toLocalISODate()}.pdf`;
       doc.save(name);
       return { ok: true, bytes: Math.round(doc.output("arraybuffer").byteLength) };
     } catch (e) {
