@@ -59,7 +59,12 @@ const RANGE = 2.2;     // falloff radius, in slots
  * the far modules come to you, already magnified, ready to release on.
  * A dead zone in the middle keeps precise picking possible. */
 const HOLD_MS = 1900;
-const PRESS_SLOP = 8;   // px of travel before a press counts as a drag
+/** px of travel before a press counts as a drag.
+ *  A finger held still for HOLD_MS drifts a long way more than a mouse does,
+ *  and every px over this cancelled the hold — which is why holding an icon on
+ *  a phone never reached edit mode. Generous for touch, tight for a pointer. */
+const PRESS_SLOP_MOUSE = 8;
+const PRESS_SLOP_TOUCH = 18;
 /** Fraction of the half-width around centre where the strip does NOT scrub. */
 const SCRUB_DEAD = 0.35;
 const SCRUB_SPEED = 16; // px per frame at the very end of the bar
@@ -121,6 +126,14 @@ export function ModuleDock({
   /** The press has moved past the slop radius. */
   const travelled = useRef(false);
   const pointerType = useRef<string>("mouse");
+  /**
+   * The window-level completion has already decided what this gesture meant,
+   * so the <a>'s own click must not also fire. Without this, a drag-release
+   * navigated twice — once to the slot released on, once to the slot the press
+   * started on — and a long press that ended in edit mode still followed its
+   * link.
+   */
+  const suppressClick = useRef(false);
 
   // Re-filter once admin status resolves, or an admin's pinned admin entries
   // would be dropped on first paint.
@@ -253,7 +266,9 @@ export function ModuleDock({
   const pressMoved = (x: number, y: number) => {
     const o = pressOrigin.current;
     if (!o || editing) return;
-    if (Math.hypot(x - o.x, y - o.y) <= PRESS_SLOP) return;
+    const slop =
+      pointerType.current === "mouse" ? PRESS_SLOP_MOUSE : PRESS_SLOP_TOUCH;
+    if (Math.hypot(x - o.x, y - o.y) <= slop) return;
     travelled.current = true;
     if (editTimer.current !== null) {
       window.clearTimeout(editTimer.current);
@@ -331,6 +346,8 @@ export function ModuleDock({
       if (dragFrom !== null) setDropIndex(slotAt(x));
     },
     complete: () => {
+      // Anything other than a clean stationary tap has been handled here.
+      if (editing || travelled.current) suppressClick.current = true;
       if (
         editing &&
         dragFrom !== null &&
@@ -626,6 +643,7 @@ export function ModuleDock({
               // The press begins on the bar even when it lands between slots,
               // so a drag started on padding still scrubs.
               pointerType.current = e.pointerType;
+              suppressClick.current = false;
               if (!pressOrigin.current) startPress(e.clientX, e.clientY, -1);
               setMouseX(e.clientX);
             }}
@@ -660,6 +678,7 @@ export function ModuleDock({
                 editing={editing}
                 dragging={dragFrom === i}
                 onPressStart={startPress}
+                suppressClick={suppressClick}
                 onDragStart={() => {
                   if (editing) {
                     setDragFrom(i);
@@ -817,6 +836,7 @@ function DockSlot({
   editing,
   dragging,
   onPressStart,
+  suppressClick,
   onDragStart,
   onActivate,
   onRemove,
@@ -833,6 +853,8 @@ function DockSlot({
   editing: boolean;
   dragging: boolean;
   onPressStart: (x: number, y: number, index: number) => void;
+  /** Shared with the parent: set once the gesture was handled at window level. */
+  suppressClick: React.MutableRefObject<boolean>;
   onDragStart: () => void;
   onActivate: () => void;
   onRemove: () => void;
@@ -908,7 +930,16 @@ function DockSlot({
           to={entry.to}
           aria-label={label}
           aria-current={active ? "page" : undefined}
-          onClick={(e) => editing && e.preventDefault()}
+          onClick={(e) => {
+            // The window-level completion already decided this gesture's
+            // outcome; letting the anchor navigate as well would either
+            // double-fire or send the user to the icon the press STARTED on
+            // rather than the one it ended on.
+            if (editing || suppressClick.current) {
+              e.preventDefault();
+              suppressClick.current = false;
+            }
+          }}
           className={slotClass}
           style={style}
           {...handlers}

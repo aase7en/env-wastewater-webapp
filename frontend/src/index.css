@@ -292,6 +292,16 @@
 .dock-slot {
   transform-origin: bottom center;
   will-change: transform;
+  /* DOCK-13 — iOS Safari. Long-pressing an <a> raises the system callout /
+   * link preview, and raising it makes Safari fire pointercancel, which killed
+   * the hold-to-edit timer mid-count. The press then ended as an ordinary tap,
+   * so holding an icon navigated to it instead of entering edit mode.
+   * touch-callout:none is what stops Safari claiming the gesture. */
+  -webkit-touch-callout: none;
+  -webkit-user-select: none;
+  user-select: none;
+  /* Also kills the grey tap flash on Android while long-pressing. */
+  -webkit-tap-highlight-color: transparent;
 }
 .dock-slot--settling {
   transition: transform var(--duration-base) var(--ease-smooth);
