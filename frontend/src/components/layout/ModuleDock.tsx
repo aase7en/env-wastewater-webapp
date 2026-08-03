@@ -177,6 +177,12 @@ export function ModuleDock({
   const HEADROOM = Math.round(TIP_OFFSET + 38);
 
   const pinned = useMemo(() => pinnedPaths(entries), [entries]);
+  /** Modules already inside SOME folder — never offered to another folder. */
+  const inAnyFolder = useMemo(() => {
+    const set = new Set<string>();
+    for (const e of entries) if (e.kind === "folder") e.items.forEach((p) => set.add(p));
+    return set;
+  }, [entries]);
   const unpinned = useMemo(
     () => allowed.filter((n) => !pinned.has(n.to)),
     [allowed, pinned],
@@ -419,10 +425,11 @@ export function ModuleDock({
   // visSheetOpen belongs here too: it drives the scrim, the escape key and
   // the tap-outside handler. Left out, the role sheet rendered over an
   // unblurred page and was hard to read against the dashboard behind it.
-  const closePickerRef = useRef<() => void>(() => {});
-  closePickerRef.current = () => {
+  const dismissRef = useRef<() => void>(() => {});
+  dismissRef.current = () => {
     setEntries(entries.filter((e) => e.kind !== "folder" || e.items.length > 0));
     setPickerFor(null);
+    setOpenFolder(null);
   };
 
   const sheetOpen =
@@ -433,15 +440,13 @@ export function ModuleDock({
     if (!editing && !sheetOpen) return;
     const onKey = (e: KeyboardEvent) => {
       if (e.key !== "Escape") return;
-      closePickerRef.current();
-      setOpenFolder(null);
+      dismissRef.current();
       setVisSheetOpen(false);
       setEditing(false);
     };
     const onDown = (e: PointerEvent) => {
       if (rootRef.current?.contains(e.target as Node)) return;
-      closePickerRef.current();
-      setOpenFolder(null);
+      dismissRef.current();
       setVisSheetOpen(false);
       setEditing(false);
     };
@@ -521,8 +526,14 @@ export function ModuleDock({
         e.kind === "folder" ? { ...e, items: e.items.filter((p) => p !== to) } : e,
       )
       .filter((e) => !(e.kind === "module" && e.to === to))
-      // A folder emptied by the move has nothing left to open.
-      .filter((e) => e.kind !== "folder" || e.items.length > 0);
+      // A folder emptied BY THE MOVE has nothing left to open — but never the
+      // one being added to. DOCK-20 dropped every empty folder here, which
+      // deleted the freshly created target a moment before the module was
+      // meant to land in it: the module left the dock, went nowhere, and the
+      // folder disappeared with it.
+      .filter(
+        (e) => e.kind !== "folder" || e.items.length > 0 || e.id === target,
+      );
 
     if (target === "dock") {
       setEntries([...without, { kind: "module", to }]);
@@ -574,18 +585,28 @@ export function ModuleDock({
       (e) => e.kind === "folder" && e.items.length === 0,
     );
     if (existing && existing.kind === "folder") {
-      setPickerFor(existing.id);
+      setOpenFolder(existing.id);
       return;
     }
     const id = newFolderId();
-    setEntries([...entries, { kind: "folder", id, name: "โฟลเดอร์ใหม่", items: [] }]);
-    setPickerFor(id);
+    setEntries([
+      ...entries,
+      { kind: "folder", id, name: "โฟลเดอร์ใหม่", items: [], color: "cyan" },
+    ]);
+    // Opens the folder sheet, not the picker: name and colour come first, and
+    // the sheet's + button is the step that opens the module list.
+    setOpenFolder(id);
   };
 
-  /** Close the picker, discarding a folder that was opened but left empty. */
-  const closePicker = () => {
+  /** Drop folders that were created but never filled. */
+  const dropEmptyFolders = () =>
     setEntries(entries.filter((e) => e.kind !== "folder" || e.items.length > 0));
-    setPickerFor(null);
+
+  const closePicker = () => setPickerFor(null);
+  /** Closing the folder sheet is the point a never-filled folder is abandoned. */
+  const closeFolder = () => {
+    dropEmptyFolders();
+    setOpenFolder(null);
   };
 
   const setFolderColor = (folderId: string, color: FolderColor) =>
@@ -631,8 +652,7 @@ export function ModuleDock({
         <div
           aria-hidden="true"
           onClick={() => {
-            closePicker();
-            setOpenFolder(null);
+            dismissRef.current();
             setVisSheetOpen(false);
           }}
           className="fixed inset-0 z-[35] bg-aura-bgDeep/50 backdrop-blur-sm"
@@ -679,7 +699,7 @@ export function ModuleDock({
             byPath={byPath}
             editing={editing}
             isActive={isActive}
-            onClose={() => setOpenFolder(null)}
+            onClose={closeFolder}
             onRename={(name) => renameFolder(folder.id, name)}
             onColor={(c) => setFolderColor(folder.id, c)}
             onLiftOut={(to) => liftOut(folder.id, to)}
@@ -693,15 +713,16 @@ export function ModuleDock({
             // including modules currently sitting loose on the dock — moving
             // one in is the whole point, and addTo() takes it out of its old
             // home. Filling the DOCK only offers what is not pinned anywhere.
+            // Filling a FOLDER offers everything that is not already inside
+            // some folder — so a module on the dock can be moved in (addTo
+            // takes it out of its old home), but one that already belongs to
+            // a folder is never offered to a second one. To move it between
+            // folders, lift it out first.
+            // Filling the DOCK offers only what is not pinned anywhere.
             items={
               pickerFor === "dock"
                 ? unpinned
-                : allowed.filter((n) => {
-                    const f = entries.find(
-                      (e) => e.kind === "folder" && e.id === pickerFor,
-                    );
-                    return !(f?.kind === "folder" && f.items.includes(n.to));
-                  })
+                : allowed.filter((n) => !inAnyFolder.has(n.to))
             }
             title={pickerFor === "dock" ? "ทุกโมดูล" : "เพิ่มลงโฟลเดอร์"}
             navigable={pickerFor === "dock"}
@@ -836,6 +857,12 @@ function DockToolbar({
   onDone: () => void;
 }) {
   const [confirmReset, setConfirmReset] = useState(false);
+  // Auto-cancel so a stray tap does not leave a destructive button armed.
+  useEffect(() => {
+    if (!confirmReset) return;
+    const t = window.setTimeout(() => setConfirmReset(false), 5000);
+    return () => window.clearTimeout(t);
+  }, [confirmReset]);
   const sizeLabel: Record<IconSize, string> = {
     sm: "เล็ก",
     md: "กลาง",
@@ -857,13 +884,15 @@ function DockToolbar({
         onClick={onCycleSize}
       />
       {confirmReset ? (
+        // DOCK-21: this had onBlur={cancel}. Pressing it blurred first, which
+        // re-rendered the button out of the tree, so the click never landed
+        // and reset did nothing at all. The confirm now simply times out.
         <button
           type="button"
           onClick={() => {
             onReset();
             setConfirmReset(false);
           }}
-          onBlur={() => setConfirmReset(false)}
           className="px-2.5 h-9 rounded-xl text-xs font-thai bg-alert-red/15 text-alert-red border border-alert-red/50"
         >
           ยืนยันรีเซ็ต?
