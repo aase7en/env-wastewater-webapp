@@ -332,15 +332,59 @@
   transform: translate(-50%, 0);
 }
 
-/* Hold-to-edit feedback. A ring thickens inward over the hold duration, so a
- * long press shows it is counting instead of looking like nothing happened —
- * which is exactly how a hold that silently failed used to feel. Duration is
- * set inline from HOLD_MS so the two cannot drift apart. */
-@keyframes dock-hold {
-  from { box-shadow: inset 0 0 0 0 rgb(var(--aura-cyan) / 0.5); }
-  to   { box-shadow: inset 0 0 0 3px rgb(var(--aura-cyan) / 0.95); }
+/* ── Hold-to-edit countdown ────────────────────────────────────────────────
+ * Two arcs start together at the BOTTOM of the icon and climb both sides,
+ * meeting at the top exactly when the hold completes. Reads as a progress
+ * ring rather than a decoration, so a long press visibly counts instead of
+ * looking like a dead control.
+ *
+ * Built the same way as the aura card ring: a conic-gradient clipped to the
+ * border by a two-layer mask. What is animated is the ARC LENGTH — a
+ * registered percentage, so it can be interpolated. Each arc spans
+ * `--dock-hold-p / 2` because two of them share the circle.
+ *
+ * `from 180deg` puts 0% at 6 o'clock; the first arc runs clockwise up the
+ * left, the mirrored stops run anticlockwise up the right.
+ *
+ * Colours are the ring tokens, i.e. the theme's own multi-hue ramp — neon
+ * cyan → lime → indigo in dark, the mint/indigo set in light. */
+@property --dock-hold-p {
+  syntax: "<percentage>";
+  inherits: false;
+  initial-value: 0%;
 }
-.dock-holding { animation: dock-hold linear forwards; }
+@keyframes dock-hold-run { to { --dock-hold-p: 100%; } }
+
+.dock-holding::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  border-radius: inherit;
+  padding: 2px;
+  background: conic-gradient(
+    from 180deg,
+    var(--aura-ring-1) 0%,
+    var(--aura-ring-2) calc(var(--dock-hold-p) * 0.25),
+    var(--aura-ring-3) calc(var(--dock-hold-p) * 0.5),
+    transparent calc(var(--dock-hold-p) * 0.5),
+    transparent calc(100% - var(--dock-hold-p) * 0.5),
+    var(--aura-ring-3) calc(100% - var(--dock-hold-p) * 0.5),
+    var(--aura-ring-2) calc(100% - var(--dock-hold-p) * 0.25),
+    var(--aura-ring-1) 100%
+  );
+  -webkit-mask:
+    linear-gradient(#fff 0 0) content-box,
+    linear-gradient(#fff 0 0);
+  -webkit-mask-composite: xor;
+          mask: linear-gradient(#fff 0 0) content-box, linear-gradient(#fff 0 0);
+          mask-composite: exclude;
+  /* Duration comes from HOLD_MS via a custom property set inline on the slot.
+     Custom properties inherit into pseudo-elements; `animation-duration` in an
+     inline style would not reach ::after at all. */
+  animation: dock-hold-run var(--dock-hold-ms, 1900ms) linear forwards;
+  pointer-events: none;
+  filter: drop-shadow(0 0 4px var(--aura-ring-1));
+}
 
 @keyframes dock-jiggle {
   0%, 100% { rotate: -1.4deg; }
@@ -354,9 +398,9 @@
      be overridden here. The dock stays fully usable — every icon simply
      keeps its resting size, and the name tag still appears. */
   .dock-slot, .dock-slot--settling { transform: none !important; transition: none; }
-  /* The hold ring is feedback, not decoration — it stays, it just appears at
-     once rather than growing. */
-  .dock-holding { animation-duration: 0s !important; }
+  /* The countdown ring is feedback, not decoration — it stays. It simply
+     completes at once instead of sweeping. */
+  .dock-holding::after { animation-duration: 0s !important; }
   .dock-tip { transition: none; }
   .dock-jiggle { animation: none; }
 }

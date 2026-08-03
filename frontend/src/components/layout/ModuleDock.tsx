@@ -684,7 +684,10 @@ export function ModuleDock({
                 active={entryActive(entry)}
                 style={slotStyle(i)}
                 settling={isSettling(i)}
-                showTip={hoverIndex === i}
+                // While something is being dragged the highlight belongs to
+                // the icon on the finger alone. Keying it off hoverIndex lit
+                // the slot underneath as well, so two icons glowed at once.
+                showTip={dragFrom !== null ? dragFrom === i : hoverIndex === i}
                 holding={holdIndex === i && !editing}
                 holdMs={HOLD_MS}
                 editing={editing}
@@ -879,6 +882,13 @@ function DockSlot({
   const item = entry.kind === "module" ? byPath.get(entry.to) : undefined;
   const label = entry.kind === "folder" ? entry.name : (item?.label ?? entry.to);
 
+  // The countdown lives on .dock-holding::after, and an inline
+  // `animationDuration` would never reach a pseudo-element — custom properties
+  // do inherit into one, so HOLD_MS is handed over as a variable.
+  const holdStyle: CSSProperties = holding
+    ? { ...style, ["--dock-hold-ms" as string]: `${holdMs}ms` }
+    : style;
+
   const body =
     entry.kind === "folder" ? (
       <FolderGlyph entry={entry} byPath={byPath} />
@@ -938,7 +948,7 @@ function DockSlot({
           aria-label={label}
           onClick={() => !editing && onActivate()}
           className={slotClass}
-          style={holding ? { ...style, animationDuration: `${holdMs}ms` } : style}
+          style={holdStyle}
           {...handlers}
         >
           {body}
@@ -959,7 +969,7 @@ function DockSlot({
             }
           }}
           className={slotClass}
-          style={holding ? { ...style, animationDuration: `${holdMs}ms` } : style}
+          style={holdStyle}
           {...handlers}
         >
           {body}
