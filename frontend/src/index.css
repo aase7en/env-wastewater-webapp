@@ -332,6 +332,16 @@
   transform: translate(-50%, 0);
 }
 
+/* Hold-to-edit feedback. A ring thickens inward over the hold duration, so a
+ * long press shows it is counting instead of looking like nothing happened —
+ * which is exactly how a hold that silently failed used to feel. Duration is
+ * set inline from HOLD_MS so the two cannot drift apart. */
+@keyframes dock-hold {
+  from { box-shadow: inset 0 0 0 0 rgb(var(--aura-cyan) / 0.5); }
+  to   { box-shadow: inset 0 0 0 3px rgb(var(--aura-cyan) / 0.95); }
+}
+.dock-holding { animation: dock-hold linear forwards; }
+
 @keyframes dock-jiggle {
   0%, 100% { rotate: -1.4deg; }
   50%      { rotate: 1.4deg; }
@@ -344,6 +354,9 @@
      be overridden here. The dock stays fully usable — every icon simply
      keeps its resting size, and the name tag still appears. */
   .dock-slot, .dock-slot--settling { transform: none !important; transition: none; }
+  /* The hold ring is feedback, not decoration — it stays, it just appears at
+     once rather than growing. */
+  .dock-holding { animation-duration: 0s !important; }
   .dock-tip { transition: none; }
   .dock-jiggle { animation: none; }
 }

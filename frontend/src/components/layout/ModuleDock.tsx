@@ -64,7 +64,7 @@ const HOLD_MS = 1900;
  *  and every px over this cancelled the hold — which is why holding an icon on
  *  a phone never reached edit mode. Generous for touch, tight for a pointer. */
 const PRESS_SLOP_MOUSE = 8;
-const PRESS_SLOP_TOUCH = 18;
+const PRESS_SLOP_TOUCH = 24;
 /** Fraction of the half-width around centre where the strip does NOT scrub. */
 const SCRUB_DEAD = 0.35;
 const SCRUB_SPEED = 16; // px per frame at the very end of the bar
@@ -123,6 +123,8 @@ export function ModuleDock({
   const [openFolder, setOpenFolder] = useState<string | null>(null);
   /** Pointer is down — enables scrubbing and release-to-select. */
   const [pressed, setPressed] = useState(false);
+  /** Slot with a hold counting down — drives the arming ring. */
+  const [holdIndex, setHoldIndex] = useState<number | null>(null);
   /** The press has moved past the slop radius. */
   const travelled = useRef(false);
   const pointerType = useRef<string>("mouse");
@@ -245,16 +247,19 @@ export function ModuleDock({
     pressOrigin.current = null;
     setPressed(false);
     travelled.current = false;
+    setHoldIndex(null);
   };
   const startPress = (x: number, y: number, index: number) => {
     clearTimers();
     pressOrigin.current = { x, y };
     setPressed(true);
     travelled.current = false;
+    setHoldIndex(index >= 0 ? index : null);
     // index < 0 means the press landed on padding rather than a slot. It can
     // still browse and scrub, but there is nothing to pick up, so no edit.
     if (index >= 0) {
       editTimer.current = window.setTimeout(() => {
+        setHoldIndex(null);
         setEditing(true);
         setDragFrom(index);
         setDropIndex(index);
@@ -270,6 +275,7 @@ export function ModuleDock({
       pointerType.current === "mouse" ? PRESS_SLOP_MOUSE : PRESS_SLOP_TOUCH;
     if (Math.hypot(x - o.x, y - o.y) <= slop) return;
     travelled.current = true;
+    setHoldIndex(null);
     if (editTimer.current !== null) {
       window.clearTimeout(editTimer.current);
       editTimer.current = null;
@@ -342,7 +348,11 @@ export function ModuleDock({
     move: (x: number, y: number) => {
       pressMoved(x, y);
       setMouseX(x);
-      updateEdgeScroll(x);
+      // Only scrub once this is definitely a DRAG. Scrubbing on a stationary
+      // hold slid the pressed icon out from under the finger for the whole
+      // 1.9s count, which read as the dock running away rather than as edit
+      // mode arming — so the hold got abandoned before it ever completed.
+      if (travelled.current || editing) updateEdgeScroll(x);
       if (dragFrom !== null) setDropIndex(slotAt(x));
     },
     complete: () => {
@@ -675,6 +685,8 @@ export function ModuleDock({
                 style={slotStyle(i)}
                 settling={isSettling(i)}
                 showTip={hoverIndex === i}
+                holding={holdIndex === i && !editing}
+                holdMs={HOLD_MS}
                 editing={editing}
                 dragging={dragFrom === i}
                 onPressStart={startPress}
@@ -833,6 +845,8 @@ function DockSlot({
   style,
   settling,
   showTip,
+  holding,
+  holdMs,
   editing,
   dragging,
   onPressStart,
@@ -850,6 +864,9 @@ function DockSlot({
   style: CSSProperties;
   settling: boolean;
   showTip: boolean;
+  /** A hold is counting down on this slot. */
+  holding: boolean;
+  holdMs: number;
   editing: boolean;
   dragging: boolean;
   onPressStart: (x: number, y: number, index: number) => void;
@@ -880,6 +897,7 @@ function DockSlot({
       : active
         ? "text-aura-cyan border-aura-cyan/25 bg-aura-cyan/5"
         : "text-aura-textMuted border-transparent",
+    holding && "dock-holding",
     editing && "dock-jiggle cursor-grab",
     dragging && "opacity-60 cursor-grabbing",
   );
@@ -920,7 +938,7 @@ function DockSlot({
           aria-label={label}
           onClick={() => !editing && onActivate()}
           className={slotClass}
-          style={style}
+          style={holding ? { ...style, animationDuration: `${holdMs}ms` } : style}
           {...handlers}
         >
           {body}
@@ -941,7 +959,7 @@ function DockSlot({
             }
           }}
           className={slotClass}
-          style={style}
+          style={holding ? { ...style, animationDuration: `${holdMs}ms` } : style}
           {...handlers}
         >
           {body}
