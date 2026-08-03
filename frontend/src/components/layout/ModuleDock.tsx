@@ -44,7 +44,11 @@ export interface DockItem {
  * only the size-independent constants live out here. */
 const GAP = 6;
 const PAD = 10;
-const MAX_SCALE = 1.6; // magnification directly under the pointer
+/** Magnification directly under the pointer. 1.6 → 1.95 (+20%): on a phone a
+ *  fingertip covers roughly a 45px circle, so at the old size the icon being
+ *  chosen was hidden by the finger choosing it. HEADROOM and TIP_OFFSET both
+ *  derive from this, so the row makes room automatically. */
+const MAX_SCALE = 1.95;
 const RANGE = 2.2;     // falloff radius, in slots
 /* ── Gesture model ─────────────────────────────────────────────────────────
  * Touch/point the dock and icons magnify under the pointer immediately, as
@@ -220,7 +224,7 @@ export function ModuleDock({
   const slotStyle = (i: number): CSSProperties => {
     if (editing && dragFrom === i && mouseX !== null && barLeft !== null) {
       return {
-        transform: `translateX(${(mouseX - centreOf(i)).toFixed(2)}px) translateY(-20px) scale(1.18)`,
+        transform: `translateX(${(mouseX - centreOf(i)).toFixed(2)}px) translateY(-24px) scale(1.42)`,
         zIndex: 20,
       };
     }
@@ -952,7 +956,10 @@ function DockSlot({
       : active
         ? "text-aura-cyan border-aura-cyan/25 bg-aura-cyan/5"
         : "text-aura-textMuted border-transparent",
-    holding && "dock-holding",
+    // The countdown ring is cyan; so were the highlight's border, fill and
+    // glow, which swallowed it whole. While counting, the slot goes quiet and
+    // the ring is the only lit thing on it.
+    holding && "dock-holding !border-transparent !bg-aura-surfaceHighest/70 !shadow-none",
     editing && "dock-jiggle cursor-grab",
     dragging && "opacity-60 cursor-grabbing",
   );

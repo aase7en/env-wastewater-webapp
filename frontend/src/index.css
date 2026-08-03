@@ -360,7 +360,13 @@
   position: absolute;
   inset: 0;
   border-radius: inherit;
-  padding: 2px;
+  /* 3px, not 2: at 2px the sweep was too fine to follow on a phone, and the
+     slot's own 1px border sat right under it. */
+  padding: 3px;
+  /* Above the glyph and the slot fill — an absolutely positioned pseudo paints
+     over in-flow content, but be explicit since the drop-shadow below creates
+     its own containing block. */
+  z-index: 2;
   background: conic-gradient(
     from 180deg,
     var(--aura-ring-1) 0%,
@@ -383,7 +389,7 @@
      inline style would not reach ::after at all. */
   animation: dock-hold-run var(--dock-hold-ms, 1900ms) linear forwards;
   pointer-events: none;
-  filter: drop-shadow(0 0 4px var(--aura-ring-1));
+  filter: drop-shadow(0 0 6px var(--aura-ring-1));
 }
 
 @keyframes dock-jiggle {
