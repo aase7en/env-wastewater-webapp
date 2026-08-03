@@ -120,6 +120,7 @@ export function ModuleDock({
   const [pressed, setPressed] = useState(false);
   /** The press has moved past the slop radius. */
   const travelled = useRef(false);
+  const pointerType = useRef<string>("mouse");
 
   // Re-filter once admin status resolves, or an admin's pinned admin entries
   // would be dropped on first paint.
@@ -304,6 +305,69 @@ export function ModuleDock({
   };
   useEffect(() => stopEdgeScroll, []);
   useEffect(() => clearTimers, []);
+
+  /* ── Gesture completion, at window level ────────────────────────────────
+   * Both the move and the release are handled on `window`, not on the bar.
+   * DOCK-12: they used to be on the bar, which meant a drag that wandered
+   * outside it — routine, since scrubbing pulls the finger toward the ends —
+   * released onto some other element and the selection was simply lost. The
+   * pointerleave handler made it worse by tearing the gesture down mid-drag.
+   *
+   * setPointerCapture would also fix this, but it re-targets the synthesised
+   * click to the capturing element and stops taps opening modules at all
+   * (DOCK-4). Window listeners have no such side effect.
+   *
+   * A latest-ref carries the live closure so the listeners never need to
+   * re-subscribe as state changes. */
+  const gesture = useRef({
+    move: (_x: number, _y: number) => {},
+    complete: () => {},
+  });
+  gesture.current = {
+    move: (x: number, y: number) => {
+      pressMoved(x, y);
+      setMouseX(x);
+      updateEdgeScroll(x);
+      if (dragFrom !== null) setDropIndex(slotAt(x));
+    },
+    complete: () => {
+      if (
+        editing &&
+        dragFrom !== null &&
+        dropIndex !== null &&
+        dropIndex !== dragFrom
+      ) {
+        setEntries(reorder(entries, dragFrom, dropIndex));
+      } else if (!editing && travelled.current && hoverIndex !== null) {
+        // Release-to-select. Only after real travel — a stationary tap is left
+        // to the slot's own click, so this never double-fires.
+        if (hoverIndex >= entries.length) setPickerFor("dock");
+        else activate(entries[hoverIndex]);
+      }
+      // A lifted finger points at nothing; leaving mouseX set would freeze the
+      // icons mid-magnification. A mouse is still hovering, so it keeps its
+      // position.
+      if (pointerType.current !== "mouse") setMouseX(null);
+      setDragFrom(null);
+      setDropIndex(null);
+      endPress();
+      stopEdgeScroll();
+    },
+  };
+
+  useEffect(() => {
+    if (!pressed) return;
+    const onMove = (e: PointerEvent) => gesture.current.move(e.clientX, e.clientY);
+    const onUp = () => gesture.current.complete();
+    window.addEventListener("pointermove", onMove);
+    window.addEventListener("pointerup", onUp);
+    window.addEventListener("pointercancel", onUp);
+    return () => {
+      window.removeEventListener("pointermove", onMove);
+      window.removeEventListener("pointerup", onUp);
+      window.removeEventListener("pointercancel", onUp);
+    };
+  }, [pressed]);
 
   const sheetOpen = pickerFor !== null || openFolder !== null;
 
@@ -560,54 +624,25 @@ export function ModuleDock({
             onScroll={(e) => setScrollX(e.currentTarget.scrollLeft)}
             onPointerDown={(e) => {
               // The press begins on the bar even when it lands between slots,
-              // so a flick started on padding still pans.
+              // so a drag started on padding still scrubs.
+              pointerType.current = e.pointerType;
               if (!pressOrigin.current) startPress(e.clientX, e.clientY, -1);
               setMouseX(e.clientX);
             }}
             onPointerMove={(e) => {
-              pressMoved(e.clientX, e.clientY);
+              // Hover only. Once the pointer is DOWN the window listener owns
+              // the gesture, so it keeps working past the edges of the bar.
+              if (pressed) return;
               setMouseX(e.clientX);
-              // Scrub only while something is actually held — a mouse merely
-              // passing over the dock must not send it sliding.
-              if (pressed || e.buttons === 1) updateEdgeScroll(e.clientX);
-              if (dragFrom !== null) setDropIndex(slotAt(e.clientX));
             }}
-            onPointerLeave={(e) => {
-              if (e.buttons === 0) {
-                setMouseX(null);
-                stopEdgeScroll();
-              }
-              endPress();
-            }}
-            onPointerUp={(e) => {
-              if (
-                editing &&
-                dragFrom !== null &&
-                dropIndex !== null &&
-                dropIndex !== dragFrom
-              ) {
-                setEntries(reorder(entries, dragFrom, dropIndex));
-              } else if (!editing && travelled.current && hoverIndex !== null) {
-                // Release-to-select. Only after real travel — a stationary tap
-                // is left to the slot's own click, so this never double-fires.
-                if (hoverIndex >= entries.length) setPickerFor("dock");
-                else activate(entries[hoverIndex]);
-              }
-              // A finger that has lifted is no longer pointing at anything;
-              // leaving mouseX set would freeze the icons mid-magnification.
-              // A mouse is still hovering, so it keeps its position.
-              if (e.pointerType !== "mouse") setMouseX(null);
-              setDragFrom(null);
-              setDropIndex(null);
-              endPress();
-              stopEdgeScroll();
-            }}
-            onPointerCancel={() => {
+            onPointerLeave={() => {
+              // Never tear down mid-gesture: a drag routinely wanders outside
+              // the bar, and resetting here is what used to throw away
+              // `travelled` and swallow the selection on release.
+              if (pressed) return;
               setMouseX(null);
-              setDragFrom(null);
-              setDropIndex(null);
-              endPress();
               stopEdgeScroll();
+              endPress();
             }}
           >
             {entries.map((entry, i) => (
@@ -625,7 +660,6 @@ export function ModuleDock({
                 editing={editing}
                 dragging={dragFrom === i}
                 onPressStart={startPress}
-                onPressEnd={endPress}
                 onDragStart={() => {
                   if (editing) {
                     setDragFrom(i);
@@ -783,7 +817,6 @@ function DockSlot({
   editing,
   dragging,
   onPressStart,
-  onPressEnd,
   onDragStart,
   onActivate,
   onRemove,
@@ -800,7 +833,6 @@ function DockSlot({
   editing: boolean;
   dragging: boolean;
   onPressStart: (x: number, y: number, index: number) => void;
-  onPressEnd: () => void;
   onDragStart: () => void;
   onActivate: () => void;
   onRemove: () => void;
@@ -838,8 +870,6 @@ function DockSlot({
         onDragStart();
       }
     },
-    onPointerUp: onPressEnd,
-    onPointerCancel: onPressEnd,
   };
 
   return (
