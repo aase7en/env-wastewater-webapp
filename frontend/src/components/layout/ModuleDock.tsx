@@ -44,6 +44,19 @@ export interface DockItem {
  * only the size-independent constants live out here. */
 const GAP = 6;
 const PAD = 10;
+/**
+ * Extra room at BOTH ENDS of the scrolling row.
+ *
+ * Same constraint that forced HEADROOM, one axis over: the row needs
+ * `overflow-x: auto` to scroll, and per spec that clips the other axis too —
+ * so an icon magnified at either end had its outer half sliced off. Reserving
+ * the space INSIDE the scroll box gives it somewhere to grow.
+ * Budget: half its own growth, plus the same again for the displacement a
+ * neighbour's growth pushes onto it.
+ *
+ * The pill keeps using PAD, so it does not gain dead space at the ends — both
+ * it and the row are centred on the same axis, so they stay aligned.
+ */
 /** Magnification directly under the pointer. 1.6 → 1.95 (+20%): on a phone a
  *  fingertip covers roughly a 45px circle, so at the old size the icon being
  *  chosen was hidden by the finger choosing it. HEADROOM and TIP_OFFSET both
@@ -156,6 +169,7 @@ export function ModuleDock({
 
   const entries = prefs.entries;
   const ITEM = ICON_PX[prefs.iconSize];
+  const SIDE_PAD = Math.round(PAD + ITEM * (MAX_SCALE - 1));
   /** Space above the row for a grown icon + its name tag; see DOCK-5. */
   const TIP_OFFSET = ITEM * (MAX_SCALE - 1) + 10;
   const HEADROOM = Math.round(TIP_OFFSET + 38);
@@ -176,7 +190,7 @@ export function ModuleDock({
   const slots = entries.length + 1; // + the trailing "ทุกโมดูล" button
   const barLeft = barRef.current?.getBoundingClientRect().left ?? null;
   const centreOf = (i: number) =>
-    (barLeft ?? 0) + PAD + i * (ITEM + GAP) + ITEM / 2 - scrollX;
+    (barLeft ?? 0) + SIDE_PAD + i * (ITEM + GAP) + ITEM / 2 - scrollX;
 
   const scales: number[] = [];
   for (let i = 0; i < slots; i++) {
@@ -196,7 +210,7 @@ export function ModuleDock({
       ? null
       : (() => {
           const raw = Math.round(
-            (mouseX - barLeft - PAD - ITEM / 2 + scrollX) / (ITEM + GAP),
+            (mouseX - barLeft - SIDE_PAD - ITEM / 2 + scrollX) / (ITEM + GAP),
           );
           const i = Math.max(0, Math.min(slots - 1, raw));
           return Math.abs(mouseX - centreOf(i)) <= ITEM ? i : null;
@@ -477,7 +491,7 @@ export function ModuleDock({
     const rect = barRef.current?.getBoundingClientRect();
     if (!rect) return 0;
     const raw = Math.round(
-      (clientX - rect.left - PAD - ITEM / 2 + scrollX) / (ITEM + GAP),
+      (clientX - rect.left - SIDE_PAD - ITEM / 2 + scrollX) / (ITEM + GAP),
     );
     return Math.max(0, Math.min(entries.length - 1, raw));
   };
@@ -677,8 +691,8 @@ export function ModuleDock({
             className="dock-bar relative z-10 flex items-end max-w-[calc(100vw-6rem)] overflow-x-auto"
             style={{
               gap: GAP,
-              paddingLeft: PAD,
-              paddingRight: PAD,
+              paddingLeft: SIDE_PAD,
+              paddingRight: SIDE_PAD,
               paddingBottom: PAD,
               paddingTop: HEADROOM,
               // `none`, never `pan-x`: handing the pan to the browser makes it
@@ -1058,9 +1072,12 @@ function DockSlot({
           // Matches the × in the sheets: quiet by default, red only on
           // hover. The solid red badge read as an error state and crowded a
           // 48px icon.
-          className="absolute -top-1 -right-1 z-10 grid place-items-center w-4 h-4 rounded-full bg-aura-surface/90 border border-aura-borderSubtle text-aura-textMuted hover:text-alert-red transition-colors"
+          // No disc behind it: the glyph's own box is taller than a 16px
+          // circle, so it always poked out and read as a mistake. Bare glyph
+          // with a shadow instead, which stays legible over any icon.
+          className="absolute -top-1.5 -right-1.5 z-10 grid place-items-center text-aura-textMuted hover:text-alert-red transition-colors [text-shadow:0_1px_3px_rgb(var(--aura-bg-deep))]"
         >
-          <MSymbol name="close" className="text-[11px]" />
+          <MSymbol name="close" className="text-[16px]" />
         </button>
       )}
       </span>
