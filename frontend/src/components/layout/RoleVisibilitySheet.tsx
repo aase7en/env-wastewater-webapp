@@ -69,9 +69,11 @@ export function RoleVisibilitySheet({
         </button>
       </div>
 
+      {/* DOCK-18: covers writes too, not just the initial load. A failed
+          toggle used to revert with no explanation at all. */}
       {error && (
-        <p className="text-xs text-alert-red font-thai mb-2">
-          โหลดไม่ได้: {error}
+        <p className="text-xs text-alert-red font-thai mb-2 shrink-0">
+          บันทึกไม่สำเร็จ: {error}
         </p>
       )}
 

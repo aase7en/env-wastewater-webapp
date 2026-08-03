@@ -289,9 +289,16 @@
   pointer-events: none;
 }
 
-.dock-slot {
+.dock-xform {
+  /* Carries the magnify/drag transform for the whole slot INCLUDING its
+     remove × and running pip; matches .dock-slot's origin so icons still
+     grow upward out of the bar. */
   transform-origin: bottom center;
   will-change: transform;
+}
+
+.dock-slot {
+  transform-origin: bottom center;
   /* DOCK-13 — iOS Safari. Long-pressing an <a> raises the system callout /
    * link preview, and raising it makes Safari fire pointercancel, which killed
    * the hold-to-edit timer mid-count. The press then ended as an ordinary tap,
@@ -303,7 +310,7 @@
   /* Also kills the grey tap flash on Android while long-pressing. */
   -webkit-tap-highlight-color: transparent;
 }
-.dock-slot--settling {
+.dock-xform--settling {
   transition: transform var(--duration-base) var(--ease-smooth);
 }
 /* Scrollable on narrow screens without a visible scrollbar eating 8px of a
@@ -403,7 +410,7 @@
   /* Magnification is an inline style set from JS, so it needs !important to
      be overridden here. The dock stays fully usable — every icon simply
      keeps its resting size, and the name tag still appears. */
-  .dock-slot, .dock-slot--settling { transform: none !important; transition: none; }
+  .dock-xform, .dock-xform--settling { transform: none !important; transition: none; }
   /* The countdown ring is feedback, not decoration — it stays. It simply
      completes at once instead of sweeping. */
   .dock-holding::after { animation-duration: 0s !important; }

@@ -934,9 +934,12 @@ function DockSlot({
   // The countdown lives on .dock-holding::after, and an inline
   // `animationDuration` would never reach a pseudo-element — custom properties
   // do inherit into one, so HOLD_MS is handed over as a variable.
-  const holdStyle: CSSProperties = holding
-    ? { ...style, ["--dock-hold-ms" as string]: `${holdMs}ms` }
-    : style;
+  // The transform belongs to the wrapper; only the countdown duration needs to
+  // reach the slot itself (its ::after reads the variable).
+  const holdStyle: CSSProperties = style;
+  const holdVars: CSSProperties = holding
+    ? ({ ["--dock-hold-ms" as string]: `${holdMs}ms` } as CSSProperties)
+    : {};
 
   const body =
     entry.kind === "folder" ? (
@@ -947,7 +950,6 @@ function DockSlot({
 
   const slotClass = cn(
     "dock-slot grid place-items-center w-full h-full rounded-2xl border",
-    settling && "dock-slot--settling",
     // The strong highlight belongs to whatever the pointer is on — with
     // release-to-select that slot is the pending choice. The current route
     // keeps a quieter tint plus its pip.
@@ -994,13 +996,26 @@ function DockSlot({
 
       {/* A folder has no URL, so it is a button; a module keeps a real <a> so
           middle-click, copy-link and keyboard all behave. */}
+      {/* DOCK-18: the transform moved from the slot onto this wrapper, so the
+          remove × and the running pip travel and scale WITH the icon. They
+          used to sit on the untransformed outer box and stayed put while the
+          icon magnified away from them. The name tag stays outside it — it
+          should follow horizontally but must not scale, or the text balloons.
+          transform-origin matches .dock-slot so growth is still upward. */}
+      <span
+        className={cn(
+          "dock-xform absolute inset-0 grid place-items-center",
+          settling && "dock-xform--settling",
+        )}
+        style={holdStyle}
+      >
       {entry.kind === "folder" ? (
         <button
           type="button"
           aria-label={label}
           onClick={() => !editing && onActivate()}
           className={slotClass}
-          style={holdStyle}
+          style={holdVars}
           {...handlers}
         >
           {body}
@@ -1021,7 +1036,7 @@ function DockSlot({
             }
           }}
           className={slotClass}
-          style={holdStyle}
+          style={holdVars}
           {...handlers}
         >
           {body}
@@ -1048,6 +1063,7 @@ function DockSlot({
           <MSymbol name="close" className="text-[11px]" />
         </button>
       )}
+      </span>
     </div>
   );
 }

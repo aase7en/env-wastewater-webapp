@@ -147,10 +147,36 @@ export function useAllVisibility() {
     refresh();
   }, [refresh]);
 
+  /**
+   * DOCK-18: the write is now optimistic-then-reverting, and it reports.
+   * Previously the local update came only AFTER the await, with no catch — so
+   * a rejected write left the toggle exactly where it was and said nothing.
+   * That is how a missing GRANT on the base table looked from the UI: a switch
+   * that simply refused to move, with no clue why.
+   */
   const setVisibility = useCallback(
     async (role: AppRole, module_key: string, visible: boolean) => {
-      await setModuleVisibility(role, module_key, visible);
-      // Optimistic local update — the matrix reflects the change immediately.
+      const revert = () =>
+        setRows((prev) =>
+          prev.map((r) =>
+            r.role === role && r.module_key === module_key
+              ? { ...r, visible: !visible }
+              : r,
+          ),
+        );
+      applyLocal(role, module_key, visible);
+      setError(null);
+      try {
+        await setModuleVisibility(role, module_key, visible);
+      } catch (e) {
+        revert();
+        setError((e as Error).message);
+      }
+    },
+    [],
+  );
+
+  function applyLocal(role: AppRole, module_key: string, visible: boolean) {
       setRows((prev) => {
         const i = prev.findIndex(
           (r) => r.role === role && r.module_key === module_key,
@@ -165,9 +191,7 @@ export function useAllVisibility() {
         next[i] = { ...next[i], visible };
         return next;
       });
-    },
-    [],
-  );
+  }
 
   return { rows, loading, error, refresh, setVisibility };
 }
