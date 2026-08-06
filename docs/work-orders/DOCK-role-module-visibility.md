@@ -1,9 +1,11 @@
 # WO — Dock: role → module visibility (admin-configurable)
 
 > **Tier**: Track Z (logic/SQL/RLS) — the UI hook is already in place from Track F
-> **Status**: open
+> **Status**: done (2026-08-03, GLM) — commit `e81c946`. Presentation-only
+> (not a security boundary). Close-note in `MIGRATION.md` (DOCK block).
+> DOCK-11..21 visual polish by Track F (Claude) landed afterwards.
 > **Requested**: 2026-08-03, alongside DOCK-9 (folders + edit toolbar)
-> **Blocked on**: nothing; needs a schema decision
+> **Blocked on**: ~~nothing; needs a schema decision~~ resolved (role as text + enum cast)
 
 ## What the user asked for
 

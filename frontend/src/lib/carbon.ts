@@ -214,8 +214,14 @@ export function useCarbonMonthly(months = 12) {
   return { data, loading, error };
 }
 
-/** Previous calendar month for a YYYY-MM key (handles January rollover). */
-function prevCalendarMonth(monthYear: string): string {
+/**
+ * Previous calendar month for a YYYY-MM key (handles January rollover).
+ *
+ * Exported (OPT-HYGIENE 2026-08-07) so the MoM-gap regression that C3 fixed
+ * (`sortedMonths[i-1]` skipped missing months) stays pinned by a unit test.
+ * Single caller: the MoM loop below in `fetchCarbonMonthly`.
+ */
+export function prevCalendarMonth(monthYear: string): string {
   const [y, m] = monthYear.split("-").map(Number);
   const prev = new Date(y, m - 2, 1); // m is 1-12; m-2 = previous month (Jan → last Dec)
   return `${prev.getFullYear()}-${String(prev.getMonth() + 1).padStart(2, "0")}`;

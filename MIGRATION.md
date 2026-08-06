@@ -294,6 +294,7 @@ binding rules are here.
 
 | Chunk | Agent | Claimed | Scope (files) |
 |---|---|---|---|
+| OPT-HYGIENE | GLM | 2026-08-07 | `frontend/src/lib/carbon.ts`, `frontend/src/lib/carbon.test.ts` (NEW), `docs/work-orders/DOCK-role-module-visibility.md`, `docs/work-orders/OAUTH-4-deny-pending-rls.md` |
 
 > **DOCK role-module-visibility GLM execute done 2026-08-03** — admin-
 > configurable dock icon visibility per role (per docs/work-orders/DOCK-

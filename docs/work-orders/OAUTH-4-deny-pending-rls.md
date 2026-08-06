@@ -1,7 +1,10 @@
 # OAUTH-4 — Deny pending-role on transactional RLS
 
 > **Tier**: cheap-ok Track Z (pure SQL + probe script)
-> **Status**: GLM in-progress (2026-07-24)
+> **Status**: done (2026-07-24, GLM) — 24/24 migration OK live, probe RED→GREEN
+> (11/11 transactional tables). Companion: SCHEMA5b (2026-07-30) extended the
+> belt to 5 reference tables OAUTH-4 missed; probe now covers 16/16. Both
+> close-notes in `MIGRATION.md`.
 > **Scope**: 1 migration + 1 RLS probe script + ADR-0011 (optional)
 > **Blocks**: should land *before* user opens Google/LINE OAuth (Part A-D in
 > `docs/runbooks/dashboard-config-oauth-ai.md`) — otherwise pending users
