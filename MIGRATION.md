@@ -294,7 +294,21 @@ binding rules are here.
 
 | Chunk | Agent | Claimed | Scope (files) |
 |---|---|---|---|
-| OPT-HYGIENE | GLM | 2026-08-07 | `frontend/src/lib/carbon.ts`, `frontend/src/lib/carbon.test.ts` (NEW), `docs/work-orders/DOCK-role-module-visibility.md`, `docs/work-orders/OAUTH-4-deny-pending-rls.md` |
+| ~~OPT-HYGIENE~~ | GLM | 2026-08-07 | done — see close-note below |
+
+> **OPT-HYGIENE GLM execute done 2026-08-07** — three Track-Z hygiene
+> fixes that GLM could do without blocking on other actors. (1) `carbon.ts`
+> `prevCalendarMonth` exported (single caller unchanged) + new
+> `carbon.test.ts` (6 tests) pinning the C3 MoM-gap regression (Jan rollover,
+> zero-pad, year-boundary, non-idempotency guard). Vitest 126→132. (2) WO
+> status hygiene: DOCK-role-module-visibility.md and OAUTH-4-deny-pending-rls.md
+> headers synced from open/in-progress → done (commit refs `e81c946`,
+> OAUTH-4 probe RED→GREEN). (3) Companion A-Wiki entity
+> `env-webapp-project.md` updated from 2026-07-16 stale state (FastAPI
+> "live", PR #10 "open") to 2026-08-07 reality (FastAPI removed `c6fc72a`,
+> two-track F∥Z, OAuth/AI-SQL/DOCK/SCHEMA5b shipped). Commit `1657f45`
+> (env-wastewater-webapp) + `cbcabb1d` (A-Wiki, separate repo). build ✅,
+> Vitest 132/132.
 
 > **DOCK role-module-visibility GLM execute done 2026-08-03** — admin-
 > configurable dock icon visibility per role (per docs/work-orders/DOCK-
