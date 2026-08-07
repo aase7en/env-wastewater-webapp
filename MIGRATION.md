@@ -244,17 +244,19 @@ migrated the dashboard onto Aura so the whole app is consistent.
 > client-side PDF, threshold notifications, Equipment page, Trends charts).
 > See `git log --oneline` + `.zcode/plans/` for the authoritative trail.
 
-## ACTIVE — Two-track parallel work: F (Fable5) ∥ Z (ZCode) — from 2026-07-18
+## ACTIVE — Two-track parallel work: F (Codex GPT5.6) ∥ Z (ZCode/GLM) — from 2026-07-18 (F owner reassigned 2026-08-07)
 
 Two agents work this repo **at the same time**. Read this before starting any
-chunk. Full plan lives in the session plan file of 2026-07-18 (Fable5); the
-binding rules are here.
+chunk. The original 2026-07-18 plan was authored by Fable5; Track F ownership
+**moved to Codex GPT5.6 on 2026-08-07** (Codex's edge = image generation +
+3D animation, picked to drive the wastewater virtual-process PFD upgrade).
+The binding rules below still apply.
 
 ### Lanes
 
-| | **Track F — Fable5** (visual layer) | **Track Z — ZCode** (feature/data layer) |
+| | **Track F — Codex GPT5.6** (visual + 3D layer) | **Track Z — ZCode/GLM** (feature/data layer) |
 |---|---|---|
-| Scope | Theme/tokens, AppShell/layout, styling (className/markup) of all pages, `design/ui-brief.md`, `frontend/public/` assets, `frontend/index.html` (while F1 open) | `src/lib/*` logic (supabase-queries, hooks, pdf), page logic, new feature pages, Supabase SQL / Edge Functions, `tests/e2e/*`, `.zcode/*`, `.github/workflows/*` |
+| Scope | Theme/tokens, AppShell/layout, styling (className/markup) of all pages, `design/ui-brief.md`, `frontend/public/` assets, `frontend/index.html` (while F1 open), **3D virtual process (PFD upgrade)** — `frontend/src/components/pfd/*`, React Three Fiber/Three.js assets | `src/lib/*` logic (supabase-queries, hooks, pdf), page logic, new feature pages, Supabase SQL / Edge Functions, `tests/e2e/*`, `.zcode/*`, `.github/workflows/*` |
 | Chunk prefix | `chunk(F#): ...` | `chunk(P#): ...` (continues P20+) |
 | Must NOT touch | Z's logic/data code, SQL, e2e tests | Colors/fonts/layout/theme, `tailwind.config.js`, `index.css`, `src/styles/*`, `design/` |
 
@@ -277,11 +279,15 @@ binding rules are here.
    wiped 3× mid-flight by Track Z `reset --hard`/`clean` cycles on
    2026-07-18): `git reset --hard`, `git checkout -- .`, and `git clean`
    destroy the *other* agent's uncommitted work — use `git stash` /
-   `git revert` instead. Track F now works from its own **git worktree**
-   (`git worktree add ../envww-trackf track-f`) and lands via fast-forward
-   pushes of `track-f` → `main`, so Z's tree operations can no longer
-   collide with F. Z: keep pulling `main` as usual; never delete the
-   `track-f` branch or the worktree registration.
+   `git revert` instead. **Track F (Codex, 2026-08-07 reassigned)**: if
+   you want the historical worktree isolation, run
+   `git worktree add ../envww-trackf track-f` and work there, landing via
+   fast-forward pushes of `track-f` → `main`. Otherwise you may work in
+   this tree directly but MUST `git pull --ff-only` before every commit
+   and stage only your own files (see "DO NOT TOUCH" list in your handoff
+   prompt — other agents have untracked work in this tree right now).
+   Track Z: keep pulling `main` as usual; never delete the `track-f`
+   branch or the worktree registration if it exists.
 7. **Work orders (Phase 2)**: every chunk has a spec file in
    `docs/work-orders/` any agent can execute or resume — file scope binds
    to the *chunk*, not permanently to an agent; whoever holds the claim
@@ -434,7 +440,9 @@ binding rules are here.
 > WO: `docs/work-orders/AUTH-2-app-user-query-schema.md` (cheap-ok → GLM execute).
 > **GLM execute done 2026-07-19** — build ✅ · Vitest 96/96 ✅ · Playwright 25/25 ✅ ·
 > migration applied live (4/4) · view recreate (PostgreSQL `select *` cache) ·
-> DB probe AuthProvider query คืน row สมบูรณ์ · **รอ Fable5 verify + JWT round-trip จริง**.
+> DB probe AuthProvider query คืน row สมบูรณ์ · **รอ user JWT round-trip จริง
+> (was "Fable5 verify" — Track F owner reassigned to Codex 2026-08-07; this
+> is a Track Z schema/auth concern, GLM owns it pending real-user test)**.
 
 > **Reopened 2026-07-19 (Fable5 review): P0 `SCHEMA-5-rest-exposure`** — ทุก
 > `.from()` ใน frontend 404 (PGRST205) เพราะ `public` schema ว่างเปล่าและไม่
@@ -474,11 +482,22 @@ into `frontend/public/` + sidebar brand + favicon link; `design/ui-brief.md`
 rewritten as the suite-authority record with the 9 binding domain-mapping
 rules; brand = UTH[AI]-ENV closed).
 
-### Track F queue (Fable5)
+### Track F queue (Codex GPT5.6 — reassigned 2026-08-07)
 
-F1 dual theme (Luminous Mint light + Boost dark + toggle) → F2.1–F2.7
-per-page conformance with the 14-screen suite in `design/` (Dashboard, Form,
-Readings, Trends, Equipment, Reports, Auth) → F3 logo/favicon + docs.
+**Done under prior owner (Fable5/Claude, 2026-07-18 → 2026-08-07):**
+F1 dual theme (Luminous Mint light + Boost dark + toggle) · F2.1–F2.7
+per-page conformance with the 14-screen suite in `design/` (Dashboard,
+Form, Readings, Trends, Equipment, Reports, Auth) · F3 logo/favicon +
+docs · F5/F6 PFD polish (Sonnet 5) · DOCK-11..21 mobile dock gestures.
+
+**Active under Codex (starts here):**
+F3D-1 → F3D-5 — replace the flat 2D SVG PFD with an animated 3D virtual
+process (wastewater treatment stages + RAS/WAS sludge loop + live
+DO/flow/Cl animation states). Codex should propose the library choice
+(React Three Fiber? Three.js? CSS-3D?), chunk plan, and first slice as a
+work order in `docs/work-orders/F3D-*.md` before editing. See the
+handoff prompt (chat with ZCode 2026-08-07) for full mission brief +
+domain knowledge pointers + DO-NOT-TOUCH list.
 
 ### Track Z queue (ZCode — user assigns; suggested order to avoid F)
 
