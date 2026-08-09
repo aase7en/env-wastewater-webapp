@@ -23,22 +23,31 @@
 --   - RLS admin-only on ai_provider → staff sessions can't read keys
 --   - Frontend never persists key in localStorage; fetches per chat turn,
 --     uses once, lets GC reclaim
---   - Audit log captures every SELECT on ai_provider (SCHEMA-4 trigger
---     already attached if we add it — see end of migration)
+--   - DML audit (INSERT/UPDATE/DELETE) via trg_audit_log added retroactively
+--     by AUDITFIX-A (20260810000000) — closes the gap this migration left.
+--     NOTE: there is NO SELECT-audit. fn_audit_log() only fires on DML.
+--     Read-audit of key_value would need a separate SECURITY DEFINER RPC
+--     wrapper, which is out of scope.
+--   (Original comment here falsely claimed "Audit log captures every SELECT
+--   on ai_provider (SCHEMA-4 trigger already attached if we add it — see end
+--   of migration)". That was wrong on two counts: no trigger was ever
+--   created, AND the helper can't audit SELECTs. Corrected 2026-08-10.)
 --
 -- Track Z scope (SQL only).
 -- Idempotent.
 
 -- ───────────────────────────────────────────────────────────────────────────
--- 1) ai_provider column extensions + audit trigger.
+-- 1) ai_provider column extensions.
 -- ───────────────────────────────────────────────────────────────────────────
+-- (Audit trigger added later by AUDITFIX-A — 20260810000000. This migration
+-- originally intended to add one but never did.)
 ALTER TABLE core.ai_provider
     ADD COLUMN IF NOT EXISTS api_url   text,
     ADD COLUMN IF NOT EXISTS key_value text,
     ADD COLUMN IF NOT EXISTS model_id  text;
 
 COMMENT ON TABLE core.ai_provider IS
-    'AI-1 (2026-07-17) — Wave 4 AI provider registry. key_value stored here per user choice (direct from client). RLS admin-only. Audit trigger on every read.';
+    'AI-1 (2026-07-17) — Wave 4 AI provider registry. key_value stored here per user choice (direct from client). RLS admin-only. DML audit via trg_audit_log (AUDITFIX-A, 2026-08-10). NO SELECT-audit.';
 
 -- Re-check RLS (was enabled before but policy may be missing).
 DROP POLICY IF EXISTS ai_provider_admin_all ON core.ai_provider;

@@ -316,7 +316,28 @@ The binding rules below still apply.
 | Chunk | Agent | Claimed | Scope (files) |
 |---|---|---|---|
 | ~~OPT-HYGIENE~~ | GLM | 2026-08-07 | done — see close-note below |
-| AUDITFIX-A | GLM | 2026-08-10 | `supabase/migrations/20260810000000_auditfix_a_missing_triggers.sql` (NEW), `scripts/test_oauth4_rls_probe.py`, `supabase/migrations/20260719000008_dba_ai_columns.sql` (comment fix) |
+| ~~AUDITFIX-A~~ | GLM | 2026-08-10 | done — see close-note below |
+
+> **AUDITFIX-A GLM execute done 2026-08-10** — closes the two
+> "missing audit trigger" gaps flagged by `reports/infra-audit-2026-08.md`
+> P1 #1 + #2. New migration `20260810000000_auditfix_a_missing_triggers.sql`
+> retro-fits the standard `trg_audit_log` (DROP IF EXISTS + CREATE, pattern
+> copied verbatim from `20260719000003_v2_audit_trigger.sql:116-118`) onto:
+> (a) `core.ai_provider` — stores API keys (`key_value`); the original
+> `20260719000008_dba_ai_columns.sql:26-27` comment falsely claimed
+> "Audit log captures every SELECT on ai_provider" but no trigger was ever
+> created AND `fn_audit_log()` only fires on DML (cannot audit SELECT).
+> Comment corrected in-place to reflect reality (DML audit via AUDITFIX-A,
+> NO SELECT-audit — read-audit would need separate RPC wrapper).
+> (b) `core.attachment` — regulation PDF upload/delete (phish vector);
+> table verified live (created in archived FastAPI era, `id uuid` PK,
+> `file_path`/`uploaded_by` columns confirmed).
+> `scripts/test_oauth4_rls_probe.py` extended with `AUDITFIX_TABLES`
+> constant + `_probe_trigger_existence` (queries `pg_trigger` joined to
+> `pg_class`/`pg_namespace`, excludes internal triggers, tolerates absent
+> table as SKIP). RED→GREEN verified (exit 1 before migration → exit 0
+> after, both tables `present/PASS`). Migration 4/4 OK live. Build ✅,
+> Vitest 132/132.
 
 > **OPT-HYGIENE GLM execute done 2026-08-07** — three Track-Z hygiene
 > fixes that GLM could do without blocking on other actors. (1) `carbon.ts`

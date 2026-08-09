@@ -133,7 +133,16 @@ def probe_helper(token: str) -> int:
     # user's uid — surfacing as that victim in the admin audit viewer.
     aud_failures = _probe_audit_log_insert(token)
 
-    return 0 if (helper_failures + policy_failures + aiq_failures + ref_failures + aud_failures) == 0 else 1
+    # Sixth probe (AUDITFIX-A): sensitive admin tables that the audit doc
+    # (`reports/infra-audit-2026-08.md`) flagged as missing trg_audit_log.
+    # `core.ai_provider` stores API keys (key_value) — a code comment in
+    # `20260719000008_dba_ai_columns.sql:26-27` falsely claimed SELECT-audit
+    # coverage, but no trigger was ever created. AUDITFIX-A adds the standard
+    # DML trigger (INSERT/UPDATE/DELETE). `core.attachment` is also flagged
+    # (regulation PDF swap = phish vector) if the table exists live.
+    trg_failures = _probe_trigger_existence(token)
+
+    return 0 if (helper_failures + policy_failures + aiq_failures + ref_failures + aud_failures + trg_failures) == 0 else 1
 
 
 def _probe_helper_body(token: str) -> int:
@@ -242,6 +251,75 @@ def _probe_audit_log_insert(token: str) -> int:
           f"{'actor=uid' if gated else 'OPEN (' + check.strip() + ')':<12} "
           f"{'PASS' if gated else 'FAIL'}")
     return 0 if gated else 1
+
+
+# Tables that AUDITFIX-A retro-fits with the standard trg_audit_log trigger.
+# `core.ai_provider` is the primary target (key_value API-key column; a code
+# comment in 20260719000008_dba_ai_columns.sql:26-27 falsely claimed audit
+# coverage that was never created). `core.attachment` is flagged in the audit
+# report too (regulation PDF swap = phish vector) but it was created in the
+# archived FastAPI era and may not exist in the live DB — probe tolerates its
+# absence (reports SKIP, not FAIL).
+AUDITFIX_TABLES = [
+    ("core", "ai_provider"),      # required — must gain trigger
+    ("core", "attachment"),        # optional — SKIP if table absent live
+]
+
+
+def _probe_trigger_existence(token: str) -> int:
+    """Assert each AUDITFIX_TABLES table carries `trg_audit_log`.
+
+    RED-first: before AUDITFIX-A applies, ai_provider has no trigger → FAIL.
+    After apply, the DROP+CREATE pattern leaves exactly one `trg_audit_log`
+    row in pg_trigger → PASS. attachment is best-effort (SKIP if the table
+    doesn't exist in the live DB — created in the archived FastAPI era).
+
+    Query joins pg_trigger + pg_class + pg_namespace and excludes internal
+    triggers (t.tgisinternal). A healthy result is exactly one row named
+    `trg_audit_log` per table.
+    """
+    print(f"\n{'table':<35} {'trigger':<18} {'status'}")
+    print("-" * 65)
+    failures = 0
+    for schema, table in AUDITFIX_TABLES:
+        # First: does the table itself exist? (attachment may not.)
+        exists_q = (
+            "SELECT 1 FROM pg_class c "
+            "JOIN pg_namespace n ON n.oid = c.relnamespace "
+            f"WHERE n.nspname = '{schema}' AND c.relname = '{table}' "
+            "AND c.relkind IN ('r','p');"
+        )
+        ex = exec_sql(token, exists_q)
+        if isinstance(ex, dict) and ex.get("_error"):
+            print(f"{schema}.{table:<30} ERROR: {ex['_error']}", file=sys.stderr)
+            failures += 1
+            continue
+        ex_rows = ex if isinstance(ex, list) else []
+        if not ex_rows:
+            print(f"{schema}.{table:<30} —                 SKIP (table absent)")
+            continue  # not a failure — table genuinely doesn't exist live
+
+        # Table exists — does trg_audit_log fire on it?
+        q = (
+            "SELECT t.tgname FROM pg_trigger t "
+            "JOIN pg_class c ON c.oid = t.tgrelid "
+            "JOIN pg_namespace n ON n.oid = c.relnamespace "
+            f"WHERE n.nspname = '{schema}' AND c.relname = '{table}' "
+            "AND NOT t.tgisinternal AND t.tgname = 'trg_audit_log';"
+        )
+        res = exec_sql(token, q)
+        if isinstance(res, dict) and res.get("_error"):
+            print(f"{schema}.{table:<30} ERROR: {res['_error']}", file=sys.stderr)
+            failures += 1
+            continue
+        rows = res if isinstance(res, list) else []
+        present = any((r.get("tgname") == "trg_audit_log") for r in rows)
+        print(f"{schema}.{table:<30} "
+              f"{'present' if present else 'MISSING':<18} "
+              f"{'PASS' if present else 'FAIL'}")
+        if not present:
+            failures += 1
+    return failures
 
 
 # All transactional tables that OAUTH-4 repolicied. Any policy on these
