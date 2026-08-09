@@ -318,7 +318,33 @@ The binding rules below still apply.
 | ~~OPT-HYGIENE~~ | GLM | 2026-08-07 | done — see close-note below |
 | ~~AUDITFIX-A~~ | GLM | 2026-08-10 | done — see close-note below |
 | ~~AUDITFIX-C~~ | GLM | 2026-08-10 | done — see close-note below |
-| AUDITFIX-B | GLM | 2026-08-10 | `supabase/migrations/20260810000002_auditfix_b_reject_status.sql` (NEW), `frontend/src/lib/admin/ai-chat.ts`, `frontend/src/lib/admin/db-query.ts`, `frontend/src/lib/admin/ai-chat.test.ts`, `frontend/src/lib/admin/db-query.test.ts` |
+| ~~AUDITFIX-B~~ | GLM | 2026-08-10 | done — see close-note below |
+
+> **AUDITFIX-B GLM execute done 2026-08-10** — closes the P1
+> "silent AI reject" gap from `reports/infra-audit-2026-08.md` #3 (the
+> last of the 3 P1 audit gaps; A + C closed the other two earlier today).
+> Two TS chokepoints logged previously-nothing rejects:
+> (1) `ai-chat.ts:123-125` PHI filter block — now INSERTs
+> `status='rejected_phi'` + `reject_reason` before throwing;
+> (2) `db-query.ts:254,269` whitelist reject (TS-layer
+> `isStatementAllowed` AND PG-layer `admin_run_query` RAISE EXCEPTION
+> re-throw) — now INSERTs `status='rejected_whitelist'`. PGRST202
+> (DBA-3 not deployed) deliberately NOT logged (infra state, not a probe).
+> Refactors: extracted `actorUid()` helper in ai-chat.ts (shared by
+> success + reject paths; replaces per-call `supabase.auth.getUser()`);
+> local `logSqlReject()` helper in db-query.ts (avoids circular import
+> ai-chat → ai-providers → db-query). Both follow the existing best-effort
+> try/catch + `console.warn` convention — a log failure never changes
+> the reject UX. Success-path INSERT now also carries `status:'success'`
+> explicitly (existing rows backfill via DEFAULT). Migration
+> `20260810000002` adds `status text NOT NULL DEFAULT 'success'` +
+> `reject_reason text` to `core.ai_query_log` (1/1 OK live); RLS
+> unchanged (existing `WITH CHECK (actor = auth.uid())` gate applies to
+> reject rows equally). Vitest 132→138 (+6 new: ai-chat +3, db-query +3);
+> build ✅. NOTE: catches browser-originated rejects only — a non-browser
+> caller (curl to `admin_run_query` RPC) would bypass; recon confirms no
+> such caller exists today; defense-in-depth for that vector (INSERT
+> statements inside `admin_run_query` before each RAISE) deferred.
 
 > **AUDITFIX-C GLM execute done 2026-08-10** — closes the P2
 > "log tampering" gap from `reports/infra-audit-2026-08.md`. The two

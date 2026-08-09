@@ -28,6 +28,37 @@
 
 import { supabase } from "../supabase";
 
+/**
+ * Best-effort reject-log to ai_query_log for the DBA-3 raw-SQL path.
+ *
+ * AUDITFIX-B (2026-08-10): the TS-side whitelist (isStatementAllowed) and
+ * the PG-side RAISE EXCEPTION both surface to the user as a thrown error,
+ * but left no audit trace. This helper inserts a row with
+ * `status='rejected_whitelist'` before re-throwing, so an admin can see
+ * probing attempts. Mirrors the pattern in ai-chat.ts (separate helper to
+ * avoid a circular import: db-query → ai-chat → ai-providers → db-query).
+ *
+ * `reason` is the same string surfaced to the user. Best-effort: a log
+ * failure never changes the reject UX.
+ */
+async function logSqlReject(sql: string, reason: string): Promise<void> {
+  try {
+    const { data } = await supabase.auth.getUser();
+    await supabase.from("ai_query_log").insert({
+      question: sql.slice(0, 4000),
+      answer: null,
+      provider_id: null,
+      scope_used: null,
+      token_usage: null,
+      actor: data.user?.id ?? null,
+      status: "rejected_whitelist",
+      reject_reason: reason.slice(0, 4000),
+    });
+  } catch (e) {
+    console.warn("ai_query_log reject insert failed (db-query):", (e as Error).message);
+  }
+}
+
 // ─── Types ───────────────────────────────────────────────────────────────
 
 export interface QueryResult {
@@ -252,6 +283,9 @@ function applyFilter(
 export async function runRawQuery(sql: string): Promise<QueryResult> {
   const check = isStatementAllowed(sql);
   if (!check.ok) {
+    // AUDITFIX-B: log the TS-layer whitelist reject before throwing so an
+    // admin can see probing attempts. Never changes the throw.
+    await logSqlReject(sql, check.reason);
     throw new Error(check.reason);
   }
 
@@ -260,6 +294,12 @@ export async function runRawQuery(sql: string): Promise<QueryResult> {
   const elapsedMs = Math.round(performance.now() - start);
 
   if (error) {
+    // AUDITFIX-B: log the PG-layer whitelist reject too (RAISE EXCEPTION
+    // from admin_run_query re-surfaces here). PGRST202 (function absent)
+    // is NOT a probe — skip logging that one.
+    if (error.code !== "PGRST202") {
+      await logSqlReject(sql, error.message);
+    }
     // PGRST202 = function not found → DBA-3 not deployed yet.
     if (error.code === "PGRST202") {
       throw new Error(

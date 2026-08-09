@@ -33,6 +33,8 @@ const mockState = {
   fakeUserId: "user-abc-123",
   /** What ai_provider select resolves to (for sendChatTurn provider pick). */
   aiProviderResult: [] as unknown,
+  /** Flip to simulate an ai_query_log INSERT failure (RLS deny / network). */
+  insertShouldError: false,
 };
 
 // Capture global fetch so sendChatTurn's provider call returns a canned
@@ -65,6 +67,9 @@ vi.mock("../supabase", () => ({
       if (table === "ai_query_log") {
         return {
           insert: (payload: Record<string, unknown>) => {
+            if (mockState.insertShouldError) {
+              return { select: () => ({ data: null, error: { message: "simulated RLS deny" } }) };
+            }
             mockState.lastInsertPayload = payload;
             return { select: () => ({ data: [payload], error: null }) };
           },
@@ -230,3 +235,79 @@ describe("sendChatTurn — ai_query_log insert carries actor (I3)", () => {
     expect(mockState.lastInsertPayload?.provider_id).toBe("prov-1");
   });
 });
+
+// ─── AUDITFIX-B: rejected PHI questions must be logged (not silent) ──────
+describe("sendChatTurn — PHI block inserts ai_query_log reject row (AUDITFIX-B)", () => {
+  it("logs a reject row with status='rejected_phi' before throwing", async () => {
+    // Before AUDITFIX-B: a PHI-blocked question threw immediately with no
+    // trace — an admin had no signal that anyone was probing forbidden
+    // queries. The fix inserts a best-effort row, then re-throws.
+    mockState.aiScopeResult = {
+      // Simulate ai_scope flagging core.personnel as patient_safe=false.
+      data: [{ view_name: "core.personnel" }], error: null,
+    };
+
+    await expect(
+      sendChatTurn("แสดงรายชื่อ core.personnel ทั้งหมด"),
+    ).rejects.toThrow(/personnel/);
+
+    // The reject row was captured by the same mock insert path.
+    expect(mockState.lastInsertPayload).not.toBeNull();
+    expect(mockState.lastInsertPayload?.status).toBe("rejected_phi");
+    expect(mockState.lastInsertPayload?.actor).toBe(mockState.fakeUserId);
+    expect(mockState.lastInsertPayload?.question).toContain("personnel");
+    // No provider was picked (block happened first).
+    expect(mockState.lastInsertPayload?.provider_id).toBeNull();
+  });
+
+  it("reject-log failure does NOT change the reject UX (still throws)", async () => {
+    // Defensive: if the log insert itself rejects (RLS deny, network), the
+    // caller must still see the original PHI block — log is best-effort.
+    // We flip a mock flag so the ai_query_log insert returns an error;
+    // sendChatTurn's logReject catches it and console.warns, then the
+    // original PHI reason still throws.
+    mockState.insertShouldError = true;
+    mockState.aiScopeResult = {
+      data: [{ view_name: "core.personnel" }], error: null,
+    };
+
+    await expect(
+      sendChatTurn("เบอร์โทร core.personnel"),
+    ).rejects.toThrow(/personnel/);
+
+    mockState.insertShouldError = false;
+  });
+});
+
+// ─── AUDITFIX-B (cont.): success path now carries status='success' ───────
+describe("sendChatTurn — success insert now carries status='success' (AUDITFIX-B)", () => {
+  function stubFetchOk() {
+    globalThis.fetch = vi.fn(async () =>
+      new Response(
+        JSON.stringify({
+          choices: [{ message: { content: "ตอบ" } }],
+          usage: { total_tokens: 7 },
+        }),
+        { status: 200, headers: { "Content-Type": "application/json" } },
+      ),
+    ) as unknown as typeof fetch;
+  }
+
+  it("success-path payload has status='success' (default backfill not relied on)", async () => {
+    mockState.aiScopeResult = { data: [], error: null };
+    mockState.aiProviderResult = [
+      {
+        id: "prov-1", name: "Mock", model: "mock-1", is_enabled: true,
+        priority: 1, api_url: "https://mock.local/v1/chat/completions",
+        base_url: "https://mock.local", key_value: "sk-mock",
+      },
+    ];
+    stubFetchOk();
+
+    await sendChatTurn("ค่า DO");
+
+    expect(mockState.lastInsertPayload?.status).toBe("success");
+    expect(mockState.lastInsertPayload?.reject_reason).toBeUndefined();
+  });
+});
+

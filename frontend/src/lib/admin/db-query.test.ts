@@ -1,5 +1,34 @@
-import { describe, it, expect } from "vitest";
-import { isStatementAllowed, stripComments, type StatementCheck } from "./db-query";
+import { describe, it, expect, vi, beforeEach } from "vitest";
+
+// AUDITFIX-B (2026-08-10): the reject-log tests below exercise runRawQuery,
+// which imports ../supabase (throws at module load if env missing). Mock it
+// before the db-query import. The pure-helper tests above don't touch the
+// client so the mock is inert for them.
+const mockState = {
+  lastInsertPayload: null as Record<string, unknown> | null,
+  rpcResult: { data: null, error: null as { code?: string; message?: string } | null },
+  fakeUserId: "user-dba-xyz",
+};
+
+vi.mock("../supabase", () => ({
+  supabase: {
+    auth: { getUser: async () => ({ data: { user: { id: mockState.fakeUserId } } }) },
+    rpc: vi.fn(async (_name: string, _args: Record<string, unknown>) => mockState.rpcResult),
+    from: vi.fn((table: string) => {
+      if (table === "ai_query_log") {
+        return {
+          insert: (payload: Record<string, unknown>) => {
+            mockState.lastInsertPayload = payload;
+            return { select: () => ({ data: [payload], error: null }) };
+          },
+        };
+      }
+      throw new Error(`unmocked table: ${table}`);
+    }),
+  },
+}));
+
+import { isStatementAllowed, stripComments, runRawQuery, type StatementCheck } from "./db-query";
 
 /** Type-narrow helper: extract reason when ok=false (throws if ok=true). */
 function reasonOf(r: StatementCheck): string {
@@ -298,3 +327,60 @@ describe("isStatementAllowed — reason messages (Thai)", () => {
     expect(reasonOf(r)).toMatch(/stacked|หลายคำสั่ง/);
   });
 });
+
+// ─── AUDITFIX-B (2026-08-10): whitelist rejects must be logged ──────────
+//
+// Before AUDITFIX-B: a TS-side whitelist reject (isStatementAllowed returns
+// ok=false) AND a PG-side reject (admin_run_query RAISE EXCEPTION) both
+// surfaced as a thrown Error with no audit trace — an admin had no signal
+// that anyone was probing destructive SQL. The fix logs a best-effort
+// ai_query_log row with status='rejected_whitelist' before re-throwing.
+
+describe("runRawQuery — AUDITFIX-B reject-log (whitelist)", () => {
+  beforeEach(() => {
+    mockState.lastInsertPayload = null;
+    mockState.rpcResult = { data: null, error: null };
+  });
+
+  it("TS-side whitelist reject (DROP) logs status='rejected_whitelist' before throwing", async () => {
+    // The TS layer rejects before the RPC is ever called. DROP fails the
+    // leading-keyword whitelist first (it's not SELECT/INSERT/UPDATE/
+    // DELETE/WITH), so the reason is the leading-keyword message — the
+    // point of this test is the log row, not the exact error string.
+    await expect(runRawQuery("DROP TABLE core.app_user")).rejects.toThrow();
+
+    expect(mockState.lastInsertPayload).not.toBeNull();
+    expect(mockState.lastInsertPayload?.status).toBe("rejected_whitelist");
+    expect(mockState.lastInsertPayload?.actor).toBe(mockState.fakeUserId);
+    expect(mockState.lastInsertPayload?.question).toContain("DROP TABLE");
+    // No provider in the SQL path.
+    expect(mockState.lastInsertPayload?.provider_id).toBeNull();
+  });
+
+  it("PG-side whitelist reject (RAISE EXCEPTION from admin_run_query) logs too", async () => {
+    // TS passes (SELECT), but PG function rejects with 42000 (forbidden).
+    mockState.rpcResult = {
+      data: null,
+      error: { code: "42000", message: "คำสั่งต้องห้าม: stacked queries" },
+    };
+
+    await expect(runRawQuery("SELECT 1; SELECT 2")).rejects.toThrow(/stacked|ห้าม/);
+
+    expect(mockState.lastInsertPayload?.status).toBe("rejected_whitelist");
+    expect(mockState.lastInsertPayload?.reject_reason).toContain("stacked");
+  });
+
+  it("PGRST202 (function absent) is NOT logged (not a probe)", async () => {
+    // DBA-3 not deployed yet is an infrastructure state, not a security event.
+    mockState.rpcResult = {
+      data: null,
+      error: { code: "PGRST202", message: "Could not find the function" },
+    };
+
+    await expect(runRawQuery("SELECT 1")).rejects.toThrow(/Raw SQL mode|DBA-3/);
+
+    // No reject row should have been written.
+    expect(mockState.lastInsertPayload).toBeNull();
+  });
+});
+

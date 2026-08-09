@@ -103,6 +103,51 @@ function escapeRegex(s: string): string {
 }
 
 /**
+ * Resolve the current user's id for the audit log's `actor` column.
+ * Shared by the success-path INSERT and the AUDITFIX-B reject-log INSERT
+ * so both pin the same identity (D3/I3 RLS gate requires
+ * `actor = auth.uid()`).
+ */
+async function actorUid(): Promise<string | null> {
+  const { data } = await supabase.auth.getUser();
+  return data.user?.id ?? null;
+}
+
+/**
+ * Best-effort INSERT of a rejected-query row to ai_query_log. Mirrors the
+ * success-path log pattern: wrapped in try/catch so a log failure never
+ * changes the reject UX (caller still throws after this returns).
+ *
+ * AUDITFIX-B (2026-08-10): closes the "silent AI reject" gap flagged by
+ * reports/infra-audit-2026-08.md P1 #3. Without this, an admin had no
+ * signal that anyone was probing forbidden queries.
+ *
+ * `status` distinguishes reject rows from success rows in the admin
+ * viewer; `reject_reason` carries the user-facing string (truncated 4000
+ * to match the existing `question` field cap).
+ */
+async function logReject(
+  question: string,
+  status: "rejected_phi" | "rejected_whitelist",
+  reason: string,
+): Promise<void> {
+  try {
+    await supabase.from("ai_query_log").insert({
+      question: question.slice(0, 4000),
+      answer: null,
+      provider_id: null,
+      scope_used: null,
+      token_usage: null,
+      actor: await actorUid(),
+      status,
+      reject_reason: reason.slice(0, 4000),
+    });
+  } catch (e) {
+    console.warn("ai_query_log reject insert failed:", (e as Error).message);
+  }
+}
+
+/**
  * Send a chat turn to the configured provider. Throws on PHI block,
  * network error, or non-2xx response.
  *
@@ -121,6 +166,10 @@ export async function sendChatTurn(
 ): Promise<ChatTurn> {
   const phi = await applyPhiFilter(question);
   if (phi.blocked) {
+    // AUDITFIX-B (2026-08-10): log the rejected question before throwing,
+    // so an admin can see probing attempts. Best-effort — never changes
+    // the reject UX (throw still fires after this returns).
+    await logReject(question, "rejected_phi", phi.reason ?? "PHI filter block");
     throw new Error(phi.reason ?? "PHI filter block");
   }
 
@@ -185,14 +234,14 @@ export async function sendChatTurn(
   // rejects NULL actor, so the previous omit-actor form silently failed
   // every insert, defeating the audit trail.
   try {
-    const { data: userData } = await supabase.auth.getUser();
     await supabase.from("ai_query_log").insert({
       question: phi.cleanedQuestion.slice(0, 4000),
       answer: answer.slice(0, 8000),
       provider_id: provider.id,
       scope_used: opts.schemaContext ? "schema-context" : null,
       token_usage: tokens,
-      actor: userData.user?.id ?? null,
+      actor: await actorUid(),
+      status: "success",
     });
   } catch (e) {
     console.warn("ai_query_log insert failed:", (e as Error).message);
