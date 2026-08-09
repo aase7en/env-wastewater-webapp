@@ -317,6 +317,7 @@ The binding rules below still apply.
 |---|---|---|---|
 | ~~OPT-HYGIENE~~ | GLM | 2026-08-07 | done — see close-note below |
 | ~~AUDITFIX-A~~ | GLM | 2026-08-10 | done — see close-note below |
+| AUDITFIX-C | GLM | 2026-08-10 | `supabase/migrations/20260810000001_auditfix_c_append_only.sql` (NEW), `scripts/test_oauth4_rls_probe.py` |
 
 > **AUDITFIX-A GLM execute done 2026-08-10** — closes the two
 > "missing audit trigger" gaps flagged by `reports/infra-audit-2026-08.md`
