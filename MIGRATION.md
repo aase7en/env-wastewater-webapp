@@ -318,6 +318,7 @@ The binding rules below still apply.
 | ~~OPT-HYGIENE~~ | GLM | 2026-08-07 | done — see close-note below |
 | ~~AUDITFIX-A~~ | GLM | 2026-08-10 | done — see close-note below |
 | ~~AUDITFIX-C~~ | GLM | 2026-08-10 | done — see close-note below |
+| AUDITFIX-B | GLM | 2026-08-10 | `supabase/migrations/20260810000002_auditfix_b_reject_status.sql` (NEW), `frontend/src/lib/admin/ai-chat.ts`, `frontend/src/lib/admin/db-query.ts`, `frontend/src/lib/admin/ai-chat.test.ts`, `frontend/src/lib/admin/db-query.test.ts` |
 
 > **AUDITFIX-C GLM execute done 2026-08-10** — closes the P2
 > "log tampering" gap from `reports/infra-audit-2026-08.md`. The two
