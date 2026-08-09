@@ -316,6 +316,7 @@ The binding rules below still apply.
 | Chunk | Agent | Claimed | Scope (files) |
 |---|---|---|---|
 | ~~OPT-HYGIENE~~ | GLM | 2026-08-07 | done — see close-note below |
+| AUDITFIX-A | GLM | 2026-08-10 | `supabase/migrations/20260810000000_auditfix_a_missing_triggers.sql` (NEW), `scripts/test_oauth4_rls_probe.py`, `supabase/migrations/20260719000008_dba_ai_columns.sql` (comment fix) |
 
 > **OPT-HYGIENE GLM execute done 2026-08-07** — three Track-Z hygiene
 > fixes that GLM could do without blocking on other actors. (1) `carbon.ts`
