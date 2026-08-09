@@ -317,7 +317,26 @@ The binding rules below still apply.
 |---|---|---|---|
 | ~~OPT-HYGIENE~~ | GLM | 2026-08-07 | done — see close-note below |
 | ~~AUDITFIX-A~~ | GLM | 2026-08-10 | done — see close-note below |
-| AUDITFIX-C | GLM | 2026-08-10 | `supabase/migrations/20260810000001_auditfix_c_append_only.sql` (NEW), `scripts/test_oauth4_rls_probe.py` |
+| ~~AUDITFIX-C~~ | GLM | 2026-08-10 | done — see close-note below |
+
+> **AUDITFIX-C GLM execute done 2026-08-10** — closes the P2
+> "log tampering" gap from `reports/infra-audit-2026-08.md`. The two
+> admin-overview policies `audit_log_admin_all` and `ai_query_log_admin_all`
+> were `FOR ALL` — an admin (or compromised admin session) could
+> UPDATE/DELETE rows and silently rewrite history. Recon confirmed zero
+> UPDATE/DELETE callers today (AuditLogPage read-only; audit-log.ts uses
+> `.select()` only; no edge function touches either table) so tightening
+> to `FOR SELECT` closes the hole with zero behavior change. INSERT still
+> flows via the separate `_authenticated_insert` policy (server-side
+> trigger sets `actor = auth.uid()`; service-role bypasses RLS via
+> BYPASSRLS). HMAC hash chain deliberately deferred — pgcrypto is
+> available but the chain would complicate the trigger for a threat model
+> with no compliance mandate; policy-only is the right-sized fix.
+> Migration `20260810000001_auditfix_c_append_only.sql` 4/4 OK live.
+> `scripts/test_oauth4_rls_probe.py` extended with `TAMPER_TARGET_POLICIES`
+> + `_probe_admin_policy_is_select_only` (asserts cmd=SELECT not ALL);
+> RED→GREEN verified (both `ALL/FAIL` before → `SELECT/PASS` after).
+> Build ✅, Vitest 132/132, AuditLogPage render unaffected.
 
 > **AUDITFIX-A GLM execute done 2026-08-10** — closes the two
 > "missing audit trigger" gaps flagged by `reports/infra-audit-2026-08.md`

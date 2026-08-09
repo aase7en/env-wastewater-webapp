@@ -142,7 +142,16 @@ def probe_helper(token: str) -> int:
     # (regulation PDF swap = phish vector) if the table exists live.
     trg_failures = _probe_trigger_existence(token)
 
-    return 0 if (helper_failures + policy_failures + aiq_failures + ref_failures + aud_failures + trg_failures) == 0 else 1
+    # Seventh probe (AUDITFIX-C): the admin policies on audit_log +
+    # ai_query_log are `FOR ALL`, which means an admin (or a compromised
+    # admin session) can UPDATE/DELETE rows and silently rewrite history.
+    # Recon (audit doc P2 + grep) confirmed NO caller actually uses
+    # UPDATE/DELETE today, so tightening to FOR SELECT closes the tamper
+    # hole with zero behavior change. INSERT still flows via the separate
+    # _authenticated_insert policy (server-side trigger sets actor).
+    tamper_failures = _probe_admin_policy_is_select_only(token)
+
+    return 0 if (helper_failures + policy_failures + aiq_failures + ref_failures + aud_failures + trg_failures + tamper_failures) == 0 else 1
 
 
 def _probe_helper_body(token: str) -> int:
@@ -318,6 +327,54 @@ def _probe_trigger_existence(token: str) -> int:
               f"{'present' if present else 'MISSING':<18} "
               f"{'PASS' if present else 'FAIL'}")
         if not present:
+            failures += 1
+    return failures
+
+
+# Admin-overview policies that AUDITFIX-C tightens from FOR ALL → FOR SELECT.
+# Tuple: (schema, table, policyname). Both audit_log + ai_query_log carry the
+# same shape: an _authenticated_insert policy (server-side trigger path), an
+# _owner_select policy (user reads own rows), and an _admin_all policy that
+# was originally FOR ALL but should be append-only (SELECT) so an admin (or a
+# compromised admin session) cannot UPDATE/DELETE history silently.
+TAMPER_TARGET_POLICIES = [
+    ("core", "audit_log", "audit_log_admin_all"),
+    ("core", "ai_query_log", "ai_query_log_admin_all"),
+]
+
+
+def _probe_admin_policy_is_select_only(token: str) -> int:
+    """Assert each admin-overview policy is FOR SELECT (not FOR ALL).
+
+    RED-first: before AUDITFIX-C applies, both policies are cmd='ALL' → FAIL.
+    After apply they are cmd='SELECT' → PASS. Guards against a future
+    migration re-broadening them. (The INSERT path is unaffected — it flows
+    through the separate _authenticated_insert policy with WITH CHECK
+    (actor = auth.uid()), tightened earlier by I1 + D3.)
+    """
+    print(f"\n{'admin policy':<45} {'cmd':<10} {'status'}")
+    print("-" * 65)
+    failures = 0
+    for schema, table, policyname in TAMPER_TARGET_POLICIES:
+        q = (
+            "SELECT cmd FROM pg_policies "
+            f"WHERE schemaname = '{schema}' AND tablename = '{table}' "
+            f"AND policyname = '{policyname}';"
+        )
+        res = exec_sql(token, q)
+        if isinstance(res, dict) and res.get("_error"):
+            print(f"{policyname:<45} ERROR: {res['_error']}", file=sys.stderr)
+            failures += 1
+            continue
+        rows = res if isinstance(res, list) else []
+        if not rows:
+            print(f"{policyname:<45} {'missing':<10} FAIL")
+            failures += 1
+            continue
+        cmd = (rows[0].get("cmd") or "").upper()
+        ok = cmd == "SELECT"
+        print(f"{policyname:<45} {cmd:<10} {'PASS' if ok else 'FAIL'}")
+        if not ok:
             failures += 1
     return failures
 
