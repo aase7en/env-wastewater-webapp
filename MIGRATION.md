@@ -298,6 +298,21 @@ The binding rules below still apply.
 
 ### In-progress claims
 
+> **Infra audit (caching + logging) done 2026-08-09** — full sweep of
+> every cache layer (SW, HTTP headers, Vite hashing, localStorage,
+> polling, Realtime, PostgREST, materialized views, Edge Functions) and
+> every logging layer (DB audit triggers, AI query log, frontend console,
+> Supabase platform logs, rate limiting, UX analytics). Findings + ranked
+> recommendations in `reports/infra-audit-2026-08.md`. **3 P1 gaps that
+> should land before any wider rollout**: (1) `core.ai_provider` has no
+> audit trigger despite a code comment claiming it does — admin key
+> changes leave no trace; (2) `core.attachment` (regulation PDF swap)
+> untriggered; (3) AI-SQL rejected queries (whitelist + PHI filter) log
+> nothing — probing is invisible. Plus P2 tamper-evidence (admin
+> `FOR ALL` on `audit_log` allows silent rewrite), SW no-bump, no
+> ErrorBoundary, no React Query, no source maps. Not blocking Track F
+> (Codex) or current ops — flagged for next Track Z chunk decision.
+
 | Chunk | Agent | Claimed | Scope (files) |
 |---|---|---|---|
 | ~~OPT-HYGIENE~~ | GLM | 2026-08-07 | done — see close-note below |
