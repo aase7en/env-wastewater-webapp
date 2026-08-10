@@ -14,7 +14,7 @@
  * useThresholdAlerts) verbatim — poll 60s + window focus / visibility
  * refresh (NOT realtime; free-tier discipline).
  */
-import { useCallback, useEffect, useRef, useState } from "react";
+import { useQuery } from "@tanstack/react-query";
 import { supabase } from "../supabase";
 
 export interface PendingUser {
@@ -88,15 +88,12 @@ export async function countPendingUsers(): Promise<number> {
  * the resulting state change within pollMs.
  */
 export function usePendingUsers(pollMs = 60_000) {
-  const [users, setUsers] = useState<PendingUser[]>([]);
-  const [count, setCount] = useState(0);
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState<string | null>(null);
-  // useRef to keep the interval stable across renders without re-subscribing.
-  const timer = useRef<ReturnType<typeof setInterval> | null>(null);
-
-  const refresh = useCallback(async () => {
-    try {
+  // EQ-3 (2026-08-11): polling + focus/visibility replaced by React Query's
+  // refetchInterval + refetchOnWindowFocus (the latter is set globally in
+  // lib/query-client.ts).
+  const q = useQuery({
+    queryKey: ["pending-users", 10] as const,
+    queryFn: async () => {
       const [rows, n] = await Promise.all([
         // Dropdown preview: oldest-first, limit 10 (the page shows the full queue).
         supabase
@@ -112,34 +109,16 @@ export function usePendingUsers(pollMs = 60_000) {
           }),
         countPendingUsers(),
       ]);
-      setUsers(rows);
-      setCount(n);
-      setError(null);
-    } catch (e) {
-      setError(e instanceof Error ? e.message : String(e));
-    } finally {
-      setLoading(false);
-    }
-  }, []);
+      return { rows, n };
+    },
+    refetchInterval: pollMs,
+  });
 
-  // Initial + interval + focus/visibility refresh.
-  useEffect(() => {
-    refresh();
-    timer.current = setInterval(refresh, pollMs);
-
-    const onFocus = () => refresh();
-    const onVisibility = () => {
-      if (document.visibilityState === "visible") refresh();
-    };
-    window.addEventListener("focus", onFocus);
-    document.addEventListener("visibilitychange", onVisibility);
-
-    return () => {
-      if (timer.current) clearInterval(timer.current);
-      window.removeEventListener("focus", onFocus);
-      document.removeEventListener("visibilitychange", onVisibility);
-    };
-  }, [refresh, pollMs]);
-
-  return { users, count, loading, error, refresh };
+  return {
+    users: q.data?.rows ?? [],
+    count: q.data?.n ?? 0,
+    loading: q.isLoading,
+    error: q.error?.message ?? null,
+    refresh: () => q.refetch(),
+  };
 }

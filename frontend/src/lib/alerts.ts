@@ -19,7 +19,8 @@
  *     (free-tier discipline, deliberately deferred)
  */
 
-import { useCallback, useEffect, useRef, useState } from "react";
+import { useCallback, useEffect, useState } from "react";
+import { useQuery } from "@tanstack/react-query";
 import { supabase } from "./supabase";
 
 // ─── Types ───────────────────────────────────────────────────────────────
@@ -90,47 +91,38 @@ export async function markAlertRead(id: string): Promise<void> {
  * sets read_at) so the UI reacts without waiting for the next poll.
  */
 export function useThresholdAlerts(pollMs = 60_000) {
+  // EQ-3 (2026-08-11): polling + focus/visibility replaced by React Query's
+  // refetchInterval + refetchOnWindowFocus (the latter is set globally in
+  // lib/query-client.ts). The previous manual setInterval + addEventListener
+  // is deleted.
+  //
+  // markRead's optimistic update lives in this hook for now (EQ-4 will port
+  // it to useMutation with queryClient.setQueryData cache writes).
   const [alerts, setAlerts] = useState<ThresholdAlert[]>([]);
   const [unread, setUnread] = useState(0);
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState<string | null>(null);
-  // useRef to keep the interval stable across renders without re-subscribing.
-  const timer = useRef<ReturnType<typeof setInterval> | null>(null);
 
-  const refresh = useCallback(async () => {
-    try {
+  const q = useQuery({
+    queryKey: ["threshold-alerts", 20] as const,
+    queryFn: async () => {
       const [rows, n] = await Promise.all([
         fetchThresholdAlerts(20),
         countUnreadAlerts(),
       ]);
-      setAlerts(rows);
-      setUnread(n);
-      setError(null);
-    } catch (e) {
-      setError(e instanceof Error ? e.message : String(e));
-    } finally {
-      setLoading(false);
-    }
-  }, []);
+      return { rows, n };
+    },
+    refetchInterval: pollMs,
+  });
 
-  // Initial + interval + focus/visibility refresh.
+  // Sync query data into local state so markRead can update optimistically.
+  // (EQ-4 will replace this with queryClient.setQueryData.)
   useEffect(() => {
-    refresh();
-    timer.current = setInterval(refresh, pollMs);
+    if (q.data) {
+      setAlerts(q.data.rows);
+      setUnread(q.data.n);
+    }
+  }, [q.data]);
 
-    const onFocus = () => refresh();
-    const onVisibility = () => {
-      if (document.visibilityState === "visible") refresh();
-    };
-    window.addEventListener("focus", onFocus);
-    document.addEventListener("visibilitychange", onVisibility);
-
-    return () => {
-      if (timer.current) clearInterval(timer.current);
-      window.removeEventListener("focus", onFocus);
-      document.removeEventListener("visibilitychange", onVisibility);
-    };
-  }, [refresh, pollMs]);
+  const refresh = useCallback(() => q.refetch(), [q]);
 
   /** Mark one alert read — optimistic local update + server write. */
   const markRead = useCallback(async (id: string) => {
@@ -152,5 +144,12 @@ export function useThresholdAlerts(pollMs = 60_000) {
     }
   }, [refresh]);
 
-  return { alerts, unread, loading, error, refresh, markRead };
+  return {
+    alerts,
+    unread,
+    loading: q.isLoading,
+    error: q.error?.message ?? null,
+    refresh,
+    markRead,
+  };
 }

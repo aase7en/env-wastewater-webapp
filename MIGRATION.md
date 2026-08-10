@@ -321,6 +321,24 @@ The binding rules below still apply.
 | ~~AUDITFIX-B~~ | GLM | 2026-08-10 | done — see close-note below |
 | ~~EQ-1~~ | GLM | 2026-08-11 | done — see close-note below |
 | ~~EQ-2~~ | GLM | 2026-08-11 | done — see close-note below |
+| ~~EQ-3~~ | GLM | 2026-08-11 | done — see close-note below |
+
+> **EQ-3 GLM execute done 2026-08-11** — converted the 2 polling hooks
+> (`useThresholdAlerts` in `alerts.ts`, `usePendingUsers` in
+> `admin/users.ts`) from manual `setInterval` + `window.focus` +
+> `document.visibilitychange` listeners to React Query's
+> `refetchInterval: pollMs` + the global `refetchOnWindowFocus: true`
+> set in EQ-1's `query-client.ts`. ~30 lines of manual timer/focus
+> plumbing deleted per hook.
+> `useThresholdAlerts` still holds local `alerts`/`unread` state for
+> `markRead`'s optimistic update (synced via `useEffect` watching
+> `q.data`) — EQ-4 will port `markRead` to `useMutation` +
+> `queryClient.setQueryData` and remove the local state entirely.
+> `usePendingUsers` is now stateless (just returns query fields).
+> **3 unused hooks (useUpcomingSafetyChecks, useAdminProviders,
+> useRepairRequests) deliberately NOT deleted** — definitions only, no
+> callers, but kept for API stability in case a future page wants them.
+> Build ✅, Vitest 138/138.
 
 > **EQ-2 GLM execute done 2026-08-11** — migrated 15 mechanical read
 > hooks across 12 lib files to `@tanstack/react-query`. Caller-facing
