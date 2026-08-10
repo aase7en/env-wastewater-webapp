@@ -323,6 +323,31 @@ The binding rules below still apply.
 | ~~EQ-2~~ | GLM | 2026-08-11 | done — see close-note below |
 | ~~EQ-3~~ | GLM | 2026-08-11 | done — see close-note below |
 | ~~EQ-4~~ | GLM | 2026-08-11 | done — see close-note below |
+| ~~EQ-5~~ | GLM | 2026-08-11 | done — see close-note below |
+
+> **EQ-5 GLM execute done 2026-08-11** — ported `useSensorFeed` to
+> react-query while preserving its incremental realtime cache updates.
+> The initial fetch (sensors + per-sensor seed samples) is now a single
+> `useQuery({ queryKey: ['sensor-feed', limit] })`. Realtime INSERT
+> events on `wastewater.sensor_reading` still arrive via the same
+> Supabase channel; on each event, the hook calls
+> `qc.setQueryData(['sensor-feed', limit], prev => { prepend + cap })`
+> — preserving the exact rolling-window semantics the prior
+> `setSamplesBySensor` callback had. The `connected` flag stays in
+> local `useState` (channel state, not query state).
+>
+> `useCarbonRollupRealtime` (carbon-rollup.ts) deliberately KEPT — not
+> dead code despite no caller today; it's a foundation for
+> CarbonRollupPage to opt into realtime when ready, and deleting it
+> would lose the resilience backstop (10s channel-state poll + refetch).
+> Migrating it to react-query's `queryClient.invalidateQueries` on
+> channel event would be a clean follow-up but is out of EQ scope
+> (no caller = no urgency).
+>
+> **EQ series complete (5/5 chunks)**. All read hooks (~25), mutations
+> (3), optimistic UI sites (2: markRead + setVisibility), polling (2),
+> and realtime (1 active, 1 dormant) are now on react-query. Build ✅,
+> Vitest 138/138 across the series.
 
 > **EQ-4 GLM execute done 2026-08-11** — ported the 3 reading mutations
 > + 2 optimistic UI sites to react-query. The caller-facing shapes are
