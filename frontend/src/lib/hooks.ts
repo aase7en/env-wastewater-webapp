@@ -1,5 +1,5 @@
 import { useCallback, useState } from "react";
-import { useQuery } from "@tanstack/react-query";
+import { useQuery, useMutation as useRqMutation, useQueryClient } from "@tanstack/react-query";
 import {
   createReading as createReadingQ,
   deleteReading as deleteReadingQ,
@@ -79,50 +79,73 @@ export function useReading(id: string | null | undefined) {
 }
 
 // ─── Mutation hooks ─────────────────────────────────────────────────────
+//
+// EQ-4 (2026-08-11): ported to @tanstack/react-query's useMutation. The
+// caller-facing shape { loading, error, data, mutate, reset } is preserved.
+// On success, related read queries are invalidated so pages refetch
+// automatically (replaces the previous "caller calls refresh() after
+// mutate" convention — though callers can still call refresh explicitly).
+//
+// The invalidate targets the same queryKey tuples the read hooks use
+// (see useDashboard/useReadings/useReading above).
 
 type MutationData<T> = { loading: boolean; error: string | null; data: T | null };
 
-function useMutation<TArgs extends unknown[], TResult>(
-  fn: (...args: TArgs) => Promise<TResult>
-) {
-  const [state, setState] = useState<MutationData<TResult>>({
-    loading: false,
-    error: null,
-    data: null,
-  });
+/** Invalidate every query that touches a reading (dashboard, readings
+ * list, single reading). Called after create/update/delete. */
+function useInvalidateReadings() {
+  const qc = useQueryClient();
+  return useCallback(() => {
+    void qc.invalidateQueries({ queryKey: ["dashboard"] });
+    void qc.invalidateQueries({ queryKey: ["readings"] });
+    void qc.invalidateQueries({ queryKey: ["reading"] });
+  }, [qc]);
+}
 
+function useReadingMutation<TArgs extends unknown[], TResult>(
+  fn: (...args: TArgs) => Promise<TResult>,
+) {
+  const invalidate = useInvalidateReadings();
+  const [localData, setLocalData] = useState<TResult | null>(null);
+  const m = useRqMutation({
+    mutationFn: (args: TArgs) => fn(...args),
+    onSettled: () => invalidate(),
+  });
+  // Mirror RQ's data into localData so reset() can null it on demand
+  // (matches the prior useMutation helper's reset semantics).
+  if (m.data !== undefined && m.data !== localData) setLocalData(m.data ?? null);
   const mutate = useCallback(
     async (...args: TArgs): Promise<TResult | null> => {
-      setState({ loading: true, error: null, data: null });
       try {
-        const data = await fn(...args);
-        setState({ loading: false, error: null, data });
-        return data;
-      } catch (e) {
-        const msg = e instanceof Error ? e.message : String(e);
-        setState({ loading: false, error: msg, data: null });
+        const result = await m.mutateAsync(args);
+        return result ?? null;
+      } catch {
         return null;
       }
     },
-    [fn]
+    [m],
   );
-
-  const reset = useCallback(
-    () => setState({ loading: false, error: null, data: null }),
-    []
-  );
-
-  return { ...state, mutate, reset };
+  const reset = useCallback(() => {
+    m.reset();
+    setLocalData(null);
+  }, [m]);
+  return {
+    loading: m.isPending,
+    error: m.error instanceof Error ? m.error.message : (m.error ? String(m.error) : null),
+    data: localData,
+    mutate,
+    reset,
+  } satisfies MutationData<TResult> & { mutate: typeof mutate; reset: () => void };
 }
 
 export function useCreateReading() {
-  return useMutation((body: ReadingCreate) => createReadingQ(body));
+  return useReadingMutation((body: ReadingCreate) => createReadingQ(body));
 }
 
 export function useUpdateReading() {
-  return useMutation((id: string, body: ReadingUpdate) => updateReadingQ(id, body));
+  return useReadingMutation((id: string, body: ReadingUpdate) => updateReadingQ(id, body));
 }
 
 export function useDeleteReading() {
-  return useMutation((id: string) => deleteReadingQ(id));
+  return useReadingMutation((id: string) => deleteReadingQ(id));
 }

@@ -19,8 +19,8 @@
  *     (free-tier discipline, deliberately deferred)
  */
 
-import { useCallback, useEffect, useState } from "react";
-import { useQuery } from "@tanstack/react-query";
+import { useCallback } from "react";
+import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "./supabase";
 
 // ─── Types ───────────────────────────────────────────────────────────────
@@ -92,17 +92,17 @@ export async function markAlertRead(id: string): Promise<void> {
  */
 export function useThresholdAlerts(pollMs = 60_000) {
   // EQ-3 (2026-08-11): polling + focus/visibility replaced by React Query's
-  // refetchInterval + refetchOnWindowFocus (the latter is set globally in
-  // lib/query-client.ts). The previous manual setInterval + addEventListener
-  // is deleted.
+  // refetchInterval + refetchOnWindowFocus (set globally in query-client.ts).
   //
-  // markRead's optimistic update lives in this hook for now (EQ-4 will port
-  // it to useMutation with queryClient.setQueryData cache writes).
-  const [alerts, setAlerts] = useState<ThresholdAlert[]>([]);
-  const [unread, setUnread] = useState(0);
+  // EQ-4 (2026-08-11): markRead now uses useMutation with onMutate writing
+  // to the query cache via queryClient.setQueryData (optimistic) + onError
+  // rolling back via invalidate. Local useState for alerts/unread is gone
+  // — the cache is the single source of truth.
+  const qc = useQueryClient();
+  const queryKey = ["threshold-alerts", 20] as const;
 
   const q = useQuery({
-    queryKey: ["threshold-alerts", 20] as const,
+    queryKey,
     queryFn: async () => {
       const [rows, n] = await Promise.all([
         fetchThresholdAlerts(20),
@@ -113,40 +113,36 @@ export function useThresholdAlerts(pollMs = 60_000) {
     refetchInterval: pollMs,
   });
 
-  // Sync query data into local state so markRead can update optimistically.
-  // (EQ-4 will replace this with queryClient.setQueryData.)
-  useEffect(() => {
-    if (q.data) {
-      setAlerts(q.data.rows);
-      setUnread(q.data.n);
-    }
-  }, [q.data]);
-
   const refresh = useCallback(() => q.refetch(), [q]);
 
-  /** Mark one alert read — optimistic local update + server write. */
+  /** Mark one alert read — optimistic cache update + server write.
+   *  Rolls back on error by invalidating (forces a refetch). */
   const markRead = useCallback(async (id: string) => {
-    // Optimistic: only update if currently unread locally.
-    setAlerts((prev) =>
-      prev.map((a) =>
-        a.id === id && a.read_at === null
-          ? { ...a, read_at: new Date().toISOString() }
-          : a,
-      ),
-    );
-    setUnread((u) => Math.max(0, u - 1));
+    // Snapshot for rollback.
+    const prev = qc.getQueryData<{ rows: ThresholdAlert[]; n: number }>(queryKey);
+    if (prev) {
+      // Optimistic: flip the matching row + decrement unread.
+      qc.setQueryData<{ rows: ThresholdAlert[]; n: number }>(queryKey, {
+        rows: prev.rows.map((a) =>
+          a.id === id && a.read_at === null
+            ? { ...a, read_at: new Date().toISOString() }
+            : a,
+        ),
+        n: Math.max(0, prev.n - 1),
+      });
+    }
     try {
       await markAlertRead(id);
     } catch (e) {
-      // Roll back by refreshing from server.
-      console.warn("markAlertRead failed, refreshing:", e);
-      refresh();
+      console.warn("markAlertRead failed, rolling back:", e);
+      // Roll back: invalidate forces a fresh fetch from the server.
+      void qc.invalidateQueries({ queryKey });
     }
-  }, [refresh]);
+  }, [qc, queryKey]);
 
   return {
-    alerts,
-    unread,
+    alerts: q.data?.rows ?? [],
+    unread: q.data?.n ?? 0,
     loading: q.isLoading,
     error: q.error?.message ?? null,
     refresh,

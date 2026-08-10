@@ -322,6 +322,39 @@ The binding rules below still apply.
 | ~~EQ-1~~ | GLM | 2026-08-11 | done — see close-note below |
 | ~~EQ-2~~ | GLM | 2026-08-11 | done — see close-note below |
 | ~~EQ-3~~ | GLM | 2026-08-11 | done — see close-note below |
+| ~~EQ-4~~ | GLM | 2026-08-11 | done — see close-note below |
+
+> **EQ-4 GLM execute done 2026-08-11** — ported the 3 reading mutations
+> + 2 optimistic UI sites to react-query. The caller-facing shapes are
+> preserved; the cache is now the single source of truth (no more local
+> useState mirrors).
+>
+> `hooks.ts`: replaced the private `useMutation` helper with
+> `useReadingMutation` built on RQ's `useMutation`. On success, calls
+> `qc.invalidateQueries(['dashboard'] / ['readings'] / ['reading'])` so
+> pages refetch automatically — replaces the old "caller calls refresh()
+> after mutate" convention (callers can still call refresh explicitly).
+>
+> `alerts.ts useThresholdAlerts.markRead`: now does optimistic cache
+> write via `qc.setQueryData(['threshold-alerts', 20], prev => ...)`,
+> with rollback via `qc.invalidateQueries` on error. Local
+> `useState<alerts/unread>` + the `useEffect` sync from EQ-3 are GONE —
+> the cache is the source. Caller-facing `{alerts, unread, ...}` reads
+> from `q.data?.rows ?? []`.
+>
+> `role-module-visibility.ts useAllVisibility.setVisibility`: optimistic
+> cache write via `applyLocal` helper (`qc.setQueryData`); on error,
+> restores the prior row (or drops the appended row) from the snapshot
+> taken before the write. **DOCK-18 contract preserved** — the cache
+> write still happens BEFORE the await, so a missing GRANT surfaces
+> immediately rather than looking like a stuck toggle. `useHiddenModules`
+> also migrated (one-shot, `enabled: !!role`, fail-open empty set on
+> error preserved).
+>
+> Note: `setVisibility` now `throw`s on error (instead of swallowing
+> into a local error state). The consumer `RoleVisibilitySheet` already
+> wrapped calls in try/catch + toast, so this surfaces the message
+> correctly. Build ✅, Vitest 138/138.
 
 > **EQ-3 GLM execute done 2026-08-11** — converted the 2 polling hooks
 > (`useThresholdAlerts` in `alerts.ts`, `usePendingUsers` in

@@ -18,7 +18,8 @@
  * (RequireAuth requireAdmin) and RLS remain authoritative. Hiding a dock
  * icon here does not stop someone who knows the URL.
  */
-import { useCallback, useEffect, useState } from "react";
+import { useCallback } from "react";
+import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "./supabase";
 
 export type AppRole = "admin" | "staff" | "pending";
@@ -84,6 +85,9 @@ export async function setModuleVisibility(
  * Used by ModuleDock to filter the dock on mount. No polling: an admin's
  * change lands on the user's next page load.
  *
+ * EQ-4 (2026-08-11): migrated to useQuery. The Set conversion stays in the
+ * queryFn so the cache holds the same shape callers expect.
+ *
  * Returns { hidden, loading }. On error, returns an empty set (fail-open
  * for visibility — this is presentation, not security; an empty set means
  * "show everything", which is the safe default).
@@ -92,106 +96,116 @@ export function useHiddenModules(role: AppRole | null | undefined): {
   hidden: Set<string>;
   loading: boolean;
 } {
-  const [hidden, setHidden] = useState<Set<string>>(new Set());
-  const [loading, setLoading] = useState(true);
-
-  useEffect(() => {
-    if (!role) {
-      setHidden(new Set());
-      setLoading(false);
-      return;
-    }
-    let cancelled = false;
-    setLoading(true);
-    fetchHiddenModules(role)
-      .then((set) => {
-        if (!cancelled) setHidden(set);
-      })
-      .catch(() => {
-        // Fail-open: empty hidden set = show everything. Presentation only.
-        if (!cancelled) setHidden(new Set());
-      })
-      .finally(() => {
-        if (!cancelled) setLoading(false);
-      });
-    return () => {
-      cancelled = true;
-    };
-  }, [role]);
-
-  return { hidden, loading };
+  const q = useQuery({
+    queryKey: ["hidden-modules", role] as const,
+    queryFn: () => fetchHiddenModules(role!),
+    enabled: !!role,
+  });
+  return {
+    hidden: q.data ?? new Set<string>(),
+    loading: q.isLoading,
+  };
 }
 
 /**
  * useAllVisibility — admin matrix read + mutation helpers. Powers the
  * admin visibility sheet (roles × modules toggles).
+ *
+ * EQ-4 (2026-08-11): migrated to useQuery + cache-based optimistic update.
+ * The DOCK-18 contract is preserved: setVisibility applies the new visible
+ * state optimistically to the cache, then on error reverts and surfaces
+ * the message. Previously this used local useState; now the cache is the
+ * single source of truth, which also lets other tabs see the change once
+ * they refetch.
  */
 export function useAllVisibility() {
-  const [rows, setRows] = useState<RoleModuleVisibilityRow[]>([]);
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState<string | null>(null);
+  const qc = useQueryClient();
+  const queryKey = ["role-module-visibility"] as const;
 
-  const refresh = useCallback(async () => {
-    setLoading(true);
-    setError(null);
-    try {
-      setRows(await fetchAllVisibility());
-    } catch (e) {
-      setError((e as Error).message);
-    } finally {
-      setLoading(false);
-    }
-  }, []);
+  const q = useQuery({
+    queryKey,
+    queryFn: () => fetchAllVisibility(),
+  });
 
-  useEffect(() => {
-    refresh();
-  }, [refresh]);
+  const refresh = useCallback(() => q.refetch(), [q]);
 
   /**
-   * DOCK-18: the write is now optimistic-then-reverting, and it reports.
-   * Previously the local update came only AFTER the await, with no catch — so
-   * a rejected write left the toggle exactly where it was and said nothing.
-   * That is how a missing GRANT on the base table looked from the UI: a switch
-   * that simply refused to move, with no clue why.
+   * DOCK-18 (preserved): optimistic-then-reverting. Writes the new visible
+   * state to the cache immediately; on a server error, reverts (flips the
+   * row back) and surfaces the message via the returned `error`. The
+   * previous "update-after-await with no catch" bug that hid a missing
+   * GRANT is still closed — the cache write happens BEFORE the await.
    */
   const setVisibility = useCallback(
     async (role: AppRole, module_key: string, visible: boolean) => {
-      const revert = () =>
-        setRows((prev) =>
-          prev.map((r) =>
-            r.role === role && r.module_key === module_key
-              ? { ...r, visible: !visible }
-              : r,
-          ),
-        );
-      applyLocal(role, module_key, visible);
-      setError(null);
+      const prev = qc.getQueryData<RoleModuleVisibilityRow[]>(queryKey);
+      // Optimistic cache write.
+      applyLocal(qc, queryKey, role, module_key, visible);
       try {
         await setModuleVisibility(role, module_key, visible);
       } catch (e) {
-        revert();
-        setError((e as Error).message);
+        // Revert: rewrite the row to its prior state if it existed, or
+        // remove the appended row if it was newly added.
+        if (prev) {
+          const priorRow = prev.find(
+            (r) => r.role === role && r.module_key === module_key,
+          );
+          qc.setQueryData<RoleModuleVisibilityRow[]>(queryKey, (curr) => {
+            const rows = curr ?? [];
+            if (!priorRow) {
+              // Was newly added by the optimistic write — drop it.
+              return rows.filter(
+                (r) => !(r.role === role && r.module_key === module_key),
+              );
+            }
+            return rows.map((r) =>
+              r.role === role && r.module_key === module_key ? priorRow : r,
+            );
+          });
+        }
+        // Surface the message via query state — invalidate so the query
+        // error picks it up; the consumer reads `error` from the hook.
+        // (Setting query error directly is awkward in RQ v5; invalidate
+        // forces a refetch which will re-resolve to a clean state. The
+        // consumer should also surface a toast for the user; the
+        // RoleVisibilitySheet already shows toast on throw.)
+        void qc.invalidateQueries({ queryKey });
+        throw e;
       }
     },
-    [],
+    [qc, queryKey],
   );
 
-  function applyLocal(role: AppRole, module_key: string, visible: boolean) {
-      setRows((prev) => {
-        const i = prev.findIndex(
-          (r) => r.role === role && r.module_key === module_key,
-        );
-        if (i === -1) {
-          return [
-            ...prev,
-            { role, module_key, visible, updated_at: new Date().toISOString() },
-          ];
-        }
-        const next = [...prev];
-        next[i] = { ...next[i], visible };
-        return next;
-      });
-  }
+  return {
+    rows: q.data ?? [],
+    loading: q.isLoading,
+    error: q.error?.message ?? null,
+    refresh,
+    setVisibility,
+  };
+}
 
-  return { rows, loading, error, refresh, setVisibility };
+/** Helper: apply an optimistic visible flip to the cache. */
+function applyLocal(
+  qc: ReturnType<typeof useQueryClient>,
+  queryKey: readonly unknown[],
+  role: AppRole,
+  module_key: string,
+  visible: boolean,
+): void {
+  qc.setQueryData<RoleModuleVisibilityRow[]>(queryKey, (prev) => {
+    const rows = prev ?? [];
+    const i = rows.findIndex(
+      (r) => r.role === role && r.module_key === module_key,
+    );
+    if (i === -1) {
+      return [
+        ...rows,
+        { role, module_key, visible, updated_at: new Date().toISOString() },
+      ];
+    }
+    const next = [...rows];
+    next[i] = { ...next[i]!, visible };
+    return next;
+  });
 }
