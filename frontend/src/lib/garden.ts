@@ -2,7 +2,7 @@
  * MOD-GA — garden module data layer.
  * CRUD over `garden.work_round`. Scope 1 carbon feed via fuel_used_l.
  */
-import { useEffect, useState } from "react";
+import { useQuery } from "@tanstack/react-query";
 import { supabase } from "./supabase";
 
 export interface GardenWorkRound {
@@ -53,18 +53,14 @@ export async function deleteGardenRound(id: string): Promise<void> {
 }
 
 export function useGardenRounds(limit = 30) {
-  const [data, setData] = useState<GardenWorkRound[]>([]);
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState<string | null>(null);
-  const [nonce, setNonce] = useState(0);
-  const refresh = () => setNonce((n) => n + 1);
-
-  useEffect(() => {
-    fetchGardenRounds(limit)
-      .then((rows) => { setData(rows); setError(null); })
-      .catch((e: Error) => setError(e.message))
-      .finally(() => setLoading(false));
-  }, [limit, nonce]);
-
-  return { data, loading, error, refresh };
+  const q = useQuery({
+    queryKey: ["garden-rounds", limit] as const,
+    queryFn: () => fetchGardenRounds(limit),
+  });
+  return {
+    data: q.data ?? [],
+    loading: q.isLoading,
+    error: q.error?.message ?? null,
+    refresh: () => q.refetch(),
+  };
 }

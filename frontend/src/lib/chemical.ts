@@ -3,7 +3,7 @@
  * CRUD over `chemical.master` (catalog) + `chemical.movement` (in/out log).
  * Balance auto-recomputed by fn_recompute_balance trigger (MOD-batch).
  */
-import { useEffect, useState } from "react";
+import { useQuery } from "@tanstack/react-query";
 import { supabase } from "./supabase";
 
 export interface ChemicalMaster {
@@ -101,37 +101,29 @@ export async function deleteChemicalMovement(id: string): Promise<void> {
 // ─── Hooks ───────────────────────────────────────────────────────────────
 
 export function useChemicalStock() {
-  const [data, setData] = useState<ChemicalMaster[]>([]);
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState<string | null>(null);
-  const [nonce, setNonce] = useState(0);
-  const refresh = () => setNonce((n) => n + 1);
-
-  useEffect(() => {
-    fetchChemicalStock()
-      .then((rows) => { setData(rows); setError(null); })
-      .catch((e: Error) => setError(e.message))
-      .finally(() => setLoading(false));
-  }, [nonce]);
-
-  return { data, loading, error, refresh };
+  const q = useQuery({
+    queryKey: ["chemical-stock"] as const,
+    queryFn: () => fetchChemicalStock(),
+  });
+  return {
+    data: q.data ?? [],
+    loading: q.isLoading,
+    error: q.error?.message ?? null,
+    refresh: () => q.refetch(),
+  };
 }
 
 export function useChemicalMovements(limit = 50) {
-  const [data, setData] = useState<ChemicalMovement[]>([]);
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState<string | null>(null);
-  const [nonce, setNonce] = useState(0);
-  const refresh = () => setNonce((n) => n + 1);
-
-  useEffect(() => {
-    fetchChemicalMovements(limit)
-      .then((rows) => { setData(rows); setError(null); })
-      .catch((e: Error) => setError(e.message))
-      .finally(() => setLoading(false));
-  }, [limit, nonce]);
-
-  return { data, loading, error, refresh };
+  const q = useQuery({
+    queryKey: ["chemical-movements", limit] as const,
+    queryFn: () => fetchChemicalMovements(limit),
+  });
+  return {
+    data: q.data ?? [],
+    loading: q.isLoading,
+    error: q.error?.message ?? null,
+    refresh: () => q.refetch(),
+  };
 }
 
 /**

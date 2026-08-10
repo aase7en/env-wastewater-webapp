@@ -3,7 +3,7 @@
  * CRUD over `garbage.collection_log`. Legacy data migration MIG-WA is
  * BLOCKED on AppSheet CSV export (separate chunk).
  */
-import { useEffect, useState } from "react";
+import { useQuery } from "@tanstack/react-query";
 import { supabase } from "./supabase";
 
 export interface GarbageLog {
@@ -54,18 +54,14 @@ export async function deleteGarbageLog(id: string): Promise<void> {
 }
 
 export function useGarbageLogs(limit = 30) {
-  const [data, setData] = useState<GarbageLog[]>([]);
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState<string | null>(null);
-  const [nonce, setNonce] = useState(0);
-  const refresh = () => setNonce((n) => n + 1);
-
-  useEffect(() => {
-    fetchGarbageLogs(limit)
-      .then((rows) => { setData(rows); setError(null); })
-      .catch((e: Error) => setError(e.message))
-      .finally(() => setLoading(false));
-  }, [limit, nonce]);
-
-  return { data, loading, error, refresh };
+  const q = useQuery({
+    queryKey: ["garbage-logs", limit] as const,
+    queryFn: () => fetchGarbageLogs(limit),
+  });
+  return {
+    data: q.data ?? [],
+    loading: q.isLoading,
+    error: q.error?.message ?? null,
+    refresh: () => q.refetch(),
+  };
 }

@@ -320,6 +320,24 @@ The binding rules below still apply.
 | ~~AUDITFIX-C~~ | GLM | 2026-08-10 | done — see close-note below |
 | ~~AUDITFIX-B~~ | GLM | 2026-08-10 | done — see close-note below |
 | ~~EQ-1~~ | GLM | 2026-08-11 | done — see close-note below |
+| ~~EQ-2~~ | GLM | 2026-08-11 | done — see close-note below |
+
+> **EQ-2 GLM execute done 2026-08-11** — migrated 15 mechanical read
+> hooks across 12 lib files to `@tanstack/react-query`. Caller-facing
+> shape `{ data, loading, error, refresh }` preserved exactly so no page
+> changes required. Files: `hooks.ts` (4: useDashboard/useReadings/
+> useEquipment/useReading), `carbon.ts` (useCarbonMonthly), `carbon-rollup.ts`
+> (useCarbonRollup), `repair.ts` (useRepairRequests), `chemical.ts` (3:
+> stock/movements/low-stock-composite), `building.ts`, `fuel.ts`,
+> `garbage.ts`, `garden.ts`, `food.ts`, `water-supply.ts`, `regulations.ts`,
+> `overview.ts` (composite: useOverviewCarbon + useLatestReadingDate as
+> separate useQuery — F7 `enabled: !today` for the conditional fetch).
+> Each query gets a stable `queryKey` so future cache invalidation works.
+> React Query's staleTime 30s (set in EQ-1) replaces the prior nonce-
+> based manual refresh as the cache floor — pages that need fresher
+> data still get `refresh = () => q.refetch()`. Build ✅, Vitest 138/138.
+> Next: EQ-3 migrates 2 polling hooks (useThresholdAlerts/usePendingUsers)
+> to `refetchInterval` + deletes 3 unused hooks.
 
 > **EQ-1 GLM execute done 2026-08-11** — React Query + ErrorBoundary
 > foundation (5-chunk EQ series, chunk 1 of 5). **Installs

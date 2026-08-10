@@ -27,7 +27,7 @@
  *   (policy `carbon_reading_rw` / `carbon_meter_rw`). Read path only here.
  */
 
-import { useEffect, useState } from "react";
+import { useQuery } from "@tanstack/react-query";
 import { supabase } from "./supabase";
 import { momPct, toLocalISODate } from "./utils";
 
@@ -197,21 +197,18 @@ export async function fetchCarbonMonthly(months = 12): Promise<CarbonSummary> {
 
 // ─── Hooks ───────────────────────────────────────────────────────────────
 
-/** useCarbonMonthly — read hook with manual refresh (no polling by default;
- * monthly data changes once a day at most). */
+/** useCarbonMonthly — read hook (EQ-2: migrated to react-query). Monthly
+ * data changes once a day at most; react-query's staleTime handles cache. */
 export function useCarbonMonthly(months = 12) {
-  const [data, setData] = useState<CarbonSummary | null>(null);
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState<string | null>(null);
-
-  useEffect(() => {
-    fetchCarbonMonthly(months)
-      .then((summary) => { setData(summary); setError(null); })
-      .catch((e: Error) => setError(e.message))
-      .finally(() => setLoading(false));
-  }, [months]);
-
-  return { data, loading, error };
+  const q = useQuery({
+    queryKey: ["carbon-monthly", months] as const,
+    queryFn: () => fetchCarbonMonthly(months),
+  });
+  return {
+    data: q.data ?? null,
+    loading: q.isLoading,
+    error: q.error?.message ?? null,
+  };
 }
 
 /**

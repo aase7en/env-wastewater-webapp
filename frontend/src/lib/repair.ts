@@ -21,7 +21,7 @@
  * swallowed by a try/catch. This module intentionally omits it.
  */
 
-import { useCallback, useEffect, useState } from "react";
+import { useQuery } from "@tanstack/react-query";
 import { supabase } from "./supabase";
 
 // ─── Types ───────────────────────────────────────────────────────────────
@@ -115,25 +115,21 @@ export async function resolveRepairRequest(id: string): Promise<void> {
 // ─── Hooks (mirror the style of hooks.ts) ────────────────────────────────
 
 /**
- * useRepairRequests — read hook with refresh. Pass `includeResolved=false`
- * to get only open requests (e.g. for the notification bell).
+ * useRepairRequests — read hook (EQ-2: migrated to react-query). Pass
+ * `includeResolved=false` to get only open requests.
  */
 export function useRepairRequests(
   limit = 50,
   includeResolved = true,
 ) {
-  const [data, setData] = useState<RepairRequest[]>([]);
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState<string | null>(null);
-  const [nonce, setNonce] = useState(0);
-  const refresh = useCallback(() => setNonce((n) => n + 1), []);
-
-  useEffect(() => {
-    fetchRepairRequests(limit, includeResolved)
-      .then((rows) => { setData(rows); setError(null); })
-      .catch((e: Error) => setError(e.message))
-      .finally(() => setLoading(false));
-  }, [limit, includeResolved, nonce]);
-
-  return { data, loading, error, refresh };
+  const q = useQuery({
+    queryKey: ["repair-requests", limit, includeResolved] as const,
+    queryFn: () => fetchRepairRequests(limit, includeResolved),
+  });
+  return {
+    data: q.data ?? [],
+    loading: q.isLoading,
+    error: q.error?.message ?? null,
+    refresh: () => q.refetch(),
+  };
 }

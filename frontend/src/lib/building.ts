@@ -3,7 +3,7 @@
  * CRUD over `building.inspection_round`. repair_needed=true seeds
  * core.repair_request via app-layer (V1b UI) — NOT a SQL trigger.
  */
-import { useEffect, useState } from "react";
+import { useQuery } from "@tanstack/react-query";
 import { supabase } from "./supabase";
 
 export interface BuildingInspection {
@@ -55,18 +55,14 @@ export async function deleteBuildingRound(id: string): Promise<void> {
 }
 
 export function useBuildingRounds(limit = 30) {
-  const [data, setData] = useState<BuildingInspection[]>([]);
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState<string | null>(null);
-  const [nonce, setNonce] = useState(0);
-  const refresh = () => setNonce((n) => n + 1);
-
-  useEffect(() => {
-    fetchBuildingRounds(limit)
-      .then((rows) => { setData(rows); setError(null); })
-      .catch((e: Error) => setError(e.message))
-      .finally(() => setLoading(false));
-  }, [limit, nonce]);
-
-  return { data, loading, error, refresh };
+  const q = useQuery({
+    queryKey: ["building-rounds", limit] as const,
+    queryFn: () => fetchBuildingRounds(limit),
+  });
+  return {
+    data: q.data ?? [],
+    loading: q.isLoading,
+    error: q.error?.message ?? null,
+    refresh: () => q.refetch(),
+  };
 }

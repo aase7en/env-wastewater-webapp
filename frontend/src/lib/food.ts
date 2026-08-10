@@ -7,7 +7,7 @@
  * samples — NOT patient samples. If patient-adjacent samples are added
  * later, they MUST NOT route through AI providers (ZCode/GLM China law).
  */
-import { useEffect, useState } from "react";
+import { useQuery } from "@tanstack/react-query";
 import { supabase } from "./supabase";
 import { toLocalISODate } from "./utils";
 
@@ -60,20 +60,16 @@ export async function deleteFoodLabTest(id: string): Promise<void> {
 }
 
 export function useFoodLabTests(limit = 30) {
-  const [data, setData] = useState<FoodLabTest[]>([]);
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState<string | null>(null);
-  const [nonce, setNonce] = useState(0);
-  const refresh = () => setNonce((n) => n + 1);
-
-  useEffect(() => {
-    fetchFoodLabTests(limit)
-      .then((rows) => { setData(rows); setError(null); })
-      .catch((e: Error) => setError(e.message))
-      .finally(() => setLoading(false));
-  }, [limit, nonce]);
-
-  return { data, loading, error, refresh };
+  const q = useQuery({
+    queryKey: ["food-lab-tests", limit] as const,
+    queryFn: () => fetchFoodLabTests(limit),
+  });
+  return {
+    data: q.data ?? [],
+    loading: q.isLoading,
+    error: q.error?.message ?? null,
+    refresh: () => q.refetch(),
+  };
 }
 
 /**

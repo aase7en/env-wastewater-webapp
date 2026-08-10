@@ -10,6 +10,7 @@
  * Scope 3 (other indirect): waste + chemical
  */
 import { useEffect, useState } from "react";
+import { useQuery } from "@tanstack/react-query";
 import { supabase } from "./supabase";
 import { toLocalISODate } from "./utils";
 
@@ -94,18 +95,15 @@ export async function fetchRollup(months = 12): Promise<RollupSummary> {
 }
 
 export function useCarbonRollup(months = 12) {
-  const [data, setData] = useState<RollupSummary | null>(null);
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState<string | null>(null);
-
-  useEffect(() => {
-    fetchRollup(months)
-      .then((d) => { setData(d); setError(null); })
-      .catch((e: Error) => setError(e.message))
-      .finally(() => setLoading(false));
-  }, [months]);
-
-  return { data, loading, error };
+  const q = useQuery({
+    queryKey: ["carbon-rollup", months] as const,
+    queryFn: () => fetchRollup(months),
+  });
+  return {
+    data: q.data ?? null,
+    loading: q.isLoading,
+    error: q.error?.message ?? null,
+  };
 }
 
 /**

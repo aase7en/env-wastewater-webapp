@@ -5,7 +5,7 @@
  * extensions). Pattern mirrors lib/repair.ts / lib/alerts.ts.
  */
 
-import { useEffect, useState } from "react";
+import { useQuery } from "@tanstack/react-query";
 import { supabase } from "./supabase";
 
 export interface WaterSupplyCheck {
@@ -57,18 +57,14 @@ export async function deleteWaterSupplyDaily(id: string): Promise<void> {
 }
 
 export function useWaterSupplyDaily(limit = 30) {
-  const [data, setData] = useState<WaterSupplyCheck[]>([]);
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState<string | null>(null);
-  const [nonce, setNonce] = useState(0);
-  const refresh = () => setNonce((n) => n + 1);
-
-  useEffect(() => {
-    fetchWaterSupplyDaily(limit)
-      .then((rows) => { setData(rows); setError(null); })
-      .catch((e: Error) => setError(e.message))
-      .finally(() => setLoading(false));
-  }, [limit, nonce]);
-
-  return { data, loading, error, refresh };
+  const q = useQuery({
+    queryKey: ["water-supply-daily", limit] as const,
+    queryFn: () => fetchWaterSupplyDaily(limit),
+  });
+  return {
+    data: q.data ?? [],
+    loading: q.isLoading,
+    error: q.error?.message ?? null,
+    refresh: () => q.refetch(),
+  };
 }

@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useQuery } from "@tanstack/react-query";
 import { useDashboard } from "./hooks";
 import { type CarbonMonth } from "./carbon";
 import { fetchLatestReadingDate, fetchOverviewCarbon, type OverviewCarbonRow } from "./supabase-queries";
@@ -13,6 +13,9 @@ import type { DashboardRow } from "./types";
  * `useCarbonMonthly` reads `carbon.reading` directly which is auth-only).
  * Each section carries its own loading/error so one failing source never
  * blanks the whole landing page.
+ *
+ * EQ-2 (2026-08-11): migrated to @tanstack/react-query. Each source is
+ * its own useQuery so failures stay isolated.
  */
 export interface OverviewData {
   water: {
@@ -45,18 +48,11 @@ export interface OverviewData {
  * momPct helper (extracted to lib/utils.ts in UTILS-1).
  */
 function useOverviewCarbon() {
-  const [rows, setRows] = useState<OverviewCarbonRow[] | null>(null);
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState<string | null>(null);
-
-  useEffect(() => {
-    fetchOverviewCarbon()
-      .then((r) => { setRows(r); setError(null); })
-      .catch((e: Error) => setError(e.message))
-      .finally(() => setLoading(false));
-  }, []);
-
-  return { rows, loading, error };
+  const q = useQuery({
+    queryKey: ["overview-carbon"] as const,
+    queryFn: () => fetchOverviewCarbon(),
+  });
+  return { rows: q.data ?? null, loading: q.isLoading, error: q.error?.message ?? null };
 }
 
 /** Convert flat OverviewCarbonRow[] → CarbonMonth[] (latest-first).
@@ -85,13 +81,12 @@ export function useOverview(): OverviewData {
   // F7: when the 14-day window is empty, fetch the actual latest date so the
   // landing card can say "บันทึกล่าสุด <date> (N วันก่อน)" instead of bare
   // "ยังไม่บันทึกวันนี้". Only fetched when today is undefined.
-  const [latestDateAny, setLatestDateAny] = useState<string | null>(null);
-  useEffect(() => {
-    if (today) { setLatestDateAny(null); return; }
-    fetchLatestReadingDate()
-      .then(setLatestDateAny)
-      .catch(() => setLatestDateAny(null));
-  }, [today]);
+  const latestDateQ = useQuery({
+    queryKey: ["latest-reading-date"] as const,
+    queryFn: () => fetchLatestReadingDate(),
+    enabled: !today,
+  });
+  const latestDateAny = today ? null : (latestDateQ.data ?? null);
 
   const months = carbonPub.rows ? toCarbonMonths(carbonPub.rows) : [];
   // rows come latest-first from the query; latestMonth = months[0]

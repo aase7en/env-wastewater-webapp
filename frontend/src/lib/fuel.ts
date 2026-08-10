@@ -5,7 +5,7 @@
  * BLOCKED on AppSheet CSV export.
  * Scope 1 carbon feed — fuel_type maps to carbon.emission_factor.
  */
-import { useEffect, useState } from "react";
+import { useQuery } from "@tanstack/react-query";
 import { supabase } from "./supabase";
 
 export interface FuelLog {
@@ -57,20 +57,16 @@ export async function deleteFuelLog(id: string): Promise<void> {
 }
 
 export function useFuelLogs(limit = 30) {
-  const [data, setData] = useState<FuelLog[]>([]);
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState<string | null>(null);
-  const [nonce, setNonce] = useState(0);
-  const refresh = () => setNonce((n) => n + 1);
-
-  useEffect(() => {
-    fetchFuelLogs(limit)
-      .then((rows) => { setData(rows); setError(null); })
-      .catch((e: Error) => setError(e.message))
-      .finally(() => setLoading(false));
-  }, [limit, nonce]);
-
-  return { data, loading, error, refresh };
+  const q = useQuery({
+    queryKey: ["fuel-logs", limit] as const,
+    queryFn: () => fetchFuelLogs(limit),
+  });
+  return {
+    data: q.data ?? [],
+    loading: q.isLoading,
+    error: q.error?.message ?? null,
+    refresh: () => q.refetch(),
+  };
 }
 
 /**
