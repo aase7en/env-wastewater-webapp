@@ -1,9 +1,11 @@
 import { StrictMode } from "react";
 import { createRoot } from "react-dom/client";
 import { BrowserRouter } from "react-router-dom";
+import { QueryClientProvider } from "@tanstack/react-query";
 import App from "./App";
 import "./index.css";
 import { registerServiceWorker } from "./lib/sw-register";
+import { queryClient } from "./lib/query-client";
 
 // basename = repo subpath on GitHub Pages, "/" in dev.
 // Vite injects import.meta.env.BASE_URL from vite.config.ts.
@@ -26,12 +28,26 @@ if (spaRedirect) {
 }
 
 createRoot(document.getElementById("root")!).render(
-  <StrictMode>
-    <BrowserRouter basename={basename}>
-      <App />
-    </BrowserRouter>
-  </StrictMode>
+  <QueryClientProvider client={queryClient}>
+    <StrictMode>
+      <BrowserRouter basename={basename}>
+        <App />
+      </BrowserRouter>
+    </StrictMode>
+  </QueryClientProvider>
 );
+
+// EQ-1 (2026-08-11): catch promise rejections that escape React's tree —
+// React Query's useQuery/useMutation errors are surfaced via their own
+// `error` state, but a stray `.then()` or an unwrapped fetch in an effect
+// would otherwise vanish silently in prod. Routes to console.error for
+// now; forwarding to an analytics sink waits on the analytics policy
+// decision (reports/infra-audit-2026-08.md #16).
+window.addEventListener("unhandledrejection", (event) => {
+  const reason = event.reason;
+  const msg = reason instanceof Error ? reason.message : String(reason);
+  console.error("unhandledrejection:", msg, reason);
+});
 
 // Register the service worker for offline-capable PWA (P20c). Skipped in
 // dev (HMR proxy conflicts) — only runs in production builds.

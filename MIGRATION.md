@@ -319,6 +319,32 @@ The binding rules below still apply.
 | ~~AUDITFIX-A~~ | GLM | 2026-08-10 | done — see close-note below |
 | ~~AUDITFIX-C~~ | GLM | 2026-08-10 | done — see close-note below |
 | ~~AUDITFIX-B~~ | GLM | 2026-08-10 | done — see close-note below |
+| ~~EQ-1~~ | GLM | 2026-08-11 | done — see close-note below |
+
+> **EQ-1 GLM execute done 2026-08-11** — React Query + ErrorBoundary
+> foundation (5-chunk EQ series, chunk 1 of 5). **Installs
+> `@tanstack/react-query@^5.101`** (React 19-compatible). 3 new files:
+> (1) `lib/query-client.ts` — singleton QueryClient with defaults
+> (staleTime 30s, retry 1, refetchOnWindowFocus true — the last one
+> replaces the manual focus/visibility listeners that useThresholdAlerts
+> + usePendingUsers were running, deleted in EQ-3). Includes
+> `createTestQueryClient()` factory for future *.test.ts files needing
+> `<QueryClientProvider>`.
+> (2) `components/ErrorBoundary.tsx` — class component (React 19 still
+> needs class for componentDidCatch/getDerivedStateFromError). Wraps the
+> whole app inside `<ToastProvider>`. Inner `<ErrorRouteWatcher>` uses
+> `useLocation()` + `key={pathname}` to reset the boundary on route
+> change so a broken route is escapable via the dock. Fallback uses
+> **inline styles** (not className) to stay under Track F/Z lane split
+> — visual polish deferred to Track F. Closes the P2 "no ErrorBoundary"
+> gap from `reports/infra-audit-2026-08.md`.
+> (3) `main.tsx` wraps `<QueryClientProvider>` outermost (before
+> StrictMode) + adds a `window.unhandledrejection` listener that
+> `console.error`s stray promise rejections (forwarding to analytics
+> sink waits on policy #16).
+> Closes the P2 "no error-tracking / no ErrorBoundary" gaps. Build ✅,
+> Vitest 138/138 (no logic added — foundation only; tests added in EQ-2+).
+> Next: EQ-2 migrates 15 mechanical read hooks to `useQuery`.
 
 > **AUDITFIX-B GLM execute done 2026-08-10** — closes the P1
 > "silent AI reject" gap from `reports/infra-audit-2026-08.md` #3 (the

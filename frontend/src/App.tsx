@@ -2,6 +2,7 @@ import { Routes, Route } from "react-router-dom";
 import { lazy, Suspense } from "react";
 import { AuthProvider } from "./components/AuthProvider";
 import { RequireAuth } from "./components/RequireAuth";
+import { ErrorBoundary } from "./components/ErrorBoundary";
 import { ToastProvider } from "./components/ui/Toast";
 import { PageSkeleton } from "./components/ui/Skeleton";
 import { AppShell } from "./components/layout/AppShell";
@@ -61,10 +62,11 @@ const AuditLogPage = lazy(() =>
 export default function App() {
   return (
     <ToastProvider>
-      <AuthProvider>
-        <Routes>
-          {/* Public: login + OAuth callback */}
-          <Route path="/login" element={<AuthPage />} />
+      <ErrorBoundary>
+        <AuthProvider>
+          <Routes>
+            {/* Public: login + OAuth callback */}
+            <Route path="/login" element={<AuthPage />} />
           <Route path="/auth/callback" element={<AuthCallback />} />
           <Route path="/pending-approval" element={<PendingApprovalPage />} />
 
@@ -234,7 +236,8 @@ export default function App() {
             }
           />
         </Routes>
-      </AuthProvider>
+        </AuthProvider>
+      </ErrorBoundary>
     </ToastProvider>
   );
 }
