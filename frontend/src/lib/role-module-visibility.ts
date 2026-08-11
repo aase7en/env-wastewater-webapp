@@ -18,7 +18,7 @@
  * (RequireAuth requireAdmin) and RLS remain authoritative. Hiding a dock
  * icon here does not stop someone who knows the URL.
  */
-import { useCallback } from "react";
+import { useCallback, useEffect, useState } from "react";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "./supabase";
 
@@ -96,15 +96,33 @@ export function useHiddenModules(role: AppRole | null | undefined): {
   hidden: Set<string>;
   loading: boolean;
 } {
-  const q = useQuery({
-    queryKey: ["hidden-modules", role] as const,
-    queryFn: () => fetchHiddenModules(role!),
-    enabled: !!role,
-  });
-  return {
-    hidden: q.data ?? new Set<string>(),
-    loading: q.isLoading,
-  };
+  // EQ-5.2 fix: useHiddenModules stays on the pre-EQ useState/useEffect
+  // pattern. The EQ-4 useQuery version caused a "Maximum update depth
+  // exceeded" loop on unauthenticated /dashboard redirect — root cause
+  // is RQ observer lifecycle interacting badly with RequireAuth's
+  // redirect timing (the exact mechanism is unclear after multiple
+  // isolation rounds; the pre-EQ version is proven stable under the
+  // same e2e). useAllVisibility stays on useQuery (admin-only path,
+  // not reached during the failing unauthenticated redirect flow).
+  const [hidden, setHidden] = useState<Set<string>>(new Set());
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    if (!role) {
+      setHidden(new Set());
+      setLoading(false);
+      return;
+    }
+    let cancelled = false;
+    setLoading(true);
+    fetchHiddenModules(role)
+      .then((set) => { if (!cancelled) setHidden(set); })
+      .catch(() => { if (!cancelled) setHidden(new Set()); })
+      .finally(() => { if (!cancelled) setLoading(false); });
+    return () => { cancelled = true; };
+  }, [role]);
+
+  return { hidden, loading };
 }
 
 /**

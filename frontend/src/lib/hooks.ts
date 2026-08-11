@@ -1,4 +1,4 @@
-import { useCallback, useState } from "react";
+import { useCallback, useEffect, useState } from "react";
 import { useQuery, useMutation as useRqMutation, useQueryClient } from "@tanstack/react-query";
 import {
   createReading as createReadingQ,
@@ -118,17 +118,24 @@ function useReadingMutation<TArgs extends unknown[], TResult>(
     mutationFn: (args: TArgs) => fn(...args),
     onSettled: () => invalidate(),
   });
-  // Mirror RQ's data/error into local state so reset() can null them on
-  // demand (matches the prior useMutation helper's reset semantics) and
-  // so mutate() can return a fresh error string instead of a stale
-  // closure snapshot (EQ-5.1 fix — caller in DailyFormPage reads
-  // mut.error right after await; the closure couldn't see the new error
-  // until React re-rendered).
-  if (m.data !== undefined && m.data !== localData) setLocalData(m.data ?? null);
-  if (m.error !== null && m.isError) {
-    const msg = m.error instanceof Error ? m.error.message : String(m.error);
-    if (msg !== localError) setLocalError(msg);
-  }
+  // EQ-5.2 fix: the previous version called setLocalData/setLocalError
+  // during render ("if (m.data !== localData) setLocalData(...)") which
+  // triggered "Maximum update depth exceeded" — setState-in-render is
+  // only safe under the React docs' "you can call set during render to
+  // adjust state" carve-out IF guarded by a deep equality check that
+  // converges. RQ's data identity flips on every cache snapshot, so the
+  // guard never converged. Moving the mirrors into useEffect (committed
+  // phase) is the canonical fix.
+  useEffect(() => {
+    setLocalData(m.data ?? null);
+  }, [m.data]);
+  useEffect(() => {
+    if (m.isError && m.error) {
+      setLocalError(m.error instanceof Error ? m.error.message : String(m.error));
+    } else if (!m.isError) {
+      setLocalError(null);
+    }
+  }, [m.isError, m.error]);
   const mutate = useCallback(
     async (...args: TArgs): Promise<MutationResult<TResult>> => {
       try {

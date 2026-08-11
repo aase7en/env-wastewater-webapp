@@ -45,3 +45,12 @@ frontend/ladle-dist/
 
 # zcode agent session state (local scaffolding — plans, scratchpads)
 .zcode/
+
+# firmware (PlatformIO / Arduino build artifacts)
+firmware/.pio/
+firmware/.pioenvs/
+firmware/.piolibdeps/
+firmware/.cache/
+firmware/build/
+firmware/.vscode/
+firmware/secrets.local.h
