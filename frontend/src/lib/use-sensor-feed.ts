@@ -11,7 +11,7 @@
  * ingest-sensor Edge Function). The hook cleans up its channel on
  * unmount.
  */
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "./supabase";
 
@@ -47,9 +47,13 @@ interface SensorFeedData {
 /**
  * @param limit  Max samples kept per sensor (rolling window).
  */
+// EQ-5.1 fix: queryKey has a runtime param (limit), so useMemo is the right
+// tool (can't be module-level like the param-less cases in alerts.ts /
+// role-module-visibility.ts). Without this, useCallback/useEffect deps
+// changed identity every render.
 export function useSensorFeed(limit = 50): SensorFeedState & { refresh: () => void } {
   const qc = useQueryClient();
-  const queryKey = ["sensor-feed", limit] as const;
+  const queryKey = useMemo(() => ["sensor-feed", limit] as const, [limit]);
   const channelRef = useRef<ReturnType<typeof supabase.channel> | null>(null);
   const [connected, setConnected] = useState(false);
 

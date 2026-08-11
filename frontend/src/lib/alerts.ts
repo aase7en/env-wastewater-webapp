@@ -90,6 +90,10 @@ export async function markAlertRead(id: string): Promise<void> {
  * `markRead(id)` updates local state optimistically (decrements unread +
  * sets read_at) so the UI reacts without waiting for the next poll.
  */
+// Module-level stable key — declared here (not inside the hook) so
+// useCallback dependencies don't change identity every render.
+const ALERTS_QUERY_KEY = ["threshold-alerts", 20] as const;
+
 export function useThresholdAlerts(pollMs = 60_000) {
   // EQ-3 (2026-08-11): polling + focus/visibility replaced by React Query's
   // refetchInterval + refetchOnWindowFocus (set globally in query-client.ts).
@@ -98,8 +102,12 @@ export function useThresholdAlerts(pollMs = 60_000) {
   // to the query cache via queryClient.setQueryData (optimistic) + onError
   // rolling back via invalidate. Local useState for alerts/unread is gone
   // — the cache is the single source of truth.
+  //
+  // EQ-5.1 (2026-08-11 fix): queryKey moved to module-level (was inside hook
+  // body → identity changed every render → useCallback recreated markRead/
+  // refresh every render, lint flagged it).
   const qc = useQueryClient();
-  const queryKey = ["threshold-alerts", 20] as const;
+  const queryKey = ALERTS_QUERY_KEY;
 
   const q = useQuery({
     queryKey,

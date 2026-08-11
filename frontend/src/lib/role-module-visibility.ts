@@ -118,9 +118,13 @@ export function useHiddenModules(role: AppRole | null | undefined): {
  * single source of truth, which also lets other tabs see the change once
  * they refetch.
  */
+// Module-level stable key (EQ-5.1 fix: was inside hook body, changed
+// identity every render, useCallback deps recreated every render).
+const VISIBILITY_QUERY_KEY = ["role-module-visibility"] as const;
+
 export function useAllVisibility() {
   const qc = useQueryClient();
-  const queryKey = ["role-module-visibility"] as const;
+  const queryKey = VISIBILITY_QUERY_KEY;
 
   const q = useQuery({
     queryKey,

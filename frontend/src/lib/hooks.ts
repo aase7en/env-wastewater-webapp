@@ -89,8 +89,6 @@ export function useReading(id: string | null | undefined) {
 // The invalidate targets the same queryKey tuples the read hooks use
 // (see useDashboard/useReadings/useReading above).
 
-type MutationData<T> = { loading: boolean; error: string | null; data: T | null };
-
 /** Invalidate every query that touches a reading (dashboard, readings
  * list, single reading). Called after create/update/delete. */
 function useInvalidateReadings() {
@@ -102,25 +100,46 @@ function useInvalidateReadings() {
   }, [qc]);
 }
 
+/** Result of a mutation call — callers read this tuple instead of
+ *  reading hook.error after await (which is a stale closure snapshot
+ *  until React re-renders). EQ-5.1 fix. */
+export interface MutationResult<T> {
+  data: T | null;
+  error: string | null;
+}
+
 function useReadingMutation<TArgs extends unknown[], TResult>(
   fn: (...args: TArgs) => Promise<TResult>,
 ) {
   const invalidate = useInvalidateReadings();
   const [localData, setLocalData] = useState<TResult | null>(null);
+  const [localError, setLocalError] = useState<string | null>(null);
   const m = useRqMutation({
     mutationFn: (args: TArgs) => fn(...args),
     onSettled: () => invalidate(),
   });
-  // Mirror RQ's data into localData so reset() can null it on demand
-  // (matches the prior useMutation helper's reset semantics).
+  // Mirror RQ's data/error into local state so reset() can null them on
+  // demand (matches the prior useMutation helper's reset semantics) and
+  // so mutate() can return a fresh error string instead of a stale
+  // closure snapshot (EQ-5.1 fix — caller in DailyFormPage reads
+  // mut.error right after await; the closure couldn't see the new error
+  // until React re-rendered).
   if (m.data !== undefined && m.data !== localData) setLocalData(m.data ?? null);
+  if (m.error !== null && m.isError) {
+    const msg = m.error instanceof Error ? m.error.message : String(m.error);
+    if (msg !== localError) setLocalError(msg);
+  }
   const mutate = useCallback(
-    async (...args: TArgs): Promise<TResult | null> => {
+    async (...args: TArgs): Promise<MutationResult<TResult>> => {
       try {
         const result = await m.mutateAsync(args);
-        return result ?? null;
-      } catch {
-        return null;
+        const data = result ?? null;
+        setLocalError(null);
+        return { data, error: null };
+      } catch (e) {
+        const msg = e instanceof Error ? e.message : String(e);
+        setLocalError(msg);
+        return { data: null, error: msg };
       }
     },
     [m],
@@ -128,14 +147,18 @@ function useReadingMutation<TArgs extends unknown[], TResult>(
   const reset = useCallback(() => {
     m.reset();
     setLocalData(null);
+    setLocalError(null);
   }, [m]);
   return {
     loading: m.isPending,
-    error: m.error instanceof Error ? m.error.message : (m.error ? String(m.error) : null),
+    // Kept for callers that read this on re-render (not after await).
+    // Callers reading right after `await mutate(...)` should use the
+    // returned tuple instead.
+    error: localError,
     data: localData,
     mutate,
     reset,
-  } satisfies MutationData<TResult> & { mutate: typeof mutate; reset: () => void };
+  };
 }
 
 export function useCreateReading() {

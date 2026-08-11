@@ -158,20 +158,20 @@ export function DailyFormPage() {
     setBanner(null);
     const payload = buildPayload();
     if (isEdit && id) {
-      const res = await updateMut.mutate(id, payload);
-      if (res) {
+      const { data, error } = await updateMut.mutate(id, payload);
+      if (data) {
         setBanner({ kind: "success", msg: "อัปเดตรายการสำเร็จ" });
         setTimeout(() => navigate("/readings"), 900);
       } else {
-        setBanner({ kind: "error", msg: updateMut.error ?? "อัปเดตไม่สำเร็จ" });
+        setBanner({ kind: "error", msg: error ?? "อัปเดตไม่สำเร็จ" });
       }
     } else {
-      const res = await createMut.mutate(payload);
-      if (res) {
+      const { data, error } = await createMut.mutate(payload);
+      if (data) {
         setBanner({ kind: "success", msg: "บันทึกรายการสำเร็จ" });
         setTimeout(() => navigate("/readings"), 900);
       } else {
-        setBanner({ kind: "error", msg: createMut.error ?? "บันทึกไม่สำเร็จ" });
+        setBanner({ kind: "error", msg: error ?? "บันทึกไม่สำเร็จ" });
       }
     }
   };
@@ -179,9 +179,9 @@ export function DailyFormPage() {
   const onDelete = async () => {
     if (!id) return;
     if (!window.confirm("ยืนยันการลบรายการนี้? การกระทำนี้ย้อนกลับไม่ได้")) return;
-    const ok = await deleteMut.mutate(id);
-    if (ok !== null) navigate("/readings");
-    else setBanner({ kind: "error", msg: deleteMut.error ?? "ลบไม่สำเร็จ" });
+    const { data, error } = await deleteMut.mutate(id);
+    if (data !== null) navigate("/readings");
+    else setBanner({ kind: "error", msg: error ?? "ลบไม่สำเร็จ" });
   };
 
   if (loadingExisting) {

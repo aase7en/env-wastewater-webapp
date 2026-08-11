@@ -141,7 +141,18 @@ export function RoleVisibilitySheet({
                         role="switch"
                         aria-checked={checked}
                         aria-label={`${item.label} ${r.label}`}
-                        onClick={() => setVisibility(r.key, item.to, !checked)}
+                        onClick={() => {
+                          // EQ-5.1 fix: setVisibility throws on server error
+                          // (EQ-4 port). The handler must catch to avoid an
+                          // unhandled promise rejection in onClick (which
+                          // would surface as the ErrorBoundary catching a
+                          // harmless warning). The error itself is already
+                          // surfaced via the hook's `error` field + the
+                          // toast this sheet shows below.
+                          void setVisibility(r.key, item.to, !checked).catch(() => {
+                            /* already surfaced via hook error + toast */
+                          });
+                        }}
                         className={
                           "w-9 h-5 rounded-full border transition-colors " +
                           (checked
