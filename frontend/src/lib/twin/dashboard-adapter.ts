@@ -1,0 +1,51 @@
+import type { DashboardRow } from "../types";
+import {
+  AERATION_TANK_ID,
+  type AerationTankTwinAsset,
+  type TwinMetric,
+  type TwinMode,
+  type WastewaterTwinState,
+} from "./types";
+
+function finiteNumber(value: number | string | null | undefined): number | null {
+  if (value === null || value === undefined || value === "") return null;
+  const parsed = typeof value === "number" ? value : Number(value);
+  return Number.isFinite(parsed) ? parsed : null;
+}
+
+function dashboardMetric(value: number | string | null | undefined): TwinMetric<number> {
+  const parsed = finiteNumber(value);
+  return parsed === null
+    ? { value: null, source: "unavailable" }
+    : { value: parsed, source: "manual-snapshot" };
+}
+
+const unavailableNumber = (): TwinMetric<number> => ({ value: null, source: "unavailable" });
+const unavailableBoolean = (): TwinMetric<boolean> => ({ value: null, source: "unavailable" });
+
+/**
+ * Converts the latest/historical React Query row into a render snapshot.
+ * DashboardRow intentionally has no tank level, temperature, or aerator flag;
+ * those stay unknown rather than being inferred from unrelated fields.
+ */
+export function dashboardRowToTwinState(
+  row: DashboardRow | undefined,
+  mode: Exclude<TwinMode, "simulation"> = "live",
+): WastewaterTwinState {
+  const aerationTank: AerationTankTwinAsset = {
+    id: AERATION_TANK_ID,
+    type: "aeration-tank",
+    label: "ถังเติมอากาศ",
+    waterLevelPercent: unavailableNumber(),
+    aeratorRunning: unavailableBoolean(),
+    dissolvedOxygenMgL: dashboardMetric(row?.do_average),
+    tdsMgL: dashboardMetric(row?.tds_aeration),
+    temperatureC: unavailableNumber(),
+  };
+
+  return {
+    mode,
+    snapshotDate: row?.reading_date ?? null,
+    assets: { [AERATION_TANK_ID]: aerationTank },
+  };
+}

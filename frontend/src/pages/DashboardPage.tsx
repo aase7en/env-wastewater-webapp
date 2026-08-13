@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { lazy, Suspense, useEffect, useRef, useState, type KeyboardEvent } from "react";
 import { Zap, Droplets, Activity, Calendar } from "lucide-react";
 import { useDashboard, useReadings } from "../lib/hooks";
 import { fetchLatestReadingDate } from "../lib/supabase-queries";
@@ -13,11 +13,41 @@ import { MSymbol } from "../components/ui/MSymbol";
 import { RepairRequestModal } from "../components/repair/RepairRequestModal";
 import { fmt, thaiDate, daysSince } from "../lib/utils";
 
+const TwinCanvas = lazy(() => import("../components/digital-twin/TwinCanvas"));
+
+type DashboardView = "twin" | "process";
+
 export function DashboardPage() {
   const { data: rows, loading, error, refresh } = useDashboard(14);
   const { data: readings } = useReadings(14);
   const { isAuthenticated } = useAuth();
   const [repairOpen, setRepairOpen] = useState(false);
+  const [dashboardView, setDashboardView] = useState<DashboardView>("twin");
+  const twinTabRef = useRef<HTMLButtonElement>(null);
+  const processTabRef = useRef<HTMLButtonElement>(null);
+
+  const selectDashboardView = (view: DashboardView) => {
+    setDashboardView(view);
+    requestAnimationFrame(() => {
+      (view === "twin" ? twinTabRef : processTabRef).current?.focus();
+    });
+  };
+
+  const handleDashboardTabKeyDown = (event: KeyboardEvent<HTMLButtonElement>) => {
+    let nextView: DashboardView | null = null;
+    if (event.key === "Home") nextView = "twin";
+    if (event.key === "End") nextView = "process";
+    if (event.key === "ArrowLeft") {
+      nextView = dashboardView === "twin" ? "process" : "twin";
+    }
+    if (event.key === "ArrowRight") {
+      nextView = dashboardView === "twin" ? "process" : "twin";
+    }
+    if (nextView) {
+      event.preventDefault();
+      selectDashboardView(nextView);
+    }
+  };
 
   // F7 stale-data fallback: when fetchDashboard returns [] (latest record
   // older than the 14-day window), surface the actual latest date so staff
@@ -94,8 +124,84 @@ export function DashboardPage() {
         </div>
       )}
 
-      {/* Process Flow Diagram */}
-      <ProcessFlowDiagram row={today} latestDate={latestDate} />
+      {/* Temporary Phase 1 view switch. The existing ProcessFlowDiagram stays
+          mounted only in its original schematic view; the 3D stack is split
+          into a separate lazy chunk. */}
+      <div className="flex justify-end">
+        <div
+          className="inline-flex rounded-xl border border-aura-borderSubtle bg-aura-surfaceHigh/50 p-1"
+          role="tablist"
+          aria-label="มุมมองระบบบำบัดน้ำเสีย"
+        >
+          <button
+            ref={twinTabRef}
+            type="button"
+            role="tab"
+            id="dashboard-tab-twin"
+            aria-selected={dashboardView === "twin"}
+            aria-controls="dashboard-panel-twin"
+            onClick={() => setDashboardView("twin")}
+            onKeyDown={handleDashboardTabKeyDown}
+            tabIndex={dashboardView === "twin" ? 0 : -1}
+            className={`min-h-[var(--touch-min)] rounded-lg px-4 py-2 text-sm font-semibold transition-colors duration-[var(--duration-base)] font-thai ${
+              dashboardView === "twin"
+                ? "bg-aura-cyan text-aura-onAccent"
+                : "text-aura-textMuted hover:text-aura-textMain"
+            }`}
+          >
+            3D Plant
+          </button>
+          <button
+            ref={processTabRef}
+            type="button"
+            role="tab"
+            id="dashboard-tab-process"
+            aria-selected={dashboardView === "process"}
+            aria-controls="dashboard-panel-process"
+            onClick={() => setDashboardView("process")}
+            onKeyDown={handleDashboardTabKeyDown}
+            tabIndex={dashboardView === "process" ? 0 : -1}
+            className={`min-h-[var(--touch-min)] rounded-lg px-4 py-2 text-sm font-semibold transition-colors duration-[var(--duration-base)] font-thai ${
+              dashboardView === "process"
+                ? "bg-aura-cyan text-aura-onAccent"
+                : "text-aura-textMuted hover:text-aura-textMain"
+            }`}
+          >
+            Process
+          </button>
+        </div>
+      </div>
+
+      <div
+        role="tabpanel"
+        id="dashboard-panel-twin"
+        aria-labelledby="dashboard-tab-twin"
+        hidden={dashboardView !== "twin"}
+      >
+        {dashboardView === "twin" ? (
+          <Suspense
+            fallback={
+              <AuraCard>
+                <div className="py-24 text-center text-sm text-aura-textMuted font-thai">
+                  กำลังเตรียมมุมมอง 3D…
+                </div>
+              </AuraCard>
+            }
+          >
+            <TwinCanvas row={today} latestDate={latestDate} />
+          </Suspense>
+        ) : null}
+      </div>
+      <div
+        role="tabpanel"
+        id="dashboard-panel-process"
+        aria-labelledby="dashboard-tab-process"
+        hidden={dashboardView !== "process"}
+      >
+        {dashboardView === "process" ? (
+          <ProcessFlowDiagram row={today} latestDate={latestDate} />
+        ) : null}
+      </div>
 
       {/* 14-day log table */}
       <AuraCard className="p-0 overflow-hidden">
