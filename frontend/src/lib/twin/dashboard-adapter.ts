@@ -16,12 +16,28 @@ function finiteNumber(value: number | string | null | undefined): number | null 
 function dashboardMetric(value: number | string | null | undefined): TwinMetric<number> {
   const parsed = finiteNumber(value);
   return parsed === null
-    ? { value: null, source: "unavailable" }
-    : { value: parsed, source: "manual-snapshot" };
+    ? unavailableMetric<number>()
+    : {
+        value: parsed,
+        source: "manual-snapshot",
+        observedAt: null,
+        provenance: { acquisition: "manual-daily-snapshot" },
+        freshness: "unknown",
+      };
 }
 
-const unavailableNumber = (): TwinMetric<number> => ({ value: null, source: "unavailable" });
-const unavailableBoolean = (): TwinMetric<boolean> => ({ value: null, source: "unavailable" });
+function unavailableMetric<T>(): TwinMetric<T> {
+  return {
+    value: null,
+    source: "unavailable",
+    observedAt: null,
+    provenance: { acquisition: "unknown" },
+    freshness: "unknown",
+  };
+}
+
+const unavailableNumber = (): TwinMetric<number> => unavailableMetric<number>();
+const unavailableBoolean = (): TwinMetric<boolean> => unavailableMetric<boolean>();
 
 /**
  * Converts the latest/historical React Query row into a render snapshot.

@@ -11,7 +11,15 @@ import {
 } from "./types";
 
 function simulatedMetric<T>(value: T | null | undefined, fallback: TwinMetric<T>): TwinMetric<T> {
-  return value === undefined ? fallback : { value, source: "simulation" };
+  return value === undefined
+    ? fallback
+    : {
+        value,
+        source: "simulation",
+        observedAt: null,
+        provenance: { acquisition: "simulation" },
+        freshness: "unknown",
+      };
 }
 
 export function deriveWastewaterTwinState(
@@ -23,8 +31,11 @@ export function deriveWastewaterTwinState(
   if (mode !== "simulation") return base;
 
   const baseTank = base.assets[AERATION_TANK_ID];
+  const override = simulationOverrides[AERATION_TANK_ID];
   const overrides: Partial<AerationTankTelemetryValues> =
-    simulationOverrides[AERATION_TANK_ID] ?? {};
+    override?.assetType === "aeration-tank" && override.assetId === AERATION_TANK_ID
+      ? override.values
+      : {};
   const tank: AerationTankTwinAsset = {
     ...baseTank,
     waterLevelPercent: simulatedMetric(overrides.waterLevelPercent, baseTank.waterLevelPercent),

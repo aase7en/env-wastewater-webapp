@@ -11,6 +11,8 @@ import { CardGridSkeleton } from "../components/ui/Skeleton";
 import { Button } from "../components/ui/Button";
 import { MSymbol } from "../components/ui/MSymbol";
 import { RepairRequestModal } from "../components/repair/RepairRequestModal";
+import { TwinRendererBoundary } from "../components/digital-twin/TwinRendererBoundary";
+import type { TwinRendererStatus } from "../lib/twin/webgl";
 import { fmt, thaiDate, daysSince } from "../lib/utils";
 
 const TwinCanvas = lazy(() => import("../components/digital-twin/TwinCanvas"));
@@ -23,10 +25,13 @@ export function DashboardPage() {
   const { isAuthenticated } = useAuth();
   const [repairOpen, setRepairOpen] = useState(false);
   const [dashboardView, setDashboardView] = useState<DashboardView>("twin");
+  const [twinRendererStatus, setTwinRendererStatus] =
+    useState<TwinRendererStatus>("loading");
   const twinTabRef = useRef<HTMLButtonElement>(null);
   const processTabRef = useRef<HTMLButtonElement>(null);
 
   const selectDashboardView = (view: DashboardView) => {
+    if (view === "twin") setTwinRendererStatus("loading");
     setDashboardView(view);
     requestAnimationFrame(() => {
       (view === "twin" ? twinTabRef : processTabRef).current?.focus();
@@ -175,21 +180,38 @@ export function DashboardPage() {
       <div
         role="tabpanel"
         id="dashboard-panel-twin"
+        data-testid="dashboard-twin-panel"
+        data-twin-status={twinRendererStatus}
+        aria-busy={dashboardView === "twin" && twinRendererStatus === "loading"}
         aria-labelledby="dashboard-tab-twin"
         hidden={dashboardView !== "twin"}
       >
         {dashboardView === "twin" ? (
-          <Suspense
-            fallback={
-              <AuraCard>
-                <div className="py-24 text-center text-sm text-aura-textMuted font-thai">
-                  กำลังเตรียมมุมมอง 3D…
-                </div>
-              </AuraCard>
-            }
+          <TwinRendererBoundary
+            onUnavailable={() => setTwinRendererStatus("unavailable")}
+            onShowProcess={() => selectDashboardView("process")}
           >
-            <TwinCanvas row={today} latestDate={latestDate} />
-          </Suspense>
+            <Suspense
+              fallback={
+                <AuraCard>
+                  <div
+                    className="py-24 text-center text-sm text-aura-textMuted font-thai"
+                    role="status"
+                    aria-live="polite"
+                  >
+                    กำลังเตรียมมุมมอง 3D…
+                  </div>
+                </AuraCard>
+              }
+            >
+              <TwinCanvas
+                row={today}
+                latestDate={latestDate}
+                onRendererStatusChange={setTwinRendererStatus}
+                onShowProcess={() => selectDashboardView("process")}
+              />
+            </Suspense>
+          </TwinRendererBoundary>
         ) : null}
       </div>
       <div

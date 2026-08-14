@@ -1,9 +1,13 @@
-import { afterEach, describe, expect, it } from "vitest";
+import { afterEach, describe, expect, expectTypeOf, it } from "vitest";
 import { AERATION_DEMO_OVERRIDES } from "./demo-state";
 import { dashboardRowToTwinState } from "./dashboard-adapter";
 import { deriveWastewaterTwinState } from "./selectors";
 import { resetTwinStore, useTwinStore } from "./store";
-import { AERATION_TANK_ID } from "./types";
+import {
+  AERATION_TANK_ID,
+  type AerationTankTelemetryValues,
+  type TwinSimulationOverride,
+} from "./types";
 
 describe("wastewater twin domain", () => {
   afterEach(resetTwinStore);
@@ -21,11 +25,41 @@ describe("wastewater twin domain", () => {
     if (!tank) throw new Error("Aeration tank asset missing");
 
     expect(state.snapshotDate).toBe("2026-08-14");
-    expect(tank.dissolvedOxygenMgL).toEqual({ value: 2.75, source: "manual-snapshot" });
-    expect(tank.tdsMgL).toEqual({ value: 432, source: "manual-snapshot" });
-    expect(tank.aeratorRunning).toEqual({ value: null, source: "unavailable" });
-    expect(tank.waterLevelPercent).toEqual({ value: null, source: "unavailable" });
-    expect(tank.temperatureC).toEqual({ value: null, source: "unavailable" });
+    expect(tank.dissolvedOxygenMgL).toEqual({
+      value: 2.75,
+      source: "manual-snapshot",
+      observedAt: null,
+      provenance: { acquisition: "manual-daily-snapshot" },
+      freshness: "unknown",
+    });
+    expect(tank.tdsMgL).toEqual({
+      value: 432,
+      source: "manual-snapshot",
+      observedAt: null,
+      provenance: { acquisition: "manual-daily-snapshot" },
+      freshness: "unknown",
+    });
+    expect(tank.aeratorRunning).toMatchObject({
+      value: null,
+      source: "unavailable",
+      observedAt: null,
+      provenance: { acquisition: "unknown" },
+      freshness: "unknown",
+    });
+    expect(tank.waterLevelPercent).toMatchObject({
+      value: null,
+      source: "unavailable",
+      observedAt: null,
+      provenance: { acquisition: "unknown" },
+      freshness: "unknown",
+    });
+    expect(tank.temperatureC).toMatchObject({
+      value: null,
+      source: "unavailable",
+      observedAt: null,
+      provenance: { acquisition: "unknown" },
+      freshness: "unknown",
+    });
   });
 
   it("rejects invalid dashboard numbers instead of leaking NaN", () => {
@@ -54,9 +88,28 @@ describe("wastewater twin domain", () => {
     if (!tank) throw new Error("Aeration tank asset missing");
 
     expect(state.mode).toBe("simulation");
-    expect(tank.aeratorRunning).toEqual({ value: true, source: "simulation" });
-    expect(tank.waterLevelPercent).toEqual({ value: 68, source: "simulation" });
+    expect(AERATION_DEMO_OVERRIDES[AERATION_TANK_ID]).toMatchObject({
+      assetId: AERATION_TANK_ID,
+      assetType: "aeration-tank",
+      values: { aeratorRunning: true, waterLevelPercent: 68 },
+    });
+    expect(tank.aeratorRunning).toMatchObject({
+      value: true,
+      source: "simulation",
+      observedAt: null,
+      provenance: { acquisition: "simulation" },
+      freshness: "unknown",
+    });
+    expect(tank.waterLevelPercent).toMatchObject({ value: 68, source: "simulation" });
     expect(tank.temperatureC.source).toBe("simulation");
+  });
+
+  it("keeps Aeration simulation values tied to the Aeration asset discriminant", () => {
+    type AerationOverride = Extract<TwinSimulationOverride, { assetType: "aeration-tank" }>;
+    const override: AerationOverride = AERATION_DEMO_OVERRIDES[AERATION_TANK_ID]!;
+
+    expectTypeOf(override.values).toEqualTypeOf<Partial<AerationTankTelemetryValues>>();
+    expect(override.assetId).toBe(AERATION_TANK_ID);
   });
 
   it("keeps only interaction and simulation state in Zustand", () => {

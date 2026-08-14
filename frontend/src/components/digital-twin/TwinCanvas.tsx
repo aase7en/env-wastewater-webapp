@@ -1,6 +1,7 @@
-import { useEffect, useMemo, useRef, useState } from "react";
-import { Canvas } from "@react-three/fiber";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { Canvas, useFrame } from "@react-three/fiber";
 import { OrbitControls } from "@react-three/drei";
+import { WebGLRenderer } from "three";
 import type { DashboardRow } from "../../lib/types";
 import { cssVar } from "../../lib/theme";
 import { thaiDate } from "../../lib/utils";
@@ -8,6 +9,10 @@ import { useAuraTheme } from "../../lib/useAuraTheme";
 import { AERATION_DEMO_OVERRIDES } from "../../lib/twin/demo-state";
 import { deriveWastewaterTwinState } from "../../lib/twin/selectors";
 import { useTwinStore } from "../../lib/twin/store";
+import {
+  supportsWebGL,
+  type TwinRendererStatus,
+} from "../../lib/twin/webgl";
 import {
   AERATION_TANK_ID,
   type AerationTankTwinAsset,
@@ -17,6 +22,17 @@ import {
 import { AuraCard } from "../ui/AuraCard";
 import { Button } from "../ui/Button";
 import { WastewaterTwin } from "./WastewaterTwin";
+import { TwinRendererFallback } from "./TwinRendererBoundary";
+
+function SceneReadySignal({ onReady }: { onReady: () => void }) {
+  const signaled = useRef(false);
+  useFrame(() => {
+    if (signaled.current) return;
+    signaled.current = true;
+    onReady();
+  });
+  return null;
+}
 
 function usePrefersReducedMotion(): boolean {
   const [reduced, setReduced] = useState(
@@ -42,6 +58,7 @@ function threeColorFromRgbToken(name: string): string {
 
 function sourceText(source: TwinMetricSource, mode: TwinMode): string {
   if (source === "simulation") return "ข้อมูลจำลอง";
+  if (source === "sensor-telemetry") return "ข้อมูลจากเซนเซอร์";
   if (source === "manual-snapshot") {
     return mode === "historical" ? "บันทึกย้อนหลัง" : "บันทึกล่าสุด";
   }
@@ -52,15 +69,23 @@ export function TwinCanvas({
   row,
   historicalRow,
   latestDate,
+  onRendererStatusChange,
+  onShowProcess,
 }: {
   row: DashboardRow | undefined;
   historicalRow?: DashboardRow;
   latestDate?: string | null;
+  onRendererStatusChange?: (status: TwinRendererStatus) => void;
+  onShowProcess: () => void;
 }) {
   const theme = useAuraTheme();
   const reducedMotion = usePrefersReducedMotion();
   const panelRef = useRef<HTMLElement>(null);
   const assetButtonRef = useRef<HTMLButtonElement>(null);
+  const [rendererCanvas, setRendererCanvas] = useState<HTMLCanvasElement | null>(null);
+  const [rendererStatus, setRendererStatus] = useState<TwinRendererStatus>(() =>
+    supportsWebGL() ? "loading" : "unavailable",
+  );
   const mode = useTwinStore((state) => state.mode);
   const selectedAssetId = useTwinStore((state) => state.selectedAssetId);
   const simulationOverrides = useTwinStore((state) => state.simulationOverrides);
@@ -77,6 +102,23 @@ export function TwinCanvas({
   const selected = selectedAssetId === AERATION_TANK_ID;
   const selectionColor = threeColorFromRgbToken("--aura-cyan");
 
+  const markRendererReady = useCallback(() => setRendererStatus("ready"), []);
+  const markRendererUnavailable = useCallback(() => setRendererStatus("unavailable"), []);
+
+  useEffect(() => {
+    onRendererStatusChange?.(rendererStatus);
+  }, [onRendererStatusChange, rendererStatus]);
+
+  useEffect(() => {
+    if (!rendererCanvas) return;
+    const handleContextLost = (event: Event) => {
+      event.preventDefault();
+      markRendererUnavailable();
+    };
+    rendererCanvas.addEventListener("webglcontextlost", handleContextLost);
+    return () => rendererCanvas.removeEventListener("webglcontextlost", handleContextLost);
+  }, [markRendererUnavailable, rendererCanvas]);
+
   useEffect(() => {
     if (selected) panelRef.current?.focus();
   }, [selected]);
@@ -85,6 +127,10 @@ export function TwinCanvas({
     closeAssetPanel();
     requestAnimationFrame(() => assetButtonRef.current?.focus());
   };
+
+  if (rendererStatus === "unavailable") {
+    return <TwinRendererFallback onShowProcess={onShowProcess} />;
+  }
 
   return (
     <AuraCard className="overflow-hidden">
@@ -131,11 +177,24 @@ export function TwinCanvas({
       >
         <Canvas
           aria-hidden="true"
+          fallback={<span>ไม่สามารถแสดงมุมมอง 3D ได้</span>}
           frameloop={reducedMotion ? "demand" : "always"}
           camera={{ position: [6.6, 5.1, 7.2], fov: 38 }}
           dpr={[1, 1.5]}
-          gl={{ antialias: true, alpha: true, powerPreference: "high-performance" }}
+          gl={async (defaultProps) => {
+            try {
+              return new WebGLRenderer(defaultProps);
+            } catch {
+              markRendererUnavailable();
+              // R3F awaits this factory outside its React error boundary.
+              // The state change unmounts Canvas; keeping the failed init
+              // pending avoids an unhandled rejection during that handoff.
+              return new Promise<WebGLRenderer>(() => undefined);
+            }
+          }}
+          onCreated={({ gl }) => setRendererCanvas(gl.domElement)}
         >
+          <SceneReadySignal onReady={markRendererReady} />
           <color attach="background" args={[theme === "dark" ? "#03181c" : "#eef8f3"]} />
           <ambientLight intensity={theme === "dark" ? 1.25 : 1.8} />
           <directionalLight position={[4, 7, 5]} intensity={2.2} />
