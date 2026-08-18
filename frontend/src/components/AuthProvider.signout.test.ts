@@ -12,6 +12,11 @@
  * `signOutAll()` (supabase signOut + queryClient.clear) so it is unit
  * testable in node env without DOM rendering — the context's signOut
  * delegates to it, so the production path is the tested path.
+ *
+ * Remediation (WO-STAB-INTEGRATE-001 finding 1): the seam moved to
+ * lib/auth-signout.ts (non-component module) so AuthProvider.tsx no
+ * longer trips react(only-export-components). Import updated; behavior
+ * under test unchanged.
  */
 import { describe, it, expect, vi, beforeEach } from "vitest";
 import { queryClient } from "../lib/query-client";
@@ -26,7 +31,7 @@ vi.mock("../lib/supabase", () => ({
   },
 }));
 
-import { signOutAll } from "./AuthProvider";
+import { signOutAll } from "../lib/auth-signout";
 
 beforeEach(() => {
   signOutMock.mockClear();
