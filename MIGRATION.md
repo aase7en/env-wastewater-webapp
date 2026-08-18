@@ -315,6 +315,9 @@ The binding rules below still apply.
 
 | Chunk | Agent | Claimed | Scope (files) |
 |---|---|---|---|
+| WO-STAB-002 | GLM | 2026-08-15 | `frontend/src/lib/admin/ai-chat.ts`, `ai-chat.test.ts` (branch `fix/p0-stabilization`) |
+| WO-STAB-003 | GLM | 2026-08-15 | `frontend/src/components/AuthProvider.tsx` (branch `fix/p0-stabilization`) |
+| WO-STAB-001 | GLM | 2026-08-15 | `frontend/src/pages/DailyFormPage.tsx` (branch `fix/p0-stabilization`) |
 | ~~OPT-HYGIENE~~ | GLM | 2026-08-07 | done — see close-note below |
 | ~~AUDITFIX-A~~ | GLM | 2026-08-10 | done — see close-note below |
 | ~~AUDITFIX-C~~ | GLM | 2026-08-10 | done — see close-note below |

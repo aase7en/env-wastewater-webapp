@@ -45,32 +45,59 @@ export interface PhiFilterResult {
 }
 
 /**
- * Apply PHI filter to a question. Returns {blocked, cleanedQuestion}.
- * If any flagged table name appears in the question text, the call is
- * blocked before any provider request is made.
+ * Load the current PHI deny-set (ai_scope patient_safe=false AND
+ * is_enabled=true). On read error, falls back to STATIC_PHI_DENY so the
+ * filter stays fail-CLOSED (I2) — an outage must never widen what the
+ * provider sees.
+ *
+ * WO-STAB-002 (2026-08-15): extracted from applyPhiFilter so sendChatTurn
+ * can load the set ONCE per turn and apply it to the current question AND
+ * every history entry (the history path previously shipped verbatim).
  */
-export async function applyPhiFilter(question: string): Promise<PhiFilterResult> {
+async function loadDenySet(): Promise<ReadonlySet<string>> {
   const { data, error } = await supabase
     .from("ai_scope")
     .select("view_name")
     .eq("patient_safe", false)
     .eq("is_enabled", true);
   if (error) {
-    // Fail-CLOSED (2026-08-02 recon I2): an ai_scope outage must never widen
-    // what the provider sees. The previous fail-open return let the question
-    // through verbatim — contradicting the PHI boundary (GLM cloud under
-    // Chinese law). Mirrors the ai-sql.ts loadPhiDenySet fix (STATIC_PHI_DENY
-    // = core.app_user + core.personnel). A question naming a static-deny
-    // table is blocked even when the live scope is unreadable.
+    // Fail-CLOSED (2026-08-02 recon I2): mirrors the ai-sql.ts
+    // loadPhiDenySet fix (STATIC_PHI_DENY = core.app_user + core.personnel).
     console.warn("PHI filter read failed — falling back to STATIC_PHI_DENY:", error.message);
-    const blockedStatic = checkAgainstDenySet(question, STATIC_PHI_DENY);
-    if (blockedStatic) return blockedStatic;
-    return { blocked: false, cleanedQuestion: question };
+    return STATIC_PHI_DENY;
   }
-  const flagged = new Set(((data ?? []) as Array<{ view_name: string }>).map((r) => r.view_name));
-  const blockedLive = checkAgainstDenySet(question, flagged);
-  if (blockedLive) return blockedLive;
+  return new Set(((data ?? []) as Array<{ view_name: string }>).map((r) => r.view_name));
+}
+
+/**
+ * Apply PHI filter to a question. Returns {blocked, cleanedQuestion}.
+ * If any flagged table name appears in the question text, the call is
+ * blocked before any provider request is made.
+ */
+export async function applyPhiFilter(question: string): Promise<PhiFilterResult> {
+  const deny = await loadDenySet();
+  const blocked = checkAgainstDenySet(question, deny);
+  if (blocked) return blocked;
   return { blocked: false, cleanedQuestion: question };
+}
+
+/**
+ * WO-STAB-002: redact history entries that trip the deny-set. Blocked
+ * entries are REPLACED with the fixed placeholder "[REDACTED]" (not
+ * dropped) so the provider's expected role alternation stays intact while
+ * the offending content never leaves the system. A fixed constant is used
+ * deliberately — echoing any part of the blocked text (even the reason
+ * string, which names the denied table) would re-leak it.
+ */
+export function redactHistory(
+  history: ChatMessage[],
+  deny: ReadonlySet<string>,
+): ChatMessage[] {
+  return history.map((m) =>
+    checkAgainstDenySet(m.content, deny)
+      ? { role: m.role, content: "[REDACTED]" }
+      : m,
+  );
 }
 
 /**
@@ -164,7 +191,15 @@ export async function sendChatTurn(
     history?: ChatMessage[];
   } = {},
 ): Promise<ChatTurn> {
-  const phi = await applyPhiFilter(question);
+  // WO-STAB-002: load the deny-set ONCE per turn and apply it to BOTH the
+  // current question and the history. Previously applyPhiFilter ran on the
+  // question only, then opts.history shipped verbatim — a previously
+  // blocked question stayed in ChatPanel local state (user bubble + the
+  // ⚠️ error echo naming the denied table) and leaked out on the next
+  // innocent turn.
+  const deny = await loadDenySet();
+  const phi = checkAgainstDenySet(question, deny)
+    ?? { blocked: false as const, cleanedQuestion: question };
   if (phi.blocked) {
     // AUDITFIX-B (2026-08-10): log the rejected question before throwing,
     // so an admin can see probing attempts. Best-effort — never changes
@@ -187,7 +222,7 @@ export async function sendChatTurn(
 
   const messages: ChatMessage[] = [
     { role: "system", content: system + schemaBlock },
-    ...(opts.history ?? []),
+    ...redactHistory(opts.history ?? [], deny),
     { role: "user", content: phi.cleanedQuestion },
   ];
 
