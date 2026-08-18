@@ -1,6 +1,6 @@
 # CURRENT WORK
 
-Status: RE-REVIEW_REQUESTED
+Status: READY_FOR_IMPLEMENTATION
 
 Allowed statuses:
 
@@ -18,111 +18,147 @@ Allowed statuses:
 
 ## Work Order
 
-`WO-STAB-INTEGRATE-001`
+`WO-STAB-004`
 
 Owner: GLM 5.3
 
 ## Goal
 
-Finish the integration review for `fix/p0-stabilization` with **no lint-baseline regression** and an exact durable checkpoint before production merge.
+Prevent in-progress edits on the wastewater daily edit form from being silently overwritten by React Query background/window-focus refetches.
 
-## Review Result
+## Problem
 
-**CHANGES_REQUIRED**
+The current edit flow in `frontend/src/pages/DailyFormPage.tsx` repopulates the entire form whenever `existing` changes:
 
-GPT reviewed the actual GitHub branch after integration.
+```text
+useReading(id)
+  → React Query
+  → background/window-focus refetch
+  → `existing` receives a new snapshot
+  → `useEffect([existing])`
+  → `setForm(...)`
+  → unsaved user input can be lost
+```
 
-Confirmed good:
-
-- `main` is now an ancestor of `fix/p0-stabilization` (`behind_by: 0`).
-- The three reviewed stabilization fixes remain in the branch.
-- Build passes.
-- Vitest passes: 142/142.
-- Playwright passes: 31/31.
-- `git diff --check` is clean.
-- No Digital Twin files were modified.
-
-Blocking findings are narrow and limited to the items below.
-
-## Required Changes
-
-### 1. Remove the new lint warning introduced by WO-STAB-003
-
-Current branch lint result is 13 warnings + 3 errors, while the documented baseline is 12 warnings + 3 errors.
-
-The additional warning is `react(only-export-components)` caused by exporting `signOutAll` from `frontend/src/components/AuthProvider.tsx`.
-
-Fix this without changing sign-out behavior. Preferred direction:
-
-- move the testable sign-out helper/seam into a non-component `.ts` module (for example an auth utility/service module consistent with the existing repo structure),
-- keep `AuthProvider.tsx` consuming that helper,
-- update the existing sign-out unit test to import the helper from its new module,
-- do not suppress/disable the lint rule merely to make the warning disappear.
-
-Acceptance: lint must return to the documented baseline or better, with no new warnings/errors caused by this branch.
-
-### 2. Record one exact pushed HEAD in HANDOFF
-
-`docs/ai/HANDOFF.md` currently describes a review-candidate SHA and then says the final pushed tip is a later doc-only commit without recording that final SHA directly.
-
-Update HANDOFF so `## Exact HEAD` contains the single exact SHA returned by `git rev-parse origin/fix/p0-stabilization` after all remediation commits are pushed.
-
-Do not use an indirect instruction such as “authoritative value: run git rev-parse”. The durable checkpoint must contain the actual SHA.
+The global QueryClient enables `refetchOnWindowFocus`. The current `useReading()` hook does not override that behavior, and `DailyFormPage` has no dirty/hydration guard. This matches P0 finding #4 in `reports/code-review-2026-08-12.md` and remains present on current `main` after the approved stabilization merge.
 
 ## Desired Result
 
-A re-review candidate on `fix/p0-stabilization` that preserves the three production fixes, preserves latest `main`, restores lint to baseline-or-better, records the exact pushed HEAD, reruns all gates, and stops at `RE-REVIEW_REQUESTED`.
+In edit mode, server/query refreshes may update cached data, but once the user has started editing, no background/window-focus refetch may overwrite unsaved form state.
+
+The initial record must still hydrate correctly. Navigating to a different reading ID must hydrate that record correctly. Save/delete behavior must remain unchanged.
+
+## User Experience Requirements
+
+- A staff member can open an existing daily reading and edit fields normally.
+- If the tab/app loses focus and regains focus while the form has unsaved edits, those edits remain exactly as entered.
+- No new warning dialog, save flow, visual redesign, or navigation redesign is required in this WO.
+- Initial loading behavior and Thai UI remain unchanged unless a minimal change is required for correctness.
+
+## Visual / UI Requirements
+
+- No visual redesign.
+- Do not alter Aura styling, layout, accordion structure, labels, thresholds, or button appearance.
+
+## 3D Requirements
+
+- None.
+- Do not touch Digital Twin branches/files.
+
+## Technical Requirements
+
+1. Inspect the current `DailyFormPage`, `useReading`, QueryClient defaults, existing E2E fixtures, and relevant tests before choosing the implementation.
+2. Protect user-edited local form state from background/window-focus refetch overwrite.
+3. Prefer the smallest robust solution. A dirty/hydration gate in the form layer is preferred if it preserves useful query refresh behavior; do not globally disable React Query focus refresh for unrelated pages.
+4. Handle route/record identity correctly: if the edit page is used for a different reading ID, the new record must be allowed to hydrate.
+5. Do not rely only on object identity of React Query results as a dirty signal.
+6. Do not convert missing values to defaults beyond existing form semantics.
+7. Do not change create/update/delete API contracts in this WO unless strictly necessary; if a broader contract change appears necessary, stop and report it instead.
+8. Add a regression test using the existing test stack where practical. Prefer existing Vitest/Playwright infrastructure; do not add a new testing framework or dependency for this WO.
+9. Run full regression gates and document results in `docs/ai/HANDOFF.md`.
+10. Stop at `REVIEW_REQUESTED`; do not merge to `main` yourself.
 
 ## Files / Areas To Inspect
 
-- `frontend/src/components/AuthProvider.tsx`
-- `frontend/src/components/AuthProvider.signout.test.ts`
-- existing auth utility/service modules under `frontend/src/lib/` or the nearest appropriate non-component location
-- `docs/ai/HANDOFF.md`
-- `docs/ai/CURRENT-WORK.md`
+- `frontend/src/pages/DailyFormPage.tsx`
+- `frontend/src/lib/hooks.ts`
+- `frontend/src/lib/query-client.ts`
+- `frontend/tests/e2e/**`
+- existing form/readings tests and fixtures
+- `reports/code-review-2026-08-12.md`
 
-> Inspect the repository first. Paths are hints, not permission to refactor unrelated areas.
+> Paths are hints. Inspect source before assuming exact implementation points.
+
+## Reuse Opportunities
+
+- Reuse the current local `form` state and existing field update helper rather than introducing a form library.
+- Reuse React refs/state and current React Query behavior.
+- Reuse existing Playwright/Vitest infrastructure.
 
 ## Acceptance Criteria
 
-- [ ] Sign-out still calls Supabase sign-out and clears React Query cache.
-- [ ] Query cache still clears even if Supabase sign-out throws.
-- [ ] `AuthProvider.tsx` no longer introduces the new `react(only-export-components)` warning from `signOutAll`.
-- [ ] `npm run lint` is at the documented baseline or better; no new branch-caused lint regression.
+- [ ] Existing record hydrates correctly on initial edit-page load.
+- [ ] After a user changes at least one field, a window-focus/background refetch cannot replace the unsaved form values.
+- [ ] Refetch before the user edits does not break initial/current server-state hydration.
+- [ ] Navigating/editing a different reading ID can hydrate the new record rather than remaining permanently gated by the prior record's dirty state.
+- [ ] Existing create flow remains unchanged.
+- [ ] Existing update flow remains unchanged.
+- [ ] Existing delete flow remains unchanged.
+- [ ] A regression test demonstrates the data-loss bug is prevented, using the existing test stack where feasible.
 - [ ] `npm run build` passes.
 - [ ] `npm test` passes with no regression.
 - [ ] Full Playwright suite passes.
+- [ ] `npm run lint` is at the documented baseline or better; no new warnings/errors caused by this WO.
 - [ ] `git diff --check` passes.
 - [ ] No Digital Twin files are modified.
-- [ ] No remaining P0/P1 work is bundled into this remediation.
-- [ ] `docs/ai/HANDOFF.md` contains the single exact pushed branch HEAD SHA.
-- [ ] HANDOFF status is `RE-REVIEW_REQUESTED` when finished.
+- [ ] No unrelated P0/P1 fixes are bundled into this WO.
+- [ ] `docs/ai/HANDOFF.md` records implementation facts, tests, branch, and implementation checkpoint.
+- [ ] HANDOFF status is `REVIEW_REQUESTED` when finished.
 
 ## Out Of Scope
 
-- WO-STAB-004 form dirty/refetch protection.
-- ErrorBoundary/AuthProvider remount bug.
-- `annotateRow` policy.
-- Component-test harness work beyond adapting the existing sign-out test to the moved helper.
-- Digital Twin work.
-- UI/visual redesign.
+- ErrorBoundary/AuthProvider remount P0.
+- P1 alert unread count, carbon MoM, role-visibility error UX, or `annotateRow` policy.
+- Generic unsaved-changes navigation prompts.
+- Autosave/drafts.
+- Offline form persistence.
+- New form framework or test framework.
+- Digital Twin / 3D / asset work.
 - New external dependencies.
 - Database migrations.
 
+## Implementation Notes
+
+Review of `WO-STAB-INTEGRATE-001`: **PASS**. The approved stabilization branch was fast-forwarded into `main` at `8fd5dab96ec27e1a4b564ad2fdc2f3ec26c1e0c2`.
+
+For durable handoffs, record an **implementation checkpoint SHA** (the code/test commit being reviewed). Do not try to make a Markdown file contain the SHA of the commit that contains that same Markdown update; that is self-referential and cannot be made stable. The reviewer will verify the actual branch tip directly from GitHub.
+
+Likely robust design direction to evaluate, not a mandatory implementation:
+
+- track whether the current record/form has been hydrated,
+- track whether the user has made a local edit,
+- allow server snapshots to hydrate while not dirty,
+- block subsequent server-to-form replacement while dirty,
+- reset the hydration/dirty gate when the reading ID changes.
+
+GLM should validate the simplest implementation against actual React/React Query behavior before coding.
+
 ## Reviewer Notes
 
-The integration itself is structurally sound. This is not a request to redo the merge or the three fixes. Only remove the new lint regression cleanly and make the HANDOFF checkpoint exact.
-
-After this WO passes re-review and is merged to `main`, the next work order should address the remaining P0 form data-loss risk caused by background/window-focus refetch.
+This is a P0 data-integrity task. Correctness is more important than preserving every background refresh. However, do not disable focus refresh globally when the actual issue is local form rehydration.
 
 ## Current Branch
 
-`fix/p0-stabilization`
+Create/use a focused branch from latest `main`, recommended:
+
+`fix/p0-form-dirty-gate`
 
 ## Current HEAD
 
-See branch `fix/p0-stabilization`; GLM must replace the HANDOFF checkpoint with the exact pushed SHA after remediation.
+Base `main` before this work-order document: `8fd5dab96ec27e1a4b564ad2fdc2f3ec26c1e0c2`.
+
+GLM must inspect/pull the actual latest `main` before branching because this work-order document itself advances `main`.
 
 ## Next Action
 
-GLM: pull latest `main`, read this file and `docs/ai/HANDOFF.md`, make only the two required remediation changes, run all gates, update HANDOFF, push normally, then STOP at `RE-REVIEW_REQUESTED`.
+GLM: pull latest `main`, read `PROJECT-BRIEF.md` and this work order, inspect the relevant source/tests, create a focused branch, implement only WO-STAB-004, run all gates, update `HANDOFF.md`, push, then STOP at `REVIEW_REQUESTED`.
