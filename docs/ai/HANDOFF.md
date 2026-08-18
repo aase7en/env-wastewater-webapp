@@ -82,7 +82,8 @@ Run from `frontend/`:
 
 ## Exact HEAD
 
-Set by the commit containing this file — the tip commit hash is recorded in the commit message and equals the branch HEAD at REVIEW_REQUESTED time. (Written post-commit below if space allows; authoritative source is `git rev-parse HEAD` on the pushed branch.)
+- Review-candidate commit: `17bf9ef` (17bf9efdfe34cf4c0a9058e1ad6e3dc02259d8ac) — the merge + integration-report commit.
+- Final pushed tip: the commit that records this exact-HEAD note (one doc-only commit above 17bf9ef). Authoritative value: `git rev-parse origin/fix/p0-stabilization`.
 
 ## Reviewer Focus
 
