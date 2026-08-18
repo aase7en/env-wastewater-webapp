@@ -1,22 +1,30 @@
 # HANDOFF
 
-Status: EMPTY
+Status: REVIEW_REQUESTED
 
 ## Task
 
-TODO
+WO-STAB-INTEGRATE-001 — integrate latest `main` into `fix/p0-stabilization`, preserve the three reviewed stabilization commits, rerun full regression gates, stop for review. No new fix/feature scope.
 
 ## Implementation Summary
 
-TODO
+- Inspected divergence first: `fix/p0-stabilization` was 3 commits ahead (the stabilization fixes) and 8 commits behind `origin/main` (all under `docs/ai/**`).
+- File-level overlap between the two sides: **zero**. `main`-only files were exactly `docs/ai/**`; branch-only files were code + `MIGRATION.md`. No conflicts were possible or occurred.
+- Integrated with a plain non-destructive merge (`git merge origin/main --no-edit`) — no rebase, no history rewrite, per WO requirement 2. The three reviewed commits (`cdd6f6d`, `e065253`, `26c629f`) carry through unchanged.
+- Verified acceptance criteria structurally:
+  - `origin/main` (5d7296b) is an ancestor of the resulting HEAD.
+  - All three stabilization commits present in `git log`.
+  - `docs/ai/PROJECT-BRIEF.md`, `CURRENT-WORK.md`, `HANDOFF.md`, `docs/ai/design/{ASSET-LIST,UX-SPEC,VISUAL-SPEC}.md` all present post-merge.
+  - No Digital Twin files modified (`git diff origin/main...HEAD` contains no `digital-twin`/`three` paths).
+- Reran the full regression gates on the integrated tree (results below).
 
 ## Files Added
 
-- None.
+- None by this WO beyond the merge bringing `docs/ai/**` from `main` (merge, not authorship).
 
 ## Files Modified
 
-- None.
+- None directly. This WO's only authored change is this HANDOFF + the `CURRENT-WORK.md` status flip.
 
 ## Files Deleted
 
@@ -24,62 +32,65 @@ TODO
 
 ## Important Decisions
 
-TODO
+- Merge (not rebase) chosen deliberately: the branch is a pushed collaboration branch and the WO asked for the safest normal workflow. Zero overlap made it conflict-free anyway.
+- Lint accounting (see Known Issues): current run shows 13 warnings + 3 errors vs the documented baseline of 12 + 3. The +1 is `react(only-export-components)` on `signOutAll` (`src/components/AuthProvider.tsx:19`) — introduced by already-reviewed commit `e065253` (WO-STAB-003), NOT by this integration WO. Same warning class as the pre-existing `useAuth` export in the same file. Reported verbatim rather than hidden; fixing it (e.g. moving the seam to a `.ts` file) is out of scope per requirement 3 (do not materially alter reviewed commits).
 
 ## UX Changes
 
-None documented yet.
+- None new. The three already-reviewed behavior changes ship as reviewed: delete success navigates normally; sign-out clears the React Query cache; PHI-denied chat history is redacted to `[REDACTED]` before provider send.
 
 ## Visual / 3D Changes
 
-None documented yet.
+- None. `feature/digital-twin-v3` untouched.
 
 ## Tests
 
 ### Commands
 
-TODO
+Run from `frontend/`:
+
+- `npm run build`
+- `npm test -- --run`
+- `npm run e2e`
+- `npm run lint`
+- `git diff --check` (from repo root)
 
 ### Results
 
-TODO
+- Build: `✓ built in 3.22s` — pass.
+- Vitest: **142 passed / 142** (9 test files) — pass, no regression from baseline (the 3 stabilization WOs had already raised the count from 138 to 142 with 4 new tests).
+- Playwright e2e: **31 passed / 31** (~34s) — pass.
+- Lint: 13 warnings + 3 errors. Baseline was 12 + 3; the +1 warning traces to reviewed commit `e065253` (detail above), not to this WO. No new regression from this integration.
+- `git diff --check`: CLEAN.
 
 ## Known Issues
 
-TODO
+- The +1 lint warning described above (pre-existing from a reviewed commit, surfaced honestly here).
+- Everything listed in the WO's Out Of Scope remains open: form-overwrite-on-refetch (next P0), ErrorBoundary/AuthProvider remount, `annotateRow` policy (GPT-approved direction noted in CURRENT-WORK: allowlist + safe-field projection first; scrubber as defense-in-depth — not implemented here), component-test harness.
 
 ## Deferred Work
 
-TODO
+- Per the WO: after this gate is approved and merged, next production work = the remaining P0 data-integrity blocker (in-progress form edits overwritten by window-focus refetch) — WO-STAB-004 in the stabilization backlog.
 
 ## Risks
 
-TODO
+- Low. Integration was conflict-free with zero file overlap; all gates green on the integrated tree. The only judgment call (lint accounting) is documented above for reviewer verification.
 
 ## Branch
 
-TODO
+`fix/p0-stabilization`
 
 ## Exact HEAD
 
-TODO
+Set by the commit containing this file — the tip commit hash is recorded in the commit message and equals the branch HEAD at REVIEW_REQUESTED time. (Written post-commit below if space allows; authoritative source is `git rev-parse HEAD` on the pushed branch.)
 
 ## Reviewer Focus
 
-TODO
+- Confirm the merge preserved the three reviewed commits unchanged (`git log`, or diff `cdd6f6d`, `e065253`, `26c629f` against their reviewed versions).
+- Confirm `docs/ai/**` arrived intact from `main`.
+- Sanity-check the lint accounting note (the +1 warning predates this WO).
+- Approve merge to `main` (out of scope for GLM per this WO).
 
 ## Next Action
 
-Await implementation or review.
-
----
-
-When implementation finishes, GLM updates this file and stops at:
-
-`REVIEW_REQUESTED`
-
-When remediation finishes, update this file and stop at:
-
-`RE-REVIEW_REQUESTED`
-
-Do not put private chain-of-thought in this file. Record decisions, evidence, test results, and implementation facts only.
+GPT review → merge to `main` → then WO-STAB-004 (form dirty-gate) per the WO's Implementation Notes.
