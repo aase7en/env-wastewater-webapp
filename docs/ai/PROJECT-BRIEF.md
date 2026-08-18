@@ -154,6 +154,21 @@ GLM must not silently expand scope beyond `CURRENT-WORK.md`.
 
 Shared state must live in repository files.
 
+## Coordination Precedence
+
+For day-to-day work, use this precedence:
+
+1. Actual current source / branch reality.
+2. Security, privacy, and data integrity constraints.
+3. `docs/ai/CURRENT-WORK.md` — authoritative definition of the active task and allowed scope.
+4. Latest reviewer decision recorded in `docs/ai/CURRENT-WORK.md` or `docs/ai/HANDOFF.md`.
+5. `docs/ai/PROJECT-BRIEF.md` and relevant `docs/ai/design/*` specifications.
+6. Older/deeper coordination documents under `docs/agent-handoff/`.
+
+The lightweight `docs/ai/` workflow is now the **primary operational collaboration workflow**. The older `WORK ORDER COMPLETE` text format in `docs/agent-handoff/AI_COLLABORATION_PROTOCOL.md` is optional legacy guidance; for active work, GLM must report through `docs/ai/HANDOFF.md` and stop at `REVIEW_REQUESTED` or `RE-REVIEW_REQUESTED` as applicable.
+
+Do not silently override older architectural rules. If an older coordination document conflicts materially with an active `CURRENT-WORK.md`, report the conflict in `HANDOFF.md` or request GPT review.
+
 ## Related Existing Coordination Docs
 
 These predate this lightweight workspace and may contain deeper Digital Twin decisions:
@@ -161,7 +176,7 @@ These predate this lightweight workspace and may contain deeper Digital Twin dec
 - `docs/agent-handoff/AI_COLLABORATION_PROTOCOL.md`
 - `docs/agent-handoff/GLM53_DIGITAL_TWIN_COORDINATION.md`
 
-Use `docs/ai/` as the lightweight day-to-day workspace. When a conflict exists, inspect source and the latest approved task/reviewer decision before proceeding.
+Use them for deeper historical/domain decisions when relevant, but use `docs/ai/` as the lightweight day-to-day source for active task state.
 
 # Agent Usage
 
