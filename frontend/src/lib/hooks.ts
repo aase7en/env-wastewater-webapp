@@ -102,7 +102,13 @@ function useInvalidateReadings() {
 
 /** Result of a mutation call — callers read this tuple instead of
  *  reading hook.error after await (which is a stale closure snapshot
- *  until React re-renders). EQ-5.1 fix. */
+ *  until React re-renders). EQ-5.1 fix.
+ *
+ * WO-STAB-001 contract note: when the underlying mutationFn returns
+ * Promise<void> (e.g. deleteReading), a SUCCESSFUL call yields
+ * {data: null, error: null} — `data` is null on success. Callers MUST
+ * branch on `error`, never on data truthiness. `data` non-null is only
+ * meaningful for mutations that return an entity (create/update). */
 export interface MutationResult<T> {
   data: T | null;
   error: string | null;

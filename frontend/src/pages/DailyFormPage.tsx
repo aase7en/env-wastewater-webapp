@@ -179,9 +179,13 @@ export function DailyFormPage() {
   const onDelete = async () => {
     if (!id) return;
     if (!window.confirm("ยืนยันการลบรายการนี้? การกระทำนี้ย้อนกลับไม่ได้")) return;
-    const { data, error } = await deleteMut.mutate(id);
-    if (data !== null) navigate("/readings");
-    else setBanner({ kind: "error", msg: error ?? "ลบไม่สำเร็จ" });
+    // WO-STAB-001: deleteReading returns Promise<void>, so the mutate tuple
+    // is {data: null, error: null} on SUCCESS — a truthy-data check always
+    // failed and showed "ลบไม่สำเร็จ" + blocked the redirect even though
+    // the row was actually deleted. Success must be judged by !error.
+    const { error } = await deleteMut.mutate(id);
+    if (!error) navigate("/readings");
+    else setBanner({ kind: "error", msg: error });
   };
 
   if (loadingExisting) {
