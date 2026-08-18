@@ -2,6 +2,27 @@ import { type ReactNode, createContext, useContext, useEffect, useMemo, useRef, 
 import type { Session, User } from "@supabase/supabase-js";
 import { supabase } from "../lib/supabase";
 import { buildRedirectURL } from "../lib/auth-redirect";
+import { queryClient } from "../lib/query-client";
+
+/**
+ * WO-STAB-003 (2026-08-15): the full sign-out sequence, extracted as a
+ * unit-testable seam. Previously the context's signOut only called
+ * supabase.auth.signOut + setAppUser(null) — the React Query cache kept
+ * the previous user's rows, so on a shared ward device the next user
+ * briefly saw them until RLS-gated refetches resolved.
+ *
+ * The cache is cleared BEFORE the error path can return: even when
+ * supabase signOut throws (network), the local cache must not survive.
+ * RLS remains the authoritative gate server-side; this is the client-side
+ * leg of the shared-device hygiene.
+ */
+export async function signOutAll(): Promise<void> {
+  try {
+    await supabase.auth.signOut();
+  } finally {
+    queryClient.clear();
+  }
+}
 
 /**
  * Auth context — exposes the Supabase session + helper methods.
@@ -231,7 +252,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       },
 
       async signOut() {
-        await supabase.auth.signOut();
+        await signOutAll();
         setAppUser(null);
       },
     }),
