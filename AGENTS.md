@@ -11,6 +11,7 @@ This repo pairs with **A-Wiki**, a separate personal-wiki repo that holds:
 - Domain knowledge: `wiki/entities/env/`, `wiki/concepts/env/`
 - The schema design doc: `wiki/synthesis/env-webapp-schema-wastewater.md`
 - The project pointer page: `wiki/entities/env/env-webapp-project.md`
+- **Shared agent reasoning/communication standards** (not just domain knowledge) — applies here too: `AGENTS.md` § Reasoning & Honesty Standards (epistemic honesty, communication, self-check) and the companion skill `agent-skills/engineering/reasoning-standards/SKILL.md` (reasoning loop, technical-work playbooks — includes the พ.ศ./Buddhist-Era date-conversion and patient-data-boundary guidance relevant to this project's hospital data)
 
 **Before starting non-trivial work here, check A-Wiki for context.** Resolve its
 location in this order:
