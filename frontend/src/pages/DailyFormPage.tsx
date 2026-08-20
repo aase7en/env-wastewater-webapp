@@ -1,5 +1,11 @@
-import { type FormEvent, useEffect, useMemo, useState } from "react";
+import { type FormEvent, useEffect, useMemo, useRef, useState } from "react";
 import { useNavigate, useParams } from "react-router-dom";
+import {
+  INITIAL_GATE,
+  markDirty,
+  resolveHydration,
+  type HydrationGateState,
+} from "../lib/form-hydration";
 import { AccordionSection } from "../components/ui/Accordion";
 import { MSymbol } from "../components/ui/MSymbol";
 import { Button } from "../components/ui/Button";
@@ -105,9 +111,18 @@ export function DailyFormPage() {
   const updateMut = useUpdateReading();
   const deleteMut = useDeleteReading();
 
-  // Edit mode: populate the form once the existing record loads.
+  // Edit mode: hydrate the form from the reading record — gated.
+  // WO-STAB-004 (P0 #4): React Query background/window-focus refetches
+  // deliver fresh snapshots of `existing`; the ungated effect repopulated
+  // the whole form and silently wiped unsaved edits. The gate allows the
+  // first hydration, pristine same-record refreshes, and record switches;
+  // it denies replacement while the user has edited the current record.
+  const gateRef = useRef<HydrationGateState>(INITIAL_GATE);
   useEffect(() => {
     if (!existing) return;
+    const { hydrate, next } = resolveHydration(gateRef.current, id);
+    if (!hydrate) return;
+    gateRef.current = next;
     setForm({
       ...emptyForm(),
       ...Object.fromEntries(
@@ -115,7 +130,7 @@ export function DailyFormPage() {
       ),
       abnormal_cause: "",
     } as FormState);
-  }, [existing]);
+  }, [existing, id]);
 
   // equipment code → Thai label lookup
   const equipLabel = useMemo(() => {
@@ -132,9 +147,13 @@ export function DailyFormPage() {
   // SPEC §6: abnormal_cause required when system_operating === false.
   const causeMissing = form.system_operating === false && !String(form.abnormal_cause ?? "").trim();
 
-  // Helper to update a single field.
-  const set = <K extends keyof FormState>(key: K, value: FormState[K]) =>
+  // Helper to update a single field. WO-STAB-004: every user edit marks
+  // the hydration gate dirty so a later background refetch snapshot of the
+  // SAME record cannot overwrite the form (record switches still hydrate).
+  const set = <K extends keyof FormState>(key: K, value: FormState[K]) => {
+    gateRef.current = markDirty(gateRef.current);
     setForm((f) => ({ ...f, [key]: value }));
+  };
 
   // Convert form-state strings to the API shape ("" → null, numbers stay).
   const buildPayload = (): ReadingCreate => {
