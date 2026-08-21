@@ -71,6 +71,10 @@ The work order requires before/after screenshots in the PR handoff. The current 
 
 The rendered top bar is now at least 64px high while `--topbar-h` in `frontend/src/styles/spacing.css` still documents 56px. The token is currently unused, so this does not block remediation, but reconcile or explicitly retire it before a future consumer relies on it.
 
+## Integration Requirement
+
+PR #16 merged after this branch was cut. The reviewed PR now has a content conflict in `docs/ai/CURRENT-WORK.md` against current `main`. Integrate current `main` after the UI remediation, retain the calendar-MoM fix and latest repo-wide handoff state, then keep this work order at `RE-REVIEW_REQUESTED`. Do not discard another owner's changes while resolving the coordination file.
+
 ## Verification Required
 
 - `npm run build`
@@ -79,6 +83,7 @@ The rendered top bar is now at least 64px high while `--topbar-h` in `frontend/s
 - `npm run lint` against the documented baseline
 - `git diff --check`
 - confirm no document-level horizontal overflow at 360px in light and dark themes
+- confirm PR #15 is mergeable against current `main`
 
 ## Next Action
 
