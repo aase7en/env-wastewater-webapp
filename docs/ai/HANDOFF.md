@@ -1,10 +1,20 @@
 # HANDOFF
 
-Status: RE-REVIEW_REQUESTED
+Status: APPROVED
 
 ## Task
 
 `WO-STAB-004` — prevent React Query background/window-focus refetch from overwriting unsaved user edits in the wastewater Daily Form (P0 data-integrity, finding #4 of `reports/code-review-2026-08-12.md`). **CI remediation round** for PR #11 after CHANGES_REQUIRED.
+
+## Reviewer Approval
+
+GPT 5.6 Sol UltraMAX returned **PASS** on 2026-08-21. PR #11 was merged into `main` as `f48dcd76d14010b17f0f6bdd35ad111201a24a27`.
+
+- Root cause and the final workflow behavior were independently verified from repository state.
+- CI runs `32440011145` (`66c97d2`) and `32440235796` (`ac8a87a`) both passed 32/32; the 32-test discovery set includes `daily-form-dirty.spec.ts`, proving the regression was not skipped.
+- Reviewer-local production build passed, Vitest passed 148/148, and `git diff --check` passed.
+- No assertions, application code, Digital Twin files, or global React Query focus settings changed during remediation.
+- The dev-server CI profile limitation is accepted for this work order; production-preview E2E remains deferred.
 
 ## Root Cause of the local-vs-CI discrepancy
 
@@ -12,7 +22,7 @@ The CI workflow's "Run smoke tests" step pointed `E2E_BASE_URL` at the **deploye
 
 ## Remediation (production code unchanged)
 
-- `0b7cd14` — first attempt: serve the job's `dist/` via `vite preview` and run the suite against it. FAILED on CI: the auth-gated suite does not pass under the prod-build+preview environment (protected routes never bounced — RequireAuth stuck loading), the same shape seen locally. This dragged service-worker / base-path / prod-build variables into an auth-gated suite — out of this WO's scope.
+- `0b7cd14` — first attempt: serve the job's `dist/` via `vite preview` and run the suite against it. The CI job produced repeated auth-gated suite failures (protected routes never bounced — RequireAuth stuck loading) before the follow-up push cancelled the run. This dragged service-worker / base-path / prod-build variables into an auth-gated suite — out of this WO's scope.
 - `66c97d2` — final fix: **run the suite via Playwright's own webServer** (`E2E_BASE_URL` unset → config boots vite dev from the checked-out branch, `CI=true` forces a fresh server, VITE_* secrets passed to the step). This is the exact profile the regression was written and verified against; the PR's code is what runs. Prod build remains gated by the separate Build step; post-deploy prod smoke stays covered by `deploy-frontend.yml`'s own smoke-test step.
 - The gate implementation, unit tests, and the e2e regression itself are **unchanged** from the reviewed checkpoint `f561654` — no assertion weakened, the changed-server snapshot and the reconnect refetch path are intact.
 
@@ -52,6 +62,7 @@ From `frontend/`: `npm run lint`, `npm run build`, `npm test -- --run`, `npm run
 
 - Local (branch): lint **12w+3e = documented baseline** · build pass · Vitest **148/148** · Playwright **32/32** · `git diff --check` clean (from the first round; remediation changed no app code).
 - **GitHub Actions (decisive gate this round): run 32440011145 — `E2E smoke tests / smoke` PASS, 32/32 in 1m59s**, including the previously-failing regression. PR checks: smoke ✓ · scripts ✓ · notify ✓.
+- Reviewer verification: current-head run `32440235796` also passed 32/32; local production build passed; Vitest passed 148/148; `git diff --check` clean.
 
 ## Known Issues
 
@@ -69,18 +80,17 @@ From `frontend/`: `npm run lint`, `npm run build`, `npm test -- --run`, `npm run
 
 ## Branch
 
-`fix/p0-form-dirty-gate`
+Merged from `fix/p0-form-dirty-gate` into `main` via PR #11.
 
 ## Exact HEAD
 
-Implementation checkpoint: `66c97d2` (`66c97d2…`, CI-fixing commit; run 32440011145 verified green on it). Doc-only status-flip commit sits on top.
+Implementation checkpoint: `66c97d2` (CI run `32440011145`). Approved PR head: `ac8a87a` (CI run `32440235796`). Merge commit: `f48dcd76d14010b17f0f6bdd35ad111201a24a27`.
 
-## Reviewer Focus
+## Review Result
 
-- `.github/workflows/e2e.yml` run step (the only functional change this round).
-- Confirm CI run 32440011145 green on the PR.
-- First-round implementation (checkpoint `f561654`) is unchanged since the prior review.
+- **PASS** — remediation meets the WO acceptance criteria and the release-blocking CI mismatch is resolved.
+- Evidence clarification: `git show 66c97d2` is workflow-only. The broader literal range `f561654..66c97d2` also contains earlier coordination-document changes, but no production or test changes.
 
 ## Next Action
 
-GPT 5.6 Sol UltraMAX re-review of PR #11 → merge → next production WO.
+WO-STAB-004 is complete. The next production work order should address the remaining P0: ErrorBoundary/AuthProvider remount behavior.

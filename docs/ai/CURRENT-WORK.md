@@ -1,6 +1,6 @@
 # CURRENT WORK
 
-Status: RE-REVIEW_REQUESTED
+Status: APPROVED
 
 Allowed statuses:
 
@@ -97,23 +97,23 @@ The initial record must still hydrate correctly. Navigating to a different readi
 
 ## Acceptance Criteria
 
-- [ ] Existing record hydrates correctly on initial edit-page load.
-- [ ] After a user changes at least one field, a window-focus/background refetch cannot replace the unsaved form values.
-- [ ] Refetch before the user edits does not break initial/current server-state hydration.
-- [ ] Navigating/editing a different reading ID can hydrate the new record rather than remaining permanently gated by the prior record's dirty state.
-- [ ] Existing create flow remains unchanged.
-- [ ] Existing update flow remains unchanged.
-- [ ] Existing delete flow remains unchanged.
-- [ ] A regression test demonstrates the data-loss bug is prevented, using the existing test stack where feasible.
-- [ ] `npm run build` passes.
-- [ ] `npm test` passes with no regression.
-- [ ] Full Playwright suite passes.
-- [ ] `npm run lint` is at the documented baseline or better; no new warnings/errors caused by this WO.
-- [ ] `git diff --check` passes.
-- [ ] No Digital Twin files are modified.
-- [ ] No unrelated P0/P1 fixes are bundled into this WO.
-- [ ] `docs/ai/HANDOFF.md` records implementation facts, tests, branch, and implementation checkpoint.
-- [ ] HANDOFF status is `REVIEW_REQUESTED` when finished.
+- [x] Existing record hydrates correctly on initial edit-page load.
+- [x] After a user changes at least one field, a window-focus/background refetch cannot replace the unsaved form values.
+- [x] Refetch before the user edits does not break initial/current server-state hydration.
+- [x] Navigating/editing a different reading ID can hydrate the new record rather than remaining permanently gated by the prior record's dirty state.
+- [x] Existing create flow remains unchanged.
+- [x] Existing update flow remains unchanged.
+- [x] Existing delete flow remains unchanged.
+- [x] A regression test demonstrates the data-loss bug is prevented, using the existing test stack where feasible.
+- [x] `npm run build` passes.
+- [x] `npm test` passes with no regression.
+- [x] Full Playwright suite passes.
+- [x] `npm run lint` is at the documented baseline or better; no new warnings/errors caused by this WO.
+- [x] `git diff --check` passes.
+- [x] No Digital Twin files are modified.
+- [x] No unrelated P0/P1 fixes are bundled into this WO.
+- [x] `docs/ai/HANDOFF.md` records implementation facts, tests, branch, and implementation checkpoint.
+- [x] HANDOFF reached `REVIEW_REQUESTED` before reviewer approval.
 
 ## Out Of Scope
 
@@ -173,6 +173,19 @@ Required remediation scope:
 7. Update `HANDOFF.md` with the new checkpoint and exact CI evidence.
 8. Set status to `RE-REVIEW_REQUESTED` only after the blocking CI check is green.
 
+## Reviewer Approval
+
+GPT 5.6 Sol UltraMAX completed the remediation re-review on 2026-08-21 and returned **PASS**.
+
+- Verified the root cause directly: the former `E2E_BASE_URL` made Playwright skip its local `webServer` and test the deployed `main` site instead of the checked-out PR code.
+- Verified `66c97d2` changes only `.github/workflows/e2e.yml`; production code and regression-test blobs are unchanged from reviewed checkpoint `f561654`.
+- Verified CI run `32440011145` at `66c97d2` and current-head run `32440235796` at `ac8a87a`: both passed 32/32. The discovered 32-test set includes `daily-form-dirty.spec.ts`, so the regression ran and was not skipped.
+- Verified local reviewer gates: production build passed, Vitest passed 148/148, and `git diff --check` passed.
+- Accepted the disclosed limitation that PR CI uses the Vite dev-server profile; production-build preview coverage remains a separate work order.
+- Merged PR #11 into `main` as merge commit `f48dcd76d14010b17f0f6bdd35ad111201a24a27`.
+
+Evidence clarification: the literal range `f561654..66c97d2` also contains earlier coordination-document changes. The functional fix commit itself (`git show 66c97d2`) is workflow-only, and there are no `frontend/src` or `frontend/tests` changes between those checkpoints.
+
 ## Current Branch
 
 Create/use a focused branch from latest `main`, recommended:
@@ -181,10 +194,8 @@ Create/use a focused branch from latest `main`, recommended:
 
 ## Current HEAD
 
-Base `main` before this work-order document: `8fd5dab96ec27e1a4b564ad2fdc2f3ec26c1e0c2`.
-
-GLM must inspect/pull the actual latest `main` before branching because this work-order document itself advances `main`.
+Approved merge checkpoint on `main`: `f48dcd76d14010b17f0f6bdd35ad111201a24a27`.
 
 ## Next Action
 
-GLM: pull latest `main`, read `PROJECT-BRIEF.md` and this work order, inspect the relevant source/tests, create a focused branch, implement only WO-STAB-004, run all gates, update `HANDOFF.md`, push, then STOP at `REVIEW_REQUESTED`.
+WO-STAB-004 is complete. Create a new focused work order for the remaining production P0: ErrorBoundary/AuthProvider remount behavior. Do not resume Digital Twin visual work from this coordination file.
