@@ -2,6 +2,7 @@ import { type ReactNode, createContext, useContext, useEffect, useMemo, useRef, 
 import type { Session, User } from "@supabase/supabase-js";
 import { supabase } from "../lib/supabase";
 import { buildRedirectURL } from "../lib/auth-redirect";
+import { signOutAll } from "../lib/auth-signout";
 
 /**
  * Auth context — exposes the Supabase session + helper methods.
@@ -231,7 +232,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       },
 
       async signOut() {
-        await supabase.auth.signOut();
+        await signOutAll();
         setAppUser(null);
       },
     }),

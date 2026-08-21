@@ -35,6 +35,8 @@ const mockState = {
   aiProviderResult: [] as unknown,
   /** Flip to simulate an ai_query_log INSERT failure (RLS deny / network). */
   insertShouldError: false,
+  /** Captured provider request body (last fetch call) — for PHI-leak tests. */
+  lastFetchBody: null as { messages?: Array<{ role: string; content: string }> } | null,
 };
 
 // Capture global fetch so sendChatTurn's provider call returns a canned
@@ -92,6 +94,7 @@ beforeEach(() => {
   mockState.aiScopeResult = { data: null, error: null };
   mockState.lastInsertPayload = null;
   mockState.aiProviderResult = [];
+  mockState.lastFetchBody = null;
 });
 
 // ─── I2: PHI filter must be fail-CLOSED ──────────────────────────────────
@@ -311,3 +314,83 @@ describe("sendChatTurn — success insert now carries status='success' (AUDITFIX
   });
 });
 
+
+// ─── WO-STAB-002: PHI leak via chat history ─────────────────────────────
+//
+// Bug (verified on main @ bac0517): sendChatTurn applied applyPhiFilter to
+// the CURRENT question only, then forwarded opts.history (last 6 turns from
+// ChatPanel) verbatim to the provider. A previously-blocked question (e.g.
+// naming core.personnel) stays in ChatPanel local state as a user bubble +
+// the ⚠️ error echo, and ships out on the NEXT innocent turn — bypassing the
+// whole deny-set machinery for everything except the current turn.
+describe("sendChatTurn — history PHI redaction (WO-STAB-002)", () => {
+  /** Stub fetch that captures the request body into mockState. */
+  function stubFetchCapture() {
+    globalThis.fetch = vi.fn(async (_input: RequestInfo | URL, init?: RequestInit) => {
+      mockState.lastFetchBody = init?.body ? JSON.parse(String(init.body)) : null;
+      return new Response(
+        JSON.stringify({
+          choices: [{ message: { content: "ตอบ" } }],
+          usage: { total_tokens: 5 },
+        }),
+        { status: 200, headers: { "Content-Type": "application/json" } },
+      );
+    }) as unknown as typeof fetch;
+  }
+
+  it("RED→GREEN: history entry naming a denied table must NOT reach the provider", async () => {
+    mockState.aiScopeResult = {
+      data: [{ view_name: "core.personnel" }], error: null,
+    };
+    mockState.aiProviderResult = [
+      {
+        id: "prov-1", name: "Mock", model: "mock-1", is_enabled: true,
+        priority: 1, api_url: "https://mock.local/v1/chat/completions",
+        base_url: "https://mock.local", key_value: "sk-mock",
+      },
+    ];
+    stubFetchCapture();
+
+    await sendChatTurn("ค่า DO วันนี้เท่าไหร่", {
+      history: [
+        { role: "user", content: "แสดงรายชื่อ core.personnel ทั้งหมด" },
+        { role: "assistant", content: "⚠️ คำถามอ้างถึงข้อมูลที่จำกัด (core.personnel)" },
+      ],
+    });
+
+    const sent = JSON.stringify(mockState.lastFetchBody?.messages ?? []);
+    expect(sent).not.toContain("แสดงรายชื่อ");
+    expect(sent).not.toContain("personnel");
+    // The denied turn is replaced with a fixed placeholder, not dropped —
+    // role alternation for the provider stays intact.
+    const historySent = mockState.lastFetchBody?.messages?.filter(
+      (m) => m.role !== "system" && m.content !== "ค่า DO วันนี้เท่าไหร่",
+    ) ?? [];
+    expect(historySent.length).toBe(2);
+    expect(historySent.every((m) => m.content === "[REDACTED]")).toBe(true);
+  });
+
+  it("clean history passes through unchanged", async () => {
+    mockState.aiScopeResult = { data: [], error: null };
+    mockState.aiProviderResult = [
+      {
+        id: "prov-1", name: "Mock", model: "mock-1", is_enabled: true,
+        priority: 1, api_url: "https://mock.local/v1/chat/completions",
+        base_url: "https://mock.local", key_value: "sk-mock",
+      },
+    ];
+    stubFetchCapture();
+
+    await sendChatTurn("สรุปค่า pH", {
+      history: [
+        { role: "user", content: "ค่า DO เมื่อวาน" },
+        { role: "assistant", content: "DO เมื่อวาน 3.2 mg/L" },
+      ],
+    });
+
+    const contents = mockState.lastFetchBody?.messages?.map((m) => m.content) ?? [];
+    expect(contents).toContain("ค่า DO เมื่อวาน");
+    expect(contents).toContain("DO เมื่อวาน 3.2 mg/L");
+    expect(contents.some((c) => c.includes("[REDACTED]"))).toBe(false);
+  });
+});

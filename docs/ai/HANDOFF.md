@@ -1,89 +1,119 @@
-# HANDOFF — Digital Twin Visual Direction
+# HANDOFF
 
-Status: DOCUMENTATION_READY
+Status: RE-REVIEW_REQUESTED
 
-Last updated: 2026-08-21
+## Task
 
-## Repository State
+`WO-STAB-005` — stop ErrorBoundary from remounting the app subtree on every navigation while keeping the post-crash route-change recovery (P0 #5, `reports/code-review-2026-08-12.md`).
 
-- Repository: `env-wastewater-webapp`
-- Target branch: `feature/digital-twin-v3`
-- Foundation checkpoint before documentation: `e79073d`
-- Production stabilization is proceeding separately. Do not mix its shared-file changes into this branch without an explicit integration work order.
+## Implementation Summary
 
-## What Exists
+- **Root cause**: `ErrorRouteWatcher` rendered `<div key={location.pathname}>` around `ErrorBoundaryInner > AuthProvider`. A changed key forces React to unmount/remount the subtree — AuthProvider re-ran `getSession()` + `loadAppUser()` on every dock click (skeleton flicker + a fresh `app_user` REST call per navigation).
+- **Fix — derived reset instead of remount** (`frontend/src/components/ErrorBoundary.tsx`, only modified production file):
+  - The function wrapper reads `useLocation()` and passes `routeKey={location.pathname}` as a prop.
+  - `getDerivedStateFromProps` clears an ACTIVE error when `routeKey` changes (escape hatch) and remembers the new route in state (`lastRouteKey`). Healthy navigations only update the remembered key — the subtree stays mounted and AuthProvider survives.
+  - The wrapper `<div>` and the `key` trick are deleted entirely.
+  - Reset lives in `getDerivedStateFromProps` (pure) rather than `componentDidUpdate`+`setState`: an initial variant using componentDidUpdate tripped `react(no-did-update-set-state)`; instead of suppressing the rule, the logic was refactored to the derived form. Nothing suppressed.
 
-### Domain layer
+## Files Added
 
-`frontend/src/lib/twin/` contains typed Twin metrics, the Dashboard adapter, selectors, an interaction/simulation store, explicit demo overrides, WebGL capability checks, and unit tests.
+- `frontend/tests/e2e/error-boundary-remount.spec.ts` (2 regression tests)
 
-React Query/Supabase data is passed into the twin. Zustand stores only mode, selected asset, and simulation overrides; it does not duplicate the full live/latest snapshot.
+## Files Modified
 
-### 3D layer
+- `frontend/src/components/ErrorBoundary.tsx` (+34/−20)
 
-`frontend/src/components/digital-twin/` contains:
+## Files Deleted
 
-- `TwinCanvas.tsx`
-- `TwinRendererBoundary.tsx`
-- `WastewaterTwin.tsx`
+- None.
 
-The current proof of concept is deliberately minimal: a procedural rectangular tank, conditional water volume, a generic central aeration element, instanced bubbles in simulation/running state, lighting, grid, orbit camera, click selection, and an accessible DOM data panel.
+## Important Decisions
 
-### Dashboard integration
+- Escape path in test B uses **browser back** (`page.goBack()`): when the tree is crashed the recovery screen is the only rendered output — there is no in-app nav to click, so back/popstate is the real user route-change mechanism.
+- Test B triggers a genuine render-phase throw by blocking the lazy `TrendsPage` chunk (route pattern covers both the dev-server module URL and the hashed prod asset).
+- Test A measures remounts by counting `app_user` REST calls (AuthProvider's mount effect) across 3 SPA navigations.
 
-`DashboardPage` lazy-loads the 3D chunk and provides `3D Plant | Process`. The existing `ProcessFlowDiagram` remains available. Renderer readiness is exposed deterministically through `data-twin-status` for Playwright.
+## UX Changes
 
-## Data Honesty State
+- Visible improvement (no behavior regression): no more skeleton flicker on every navigation; post-crash recovery via route change works as before.
 
-Current `DashboardRow` mapping supplies DO and TDS as manual daily snapshot metrics. It does not supply tank level, aerator running state, or a reliable temperature value for the current dashboard contract; those remain unavailable.
+## Visual / 3D Changes
 
-Simulation values are explicitly synthetic and visibly labeled. Do not weaken this separation during visual work.
+- None. No Digital Twin files touched.
 
-## New Visual Direction
+## Tests
 
-The user supplied:
+### Commands
 
-- six ground photographs of the treatment plant
-- three drone photographs showing hospital/canal context
-- four cozy fishing-game screenshots as style references
+From `frontend/`: `npm run lint`, `npm run build`, `npm test -- --run`, `npm run e2e`; from repo root: `git diff --check`.
 
-The original hospital-site media is not committed to the repository. Nine raw photographs are archived privately at:
+### Results
 
-`L:\My Drive\A-Wiki-Data\raw\environment\env-wastewater-webapp\digital-twin\site-reference\2026-08-21`
+- Lint: **12 warnings + 3 errors — exactly the documented baseline** (3 transient new hits during development were eliminated by the derived-state refactor + fixture-param rename; nothing suppressed).
+- Build: pass.
+- Vitest: **148/148**.
+- Playwright e2e: **34/34** (32 existing + 2 new).
+- `git diff --check`: CLEAN.
+- **RED proof** (test A on the old code, via temporary stash): expected 2 `app_user` calls, received **11** — the remount storm captured directly; GREEN (2/2) with the fix.
 
-The private folder contains `README.md`, `MANIFEST.sha256`, six ground photographs, and three drone photographs. Game screenshots are intentionally excluded from the confidential raw archive. See `docs/ai/digital-twin/09-SITE-VISUAL-REFERENCE.md` for the durable observations and handling boundary.
+## Known Issues
 
-Key direction:
+- The derived reset clears error state on ANY route change while an error is active (including forward navigation via any external mechanism) — matches the intended semantics.
 
-- real plant geometry and identity first
-- cozy stylized three-quarter diorama presentation
-- professional Aura operational UI
-- no game mechanics or copied game assets
-- aeration water must not look like a clear ornamental pond
-- canal is spatial context only until plans verify actual hydraulic connections
+## Deferred Work
 
-## Important Correction to the Current POC
+Out of scope per CURRENT-WORK: P1 findings (alert unread count, carbon MoM, role-visibility error UX), `annotateRow` policy, component-test harness.
 
-Ground photographs show a tall rectangular aeration basin with visible surface equipment at two positions, red ladder/piping, a blue Thai sign, lawn, hedge, and nearby buildings. The current generic central diffuser is not site-authentic.
+## Risks
 
-This is a visual correction, not permission to invent per-equipment telemetry. The current contract exposes one aggregate `aeratorRunning` metric. Individual aerator ON/OFF states must not be shown unless Core Engineering exposes a validated contract.
+- Low. Single-file production change; both behaviors pinned by regression tests with a captured RED.
 
-## Next Work
+## Branch
 
-Read `docs/ai/digital-twin/03-MICRO-STEP-BOARD.md`. The proposed next implementation is `DT-VIS-P001`, but it requires explicit user approval.
+`fix/p0-error-boundary-remount`
 
-## Verification for This Handoff
+## Exact HEAD
 
-This work order changes documentation only. Source build/test gates are not required unless source changes appear unexpectedly. Run at minimum:
+`d11c2a3e6fa9843bd4ff2bad96e6d578c2a44ec8` (implementation checkpoint; doc-only commits sit on top).
 
-- `git diff --check`
-- confirm only intended documentation files are staged
-- record the exact documentation commit below
+## Remediation Round (test determinism — CHANGES_REQUIRED)
 
-## Documentation Commit
+Reviewer finding: test A's pointer clicks on animated/overlapping ModuleDock links were flaky (reviewer-local failures + a CI '1 flaky' masked by retry); text markers also matched persistent nav UI and no URL was asserted.
 
-The documentation checkpoint is the commit containing this file. Verify it from the branch tip with `git log -1 --oneline`; do not attempt to embed a commit's own SHA inside itself.
+Fix (test-only, commit `c152148`):
+- Links activated via KEYBOARD (focus + Enter) — no pointer hit-testing.
+- `toHaveURL` (end-anchored) asserted after EVERY transition; text markers dropped from the wait path.
+- `page.goto` used exactly once at boot — later gotos would full-reload and remount AuthProvider, invalidating the behavior under test.
+- `app_user` call-count assertion unchanged; 500 ms settle before counting.
+- Production code UNCHANGED from checkpoint `d11c2a3`.
 
-## Resume Prompt
+Stability + gates: focused `--retries=0 --repeat-each=3` → **6/6 passed (31s, no flaky)** · lint 12w+3e (= baseline) · build OK · Vitest 148/148 · Playwright 34/34 · `git diff --check` clean.
 
-> Open `feature/digital-twin-v3`. Read `AGENTS.md`, `docs/ai/PROJECT-BRIEF.md`, `docs/ai/CURRENT-WORK.md`, `docs/ai/HANDOFF.md`, all files under `docs/ai/digital-twin/`, and `docs/agent-handoff/DIGITAL_TWIN_CONTINUITY.md`. Inspect source before trusting recorded implementation facts. Do not implement until the user approves the active micro task. Preserve unknown-first behavior, the Process view, accessibility, reduced motion, and WebGL fallback.
+## Reviewer Focus
+
+- The `getDerivedStateFromProps` reset semantics in `ErrorBoundary.tsx` (healthy nav = key update only; error + route change = clear).
+- Test A's measurement approach (app_user call count) and test B's crash trigger (lazy chunk block) + browser-back escape.
+
+## Reviewer Decision — CHANGES_REQUIRED
+
+The production implementation is accepted in principle; the blocker is the determinism of regression test A.
+
+Reviewer evidence on the PR branch:
+
+- `npm run build`: PASS.
+- `npm test`: 148/148 PASS.
+- CI run `32453224779`: 34/34 PASS.
+- Targeted local spec, normal profile: test A failed twice at `error-boundary-remount.spec.ts:52`; `.dock-item` intercepted the second dock-link pointer click. Test B passed both times.
+- Targeted local spec, fresh CI profile: test A failed first attempt and passed on retry, producing `1 flaky`; the process exited green only because CI config permits one retry.
+
+Required fix:
+
+1. Preserve real client-side React Router transitions, but remove pointer hit-testing from this remount regression; do not use full-page `page.goto` for the three post-boot transitions.
+2. Assert the URL/path after every transition. The current Thai text markers also exist in the persistent nav and do not prove the destination rendered.
+3. Keep the `app_user` boot-count equality assertion intact.
+4. Run the focused spec with `--retries=0 --repeat-each=3`, then lint/build/Vitest/full Playwright/`git diff --check`.
+5. Update this handoff with exact results and stop at `RE-REVIEW_REQUESTED`.
+
+## Next Action
+
+GLM 5.3 remediates only the reviewer test finding, pushes PR #12, and stops at `RE-REVIEW_REQUESTED`.

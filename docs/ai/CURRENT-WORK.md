@@ -1,83 +1,83 @@
-# CURRENT WORK — Digital Twin Visual Direction
+# CURRENT WORK
 
-Status: DESIGNING
+Status: RE-REVIEW_REQUESTED
 
-Last updated: 2026-08-21
+Allowed statuses:
 
-> This file is the branch-specific authoritative task. It does not authorize source implementation until the user approves the named micro task.
+- IDLE
+- DESIGNING
+- READY_FOR_IMPLEMENTATION
+- IMPLEMENTING
+- REVIEW_REQUESTED
+- CHANGES_REQUIRED
+- RE-REVIEW_REQUESTED
+- APPROVED
+- BLOCKED
+
+> `CURRENT-WORK.md` is the authoritative task definition. Agents must not silently expand task scope.
 
 ## Work Order
 
-`DT-VIS-P000` — lock site-authentic visual direction and durable handoff
+`WO-STAB-005`
 
-Owner: Codex / Visual Experience Owner
+Owner: GLM 5.3
 
 ## Goal
 
-Convert the user's ground and drone photographs plus high-level game-style references into a durable, implementation-ready visual brief for the existing Aeration Tank proof of concept.
+Stop `ErrorBoundary` from remounting the app subtree (AuthProvider included) on every navigation, while keeping the post-crash recovery behavior: a route change still clears the recovery screen so the user can escape a broken page.
 
-## Current Outcome
+## Problem (P0 #5, reports/code-review-2026-08-12.md)
 
-- Visual direction is documented as **UTH Environmental Treatment Garden**.
-- Site observations, uncertainty, requested reference material, and data-honesty constraints are recorded in `docs/ai/digital-twin/09-SITE-VISUAL-REFERENCE.md`.
-- Implementation is intentionally paused. No scene redesign is authorized by this documentation work order.
+`ErrorRouteWatcher` rendered `<div key={location.pathname}>` around `ErrorBoundaryInner > AuthProvider`. React treats a changed key as a new subtree, so every route change unmounted and remounted the whole app: AuthProvider re-ran `getSession()` + `loadAppUser()` on each dock click — visible PageSkeleton flicker on every navigation plus a fresh `app_user` REST round-trip each time.
 
-## Current Verified Foundation
+## Desired Result
 
-Branch `feature/digital-twin-v3` at implementation checkpoint `e79073d` contains:
+- Healthy SPA navigation keeps the subtree mounted (AuthProvider survives; no flicker; no repeated app_user lookups).
+- After a render crash, a route change (e.g. browser back — the crashed tree offers no in-app nav) clears the error and renders the target route.
 
-- Three.js, React Three Fiber, Drei, and Zustand
-- `frontend/src/lib/twin/**`
-- `frontend/src/components/digital-twin/**`
-- lazy 3D/Process switch on `DashboardPage`
-- manual-snapshot provenance and unknown-first mapping
-- explicit simulation/demo state
-- WebGL capability, initialization, error-boundary, and context-loss fallback
-- accessibility and reduced-motion behavior
-- unit and Playwright coverage for the foundation
+## Technical Requirements
 
-## Immediate Next Decision
-
-The user chooses whether to proceed with:
-
-`DT-VIS-P001 — Site-authentic Aeration Diorama Blockout`
-
-Before implementation, the assigned agent must state:
-
-- files it will modify
-- files it will not modify
-- expected visible result
-- acceptance criteria
-- test and screenshot plan
-
-## Allowed for DT-VIS-P000
-
-- Documentation under `docs/ai/digital-twin/**`
-- This branch-specific `PROJECT-BRIEF.md`, `CURRENT-WORK.md`, and `HANDOFF.md`
-- `docs/agent-handoff/DIGITAL_TWIN_CONTINUITY.md`
-
-## Forbidden for DT-VIS-P000
-
-- Frontend source changes
-- Supabase/schema/Auth/RLS changes
-- `ProcessFlowDiagram.tsx`
-- Blender/GLTF assets
-- New treatment stages
-- Realtime, historical, or scenario-engine implementation
-- Merging to `main`
-- Committing hospital-site photographs or scanned engineering drawings without explicit permission and a privacy/security review
+- Fix only `frontend/src/components/ErrorBoundary.tsx`; add regression tests under the existing Playwright stack.
+- No Auth/RLS/Supabase changes, no Digital Twin files, no UI redesign, no P1 fixes, no new dependencies.
 
 ## Acceptance Criteria
 
-- [x] Branch and implementation checkpoint recorded.
-- [x] Current foundation summarized from source.
-- [x] Visual direction and anti-copy boundary recorded.
-- [x] Ground and drone photo observations recorded without pretending uncertain details are verified.
-- [x] Reference material request prioritized.
-- [x] Micro tasks, ownership, dependencies, tests, and stop conditions recorded.
-- [x] A fresh agent can continue from repository files without relying on chat history.
-- [ ] User approves `DT-VIS-P001` before any scene implementation begins.
+- [ ] Healthy SPA navigation does not remount the subtree through a deterministic regression test (the production fix is accepted in principle; test A currently flakes during dock-link pointer interaction).
+- [x] Route change after a crash clears the recovery screen (lazy-chunk 404 → recovery screen → browser back → route renders).
+- [ ] Lint/build/Vitest remain at the verified baseline and the full Playwright suite passes after the deterministic-test remediation, with the focused spec also clean under retries-disabled repeated execution.
+- [x] No Digital Twin / unrelated files.
 
-## Stop Condition
+## Remediation Round (CHANGES_REQUIRED — test determinism)
 
-Stop after documentation, validation, commit, and handoff. Do not begin `DT-VIS-P001` in the same work order.
+Test A rewritten per the reviewer finding: keyboard navigation (focus + Enter, no pointer hit-testing), toHaveURL assertion after every transition (end-anchored patterns, no persistent-nav text markers), page.goto used only at boot, app_user call-count assertion unchanged. Stability proof: `--retries=0 --repeat-each=3` → 6/6 passed. Full gates re-run green (lint baseline 12+3, build, Vitest 148/148, Playwright 34/34, diff-check clean).
+
+## Implementation Checkpoint
+
+Remediation checkpoint: `c1521481beaabee73a4da5542ec2e2c28765cd3e` (test-only change; production checkpoint remains `d11c2a3e6fa9843bd4ff2bad96e6d578c2a44ec8`). Branch `fix/p0-error-boundary-remount`; see HANDOFF.md and PR #12.
+
+## Reviewer Finding — Test Gate Blocker
+
+Production review found no blocking issue in `ErrorBoundary.tsx`: removing the pathname-keyed wrapper preserves subtree identity, and the pure derived-state reset matches the required error-recovery semantics.
+
+The new regression test A is not deterministic enough to approve:
+
+- `frontend/tests/e2e/error-boundary-remount.spec.ts:51-53` performs repeated pointer clicks on animated/overlapping ModuleDock links. Reviewer-local targeted runs failed twice at the second navigation because the parent `.dock-item` intercepted pointer events.
+- A fresh CI-profile targeted run also failed on its first attempt and passed only on Playwright's configured retry, reported as `1 flaky`. A green exit code can therefore mask the failure.
+- The post-click markers (`"บันทึก"`, `"ประวัติ"`) are also present in the persistent navigation UI, so they can resolve before the destination page is proven active. The test does not currently assert the URL after each navigation.
+
+Required remediation:
+
+1. Keep the three transitions as true in-page React Router navigation; do not replace them with `page.goto`, because full reloads would remount AuthProvider and invalidate the behavior under test.
+2. Trigger the links without pointer hit-testing (for example, keyboard activation or an explicit DOM click appropriate for this non-pointer regression).
+3. Assert the expected URL/path after every transition before continuing. Use destination-specific page assertions only if they cannot match persistent navigation labels.
+4. Prove the focused spec stable with retries disabled and repeated execution (minimum `--retries=0 --repeat-each=3`), then run the full Playwright suite and all existing gates.
+5. Do not alter or weaken the `app_user` call-count assertion. No production-code change is requested unless the corrected test exposes a separate defect.
+6. Update `HANDOFF.md`, push the remediation to PR #12, and stop at `RE-REVIEW_REQUESTED`.
+
+## Out Of Scope
+
+Remaining P1 findings (alert unread count, carbon MoM, role-visibility error UX), `annotateRow` policy, component-test harness, unsaved-changes navigation prompts, Digital Twin work.
+
+## Next Action
+
+GLM 5.3: remediate only the deterministic-test finding above, run all gates, update the handoff, push PR #12, and stop at `RE-REVIEW_REQUESTED`.
