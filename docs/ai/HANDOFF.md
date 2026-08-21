@@ -1,39 +1,27 @@
 # HANDOFF
 
-Status: APPROVED
+Status: RE-REVIEW_REQUESTED
 
 ## Task
 
-`WO-STAB-004` — prevent React Query background/window-focus refetch from overwriting unsaved user edits in the wastewater Daily Form (P0 data-integrity, finding #4 of `reports/code-review-2026-08-12.md`). **CI remediation round** for PR #11 after CHANGES_REQUIRED.
+`WO-STAB-005` — stop ErrorBoundary from remounting the app subtree on every navigation while keeping the post-crash route-change recovery (P0 #5, `reports/code-review-2026-08-12.md`).
 
-## Reviewer Approval
+## Implementation Summary
 
-GPT 5.6 Sol UltraMAX returned **PASS** on 2026-08-21. PR #11 was merged into `main` as `f48dcd76d14010b17f0f6bdd35ad111201a24a27`.
-
-- Root cause and the final workflow behavior were independently verified from repository state.
-- CI runs `32440011145` (`66c97d2`) and `32440235796` (`ac8a87a`) both passed 32/32; the 32-test discovery set includes `daily-form-dirty.spec.ts`, proving the regression was not skipped.
-- Reviewer-local production build passed, Vitest passed 148/148, and `git diff --check` passed.
-- No assertions, application code, Digital Twin files, or global React Query focus settings changed during remediation.
-- The dev-server CI profile limitation is accepted for this work order; production-preview E2E remains deferred.
-
-## Root Cause of the local-vs-CI discrepancy
-
-The CI workflow's "Run smoke tests" step pointed `E2E_BASE_URL` at the **deployed GitHub Pages site (main)**. `playwright.config.ts` disables its `webServer` whenever `E2E_BASE_URL` is set — so the PR's own `dist/`, compiled one step earlier in the same job, was **never exercised**. The new regression asserts behavior that only exists in this PR's build, so CI failed by construction (it received main's overwrite: `2026-08-01`) while local runs passed (the local `npm run e2e` boots the branch via the dev webServer). Structurally, that CI profile could never catch any pre-merge behavior regression — it always tested the previous deploy.
-
-## Remediation (production code unchanged)
-
-- `0b7cd14` — first attempt: serve the job's `dist/` via `vite preview` and run the suite against it. The CI job produced repeated auth-gated suite failures (protected routes never bounced — RequireAuth stuck loading) before the follow-up push cancelled the run. This dragged service-worker / base-path / prod-build variables into an auth-gated suite — out of this WO's scope.
-- `66c97d2` — final fix: **run the suite via Playwright's own webServer** (`E2E_BASE_URL` unset → config boots vite dev from the checked-out branch, `CI=true` forces a fresh server, VITE_* secrets passed to the step). This is the exact profile the regression was written and verified against; the PR's code is what runs. Prod build remains gated by the separate Build step; post-deploy prod smoke stays covered by `deploy-frontend.yml`'s own smoke-test step.
-- The gate implementation, unit tests, and the e2e regression itself are **unchanged** from the reviewed checkpoint `f561654` — no assertion weakened, the changed-server snapshot and the reconnect refetch path are intact.
+- **Root cause**: `ErrorRouteWatcher` rendered `<div key={location.pathname}>` around `ErrorBoundaryInner > AuthProvider`. A changed key forces React to unmount/remount the subtree — AuthProvider re-ran `getSession()` + `loadAppUser()` on every dock click (skeleton flicker + a fresh `app_user` REST call per navigation).
+- **Fix — derived reset instead of remount** (`frontend/src/components/ErrorBoundary.tsx`, only modified production file):
+  - The function wrapper reads `useLocation()` and passes `routeKey={location.pathname}` as a prop.
+  - `getDerivedStateFromProps` clears an ACTIVE error when `routeKey` changes (escape hatch) and remembers the new route in state (`lastRouteKey`). Healthy navigations only update the remembered key — the subtree stays mounted and AuthProvider survives.
+  - The wrapper `<div>` and the `key` trick are deleted entirely.
+  - Reset lives in `getDerivedStateFromProps` (pure) rather than `componentDidUpdate`+`setState`: an initial variant using componentDidUpdate tripped `react(no-did-update-set-state)`; instead of suppressing the rule, the logic was refactored to the derived form. Nothing suppressed.
 
 ## Files Added
 
-- (unchanged from first round) `frontend/src/lib/form-hydration.ts`, `frontend/src/lib/form-hydration.test.ts`, `frontend/tests/e2e/daily-form-dirty.spec.ts`
+- `frontend/tests/e2e/error-boundary-remount.spec.ts` (2 regression tests)
 
 ## Files Modified
 
-- `frontend/src/pages/DailyFormPage.tsx` (gate wiring — unchanged this round)
-- `.github/workflows/e2e.yml` (the remediation — run step only)
+- `frontend/src/components/ErrorBoundary.tsx` (+34/−20)
 
 ## Files Deleted
 
@@ -41,12 +29,13 @@ The CI workflow's "Run smoke tests" step pointed `E2E_BASE_URL` at the **deploye
 
 ## Important Decisions
 
-- CI now tests the PR branch code (dev webServer profile) instead of the deployed main build. This closes the structural blind spot: CI previously could not catch pre-merge behavior regressions at all.
-- The vite-preview variant was attempted and reverted-with-reason (commit `0b7cd14` remains in history for the audit trail) — making an auth-gated suite pass under prod-build+preview is a separate concern, not this WO.
+- Escape path in test B uses **browser back** (`page.goBack()`): when the tree is crashed the recovery screen is the only rendered output — there is no in-app nav to click, so back/popstate is the real user route-change mechanism.
+- Test B triggers a genuine render-phase throw by blocking the lazy `TrendsPage` chunk (route pattern covers both the dev-server module URL and the hashed prod asset).
+- Test A measures remounts by counting `app_user` REST calls (AuthProvider's mount effect) across 3 SPA navigations.
 
 ## UX Changes
 
-- None new (first-round fix unchanged: edits persist through background refetches).
+- Visible improvement (no behavior regression): no more skeleton flicker on every navigation; post-crash recovery via route change works as before.
 
 ## Visual / 3D Changes
 
@@ -56,41 +45,75 @@ The CI workflow's "Run smoke tests" step pointed `E2E_BASE_URL` at the **deploye
 
 ### Commands
 
-From `frontend/`: `npm run lint`, `npm run build`, `npm test -- --run`, `npm run e2e`; from repo root: `git diff --check`. CI: GitHub Actions run on PR #11.
+From `frontend/`: `npm run lint`, `npm run build`, `npm test -- --run`, `npm run e2e`; from repo root: `git diff --check`.
 
 ### Results
 
-- Local (branch): lint **12w+3e = documented baseline** · build pass · Vitest **148/148** · Playwright **32/32** · `git diff --check` clean (from the first round; remediation changed no app code).
-- **GitHub Actions (decisive gate this round): run 32440011145 — `E2E smoke tests / smoke` PASS, 32/32 in 1m59s**, including the previously-failing regression. PR checks: smoke ✓ · scripts ✓ · notify ✓.
-- Reviewer verification: current-head run `32440235796` also passed 32/32; local production build passed; Vitest passed 148/148; `git diff --check` clean.
+- Lint: **12 warnings + 3 errors — exactly the documented baseline** (3 transient new hits during development were eliminated by the derived-state refactor + fixture-param rename; nothing suppressed).
+- Build: pass.
+- Vitest: **148/148**.
+- Playwright e2e: **34/34** (32 existing + 2 new).
+- `git diff --check`: CLEAN.
+- **RED proof** (test A on the old code, via temporary stash): expected 2 `app_user` calls, received **11** — the remount storm captured directly; GREEN (2/2) with the fix.
 
 ## Known Issues
 
-- CI exercises the dev-server profile of the PR code, not a served production bundle (see Important Decisions; prod-build preview under the auth-gated suite is flagged as follow-up territory).
-- E2E gate test ~35s (staleTime wait by design).
+- The derived reset clears error state on ANY route change while an error is active (including forward navigation via any external mechanism) — matches the intended semantics.
 
 ## Deferred Work
 
-- Prod-build/preview (or preview-equivalent) CI profile for the full auth-gated suite — separate WO if wanted.
-- Out-of-scope stabilization items per CURRENT-WORK (ErrorBoundary remount P0, P1 findings, annotateRow policy).
+Out of scope per CURRENT-WORK: P1 findings (alert unread count, carbon MoM, role-visibility error UX), `annotateRow` policy, component-test harness.
 
 ## Risks
 
-- Low. No production code changed in this round; CI now tests what the WO claims.
+- Low. Single-file production change; both behaviors pinned by regression tests with a captured RED.
 
 ## Branch
 
-Merged from `fix/p0-form-dirty-gate` into `main` via PR #11.
+`fix/p0-error-boundary-remount`
 
 ## Exact HEAD
 
-Implementation checkpoint: `66c97d2` (CI run `32440011145`). Approved PR head: `ac8a87a` (CI run `32440235796`). Merge commit: `f48dcd76d14010b17f0f6bdd35ad111201a24a27`.
+`d11c2a3e6fa9843bd4ff2bad96e6d578c2a44ec8` (implementation checkpoint; doc-only commits sit on top).
 
-## Review Result
+## Remediation Round (test determinism — CHANGES_REQUIRED)
 
-- **PASS** — remediation meets the WO acceptance criteria and the release-blocking CI mismatch is resolved.
-- Evidence clarification: `git show 66c97d2` is workflow-only. The broader literal range `f561654..66c97d2` also contains earlier coordination-document changes, but no production or test changes.
+Reviewer finding: test A's pointer clicks on animated/overlapping ModuleDock links were flaky (reviewer-local failures + a CI '1 flaky' masked by retry); text markers also matched persistent nav UI and no URL was asserted.
+
+Fix (test-only, commit `c152148`):
+- Links activated via KEYBOARD (focus + Enter) — no pointer hit-testing.
+- `toHaveURL` (end-anchored) asserted after EVERY transition; text markers dropped from the wait path.
+- `page.goto` used exactly once at boot — later gotos would full-reload and remount AuthProvider, invalidating the behavior under test.
+- `app_user` call-count assertion unchanged; 500 ms settle before counting.
+- Production code UNCHANGED from checkpoint `d11c2a3`.
+
+Stability + gates: focused `--retries=0 --repeat-each=3` → **6/6 passed (31s, no flaky)** · lint 12w+3e (= baseline) · build OK · Vitest 148/148 · Playwright 34/34 · `git diff --check` clean.
+
+## Reviewer Focus
+
+- The `getDerivedStateFromProps` reset semantics in `ErrorBoundary.tsx` (healthy nav = key update only; error + route change = clear).
+- Test A's measurement approach (app_user call count) and test B's crash trigger (lazy chunk block) + browser-back escape.
+
+## Reviewer Decision — CHANGES_REQUIRED
+
+The production implementation is accepted in principle; the blocker is the determinism of regression test A.
+
+Reviewer evidence on the PR branch:
+
+- `npm run build`: PASS.
+- `npm test`: 148/148 PASS.
+- CI run `32453224779`: 34/34 PASS.
+- Targeted local spec, normal profile: test A failed twice at `error-boundary-remount.spec.ts:52`; `.dock-item` intercepted the second dock-link pointer click. Test B passed both times.
+- Targeted local spec, fresh CI profile: test A failed first attempt and passed on retry, producing `1 flaky`; the process exited green only because CI config permits one retry.
+
+Required fix:
+
+1. Preserve real client-side React Router transitions, but remove pointer hit-testing from this remount regression; do not use full-page `page.goto` for the three post-boot transitions.
+2. Assert the URL/path after every transition. The current Thai text markers also exist in the persistent nav and do not prove the destination rendered.
+3. Keep the `app_user` boot-count equality assertion intact.
+4. Run the focused spec with `--retries=0 --repeat-each=3`, then lint/build/Vitest/full Playwright/`git diff --check`.
+5. Update this handoff with exact results and stop at `RE-REVIEW_REQUESTED`.
 
 ## Next Action
 
-WO-STAB-004 is complete. The next production work order should address the remaining P0: ErrorBoundary/AuthProvider remount behavior.
+GLM 5.3 remediates only the reviewer test finding, pushes PR #12, and stops at `RE-REVIEW_REQUESTED`.
