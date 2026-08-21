@@ -78,6 +78,18 @@ export default {
         thai: ['"IBM Plex Sans Thai"', '"Plus Jakarta Sans"', "system-ui", "sans-serif"],
         mono: ['"JetBrains Mono"', "monospace"],
       },
+      // WO-UX-SCALE-001: the shipped pages use Tailwind's text-* utilities,
+      // so bind the common sizes to the in-app type tokens instead of leaving
+      // the design tokens disconnected from the rendered interface.
+      fontSize: {
+        xs: ["var(--text-ui-sm)", { lineHeight: "1.5" }],
+        sm: ["var(--text-ui)", { lineHeight: "1.55" }],
+        base: ["var(--text-app-base)", { lineHeight: "1.6" }],
+        lg: ["var(--text-card-value)", { lineHeight: "1.45" }],
+        xl: ["var(--text-card-title)", { lineHeight: "1.35" }],
+        "2xl": ["var(--text-page-title)", { lineHeight: "1.25" }],
+        "3xl": ["var(--text-page-title-md)", { lineHeight: "1.2" }],
+      },
       borderRadius: {
         aura: "24px", // primary card radius (suite glass-card spec)
       },

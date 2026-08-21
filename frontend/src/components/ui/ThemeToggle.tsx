@@ -17,13 +17,13 @@ export function ThemeToggle({ className }: { className?: string }) {
       aria-label={next === "dark" ? "สลับเป็นโหมดมืด" : "สลับเป็นโหมดสว่าง"}
       title={next === "dark" ? "โหมดมืด (Aura)" : "โหมดสว่าง (Luminous Mint)"}
       className={cn(
-        "flex items-center justify-center w-9 h-9 rounded-xl border transition-all",
+        "flex items-center justify-center w-[var(--touch-min)] h-[var(--touch-min)] rounded-xl border transition-all",
         "border-aura-borderSubtle text-aura-textMuted",
         "hover:text-aura-cyan hover:border-aura-cyan/40 hover:shadow-aura-glow-cyan",
         className
       )}
     >
-      {next === "dark" ? <Moon className="w-4 h-4" /> : <Sun className="w-4 h-4" />}
+      {next === "dark" ? <Moon className="w-5 h-5" /> : <Sun className="w-5 h-5" />}
     </button>
   );
 }
