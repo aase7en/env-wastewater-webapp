@@ -7,11 +7,13 @@
  * equivalent yet). This boundary wraps the whole app via App.tsx so a
  * render-time crash anywhere shows a recovery screen instead.
  *
- * Recovery path: the inner <ResetOnRouteChange> watches `useLocation()`
- * and resets the error state when the user navigates away — that lets
- * them escape a broken route by clicking another dock link. Without it,
- * a re-render of the boundary would rethrow and the recovery screen
- * would itself crash.
+ * Recovery path (WO-STAB-005): the function wrapper reads `useLocation()`
+ * and passes the pathname down as a prop; `getDerivedStateFromProps`
+ * clears the error state when the route changes WHILE an error is active.
+ * The previous implementation remounted the entire subtree via
+ * `key={pathname}` on every navigation — unmounting AuthProvider on every
+ * dock click (skeleton flicker + repeated app_user lookups) for a reset
+ * that is only needed after a crash.
  *
  * Track Z scope (logic + minimal fallback UI — visual polish is a
  * separate Track F pass). The fallback uses inline styles rather than
@@ -27,9 +29,14 @@ import { useLocation } from "react-router-dom";
 
 interface Props {
   children: ReactNode;
+  /** Current route pathname — a change while an error is active clears
+   *  the recovery screen (see getDerivedStateFromProps). */
+  routeKey?: string;
 }
 interface State {
   error: Error | null;
+  /** Route the current error state (or pristine state) was rendered on. */
+  lastRouteKey?: string;
 }
 
 class ErrorBoundaryInner extends Component<Props, State> {
@@ -37,6 +44,23 @@ class ErrorBoundaryInner extends Component<Props, State> {
 
   static getDerivedStateFromError(error: Error): State {
     return { error };
+  }
+
+  /**
+   * WO-STAB-005: route-change reset, derived instead of remounting.
+   * When the route changes: remember it, and if an error is active,
+   * clear it so the new route renders (escape from the recovery screen
+   * via browser back / any external navigation). Healthy navigations
+   * only update the remembered key — the subtree below stays mounted
+   * (AuthProvider survives, no skeleton flicker, no repeated app_user
+   * lookups — the bug the old key={pathname} wrapper had).
+   */
+  static getDerivedStateFromProps(props: Props, state: State): State | null {
+    if (props.routeKey === state.lastRouteKey) return null;
+    // Route changed: clear any active error (escape hatch) and remember
+    // the new route. When no error was active this is a no-op value-wise
+    // (error stays null) — the subtree below is untouched either way.
+    return { error: null, lastRouteKey: props.routeKey };
   }
 
   componentDidCatch(error: Error, info: ErrorInfo): void {
@@ -107,22 +131,12 @@ class ErrorBoundaryInner extends Component<Props, State> {
 }
 
 /**
- * Wraps the inner class boundary with a route-change watcher so the
- * recovery screen resets itself when the user navigates away from the
- * broken route. (Class component can't use hooks directly.)
+ * Wraps the inner class boundary: reads the router location (class
+ * components can't use hooks) and passes the pathname down as `routeKey`
+ * so the boundary can clear an active error on route change WITHOUT
+ * remounting the subtree on healthy navigations.
  */
 export function ErrorBoundary({ children }: Props): ReactNode {
-  return (
-    <ErrorRouteWatcher>
-      <ErrorBoundaryInner>{children}</ErrorBoundaryInner>
-    </ErrorRouteWatcher>
-  );
-}
-
-function ErrorRouteWatcher({ children }: Props): ReactNode {
   const location = useLocation();
-  // Re-mount the inner boundary on every route change so its error state
-  // is discarded. The key trick: a new key = React treats it as a fresh
-  // subtree, dropping the prior error state.
-  return <div key={location.pathname}>{children}</div>;
+  return <ErrorBoundaryInner routeKey={location.pathname}>{children}</ErrorBoundaryInner>;
 }
