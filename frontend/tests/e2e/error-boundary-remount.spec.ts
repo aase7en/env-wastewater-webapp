@@ -47,14 +47,26 @@ test.describe("WO-STAB-005 ErrorBoundary remount/reset", () => {
     const bootCalls = appUserCalls; // AuthProvider mount #1
     expect(bootCalls).toBeGreaterThanOrEqual(1);
 
-    // SPA-navigate through the app shell links (no full page loads).
-    const navTo = async (hrefPart: string, marker: string) => {
-      await page.locator(`a[href*="${hrefPart}"]`).first().click();
-      await expect(page.getByText(marker).first()).toBeVisible({ timeout: 10_000 });
+    // SPA-navigate via client-side React Router. CHANGES_REQUIRED
+    // remediation: activate the links with KEYBOARD (focus + Enter) —
+    // no pointer hit-testing, so animated/overlapping dock chrome (the
+    // `.dock-item` parents that made the click() variant flaky) cannot
+    // intercept. In-page navigation only: page.goto after boot would be
+    // a full reload and would remount AuthProvider by itself.
+    const navTo = async (hrefPart: string, urlPattern: RegExp) => {
+      const link = page.locator(`a[href*="${hrefPart}"]`).first();
+      await link.focus();
+      await page.keyboard.press("Enter");
+      // Prove the ROUTE actually changed before continuing — URL, not a
+      // text marker (the old markers also exist in persistent nav UI and
+      // could resolve before the destination page is active).
+      await expect(page).toHaveURL(urlPattern, { timeout: 10_000 });
     };
-    await navTo("form", "บันทึก");
-    await navTo("readings", "ประวัติ");
-    await navTo("form", "บันทึก");
+    await navTo("form", /\/form$/);
+    await navTo("readings", /\/readings$/);
+    await navTo("form", /\/form$/);
+    // Let any (buggy) remount-side auth traffic land before counting.
+    await page.waitForTimeout(500);
 
     // The fix: no additional AuthProvider mounts → app_user called only
     // at boot. (Old key-remount code: +1 per navigation.)
