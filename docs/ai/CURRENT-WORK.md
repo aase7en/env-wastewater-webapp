@@ -1,6 +1,6 @@
 # CURRENT WORK
 
-Status: RE-REVIEW_REQUESTED
+Status: CHANGES_REQUIRED
 
 Allowed statuses:
 
@@ -18,66 +18,68 @@ Allowed statuses:
 
 ## Work Order
 
-`WO-STAB-005`
+`WO-UX-SCALE-001`
 
-Owner: GLM 5.3
+Owner: Codex — Visual Experience Owner
 
-## Goal
+PR: #15
 
-Stop `ErrorBoundary` from remounting the app subtree (AuthProvider included) on every navigation, while keeping the post-crash recovery behavior: a route change still clears the recovery screen so the user can escape a broken page.
+Reviewed checkpoint: `d6b31c19b734331b54c5861c4e74aaf30f5d97f9`
 
-## Problem (P0 #5, reports/code-review-2026-08-12.md)
+## Reviewer Verdict
 
-`ErrorRouteWatcher` rendered `<div key={location.pathname}>` around `ErrorBoundaryInner > AuthProvider`. React treats a changed key as a new subtree, so every route change unmounted and remounted the whole app: AuthProvider re-ran `getSession()` + `loadAppUser()` on each dock click — visible PageSkeleton flicker on every navigation plus a fresh `app_user` REST round-trip each time.
+`CHANGES_REQUIRED`
 
-## Desired Result
+The typography, icon scale, shared button sizing, Aura theme behavior and closed-header layout match the work order. Two interactive mobile acceptance failures must be corrected before merge.
 
-- Healthy SPA navigation keeps the subtree mounted (AuthProvider survives; no flicker; no repeated app_user lookups).
-- After a render crash, a route change (e.g. browser back — the crashed tree offers no in-app nav) clears the error and renders the target route.
+## Required Remediation
 
-## Technical Requirements
+### 1. Keep both bell panels inside the mobile viewport
 
-- Fix only `frontend/src/components/ErrorBoundary.tsx`; add regression tests under the existing Playwright stack.
-- No Auth/RLS/Supabase changes, no Digital Twin files, no UI redesign, no P1 fixes, no new dependencies.
+`NotificationBell` and `PendingUsersBell` render a 320px-wide panel with `absolute right-0`, anchored to each individual bell. At 360px the bells sit to the left of the theme and user controls, so an open panel extends beyond the viewport's left edge. `max-w-[calc(100vw-1.5rem)]` limits panel width but does not change that anchor position.
 
-## Acceptance Criteria
+Required result:
 
-- [ ] Healthy SPA navigation does not remount the subtree through a deterministic regression test (the production fix is accepted in principle; test A currently flakes during dock-link pointer interaction).
-- [x] Route change after a crash clears the recovery screen (lazy-chunk 404 → recovery screen → browser back → route renders).
-- [ ] Lint/build/Vitest remain at the verified baseline and the full Playwright suite passes after the deterministic-test remediation, with the focused spec also clean under retries-disabled repeated execution.
-- [x] No Digital Twin / unrelated files.
+- Opening either bell panel at 360px keeps the entire panel visible and usable.
+- Preserve desktop alignment, keyboard Escape behavior, outside-click behavior and accessible labels.
+- Add deterministic browser coverage for both panel positions at the mobile viewport; do not validate only the closed header's document width.
 
-## Remediation Round (CHANGES_REQUIRED — test determinism)
+Relevant files:
 
-Test A rewritten per the reviewer finding: keyboard navigation (focus + Enter, no pointer hit-testing), toHaveURL assertion after every transition (end-anchored patterns, no persistent-nav text markers), page.goto used only at boot, app_user call-count assertion unchanged. Stability proof: `--retries=0 --repeat-each=3` → 6/6 passed. Full gates re-run green (lint baseline 12+3, build, Vitest 148/148, Playwright 34/34, diff-check clean).
+- `frontend/src/components/ui/NotificationBell.tsx`
+- `frontend/src/components/ui/PendingUsersBell.tsx`
+- `frontend/src/components/layout/AppShell.tsx` only if a shared header anchor is needed
 
-## Implementation Checkpoint
+### 2. Make the mobile brand link at least 44px by 44px
 
-Remediation checkpoint: `c1521481beaabee73a4da5542ec2e2c28765cd3e` (test-only change; production checkpoint remains `d11c2a3e6fa9843bd4ff2bad96e6d578c2a44ec8`). Branch `fix/p0-error-boundary-remount`; see HANDOFF.md and PR #12.
+Below `sm`, the wordmark is hidden and the brand link's only visible child is the `w-9 h-9` logo. The link itself has no minimum dimensions or padding, leaving a 36px by 36px touch target.
 
-## Reviewer Finding — Test Gate Blocker
+Required result:
 
-Production review found no blocking issue in `ErrorBoundary.tsx`: removing the pathname-keyed wrapper preserves subtree identity, and the pure derived-state reset matches the required error-recovery semantics.
+- The `/dashboard` brand link has a computed interactive target of at least 44px by 44px at 360px.
+- Keep the compact mobile header within the viewport and retain its accessible name.
 
-The new regression test A is not deterministic enough to approve:
+Relevant file:
 
-- `frontend/tests/e2e/error-boundary-remount.spec.ts:51-53` performs repeated pointer clicks on animated/overlapping ModuleDock links. Reviewer-local targeted runs failed twice at the second navigation because the parent `.dock-item` intercepted pointer events.
-- A fresh CI-profile targeted run also failed on its first attempt and passed only on Playwright's configured retry, reported as `1 flaky`. A green exit code can therefore mask the failure.
-- The post-click markers (`"บันทึก"`, `"ประวัติ"`) are also present in the persistent navigation UI, so they can resolve before the destination page is proven active. The test does not currently assert the URL after each navigation.
+- `frontend/src/components/layout/AppShell.tsx`
 
-Required remediation:
+## Handoff Evidence
 
-1. Keep the three transitions as true in-page React Router navigation; do not replace them with `page.goto`, because full reloads would remount AuthProvider and invalidate the behavior under test.
-2. Trigger the links without pointer hit-testing (for example, keyboard activation or an explicit DOM click appropriate for this non-pointer regression).
-3. Assert the expected URL/path after every transition before continuing. Use destination-specific page assertions only if they cannot match persistent navigation labels.
-4. Prove the focused spec stable with retries disabled and repeated execution (minimum `--retries=0 --repeat-each=3`), then run the full Playwright suite and all existing gates.
-5. Do not alter or weaken the `app_user` call-count assertion. No production-code change is requested unless the corrected test exposes a separate defect.
-6. Update `HANDOFF.md`, push the remediation to PR #12, and stop at `RE-REVIEW_REQUESTED`.
+The work order requires before/after screenshots in the PR handoff. The current PR describes a local screenshot folder but does not attach or link reviewable before/after pairs. Add representative mobile and desktop before/after evidence to PR #15 when requesting re-review.
 
-## Out Of Scope
+## Non-Blocking Follow-up
 
-Remaining P1 findings (alert unread count, carbon MoM, role-visibility error UX), `annotateRow` policy, component-test harness, unsaved-changes navigation prompts, Digital Twin work.
+The rendered top bar is now at least 64px high while `--topbar-h` in `frontend/src/styles/spacing.css` still documents 56px. The token is currently unused, so this does not block remediation, but reconcile or explicitly retire it before a future consumer relies on it.
+
+## Verification Required
+
+- `npm run build`
+- `npm test`
+- full Playwright suite, including both open bell panels at 360px
+- `npm run lint` against the documented baseline
+- `git diff --check`
+- confirm no document-level horizontal overflow at 360px in light and dark themes
 
 ## Next Action
 
-GLM 5.3: remediate only the deterministic-test finding above, run all gates, update the handoff, push PR #12, and stop at `RE-REVIEW_REQUESTED`.
+Codex: remediate only the findings above on PR #15, update the PR evidence and this file to `RE-REVIEW_REQUESTED`, then stop for GPT re-review. Do not start the Digital Twin visual lane and do not merge the PR.
