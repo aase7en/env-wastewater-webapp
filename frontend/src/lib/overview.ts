@@ -1,6 +1,6 @@
 import { useQuery } from "@tanstack/react-query";
 import { useDashboard } from "./hooks";
-import { type CarbonMonth } from "./carbon";
+import { prevCalendarMonth, type CarbonMonth } from "./carbon";
 import { fetchLatestReadingDate, fetchOverviewCarbon, type OverviewCarbonRow } from "./supabase-queries";
 import { momPct } from "./utils";
 import type { DashboardRow } from "./types";
@@ -58,9 +58,17 @@ function useOverviewCarbon() {
 /** Convert flat OverviewCarbonRow[] → CarbonMonth[] (latest-first).
  *  momPct comes from lib/utils.ts (UTILS-1 extract) — unrounded, callers
  *  display via fmt(…, 1) at render time. */
-function toCarbonMonths(rows: OverviewCarbonRow[]): CarbonMonth[] {
-  return rows.map((r, i) => {
-    const prev = i + 1 < rows.length ? rows[i + 1].tco2e : null;
+/**
+ * WO-STAB-007: exported for unit testing (lib module — no component-export
+ * lint concern). Calendar-previous MoM, not index-previous: a missing
+ * month must yield null (no baseline), never a delta against an older
+ * month. Mirrors the carbon.ts C3 fix; reuses its helper + tests.
+ */
+export function toCarbonMonths(rows: OverviewCarbonRow[]): CarbonMonth[] {
+  return rows.map((r) => {
+    const prevKey = prevCalendarMonth(r.month);
+    const prevRow = rows.find((x) => x.month === prevKey);
+    const prev = prevRow ? prevRow.tco2e : null;
     return {
       month: r.month,
       days: r.days,
