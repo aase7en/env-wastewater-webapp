@@ -1,6 +1,6 @@
 # CURRENT WORK
 
-Status: APPROVED
+Status: CHANGES_REQUIRED
 
 Allowed statuses:
 
@@ -16,68 +16,45 @@ Allowed statuses:
 
 > `CURRENT-WORK.md` is the authoritative task definition. Agents must not silently expand task scope.
 
-## Work Order
+## Review Queue — 2026-08-22
 
-`WO-STAB-005`
+GPT reviewed the three queued pull requests in the required order.
 
-Owner: GLM 5.3
+| Order | PR | Verdict | Repository checkpoint |
+|---:|---:|---|---|
+| 1 | #16 — `WO-STAB-007` | APPROVED and merged | merge `77015d691d2d5a9f20937e582ffb53aa31cad875` |
+| 2 | #15 — `WO-UX-SCALE-001` | CHANGES_REQUIRED | findings on branch head `edd18b0f77bf2050fa49e6cde95eb7d3f6251a99` |
+| 3 | #14 — Digital Twin foundation | CHANGES_REQUIRED | findings on branch head `fc9023020bd2fc09e1bab2138153f44ab3f11978` |
 
-## Goal
+PR #14 must not merge before PR #15. No visual-direction work starts until the foundation is approved and merged.
 
-Stop `ErrorBoundary` from remounting the app subtree (AuthProvider included) on every navigation, while keeping the post-crash recovery behavior: a route change still clears the recovery screen so the user can escape a broken page.
+## PR #15 — Required Owner Action
 
-## Problem (P0 #5, reports/code-review-2026-08-12.md)
+Owner: Codex — Visual Experience
 
-`ErrorRouteWatcher` rendered `<div key={location.pathname}>` around `ErrorBoundaryInner > AuthProvider`. React treats a changed key as a new subtree, so every route change unmounted and remounted the whole app: AuthProvider re-ran `getSession()` + `loadAppUser()` on each dock click — visible PageSkeleton flicker on every navigation plus a fresh `app_user` REST round-trip each time.
+The production checkpoint `d6b31c19b734331b54c5861c4e74aaf30f5d97f9` has two mobile acceptance failures:
 
-## Desired Result
+1. The notification and pending-user panels are anchored to their individual bells and extend beyond the left edge at 360px when opened.
+2. The mobile brand link has a 36px by 36px target instead of the required minimum 44px by 44px.
 
-- Healthy SPA navigation keeps the subtree mounted (AuthProvider survives; no flicker; no repeated app_user lookups).
-- After a render crash, a route change (e.g. browser back — the crashed tree offers no in-app nav) clears the error and renders the target route.
+Add deterministic mobile coverage for both open panels, attach the required before/after evidence, integrate current `main`, run all gates and stop at `RE-REVIEW_REQUESTED`. The complete finding and scope guardrails are committed in PR #15's `docs/ai/CURRENT-WORK.md`.
 
-## Technical Requirements
+## PR #14 — Required Owner Action
 
-- Fix only `frontend/src/components/ErrorBoundary.tsx`; add regression tests under the existing Playwright stack.
-- No Auth/RLS/Supabase changes, no Digital Twin files, no UI redesign, no P1 fixes, no new dependencies.
+Owner: GLM 5.3 — Core Engineering / integration
 
-## Acceptance Criteria
+The production checkpoint `36a895e68742c57e34b9354798d2fc5497d90596` has four blocking foundation issues:
 
-- [ ] Healthy SPA navigation does not remount the subtree through a deterministic regression test (the production fix is accepted in principle; test A currently flakes during dock-link pointer interaction).
-- [x] Route change after a crash clears the recovery screen (lazy-chunk 404 → recovery screen → browser back → route renders).
-- [ ] Lint/build/Vitest remain at the verified baseline and the full Playwright suite passes after the deterministic-test remediation, with the focused spec also clean under retries-disabled repeated execution.
-- [x] No Digital Twin / unrelated files.
+1. `DashboardRow.do_average` is a derived average of Aeration, Sedimentation and Before-discharge DO, but is presented as Aeration Tank DO with direct manual provenance.
+2. Manual latest snapshots are encoded as mode `live`; add/use `latest` and reserve `live` for actual sensor telemetry.
+3. The renderer-initialization fallback test can fail in the StrictMode capability probe before reaching the R3F renderer factory, so the claimed path is not proven.
+4. Mouse/touch Process → 3D re-entry bypasses the readiness-reset helper and can expose stale `ready` before the remounted scene renders.
 
-## Remediation Round (CHANGES_REQUIRED — test determinism)
-
-Test A rewritten per the reviewer finding: keyboard navigation (focus + Enter, no pointer hit-testing), toHaveURL assertion after every transition (end-anchored patterns, no persistent-nav text markers), page.goto used only at boot, app_user call-count assertion unchanged. Stability proof: `--retries=0 --repeat-each=3` → 6/6 passed. Full gates re-run green (lint baseline 12+3, build, Vitest 148/148, Playwright 34/34, diff-check clean).
-
-## Implementation Checkpoint
-
-Remediation checkpoint: `c1521481beaabee73a4da5542ec2e2c28765cd3e` (test-only change; production checkpoint remains `d11c2a3e6fa9843bd4ff2bad96e6d578c2a44ec8`). Branch `fix/p0-error-boundary-remount`; see HANDOFF.md and PR #12.
-
-## Reviewer Finding — Test Gate Blocker
-
-Production review found no blocking issue in `ErrorBoundary.tsx`: removing the pathname-keyed wrapper preserves subtree identity, and the pure derived-state reset matches the required error-recovery semantics.
-
-The new regression test A is not deterministic enough to approve:
-
-- `frontend/tests/e2e/error-boundary-remount.spec.ts:51-53` performs repeated pointer clicks on animated/overlapping ModuleDock links. Reviewer-local targeted runs failed twice at the second navigation because the parent `.dock-item` intercepted pointer events.
-- A fresh CI-profile targeted run also failed on its first attempt and passed only on Playwright's configured retry, reported as `1 flaky`. A green exit code can therefore mask the failure.
-- The post-click markers (`"บันทึก"`, `"ประวัติ"`) are also present in the persistent navigation UI, so they can resolve before the destination page is proven active. The test does not currently assert the URL after each navigation.
-
-Required remediation:
-
-1. Keep the three transitions as true in-page React Router navigation; do not replace them with `page.goto`, because full reloads would remount AuthProvider and invalidate the behavior under test.
-2. Trigger the links without pointer hit-testing (for example, keyboard activation or an explicit DOM click appropriate for this non-pointer regression).
-3. Assert the expected URL/path after every transition before continuing. Use destination-specific page assertions only if they cannot match persistent navigation labels.
-4. Prove the focused spec stable with retries disabled and repeated execution (minimum `--retries=0 --repeat-each=3`), then run the full Playwright suite and all existing gates.
-5. Do not alter or weaken the `app_user` call-count assertion. No production-code change is requested unless the corrected test exposes a separate defect.
-6. Update `HANDOFF.md`, push the remediation to PR #12, and stop at `RE-REVIEW_REQUESTED`.
-
-## Out Of Scope
-
-Remaining P1 findings (alert unread count, carbon MoM, role-visibility error UX), `annotateRow` policy, component-test harness, unsaved-changes navigation prompts, Digital Twin work.
+Remediate without schema/Auth/RLS/PFD/visual-scope expansion. After PR #15 merges, integrate the then-current `main`, resolve `CURRENT-WORK.md` and `HANDOFF.md` in favor of the latest coordination state, run all gates and stop at `RE-REVIEW_REQUESTED`. The complete finding is committed in PR #14's `docs/ai/CURRENT-WORK.md`.
 
 ## Next Action
 
-GLM 5.3: remediate only the deterministic-test finding above, run all gates, update the handoff, push PR #12, and stop at `RE-REVIEW_REQUESTED`.
+1. Codex remediates PR #15 and requests GPT re-review.
+2. GPT approves/merges PR #15 or records a new actionable finding.
+3. GLM completes PR #14 remediation and final main integration.
+4. GPT re-reviews PR #14; only after approval/merge may Codex begin the queued Twin visual work orders.

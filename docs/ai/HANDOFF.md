@@ -1,31 +1,60 @@
 # HANDOFF
 
-Status: APPROVED (WO-STAB-005 merged via PR #12). This file is the repo-wide session checkpoint — read this before chat history.
+Status: CHANGES_REQUIRED — GPT review queue checkpoint. Read `CURRENT-WORK.md` before taking ownership.
 
-## Repo state @ 2026-08-22 (authoritative)
+## Repo State — 2026-08-22
 
-main = 2eab5ee. **All 5 P0s from reports/code-review-2026-08-12.md are fixed on main.** Keep-alive CI (daily Supabase ping) live and verified HTTP 200.
+Review base on `main`: `77015d691d2d5a9f20937e582ffb53aa31cad875`
 
-### Open PRs (all CI-green, awaiting review/merge — GLM did NOT merge per instruction)
+- All five P0 findings from `reports/code-review-2026-08-12.md` remain fixed on `main`.
+- Supabase keep-alive workflow remains deployed.
+- PR #16 (`WO-STAB-007`) was approved and merged at `77015d6`; overview carbon MoM now compares only the exact previous calendar month and returns null across a gap.
+- PR #15 and PR #14 were not merged. Both have durable `CHANGES_REQUIRED` findings on their own branches.
 
-| PR | Branch | Content | Owner | Checkpoint |
-|---|---|---|---|---|
-| #14 | feature/digital-twin-integration | Digital Twin foundation (3D Plant/Process tabs, lib/twin contracts, twin docs 00–05) = twin-v3 @6123a4a merged with main, zero source conflicts; gates: Vitest 154/154, e2e 40/40 | GLM-integrated (Codex's work preserved) | 29a5147 (+doc 36a895e) |
-| #15 | feat/ux-scale-001 | WO-UX-SCALE-001 app-wide readability scale (typography/icons/touch targets, 360px header). WO doc: docs/work-orders/WO-UX-SCALE-001.md | Codex | (see PR) |
-| #16 | fix/p1-carbon-mom-gap | WO-STAB-007 P1 #7: overview MoM calendar-previous (gap month → null); +4 tests RED→GREEN; Vitest 152/152 | GLM | 8bf5ebd |
+## Active Queue
 
-Suggested merge order: #16 → #15 → #14 (smallest→largest; #14 last so twin lands once on fully-scaled UI).
+| Order | PR | Owner | State | Exact branch head |
+|---:|---:|---|---|---|
+| 1 | #15 — `WO-UX-SCALE-001` | Codex | CHANGES_REQUIRED | `edd18b0f77bf2050fa49e6cde95eb7d3f6251a99` |
+| 2 | #14 — Digital Twin foundation | GLM 5.3 | CHANGES_REQUIRED; merge only after #15 | `fc9023020bd2fc09e1bab2138153f44ab3f11978` |
 
-### GLM backlog (next, in priority order)
-1. WO-STAB-006 — alert unread optimistic double-decrement (P1 #6, small)
-2. WO-STAB-008 — role-visibility write-error surfacing (P1 #8; UI share with Codex)
-3. WO-STAB-009 — annotateRow PHI policy (GPT-approved direction: allowlist + safe-field projection first; scrubber as defense-in-depth)
-4. Component-test harness (jsdom/RTL retry — react-dom/vitest issue documented in e065253)
+### PR #15 remediation summary
 
-### Codex lanes (after #14 merges): twin visual WOs per docs/ai/digital-twin/03-MICRO-STEP-BOARD.md
+- Keep both bell dropdown panels fully inside a 360px viewport when open.
+- Raise the mobile brand-link target from 36px to at least 44px.
+- Add deterministic open-panel mobile coverage and reviewable before/after evidence.
+- Integrate current `main`, run all gates and stop at `RE-REVIEW_REQUESTED`.
 
-### Ops lessons (binding)
-- Agent shells reset cwd between tool calls — single self-contained commands only; verify `git rev-parse --show-toplevel` when state matters.
-- `feature/digital-twin-v3` branch is held by Codex's worktree (envw...-dt-v3-docs) — never checkout it; integration went via a new branch.
-- Human preview of twin: worktree `A:\GitHub\envww-twin-preview` (has .env + deps; npm run dev in frontend/).
-- Supabase free tier pauses on inactivity → keep-alive workflow handles it; if site breaks with ERR_NAME_NOT_RESOLVED again: resume at supabase.com/dashboard.
+### PR #14 remediation summary
+
+- Do not present derived plant-wide `do_average` as Aeration Tank DO with direct/manual provenance.
+- Add/use `latest` for manual snapshots; reserve `live` for actual sensor telemetry.
+- Make the renderer-init fallback test reach the real R3F renderer-construction failure path under StrictMode.
+- Reset 3D readiness on mouse/touch Process → 3D re-entry and cover it deterministically.
+- After #15 merges, integrate current `main`, resolve the two coordination-doc conflicts toward the latest state, run all gates and stop at `RE-REVIEW_REQUESTED`.
+
+Full findings, scope limits and required gates are in each PR branch's `docs/ai/CURRENT-WORK.md`.
+
+## Merge Order
+
+1. GPT re-reviews and merges #15 only after its owner reports `RE-REVIEW_REQUESTED`.
+2. GLM integrates that new `main` into #14 and requests re-review.
+3. GPT re-reviews and merges #14 only if data honesty, resilience and readiness tests pass.
+4. Codex may then start the Twin visual micro work orders from `docs/ai/digital-twin/03-MICRO-STEP-BOARD.md`.
+
+Do not begin Twin visual styling while #14 is unmerged.
+
+## Remaining GLM Backlog After #14
+
+1. `WO-STAB-006` — alert unread optimistic double-decrement.
+2. `WO-STAB-008` — role-visibility write-error surfacing.
+3. `WO-STAB-009` — `annotateRow` PHI policy.
+4. Component-test harness investigation.
+
+## Operational Guardrails
+
+- Never treat missing telemetry as zero, normal or stopped.
+- React Query/Supabase remains telemetry source of truth; Zustand holds interaction/simulation state only.
+- Keep private hospital photographs and drawings outside Git.
+- Never use destructive Git commands in shared worktrees; stage only explicit owned files.
+- The primary worktree contains unrelated untracked user files. Do not remove or stage them.
