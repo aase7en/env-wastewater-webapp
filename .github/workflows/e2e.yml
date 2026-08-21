@@ -47,24 +47,23 @@ jobs:
           VITE_SUPABASE_ANON_KEY: ${{ secrets.VITE_SUPABASE_ANON_KEY }}
         run: npm run build
 
-      - name: Run smoke tests against this PR's own build (vite preview)
+      - name: Run smoke tests against this PR's own code (Playwright webServer)
         working-directory: frontend
         env:
           # WO-STAB-004 CI remediation: the suite must exercise the code in
-          # the PR, not the deployed main build. dist/ was compiled by the
-          # previous step with GH_PAGES_BASE, so vite preview serves it under
-          # the same subpath the prod site uses. (The old E2E_BASE_URL →
+          # the PR, not the deployed main build. With E2E_BASE_URL unset,
+          # playwright.config.ts boots its own webServer (vite dev) from the
+          # checked-out branch — the same profile the WO regression was
+          # written and verified against locally. (The old E2E_BASE_URL →
           # deployed-Pages profile could never catch behavior regressions
-          # pre-merge — the PR build was compiled then ignored. Post-deploy
-          # prod smoke remains covered by deploy-frontend.yml's own step.)
-          E2E_BASE_URL: http://127.0.0.1:4173/env-wastewater-webapp/
-        run: |
-          npx vite preview --host 127.0.0.1 --port 4173 --strictPort &
-          for i in $(seq 1 30); do
-            curl -sf http://127.0.0.1:4173/env-wastewater-webapp/ >/dev/null && break
-            sleep 1
-          done
-          npx playwright test
+          # pre-merge: the PR build was compiled then ignored. A vite-preview
+          # variant was tried first but drags service-worker/base-path
+          # variables into an auth-gated suite — out of this WO's scope.
+          # Prod build stays gated by the Build step above; post-deploy prod
+          # smoke remains covered by deploy-frontend.yml's own step.)
+          VITE_SUPABASE_URL: ${{ secrets.VITE_SUPABASE_URL }}
+          VITE_SUPABASE_ANON_KEY: ${{ secrets.VITE_SUPABASE_ANON_KEY }}
+        run: npx playwright test
 
       - name: Upload test artifacts on failure
         if: failure()
