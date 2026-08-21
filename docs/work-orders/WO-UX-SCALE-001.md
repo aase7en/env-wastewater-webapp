@@ -86,3 +86,31 @@ visual QA record for GPT review.
 
 Stop at PR review requested. Do not merge. Do not start Twin visual Lane 2
 until PR #14 is merged.
+
+## Completion record — 2026-08-22
+
+```text
+WORK ORDER COMPLETE
+WO: WO-UX-SCALE-001
+Owner: Codex
+Branch: feat/ux-scale-001
+Commit(s): 1903f8d (claim), cb083a5 (implementation)
+Files changed: Tailwind type mapping, typography/index styles, shared Button,
+  ThemeToggle, notification/pending bells and AppShell; coordination docs.
+Behavior changed: common text renders at 14/16/17px tiers, page headings at
+  28/34px, default Material Symbols at 24px, shared header controls and small
+  buttons meet the 44px touch target, and the compact mobile header hides its
+  wordmark while retaining an accessible link label.
+Contracts changed: none.
+Tests run/results: build PASS; Vitest 148/148 PASS; Playwright 34/34 PASS;
+  lint unchanged at the documented baseline (12 warnings + 3 fixture
+  false-positive errors); git diff --check PASS. Browser QA PASS at 360x800
+  and 1440x1000 in light/dark themes with no document/header overflow.
+Known limitations: bespoke inline action links and ModuleDock edit-mode micro
+  controls are outside this token/primitives WO; dense mobile tables may wrap
+  labels inside their existing responsive/table containers.
+Cross-agent follow-up needed: none for scale. Lane 2 remains blocked until
+  PR #14 merges; its micro-step board is not present on this main checkpoint.
+Recommended next WO: after PR #14 merges, rebase and select the first unblocked
+  Codex visual WO from docs/ai/digital-twin/03-MICRO-STEP-BOARD.md.
+```

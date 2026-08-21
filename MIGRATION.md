@@ -315,7 +315,7 @@ The binding rules below still apply.
 
 | Chunk | Agent | Claimed | Scope (files) |
 |---|---|---|---|
-| WO-UX-SCALE-001 | Codex | 2026-08-22 | `frontend/tailwind.config.js`, `frontend/src/styles/{typography.css,index.css}`, `frontend/src/components/ui/{Button.tsx,ThemeToggle.tsx,NotificationBell.tsx,PendingUsersBell.tsx}`, `frontend/src/components/layout/AppShell.tsx`, visual docs only (branch `feat/ux-scale-001`; no `src/lib/**`) |
+| ~~WO-UX-SCALE-001~~ | Codex | 2026-08-22 | done — cb083a5; `frontend/tailwind.config.js`, typography/index styles, shared button/header controls and `AppShell` (branch `feat/ux-scale-001`; no `src/lib/**`) |
 | ~~WO-STAB-002~~ | GLM | 2026-08-15 | done — cdd6f6d | `frontend/src/lib/admin/ai-chat.ts`, `ai-chat.test.ts` (branch `fix/p0-stabilization`) |
 | ~~WO-STAB-003~~ | GLM | 2026-08-15 | done — e065253 | `frontend/src/components/AuthProvider.tsx` (branch `fix/p0-stabilization`) |
 | ~~WO-STAB-001~~ | GLM | 2026-08-15 | done — see STAB-001 commit | `frontend/src/pages/DailyFormPage.tsx` (branch `fix/p0-stabilization`) |
