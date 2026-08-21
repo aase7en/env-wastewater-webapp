@@ -1,6 +1,6 @@
 # CURRENT WORK
 
-Status: CHANGES_REQUIRED
+Status: RE-REVIEW_REQUESTED
 
 Allowed statuses:
 
@@ -47,9 +47,13 @@ Stop `ErrorBoundary` from remounting the app subtree (AuthProvider included) on 
 - [ ] Lint/build/Vitest remain at the verified baseline and the full Playwright suite passes after the deterministic-test remediation, with the focused spec also clean under retries-disabled repeated execution.
 - [x] No Digital Twin / unrelated files.
 
+## Remediation Round (CHANGES_REQUIRED — test determinism)
+
+Test A rewritten per the reviewer finding: keyboard navigation (focus + Enter, no pointer hit-testing), toHaveURL assertion after every transition (end-anchored patterns, no persistent-nav text markers), page.goto used only at boot, app_user call-count assertion unchanged. Stability proof: `--retries=0 --repeat-each=3` → 6/6 passed. Full gates re-run green (lint baseline 12+3, build, Vitest 148/148, Playwright 34/34, diff-check clean).
+
 ## Implementation Checkpoint
 
-`d11c2a3e6fa9843bd4ff2bad96e6d578c2a44ec8` (branch `fix/p0-error-boundary-remount`; see HANDOFF.md for details and PR).
+Remediation checkpoint: `c1521481beaabee73a4da5542ec2e2c28765cd3e` (test-only change; production checkpoint remains `d11c2a3e6fa9843bd4ff2bad96e6d578c2a44ec8`). Branch `fix/p0-error-boundary-remount`; see HANDOFF.md and PR #12.
 
 ## Reviewer Finding — Test Gate Blocker
 

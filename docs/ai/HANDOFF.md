@@ -1,6 +1,6 @@
 # HANDOFF
 
-Status: CHANGES_REQUIRED
+Status: RE-REVIEW_REQUESTED
 
 ## Task
 
@@ -75,6 +75,19 @@ Out of scope per CURRENT-WORK: P1 findings (alert unread count, carbon MoM, role
 ## Exact HEAD
 
 `d11c2a3e6fa9843bd4ff2bad96e6d578c2a44ec8` (implementation checkpoint; doc-only commits sit on top).
+
+## Remediation Round (test determinism — CHANGES_REQUIRED)
+
+Reviewer finding: test A's pointer clicks on animated/overlapping ModuleDock links were flaky (reviewer-local failures + a CI '1 flaky' masked by retry); text markers also matched persistent nav UI and no URL was asserted.
+
+Fix (test-only, commit `c152148`):
+- Links activated via KEYBOARD (focus + Enter) — no pointer hit-testing.
+- `toHaveURL` (end-anchored) asserted after EVERY transition; text markers dropped from the wait path.
+- `page.goto` used exactly once at boot — later gotos would full-reload and remount AuthProvider, invalidating the behavior under test.
+- `app_user` call-count assertion unchanged; 500 ms settle before counting.
+- Production code UNCHANGED from checkpoint `d11c2a3`.
+
+Stability + gates: focused `--retries=0 --repeat-each=3` → **6/6 passed (31s, no flaky)** · lint 12w+3e (= baseline) · build OK · Vitest 148/148 · Playwright 34/34 · `git diff --check` clean.
 
 ## Reviewer Focus
 
