@@ -1,0 +1,49 @@
+name: Supabase keep-alive
+
+# Free-tier Supabase projects get paused after ~a week of no activity,
+# which removes the project's DNS record entirely (NXDOMAIN) — the
+# production webapp then "breaks" (auth + all data queries fail) until
+# someone manually resumes the project from the Supabase dashboard.
+# Incident: 2026-08-21, user hit exactly this after a period of no use.
+#
+# Prevention: one lightweight read per day against the anon-accessible
+# public view (SCHEMA-6 `v_overview_carbon` — carbon aggregates only, no
+# PHI) counts as real API activity, which resets the inactivity timer.
+# Reuses the existing VITE_* secrets — no new secrets needed.
+#
+# Failure visibility: a non-200 response fails the job, so a red X in
+# the Actions tab is the early warning that the project paused again
+# (or credentials rotated). Set TELEGRAM_BOT_TOKEN/CHAT_ID later if you
+# want push alerts wired the same way e2e.yml does.
+
+on:
+  schedule:
+    # Daily at 03:00 UTC (10:00 ICT). GitHub cron is UTC-only.
+    - cron: "0 3 * * *"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  ping:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - name: Ping anon REST view (counts as project activity)
+        env:
+          SB_URL: ${{ secrets.VITE_SUPABASE_URL }}
+          SB_KEY: ${{ secrets.VITE_SUPABASE_ANON_KEY }}
+        run: |
+          set -euo pipefail
+          url="${SB_URL%/}/rest/v1/v_overview_carbon?select=month&limit=1"
+          code=$(curl -s -o /tmp/ka-body -w "%{http_code}" --max-time 30 \
+            -H "apikey: ${SB_KEY}" \
+            -H "Authorization: Bearer ${SB_KEY}" \
+            "$url")
+          echo "GET $url -> HTTP $code"
+          head -c 200 /tmp/ka-body || true; echo
+          if [ "$code" != "200" ]; then
+            echo "::error::Supabase responded $code (200 expected). If this is 401/403 the anon key rotated; any other code (or DNS failure) may mean the free-tier project was PAUSED again — resume it at https://supabase.com/dashboard"
+            exit 1
+          fi
