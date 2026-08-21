@@ -1,6 +1,6 @@
 # CURRENT WORK
 
-Status: REVIEW_REQUESTED
+Status: RE-REVIEW_REQUESTED
 
 Allowed statuses:
 
@@ -146,6 +146,32 @@ GLM should validate the simplest implementation against actual React/React Query
 ## Reviewer Notes
 
 This is a P0 data-integrity task. Correctness is more important than preserving every background refresh. However, do not disable focus refresh globally when the actual issue is local form rehydration.
+
+## Review Finding — CI Blocker
+
+Reviewer verification after PR #11 creation found a blocking mismatch between local and GitHub CI behavior.
+
+Verified facts:
+
+- PR #11 is OPEN and MERGEABLE.
+- Focused local unit test passes: `frontend/src/lib/form-hydration.test.ts` = 6/6.
+- Local production build passes.
+- Focused local Playwright regression passes: `frontend/tests/e2e/daily-form-dirty.spec.ts` = 1/1.
+- GitHub Actions workflow `E2E smoke tests / smoke` FAILS on the same new regression test, including retry.
+- CI failure proves the unsaved input is overwritten: expected `2026-08-15`, received server-refetch value `2026-08-01`.
+
+This is a release blocker for WO-STAB-004. The current implementation cannot be approved while CI demonstrates the protected value is still lost under the CI execution path.
+
+Required remediation scope:
+
+1. Reproduce or explain the local-vs-CI difference using repository evidence.
+2. Determine whether the root cause is the production gate implementation, component lifecycle/remount behavior, or an invalid/non-equivalent E2E trigger.
+3. Fix the smallest correct layer; do not weaken the acceptance criterion and do not make the test pass by avoiding a real refetch.
+4. Preserve the existing constraints: no Digital Twin changes, no unrelated fixes, no global disabling of React Query focus refresh unless strictly proven necessary.
+5. Re-run focused tests plus the required regression gates.
+6. Push remediation to PR #11 and require GitHub CI green.
+7. Update `HANDOFF.md` with the new checkpoint and exact CI evidence.
+8. Set status to `RE-REVIEW_REQUESTED` only after the blocking CI check is green.
 
 ## Current Branch
 
