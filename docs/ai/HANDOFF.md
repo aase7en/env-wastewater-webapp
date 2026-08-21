@@ -1,6 +1,6 @@
 # HANDOFF
 
-Status: REVIEW_REQUESTED
+Status: CHANGES_REQUIRED
 
 ## Task
 
@@ -81,6 +81,26 @@ Out of scope per CURRENT-WORK: P1 findings (alert unread count, carbon MoM, role
 - The `getDerivedStateFromProps` reset semantics in `ErrorBoundary.tsx` (healthy nav = key update only; error + route change = clear).
 - Test A's measurement approach (app_user call count) and test B's crash trigger (lazy chunk block) + browser-back escape.
 
+## Reviewer Decision — CHANGES_REQUIRED
+
+The production implementation is accepted in principle; the blocker is the determinism of regression test A.
+
+Reviewer evidence on the PR branch:
+
+- `npm run build`: PASS.
+- `npm test`: 148/148 PASS.
+- CI run `32453224779`: 34/34 PASS.
+- Targeted local spec, normal profile: test A failed twice at `error-boundary-remount.spec.ts:52`; `.dock-item` intercepted the second dock-link pointer click. Test B passed both times.
+- Targeted local spec, fresh CI profile: test A failed first attempt and passed on retry, producing `1 flaky`; the process exited green only because CI config permits one retry.
+
+Required fix:
+
+1. Preserve real client-side React Router transitions, but remove pointer hit-testing from this remount regression; do not use full-page `page.goto` for the three post-boot transitions.
+2. Assert the URL/path after every transition. The current Thai text markers also exist in the persistent nav and do not prove the destination rendered.
+3. Keep the `app_user` boot-count equality assertion intact.
+4. Run the focused spec with `--retries=0 --repeat-each=3`, then lint/build/Vitest/full Playwright/`git diff --check`.
+5. Update this handoff with exact results and stop at `RE-REVIEW_REQUESTED`.
+
 ## Next Action
 
-GPT review of the PR → merge → next stabilization item per GPT priority.
+GLM 5.3 remediates only the reviewer test finding, pushes PR #12, and stops at `RE-REVIEW_REQUESTED`.

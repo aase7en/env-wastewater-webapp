@@ -1,6 +1,6 @@
 # CURRENT WORK
 
-Status: REVIEW_REQUESTED
+Status: CHANGES_REQUIRED
 
 Allowed statuses:
 
@@ -42,14 +42,33 @@ Stop `ErrorBoundary` from remounting the app subtree (AuthProvider included) on 
 
 ## Acceptance Criteria
 
-- [x] Healthy SPA navigation does not remount the subtree (proven by counting `app_user` REST calls: stays at boot value; RED on old code showed 11 calls vs 2 expected).
+- [ ] Healthy SPA navigation does not remount the subtree through a deterministic regression test (the production fix is accepted in principle; test A currently flakes during dock-link pointer interaction).
 - [x] Route change after a crash clears the recovery screen (lazy-chunk 404 → recovery screen → browser back → route renders).
-- [x] Lint at documented baseline (12w+3e), build OK, Vitest 148/148, Playwright 34/34, `git diff --check` clean.
+- [ ] Lint/build/Vitest remain at the verified baseline and the full Playwright suite passes after the deterministic-test remediation, with the focused spec also clean under retries-disabled repeated execution.
 - [x] No Digital Twin / unrelated files.
 
 ## Implementation Checkpoint
 
 `d11c2a3e6fa9843bd4ff2bad96e6d578c2a44ec8` (branch `fix/p0-error-boundary-remount`; see HANDOFF.md for details and PR).
+
+## Reviewer Finding — Test Gate Blocker
+
+Production review found no blocking issue in `ErrorBoundary.tsx`: removing the pathname-keyed wrapper preserves subtree identity, and the pure derived-state reset matches the required error-recovery semantics.
+
+The new regression test A is not deterministic enough to approve:
+
+- `frontend/tests/e2e/error-boundary-remount.spec.ts:51-53` performs repeated pointer clicks on animated/overlapping ModuleDock links. Reviewer-local targeted runs failed twice at the second navigation because the parent `.dock-item` intercepted pointer events.
+- A fresh CI-profile targeted run also failed on its first attempt and passed only on Playwright's configured retry, reported as `1 flaky`. A green exit code can therefore mask the failure.
+- The post-click markers (`"บันทึก"`, `"ประวัติ"`) are also present in the persistent navigation UI, so they can resolve before the destination page is proven active. The test does not currently assert the URL after each navigation.
+
+Required remediation:
+
+1. Keep the three transitions as true in-page React Router navigation; do not replace them with `page.goto`, because full reloads would remount AuthProvider and invalidate the behavior under test.
+2. Trigger the links without pointer hit-testing (for example, keyboard activation or an explicit DOM click appropriate for this non-pointer regression).
+3. Assert the expected URL/path after every transition before continuing. Use destination-specific page assertions only if they cannot match persistent navigation labels.
+4. Prove the focused spec stable with retries disabled and repeated execution (minimum `--retries=0 --repeat-each=3`), then run the full Playwright suite and all existing gates.
+5. Do not alter or weaken the `app_user` call-count assertion. No production-code change is requested unless the corrected test exposes a separate defect.
+6. Update `HANDOFF.md`, push the remediation to PR #12, and stop at `RE-REVIEW_REQUESTED`.
 
 ## Out Of Scope
 
@@ -57,4 +76,4 @@ Remaining P1 findings (alert unread count, carbon MoM, role-visibility error UX)
 
 ## Next Action
 
-GPT review of the PR → merge → next stabilization item (P1 batch or per GPT's priority).
+GLM 5.3: remediate only the deterministic-test finding above, run all gates, update the handoff, push PR #12, and stop at `RE-REVIEW_REQUESTED`.
