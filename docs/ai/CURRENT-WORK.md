@@ -1,6 +1,6 @@
 # CURRENT WORK
 
-Status: REVIEW_REQUESTED
+Status: CHANGES_REQUIRED
 
 Allowed statuses:
 
@@ -18,66 +18,111 @@ Allowed statuses:
 
 ## Work Order
 
-`WO-STAB-005`
+`WO-TWIN-INTEGRATE-001`
 
-Owner: GLM 5.3
+Owner: GLM 5.3 — Core Engineering / integration
 
-## Goal
+PR: #14
 
-Stop `ErrorBoundary` from remounting the app subtree (AuthProvider included) on every navigation, while keeping the post-crash recovery behavior: a route change still clears the recovery screen so the user can escape a broken page.
+Reviewed checkpoint: `36a895e68742c57e34b9354798d2fc5497d90596`
 
-## Problem (P0 #5, reports/code-review-2026-08-12.md)
+## Reviewer Verdict
 
-`ErrorRouteWatcher` rendered `<div key={location.pathname}>` around `ErrorBoundaryInner > AuthProvider`. React treats a changed key as a new subtree, so every route change unmounted and remounted the whole app: AuthProvider re-ran `getSession()` + `loadAppUser()` on each dock click — visible PageSkeleton flicker on every navigation plus a fresh `app_user` REST round-trip each time.
+`CHANGES_REQUIRED`
 
-## Desired Result
+The Phase 1 renderer structure, Zustand boundary, explicit demo labeling, unknown water/aerator values, lazy loading, Process fallback and reduced-motion path are sound in principle. The following data-contract, readiness-test and integration issues block merge.
 
-- Healthy SPA navigation keeps the subtree mounted (AuthProvider survives; no flicker; no repeated app_user lookups).
-- After a render crash, a route change (e.g. browser back — the crashed tree offers no in-app nav) clears the error and renders the target route.
+## Required Remediation
 
-## Technical Requirements
+### 1. Do not present plant-wide `do_average` as Aeration Tank DO
 
-- Fix only `frontend/src/components/ErrorBoundary.tsx`; add regression tests under the existing Playwright stack.
-- No Auth/RLS/Supabase changes, no Digital Twin files, no UI redesign, no P1 fixes, no new dependencies.
+`wastewater.v_dashboard_14day.do_average` is produced by `fn_do_average(do_aeration, do_sedimentation, do_before_discharge)`. It is a derived plant-wide average, not the Aeration Tank observation. `dashboard-adapter.ts` currently assigns it to `AerationTankTwinAsset.dissolvedOxygenMgL` and marks it as a direct manual snapshot; the data panel then labels it simply `DO` under the Aeration asset.
 
-## Acceptance Criteria
+Required result:
 
-- [ ] Healthy SPA navigation does not remount the subtree through a deterministic regression test (the production fix is accepted in principle; test A currently flakes during dock-link pointer interaction).
-- [x] Route change after a crash clears the recovery screen (lazy-chunk 404 → recovery screen → browser back → route renders).
-- [ ] Lint/build/Vitest remain at the verified baseline and the full Playwright suite passes after the deterministic-test remediation, with the focused spec also clean under retries-disabled repeated execution.
-- [x] No Digital Twin / unrelated files.
+- Do not map `DashboardRow.do_average` to an Aeration Tank DO metric with direct/manual provenance.
+- Without changing the Supabase schema, either leave Aeration DO unavailable or model the value separately and label it explicitly as a plant-wide derived average with truthful derived provenance.
+- Preserve unknown-first behavior and add regression tests proving the corrected semantic and provenance.
 
-## Remediation Round (CHANGES_REQUIRED — test determinism)
+Relevant files:
 
-Test A rewritten per the reviewer finding: keyboard navigation (focus + Enter, no pointer hit-testing), toHaveURL assertion after every transition (end-anchored patterns, no persistent-nav text markers), page.goto used only at boot, app_user call-count assertion unchanged. Stability proof: `--retries=0 --repeat-each=3` → 6/6 passed. Full gates re-run green (lint baseline 12+3, build, Vitest 148/148, Playwright 34/34, diff-check clean).
+- `frontend/src/lib/twin/dashboard-adapter.ts`
+- `frontend/src/lib/twin/types.ts`
+- `frontend/src/lib/twin/dashboard-adapter.test.ts`
+- presentation labels only where required to consume the corrected contract
+- reference definition: `supabase/migrations/20260718000000_p12_frontend_views.sql`
 
-## Implementation Checkpoint
+Do not change the Supabase schema or query raw records from the renderer.
 
-Remediation checkpoint: `c1521481beaabee73a4da5542ec2e2c28765cd3e` (test-only change; production checkpoint remains `d11c2a3e6fa9843bd4ff2bad96e6d578c2a44ec8`). Branch `fix/p0-error-boundary-remount`; see HANDOFF.md and PR #12.
+### 2. Reserve `live` mode for actual realtime telemetry
 
-## Reviewer Finding — Test Gate Blocker
+Manual daily dashboard rows currently enter the domain as mode `live`; `returnToLatest()` also sets `live`. Hiding the word LIVE in the UI is not sufficient because the shared contract itself misclassifies latest manual data.
 
-Production review found no blocking issue in `ErrorBoundary.tsx`: removing the pathname-keyed wrapper preserves subtree identity, and the pure derived-state reset matches the required error-recovery semantics.
+Required result:
 
-The new regression test A is not deterministic enough to approve:
+- Add/use a `latest` mode for the current manual snapshot.
+- Keep `live` available only for future actual realtime sensor telemetry.
+- Keep `historical` and `simulation` behavior distinct.
+- Update selectors, store actions/names, tests and UI branching without adding realtime polling.
 
-- `frontend/tests/e2e/error-boundary-remount.spec.ts:51-53` performs repeated pointer clicks on animated/overlapping ModuleDock links. Reviewer-local targeted runs failed twice at the second navigation because the parent `.dock-item` intercepted pointer events.
-- A fresh CI-profile targeted run also failed on its first attempt and passed only on Playwright's configured retry, reported as `1 flaky`. A green exit code can therefore mask the failure.
-- The post-click markers (`"บันทึก"`, `"ประวัติ"`) are also present in the persistent navigation UI, so they can resolve before the destination page is proven active. The test does not currently assert the URL after each navigation.
+Relevant files:
 
-Required remediation:
+- `frontend/src/lib/twin/types.ts`
+- `frontend/src/lib/twin/store.ts`
+- `frontend/src/lib/twin/dashboard-adapter.ts`
+- `frontend/src/lib/twin/selectors.ts`
+- twin unit and E2E tests
 
-1. Keep the three transitions as true in-page React Router navigation; do not replace them with `page.goto`, because full reloads would remount AuthProvider and invalidate the behavior under test.
-2. Trigger the links without pointer hit-testing (for example, keyboard activation or an explicit DOM click appropriate for this non-pointer regression).
-3. Assert the expected URL/path after every transition before continuing. Use destination-specific page assertions only if they cannot match persistent navigation labels.
-4. Prove the focused spec stable with retries disabled and repeated execution (minimum `--retries=0 --repeat-each=3`), then run the full Playwright suite and all existing gates.
-5. Do not alter or weaken the `app_user` call-count assertion. No production-code change is requested unless the corrected test exposes a separate defect.
-6. Update `HANDOFF.md`, push the remediation to PR #12, and stop at `RE-REVIEW_REQUESTED`.
+### 3. Test the real renderer-initialization failure path
 
-## Out Of Scope
+The Playwright test named `falls back when renderer initialization fails` permits WebGL only for the first distinct canvas. In React StrictMode, the side-effectful `supportsWebGL()` state initializer can run twice, so the second capability probe can fail before R3F reaches the `WebGLRenderer` factory. The test therefore does not establish that an actual renderer-construction failure reaches the Thai fallback.
 
-Remaining P1 findings (alert unread count, carbon MoM, role-visibility error UX), `annotateRow` policy, component-test harness, unsaved-changes navigation prompts, Digital Twin work.
+Required result:
+
+- Make capability detection safe/deterministic under StrictMode.
+- Force failure only when the connected R3F canvas initializes (or use an equally explicit test seam), while allowing the capability probe to succeed.
+- Assert that the renderer-init path was reached and that Dashboard/Process remain usable.
+- Do not skip or weaken the existing unsupported-WebGL and context-loss coverage.
+
+### 4. Reset readiness for mouse/touch re-entry to 3D
+
+`selectDashboardView()` resets the status to `loading`, but the two tab click handlers call `setDashboardView()` directly. After switching 3D → Process → 3D, `data-twin-status` can retain stale `ready` before the remounted Canvas renders a frame.
+
+Required result:
+
+- Route click/touch tab changes through the same readiness-reset path as keyboard/fallback navigation.
+- Add deterministic coverage for Process → 3D re-entry and prove `ready` is emitted only after the new scene frame.
+
+Relevant file:
+
+- `frontend/src/pages/DashboardPage.tsx`
+- `frontend/tests/e2e/digital-twin.spec.ts`
+
+### 5. Reconcile the PR with current `main` before re-review
+
+The reviewed head no longer merges cleanly. `git merge-tree` reports conflicts in:
+
+- `docs/ai/CURRENT-WORK.md`
+- `docs/ai/HANDOFF.md`
+
+PR #15 is also ahead in the required merge queue and is currently under remediation. After #15 is approved and merged, integrate the then-current `main` once, preserve the latest repo-wide handoff/queue, and record this Twin remediation without restoring stale WO-STAB-005 instructions.
+
+## Scope Guardrails
+
+- No Supabase schema, Auth or RLS changes.
+- No ProcessFlowDiagram implementation changes.
+- No Blender/GLTF, new treatment stages, historical UI, realtime polling or visual polish.
+- React Query/Supabase remains the telemetry source of truth; do not move live/manual snapshots into Zustand.
+
+## Verification Required
+
+- `npm run build`
+- `npm run lint` against the documented baseline
+- `npm test`
+- full Playwright suite, including genuine renderer-init failure and 3D re-entry readiness
+- `git diff --check`
+- confirm the final PR is mergeable against current `main`
 
 ## Next Action
 
-GLM 5.3: remediate only the deterministic-test finding above, run all gates, update the handoff, push PR #12, and stop at `RE-REVIEW_REQUESTED`.
+GLM 5.3: remediate only the findings above, preserve the approved Phase 1 behavior, integrate current `main` after PR #15 lands, update `HANDOFF.md` and this file to `RE-REVIEW_REQUESTED`, push PR #14, then stop for GPT re-review. Do not merge.
