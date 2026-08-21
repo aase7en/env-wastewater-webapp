@@ -47,11 +47,24 @@ jobs:
           VITE_SUPABASE_ANON_KEY: ${{ secrets.VITE_SUPABASE_ANON_KEY }}
         run: npm run build
 
-      - name: Run smoke tests against the deployed prod URL
+      - name: Run smoke tests against this PR's own build (vite preview)
         working-directory: frontend
         env:
-          E2E_BASE_URL: https://aase7en.github.io/env-wastewater-webapp/
-        run: npm run e2e:prod
+          # WO-STAB-004 CI remediation: the suite must exercise the code in
+          # the PR, not the deployed main build. dist/ was compiled by the
+          # previous step with GH_PAGES_BASE, so vite preview serves it under
+          # the same subpath the prod site uses. (The old E2E_BASE_URL →
+          # deployed-Pages profile could never catch behavior regressions
+          # pre-merge — the PR build was compiled then ignored. Post-deploy
+          # prod smoke remains covered by deploy-frontend.yml's own step.)
+          E2E_BASE_URL: http://127.0.0.1:4173/env-wastewater-webapp/
+        run: |
+          npx vite preview --host 127.0.0.1 --port 4173 --strictPort &
+          for i in $(seq 1 30); do
+            curl -sf http://127.0.0.1:4173/env-wastewater-webapp/ >/dev/null && break
+            sleep 1
+          done
+          npx playwright test
 
       - name: Upload test artifacts on failure
         if: failure()
