@@ -47,7 +47,11 @@ The user supplied:
 - three drone photographs showing hospital/canal context
 - four cozy fishing-game screenshots as style references
 
-The original media is not committed to the repository. See `docs/ai/digital-twin/09-SITE-VISUAL-REFERENCE.md` for the durable written observations and the privacy/copyright boundary.
+The original hospital-site media is not committed to the repository. Nine raw photographs are archived privately at:
+
+`L:\My Drive\A-Wiki-Data\raw\environment\env-wastewater-webapp\digital-twin\site-reference\2026-08-21`
+
+The private folder contains `README.md`, `MANIFEST.sha256`, six ground photographs, and three drone photographs. Game screenshots are intentionally excluded from the confidential raw archive. See `docs/ai/digital-twin/09-SITE-VISUAL-REFERENCE.md` for the durable observations and handling boundary.
 
 Key direction:
 

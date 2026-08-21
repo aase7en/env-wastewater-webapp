@@ -21,6 +21,14 @@ Allow a new agent to continue the Digital Twin stream when a prior session or we
 
 Do not trust a recorded commit, test count, bundle size, or branch status without cheaply verifying it when the task depends on it.
 
+## Private Site Reference
+
+When Google Drive is mounted, read-only source photographs are available at:
+
+`L:\My Drive\A-Wiki-Data\raw\environment\env-wastewater-webapp\digital-twin\site-reference\2026-08-21`
+
+Verify files against `MANIFEST.sha256` when integrity matters. Never copy these originals into Git, a PR, screenshots shared publicly, or the frontend bundle without explicit authorization. Use `docs/ai/digital-twin/09-SITE-VISUAL-REFERENCE.md` when the private Drive is unavailable.
+
 ## Ownership
 
 ### Core Engineering

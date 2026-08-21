@@ -58,6 +58,12 @@ Relevant A-Wiki references:
 
 The current deployed data model and application source override older design documents when they conflict.
 
+Private raw site-reference material is stored outside Git under:
+
+`L:\My Drive\A-Wiki-Data\raw\environment\env-wastewater-webapp\digital-twin\site-reference\2026-08-21`
+
+Agents may inspect it when the Drive is mounted, but must not copy the originals into Git or the frontend bundle without explicit authorization.
+
 ## Continuity Rule
 
 Repository documentation is the durable memory layer. Chat is temporary.

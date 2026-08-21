@@ -6,11 +6,20 @@ Last updated: 2026-08-21
 
 ## Reference Asset Policy
 
-The user supplied reference images through a Codex session. The originals are intentionally not committed here because they include hospital-site/drone context and external game screenshots.
+The original hospital-site reference photographs are archived privately outside Git at:
 
-This file preserves the durable observations. A future agent needing pixel-level inspection must ask the user to reattach the images or provide an approved private reference location.
+`L:\My Drive\A-Wiki-Data\raw\environment\env-wastewater-webapp\digital-twin\site-reference\2026-08-21`
 
-Do not add original hospital photographs, drone imagery, or scanned construction drawings to the public repository without explicit permission and a privacy/security review.
+Inventory:
+
+- `ground/`: 6 original ground photographs
+- `drone/`: 3 original drone photographs
+- `README.md`: classification and handling rules
+- `MANIFEST.sha256`: integrity hashes for all 9 images
+
+The external game screenshots are not part of this confidential raw archive. This file preserves their high-level style observations without storing or copying the images.
+
+A future agent may inspect the private folder when the Drive is mounted. If it is unavailable, continue from this written brief or ask the user to restore access. Do not add original hospital photographs, drone imagery, or scanned construction drawings to the public repository/frontend bundle without explicit permission and a privacy/security review.
 
 ## Ground Reference Set — Observed Physical Features
 

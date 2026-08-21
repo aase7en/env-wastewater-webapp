@@ -23,10 +23,14 @@ Use `WAITING_FOR_INPUT` when a task specifically requires user-provided referenc
 
 ### DT-REF-P001 — Confirm treatment-zone reference pack
 
-- Status: WAITING_FOR_INPUT
+- Status: WAITING_FOR_INPUT — private raw archive complete; annotation/drawings remain optional pending input
 - Owner: User supplies references; Codex catalogs them
 - Dependencies: none
-- Needed first:
+- Completed:
+  - archived 6 ground and 3 drone photographs in the private Drive reference folder
+  - verified source/destination SHA-256 for all 9 files
+  - created private `README.md` and `MANIFEST.sha256`
+- Optional next inputs, highest value first:
   - annotated drone image showing exact treatment-zone boundary
   - closest available top-down drone crop
   - general arrangement/site plan if available
