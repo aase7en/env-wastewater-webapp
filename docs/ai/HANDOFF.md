@@ -1,119 +1,45 @@
 # HANDOFF
 
-Status: RE-REVIEW_REQUESTED
+Status: REVIEW_REQUESTED
 
 ## Task
 
-`WO-STAB-005` — stop ErrorBoundary from remounting the app subtree on every navigation while keeping the post-crash route-change recovery (P0 #5, `reports/code-review-2026-08-12.md`).
+`WO-TWIN-INTEGRATE-001` (GLM-initiated, product-owner-approved) — bring the Digital Twin foundation to main via PR #14, after merging the stabilization line into it.
 
-## Implementation Summary
+## Session Record (2026-08-21/22 — authoritative summary, chat is NOT memory)
 
-- **Root cause**: `ErrorRouteWatcher` rendered `<div key={location.pathname}>` around `ErrorBoundaryInner > AuthProvider`. A changed key forces React to unmount/remount the subtree — AuthProvider re-ran `getSession()` + `loadAppUser()` on every dock click (skeleton flicker + a fresh `app_user` REST call per navigation).
-- **Fix — derived reset instead of remount** (`frontend/src/components/ErrorBoundary.tsx`, only modified production file):
-  - The function wrapper reads `useLocation()` and passes `routeKey={location.pathname}` as a prop.
-  - `getDerivedStateFromProps` clears an ACTIVE error when `routeKey` changes (escape hatch) and remembers the new route in state (`lastRouteKey`). Healthy navigations only update the remembered key — the subtree stays mounted and AuthProvider survives.
-  - The wrapper `<div>` and the `key` trick are deleted entirely.
-  - Reset lives in `getDerivedStateFromProps` (pure) rather than `componentDidUpdate`+`setState`: an initial variant using componentDidUpdate tripped `react(no-did-update-set-state)`; instead of suppressing the rule, the logic was refactored to the derived form. Nothing suppressed.
+### Production incidents & ops
+1. **Supabase free-tier pause incident**: ENV_DB was paused by inactivity; DNS record removed (NXDOMAIN, verified via Google+Cloudflare DoH) → app auth/data all failed. User resumed from dashboard; DNS+REST verified back.
+2. **Keep-alive prevention shipped**: PR #13 merged (`.github/workflows/supabase-keepalive.yml`) — daily 03:00 UTC anon GET on `v_overview_carbon` (PHI-safe). First dispatch verified **HTTP 200** (run 32477700819).
 
-## Files Added
+### Stabilization line (all merged to main)
+- PR #12 merged (`1473d03`): WO-STAB-005 ErrorBoundary — derived route-reset, no subtree remount; deterministic e2e (keyboard nav + URL asserts, 6/6 at retries=0 repeat=3). All 5 P0s from reports/code-review-2026-08-12.md now closed on main.
+- PR #11 (earlier): WO-STAB-004 form dirty-gate + CI now runs the suite against the PR's own code via Playwright webServer (structural fix: old CI tested the deployed main build).
 
-- `frontend/tests/e2e/error-boundary-remount.spec.ts` (2 regression tests)
+### This PR (#14) — Digital Twin foundation
+- Branch `feature/digital-twin-integration` = `feature/digital-twin-v3` @ `6123a4a` (Codex's work, preserved untouched) **merged with main** @ `2eab5ee`.
+- Source merged with ZERO conflicts; docs/ai add/add (CURRENT-WORK/HANDOFF/PROJECT-BRIEF) resolved toward main's living versions; twin docs (`docs/ai/digital-twin/00–05`) intact; no conflict markers (verified `git grep '<<<<<<<'` = none).
+- Gates on integration commit `29a5147`: build ✓ · Vitest 154/154 · Playwright 40/40 · lint 0 errors · `git diff --check` clean · GitHub CI smoke ✓ 2m22s.
+- Contents: lib/twin contracts (TwinMetric provenance/freshness, data-honesty held — unavailable never zero, manual never LIVE), TwinCanvas (R3F lazy), TwinRendererBoundary fallback, Dashboard "3D Plant | Process" tabs, twin governance docs.
 
-## Files Modified
+### Pending / next owners
+- **GPT**: review + merge PR #14.
+- **Codex**: two queued lanes — (1) WO-UX-SCALE-001 app-wide readability/responsive scale pass (handoff prompt already delivered to user); (2) twin visual WOs per `docs/ai/digital-twin/03-MICRO-STEP-BOARD.md` once #14 merges.
+- **GLM (me)**: available for contract/lib work; P1 batch (alert unread count, carbon MoM, role-visibility error UX) + annotateRow policy remain the known backlog.
 
-- `frontend/src/components/ErrorBoundary.tsx` (+34/−20)
-
-## Files Deleted
-
-- None.
-
-## Important Decisions
-
-- Escape path in test B uses **browser back** (`page.goBack()`): when the tree is crashed the recovery screen is the only rendered output — there is no in-app nav to click, so back/popstate is the real user route-change mechanism.
-- Test B triggers a genuine render-phase throw by blocking the lazy `TrendsPage` chunk (route pattern covers both the dev-server module URL and the hashed prod asset).
-- Test A measures remounts by counting `app_user` REST calls (AuthProvider's mount effect) across 3 SPA navigations.
-
-## UX Changes
-
-- Visible improvement (no behavior regression): no more skeleton flicker on every navigation; post-crash recovery via route change works as before.
-
-## Visual / 3D Changes
-
-- None. No Digital Twin files touched.
-
-## Tests
-
-### Commands
-
-From `frontend/`: `npm run lint`, `npm run build`, `npm test -- --run`, `npm run e2e`; from repo root: `git diff --check`.
-
-### Results
-
-- Lint: **12 warnings + 3 errors — exactly the documented baseline** (3 transient new hits during development were eliminated by the derived-state refactor + fixture-param rename; nothing suppressed).
-- Build: pass.
-- Vitest: **148/148**.
-- Playwright e2e: **34/34** (32 existing + 2 new).
-- `git diff --check`: CLEAN.
-- **RED proof** (test A on the old code, via temporary stash): expected 2 `app_user` calls, received **11** — the remount storm captured directly; GREEN (2/2) with the fix.
-
-## Known Issues
-
-- The derived reset clears error state on ANY route change while an error is active (including forward navigation via any external mechanism) — matches the intended semantics.
-
-## Deferred Work
-
-Out of scope per CURRENT-WORK: P1 findings (alert unread count, carbon MoM, role-visibility error UX), `annotateRow` policy, component-test harness.
-
-## Risks
-
-- Low. Single-file production change; both behaviors pinned by regression tests with a captured RED.
+### Operational notes (lessons)
+- Agent shells reset cwd between tool calls — every git/build command must be a single self-contained command (`cd <abs> && ...`), verify `git rev-parse --show-toplevel` when state matters.
+- `feature/digital-twin-v3` branch is held by Codex's worktree (`env-wastewater-webapp-dt-v3-docs`); integration work went to a NEW branch to avoid touching it.
+- Preview worktree for humans: `A:\GitHub\envww-twin-preview` (has `.env` + deps; `npm run dev` inside `frontend/`).
 
 ## Branch
 
-`fix/p0-error-boundary-remount`
+`feature/digital-twin-integration`
 
 ## Exact HEAD
 
-`d11c2a3e6fa9843bd4ff2bad96e6d578c2a44ec8` (implementation checkpoint; doc-only commits sit on top).
-
-## Remediation Round (test determinism — CHANGES_REQUIRED)
-
-Reviewer finding: test A's pointer clicks on animated/overlapping ModuleDock links were flaky (reviewer-local failures + a CI '1 flaky' masked by retry); text markers also matched persistent nav UI and no URL was asserted.
-
-Fix (test-only, commit `c152148`):
-- Links activated via KEYBOARD (focus + Enter) — no pointer hit-testing.
-- `toHaveURL` (end-anchored) asserted after EVERY transition; text markers dropped from the wait path.
-- `page.goto` used exactly once at boot — later gotos would full-reload and remount AuthProvider, invalidating the behavior under test.
-- `app_user` call-count assertion unchanged; 500 ms settle before counting.
-- Production code UNCHANGED from checkpoint `d11c2a3`.
-
-Stability + gates: focused `--retries=0 --repeat-each=3` → **6/6 passed (31s, no flaky)** · lint 12w+3e (= baseline) · build OK · Vitest 148/148 · Playwright 34/34 · `git diff --check` clean.
-
-## Reviewer Focus
-
-- The `getDerivedStateFromProps` reset semantics in `ErrorBoundary.tsx` (healthy nav = key update only; error + route change = clear).
-- Test A's measurement approach (app_user call count) and test B's crash trigger (lazy chunk block) + browser-back escape.
-
-## Reviewer Decision — CHANGES_REQUIRED
-
-The production implementation is accepted in principle; the blocker is the determinism of regression test A.
-
-Reviewer evidence on the PR branch:
-
-- `npm run build`: PASS.
-- `npm test`: 148/148 PASS.
-- CI run `32453224779`: 34/34 PASS.
-- Targeted local spec, normal profile: test A failed twice at `error-boundary-remount.spec.ts:52`; `.dock-item` intercepted the second dock-link pointer click. Test B passed both times.
-- Targeted local spec, fresh CI profile: test A failed first attempt and passed on retry, producing `1 flaky`; the process exited green only because CI config permits one retry.
-
-Required fix:
-
-1. Preserve real client-side React Router transitions, but remove pointer hit-testing from this remount regression; do not use full-page `page.goto` for the three post-boot transitions.
-2. Assert the URL/path after every transition. The current Thai text markers also exist in the persistent nav and do not prove the destination rendered.
-3. Keep the `app_user` boot-count equality assertion intact.
-4. Run the focused spec with `--retries=0 --repeat-each=3`, then lint/build/Vitest/full Playwright/`git diff --check`.
-5. Update this handoff with exact results and stop at `RE-REVIEW_REQUESTED`.
+`29a5147132a0f5f932ae9ac70c740f55bf06747e` (integration checkpoint; this doc commit sits on top)
 
 ## Next Action
 
-GLM 5.3 remediates only the reviewer test finding, pushes PR #12, and stops at `RE-REVIEW_REQUESTED`.
+GPT review PR #14 → merge → Codex lanes (UX-scale, twin visual). 

@@ -1,6 +1,6 @@
 # CURRENT WORK
 
-Status: RE-REVIEW_REQUESTED
+Status: REVIEW_REQUESTED
 
 Allowed statuses:
 
