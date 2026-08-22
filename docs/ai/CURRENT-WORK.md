@@ -1,6 +1,6 @@
 # CURRENT WORK
 
-Status: READY_FOR_IMPLEMENTATION
+Status: IMPLEMENTING
 
 Allowed statuses:
 
@@ -16,13 +16,14 @@ Allowed statuses:
 
 > `CURRENT-WORK.md` is the authoritative task definition. Agents must not silently expand task scope.
 
-## Review Queue — 2026-08-22
+## Review Queue — 2026-08-23
 
 | Order | PR | Verdict | Repository checkpoint |
 |---:|---:|---|---|
 | 1 | #16 — `WO-STAB-007` | APPROVED and merged | merge `77015d691d2d5a9f20937e582ffb53aa31cad875` |
 | 2 | #15 — `WO-UX-SCALE-001` | APPROVED and merged | merge `da3f510535e711c7cdcbd52bca98c3ecea15e2e7` |
 | 3 | #14 — Digital Twin foundation | APPROVED and merged | merge `da3b70bdc5338f36c600efb3a3feedea2dee5420` |
+| 4 | #21 — `WO-UX-AN-P001` | APPROVED and merged | merge `553247fd38fb210702a18601644a62b86c5d2ee3` |
 
 PR #14 is approved and merged. Digital Twin visual work orders are now unblocked, subject to each work order's own dependency and user-approval rules in `docs/ai/digital-twin/03-MICRO-STEP-BOARD.md`.
 
@@ -30,7 +31,7 @@ PR #14 is approved and merged. Digital Twin visual work orders are now unblocked
 
 Program: `ENV-NEXT-DESIGN`
 
-State: `READY_FOR_IMPLEMENTATION`
+State: `IMPLEMENTING`
 
 Authoritative execution plan: `docs/ai/design/ENV-NEXT-DESIGN-EXECUTION.md`.
 
@@ -42,9 +43,9 @@ Work: `DT-VIS-P001` — Site-authentic Aeration Diorama Blockout.
 
 Design spec: `docs/ai/design/DT-VIS-P001-DESIGN-SPEC.md`.
 
-Owner: GPT/Codex visual engineer; one writer at a time.
+Owner: ChatGPT GPT-5.6 Sol + SunDay-Worker 3 on isolated branch `feature/dt-vis-p001`; one writer at a time.
 
-Status: `READY`.
+Status: `IMPLEMENTING`.
 
 Goal: continue the existing Aeration Tank 3D direction. Do not replace the Twin with a 2D dashboard. Preserve all data-honesty, accessibility, Process fallback, reduced-motion and WebGL resilience contracts.
 
@@ -52,9 +53,9 @@ Goal: continue the existing Aeration Tank 3D direction. Do not replace the Twin 
 
 Work order: `docs/work-orders/WO-UX-AN-P001-GLM.md`.
 
-Owner: GLM 5.3.
+Original owner: GLM 5.3; temporarily executed by ChatGPT GPT-5.6 Sol + SunDay-Worker 3.
 
-Status: `READY_FOR_IMPLEMENTATION`.
+Status: `APPROVED / MERGED` — PR #21, merge `553247fd38fb210702a18601644a62b86c5d2ee3`.
 
 Goal: build a reusable Situation & Trend presentation kit under `frontend/src/components/analytics/**`, with explicit unknown/stale/source states, Ladle stories and deterministic tests. No production route/data-source/Twin/shared-token changes.
 
@@ -65,7 +66,7 @@ Lane A and Lane B may proceed concurrently only within their owned file paths. E
 ### Stop conditions
 
 - Lane A stops at visual `REVIEW_REQUESTED` with screenshots and full required gates.
-- Lane B stops at `REVIEW_REQUESTED` with focused tests, lint/build/unit evidence and exact HEAD.
+- Lane B completed the full loop and merged as PR #21 (`553247fd38fb210702a18601644a62b86c5d2ee3`).
 - Neither lane may start Sankey, Hazard Map, Operations board, full navigation rewrite, or external API production integration without a new active work order.
 
 ## Completed Foundation Context
@@ -155,9 +156,9 @@ The rendered top bar is now at least 64px high while `--topbar-h` in `frontend/s
 
 ## Next Action
 
-Run the two approved lanes from `docs/ai/design/ENV-NEXT-DESIGN-EXECUTION.md` without file overlap:
+Continue the remaining approved lane from `docs/ai/design/ENV-NEXT-DESIGN-EXECUTION.md`:
 
 - Lane A: visual engineer implements `DT-VIS-P001` from `docs/ai/design/DT-VIS-P001-DESIGN-SPEC.md`.
-- Lane B: GLM 5.3 implements `docs/work-orders/WO-UX-AN-P001-GLM.md`.
+- Lane B is complete and merged via PR #21.
 
-Both stop at their review gates. Do not automatically start Sankey, Hazard Map, Operations, or navigation work afterward.
+Continue Lane A only. Do not automatically start Sankey, Hazard Map, Operations, or navigation work afterward.
