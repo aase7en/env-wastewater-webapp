@@ -13,7 +13,7 @@ interface TwinInteractionState {
 }
 
 const initialState = {
-  mode: "live" as const,
+  mode: "latest" as const,
   selectedAssetId: null,
   simulationOverrides: {} as TwinSimulationOverrides,
 };
@@ -29,7 +29,7 @@ export const useTwinStore = create<TwinInteractionState>((set) => ({
     set((state) => ({ selectedAssetId: state.selectedAssetId === assetId ? null : assetId })),
   closeAssetPanel: () => set({ selectedAssetId: null }),
   startSimulation: (simulationOverrides) => set({ mode: "simulation", simulationOverrides }),
-  returnToLatest: () => set({ mode: "live", simulationOverrides: {} }),
+  returnToLatest: () => set({ mode: "latest", simulationOverrides: {} }),
 }));
 
 export function resetTwinStore(): void {

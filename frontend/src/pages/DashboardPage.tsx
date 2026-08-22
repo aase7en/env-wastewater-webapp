@@ -145,7 +145,7 @@ export function DashboardPage() {
             id="dashboard-tab-twin"
             aria-selected={dashboardView === "twin"}
             aria-controls="dashboard-panel-twin"
-            onClick={() => setDashboardView("twin")}
+            onClick={() => selectDashboardView("twin")}
             onKeyDown={handleDashboardTabKeyDown}
             tabIndex={dashboardView === "twin" ? 0 : -1}
             className={`min-h-[var(--touch-min)] rounded-lg px-4 py-2 text-sm font-semibold transition-colors duration-[var(--duration-base)] font-thai ${
@@ -163,7 +163,7 @@ export function DashboardPage() {
             id="dashboard-tab-process"
             aria-selected={dashboardView === "process"}
             aria-controls="dashboard-panel-process"
-            onClick={() => setDashboardView("process")}
+            onClick={() => selectDashboardView("process")}
             onKeyDown={handleDashboardTabKeyDown}
             tabIndex={dashboardView === "process" ? 0 : -1}
             className={`min-h-[var(--touch-min)] rounded-lg px-4 py-2 text-sm font-semibold transition-colors duration-[var(--duration-base)] font-thai ${

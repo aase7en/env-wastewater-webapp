@@ -182,6 +182,9 @@ export function TwinCanvas({
           camera={{ position: [6.6, 5.1, 7.2], fov: 38 }}
           dpr={[1, 1.5]}
           gl={async (defaultProps) => {
+            if (defaultProps.canvas instanceof HTMLCanvasElement) {
+              defaultProps.canvas.dataset.twinRendererCanvas = "true";
+            }
             try {
               return new WebGLRenderer(defaultProps);
             } catch {

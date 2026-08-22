@@ -1,4 +1,4 @@
-export type TwinMode = "live" | "historical" | "simulation";
+export type TwinMode = "latest" | "live" | "historical" | "simulation";
 
 /** Stable, process-wide asset identifier. Future phases can add assets without
  * changing the selection/store contract. */

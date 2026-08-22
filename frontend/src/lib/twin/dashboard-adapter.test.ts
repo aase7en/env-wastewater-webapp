@@ -24,12 +24,13 @@ describe("wastewater twin domain", () => {
     expect(tank).toBeDefined();
     if (!tank) throw new Error("Aeration tank asset missing");
 
+    expect(state.mode).toBe("latest");
     expect(state.snapshotDate).toBe("2026-08-14");
     expect(tank.dissolvedOxygenMgL).toEqual({
-      value: 2.75,
-      source: "manual-snapshot",
+      value: null,
+      source: "unavailable",
       observedAt: null,
-      provenance: { acquisition: "manual-daily-snapshot" },
+      provenance: { acquisition: "unknown" },
       freshness: "unknown",
     });
     expect(tank.tdsMgL).toEqual({
@@ -81,6 +82,15 @@ describe("wastewater twin domain", () => {
     expect(state.snapshotDate).toBe("2025-01-02");
   });
 
+  it("keeps manual dashboard rows out of live mode", () => {
+    const state = deriveWastewaterTwinState(
+      { reading_date: "2026-08-14", tds_aeration: 420 },
+      "live",
+      {},
+    );
+    expect(state.mode).toBe("latest");
+  });
+
   it("applies explicitly labeled simulation values", () => {
     const state = deriveWastewaterTwinState(undefined, "simulation", AERATION_DEMO_OVERRIDES);
     const tank = state.assets[AERATION_TANK_ID];
@@ -121,7 +131,7 @@ describe("wastewater twin domain", () => {
     expect("sourceRow" in useTwinStore.getState()).toBe(false);
 
     useTwinStore.getState().returnToLatest();
-    expect(useTwinStore.getState().mode).toBe("live");
+    expect(useTwinStore.getState().mode).toBe("latest");
     expect(useTwinStore.getState().simulationOverrides).toEqual({});
   });
 });

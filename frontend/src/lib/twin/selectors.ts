@@ -27,7 +27,7 @@ export function deriveWastewaterTwinState(
   mode: TwinMode,
   simulationOverrides: TwinSimulationOverrides,
 ): WastewaterTwinState {
-  const base = dashboardRowToTwinState(row, mode === "historical" ? "historical" : "live");
+  const base = dashboardRowToTwinState(row, mode === "historical" ? "historical" : "latest");
   if (mode !== "simulation") return base;
 
   const baseTank = base.assets[AERATION_TANK_ID];

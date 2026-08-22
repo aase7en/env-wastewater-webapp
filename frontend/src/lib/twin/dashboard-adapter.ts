@@ -46,7 +46,7 @@ const unavailableBoolean = (): TwinMetric<boolean> => unavailableMetric<boolean>
  */
 export function dashboardRowToTwinState(
   row: DashboardRow | undefined,
-  mode: Exclude<TwinMode, "simulation"> = "live",
+  mode: Exclude<TwinMode, "simulation" | "live"> = "latest",
 ): WastewaterTwinState {
   const aerationTank: AerationTankTwinAsset = {
     id: AERATION_TANK_ID,
@@ -54,7 +54,10 @@ export function dashboardRowToTwinState(
     label: "ถังเติมอากาศ",
     waterLevelPercent: unavailableNumber(),
     aeratorRunning: unavailableBoolean(),
-    dissolvedOxygenMgL: dashboardMetric(row?.do_average),
+    // DashboardRow.do_average is a plant-wide derived average, not a direct
+    // Aeration Tank observation. Keep the asset-specific DO unknown until
+    // a truthful Aeration measurement source is available.
+    dissolvedOxygenMgL: unavailableNumber(),
     tdsMgL: dashboardMetric(row?.tds_aeration),
     temperatureC: unavailableNumber(),
   };
