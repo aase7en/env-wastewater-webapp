@@ -42,10 +42,10 @@ Use `WAITING_FOR_INPUT` when a task specifically requires user-provided referenc
 
 ### DT-VIS-P001 — Site-authentic Aeration Diorama Blockout
 
-- Status: BACKLOG — requires explicit user approval
+- Status: READY — user approved continuation of design work on 2026-08-23; implementation must follow `docs/ai/design/DT-VIS-P001-DESIGN-SPEC.md`
 - Owner: Codex
 - Reviewer: Architecture/UX reviewer
-- Dependencies: foundation `e79073d`; visual brief; reference pack may remain partial if uncertainty is documented
+- Dependencies: merged Digital Twin foundation PR #14 (`da3b70bd`); `docs/ai/design/DT-VIS-P001-DESIGN-SPEC.md`; reference pack may remain partial if uncertainty is documented
 - Allowed:
   - `frontend/src/components/digital-twin/WastewaterTwin.tsx`
   - local visual helpers under `frontend/src/components/digital-twin/`

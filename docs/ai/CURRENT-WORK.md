@@ -1,6 +1,6 @@
 # CURRENT WORK
 
-Status: APPROVED
+Status: READY_FOR_IMPLEMENTATION
 
 Allowed statuses:
 
@@ -26,17 +26,51 @@ Allowed statuses:
 
 PR #14 is approved and merged. Digital Twin visual work orders are now unblocked, subject to each work order's own dependency and user-approval rules in `docs/ai/digital-twin/03-MICRO-STEP-BOARD.md`.
 
-## Active Work Order
+## Active Work — Multi-Agent Design Execution
 
-PR #14 — Digital Twin foundation remediation is complete.
+Program: `ENV-NEXT-DESIGN`
 
-Final reviewer verdict: `APPROVED`.
+State: `READY_FOR_IMPLEMENTATION`
 
-PR state: `MERGED`.
+Authoritative execution plan: `docs/ai/design/ENV-NEXT-DESIGN-EXECUTION.md`.
 
-Merge commit: `da3b70bdc5338f36c600efb3a3feedea2dee5420`.
+User approval recorded 2026-08-23: continue the design work while preserving the existing Digital Twin as the spatial/visual core, and delegate bounded implementation work to GLM 5.3 where its engineering strengths are appropriate.
 
-No further GPT foundation decision is pending. The next visual lane is governed by `docs/ai/digital-twin/03-MICRO-STEP-BOARD.md`.
+### Lane A — Digital Twin visual vertical slice
+
+Work: `DT-VIS-P001` — Site-authentic Aeration Diorama Blockout.
+
+Design spec: `docs/ai/design/DT-VIS-P001-DESIGN-SPEC.md`.
+
+Owner: GPT/Codex visual engineer; one writer at a time.
+
+Status: `READY`.
+
+Goal: continue the existing Aeration Tank 3D direction. Do not replace the Twin with a 2D dashboard. Preserve all data-honesty, accessibility, Process fallback, reduced-motion and WebGL resilience contracts.
+
+### Lane B — GLM 5.3 analytics engineering
+
+Work order: `docs/work-orders/WO-UX-AN-P001-GLM.md`.
+
+Owner: GLM 5.3.
+
+Status: `READY_FOR_IMPLEMENTATION`.
+
+Goal: build a reusable Situation & Trend presentation kit under `frontend/src/components/analytics/**`, with explicit unknown/stale/source states, Ladle stories and deterministic tests. No production route/data-source/Twin/shared-token changes.
+
+### Parallel-safety rule
+
+Lane A and Lane B may proceed concurrently only within their owned file paths. Each lane writes only its lane-specific handoff under `docs/ai/handoffs/`; the coordinating/reviewer agent owns the shared `docs/ai/HANDOFF.md`. Shared UI/tokens/styles, `DashboardPage.tsx`, routing/navigation, or other cross-lane files require explicit temporary ownership before editing.
+
+### Stop conditions
+
+- Lane A stops at visual `REVIEW_REQUESTED` with screenshots and full required gates.
+- Lane B stops at `REVIEW_REQUESTED` with focused tests, lint/build/unit evidence and exact HEAD.
+- Neither lane may start Sankey, Hazard Map, Operations board, full navigation rewrite, or external API production integration without a new active work order.
+
+## Completed Foundation Context
+
+PR #14 — Digital Twin foundation remediation is complete and approved.
 
 ## Main Integration
 
@@ -121,4 +155,9 @@ The rendered top bar is now at least 64px high while `--topbar-h` in `frontend/s
 
 ## Next Action
 
-Digital Twin foundation review is complete. Follow `docs/ai/digital-twin/03-MICRO-STEP-BOARD.md` for the visual lane. `DT-VIS-P001` remains governed by its recorded dependency and explicit user-approval requirement; no additional GPT foundation decision is pending.
+Run the two approved lanes from `docs/ai/design/ENV-NEXT-DESIGN-EXECUTION.md` without file overlap:
+
+- Lane A: visual engineer implements `DT-VIS-P001` from `docs/ai/design/DT-VIS-P001-DESIGN-SPEC.md`.
+- Lane B: GLM 5.3 implements `docs/work-orders/WO-UX-AN-P001-GLM.md`.
+
+Both stop at their review gates. Do not automatically start Sankey, Hazard Map, Operations, or navigation work afterward.
