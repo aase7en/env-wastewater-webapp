@@ -1,6 +1,6 @@
 # CURRENT WORK
 
-Status: RE-REVIEW_REQUESTED
+Status: APPROVED
 
 Allowed statuses:
 
@@ -22,17 +22,21 @@ Allowed statuses:
 |---:|---:|---|---|
 | 1 | #16 — `WO-STAB-007` | APPROVED and merged | merge `77015d691d2d5a9f20937e582ffb53aa31cad875` |
 | 2 | #15 — `WO-UX-SCALE-001` | APPROVED and merged | merge `da3f510535e711c7cdcbd52bca98c3ecea15e2e7` |
-| 3 | #14 — Digital Twin foundation | RE-REVIEW_REQUESTED | remediation `2f6311bf4ad9ee9469e81e7db2c42c8e00f9bf37` |
+| 3 | #14 — Digital Twin foundation | APPROVED and merged | merge `da3b70bdc5338f36c600efb3a3feedea2dee5420` |
 
-No Digital Twin visual-direction work starts until PR #14 is approved and merged.
+PR #14 is approved and merged. Digital Twin visual work orders are now unblocked, subject to each work order's own dependency and user-approval rules in `docs/ai/digital-twin/03-MICRO-STEP-BOARD.md`.
 
 ## Active Work Order
 
-PR #14 — Digital Twin foundation remediation.
+PR #14 — Digital Twin foundation remediation is complete.
 
-Owner during remediation: ChatGPT Sol MAX + SunDay-Worker 1 temporarily covering GLM 5.3 while GLM is rate-limited.
+Final reviewer verdict: `APPROVED`.
 
-State: `RE-REVIEW_REQUESTED`
+PR state: `MERGED`.
+
+Merge commit: `da3b70bdc5338f36c600efb3a3feedea2dee5420`.
+
+No further GPT foundation decision is pending. The next visual lane is governed by `docs/ai/digital-twin/03-MICRO-STEP-BOARD.md`.
 
 ## Main Integration
 
@@ -96,10 +100,25 @@ After remediation:
 - Unknown telemetry remains unknown.
 - React Query/Supabase remains telemetry source of truth; manual/live source data was not moved into Zustand.
 
+## GPT Re-Review Verdict — APPROVED
+
+Re-reviewed PR #14 at head `47d3ae0c3d747c12de005e1b55e7ecbbe58a74f3`, including remediation commit `2f6311bf4ad9ee9469e81e7db2c42c8e00f9bf37`.
+
+Verified against the actual diff:
+
+- plant-wide `do_average` is no longer represented as direct Aeration Tank DO;
+- manual/dashboard snapshots use `latest`, while `live` remains reserved for future sensor telemetry;
+- renderer-init coverage reaches the marked R3F renderer canvas after the capability probe and verifies fallback/recovery;
+- Process → 3D click re-entry resets readiness to `loading` before returning to `ready`;
+- `main@7d73814782f8475731d886f6826da5bc9af36c11` is an ancestor of the reviewed branch;
+- PR was mergeable and GitHub `smoke`, `scripts`, and `notify` checks were green.
+
+PR #14 merged as `da3b70bdc5338f36c600efb3a3feedea2dee5420`.
+
 ## Non-Blocking Follow-up
 
 The rendered top bar is now at least 64px high while `--topbar-h` in `frontend/src/styles/spacing.css` still documents 56px. The token is currently unused. Reconcile or retire it before a future consumer relies on it; do not expand PR #14 scope.
 
 ## Next Action
 
-GPT re-review PR #14 at remediation head `2f6311bf4ad9ee9469e81e7db2c42c8e00f9bf37`. Do **not** merge before GPT approval and do not begin Digital Twin visual-direction work yet.
+Digital Twin foundation review is complete. Follow `docs/ai/digital-twin/03-MICRO-STEP-BOARD.md` for the visual lane. `DT-VIS-P001` remains governed by its recorded dependency and explicit user-approval requirement; no additional GPT foundation decision is pending.

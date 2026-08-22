@@ -1,45 +1,31 @@
 # HANDOFF
 
-Status: RE-REVIEW_REQUESTED — PR #14 remediation pushed; GitHub CI green and merge state CLEAN; GPT re-review next.
+Status: APPROVED — PR #14 passed GPT re-review and merged; Digital Twin visual work orders are unblocked subject to their own board rules.
 
 ## Repo State — 2026-08-22
 
-Repository/worktree:
+Current authoritative branch: `main`.
 
-`A:\GitHub\envww-twin-preview`
+PR #14 final reviewed head:
 
-Branch:
+`47d3ae0c3d747c12de005e1b55e7ecbbe58a74f3`
 
-`feature/digital-twin-integration`
-
-Reviewed findings checkpoint before remediation:
-
-`fc9023020bd2fc09e1bab2138153f44ab3f11978`
-
-Current `main` integrated before remediation:
-
-`7d73814782f8475731d886f6826da5bc9af36c11`
-
-Main-integration merge commit on this branch:
-
-`113a68e`
-
-Remediation head pushed to PR #14:
+Remediation commit:
 
 `2f6311bf4ad9ee9469e81e7db2c42c8e00f9bf37`
 
-Untracked files intentionally preserved and never staged/cleaned:
+PR #14 merge commit on `main`:
 
-- `.serena/`
-- `frontend/shot-process.png`
-- `frontend/shot-twin.png`
+`da3b70bdc5338f36c600efb3a3feedea2dee5420`
+
+The reviewed branch had integrated `main@7d73814782f8475731d886f6826da5bc9af36c11` through merge `113a68e` before remediation. The primary worktree's unrelated untracked user files were not staged, deleted, reset, or cleaned during review/merge.
 
 ## Completed Queue Before PR #14
 
 - PR #16 — `WO-STAB-007`: APPROVED / MERGED at `77015d691d2d5a9f20937e582ffb53aa31cad875`.
 - PR #15 — `WO-UX-SCALE-001`: APPROVED / MERGED at `da3f510535e711c7cdcbd52bca98c3ecea15e2e7`.
 
-## PR #14 Remediation Completed
+## PR #14 Remediation Completed and Approved
 
 ### 1. Truthful Aeration DO contract
 
@@ -112,6 +98,18 @@ Full gates:
 - GitHub PR #14 at `2f6311b`: `smoke`, `scripts`, and both `notify` checks **SUCCESS**.
 - GitHub merge state: **CLEAN**.
 
+## GPT Re-Review Verdict
+
+`APPROVED`.
+
+Reviewer verified all four recorded findings against the actual remediation diff at `2f6311bf4ad9ee9469e81e7db2c42c8e00f9bf37`, confirmed `main@7d73814782f8475731d886f6826da5bc9af36c11` is an ancestor of the branch, and confirmed GitHub `smoke`, `scripts`, and `notify` checks were green with the PR mergeable.
+
+PR #14 was merged as:
+
+`da3b70bdc5338f36c600efb3a3feedea2dee5420`
+
+The Digital Twin foundation review gate is closed. No additional GPT foundation decision is pending.
+
 ## Files Intentionally Changed by Remediation
 
 - `frontend/src/components/digital-twin/TwinCanvas.tsx`
@@ -138,4 +136,4 @@ Full gates:
 
 ## Next Action
 
-GPT re-review PR #14 at head `2f6311bf4ad9ee9469e81e7db2c42c8e00f9bf37`. STOP at `RE-REVIEW_REQUESTED`; do **not** merge PR #14 until GPT approves it, and do not begin Digital Twin visual-direction work yet.
+Follow `docs/ai/digital-twin/03-MICRO-STEP-BOARD.md` for the visual lane. The foundation dependency is now satisfied. `DT-VIS-P001` still carries its own explicit user-approval requirement on the board; no further GPT foundation decision is pending.
