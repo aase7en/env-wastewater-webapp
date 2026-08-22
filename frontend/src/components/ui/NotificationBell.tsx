@@ -70,7 +70,7 @@ function BellInner({ className }: { className?: string }) {
       </button>
 
       {open && (
-        <div className="absolute right-0 top-11 w-80 max-w-[calc(100vw-1.5rem)] z-50 aura-card aura-card--static p-0 overflow-hidden">
+        <div className="fixed inset-x-3 top-[4.25rem] z-50 aura-card aura-card--static p-0 overflow-hidden sm:absolute sm:inset-x-auto sm:right-0 sm:top-11 sm:w-80 sm:max-w-[calc(100vw-1.5rem)]">
           <div className="px-4 py-3 border-b border-aura-borderSubtle flex items-center justify-between">
             <span className="text-sm font-semibold text-aura-textMain font-thai">การแจ้งเตือนค่าเกินเกณฑ์</span>
             {unread > 0 && (

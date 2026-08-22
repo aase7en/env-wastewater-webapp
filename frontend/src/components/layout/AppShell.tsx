@@ -136,7 +136,7 @@ export function AppShell({ children }: { children: ReactNode }) {
         <Link
           to="/dashboard"
           aria-label="UTH[AI]-ENV — ระบบติดตามบ่อบำบัดน้ำเสีย"
-          className="flex items-center gap-2.5 min-w-0 shrink-0"
+          className="flex min-w-[var(--touch-min)] min-h-[var(--touch-min)] items-center justify-center gap-2.5 shrink-0 sm:justify-start"
         >
           <img
             src={`${import.meta.env.BASE_URL}logo-aura.png`}
