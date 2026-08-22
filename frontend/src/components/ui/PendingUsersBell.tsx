@@ -59,12 +59,12 @@ function BellInner({ className }: { className?: string }) {
         aria-label={count > 0 ? `ผู้ใช้รออนุมัติ ${count} ราย` : "ผู้ใช้รออนุมัติ"}
         aria-expanded={open}
         className={cn(
-          "relative flex items-center justify-center w-9 h-9 rounded-xl border transition-all",
+          "relative flex items-center justify-center w-[var(--touch-min)] h-[var(--touch-min)] rounded-xl border transition-all",
           "border-aura-borderSubtle text-aura-textMuted hover:text-aura-cyan hover:border-aura-cyan/40",
           open && "text-aura-cyan border-aura-cyan/40"
         )}
       >
-        <MSymbol name="person_add" fill={count > 0} className="text-[20px]" />
+        <MSymbol name="person_add" fill={count > 0} className="text-[24px]" />
         {count > 0 && (
           <span className="absolute -top-1 -right-1 min-w-[18px] h-[18px] px-1 rounded-full bg-alert-red text-white text-[10px] font-bold flex items-center justify-center">
             {count > 9 ? "9+" : count}
@@ -73,7 +73,7 @@ function BellInner({ className }: { className?: string }) {
       </button>
 
       {open && (
-        <div className="absolute right-0 top-11 w-80 max-w-[calc(100vw-1.5rem)] z-50 aura-card aura-card--static p-0 overflow-hidden">
+        <div className="fixed inset-x-3 top-[4.25rem] z-50 aura-card aura-card--static p-0 overflow-hidden sm:absolute sm:inset-x-auto sm:right-0 sm:top-11 sm:w-80 sm:max-w-[calc(100vw-1.5rem)]">
           <div className="px-4 py-3 border-b border-aura-borderSubtle flex items-center justify-between">
             <span className="text-sm font-semibold text-aura-textMain font-thai">ผู้ใช้รออนุมัติ</span>
             {count > 0 && (
@@ -104,7 +104,7 @@ function BellInner({ className }: { className?: string }) {
                   className="w-full text-left px-4 py-3 border-b border-aura-borderSubtle/50 last:border-b-0"
                 >
                   <div className="flex items-start gap-2.5">
-                    <MSymbol name="person_add" className="text-[18px] mt-0.5 text-aura-cyan" />
+                    <MSymbol name="person_add" className="text-[20px] mt-0.5 text-aura-cyan" />
                     <div className="min-w-0">
                       <div className="text-sm font-thai text-aura-textMain truncate">
                         {u.display_name || u.email || "ผู้ใช้ใหม่"}

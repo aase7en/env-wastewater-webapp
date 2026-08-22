@@ -90,6 +90,8 @@
   html {
     /* Thai wraps through IBM Plex Sans Thai when Plus Jakarta Sans lacks glyphs. */
     font-family: "Plus Jakarta Sans", "IBM Plex Sans Thai", system-ui, sans-serif;
+    text-size-adjust: 100%;
+    -webkit-text-size-adjust: 100%;
   }
   h1, h2, h3, h4 {
     font-family: "Plus Jakarta Sans", "IBM Plex Sans Thai", system-ui, sans-serif;
@@ -99,12 +101,32 @@
      light. Values swap via tokens.css (:root / .dark). */
   body {
     @apply text-aura-textMain antialiased;
+    font-size: var(--text-app-base);
+    line-height: var(--leading-normal);
     background-color: var(--aura-body-bg);
     background-image:
       radial-gradient(circle at 0% 0%, var(--aura-ambient-1) 0%, transparent 50%),
       radial-gradient(circle at 100% 100%, var(--aura-ambient-2) 0%, transparent 50%);
     background-attachment: fixed;
     min-height: 100vh;
+  }
+}
+
+/* Compatibility bridge for legacy pixel-sized utilities. New presentation
+ * code should use semantic text-* utilities, but these aliases let the scale
+ * tokens improve existing dense labels without a risky cross-page rewrite. */
+@layer utilities {
+  .text-\[12px\] {
+    font-size: var(--text-ui-sm);
+    line-height: 1.5;
+  }
+  .text-\[11px\] {
+    font-size: var(--text-micro);
+    line-height: 1.45;
+  }
+  .text-\[10px\] {
+    font-size: var(--text-micro-2);
+    line-height: 1.4;
   }
 }
 
@@ -199,7 +221,7 @@
     border-color var(--duration-base) var(--ease-smooth),
     box-shadow var(--duration-base) var(--ease-smooth);
   font-family: inherit;
-  font-size: 14px;
+  font-size: var(--text-ui);
 }
 .glass-input::placeholder { color: var(--aura-placeholder); }
 .glass-input:focus {
@@ -241,7 +263,7 @@
   font-family: "Material Symbols Outlined";
   font-weight: normal;
   font-style: normal;
-  font-size: 22px;
+  font-size: 24px;
   line-height: 1;
   letter-spacing: normal;
   text-transform: none;

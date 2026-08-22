@@ -70,9 +70,9 @@ function UserFooter() {
     return (
       <Link
         to="/login"
-        className="flex items-center gap-3 px-2 py-2 rounded-xl text-sm font-thai text-aura-textMuted hover:text-aura-cyan transition-colors"
+        className="flex min-h-[var(--touch-min)] items-center gap-3 px-2 py-2 rounded-xl text-sm font-thai text-aura-textMuted hover:text-aura-cyan transition-colors"
       >
-        <MSymbol name="login" className="text-[20px]" />
+        <MSymbol name="login" />
         เข้าสู่ระบบ
       </Link>
     );
@@ -84,7 +84,7 @@ function UserFooter() {
       <div
         title={name}
         aria-label={name}
-        className="w-8 h-8 rounded-full bg-aura-surfaceHighest border border-aura-borderSubtle flex items-center justify-center text-sm font-semibold text-aura-cyan shrink-0"
+        className="w-9 h-9 rounded-full bg-aura-surfaceHighest border border-aura-borderSubtle flex items-center justify-center text-sm font-semibold text-aura-cyan shrink-0"
       >
         {initial}
       </div>
@@ -103,9 +103,9 @@ function UserFooter() {
         onClick={() => void signOut()}
         aria-label="ออกจากระบบ"
         title="ออกจากระบบ"
-        className="text-aura-textMuted hover:text-alert-red transition-colors"
+        className="grid w-[var(--touch-min)] h-[var(--touch-min)] place-items-center rounded-xl text-aura-textMuted hover:text-alert-red hover:bg-alert-red/10 transition-colors"
       >
-        <MSymbol name="logout" className="text-[20px]" />
+        <MSymbol name="logout" />
       </button>
     </div>
   );
@@ -132,16 +132,20 @@ export function AppShell({ children }: { children: ReactNode }) {
           order (NotificationBell then PendingUsersBell) as before. */}
       {/* ── Top bar — one bar for every breakpoint now that the dock is the
              nav. Holds what the sidebar footer used to: brand, user, theme. ── */}
-      <header className="sticky top-0 z-30 h-14 shrink-0 flex items-center justify-between gap-3 px-4 md:px-8 bg-aura-bgDeep/80 backdrop-blur-md border-b border-aura-borderSubtle">
-        <Link to="/dashboard" className="flex items-center gap-2.5 min-w-0">
+      <header className="sticky top-0 z-30 min-h-16 shrink-0 flex items-center justify-between gap-2 px-3 sm:px-4 md:px-8 bg-aura-bgDeep/80 backdrop-blur-md border-b border-aura-borderSubtle">
+        <Link
+          to="/dashboard"
+          aria-label="UTH[AI]-ENV — ระบบติดตามบ่อบำบัดน้ำเสีย"
+          className="flex min-w-[var(--touch-min)] min-h-[var(--touch-min)] items-center justify-center gap-2.5 shrink-0 sm:justify-start"
+        >
           <img
             src={`${import.meta.env.BASE_URL}logo-aura.png`}
             alt=""
-            className="w-8 h-8 rounded-lg shrink-0"
+            className="w-9 h-9 rounded-lg shrink-0"
           />
-          <BrandWordmark className="text-base md:text-lg" />
+          <BrandWordmark className="hidden sm:inline text-lg md:text-xl" />
         </Link>
-        <div className="flex items-center gap-3 shrink-0">
+        <div className="flex items-center gap-1.5 sm:gap-2 md:gap-3 shrink-0">
           <span className="hidden xl:inline text-xs text-aura-textMuted font-thai">
             ระบบติดตามบ่อบำบัดน้ำเสีย
           </span>

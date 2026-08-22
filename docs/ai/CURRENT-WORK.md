@@ -1,6 +1,6 @@
 # CURRENT WORK
 
-Status: CHANGES_REQUIRED
+Status: RE-REVIEW_REQUESTED
 
 Allowed statuses:
 
@@ -18,43 +18,101 @@ Allowed statuses:
 
 ## Review Queue — 2026-08-22
 
-GPT reviewed the three queued pull requests in the required order.
-
 | Order | PR | Verdict | Repository checkpoint |
 |---:|---:|---|---|
 | 1 | #16 — `WO-STAB-007` | APPROVED and merged | merge `77015d691d2d5a9f20937e582ffb53aa31cad875` |
-| 2 | #15 — `WO-UX-SCALE-001` | CHANGES_REQUIRED | findings on branch head `edd18b0f77bf2050fa49e6cde95eb7d3f6251a99` |
-| 3 | #14 — Digital Twin foundation | CHANGES_REQUIRED | findings on branch head `fc9023020bd2fc09e1bab2138153f44ab3f11978` |
+| 2 | #15 — `WO-UX-SCALE-001` | RE-REVIEW_REQUESTED | remediation `309f1a6`; main integration `64c2e71` |
+| 3 | #14 — Digital Twin foundation | CHANGES_REQUIRED | findings head `fc9023020bd2fc09e1bab2138153f44ab3f11978` |
 
-PR #14 must not merge before PR #15. No visual-direction work starts until the foundation is approved and merged.
+PR #14 must not merge before PR #15. No Digital Twin visual-direction work starts until PR #14 is approved and merged.
 
-## PR #15 — Required Owner Action
+## Active Work Order
 
-Owner: Codex — Visual Experience
+`WO-UX-SCALE-001`
 
-The production checkpoint `d6b31c19b734331b54c5861c4e74aaf30f5d97f9` has two mobile acceptance failures:
+Owner: ChatGPT Sol MAX + SunDay-Worker 1 temporarily covering Codex while Codex is rate-limited.
 
-1. The notification and pending-user panels are anchored to their individual bells and extend beyond the left edge at 360px when opened.
-2. The mobile brand link has a 36px by 36px target instead of the required minimum 44px by 44px.
+PR: #15
 
-Add deterministic mobile coverage for both open panels, attach the required before/after evidence, integrate current `main`, run all gates and stop at `RE-REVIEW_REQUESTED`. The complete finding and scope guardrails are committed in PR #15's `docs/ai/CURRENT-WORK.md`.
+Branch: `feat/ux-scale-001`
 
-## PR #14 — Required Owner Action
+Original reviewed production checkpoint: `d6b31c19b734331b54c5861c4e74aaf30f5d97f9`
+
+## Reviewer Verdict Addressed
+
+The original typography/icon/button/Aura scaling work remains intact. The two blocking mobile findings have been remediated:
+
+1. Both bell panels now remain fully inside a 360px viewport when opened.
+2. The mobile `/dashboard` brand link now has a computed interactive target of at least 44px by 44px.
+
+## Remediation Details
+
+- `NotificationBell` and `PendingUsersBell` use viewport-anchored fixed positioning on mobile (`inset-x-3`, below the sticky top bar), then restore the original per-bell absolute right alignment from `sm` upward.
+- The mobile brand link uses `--touch-min` minimum width/height, centered below `sm`, while preserving desktop alignment from `sm` upward.
+- Escape behavior, outside-click behavior, accessible labels, navigation behavior and desktop dropdown alignment are unchanged.
+- Current `main` was integrated after the UI remediation. The merged calendar-MoM fix and latest queue coordination were preserved.
+
+## Regression Coverage
+
+Added:
+
+- `frontend/tests/e2e/ux-scale-mobile.spec.ts`
+  - brand target >= 44x44 at 360px;
+  - no document overflow in both themes;
+  - both open bell panels fully inside the viewport;
+  - Escape closes the notification panel.
+- `frontend/tests/e2e/ux-scale-desktop.spec.ts`
+  - 1440px desktop overflow guard in both themes.
+
+RED proof before remediation:
+
+- brand link measured 36px wide;
+- notification panel right edge reached 376px in a 360px viewport.
+
+Focused remediation run after the fix:
+
+- mobile spec with `--retries=0 --repeat-each=3`: 6/6 PASS.
+
+## Review Evidence
+
+Reviewable screenshots are committed under:
+
+`docs/review-evidence/pr-15/`
+
+Evidence includes:
+
+- before/after mobile header;
+- before/after notification panel evidence;
+- after pending-user panel;
+- before/after 1440px light and dark desktop screenshots.
+
+## Full Verification
+
+- `npm run lint`: documented baseline only — 12 warnings + 3 existing fixture false-positive errors; no new lint finding from this remediation.
+- `npm run build`: PASS.
+- `npm test -- --run`: 152/152 PASS.
+- full Playwright: 37/37 PASS.
+- `git diff --check`: PASS.
+- mobile 360px document overflow check: PASS in both themes.
+- desktop 1440px overflow check: PASS in both themes.
+
+## PR #14 — Required Owner Action After #15
 
 Owner: GLM 5.3 — Core Engineering / integration
 
-The production checkpoint `36a895e68742c57e34b9354798d2fc5497d90596` has four blocking foundation issues:
+PR #14 remains `CHANGES_REQUIRED` and blocked until PR #15 merges. Its four blocking findings remain:
 
-1. `DashboardRow.do_average` is a derived average of Aeration, Sedimentation and Before-discharge DO, but is presented as Aeration Tank DO with direct manual provenance.
-2. Manual latest snapshots are encoded as mode `live`; add/use `latest` and reserve `live` for actual sensor telemetry.
-3. The renderer-initialization fallback test can fail in the StrictMode capability probe before reaching the R3F renderer factory, so the claimed path is not proven.
-4. Mouse/touch Process → 3D re-entry bypasses the readiness-reset helper and can expose stale `ready` before the remounted scene renders.
+1. `DashboardRow.do_average` must not be presented as Aeration Tank DO with direct/manual provenance.
+2. Manual latest snapshots must use `latest`, reserving `live` for actual sensor telemetry.
+3. Renderer-init fallback coverage must reach the actual R3F renderer-construction failure path under StrictMode.
+4. Mouse/touch Process → 3D re-entry must reset readiness before the remounted scene renders.
 
-Remediate without schema/Auth/RLS/PFD/visual-scope expansion. After PR #15 merges, integrate the then-current `main`, resolve `CURRENT-WORK.md` and `HANDOFF.md` in favor of the latest coordination state, run all gates and stop at `RE-REVIEW_REQUESTED`. The complete finding is committed in PR #14's `docs/ai/CURRENT-WORK.md`.
+After #15 merges, integrate the then-current `main`, resolve coordination docs toward the latest state, run all gates and stop at `RE-REVIEW_REQUESTED`.
+
+## Non-Blocking Follow-up
+
+The rendered top bar is now at least 64px high while `--topbar-h` in `frontend/src/styles/spacing.css` still documents 56px. The token is currently unused. Reconcile or retire it before a future consumer relies on it; do not expand this remediation scope.
 
 ## Next Action
 
-1. Codex remediates PR #15 and requests GPT re-review.
-2. GPT approves/merges PR #15 or records a new actionable finding.
-3. GLM completes PR #14 remediation and final main integration.
-4. GPT re-reviews PR #14; only after approval/merge may Codex begin the queued Twin visual work orders.
+GPT re-review PR #15. If approved, merge #15. Only after that should PR #14 integrate the new main and continue its remediation. Do not begin Digital Twin visual-direction work yet.
