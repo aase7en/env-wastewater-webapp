@@ -1,8 +1,8 @@
 # HANDOFF
 
-Status: IMPLEMENTING — Analytics Lane B completed and merged as PR #21; Digital Twin Lane A is the only active implementation lane.
+Status: APPROVED — `ENV-NEXT-DESIGN` P001 is complete; Analytics Lane B merged as PR #21 and Digital Twin Lane A merged as PR #23. No production implementation lane is currently authorized.
 
-## Active Design Execution — 2026-08-23
+## Completed Design Execution — 2026-08-23
 
 User approved continuation of design work while preserving the existing Digital Twin as the spatial/visual core.
 
@@ -12,9 +12,11 @@ Authoritative execution plan: `docs/ai/design/ENV-NEXT-DESIGN-EXECUTION.md`.
 
 - Work: `DT-VIS-P001`
 - Spec: `docs/ai/design/DT-VIS-P001-DESIGN-SPEC.md`
-- Owner: ChatGPT GPT-5.6 Sol + SunDay-Worker 3 on `feature/dt-vis-p001`; one writer at a time
-- Status: IMPLEMENTING
-- Scope: site-authentic Aeration Tank diorama only; no new treatment stages or data semantics
+- Implementation owner: ChatGPT GPT-5.6 Sol + SunDay-Worker 3; final review/merge completed with SunDay-Worker 5 after Worker 3 transport termination
+- Status: APPROVED / MERGED
+- PR: #23
+- Merge: `491ff6dd980e1e3b032b934588baefb9218b1b2b`
+- Result: site-authentic Aeration Tank diorama slice with visual acceptance E2E and screenshot evidence; no new treatment stages or data semantics
 
 ### Lane B — GLM 5.3
 
@@ -25,7 +27,18 @@ Authoritative execution plan: `docs/ai/design/ENV-NEXT-DESIGN-EXECUTION.md`.
 - Merge: `553247fd38fb210702a18601644a62b86c5d2ee3`
 - Result: reusable `frontend/src/components/analytics/**` situation/provenance/chart-frame kit with Ladle stories and deterministic tests; no production route wiring
 
-Lane B is closed. Lane A remains isolated from analytics code and is the only active implementation lane. Any need for shared files still requires explicit ownership handoff.
+Both P001 lanes are closed and merged. No active implementation lane remains. Future production work requires a new bounded work order / explicit approval and must re-establish file ownership before editing shared surfaces.
+
+## DT-VIS-P001 Closure
+
+- Final reviewed branch head: `504709ffdeff663fae4126f3ce0d37cff67af0db`.
+- PR #23 GitHub checks: `smoke`, `scripts`, and both `notify` checks SUCCESS.
+- Local final gates: focused Twin adapter 7/7, focused Twin+visual Playwright 11/11, lint baseline 12 warnings / 0 errors, build PASS, Vitest 169/169, full Playwright 48/48, diff-check PASS.
+- Evidence: `docs/review-evidence/dt-vis-p001/` (desktop light/dark, 360px mobile, simulation, reduced motion, Process, context-loss fallback, before captures).
+- PR #23 merged to `main` as `491ff6dd980e1e3b032b934588baefb9218b1b2b`.
+- No schema/Auth/RLS/router/Process/data-contract change and no new 3D dependency was introduced.
+
+Program gate: **STOP**. Candidate next lanes remain documented in `docs/ai/design/ENV-NEXT-DESIGN-EXECUTION.md`; none is automatically active.
 
 ## Repo State — 2026-08-23
 
