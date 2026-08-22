@@ -30,15 +30,17 @@
   --text-body: 16px;
   --text-label: 14px;         /* label-md, 600 */
   --text-label-sm: 12px;      /* label-caps / label-sm, 700, 0.1em */
-  --text-micro: 11px;
-  --text-micro-2: 10px;       /* uppercase tracked eyebrow */
+  --text-micro: 13px;
+  --text-micro-2: 12px;       /* uppercase tracked eyebrow / compact badge */
 
-  /* In-app scale (as actually used in the shipped pages). */
-  --text-page-title: 24px;    /* h1, md:30px */
-  --text-page-title-md: 30px;
-  --text-card-value: 18px;    /* KPI figure */
-  --text-ui: 14px;            /* body / table default */
-  --text-ui-sm: 12px;
+  /* In-app scale — tuned for hospital phones/tablets and outdoor use.
+     These tokens drive Tailwind's common text-* utilities via the config. */
+  --text-page-title: 28px;
+  --text-page-title-md: 34px;
+  --text-card-value: 20px;    /* KPI figure / compact heading */
+  --text-app-base: 17px;      /* unclassified body copy */
+  --text-ui: 16px;            /* controls / tables / primary labels */
+  --text-ui-sm: 14px;         /* secondary labels */
 
   --leading-tight: 1.1;
   --leading-snug: 1.3;

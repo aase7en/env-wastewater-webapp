@@ -315,6 +315,7 @@ The binding rules below still apply.
 
 | Chunk | Agent | Claimed | Scope (files) |
 |---|---|---|---|
+| ~~WO-UX-SCALE-001~~ | Codex | 2026-08-22 | done — cb083a5; `frontend/tailwind.config.js`, typography/index styles, shared button/header controls and `AppShell` (branch `feat/ux-scale-001`; no `src/lib/**`) |
 | ~~WO-STAB-002~~ | GLM | 2026-08-15 | done — cdd6f6d | `frontend/src/lib/admin/ai-chat.ts`, `ai-chat.test.ts` (branch `fix/p0-stabilization`) |
 | ~~WO-STAB-003~~ | GLM | 2026-08-15 | done — e065253 | `frontend/src/components/AuthProvider.tsx` (branch `fix/p0-stabilization`) |
 | ~~WO-STAB-001~~ | GLM | 2026-08-15 | done — see STAB-001 commit | `frontend/src/pages/DailyFormPage.tsx` (branch `fix/p0-stabilization`) |
@@ -322,6 +323,7 @@ The binding rules below still apply.
 | ~~AUDITFIX-A~~ | GLM | 2026-08-10 | done — see close-note below |
 | ~~AUDITFIX-C~~ | GLM | 2026-08-10 | done — see close-note below |
 | ~~AUDITFIX-B~~ | GLM | 2026-08-10 | done — see close-note below |
+| ~~WO-STAB-007~~ | GLM | 2026-08-22 | done — P1 carbon MoM gap fixed (see PR) |
 | ~~EQ-1~~ | GLM | 2026-08-11 | done — see close-note below |
 | ~~EQ-2~~ | GLM | 2026-08-11 | done — see close-note below |
 | ~~EQ-3~~ | GLM | 2026-08-11 | done — see close-note below |

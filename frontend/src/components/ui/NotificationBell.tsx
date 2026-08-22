@@ -56,12 +56,12 @@ function BellInner({ className }: { className?: string }) {
         aria-label={unread > 0 ? `การแจ้งเตือน ${unread} รายการยังไม่อ่าน` : "การแจ้งเตือน"}
         aria-expanded={open}
         className={cn(
-          "relative flex items-center justify-center w-9 h-9 rounded-xl border transition-all",
+          "relative flex items-center justify-center w-[var(--touch-min)] h-[var(--touch-min)] rounded-xl border transition-all",
           "border-aura-borderSubtle text-aura-textMuted hover:text-aura-cyan hover:border-aura-cyan/40",
           open && "text-aura-cyan border-aura-cyan/40"
         )}
       >
-        <MSymbol name="notifications" fill={unread > 0} className="text-[20px]" />
+        <MSymbol name="notifications" fill={unread > 0} className="text-[24px]" />
         {unread > 0 && (
           <span className="absolute -top-1 -right-1 min-w-[18px] h-[18px] px-1 rounded-full bg-alert-red text-white text-[10px] font-bold flex items-center justify-center">
             {unread > 9 ? "9+" : unread}
@@ -70,7 +70,7 @@ function BellInner({ className }: { className?: string }) {
       </button>
 
       {open && (
-        <div className="absolute right-0 top-11 w-80 max-w-[calc(100vw-1.5rem)] z-50 aura-card aura-card--static p-0 overflow-hidden">
+        <div className="fixed inset-x-3 top-[4.25rem] z-50 aura-card aura-card--static p-0 overflow-hidden sm:absolute sm:inset-x-auto sm:right-0 sm:top-11 sm:w-80 sm:max-w-[calc(100vw-1.5rem)]">
           <div className="px-4 py-3 border-b border-aura-borderSubtle flex items-center justify-between">
             <span className="text-sm font-semibold text-aura-textMain font-thai">การแจ้งเตือนค่าเกินเกณฑ์</span>
             {unread > 0 && (
@@ -107,7 +107,7 @@ function BellInner({ className }: { className?: string }) {
                     <MSymbol
                       name="warning"
                       fill={!a.read_at}
-                      className={cn("text-[18px] mt-0.5", a.read_at ? "text-aura-textMuted" : "text-alert-amber")}
+                      className={cn("text-[20px] mt-0.5", a.read_at ? "text-aura-textMuted" : "text-alert-amber")}
                     />
                     <div className="min-w-0">
                       <div className={cn("text-sm font-thai", a.read_at ? "text-aura-textMuted" : "text-aura-textMain")}>
