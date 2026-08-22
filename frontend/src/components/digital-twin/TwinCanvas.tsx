@@ -199,8 +199,12 @@ export function TwinCanvas({
         >
           <SceneReadySignal onReady={markRendererReady} />
           <color attach="background" args={[theme === "dark" ? "#03181c" : "#eef8f3"]} />
-          <ambientLight intensity={theme === "dark" ? 1.25 : 1.8} />
-          <directionalLight position={[4, 7, 5]} intensity={2.2} />
+          <ambientLight intensity={theme === "dark" ? 0.85 : 1.1} />
+          <directionalLight
+            position={[4, 7, 5]}
+            intensity={theme === "dark" ? 2.5 : 2.3}
+            color={theme === "dark" ? "#ffe5bf" : "#fff0cf"}
+          />
           <WastewaterTwin
             asset={tank}
             selected={selected}
@@ -209,7 +213,6 @@ export function TwinCanvas({
             selectionColor={selectionColor}
             onSelectAsset={selectAsset}
           />
-          <gridHelper args={[12, 12, theme === "dark" ? "#17434a" : "#9fc8bd", theme === "dark" ? "#0b2a30" : "#d1e5de"]} position={[0, -0.02, 0]} />
           <OrbitControls
             makeDefault
             enablePan={false}
