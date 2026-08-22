@@ -323,6 +323,7 @@ The binding rules below still apply.
 | ~~AUDITFIX-A~~ | GLM | 2026-08-10 | done — see close-note below |
 | ~~AUDITFIX-C~~ | GLM | 2026-08-10 | done — see close-note below |
 | ~~AUDITFIX-B~~ | GLM | 2026-08-10 | done — see close-note below |
+| ~~WO-STAB-007~~ | GLM | 2026-08-22 | done — P1 carbon MoM gap fixed (see PR) |
 | ~~EQ-1~~ | GLM | 2026-08-11 | done — see close-note below |
 | ~~EQ-2~~ | GLM | 2026-08-11 | done — see close-note below |
 | ~~EQ-3~~ | GLM | 2026-08-11 | done — see close-note below |
