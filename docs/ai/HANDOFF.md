@@ -1,6 +1,6 @@
 # HANDOFF
 
-Status: READY_FOR_IMPLEMENTATION — PR #14 foundation is merged; the next multi-agent design execution is defined and split into non-overlapping Digital Twin and GLM analytics lanes.
+Status: IMPLEMENTING — Analytics Lane B completed and merged as PR #21; Digital Twin Lane A is the only active implementation lane.
 
 ## Active Design Execution — 2026-08-23
 
@@ -12,21 +12,22 @@ Authoritative execution plan: `docs/ai/design/ENV-NEXT-DESIGN-EXECUTION.md`.
 
 - Work: `DT-VIS-P001`
 - Spec: `docs/ai/design/DT-VIS-P001-DESIGN-SPEC.md`
-- Owner: GPT/Codex visual engineer; one writer at a time
-- Status: READY
+- Owner: ChatGPT GPT-5.6 Sol + SunDay-Worker 3 on `feature/dt-vis-p001`; one writer at a time
+- Status: IMPLEMENTING
 - Scope: site-authentic Aeration Tank diorama only; no new treatment stages or data semantics
 
 ### Lane B — GLM 5.3
 
 - Work order: `docs/work-orders/WO-UX-AN-P001-GLM.md`
-- Owner: GLM 5.3
-- Status: READY_FOR_IMPLEMENTATION
-- Scope: new `frontend/src/components/analytics/**` presentation kit + tests/stories only
-- No production route, Supabase, Twin, shared-token, or navigation changes
+- Original owner: GLM 5.3; temporary executor: ChatGPT GPT-5.6 Sol + SunDay-Worker 3
+- Status: APPROVED / MERGED
+- PR: #21
+- Merge: `553247fd38fb210702a18601644a62b86c5d2ee3`
+- Result: reusable `frontend/src/components/analytics/**` situation/provenance/chart-frame kit with Ladle stories and deterministic tests; no production route wiring
 
-The lanes may run in parallel because their owned production paths do not overlap. Any need for shared files requires a stop and explicit ownership handoff.
+Lane B is closed. Lane A remains isolated from analytics code and is the only active implementation lane. Any need for shared files still requires explicit ownership handoff.
 
-## Repo State — 2026-08-22
+## Repo State — 2026-08-23
 
 Current authoritative branch: `main`.
 
