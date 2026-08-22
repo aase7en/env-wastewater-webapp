@@ -1,6 +1,6 @@
 # CURRENT WORK
 
-Status: IMPLEMENTING
+Status: APPROVED
 
 Allowed statuses:
 
@@ -24,14 +24,15 @@ Allowed statuses:
 | 2 | #15 — `WO-UX-SCALE-001` | APPROVED and merged | merge `da3f510535e711c7cdcbd52bca98c3ecea15e2e7` |
 | 3 | #14 — Digital Twin foundation | APPROVED and merged | merge `da3b70bdc5338f36c600efb3a3feedea2dee5420` |
 | 4 | #21 — `WO-UX-AN-P001` | APPROVED and merged | merge `553247fd38fb210702a18601644a62b86c5d2ee3` |
+| 5 | #23 — `DT-VIS-P001` | APPROVED and merged | merge `491ff6dd980e1e3b032b934588baefb9218b1b2b` |
 
 PR #14 is approved and merged. Digital Twin visual work orders are now unblocked, subject to each work order's own dependency and user-approval rules in `docs/ai/digital-twin/03-MICRO-STEP-BOARD.md`.
 
-## Active Work — Multi-Agent Design Execution
+## Completed Work — Multi-Agent Design Execution
 
 Program: `ENV-NEXT-DESIGN`
 
-State: `IMPLEMENTING`
+State: `APPROVED`
 
 Authoritative execution plan: `docs/ai/design/ENV-NEXT-DESIGN-EXECUTION.md`.
 
@@ -43,9 +44,9 @@ Work: `DT-VIS-P001` — Site-authentic Aeration Diorama Blockout.
 
 Design spec: `docs/ai/design/DT-VIS-P001-DESIGN-SPEC.md`.
 
-Owner: ChatGPT GPT-5.6 Sol + SunDay-Worker 3 on isolated branch `feature/dt-vis-p001`; one writer at a time.
+Implementation owner: ChatGPT GPT-5.6 Sol + SunDay-Worker 3 on isolated branch `feature/dt-vis-p001`; final review/merge completed by GPT with SunDay-Worker 5 after Worker 3 transport termination.
 
-Status: `IMPLEMENTING`.
+Status: `APPROVED / MERGED` — PR #23, merge `491ff6dd980e1e3b032b934588baefb9218b1b2b`.
 
 Goal: continue the existing Aeration Tank 3D direction. Do not replace the Twin with a 2D dashboard. Preserve all data-honesty, accessibility, Process fallback, reduced-motion and WebGL resilience contracts.
 
@@ -59,15 +60,15 @@ Status: `APPROVED / MERGED` — PR #21, merge `553247fd38fb210702a18601644a62b86
 
 Goal: build a reusable Situation & Trend presentation kit under `frontend/src/components/analytics/**`, with explicit unknown/stale/source states, Ladle stories and deterministic tests. No production route/data-source/Twin/shared-token changes.
 
-### Parallel-safety rule
+### Historical parallel-safety rule (P001 closed)
 
 Lane A and Lane B may proceed concurrently only within their owned file paths. Each lane writes only its lane-specific handoff under `docs/ai/handoffs/`; the coordinating/reviewer agent owns the shared `docs/ai/HANDOFF.md`. Shared UI/tokens/styles, `DashboardPage.tsx`, routing/navigation, or other cross-lane files require explicit temporary ownership before editing.
 
 ### Stop conditions
 
-- Lane A stops at visual `REVIEW_REQUESTED` with screenshots and full required gates.
+- Lane A completed the full loop and merged as PR #23 (`491ff6dd980e1e3b032b934588baefb9218b1b2b`).
 - Lane B completed the full loop and merged as PR #21 (`553247fd38fb210702a18601644a62b86c5d2ee3`).
-- Neither lane may start Sankey, Hazard Map, Operations board, full navigation rewrite, or external API production integration without a new active work order.
+- `ENV-NEXT-DESIGN` P001 execution is closed. Do not start Sankey, Hazard Map, Operations board, full navigation rewrite, external API production integration, or the next Digital Twin visual slice without a new active work order / explicit approval.
 
 ## Completed Foundation Context
 
@@ -156,9 +157,6 @@ The rendered top bar is now at least 64px high while `--topbar-h` in `frontend/s
 
 ## Next Action
 
-Continue the remaining approved lane from `docs/ai/design/ENV-NEXT-DESIGN-EXECUTION.md`:
+`ENV-NEXT-DESIGN` P001 is complete: Analytics Lane B merged via PR #21 and Digital Twin Lane A merged via PR #23.
 
-- Lane A: visual engineer implements `DT-VIS-P001` from `docs/ai/design/DT-VIS-P001-DESIGN-SPEC.md`.
-- Lane B is complete and merged via PR #21.
-
-Continue Lane A only. Do not automatically start Sankey, Hazard Map, Operations, or navigation work afterward.
+**STOP at the program gate.** No implementation lane is currently authorized. A coordinating agent may review the candidate next lanes in `docs/ai/design/ENV-NEXT-DESIGN-EXECUTION.md`, but must create/activate a new bounded work order and obtain the required approval before editing production code. Do not automatically start `DT-VIS-P002`, Sankey, Hazard Map, Operations, navigation, or external API production integration.

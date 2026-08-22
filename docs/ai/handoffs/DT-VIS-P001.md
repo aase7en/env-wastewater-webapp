@@ -1,7 +1,7 @@
 # DT-VIS-P001 Handoff
 
-Status: REVIEW_REQUESTED
-Owner: ChatGPT GPT-5.6 Sol + SunDay-Worker 3 (continuing the existing visual branch)
+Status: APPROVED / MERGED
+Implementation owner: ChatGPT GPT-5.6 Sol + SunDay-Worker 3; final review/merge completed with SunDay-Worker 5 after Worker 3 transport termination
 
 When implementation begins, this lane owns this handoff file. Record:
 
@@ -119,3 +119,9 @@ Lane result: **REVIEW_REQUESTED**. P001 is a bounded visual vertical slice, not 
 ### 9. Memory / SSoT
 
 This repository handoff is authoritative. Serena memory may only point to this file and the current global SSoT; chat memory is not a substitute. After reviewer approval/merge, the coordinator must update `docs/ai/CURRENT-WORK.md` and `docs/ai/HANDOFF.md` to close P001 and stop before starting any unapproved next work order.
+
+## Merge Closure
+
+GPT final review: **PASS**. PR #23 head `504709ffdeff663fae4126f3ce0d37cff67af0db` was mergeable, current main was an ancestor, and GitHub `smoke`, `scripts`, and both `notify` checks succeeded. PR #23 merged to `main` as `491ff6dd980e1e3b032b934588baefb9218b1b2b` at 2026-08-23 (Thailand time).
+
+P001 is closed. Do not begin `DT-VIS-P002` or another product lane from this handoff without a new active work order / explicit approval.

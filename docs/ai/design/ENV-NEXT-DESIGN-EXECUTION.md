@@ -1,7 +1,7 @@
 # UTH[AI]-ENV — Next Design Execution Plan
 
 Last updated: 2026-08-23
-Status: READY_FOR_IMPLEMENTATION
+Status: APPROVED / P001 COMPLETE
 
 ## Current checkpoint
 
@@ -9,10 +9,12 @@ Status: READY_FOR_IMPLEMENTATION
 - UX scale/mobile readability: merged and approved (PR #15).
 - Environmental Intelligence/toolchain plan: merged (PR #18).
 - Experience & Visual Intelligence Master Plan: merged (PR #19, merge `2c5d51f08ebb8b282767b505be6e49dce4102966`).
-- No production implementation of the new Analytics/Flows/Operations/Map/Network surfaces has started yet.
-- Digital Twin visual lane remains the top visual priority.
+- Situation & Trend Analytics presentation kit: implemented and merged (PR #21, merge `553247fd38fb210702a18601644a62b86c5d2ee3`); it is not yet wired to a production route.
+- Digital Twin P001 site-authentic Aeration Tank visual slice: implemented, reviewed, evidenced and merged (PR #23, merge `491ff6dd980e1e3b032b934588baefb9218b1b2b`).
+- Flows/Operations/Map/Network production surfaces have not started.
+- P001 execution is closed; no next lane is automatically active.
 
-## Multi-agent split
+## Completed multi-agent split
 
 ### Lane A — Digital Twin visual vertical slice
 
@@ -21,6 +23,8 @@ Work order/domain: `DT-VIS-P001`.
 Design source: `docs/ai/design/DT-VIS-P001-DESIGN-SPEC.md`.
 
 Owner: GPT/Codex visual engineer; one writer only.
+
+Status: **APPROVED / MERGED** — PR #23, merge `491ff6dd980e1e3b032b934588baefb9218b1b2b`.
 
 Primary files:
 
@@ -35,7 +39,9 @@ Goal: site-authentic Aeration Tank diorama; preserve all merged truth/fallback c
 
 Work order: `docs/work-orders/WO-UX-AN-P001-GLM.md`.
 
-Owner: GLM 5.3.
+Original owner: GLM 5.3; temporarily executed by ChatGPT GPT-5.6 Sol + SunDay-Worker 3.
+
+Status: **APPROVED / MERGED** — PR #21, merge `553247fd38fb210702a18601644a62b86c5d2ee3`.
 
 Primary files:
 
@@ -44,7 +50,7 @@ Primary files:
 
 Goal: reusable Situation & Trend presentation kit. No production route, data-source, Twin, or shared-token changes.
 
-This lane is intentionally non-overlapping with Lane A and can proceed in parallel.
+This lane was intentionally non-overlapping with Lane A; both P001 lanes are now complete and merged.
 
 ## Why this split
 
@@ -88,9 +94,13 @@ If either lane needs:
 
 then that lane must stop and request temporary ownership before editing.
 
+## P001 Closure Gate
+
+Both planned P001 lanes are reviewed and merged. This execution plan is now a completed checkpoint, not permission to continue editing production code.
+
 ## Next lanes after review
 
-Do not start automatically. After Lane A and Lane B are reviewed:
+Do not start automatically. A new bounded work order / explicit approval is required before activating any candidate:
 
 1. `DT-VIS-P002` — Aeration water/system-level motion language;
 2. `DT-VIS-P003` — operational panel hierarchy/responsive polish;
