@@ -64,6 +64,8 @@ async function installStaffSession(page: Page) {
 export const test = base.extend({
   page: async ({ page }, use) => {
     baseURLAwareGoto(page);
+    // Playwright's fixture continuation is named `use`; it is not a React hook.
+    // oxlint-disable-next-line react-hooks/rules-of-hooks
     await use(page);
   },
 
@@ -73,6 +75,8 @@ export const test = base.extend({
   authed: async ({ page }, use) => {
     await installStaffSession(page);
     baseURLAwareGoto(page);
+    // Playwright's fixture continuation is named `use`; it is not a React hook.
+    // oxlint-disable-next-line react-hooks/rules-of-hooks
     await use(page);
   },
 
@@ -107,6 +111,8 @@ export const test = base.extend({
       });
     });
     baseURLAwareGoto(page);
+    // Playwright's fixture continuation is named `use`; it is not a React hook.
+    // oxlint-disable-next-line react-hooks/rules-of-hooks
     await use(page);
   },
 });

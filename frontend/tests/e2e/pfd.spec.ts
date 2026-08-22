@@ -23,6 +23,7 @@ const STAGE_DESCRIPTION = "ถังเติมอากาศ — จุลิ
 test.describe("PFD interactive drill-down", () => {
   test("dashboard renders either the PFD nodes or the empty-state fallback", async ({ authed: page }) => {
     await page.goto("/dashboard");
+    await page.getByRole("tab", { name: "Process" }).click();
     // Two valid states — both must render one of these, not neither.
     const nodes = page.locator("svg g[role='button']");
     const empty = page.getByText("ไม่มีข้อมูลวันนี้");
@@ -58,6 +59,7 @@ test.describe("PFD interactive drill-down", () => {
       });
     });
     await page.goto("/dashboard");
+    await page.getByRole("tab", { name: "Process" }).click();
     const nodes = page.locator("svg g[role='button']");
     await expect(nodes).toHaveCount(5);
     const labels = await nodes.evaluateAll((els) =>
@@ -87,6 +89,7 @@ test.describe("PFD interactive drill-down", () => {
       });
     });
     await page.goto("/dashboard");
+    await page.getByRole("tab", { name: "Process" }).click();
     const aeration = page
       .locator("svg g[role='button']")
       .filter({ hasText: "เติมอากาศ" });
@@ -114,6 +117,7 @@ test.describe("PFD interactive drill-down", () => {
       });
     });
     await page.goto("/dashboard");
+    await page.getByRole("tab", { name: "Process" }).click();
     const aeration = page
       .locator("svg g[role='button']")
       .filter({ hasText: "เติมอากาศ" });

@@ -1,4 +1,4 @@
-import { type ElementType, type ReactNode } from "react";
+import { createElement, type ElementType, type ReactNode } from "react";
 import { cn } from "../../lib/utils";
 
 /**
@@ -26,16 +26,20 @@ export function AuraCard({
   idle?: boolean;
   as?: ElementType;
 }) {
-  return (
-    <Tag
-      className={cn(
+  // React Three Fiber augments JSX.IntrinsicElements. Under TypeScript 6,
+  // rendering a runtime ElementType through JSX can then collapse children to
+  // `never`; createElement preserves the existing polymorphic API without
+  // coupling this DOM primitive to the R3F JSX namespace.
+  return createElement(
+    Tag,
+    {
+      className: cn(
         "aura-card p-5",
         aura !== "animated" && "aura-card--static",
         idle && "aura-card--idle",
         className
-      )}
-    >
-      {children}
-    </Tag>
+      ),
+    },
+    children,
   );
 }
