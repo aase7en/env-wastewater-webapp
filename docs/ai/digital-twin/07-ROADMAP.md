@@ -12,10 +12,13 @@ Status: IN PROGRESS across branches
 
 ## Phase 1A — Digital Twin foundation
 
-Status: IMPLEMENTED AND HARDENED on `feature/digital-twin-v3`
+Status: APPROVED / MERGED TO `main`
+
+Merge checkpoint: PR #14 → `da3b70bdc5338f36c600efb3a3feedea2dee5420`.
 
 - Twin domain/types/adapters/selectors
-- manual-snapshot provenance and unknown-first mapping
+- truthful `latest` vs future `live` mode separation
+- manual-snapshot provenance and unknown-first Aeration DO mapping
 - interaction/scenario Zustand store
 - lazy R3F renderer
 - Aeration procedural proof of concept
@@ -24,7 +27,7 @@ Status: IMPLEMENTED AND HARDENED on `feature/digital-twin-v3`
 - deterministic readiness and WebGL resilience
 - temporary `3D Plant | Process` switch
 
-This is not merged to `main`.
+The foundation review gate is closed. Visual work may continue only through the micro-step board and its explicit dependency/approval rules.
 
 ## Phase 1B — Site-authentic Aeration visual vertical slice
 
@@ -39,6 +42,30 @@ Status: DESIGNING
 - visual/resilience QA
 
 Do not add other treatment stages in this phase.
+
+## Parallel Track — Environmental Health & Climate Resilience
+
+Status: PLANNING
+
+This track can progress independently of the 3D visual lane when its own work orders are approved. It adds source-aware external hazard intelligence without forcing hazard data into the 3D scene.
+
+Initial domains:
+
+- PM2.5 / smoke context
+- heat / heat index
+- river level / discharge
+- flood extent / proximity
+- rainfall/weather context where useful
+
+Planned source families:
+
+- GISTDA
+- TMD
+- ThaiWater / HII
+
+Architecture and work queue: `docs/ai/environmental-intelligence/`.
+
+Mandatory rules: forecast != observation, satellite estimate != ground measurement, stale != live, missing != safe, credentials remain server-side.
 
 ## Phase 2 — Wastewater plant twin
 
