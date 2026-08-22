@@ -1,6 +1,30 @@
 # HANDOFF
 
-Status: APPROVED — PR #14 passed GPT re-review and merged; Digital Twin visual work orders are unblocked subject to their own board rules.
+Status: READY_FOR_IMPLEMENTATION — PR #14 foundation is merged; the next multi-agent design execution is defined and split into non-overlapping Digital Twin and GLM analytics lanes.
+
+## Active Design Execution — 2026-08-23
+
+User approved continuation of design work while preserving the existing Digital Twin as the spatial/visual core.
+
+Authoritative execution plan: `docs/ai/design/ENV-NEXT-DESIGN-EXECUTION.md`.
+
+### Lane A — Digital Twin visual
+
+- Work: `DT-VIS-P001`
+- Spec: `docs/ai/design/DT-VIS-P001-DESIGN-SPEC.md`
+- Owner: GPT/Codex visual engineer; one writer at a time
+- Status: READY
+- Scope: site-authentic Aeration Tank diorama only; no new treatment stages or data semantics
+
+### Lane B — GLM 5.3
+
+- Work order: `docs/work-orders/WO-UX-AN-P001-GLM.md`
+- Owner: GLM 5.3
+- Status: READY_FOR_IMPLEMENTATION
+- Scope: new `frontend/src/components/analytics/**` presentation kit + tests/stories only
+- No production route, Supabase, Twin, shared-token, or navigation changes
+
+The lanes may run in parallel because their owned production paths do not overlap. Any need for shared files requires a stop and explicit ownership handoff.
 
 ## Repo State — 2026-08-22
 
