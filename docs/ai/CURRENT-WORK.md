@@ -22,7 +22,7 @@ Allowed statuses:
 |---:|---:|---|---|
 | 1 | #16 — `WO-STAB-007` | APPROVED and merged | merge `77015d691d2d5a9f20937e582ffb53aa31cad875` |
 | 2 | #15 — `WO-UX-SCALE-001` | APPROVED and merged | merge `da3f510535e711c7cdcbd52bca98c3ecea15e2e7` |
-| 3 | #14 — Digital Twin foundation | RE-REVIEW_REQUESTED | remediation pending commit/push from branch `feature/digital-twin-integration` |
+| 3 | #14 — Digital Twin foundation | RE-REVIEW_REQUESTED | remediation `2f6311bf4ad9ee9469e81e7db2c42c8e00f9bf37` |
 
 No Digital Twin visual-direction work starts until PR #14 is approved and merged.
 
@@ -83,7 +83,9 @@ After remediation:
 - `npm run build`: **PASS**.
 - `npm test -- --run`: **159/159 PASS**.
 - full Playwright: **44/44 PASS**.
-- `git diff --check`: **PASS** before SSoT update; rerun before commit.
+- `git diff --check`: **PASS**.
+- GitHub PR #14 at remediation head `2f6311b`: `smoke`, `scripts`, and both `notify` checks **SUCCESS**.
+- GitHub merge state at remediation head: **CLEAN**.
 
 ## Guardrails Preserved
 
@@ -100,4 +102,4 @@ The rendered top bar is now at least 64px high while `--topbar-h` in `frontend/s
 
 ## Next Action
 
-Commit/push this bounded remediation to PR #14, confirm GitHub CI green and PR mergeability, then GPT re-review PR #14. Do **not** merge before GPT approval and do not begin Digital Twin visual-direction work yet.
+GPT re-review PR #14 at remediation head `2f6311bf4ad9ee9469e81e7db2c42c8e00f9bf37`. Do **not** merge before GPT approval and do not begin Digital Twin visual-direction work yet.

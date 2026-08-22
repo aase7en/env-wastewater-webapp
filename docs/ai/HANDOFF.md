@@ -1,6 +1,6 @@
 # HANDOFF
 
-Status: RE-REVIEW_REQUESTED — PR #14 remediation complete locally; commit/push + GitHub CI confirmation next, then GPT re-review.
+Status: RE-REVIEW_REQUESTED — PR #14 remediation pushed; GitHub CI green and merge state CLEAN; GPT re-review next.
 
 ## Repo State — 2026-08-22
 
@@ -23,6 +23,10 @@ Current `main` integrated before remediation:
 Main-integration merge commit on this branch:
 
 `113a68e`
+
+Remediation head pushed to PR #14:
+
+`2f6311bf4ad9ee9469e81e7db2c42c8e00f9bf37`
 
 Untracked files intentionally preserved and never staged/cleaned:
 
@@ -104,7 +108,9 @@ Full gates:
 - build: **PASS**.
 - Vitest: **159/159 PASS**.
 - Playwright: **44/44 PASS**.
-- `git diff --check`: clean before this documentation update; rerun before commit.
+- `git diff --check`: **PASS**.
+- GitHub PR #14 at `2f6311b`: `smoke`, `scripts`, and both `notify` checks **SUCCESS**.
+- GitHub merge state: **CLEAN**.
 
 ## Files Intentionally Changed by Remediation
 
@@ -132,9 +138,4 @@ Full gates:
 
 ## Next Action
 
-1. Rerun `git diff --check` and inspect status.
-2. Commit only the intended remediation + SSoT files.
-3. Push branch to PR #14.
-4. Confirm GitHub CI green and mergeability.
-5. STOP at `RE-REVIEW_REQUESTED` for GPT re-review.
-6. Do **not** merge PR #14 until GPT approves it.
+GPT re-review PR #14 at head `2f6311bf4ad9ee9469e81e7db2c42c8e00f9bf37`. STOP at `RE-REVIEW_REQUESTED`; do **not** merge PR #14 until GPT approves it, and do not begin Digital Twin visual-direction work yet.
