@@ -22,6 +22,8 @@ A trustworthy Thai-language environmental operations system that combines operat
 
 The Digital Twin must represent operational data honestly: missing values stay unknown, manual daily records are not mislabeled as realtime, and visual presentation must not invent engineering meaning.
 
+The shared product/visual direction is defined in `docs/ai/design/ENV-EXPERIENCE-MASTER-PLAN.md`. All agents doing non-trivial product, UI, visualization, Digital Twin, map, analytics, flow, or operations-surface work must read it. The plan preserves the existing Digital Twin as the spatial/visual core and treats new 2D intelligence surfaces as complementary rather than replacements.
+
 ## Current State
 
 High-confidence repository facts:
@@ -179,8 +181,9 @@ For day-to-day work, use this precedence:
 2. Security, privacy, and data integrity constraints.
 3. `docs/ai/CURRENT-WORK.md` — authoritative definition of the active task and allowed scope.
 4. Latest reviewer decision recorded in `docs/ai/CURRENT-WORK.md` or `docs/ai/HANDOFF.md`.
-5. `docs/ai/PROJECT-BRIEF.md` and relevant `docs/ai/design/*` specifications.
-6. Older/deeper coordination documents under `docs/agent-handoff/`.
+5. `docs/ai/PROJECT-BRIEF.md`.
+6. `docs/ai/design/ENV-EXPERIENCE-MASTER-PLAN.md` for all non-trivial product/visual work, plus relevant domain/design specifications.
+7. Older/deeper coordination documents under `docs/agent-handoff/`.
 
 The lightweight `docs/ai/` workflow is now the **primary operational collaboration workflow**. The older `WORK ORDER COMPLETE` text format in `docs/agent-handoff/AI_COLLABORATION_PROTOCOL.md` is optional legacy guidance; for active work, GLM must report through `docs/ai/HANDOFF.md` and stop at `REVIEW_REQUESTED` or `RE-REVIEW_REQUESTED` as applicable.
 
@@ -201,7 +204,7 @@ Use them for deeper historical/domain decisions when relevant, but use `docs/ai/
 
 Use:
 
-> Read `docs/ai/PROJECT-BRIEF.md`, `docs/ai/CURRENT-WORK.md`, `docs/ai/HANDOFF.md`, and relevant files under `docs/ai/design/`.
+> Read `docs/ai/PROJECT-BRIEF.md`, `docs/ai/CURRENT-WORK.md`, `docs/ai/HANDOFF.md`, `docs/ai/design/ENV-EXPERIENCE-MASTER-PLAN.md`, and the relevant domain/design files.
 >
 > Act as Architect + UX/UI + 3D/Visual Designer + Reviewer.
 >
@@ -226,7 +229,9 @@ Use:
 > Read:
 > `docs/ai/PROJECT-BRIEF.md`
 > `docs/ai/CURRENT-WORK.md`
-> and relevant `docs/ai/design/*` files.
+> `docs/ai/HANDOFF.md`
+> `docs/ai/design/ENV-EXPERIENCE-MASTER-PLAN.md`
+> and the relevant domain/design files.
 >
 > Inspect the repository before implementing.
 >

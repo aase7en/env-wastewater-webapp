@@ -5,6 +5,22 @@ for โรงพยาบาลอุทัย's environmental monitoring. Norma
 CI as needed. Not bound to any "main-only" rule (that's an A-Wiki-specific policy,
 not this repo's).
 
+## Mandatory SSoT reading — before non-trivial work
+
+This repository, not chat history, is the shared memory for multi-agent work.
+
+Before non-trivial product, architecture, UI, Digital Twin, data, or integration work, read in this order:
+
+1. `docs/ai/PROJECT-BRIEF.md`
+2. `docs/ai/CURRENT-WORK.md`
+3. `docs/ai/HANDOFF.md`
+4. `docs/ai/design/ENV-EXPERIENCE-MASTER-PLAN.md`
+5. the relevant domain folder under `docs/ai/` (for example `digital-twin/`, `environmental-intelligence/`, or `tooling/`)
+
+The Experience Master Plan is mandatory for all product/visual work. It explicitly preserves the existing Digital Twin as the spatial/visual core while adding Operations, Analytics, Flows, Hazard Map, Resource Explorer, and System/Data Network as complementary intelligence surfaces.
+
+An active `CURRENT-WORK.md` remains the execution scope. Do not treat the master plan as permission to start unrelated work.
+
 ## 📡 Companion repo — A-Wiki
 
 This repo pairs with **A-Wiki**, a separate personal-wiki repo that holds:
