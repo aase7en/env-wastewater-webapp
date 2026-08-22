@@ -22,7 +22,14 @@ This file is the source of truth for planned/connected AI developer tools. Clien
 
 ## Codex MCP Configuration — 2026-08-22
 
-The user-level Codex configuration was updated non-destructively. A timestamped backup of the previous `config.toml` was created first.
+The user-level Codex configuration was updated non-destructively. A timestamped backup of the previous `config.toml` was created first: `config.toml.backup-20260822-105609` in the user's `.codex` directory.
+
+Verification performed from the local shell:
+
+- Node.js and npm are available.
+- `@playwright/mcp@latest`, `chrome-devtools-mcp@latest`, and the Context7 remote endpoint configuration were written successfully.
+- package-resolution checks for the two `npx` MCP packages completed successfully.
+- the standalone `codex` CLI is not on the current Windows shell `PATH`, so end-to-end MCP visibility inside the Codex desktop app still requires one user-side restart/reload and UI verification. This is an app reload limitation, not a repository task.
 
 Configured servers:
 

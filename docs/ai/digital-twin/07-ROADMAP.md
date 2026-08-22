@@ -12,10 +12,13 @@ Status: IN PROGRESS across branches
 
 ## Phase 1A — Digital Twin foundation
 
-Status: IMPLEMENTED AND HARDENED on `feature/digital-twin-v3`
+Status: APPROVED / MERGED TO `main`
+
+Merge checkpoint: PR #14 → `da3b70bdc5338f36c600efb3a3feedea2dee5420`.
 
 - Twin domain/types/adapters/selectors
-- manual-snapshot provenance and unknown-first mapping
+- truthful `latest` vs future `live` mode separation
+- manual-snapshot provenance and unknown-first Aeration DO mapping
 - interaction/scenario Zustand store
 - lazy R3F renderer
 - Aeration procedural proof of concept
@@ -24,7 +27,7 @@ Status: IMPLEMENTED AND HARDENED on `feature/digital-twin-v3`
 - deterministic readiness and WebGL resilience
 - temporary `3D Plant | Process` switch
 
-This is not merged to `main`.
+The foundation review gate is closed. Visual work may continue only through the micro-step board and its explicit dependency/approval rules.
 
 ## Phase 1B — Site-authentic Aeration visual vertical slice
 
