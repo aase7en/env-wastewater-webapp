@@ -44,6 +44,12 @@ Program gate: **STOP**. Candidate next lanes remain documented in `docs/ai/desig
 
 Current authoritative branch: `main`.
 
+### Machine-local worktree caveat
+
+The legacy primary worktree `A:\\GitHub\\env-wastewater-webapp` was still at `7d73814782f8475731d886f6826da5bc9af36c11` after the P001 closure. It was **not** fast-forwarded because untracked user-owned files under `docs/ai/digital-twin/` would collide with tracked files now present on current `main`. Those untracked files were intentionally left untouched.
+
+Until the user explicitly reconciles that legacy worktree, agents must not treat its local checkout as current SSoT. Run the freshness gate in `AGENTS.md` and use current `origin/main` / a clean worktree for authoritative reads and new branches. Remote `main` after the P001 closure is `6559fa31cd83d2d1c5378bfd810527b743a215ac` before this caveat update.
+
 PR #14 final reviewed head:
 
 `47d3ae0c3d747c12de005e1b55e7ecbbe58a74f3`

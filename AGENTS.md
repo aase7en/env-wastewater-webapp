@@ -9,6 +9,17 @@ not this repo's).
 
 This repository, not chat history, is the shared memory for multi-agent work.
 
+### Repository freshness gate
+
+Before reading the SSoT files for non-trivial work, verify the active worktree is based on current `origin/main`:
+
+1. `git fetch origin main`;
+2. compare the active branch/HEAD with `origin/main` (or verify current `origin/main` is an ancestor of the working branch);
+3. if the worktree is stale, update it safely before trusting local SSoT files;
+4. if untracked/user-owned files would be overwritten, **do not clean, reset, delete, move, or stash them blindly**. Use a clean worktree based on current `origin/main` and record the local-worktree caveat in `docs/ai/HANDOFF.md`.
+
+A stale local checkout must never silently become the project memory just because an agent was activated there.
+
 Before non-trivial product, architecture, UI, Digital Twin, data, or integration work, read in this order:
 
 1. `docs/ai/PROJECT-BRIEF.md`
