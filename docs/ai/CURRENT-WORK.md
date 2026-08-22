@@ -1,6 +1,6 @@
 # CURRENT WORK
 
-Status: IMPLEMENTING
+Status: RE-REVIEW_REQUESTED
 
 Allowed statuses:
 
@@ -21,7 +21,7 @@ Allowed statuses:
 | Order | PR | Verdict | Repository checkpoint |
 |---:|---:|---|---|
 | 1 | #16 — `WO-STAB-007` | APPROVED and merged | merge `77015d691d2d5a9f20937e582ffb53aa31cad875` |
-| 2 | #15 — `WO-UX-SCALE-001` | REMEDIATION IN PROGRESS | original findings head `edd18b0f77bf2050fa49e6cde95eb7d3f6251a99` |
+| 2 | #15 — `WO-UX-SCALE-001` | RE-REVIEW_REQUESTED | remediation `309f1a6`; main integration `64c2e71` |
 | 3 | #14 — Digital Twin foundation | CHANGES_REQUIRED | findings head `fc9023020bd2fc09e1bab2138153f44ab3f11978` |
 
 PR #14 must not merge before PR #15. No Digital Twin visual-direction work starts until PR #14 is approved and merged.
@@ -38,56 +38,63 @@ Branch: `feat/ux-scale-001`
 
 Original reviewed production checkpoint: `d6b31c19b734331b54c5861c4e74aaf30f5d97f9`
 
-## Reviewer Verdict
+## Reviewer Verdict Addressed
 
-`CHANGES_REQUIRED`
+The original typography/icon/button/Aura scaling work remains intact. The two blocking mobile findings have been remediated:
 
-Typography, icon scale, shared button sizing, Aura theme behavior and closed-header layout were accepted. Two interactive mobile acceptance failures must be remediated before merge.
+1. Both bell panels now remain fully inside a 360px viewport when opened.
+2. The mobile `/dashboard` brand link now has a computed interactive target of at least 44px by 44px.
 
-## Required Remediation
+## Remediation Details
 
-### 1. Keep both bell panels inside the mobile viewport
+- `NotificationBell` and `PendingUsersBell` use viewport-anchored fixed positioning on mobile (`inset-x-3`, below the sticky top bar), then restore the original per-bell absolute right alignment from `sm` upward.
+- The mobile brand link uses `--touch-min` minimum width/height, centered below `sm`, while preserving desktop alignment from `sm` upward.
+- Escape behavior, outside-click behavior, accessible labels, navigation behavior and desktop dropdown alignment are unchanged.
+- Current `main` was integrated after the UI remediation. The merged calendar-MoM fix and latest queue coordination were preserved.
 
-At 360px, `NotificationBell` and `PendingUsersBell` used 320px `absolute right-0` panels anchored to individual bell buttons, allowing the panel to extend beyond the viewport.
+## Regression Coverage
 
-Required result:
+Added:
 
-- Opening either bell panel at 360px keeps the entire panel visible and usable.
-- Preserve desktop alignment, keyboard Escape behavior, outside-click behavior and accessible labels.
-- Add deterministic browser coverage for both panel positions at the mobile viewport.
+- `frontend/tests/e2e/ux-scale-mobile.spec.ts`
+  - brand target >= 44x44 at 360px;
+  - no document overflow in both themes;
+  - both open bell panels fully inside the viewport;
+  - Escape closes the notification panel.
+- `frontend/tests/e2e/ux-scale-desktop.spec.ts`
+  - 1440px desktop overflow guard in both themes.
 
-### 2. Make the mobile brand link at least 44px by 44px
+RED proof before remediation:
 
-Below `sm`, the wordmark is hidden and the visible logo is 36px square. The `/dashboard` brand link must expose a computed interactive target of at least 44px by 44px while keeping the compact mobile header inside the viewport and retaining its accessible name.
+- brand link measured 36px wide;
+- notification panel right edge reached 376px in a 360px viewport.
 
-## Remediation Implemented
+Focused remediation run after the fix:
 
-- Mobile bell panels now use a viewport-anchored fixed position (`inset-x-3`) below the sticky top bar, then return to the existing per-bell absolute alignment from `sm` upward.
-- The mobile brand link now has minimum touch-target dimensions using `--touch-min`, with centered mobile alignment and the prior desktop alignment restored at `sm`.
-- Added deterministic Playwright coverage:
-  - mobile 360px brand target >= 44x44;
-  - document-width overflow checks in both themes;
-  - both opened bell panels fully inside the 360px viewport;
-  - Escape still closes the notification panel;
-  - desktop 1440px overflow guard in both themes.
-- Captured reviewable evidence in `docs/review-evidence/pr-15/` including before/after mobile and desktop screenshots plus both remediated panels.
-- RED proof captured before the remediation: brand target measured 36px; notification panel right edge measured 376px in a 360px viewport.
+- mobile spec with `--retries=0 --repeat-each=3`: 6/6 PASS.
 
-## Integration Requirement
+## Review Evidence
 
-PR #16 merged after this branch was cut. Current `main` has been integrated into PR #15 during this remediation. Coordination files must preserve the current queue, merged calendar-MoM fix and PR #14 dependency order.
+Reviewable screenshots are committed under:
 
-## Verification Required
+`docs/review-evidence/pr-15/`
 
-- focused mobile spec with retries disabled and repeated execution;
-- `npm run build`;
-- `npm test`;
-- full Playwright suite;
-- `npm run lint` against the documented baseline;
-- `git diff --check`;
-- no document-level horizontal overflow at 360px in light and dark themes;
-- PR #15 mergeable against current `main`;
-- before/after screenshot evidence linked in PR #15.
+Evidence includes:
+
+- before/after mobile header;
+- before/after notification panel evidence;
+- after pending-user panel;
+- before/after 1440px light and dark desktop screenshots.
+
+## Full Verification
+
+- `npm run lint`: documented baseline only — 12 warnings + 3 existing fixture false-positive errors; no new lint finding from this remediation.
+- `npm run build`: PASS.
+- `npm test -- --run`: 152/152 PASS.
+- full Playwright: 37/37 PASS.
+- `git diff --check`: PASS.
+- mobile 360px document overflow check: PASS in both themes.
+- desktop 1440px overflow check: PASS in both themes.
 
 ## PR #14 — Required Owner Action After #15
 
@@ -108,4 +115,4 @@ The rendered top bar is now at least 64px high while `--topbar-h` in `frontend/s
 
 ## Next Action
 
-Complete all PR #15 gates. If green, update this file and `HANDOFF.md` to `RE-REVIEW_REQUESTED`, push PR #15 and stop for GPT review. Do not merge and do not start Digital Twin visual-direction work.
+GPT re-review PR #15. If approved, merge #15. Only after that should PR #14 integrate the new main and continue its remediation. Do not begin Digital Twin visual-direction work yet.

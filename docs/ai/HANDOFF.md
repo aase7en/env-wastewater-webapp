@@ -1,60 +1,115 @@
 # HANDOFF
 
-Status: CHANGES_REQUIRED — GPT review queue checkpoint. Read `CURRENT-WORK.md` before taking ownership.
+Status: RE-REVIEW_REQUESTED — PR #15 remediation complete; GPT review next.
 
 ## Repo State — 2026-08-22
 
-Review base on `main`: `77015d691d2d5a9f20937e582ffb53aa31cad875`
+Main integrated into this branch through repository checkpoint `8a6812cdaf6e6fd29c51335838c1f9de70c78430` (which includes merged PR #16 / `WO-STAB-007`).
 
-- All five P0 findings from `reports/code-review-2026-08-12.md` remain fixed on `main`.
-- Supabase keep-alive workflow remains deployed.
-- PR #16 (`WO-STAB-007`) was approved and merged at `77015d6`; overview carbon MoM now compares only the exact previous calendar month and returns null across a gap.
-- PR #15 and PR #14 were not merged. Both have durable `CHANGES_REQUIRED` findings on their own branches.
+Active branch:
 
-## Active Queue
+`feat/ux-scale-001`
 
-| Order | PR | Owner | State | Exact branch head |
-|---:|---:|---|---|---|
-| 1 | #15 — `WO-UX-SCALE-001` | Codex | CHANGES_REQUIRED | `edd18b0f77bf2050fa49e6cde95eb7d3f6251a99` |
-| 2 | #14 — Digital Twin foundation | GLM 5.3 | CHANGES_REQUIRED; merge only after #15 | `fc9023020bd2fc09e1bab2138153f44ab3f11978` |
+Pull request:
 
-### PR #15 remediation summary
+`#15 — WO-UX-SCALE-001`
 
-- Keep both bell dropdown panels fully inside a 360px viewport when open.
-- Raise the mobile brand-link target from 36px to at least 44px.
-- Add deterministic open-panel mobile coverage and reviewable before/after evidence.
-- Integrate current `main`, run all gates and stop at `RE-REVIEW_REQUESTED`.
+Implementation remediation checkpoint:
 
-### PR #14 remediation summary
+`309f1a6` — mobile bell viewport + brand touch-target remediation, tests and screenshot evidence.
 
-- Do not present derived plant-wide `do_average` as Aeration Tank DO with direct/manual provenance.
-- Add/use `latest` for manual snapshots; reserve `live` for actual sensor telemetry.
-- Make the renderer-init fallback test reach the real R3F renderer-construction failure path under StrictMode.
-- Reset 3D readiness on mouse/touch Process → 3D re-entry and cover it deterministically.
-- After #15 merges, integrate current `main`, resolve the two coordination-doc conflicts toward the latest state, run all gates and stop at `RE-REVIEW_REQUESTED`.
+Main-integration checkpoint:
 
-Full findings, scope limits and required gates are in each PR branch's `docs/ai/CURRENT-WORK.md`.
+`64c2e71` — merge current `main` into PR #15 while preserving the latest coordination state and calendar-MoM fix.
 
-## Merge Order
+## PR #15 Reviewer Findings Addressed
 
-1. GPT re-reviews and merges #15 only after its owner reports `RE-REVIEW_REQUESTED`.
-2. GLM integrates that new `main` into #14 and requests re-review.
-3. GPT re-reviews and merges #14 only if data honesty, resilience and readiness tests pass.
-4. Codex may then start the Twin visual micro work orders from `docs/ai/digital-twin/03-MICRO-STEP-BOARD.md`.
+### Mobile bell panels
 
-Do not begin Twin visual styling while #14 is unmerged.
+Problem: at 360px, the 320px panels were absolutely right-aligned to individual bell buttons, allowing the open panel to extend beyond the viewport.
 
-## Remaining GLM Backlog After #14
+Fix:
 
-1. `WO-STAB-006` — alert unread optimistic double-decrement.
-2. `WO-STAB-008` — role-visibility write-error surfacing.
-3. `WO-STAB-009` — `annotateRow` PHI policy.
-4. Component-test harness investigation.
+- `NotificationBell` and `PendingUsersBell` now use `fixed inset-x-3` mobile positioning below the sticky top bar.
+- From `sm` upward, they return to the original absolute, right-aligned 320px desktop behavior.
+- Escape/outside-click/accessibility behavior is preserved.
 
-## Operational Guardrails
+### Mobile brand target
 
-- Never treat missing telemetry as zero, normal or stopped.
-- React Query/Supabase remains telemetry source of truth; Zustand holds interaction/simulation state only.
-- Keep private hospital photographs and drawings outside Git.
-- Never use destructive Git commands in shared worktrees; stage only explicit owned files.
-- The primary worktree contains unrelated untracked user files. Do not remove or stage them.
+Problem: the mobile wordmark is hidden and the only visible logo is 36x36, leaving the `/dashboard` link itself at 36x36.
+
+Fix:
+
+- Brand link now has `min-w-[var(--touch-min)] min-h-[var(--touch-min)]`.
+- Mobile alignment is centered; desktop alignment is restored from `sm` upward.
+- Accessible link name is unchanged.
+
+## Regression Coverage
+
+Added:
+
+- `frontend/tests/e2e/ux-scale-mobile.spec.ts`
+- `frontend/tests/e2e/ux-scale-desktop.spec.ts`
+
+Mobile coverage verifies:
+
+- 44x44 minimum brand target at 360px;
+- no document-level horizontal overflow in light/dark themes;
+- both notification and pending-user panels fully within the 360px viewport while open;
+- Escape closes the notification panel.
+
+Desktop coverage verifies:
+
+- no document-level horizontal overflow at 1440px in light/dark themes.
+
+RED proof before the fix:
+
+- brand link width = 36px, below the 44px requirement;
+- notification panel right edge = 376px at a 360px viewport.
+
+Focused post-fix stability proof:
+
+- `ux-scale-mobile.spec.ts --retries=0 --repeat-each=3`: 6/6 PASS.
+
+## Visual Evidence
+
+Committed under:
+
+`docs/review-evidence/pr-15/`
+
+Files include before/after mobile header, before/after notification-panel evidence, after pending-user panel, and before/after 1440px desktop light/dark screenshots.
+
+## Full Gates
+
+- Lint: 12 warnings + 3 errors — exactly the documented pre-existing baseline; no new remediation lint findings.
+- Build: PASS.
+- Vitest: 152/152 PASS.
+- Full Playwright: 37/37 PASS.
+- `git diff --check`: PASS.
+- 360px light/dark overflow checks: PASS.
+- 1440px light/dark overflow checks: PASS.
+
+## Scope / Safety
+
+No changes to:
+
+- `frontend/src/lib/**` except files received from merged `main` (PR #16 calendar-MoM work);
+- Supabase schema/migrations/auth/RLS;
+- telemetry contracts/provenance/null semantics;
+- Digital Twin implementation;
+- Process Flow implementation.
+
+The primary repo worktree contains unrelated untracked user files. They were not removed, reset, cleaned or staged. This remediation was performed in the dedicated `env-wastewater-webapp-ux-scale` worktree.
+
+## Active Queue After This Handoff
+
+| Order | PR | State | Next owner |
+|---:|---:|---|---|
+| 1 | #15 — `WO-UX-SCALE-001` | RE-REVIEW_REQUESTED | GPT reviewer |
+| 2 | #14 — Digital Twin foundation | CHANGES_REQUIRED; blocked until #15 merges | GLM / ChatGPT implementation worker after #15 merge |
+
+PR #14 still must correct data provenance, `latest` vs `live`, real R3F initialization-failure coverage under StrictMode, and 3D readiness reset on mouse/touch re-entry.
+
+## Next Action
+
+GPT re-review PR #15. If approved, merge PR #15. Then integrate the new `main` into PR #14 and continue only its recorded remediation. Do not start Digital Twin visual-direction work before PR #14 is approved and merged.
