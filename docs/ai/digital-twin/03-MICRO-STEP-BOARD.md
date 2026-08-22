@@ -1,6 +1,8 @@
 # Digital Twin Micro-Step Board
 
-Last updated: 2026-08-21
+Last updated: 2026-08-23
+
+> Product/visual direction: read `docs/ai/design/ENV-EXPERIENCE-MASTER-PLAN.md` before executing this board. The Digital Twin remains the spatial/visual core of UTH[AI]-ENV; Operations, Analytics, Flows, Hazard Map, Resource Explorer, and System/Data Network are complementary intelligence surfaces, not replacements for this workstream.
 
 ## Status Vocabulary
 

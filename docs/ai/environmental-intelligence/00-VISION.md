@@ -97,7 +97,8 @@ This repository is the authoritative memory for this initiative. New agents must
 1. `docs/ai/PROJECT-BRIEF.md`
 2. `docs/ai/CURRENT-WORK.md`
 3. `docs/ai/HANDOFF.md`
-4. this folder when working on Environmental Intelligence
-5. `docs/ai/tooling/AI-DEVELOPER-TOOLCHAIN.md` when changing agent/tool integrations
+4. `docs/ai/design/ENV-EXPERIENCE-MASTER-PLAN.md`
+5. this folder when working on Environmental Intelligence
+6. `docs/ai/tooling/AI-DEVELOPER-TOOLCHAIN.md` when changing agent/tool integrations
 
 Chat history is not the project memory.
