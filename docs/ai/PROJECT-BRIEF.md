@@ -8,7 +8,7 @@ Repository for hospital environmental monitoring, with wastewater treatment as t
 
 ## Goal
 
-Maintain a reliable environmental monitoring application and evolve it incrementally toward an **Environmental Operations Digital Twin** without rewriting working production features.
+Maintain a reliable environmental monitoring application and evolve it incrementally into a **Hospital Environmental Intelligence Platform** that combines Environmental Operations, Digital Twin views, and source-aware Environmental Hazard Intelligence without rewriting working production features.
 
 ## Users
 
@@ -31,8 +31,9 @@ High-confidence repository facts:
 - Wastewater monitoring includes a dashboard, daily-entry form, recent readings/history, reports, process-flow visualization, thresholds, and related environmental modules.
 - React Query is used for frontend data fetching/caching.
 - Repository contains design documents, ADR/work-order documentation, migrations/scripts, tests, and an A-Wiki companion reference described in `AGENTS.md`.
-- `main` does **not** currently list Three.js / React Three Fiber in `frontend/package.json`.
-- Existing coordination docs reference planned/separate Digital Twin work. TODO: confirm the exact current branch/HEAD before any 3D implementation task.
+- Digital Twin foundation PR #14 is merged on `main`; Three.js, React Three Fiber, Drei, and Zustand are present in `frontend/package.json`.
+- The foundation preserves truthful `latest` vs future `live` semantics, unknown-first Aeration telemetry, renderer fallback/resilience, and Process-view fallback.
+- A parallel Environmental Health & Climate Resilience planning track now covers PM2.5, heat/heat index, river level, flood context, and future geospatial hazard layers. See `docs/ai/environmental-intelligence/`.
 
 ## Tech Stack
 
@@ -62,13 +63,24 @@ High-confidence repository facts:
 
 ### 3D / Rendering
 
-- No Three.js / React Three Fiber dependency detected on `main` at workspace initialization.
-- TODO: confirm and preserve any separate/unpushed Digital Twin branch before future implementation or rebase work.
+- Three.js 0.185.x
+- React Three Fiber 9.x
+- Drei 10.x
+- Zustand 5.x for Twin interaction/simulation state only
+- Digital Twin rendering remains optional and fallback-safe; Process/Data views stay available
+- `latest` manual snapshots and future `live` sensor telemetry are separate contracts
 
 ### Hosting
 
 - GitHub Pages for the frontend.
 - Supabase for managed backend/database services.
+
+### Environmental Intelligence / External Data
+
+- GISTDA API access is available to the user; exact endpoint/product entitlement still requires inventory and must not expose the API key in frontend/Git/chat.
+- TMD and ThaiWater/HII are planned research sources for heat/weather and river/flood data respectively.
+- External hazard data must preserve source type, valid/observed time, ingestion time, freshness, and provenance.
+- See `docs/ai/environmental-intelligence/` for the durable plan.
 
 ### Other Important Tools
 
@@ -82,6 +94,8 @@ High-confidence repository facts:
 
 - `frontend/` — production SPA and tests
 - `docs/` — architecture/work orders/coordination/research
+- `docs/ai/environmental-intelligence/` — hazard-intelligence vision, source/provenance rules, and implementation board
+- `docs/ai/tooling/` — AI/MCP developer-toolchain source of truth
 - `design/` — design-system and UI direction
 - `scripts/` — migration/introspection/utility tooling
 - `data/` — data working area; real raw operational exports are governed by repository data policy
@@ -103,6 +117,9 @@ High-confidence repository facts:
 - Source reality overrides stale planning notes; report mismatches instead of silently ignoring them.
 - Keep 3D optional and fallback-safe; critical operational information must remain accessible outside Canvas.
 - Do not fabricate missing operational values or infer business semantics in the visual layer.
+- Missing data is never automatically safe/normal/zero; stale data is never `live`.
+- Observation, satellite estimate, forecast, model output, manual record, sensor telemetry, and simulation must remain distinguishable.
+- Private external-provider credentials must stay server-side or in approved client credential stores; never commit them or expose them in the browser bundle.
 
 ## Agent Roles
 

@@ -40,6 +40,30 @@ Status: DESIGNING
 
 Do not add other treatment stages in this phase.
 
+## Parallel Track — Environmental Health & Climate Resilience
+
+Status: PLANNING
+
+This track can progress independently of the 3D visual lane when its own work orders are approved. It adds source-aware external hazard intelligence without forcing hazard data into the 3D scene.
+
+Initial domains:
+
+- PM2.5 / smoke context
+- heat / heat index
+- river level / discharge
+- flood extent / proximity
+- rainfall/weather context where useful
+
+Planned source families:
+
+- GISTDA
+- TMD
+- ThaiWater / HII
+
+Architecture and work queue: `docs/ai/environmental-intelligence/`.
+
+Mandatory rules: forecast != observation, satellite estimate != ground measurement, stale != live, missing != safe, credentials remain server-side.
+
 ## Phase 2 — Wastewater plant twin
 
 Status: FUTURE
