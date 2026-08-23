@@ -1,6 +1,6 @@
 # CURRENT WORK
 
-Status: APPROVED
+Status: READY_FOR_IMPLEMENTATION
 
 Allowed statuses:
 
@@ -25,8 +25,30 @@ Allowed statuses:
 | 3 | #14 — Digital Twin foundation | APPROVED and merged | merge `da3b70bdc5338f36c600efb3a3feedea2dee5420` |
 | 4 | #21 — `WO-UX-AN-P001` | APPROVED and merged | merge `553247fd38fb210702a18601644a62b86c5d2ee3` |
 | 5 | #23 — `DT-VIS-P001` | APPROVED and merged | merge `491ff6dd980e1e3b032b934588baefb9218b1b2b` |
+| 6 | #26 — P1 WO proposals | APPROVED and merged; activation decided | merge `e98df9057bd2cbb4ba879371dd82b7164d7da91a` |
 
 PR #14 is approved and merged. Digital Twin visual work orders are now unblocked, subject to each work order's own dependency and user-approval rules in `docs/ai/digital-twin/03-MICRO-STEP-BOARD.md`.
+
+## Active Work — P1 Stabilization Queue
+
+Program: `ENV-P1-STABILIZATION`
+
+State: `READY_FOR_IMPLEMENTATION`
+
+Activation decision: GPT review of PR #26 on 2026-08-24. PR #26 was docs-only and merged as `e98df9057bd2cbb4ba879371dd82b7164d7da91a`.
+
+Execution is **serialized** to reduce review risk even though the owned production files do not overlap:
+
+1. `WO-STAB-009` — annotateRow PHI/provider boundary. Status: `READY_FOR_IMPLEMENTATION`. Owner: GLM 5.3. Active source: `docs/work-orders/WO-STAB-009-PROPOSAL.md` (status inside file is ACTIVE). This runs first because it controls external-provider data disclosure. Mandatory GPT amendments: runtime `ai_scope` approval must be intersected with a static per-table safe-field profile; unknown/ambiguous/unmapped scope fails closed; projection/scrubbing occurs before prompt construction; refusal paths send/log no raw row; scope read failure yields zero provider calls.
+2. `WO-STAB-006` — alert unread optimistic-count idempotency. Status: `READY_FOR_IMPLEMENTATION`, but **do not start until WO-STAB-009 reaches `REVIEW_REQUESTED`**. Owner: GLM 5.3. Active source: `docs/work-orders/WO-STAB-006-PROPOSAL.md` (status inside file is ACTIVE).
+
+Execution contract for both WOs:
+
+- GLM follows the full engineering loop and records durable evidence in repo docs/handoff;
+- one WO at a time in the order above;
+- each implementation stops at `REVIEW_REQUESTED` with exact HEAD, changed files, RED/GREEN evidence, lint/build/unit/full-Playwright/diff-check results and PR URL;
+- GLM must not merge its implementation PR; GPT/reviewer owns final approval/merge;
+- `WO-STAB-008`, `DT-VIS-P002/P003`, `UX-FLOW-P001`, `ENV-INT-P001`, Operations, navigation rewrite and external API production work remain **DEFERRED / NOT ACTIVE**.
 
 ## Completed Work — Multi-Agent Design Execution
 
@@ -157,6 +179,9 @@ The rendered top bar is now at least 64px high while `--topbar-h` in `frontend/s
 
 ## Next Action
 
-`ENV-NEXT-DESIGN` P001 is complete: Analytics Lane B merged via PR #21 and Digital Twin Lane A merged via PR #23.
+Execute the activated P1 stabilization queue in strict order:
 
-**STOP at the program gate.** No implementation lane is currently authorized. A coordinating agent may review the candidate next lanes in `docs/ai/design/ENV-NEXT-DESIGN-EXECUTION.md`, but must create/activate a new bounded work order and obtain the required approval before editing production code. Do not automatically start `DT-VIS-P002`, Sankey, Hazard Map, Operations, navigation, or external API production integration.
+1. GLM 5.3 implements `WO-STAB-009` from `docs/work-orders/WO-STAB-009-PROPOSAL.md`, including all GPT activation amendments, and stops at `REVIEW_REQUESTED` with a PR and full evidence.
+2. Only after step 1 reaches `REVIEW_REQUESTED`, GLM 5.3 implements `WO-STAB-006` from `docs/work-orders/WO-STAB-006-PROPOSAL.md` and again stops at `REVIEW_REQUESTED`.
+
+The `ENV-NEXT-DESIGN` program gate remains closed for `DT-VIS-P002`, Sankey, Hazard Map, Operations, navigation, and external API production integration. `WO-STAB-008` also remains deferred.

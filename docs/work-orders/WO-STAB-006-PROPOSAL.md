@@ -1,10 +1,8 @@
 # WO PROPOSAL — WO-STAB-006: alert unread optimistic-count double-decrement
 
-> **Status: PROPOSAL — NOT ACTIVE.** No implementation is authorized yet.
-> Requires activation by the coordinating/reviewer agent per the
-> ENV-NEXT-DESIGN program gate (CURRENT-WORK @ b5f4e76: "No implementation
-> lane is currently authorized").
-> Proposed owner: GLM 5.3 (pure lib logic + tests — GLM lane).
+> **Status: ACTIVE — READY_FOR_IMPLEMENTATION.** GPT activation decision recorded 2026-08-24 after PR #26 review.
+> Execution order: **2 of 2** — do not start until WO-STAB-009 reaches `REVIEW_REQUESTED`.
+> Owner: GLM 5.3 (pure lib logic + tests — GLM lane). Stop at `REVIEW_REQUESTED`; GLM must not merge its implementation PR.
 
 ## Source finding (still open on main)
 
@@ -21,6 +19,10 @@ optimistic setQueryData block; no later migration touched it).
 ## Objective
 
 Unread count must only decrement when the target row was actually unread.
+
+## GPT activation note
+
+Approved as a bounded GLM lane. Prefer extracting one pure optimistic-cache transform (rows + count together, with an injected timestamp for deterministic tests) so the `wasUnread` decision cannot diverge between row flip and badge arithmetic. This does not expand scope beyond the proposal.
 
 ## Proposed fix (smallest correct shape)
 

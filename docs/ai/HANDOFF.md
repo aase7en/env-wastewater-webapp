@@ -1,6 +1,34 @@
 # HANDOFF
 
-Status: APPROVED — `ENV-NEXT-DESIGN` P001 is complete; Analytics Lane B merged as PR #21 and Digital Twin Lane A merged as PR #23. No production implementation lane is currently authorized.
+Status: READY_FOR_IMPLEMENTATION — GPT activated the remaining GLM-safe P1 stabilization queue after reviewing and merging PR #26. Execute WO-STAB-009 first, then WO-STAB-006; all other candidate lanes remain inactive.
+
+## Active P1 Stabilization Queue — 2026-08-24
+
+Decision source: GPT review of PR #26 (`e98df9057bd2cbb4ba879371dd82b7164d7da91a`).
+
+### 1. WO-STAB-009 — PHI/provider boundary
+
+- Decision: **ACTIVATE WITH AMENDMENTS**.
+- Owner: GLM 5.3.
+- Status: READY_FOR_IMPLEMENTATION.
+- Work-order source: `docs/work-orders/WO-STAB-009-PROPOSAL.md` (now marked ACTIVE).
+- Priority rationale: this is an external-provider disclosure boundary and therefore runs before the badge-count bug.
+- Mandatory boundary: effective authorization = runtime `core.ai_scope` (`patient_safe=true`, `is_enabled=true`) **AND** a static explicit per-table safe-field profile. Runtime/admin toggles alone cannot widen row payloads.
+- Unknown, ambiguous, unmapped, disabled or unreadable scope fails closed with zero provider calls. Do not use `STATIC_PHI_DENY` as a positive-allowlist fallback.
+- Project safe fields before prompt construction; unknown fields omitted; scrub projected string values as defense-in-depth; refusal/error paths must not include/log raw row content.
+- GLM stops at REVIEW_REQUESTED; GPT performs final review/merge.
+
+### 2. WO-STAB-006 — unread optimistic count
+
+- Decision: **ACTIVATE**.
+- Owner: GLM 5.3.
+- Status: READY_FOR_IMPLEMENTATION, serialized behind WO-STAB-009.
+- Work-order source: `docs/work-orders/WO-STAB-006-PROPOSAL.md` (now marked ACTIVE).
+- Prefer one pure optimistic-cache transform so row flip and unread decrement share one `wasUnread` decision.
+- Do not start until WO-STAB-009 reaches REVIEW_REQUESTED.
+- GLM stops at REVIEW_REQUESTED; GPT performs final review/merge.
+
+Deferred: WO-STAB-008 and all program-level visual/external lanes (`DT-VIS-P002/P003`, `UX-FLOW-P001`, `ENV-INT-P001`, Operations, navigation rewrite, external API production integration).
 
 ## Completed Design Execution — 2026-08-23
 
@@ -27,7 +55,7 @@ Authoritative execution plan: `docs/ai/design/ENV-NEXT-DESIGN-EXECUTION.md`.
 - Merge: `553247fd38fb210702a18601644a62b86c5d2ee3`
 - Result: reusable `frontend/src/components/analytics/**` situation/provenance/chart-frame kit with Ladle stories and deterministic tests; no production route wiring
 
-Both P001 lanes are closed and merged. No active implementation lane remains. Future production work requires a new bounded work order / explicit approval and must re-establish file ownership before editing shared surfaces.
+Both P001 design lanes are closed and merged. That design program remains closed; the separate P1 stabilization queue above is now the only active production authorization. Future design/external work still requires a new bounded work order / explicit approval and must re-establish file ownership before editing shared surfaces.
 
 ## DT-VIS-P001 Closure
 
@@ -38,7 +66,7 @@ Both P001 lanes are closed and merged. No active implementation lane remains. Fu
 - PR #23 merged to `main` as `491ff6dd980e1e3b032b934588baefb9218b1b2b`.
 - No schema/Auth/RLS/router/Process/data-contract change and no new 3D dependency was introduced.
 
-Program gate: **STOP**. Candidate next lanes remain documented in `docs/ai/design/ENV-NEXT-DESIGN-EXECUTION.md`; none is automatically active.
+Design-program gate remains **STOP** for candidate visual/external lanes in `docs/ai/design/ENV-NEXT-DESIGN-EXECUTION.md`. The only active exception is the separately authorized P1 stabilization queue (`WO-STAB-009` → `WO-STAB-006`) recorded above.
 
 ## Repo State — 2026-08-23
 
