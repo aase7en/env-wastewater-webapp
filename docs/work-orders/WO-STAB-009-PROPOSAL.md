@@ -1,8 +1,8 @@
 # WO PROPOSAL — WO-STAB-009: annotateRow PHI boundary (allowlist + safe-field projection)
 
-> **Status: PROPOSAL — NOT ACTIVE.** No implementation is authorized yet
-> (program gate @ b5f4e76). Requires activation by the coordinating/
-> reviewer agent. Proposed owner: GLM 5.3 (lib/data-boundary work).
+> **Status: ACTIVE — READY_FOR_IMPLEMENTATION.** GPT activation decision recorded 2026-08-24 after PR #26 review.
+> Execution order: **1 of 2** (run before WO-STAB-006).
+> Owner: GLM 5.3 (lib/data-boundary work). Stop at `REVIEW_REQUESTED`; GLM must not merge its implementation PR.
 
 ## Source finding (still open on main)
 
@@ -22,18 +22,31 @@ PHI content inside rows of non-flagged tables (e.g. emails inside
 This proposal operationalizes that direction — no new decision required,
 only activation.
 
-## Proposed fix (two layers, allowlist first)
+## GPT activation amendments — mandatory
 
-1. **Allowlist gate (authoritative)**: `annotateRow` refuses unless
-   `tableName` is in a new `core.ai_scope`-backed allowlist
-   (`patient_safe = true AND is_enabled = true` — reuse the existing
-   scope table read, inverted selection). Non-listed table → immediate
-   local refusal row (no provider call), surfaced in the UI message.
-   Unknown/unreadable scope → fail-closed refusal.
-2. **Safe-field projection (default)**: for allowlisted tables, project
-   only columns declared safe. Bootstrapping: a static map for known
-   operational tables (id/dates/quantities/status fields), everything
-   else omitted by default. Unknown column → omitted (Unknown ≠ shared).
+The proposal direction is approved with these boundary-tightening amendments:
+
+1. `core.ai_scope` with `patient_safe=true AND is_enabled=true` is a **necessary runtime gate, not sufficient authorization by itself**. An admin toggle must not be able to widen the row payload sent to an external provider.
+2. Row annotation must also require an explicit static per-table safe-field profile in code. Effective authorization is the **intersection** of runtime `ai_scope` approval and the static safe-field profile.
+3. Use canonical fully-qualified `schema.table` keys for the static profile. Unknown, ambiguous, unqualified-without-an-explicit-hardcoded-map, disabled, missing, or unreadable scope => **fail closed locally with zero provider calls**.
+4. Do **not** fall back to `STATIC_PHI_DENY` for this positive allowlist decision. That fallback only protects the deny-list path; using it as an allowlist fallback could widen exposure when scope lookup fails.
+5. Project the row to the static safe fields **before** prompt construction / `JSON.stringify`. Unknown columns are omitted by default. Apply the PII regex scrubber to projected string values as defense-in-depth before the provider request.
+6. Refusal/error paths must not include or log the raw row. Tests must prove a table marked safe in `ai_scope` but absent from the static safe-field profile is still refused, and that an `ai_scope` read failure causes zero provider requests.
+
+These amendments are part of the active acceptance criteria.
+
+## Proposed fix (three layers, runtime gate + static profile first)
+
+1. **Runtime scope gate**: `annotateRow` refuses unless canonical `tableName`
+   is enabled and marked `patient_safe = true` in `core.ai_scope`. This is
+   necessary but not sufficient authorization. Non-listed/disabled/unreadable
+   scope → immediate local refusal (no provider call).
+2. **Static safe-field profile (authoritative payload boundary)**: the same
+   canonical table must exist in an explicit in-code safe-field map. Project
+   only declared safe columns (id/dates/quantities/status fields as reviewed);
+   everything else is omitted by default. Unknown column → omitted
+   (Unknown ≠ shared). A runtime/admin scope toggle cannot create a new
+   payload profile by itself.
 3. **Defense-in-depth scrubber**: regex redaction of obvious PII shapes
    (email/phone/Thai national-ID patterns) applied to projected values
    before send. Best-effort, logged, never the only gate.
