@@ -59,6 +59,14 @@ A future agent may inspect the private folder when the Drive is mounted. If it i
 
 The exact equipment type and dimensions are not confirmed by photographs alone.
 
+## Process-topology reference added 2026-08-24
+
+The user supplied a hand-drawn wastewater process/layout diagram and explicitly confirmed that Uthai Hospital uses an **Activated Sludge** process. Its durable process interpretation is recorded in:
+
+`11-UTHAI-ACTIVATED-SLUDGE-PROCESS-KNOWLEDGE.md`
+
+Use that file for hydraulic/process connections (main liquid path, RAS, WAS, sludge-drying filtrate return, chlorination, bypass/emergency paths). This site-visual-reference file remains authoritative for visual appearance and spatial/photo evidence. The process drawing establishes connection topology, but does not by itself resolve exact site coordinates, underground pipe geometry, valve logic, or live equipment state.
+
 ## Drone Reference Set — Spatial Context
 
 Observed/inferred:
