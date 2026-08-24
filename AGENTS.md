@@ -28,6 +28,8 @@ Before non-trivial product, architecture, UI, Digital Twin, data, or integration
 4. `docs/ai/design/ENV-EXPERIENCE-MASTER-PLAN.md`
 5. the relevant domain folder under `docs/ai/` (for example `digital-twin/`, `environmental-intelligence/`, or `tooling/`)
 
+For any wastewater-process, process-flow, Digital Twin wastewater, sludge, chlorination, bypass, or simulation work, also read `docs/ai/digital-twin/11-UTHAI-ACTIVATED-SLUDGE-PROCESS-KNOWLEDGE.md` before designing or editing behavior. It is the durable user-confirmed process-topology reference for Uthai Hospital's Activated Sludge system.
+
 The Experience Master Plan is mandatory for all product/visual work. It explicitly preserves the existing Digital Twin as the spatial/visual core while adding Operations, Analytics, Flows, Hazard Map, Resource Explorer, and System/Data Network as complementary intelligence surfaces.
 
 An active `CURRENT-WORK.md` remains the execution scope. Do not treat the master plan as permission to start unrelated work.

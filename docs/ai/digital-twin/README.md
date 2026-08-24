@@ -17,6 +17,7 @@ This directory is the durable project memory for the Digital Twin stream. Chat h
 9. `08-FOUNDATION-BASELINE.md`
 10. `09-SITE-VISUAL-REFERENCE.md`
 11. `10-SESSION-LEDGER.md`
+12. `11-UTHAI-ACTIVATED-SLUDGE-PROCESS-KNOWLEDGE.md` — user-confirmed wastewater process topology; mandatory for wastewater process/Digital Twin flow work
 
 ## Current State
 
