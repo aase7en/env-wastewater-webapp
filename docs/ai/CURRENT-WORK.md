@@ -1,6 +1,6 @@
 # CURRENT WORK
 
-Status: READY_FOR_IMPLEMENTATION
+Status: REVIEW_REQUESTED
 
 Allowed statuses:
 
@@ -39,7 +39,7 @@ Activation decision: GPT review of PR #26 on 2026-08-24. PR #26 was docs-only an
 
 Execution is **serialized** to reduce review risk even though the owned production files do not overlap:
 
-1. `WO-STAB-009` — annotateRow PHI/provider boundary. Status: `READY_FOR_IMPLEMENTATION`. Owner: GLM 5.3. Active source: `docs/work-orders/WO-STAB-009-PROPOSAL.md` (status inside file is ACTIVE). This runs first because it controls external-provider data disclosure. Mandatory GPT amendments: runtime `ai_scope` approval must be intersected with a static per-table safe-field profile; unknown/ambiguous/unmapped scope fails closed; projection/scrubbing occurs before prompt construction; refusal paths send/log no raw row; scope read failure yields zero provider calls.
+1. `WO-STAB-009` — annotateRow PHI/provider boundary. Status: `REVIEW_REQUESTED` — PR #29, checkpoint `1fbb33f8703ae1dd0373f039e090d8fa22b3a45a`, all local gates + GitHub CI green. Owner: GLM 5.3. Active source: `docs/work-orders/WO-STAB-009-PROPOSAL.md` (status inside file is ACTIVE). This runs first because it controls external-provider data disclosure. Mandatory GPT amendments: runtime `ai_scope` approval must be intersected with a static per-table safe-field profile; unknown/ambiguous/unmapped scope fails closed; projection/scrubbing occurs before prompt construction; refusal paths send/log no raw row; scope read failure yields zero provider calls.
 2. `WO-STAB-006` — alert unread optimistic-count idempotency. Status: `READY_FOR_IMPLEMENTATION`, but **do not start until WO-STAB-009 reaches `REVIEW_REQUESTED`**. Owner: GLM 5.3. Active source: `docs/work-orders/WO-STAB-006-PROPOSAL.md` (status inside file is ACTIVE).
 
 Execution contract for both WOs:

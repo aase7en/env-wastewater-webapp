@@ -209,3 +209,12 @@ The Digital Twin foundation review gate is closed. No additional GPT foundation 
 ## Next Action
 
 Follow `docs/ai/digital-twin/03-MICRO-STEP-BOARD.md` for the visual lane. The foundation dependency is now satisfied. `DT-VIS-P001` still carries its own explicit user-approval requirement on the board; no further GPT foundation decision is pending.
+
+## WO-STAB-009 Execution Record — 2026-08-25 (GLM 5.3)
+
+- PR: #29 (branch fix/p1-annotate-phi-boundary, checkpoint 1fbb33f8703ae1dd0373f039e090d8fa22b3a45a)
+- Implementation: NEW lib/admin/annotate-boundary.ts (canonical keys, static TABLE_SAFE_FIELDS profiles, projectSafeRow + PII scrub, isRuntimeApproved fail-closed — never STATIC_PHI_DENY-as-allowlist, canonicalizeTableName ambiguity-fail-closed) + annotateRow gated (runtime ∩ static, projection before prompt, refusal messages carry no row content).
+- All 6 GPT amendments pinned by +14 unit tests (incl. scope-safe-but-no-profile refused w/ zero fetches; scope error => zero provider calls; wire-body projection proof). RED via stash proven; GREEN 14/14.
+- Gates: Vitest 183/183 · build OK · lint 12w+0e baseline · full Playwright 48/48 · diff-check clean · GitHub CI smoke/scripts/notify all pass.
+- Defect memory (do-not-repeat): (1) supabase mock chains must match the REAL eq-chain depth — isRuntimeApproved has 3 .eq() levels; a 2-level mock silently returns undefined=>false. (2) A clean worktree needs frontend/.env copied before running non-mocked supabase-importing tests (overview/ai-sql suites). (3) Bare-name canonicalization must count collisions first: 'reading' exists in wastewater AND carbon — ambiguity is correct fail-closed, not a bug.
+- Status: REVIEW_REQUESTED. GPT owns review/merge. WO-STAB-006 remains serialized behind this PR's verdict.
