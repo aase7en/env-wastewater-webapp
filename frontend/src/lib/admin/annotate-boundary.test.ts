@@ -121,14 +121,17 @@ describe("projectSafeRow (amendments 2+5)", () => {
     expect(out).not.toHaveProperty("old_data");
   });
   it("scrubs email/Thai-ID/phone shapes in safe string fields (defense-in-depth)", () => {
+    // PR29 remediation moved this onto a still-permitted string field:
+    // note/color_desc/smell_desc are no longer projected at all, but any
+    // allowlisted string value is still regex-scrubbed as defense-in-depth.
     const out = projectSafeRow(
-      { id: "1", note: "ติดต่อ a@hospital.co หรือ 0891234567 / เลข 1234567890123" },
+      { id: "ติดต่อ a@hospital.co หรือ 0891234567 / เลข 1234567890123" },
       "wastewater.reading",
-    ) as { note: string };
-    expect(out.note).not.toContain("a@hospital.co");
-    expect(out.note).not.toContain("0891234567");
-    expect(out.note).not.toContain("1234567890123");
-    expect(out.note).toContain("[REDACTED]");
+    ) as { id: string };
+    expect(out.id).not.toContain("a@hospital.co");
+    expect(out.id).not.toContain("0891234567");
+    expect(out.id).not.toContain("1234567890123");
+    expect(out.id).toContain("[REDACTED]");
   });
 });
 
@@ -198,5 +201,54 @@ describe("annotateRow boundary", () => {
     try { await annotateRow({ id: "1", note: secret }, "wastewater.reading"); }
     catch (e) { msg = (e as Error).message; }
     expect(msg).not.toContain(secret);
+  });
+});
+
+// ─── PR #29 remediation — unrestricted free-text is NOT provider-safe ──────
+//
+// DailyFormPage permits arbitrary typed text in color_desc / smell_desc /
+// note ("พิมพ์เอง" inputs + free Textarea). Regex scrubbing (email/phone/
+// Thai-ID) cannot guarantee removal of patient names or other identifiers,
+// so these fields must be absent from the projection entirely — the
+// profile is the authorization boundary, scrubbing is defense-in-depth.
+
+const PHI_NOTE = "ผู้ป่วย สมชาย ใจดี HN 12345";
+const CUSTOM_COLOR = "สีน้ำตาลอ่อน มีฟองเลือดจากตึกผู้ป่วยใน";
+const CUSTOM_SMELL = "กลิ่นเปรี้ยวผิดปกติ แจ้งคุณหมอสมศักดิ์ที่หอผ่าตัดพิเศษ";
+
+const FREE_TEXT_ROW = {
+  id: "r-free",
+  reading_date: "2026-08-26",
+  do_tank: 4.1,
+  color_desc: CUSTOM_COLOR,
+  smell_desc: CUSTOM_SMELL,
+  note: PHI_NOTE,
+};
+
+describe("PR29 remediation: unrestricted free-text fields never reach the provider", () => {
+  it("projectSafeRow omits note/color_desc/smell_desc from wastewater.reading", () => {
+    const out = projectSafeRow(FREE_TEXT_ROW, "wastewater.reading");
+    expect(out).not.toHaveProperty("note");
+    expect(out).not.toHaveProperty("color_desc");
+    expect(out).not.toHaveProperty("smell_desc");
+    expect(JSON.stringify(out)).not.toContain("สมชาย"); // patient-name fragment no regex catches
+    expect(JSON.stringify(out)).not.toContain(CUSTOM_COLOR);
+    expect(JSON.stringify(out)).not.toContain(CUSTOM_SMELL);
+    expect(out).toHaveProperty("id", "r-free"); // bounded fields still projected
+  });
+
+  it("captured provider request body contains no free-text field or value (PHI cannot leave)", async () => {
+    state.scopeResult = { data: { view_name: "wastewater.reading" }, error: null };
+    await annotateRow(FREE_TEXT_ROW, "wastewater.reading");
+    expect(state.fetchBodies.length).toBe(1);
+    const body = state.fetchBodies[0]!;
+    expect(body).not.toContain("color_desc");
+    expect(body).not.toContain("smell_desc");
+    expect(body).not.toContain('"note"');
+    expect(body).not.toContain("สมชาย");
+    expect(body).not.toContain(CUSTOM_COLOR);
+    expect(body).not.toContain(CUSTOM_SMELL);
+    expect(body).toContain("r-free"); // annotation still works on safe fields
+    expect(body).toContain("4.1");
   });
 });

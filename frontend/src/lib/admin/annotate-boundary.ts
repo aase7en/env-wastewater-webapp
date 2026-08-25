@@ -25,15 +25,21 @@ import { supabase } from "../supabase";
 /** Canonical fully-qualified safe-field profiles.
  * A table is annotatable ONLY if it appears here AND is approved at
  * runtime. Fields are allowlisted by name; anything else is dropped.
- * Values are scrubbed defensively before leaving the browser. */
+ * Values are scrubbed defensively before leaving the browser.
+ *
+ * PR #29 remediation: unrestricted free-text inputs the production UI
+ * lets users type arbitrarily (color_desc, smell_desc, note in
+ * DailyFormPage — "พิมพ์เอง" + free Textarea) are NOT provider-safe.
+ * Regex scrubbing cannot guarantee removal of patient names / free-text
+ * identifiers, so they stay out of the profile entirely. Only bounded
+ * (numeric/date/uuid/enum-contract) fields may be allowlisted. */
 const TABLE_SAFE_FIELDS: Readonly<Record<string, readonly string[]>> = {
   "wastewater.reading": [
     "id", "reading_date", "do_inlet", "do_tank", "do_outlet",
     "ph_inlet", "ph_tank", "ph_outlet", "tds_inlet", "tds_tank",
     "tds_outlet", "free_chlorine", "temperature", "sv30",
     "sludge_level_cm", "wastewater_in", "wastewater_out",
-    "wastewater_discharged", "system_operating", "color_desc",
-    "smell_desc", "note",
+    "wastewater_discharged", "system_operating",
   ],
   "carbon.reading": [
     "id", "reading_date", "meter_value", "consumption",
