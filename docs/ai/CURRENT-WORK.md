@@ -1,6 +1,6 @@
 # CURRENT WORK
 
-Status: READY_FOR_IMPLEMENTATION
+Status: REVIEW_REQUESTED
 
 Allowed statuses:
 
@@ -33,14 +33,14 @@ PR #14 is approved and merged. Digital Twin visual work orders are now unblocked
 
 Program: `ENV-P1-STABILIZATION`
 
-State: `READY_FOR_IMPLEMENTATION`
+State: `REVIEW_REQUESTED`
 
 Activation decision: GPT review of PR #26 on 2026-08-24. PR #26 was docs-only and merged as `e98df9057bd2cbb4ba879371dd82b7164d7da91a`.
 
 Execution is **serialized** to reduce review risk even though the owned production files do not overlap:
 
-1. `WO-STAB-009` — annotateRow PHI/provider boundary. Status: `READY_FOR_IMPLEMENTATION`. Owner: GLM 5.3. Active source: `docs/work-orders/WO-STAB-009-PROPOSAL.md` (status inside file is ACTIVE). This runs first because it controls external-provider data disclosure. Mandatory GPT amendments: runtime `ai_scope` approval must be intersected with a static per-table safe-field profile; unknown/ambiguous/unmapped scope fails closed; projection/scrubbing occurs before prompt construction; refusal paths send/log no raw row; scope read failure yields zero provider calls.
-2. `WO-STAB-006` — alert unread optimistic-count idempotency. Status: `READY_FOR_IMPLEMENTATION`, but **do not start until WO-STAB-009 reaches `REVIEW_REQUESTED`**. Owner: GLM 5.3. Active source: `docs/work-orders/WO-STAB-006-PROPOSAL.md` (status inside file is ACTIVE).
+1. `WO-STAB-009` — annotateRow PHI/provider boundary. Status: `REVIEW_REQUESTED` — PR #29, checkpoint `1fbb33f8703ae1dd0373f039e090d8fa22b3a45a`, all local gates + GitHub CI green, awaiting GPT review. Owner: GLM 5.3. Active source: `docs/work-orders/WO-STAB-009-PROPOSAL.md` (status inside file is ACTIVE). This runs first because it controls external-provider data disclosure. Mandatory GPT amendments: runtime `ai_scope` approval must be intersected with a static per-table safe-field profile; unknown/ambiguous/unmapped scope fails closed; projection/scrubbing occurs before prompt construction; refusal paths send/log no raw row; scope read failure yields zero provider calls.
+2. `WO-STAB-006` — alert unread optimistic-count idempotency. Status: `REVIEW_REQUESTED` — serial precondition met (WO-STAB-009 reached `REVIEW_REQUESTED` on PR #29). PR #30, checkpoint `8af33dc070457de03309ae9b30fe84728aad8466`, all local gates green (RED-first: 3 failing tests on the extracted bug, then fix). Owner: GLM 5.3. Active source: `docs/work-orders/WO-STAB-006-PROPOSAL.md` (status inside file is ACTIVE).
 
 Execution contract for both WOs:
 
