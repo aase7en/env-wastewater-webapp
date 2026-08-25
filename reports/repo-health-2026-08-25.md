@@ -29,14 +29,14 @@ lane is recorded as deferred rather than silently forgotten.
   mandatory pre-read gate in `AGENTS.md` for wastewater-process work.
 - Digital Twin 3D + UX-scale typography are live in production.
 
-## In flight — `REVIEW_REQUESTED`, awaiting GPT (serialized)
+## In flight — GPT review outcome update 2026-08-26
 
 | WO | PR | Checkpoint | State |
 |---|---|---|---|
-| WO-STAB-009 — annotateRow PHI/provider boundary | #29 | `1fbb33f` (+docs `703e371`) | local gates + GitHub CI green |
-| WO-STAB-006 — alert unread idempotency | #30 | `8af33dc` (+docs `941f6d7`) | local gates + GitHub CI green (RED-first: 3 failing tests → fix) |
+| WO-STAB-009 — annotateRow PHI/provider boundary | #29 | `1fbb33f` (+docs `703e371`) | **CHANGES_REQUIRED** — unrestricted `color_desc` / `smell_desc` / `note` free text can bypass regex scrubbing; remediation: `docs/ai/prompts/GPT56-REVIEW-PR29-REMEDIATION.md` |
+| WO-STAB-006 — alert unread idempotency | #30 | `8af33dc` (+docs `941f6d7`) | **APPROVED / MERGED** — merge `72bd8f6088b177fb28017beda95c70a778d872e1` |
 
-GLM does not merge these; GPT reviewer owns approval/merge.
+GLM owns PR #29 remediation and must stop at `RE-REVIEW_REQUESTED`; GPT remains its merge owner. PR #30 is closed.
 
 ## Explicitly deferred / NOT active
 

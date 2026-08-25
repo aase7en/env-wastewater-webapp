@@ -20,8 +20,9 @@
  */
 
 import { useCallback } from "react";
-import { useQuery, useQueryClient } from "@tanstack/react-query";
+import { useQuery, useQueryClient, type QueryClient } from "@tanstack/react-query";
 import { supabase } from "./supabase";
+import { applyMarkRead, type AlertsSnapshot } from "./alerts-unread";
 
 // ─── Types ───────────────────────────────────────────────────────────────
 
@@ -77,6 +78,43 @@ export async function markAlertRead(id: string): Promise<void> {
   if (error) throw new Error(error.message);
 }
 
+// ─── Optimistic mark-read (cache write + rollback) ───────────────────────
+
+/** Minimal query-client surface markReadViaCache needs — keeps the helper
+ *  unit-testable in node env with a plain fake object (no DOM test infra
+ *  in this repo). */
+export type AlertsCacheClient = Pick<
+  QueryClient,
+  "getQueryData" | "setQueryData" | "invalidateQueries"
+>;
+
+/**
+ * markRead body, extracted module-level (WO-STAB-006): optimistic cache
+ * write via the pure applyMarkRead transform, then the server write, with
+ * invalidation-on-error rollback unchanged from the pre-extraction inline
+ * block. Only difference from the old inline code: the unread decrement
+ * now shares the row-flip's `wasUnread` decision, so a repeat click on an
+ * already-read alert can no longer double-decrement the badge.
+ */
+export async function markReadViaCache(
+  qc: AlertsCacheClient,
+  queryKey: readonly unknown[],
+  id: string,
+): Promise<void> {
+  // Optimistic: flip the matching row + decrement unread (gated).
+  const prev = qc.getQueryData<AlertsSnapshot>(queryKey);
+  if (prev) {
+    qc.setQueryData<AlertsSnapshot>(queryKey, applyMarkRead(prev, id));
+  }
+  try {
+    await markAlertRead(id);
+  } catch (e) {
+    console.warn("markAlertRead failed, rolling back:", e);
+    // Roll back: invalidate forces a fresh fetch from the server.
+    void qc.invalidateQueries({ queryKey });
+  }
+}
+
 // ─── Hooks ───────────────────────────────────────────────────────────────
 
 /**
@@ -124,29 +162,12 @@ export function useThresholdAlerts(pollMs = 60_000) {
   const refresh = useCallback(() => q.refetch(), [q]);
 
   /** Mark one alert read — optimistic cache update + server write.
-   *  Rolls back on error by invalidating (forces a refetch). */
-  const markRead = useCallback(async (id: string) => {
-    // Snapshot for rollback.
-    const prev = qc.getQueryData<{ rows: ThresholdAlert[]; n: number }>(queryKey);
-    if (prev) {
-      // Optimistic: flip the matching row + decrement unread.
-      qc.setQueryData<{ rows: ThresholdAlert[]; n: number }>(queryKey, {
-        rows: prev.rows.map((a) =>
-          a.id === id && a.read_at === null
-            ? { ...a, read_at: new Date().toISOString() }
-            : a,
-        ),
-        n: Math.max(0, prev.n - 1),
-      });
-    }
-    try {
-      await markAlertRead(id);
-    } catch (e) {
-      console.warn("markAlertRead failed, rolling back:", e);
-      // Roll back: invalidate forces a fresh fetch from the server.
-      void qc.invalidateQueries({ queryKey });
-    }
-  }, [qc, queryKey]);
+   *  Rolls back on error by invalidating (forces a refetch).
+   *  Logic lives in markReadViaCache (module-level, testable). */
+  const markRead = useCallback(
+    (id: string) => markReadViaCache(qc, queryKey, id),
+    [qc, queryKey],
+  );
 
   return {
     alerts: q.data?.rows ?? [],
