@@ -9,6 +9,11 @@
  */
 import { sendChatTurn } from "./ai-chat";
 import { supabase } from "../supabase";
+import {
+  canonicalizeTableName,
+  isRuntimeApproved,
+  projectSafeRow,
+} from "./annotate-boundary";
 
 // ─── DBA-8: NL → SQL ─────────────────────────────────────────────────────
 
@@ -107,9 +112,24 @@ export async function annotateRow(
   row: Record<string, unknown>,
   tableName: string,
 ): Promise<RowAnnotation> {
-  const rowJson = JSON.stringify(row, null, 2);
+  // WO-STAB-009 boundary: canonical name -> runtime scope approval AND
+  // static safe-field profile -> projection+scrub BEFORE prompt build.
+  // Refusals throw without referencing the row contents.
+  const canonical = canonicalizeTableName(tableName);
+  if (!canonical) {
+    throw new Error(
+      `ไม่อนุญาตให้วิเคราะห์แถวของตารางนี้ผ่าน AI (ไม่มี safe-field profile): ${tableName}`,
+    );
+  }
+  if (!(await isRuntimeApproved(canonical))) {
+    throw new Error(
+      `ไม่อนุญาตให้วิเคราะห์แถวของตารางนี้ผ่าน AI (scope ปิดอยู่หรืออ่านไม่ได้): ${canonical}`,
+    );
+  }
+  const safeRow = projectSafeRow(row, canonical);
+  const rowJson = JSON.stringify(safeRow, null, 2);
   const turn = await sendChatTurn(
-    `Analyze this row from ${tableName}:\n${rowJson}\n\nReturn JSON {summary, anomaly, suggested_action}.`,
+    `Analyze this row from ${canonical}:\n${rowJson}\n\nReturn JSON {summary, anomaly, suggested_action}.`,
     {
       systemPrompt:
         "You analyze a single row from an environmental DB. " +
