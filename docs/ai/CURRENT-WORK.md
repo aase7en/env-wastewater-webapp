@@ -1,6 +1,6 @@
 # CURRENT WORK
 
-Status: READY_FOR_IMPLEMENTATION
+Status: CHANGES_REQUIRED
 
 Allowed statuses:
 
@@ -26,6 +26,15 @@ Allowed statuses:
 | 4 | #21 — `WO-UX-AN-P001` | APPROVED and merged | merge `553247fd38fb210702a18601644a62b86c5d2ee3` |
 | 5 | #23 — `DT-VIS-P001` | APPROVED and merged | merge `491ff6dd980e1e3b032b934588baefb9218b1b2b` |
 | 6 | #26 — P1 WO proposals | APPROVED and merged; activation decided | merge `e98df9057bd2cbb4ba879371dd82b7164d7da91a` |
+| 7 | #29 — `WO-STAB-009` | CHANGES_REQUIRED | reviewed tip `703e371b8d8dbde38f698b0371d6ece9ecd7dbc7`; remediation `docs/ai/prompts/GPT56-REVIEW-PR29-REMEDIATION.md` |
+
+### GPT Review Verdict — PR #29 / WO-STAB-009 — 2026-08-26
+
+`CHANGES_REQUIRED` — do not merge.
+
+Verified green evidence: Vitest 183/183 with non-secret dummy Supabase env, build PASS, lint 12 warnings / 0 errors, diff-check PASS, and GitHub `smoke` / `scripts` / both `notify` checks SUCCESS. The runtime `ai_scope` ∩ static-profile gate, ambiguity fail-closed behavior, pre-prompt projection, scope-error zero-provider-call behavior, and refusal-message raw-row protection are present.
+
+Blocking PHI finding: `TABLE_SAFE_FIELDS["wastewater.reading"]` includes unrestricted user-entered `color_desc`, `smell_desc`, and `note`. `DailyFormPage.tsx` allows arbitrary text in all three fields, while the scrubber only handles email/phone/Thai-ID patterns; patient names or other non-regex identifiers can therefore survive and reach the external provider. Remediation must remove those unrestricted fields from the provider-safe profile (not replace the boundary with a name regex) and add captured-body regression coverage.
 
 PR #14 is approved and merged. Digital Twin visual work orders are now unblocked, subject to each work order's own dependency and user-approval rules in `docs/ai/digital-twin/03-MICRO-STEP-BOARD.md`.
 
@@ -33,14 +42,14 @@ PR #14 is approved and merged. Digital Twin visual work orders are now unblocked
 
 Program: `ENV-P1-STABILIZATION`
 
-State: `READY_FOR_IMPLEMENTATION`
+State: `CHANGES_REQUIRED / REVIEW_REQUESTED`
 
 Activation decision: GPT review of PR #26 on 2026-08-24. PR #26 was docs-only and merged as `e98df9057bd2cbb4ba879371dd82b7164d7da91a`.
 
 Execution is **serialized** to reduce review risk even though the owned production files do not overlap:
 
-1. `WO-STAB-009` — annotateRow PHI/provider boundary. Status: `READY_FOR_IMPLEMENTATION`. Owner: GLM 5.3. Active source: `docs/work-orders/WO-STAB-009-PROPOSAL.md` (status inside file is ACTIVE). This runs first because it controls external-provider data disclosure. Mandatory GPT amendments: runtime `ai_scope` approval must be intersected with a static per-table safe-field profile; unknown/ambiguous/unmapped scope fails closed; projection/scrubbing occurs before prompt construction; refusal paths send/log no raw row; scope read failure yields zero provider calls.
-2. `WO-STAB-006` — alert unread optimistic-count idempotency. Status: `READY_FOR_IMPLEMENTATION`, but **do not start until WO-STAB-009 reaches `REVIEW_REQUESTED`**. Owner: GLM 5.3. Active source: `docs/work-orders/WO-STAB-006-PROPOSAL.md` (status inside file is ACTIVE).
+1. `WO-STAB-009` — annotateRow PHI/provider boundary. Status: `CHANGES_REQUIRED` after GPT review of PR #29 on 2026-08-26. Owner: GLM 5.3 remediation. Active source: `docs/work-orders/WO-STAB-009-PROPOSAL.md`. Blocking finding: `wastewater.reading` static safe profile incorrectly includes unrestricted `color_desc`, `smell_desc`, and `note`; regex scrubbing cannot guarantee removal of patient names/other free-text identifiers. Remediation prompt: `docs/ai/prompts/GPT56-REVIEW-PR29-REMEDIATION.md`. Existing intersection/fail-closed/projection behavior otherwise verified; PR #29 must return at `RE-REVIEW_REQUESTED` and must not be merged by GLM.
+2. `WO-STAB-006` — alert unread optimistic-count idempotency. Status: `REVIEW_REQUESTED` at PR #30; serialized review is now allowed because PR #29 has a recorded GPT verdict (`CHANGES_REQUIRED`). Owner: GPT reviewer for verdict/merge; GLM remains implementation owner for any remediation. Active source: `docs/work-orders/WO-STAB-006-PROPOSAL.md`.
 
 Execution contract for both WOs:
 

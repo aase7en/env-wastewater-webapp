@@ -1,32 +1,40 @@
 # HANDOFF
 
-Status: READY_FOR_IMPLEMENTATION — GPT activated the remaining GLM-safe P1 stabilization queue after reviewing and merging PR #26. Execute WO-STAB-009 first, then WO-STAB-006; all other candidate lanes remain inactive.
+Status: CHANGES_REQUIRED / REVIEW_REQUESTED — GPT reviewed PR #29 on 2026-08-26 and found a blocking PHI leak path in unrestricted wastewater free-text safe fields. PR #29 requires remediation; PR #30 may now be reviewed because serialized ordering requires a verdict, not a merge. All deferred lanes remain inactive.
 
 ## Active P1 Stabilization Queue — 2026-08-24
 
 Decision source: GPT review of PR #26 (`e98df9057bd2cbb4ba879371dd82b7164d7da91a`).
 
+### GPT Review Record — PR #29 / WO-STAB-009 — 2026-08-26
+
+- Verdict: **CHANGES_REQUIRED — DO NOT MERGE**.
+- Reviewed branch tip: `703e371b8d8dbde38f698b0371d6ece9ecd7dbc7`; implementation checkpoint `1fbb33f8703ae1dd0373f039e090d8fa22b3a45a`.
+- Verified gates: Vitest **183/183 PASS** (isolated worktree with non-secret dummy Supabase env), build PASS, lint **12 warnings / 0 errors**, diff-check PASS; GitHub `smoke`, `scripts`, both `notify` checks SUCCESS.
+- Verified good boundary behavior: runtime `ai_scope` approval intersects static profile; ambiguous/unknown scope fails closed; `projectSafeRow()` precedes prompt construction; scope read failure produces zero provider calls; `STATIC_PHI_DENY` is not used as positive allowlist fallback; refusal messages do not include raw row values.
+- Blocking PHI finding: `wastewater.reading` static profile includes `color_desc`, `smell_desc`, and `note`, and `DailyFormPage.tsx` permits arbitrary text for all three. Regex scrubbing only covers email/phone/Thai-ID shapes, so patient names/other non-regex identifiers can survive into the provider request.
+- Required remediation: remove unrestricted free-text fields from the provider-safe profile; do not use name-regex as the authorization boundary; add project + captured-body regressions using non-regex identifying text; audit remaining profiles for unrestricted free text only within this WO scope.
+- Remediation prompt: `docs/ai/prompts/GPT56-REVIEW-PR29-REMEDIATION.md`.
+- Next owner for PR #29: GLM 5.3 remediation, then STOP at `RE-REVIEW_REQUESTED`; GPT remains merge owner.
+
 ### 1. WO-STAB-009 — PHI/provider boundary
 
-- Decision: **ACTIVATE WITH AMENDMENTS**.
-- Owner: GLM 5.3.
-- Status: READY_FOR_IMPLEMENTATION.
-- Work-order source: `docs/work-orders/WO-STAB-009-PROPOSAL.md` (now marked ACTIVE).
-- Priority rationale: this is an external-provider disclosure boundary and therefore runs before the badge-count bug.
-- Mandatory boundary: effective authorization = runtime `core.ai_scope` (`patient_safe=true`, `is_enabled=true`) **AND** a static explicit per-table safe-field profile. Runtime/admin toggles alone cannot widen row payloads.
-- Unknown, ambiguous, unmapped, disabled or unreadable scope fails closed with zero provider calls. Do not use `STATIC_PHI_DENY` as a positive-allowlist fallback.
-- Project safe fields before prompt construction; unknown fields omitted; scrub projected string values as defense-in-depth; refusal/error paths must not include/log raw row content.
-- GLM stops at REVIEW_REQUESTED; GPT performs final review/merge.
+- Decision: **CHANGES_REQUIRED after GPT review of PR #29**.
+- Owner: GLM 5.3 remediation; GPT remains reviewer/merge owner.
+- Status: CHANGES_REQUIRED.
+- Work-order source: `docs/work-orders/WO-STAB-009-PROPOSAL.md`; remediation: `docs/ai/prompts/GPT56-REVIEW-PR29-REMEDIATION.md`.
+- Blocking issue: the static `wastewater.reading` profile includes unrestricted `color_desc`, `smell_desc`, and `note`; current regex scrubbing cannot guarantee removal of patient names/other identifying free text.
+- Required correction: remove unrestricted free-text fields from the provider-safe profile and add captured-body regressions; keep the verified runtime/static intersection, ambiguity fail-closed, projection-before-prompt, zero-call scope-error, and no-`STATIC_PHI_DENY`-fallback behavior.
+- GLM must push remediation to PR #29 and STOP at RE-REVIEW_REQUESTED; GLM must not merge.
 
 ### 2. WO-STAB-006 — unread optimistic count
 
-- Decision: **ACTIVATE**.
-- Owner: GLM 5.3.
-- Status: READY_FOR_IMPLEMENTATION, serialized behind WO-STAB-009.
-- Work-order source: `docs/work-orders/WO-STAB-006-PROPOSAL.md` (now marked ACTIVE).
-- Prefer one pure optimistic-cache transform so row flip and unread decrement share one `wasUnread` decision.
-- Do not start until WO-STAB-009 reaches REVIEW_REQUESTED.
-- GLM stops at REVIEW_REQUESTED; GPT performs final review/merge.
+- Decision: **REVIEW_REQUESTED at PR #30**.
+- Implementation owner: GLM 5.3; current owner: GPT reviewer/merge owner.
+- Status: REVIEW_REQUESTED. Serialized review is now permitted because PR #29 has a recorded verdict.
+- Work-order source: `docs/work-orders/WO-STAB-006-PROPOSAL.md`.
+- Reviewer must verify one `wasUnread` decision drives both row flip and decrement, second write returns the same snapshot reference, rollback remains invalidate-on-error, and the claimed RED-first evidence is real.
+- GPT records APPROVED+merge or CHANGES_REQUIRED; GLM must not self-merge.
 
 Deferred: WO-STAB-008 and all program-level visual/external lanes (`DT-VIS-P002/P003`, `UX-FLOW-P001`, `ENV-INT-P001`, Operations, navigation rewrite, external API production integration).
 
