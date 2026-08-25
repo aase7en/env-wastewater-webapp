@@ -1,6 +1,6 @@
 # CURRENT WORK
 
-Status: REVIEW_REQUESTED
+Status: CHANGES_REQUIRED
 
 Allowed statuses:
 
@@ -26,6 +26,22 @@ Allowed statuses:
 | 4 | #21 — `WO-UX-AN-P001` | APPROVED and merged | merge `553247fd38fb210702a18601644a62b86c5d2ee3` |
 | 5 | #23 — `DT-VIS-P001` | APPROVED and merged | merge `491ff6dd980e1e3b032b934588baefb9218b1b2b` |
 | 6 | #26 — P1 WO proposals | APPROVED and merged; activation decided | merge `e98df9057bd2cbb4ba879371dd82b7164d7da91a` |
+| 7 | #29 — `WO-STAB-009` | CHANGES_REQUIRED | reviewed tip `703e371b8d8dbde38f698b0371d6ece9ecd7dbc7`; remediation `docs/ai/prompts/GPT56-REVIEW-PR29-REMEDIATION.md` |
+| 8 | #30 — `WO-STAB-006` | APPROVED and merged | merge `72bd8f6088b177fb28017beda95c70a778d872e1` |
+
+### GPT Review Verdict — PR #29 / WO-STAB-009 — 2026-08-26
+
+`CHANGES_REQUIRED` — do not merge.
+
+Verified green evidence: Vitest 183/183 with non-secret dummy Supabase env, build PASS, lint 12 warnings / 0 errors, diff-check PASS, and GitHub `smoke` / `scripts` / both `notify` checks SUCCESS. The runtime `ai_scope` ∩ static-profile gate, ambiguity fail-closed behavior, pre-prompt projection, scope-error zero-provider-call behavior, and refusal-message raw-row protection are present.
+
+Blocking PHI finding: `TABLE_SAFE_FIELDS["wastewater.reading"]` includes unrestricted user-entered `color_desc`, `smell_desc`, and `note`. `DailyFormPage.tsx` allows arbitrary text in all three fields, while the scrubber only handles email/phone/Thai-ID patterns; patient names or other non-regex identifiers can therefore survive and reach the external provider. Remediation must remove those unrestricted fields from the provider-safe profile (not replace the boundary with a name regex) and add captured-body regression coverage.
+
+### GPT Review Verdict — PR #30 / WO-STAB-006 — 2026-08-26
+
+`APPROVED / MERGED` — merge `72bd8f6088b177fb28017beda95c70a778d872e1`.
+
+Reviewer verified one `wasUnread` decision controls both the row flip and unread decrement, repeat/already-read/unknown-id paths preserve the same snapshot reference, and rollback remains invalidate-on-error. RED-first was independently reproduced by temporarily restoring the old unconditional-decrement arithmetic in the isolated review worktree: exactly the three claimed regressions failed (repeat-click identity, already-read decrement, unknown-id decrement). The reviewed implementation was restored immediately; focused tests returned 10/10, full Vitest 179/179, build PASS, lint 12 warnings / 0 errors and diff-check clean. GitHub E2E on reviewed head `941f6d73f9ccfcaa8f4efc47c0aa4c86f16d509e` runs full `npx playwright test` against the PR branch and completed SUCCESS.
 
 PR #14 is approved and merged. Digital Twin visual work orders are now unblocked, subject to each work order's own dependency and user-approval rules in `docs/ai/digital-twin/03-MICRO-STEP-BOARD.md`.
 
@@ -33,14 +49,14 @@ PR #14 is approved and merged. Digital Twin visual work orders are now unblocked
 
 Program: `ENV-P1-STABILIZATION`
 
-State: `READY_FOR_IMPLEMENTATION`
+State: `CHANGES_REQUIRED`
 
 Activation decision: GPT review of PR #26 on 2026-08-24. PR #26 was docs-only and merged as `e98df9057bd2cbb4ba879371dd82b7164d7da91a`.
 
 Execution is **serialized** to reduce review risk even though the owned production files do not overlap:
 
-1. `WO-STAB-009` — annotateRow PHI/provider boundary. Status: `REVIEW_REQUESTED` — PR #29, checkpoint `1fbb33f8703ae1dd0373f039e090d8fa22b3a45a`, all local gates + GitHub CI green. Owner: GLM 5.3. Active source: `docs/work-orders/WO-STAB-009-PROPOSAL.md` (status inside file is ACTIVE). This runs first because it controls external-provider data disclosure. Mandatory GPT amendments: runtime `ai_scope` approval must be intersected with a static per-table safe-field profile; unknown/ambiguous/unmapped scope fails closed; projection/scrubbing occurs before prompt construction; refusal paths send/log no raw row; scope read failure yields zero provider calls.
-2. `WO-STAB-006` — alert unread optimistic-count idempotency. Status: `READY_FOR_IMPLEMENTATION`, but **do not start until WO-STAB-009 reaches `REVIEW_REQUESTED`**. Owner: GLM 5.3. Active source: `docs/work-orders/WO-STAB-006-PROPOSAL.md` (status inside file is ACTIVE).
+1. `WO-STAB-009` — annotateRow PHI/provider boundary. Status: `CHANGES_REQUIRED` after GPT review of PR #29 on 2026-08-26. Owner: GLM 5.3 remediation. Active source: `docs/work-orders/WO-STAB-009-PROPOSAL.md`. Blocking finding: `wastewater.reading` static safe profile incorrectly includes unrestricted `color_desc`, `smell_desc`, and `note`; regex scrubbing cannot guarantee removal of patient names/other free-text identifiers. Remediation prompt: `docs/ai/prompts/GPT56-REVIEW-PR29-REMEDIATION.md`. Existing intersection/fail-closed/projection behavior otherwise verified; PR #29 must return at `RE-REVIEW_REQUESTED` and must not be merged by GLM.
+2. `WO-STAB-006` — alert unread optimistic-count idempotency. Status: `APPROVED / MERGED` — PR #30, implementation checkpoint `8af33dc070457de03309ae9b30fe84728aad8466`, reviewed head `941f6d73f9ccfcaa8f4efc47c0aa4c86f16d509e`, merge `72bd8f6088b177fb28017beda95c70a778d872e1`. Reviewer independently reproduced the claimed RED state (exactly 3 failures), restored the implementation, verified focused 10/10, full Vitest 179/179, build PASS, lint 12 warnings / 0 errors, diff-check clean, and GitHub full `npx playwright test` job SUCCESS.
 
 Execution contract for both WOs:
 
@@ -179,9 +195,8 @@ The rendered top bar is now at least 64px high while `--topbar-h` in `frontend/s
 
 ## Next Action
 
-Execute the activated P1 stabilization queue in strict order:
+1. GLM 5.3 remediates **PR #29 / WO-STAB-009 only** using `docs/ai/prompts/GPT56-REVIEW-PR29-REMEDIATION.md`, pushes to the existing PR, records full evidence, and stops at `RE-REVIEW_REQUESTED`; GPT remains merge owner. Live re-check on 2026-08-26 confirmed PR #29 is still at `703e371b8d8dbde38f698b0371d6ece9ecd7dbc7` with no remediation commit and is currently `CONFLICTING/DIRTY` against `main`; remediation must reconcile current `main` additively without dropping the recorded PR #29/PR #30 reviewer history.
+2. `WO-STAB-006` is closed as APPROVED / MERGED (`72bd8f6088b177fb28017beda95c70a778d872e1`).
+3. After PR #29 is eventually approved/merged, the next remaining P1 is `WO-STAB-008`, but it shares `NotificationBell` UI with the Codex visual lane and **must not start without explicit user go-ahead plus Codex coordination**.
 
-1. GLM 5.3 implements `WO-STAB-009` from `docs/work-orders/WO-STAB-009-PROPOSAL.md`, including all GPT activation amendments, and stops at `REVIEW_REQUESTED` with a PR and full evidence.
-2. Only after step 1 reaches `REVIEW_REQUESTED`, GLM 5.3 implements `WO-STAB-006` from `docs/work-orders/WO-STAB-006-PROPOSAL.md` and again stops at `REVIEW_REQUESTED`.
-
-The `ENV-NEXT-DESIGN` program gate remains closed for `DT-VIS-P002`, Sankey, Hazard Map, Operations, navigation, and external API production integration. `WO-STAB-008` also remains deferred.
+Deferred / not active without user authorization: `DT-VIS-P002`, `DT-VIS-P003`, `UX-FLOW-P001`, `ENV-INT-P001`, P2 backlog triage, and `--topbar-h` token reconciliation.

@@ -1,34 +1,53 @@
 # HANDOFF
 
-Status: READY_FOR_IMPLEMENTATION — GPT activated the remaining GLM-safe P1 stabilization queue after reviewing and merging PR #26. Execute WO-STAB-009 first, then WO-STAB-006; all other candidate lanes remain inactive.
+Status: CHANGES_REQUIRED — PR #29 / WO-STAB-009 requires PHI-boundary remediation; PR #30 / WO-STAB-006 was GPT-approved and merged as `72bd8f6088b177fb28017beda95c70a778d872e1`. No deferred lane is activated.
 
 ## Active P1 Stabilization Queue — 2026-08-24
 
 Decision source: GPT review of PR #26 (`e98df9057bd2cbb4ba879371dd82b7164d7da91a`).
 
+### GPT Review Record — PR #29 / WO-STAB-009 — 2026-08-26
+
+- Verdict: **CHANGES_REQUIRED — DO NOT MERGE**.
+- Reviewed branch tip: `703e371b8d8dbde38f698b0371d6ece9ecd7dbc7`; implementation checkpoint `1fbb33f8703ae1dd0373f039e090d8fa22b3a45a`.
+- Verified gates: Vitest **183/183 PASS** (isolated worktree with non-secret dummy Supabase env), build PASS, lint **12 warnings / 0 errors**, diff-check PASS; GitHub `smoke`, `scripts`, both `notify` checks SUCCESS.
+- Verified good boundary behavior: runtime `ai_scope` approval intersects static profile; ambiguous/unknown scope fails closed; `projectSafeRow()` precedes prompt construction; scope read failure produces zero provider calls; `STATIC_PHI_DENY` is not used as positive allowlist fallback; refusal messages do not include raw row values.
+- Blocking PHI finding: `wastewater.reading` static profile includes `color_desc`, `smell_desc`, and `note`, and `DailyFormPage.tsx` permits arbitrary text for all three. Regex scrubbing only covers email/phone/Thai-ID shapes, so patient names/other non-regex identifiers can survive into the provider request.
+- Required remediation: remove unrestricted free-text fields from the provider-safe profile; do not use name-regex as the authorization boundary; add project + captured-body regressions using non-regex identifying text; audit remaining profiles for unrestricted free text only within this WO scope.
+- Remediation prompt: `docs/ai/prompts/GPT56-REVIEW-PR29-REMEDIATION.md`.
+- Next owner for PR #29: GLM 5.3 remediation, then STOP at `RE-REVIEW_REQUESTED`; GPT remains merge owner.
+
 ### 1. WO-STAB-009 — PHI/provider boundary
 
-- Decision: **ACTIVATE WITH AMENDMENTS**.
-- Owner: GLM 5.3.
-- Status: READY_FOR_IMPLEMENTATION.
-- Work-order source: `docs/work-orders/WO-STAB-009-PROPOSAL.md` (now marked ACTIVE).
-- Priority rationale: this is an external-provider disclosure boundary and therefore runs before the badge-count bug.
-- Mandatory boundary: effective authorization = runtime `core.ai_scope` (`patient_safe=true`, `is_enabled=true`) **AND** a static explicit per-table safe-field profile. Runtime/admin toggles alone cannot widen row payloads.
-- Unknown, ambiguous, unmapped, disabled or unreadable scope fails closed with zero provider calls. Do not use `STATIC_PHI_DENY` as a positive-allowlist fallback.
-- Project safe fields before prompt construction; unknown fields omitted; scrub projected string values as defense-in-depth; refusal/error paths must not include/log raw row content.
-- GLM stops at REVIEW_REQUESTED; GPT performs final review/merge.
+- Decision: **CHANGES_REQUIRED after GPT review of PR #29**.
+- Owner: GLM 5.3 remediation; GPT remains reviewer/merge owner.
+- Status: CHANGES_REQUIRED.
+- Work-order source: `docs/work-orders/WO-STAB-009-PROPOSAL.md`; remediation: `docs/ai/prompts/GPT56-REVIEW-PR29-REMEDIATION.md`.
+- Blocking issue: the static `wastewater.reading` profile includes unrestricted `color_desc`, `smell_desc`, and `note`; current regex scrubbing cannot guarantee removal of patient names/other identifying free text.
+- Required correction: remove unrestricted free-text fields from the provider-safe profile and add captured-body regressions; keep the verified runtime/static intersection, ambiguity fail-closed, projection-before-prompt, zero-call scope-error, and no-`STATIC_PHI_DENY`-fallback behavior.
+- GLM must push remediation to PR #29 and STOP at RE-REVIEW_REQUESTED; GLM must not merge.
 
 ### 2. WO-STAB-006 — unread optimistic count
 
-- Decision: **ACTIVATE**.
-- Owner: GLM 5.3.
-- Status: READY_FOR_IMPLEMENTATION, serialized behind WO-STAB-009.
-- Work-order source: `docs/work-orders/WO-STAB-006-PROPOSAL.md` (now marked ACTIVE).
-- Prefer one pure optimistic-cache transform so row flip and unread decrement share one `wasUnread` decision.
-- Do not start until WO-STAB-009 reaches REVIEW_REQUESTED.
-- GLM stops at REVIEW_REQUESTED; GPT performs final review/merge.
+- Decision: **APPROVED / MERGED**.
+- Implementation owner: GLM 5.3; reviewer/merge owner: GPT.
+- PR #30 reviewed head: `941f6d73f9ccfcaa8f4efc47c0aa4c86f16d509e`; implementation checkpoint: `8af33dc070457de03309ae9b30fe84728aad8466`.
+- Merge: `72bd8f6088b177fb28017beda95c70a778d872e1`.
+- Verified implementation: one `wasUnread` decision gates both row flip and unread decrement; already-read / unknown-id paths return the same snapshot reference; rollback remains invalidate-on-error.
+- Independent RED reproduction: reviewer temporarily restored the old unconditional-decrement arithmetic in the isolated review worktree; exactly 3 tests failed (repeat-click identity, already-read decrement, unknown-id decrement). Reviewer restored the reviewed implementation immediately; focused suite returned 10/10.
+- Full reviewer gates: Vitest 179/179 PASS; build PASS; lint 12 warnings / 0 errors; diff-check PASS. The local full-Playwright invocation was interrupted by Worker 3 transport termination, not a test failure; remote GitHub E2E on the exact reviewed head independently runs full `npx playwright test` against PR code and completed SUCCESS.
+- Closed. Do not reopen unless a new regression is observed.
 
 Deferred: WO-STAB-008 and all program-level visual/external lanes (`DT-VIS-P002/P003`, `UX-FLOW-P001`, `ENV-INT-P001`, Operations, navigation rewrite, external API production integration).
+
+### GPT Reviewer Session Checkpoint — 2026-08-26
+
+- PR #29 verdict: CHANGES_REQUIRED; remediation prompt `docs/ai/prompts/GPT56-REVIEW-PR29-REMEDIATION.md`.
+- PR #30 verdict: APPROVED and merged `72bd8f6088b177fb28017beda95c70a778d872e1`.
+- Review work was isolated in `A:\GitHub\env-wastewater-webapp-review-worker3`; the dirty/stale primary worktree was not reset, cleaned, stashed, or mutated.
+- Worker 3 transport terminated during a local full-Playwright invocation. This was classified as transport failure, not test failure. The worker later reconnected; GitHub E2E evidence on exact PR #30 head independently confirms the workflow executes full `npx playwright test` and completed SUCCESS.
+- Live re-check on 2026-08-26: PR #29 remains OPEN at `703e371b8d8dbde38f698b0371d6ece9ecd7dbc7`; no remediation commit has been pushed. GitHub reports `CONFLICTING` / merge state `DIRTY` against current `main`. This is a handoff blocker, not a reviewer failure.
+- Next safe action: GLM 5.3 remediates PR #29 only, first reconciling current `main` additively while preserving both the PR #29 CHANGES_REQUIRED record and PR #30 merged record, then stops at `RE-REVIEW_REQUESTED`. `WO-STAB-008` remains inactive until explicit user go-ahead + Codex coordination.
 
 ## Completed Design Execution — 2026-08-23
 
@@ -218,3 +237,42 @@ Follow `docs/ai/digital-twin/03-MICRO-STEP-BOARD.md` for the visual lane. The fo
 - Gates: Vitest 183/183 · build OK · lint 12w+0e baseline · full Playwright 48/48 · diff-check clean · GitHub CI smoke/scripts/notify all pass.
 - Defect memory (do-not-repeat): (1) supabase mock chains must match the REAL eq-chain depth — isRuntimeApproved has 3 .eq() levels; a 2-level mock silently returns undefined=>false. (2) A clean worktree needs frontend/.env copied before running non-mocked supabase-importing tests (overview/ai-sql suites). (3) Bare-name canonicalization must count collisions first: 'reading' exists in wastewater AND carbon — ambiguity is correct fail-closed, not a bug.
 - Status: REVIEW_REQUESTED. GPT owns review/merge. WO-STAB-006 remains serialized behind this PR's verdict.
+---
+
+# WO-STAB-006 Execution Record — 2026-08-25
+
+**Work order:** WO-STAB-006 — alert unread optimistic-count double-decrement (P1 #6, `reports/code-review-2026-08-12.md`). Active source: `docs/work-orders/WO-STAB-006-PROPOSAL.md`. Serial precondition met: WO-STAB-009 reached `REVIEW_REQUESTED` on PR #29 before this WO started.
+
+**Status:** `REVIEW_REQUESTED` — implementation checkpoint `8af33dc070457de03309ae9b30fe84728aad8466`, branch `fix/p1-alert-unread-idempotent`, PR #30.
+
+## Implementation summary
+
+- `frontend/src/lib/alerts-unread.ts` (NEW) — pure `applyMarkRead(snapshot, id, now)` per the GPT activation note: one `wasUnread` decision drives both the row flip and the badge decrement; timestamp injected for determinism; returns the SAME reference when the target is not unread (unknown id or already read), making an idempotent second write a full no-op.
+- `frontend/src/lib/alerts.ts` — hook `markRead` body extracted module-level as `markReadViaCache(qc, queryKey, id)` typed against `Pick<QueryClient, "getQueryData" | "setQueryData" | "invalidateQueries">`; optimistic write delegates to `applyMarkRead`; invalidation-on-error rollback byte-identical to the pre-extraction inline block. Extraction exists so the rollback path is pinnable in node-env tests (repo has no DOM test infra).
+- Bug fixed: optimistic snapshot previously wrote `n: Math.max(0, prev.n - 1)` unconditionally while the row-flip was guarded by `read_at === null` — double-click on dismiss (no debounce in NotificationBell) under-counted the badge until the next 60s poll.
+
+## RED → GREEN evidence
+
+RED-first: the transform was first extracted verbatim with the bug intact; 3 tests failed exactly on the bug surface (double-click idempotency, already-read decrement, unknown-id decrement). Fix applied → all green.
+
+## Tests run (exact results)
+
+- Focused `src/lib/alerts-unread.test.ts`: 10/10 (6 pure-transform + 4 wrapper incl. rollback pin)
+- Full Vitest: 179/179 (baseline 169 + 10)
+- Build (`tsc -b && vite build`): PASS
+- Lint (oxlint): 12 warnings / 0 errors (baseline)
+- Full Playwright: 48/48
+- `git diff --check`: clean
+
+## Defect memory (do not repeat)
+
+1. Optimistic-cache writes that pair a guarded row transform with a count must derive BOTH from one predicate — a count arithmetic copied "as before" next to a newly-guarded flip is exactly how this bug survived EQ-4's rewrite. When extracting, write the idempotency test BEFORE porting the arithmetic.
+2. Node-env fakes typed against `Pick<QueryClient, …>` still need their literal params correctly typed: `invalidateQueries: (filters: { queryKey: unknown[] })` — `unknown` vs `unknown[]` fails `tsc -b` even though vitest (esbuild, no typecheck) passes. Always run the build gate on test files, not just vitest.
+
+## Reviewer focus
+
+1. Same-reference early-return semantics in `applyMarkRead` (no timestamp clobber on repeat click).
+2. `markReadViaCache` preserves the old rollback and empty-cache behavior.
+3. Unknown-id now does NOT decrement `n` (conservative; matches proposal's gating) — intentional behavior change.
+
+GLM must not merge PR #30. Next owner: GPT reviewer.

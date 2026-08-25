@@ -1,9 +1,9 @@
 # env-wastewater-webapp — Agent Notes
 
-Wastewater-treatment data migration (AppSheet → Supabase) + future FastAPI/frontend
-for โรงพยาบาลอุทัย's environmental monitoring. Normal git workflow — branches, PRs,
-CI as needed. Not bound to any "main-only" rule (that's an A-Wiki-specific policy,
-not this repo's).
+Environmental-monitoring webapp for โรงพยาบาลอุทัย (wastewater treatment +
+utilities), migrated from AppSheet to Supabase; React frontend deployed on
+GitHub Pages. Normal git workflow — branches, PRs, CI as needed. Not bound to
+any "main-only" rule (that's an A-Wiki-specific policy, not this repo's).
 
 ## Mandatory SSoT reading — before non-trivial work
 
@@ -26,13 +26,47 @@ Before non-trivial product, architecture, UI, Digital Twin, data, or integration
 2. `docs/ai/CURRENT-WORK.md`
 3. `docs/ai/HANDOFF.md`
 4. `docs/ai/design/ENV-EXPERIENCE-MASTER-PLAN.md`
-5. the relevant domain folder under `docs/ai/` (for example `digital-twin/`, `environmental-intelligence/`, or `tooling/`)
+5. `docs/agent-handoff/AI_COLLABORATION_PROTOCOL.md` — the multi-agent ownership/review rules; mandatory whenever more than one agent (GLM / GPT / Codex / others) is active on this repo
+6. the relevant domain folder under `docs/ai/` (for example `digital-twin/`, `environmental-intelligence/`, or `tooling/`)
 
 For any wastewater-process, process-flow, Digital Twin wastewater, sludge, chlorination, bypass, or simulation work, also read `docs/ai/digital-twin/11-UTHAI-ACTIVATED-SLUDGE-PROCESS-KNOWLEDGE.md` before designing or editing behavior. It is the durable user-confirmed process-topology reference for Uthai Hospital's Activated Sludge system.
 
 The Experience Master Plan is mandatory for all product/visual work. It explicitly preserves the existing Digital Twin as the spatial/visual core while adding Operations, Analytics, Flows, Hazard Map, Resource Explorer, and System/Data Network as complementary intelligence surfaces.
 
 An active `CURRENT-WORK.md` remains the execution scope. Do not treat the master plan as permission to start unrelated work.
+
+## Binding rules for every agent
+
+These apply to **any** agent working in this repo, regardless of which tool
+or session launched it. They consolidate rules that were previously scattered
+across the collaboration protocol and design docs (audit record:
+`reports/repo-health-2026-08-25.md`). Where this section and
+`docs/agent-handoff/AI_COLLABORATION_PROTOCOL.md` overlap, the protocol has
+the detailed wording; this section is the always-read summary.
+
+- **No unauthorized work.** Only the active work order in
+  `docs/ai/CURRENT-WORK.md` (or an explicit user instruction) authorizes
+  changes. No silent scope expansion; no starting deferred lanes.
+- **PHI boundary.** Patient-identifying data must never leave the system —
+  never route PHI to external AI providers, directly or indirectly.
+  AI annotate/chat features must go through the approved safe-field
+  projection (`frontend/src/lib/admin/annotate-boundary.ts`) and fail closed.
+- **Secrets & raw data.** `.env` and `data/raw/` are gitignored — never
+  commit, never print contents to chat.
+- **Ownership (two-track).** Track F (visual: className, styling, 3D,
+  Digital Twin art direction) = Codex lane. Track Z (lib logic, SQL, RLS,
+  data contracts, tests, CI) = GLM lane. One writer per file; do not touch
+  files another agent owns.
+- **Review gate.** The implementing agent never merges its own
+  implementation PR. Stop at `REVIEW_REQUESTED`; the GPT reviewer owns
+  approval and merge.
+- **Data honesty.** Unknown ≠ Zero/Normal/Stopped — never coerce missing
+  telemetry into a value. `latest` ≠ `live` (reserve "live" for real sensor
+  telemetry). Simulation must be explicitly labeled as simulation.
+- **Dates.** User-facing dates are พ.ศ. (CE + 543).
+- **Git safety.** Never `reset --hard`, clean, delete, move, or blindly
+  stash untracked files you did not create — they may be another agent's
+  (or the user's) work.
 
 ## 📡 Companion repo — A-Wiki
 
