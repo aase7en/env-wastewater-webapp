@@ -195,7 +195,7 @@ The rendered top bar is now at least 64px high while `--topbar-h` in `frontend/s
 
 ## Next Action
 
-1. GLM 5.3 remediates **PR #29 / WO-STAB-009 only** using `docs/ai/prompts/GPT56-REVIEW-PR29-REMEDIATION.md`, pushes to the existing PR, records full evidence, and stops at `RE-REVIEW_REQUESTED`; GPT remains merge owner.
+1. GLM 5.3 remediates **PR #29 / WO-STAB-009 only** using `docs/ai/prompts/GPT56-REVIEW-PR29-REMEDIATION.md`, pushes to the existing PR, records full evidence, and stops at `RE-REVIEW_REQUESTED`; GPT remains merge owner. Live re-check on 2026-08-26 confirmed PR #29 is still at `703e371b8d8dbde38f698b0371d6ece9ecd7dbc7` with no remediation commit and is currently `CONFLICTING/DIRTY` against `main`; remediation must reconcile current `main` additively without dropping the recorded PR #29/PR #30 reviewer history.
 2. `WO-STAB-006` is closed as APPROVED / MERGED (`72bd8f6088b177fb28017beda95c70a778d872e1`).
 3. After PR #29 is eventually approved/merged, the next remaining P1 is `WO-STAB-008`, but it shares `NotificationBell` UI with the Codex visual lane and **must not start without explicit user go-ahead plus Codex coordination**.
 

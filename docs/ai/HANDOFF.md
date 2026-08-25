@@ -46,7 +46,8 @@ Deferred: WO-STAB-008 and all program-level visual/external lanes (`DT-VIS-P002/
 - PR #30 verdict: APPROVED and merged `72bd8f6088b177fb28017beda95c70a778d872e1`.
 - Review work was isolated in `A:\GitHub\env-wastewater-webapp-review-worker3`; the dirty/stale primary worktree was not reset, cleaned, stashed, or mutated.
 - Worker 3 transport terminated during a local full-Playwright invocation. This was classified as transport failure, not test failure. The worker later reconnected; GitHub E2E evidence on exact PR #30 head independently confirms the workflow executes full `npx playwright test` and completed SUCCESS.
-- Next safe action: GLM 5.3 remediates PR #29 only and stops at `RE-REVIEW_REQUESTED`. `WO-STAB-008` remains inactive until explicit user go-ahead + Codex coordination.
+- Live re-check on 2026-08-26: PR #29 remains OPEN at `703e371b8d8dbde38f698b0371d6ece9ecd7dbc7`; no remediation commit has been pushed. GitHub reports `CONFLICTING` / merge state `DIRTY` against current `main`. This is a handoff blocker, not a reviewer failure.
+- Next safe action: GLM 5.3 remediates PR #29 only, first reconciling current `main` additively while preserving both the PR #29 CHANGES_REQUIRED record and PR #30 merged record, then stops at `RE-REVIEW_REQUESTED`. `WO-STAB-008` remains inactive until explicit user go-ahead + Codex coordination.
 
 ## Completed Design Execution — 2026-08-23
 
