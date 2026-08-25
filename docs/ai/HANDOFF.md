@@ -229,6 +229,14 @@ The Digital Twin foundation review gate is closed. No additional GPT foundation 
 
 Follow `docs/ai/digital-twin/03-MICRO-STEP-BOARD.md` for the visual lane. The foundation dependency is now satisfied. `DT-VIS-P001` still carries its own explicit user-approval requirement on the board; no further GPT foundation decision is pending.
 
+## WO-STAB-009 Execution Record — 2026-08-25 (GLM 5.3)
+
+- PR: #29 (branch fix/p1-annotate-phi-boundary, checkpoint 1fbb33f8703ae1dd0373f039e090d8fa22b3a45a)
+- Implementation: NEW lib/admin/annotate-boundary.ts (canonical keys, static TABLE_SAFE_FIELDS profiles, projectSafeRow + PII scrub, isRuntimeApproved fail-closed — never STATIC_PHI_DENY-as-allowlist, canonicalizeTableName ambiguity-fail-closed) + annotateRow gated (runtime ∩ static, projection before prompt, refusal messages carry no row content).
+- All 6 GPT amendments pinned by +14 unit tests (incl. scope-safe-but-no-profile refused w/ zero fetches; scope error => zero provider calls; wire-body projection proof). RED via stash proven; GREEN 14/14.
+- Gates: Vitest 183/183 · build OK · lint 12w+0e baseline · full Playwright 48/48 · diff-check clean · GitHub CI smoke/scripts/notify all pass.
+- Defect memory (do-not-repeat): (1) supabase mock chains must match the REAL eq-chain depth — isRuntimeApproved has 3 .eq() levels; a 2-level mock silently returns undefined=>false. (2) A clean worktree needs frontend/.env copied before running non-mocked supabase-importing tests (overview/ai-sql suites). (3) Bare-name canonicalization must count collisions first: 'reading' exists in wastewater AND carbon — ambiguity is correct fail-closed, not a bug.
+- Status: REVIEW_REQUESTED. GPT owns review/merge. WO-STAB-006 remains serialized behind this PR's verdict.
 ---
 
 # WO-STAB-006 Execution Record — 2026-08-25
@@ -268,3 +276,88 @@ RED-first: the transform was first extracted verbatim with the bug intact; 3 tes
 3. Unknown-id now does NOT decrement `n` (conservative; matches proposal's gating) — intentional behavior change.
 
 GLM must not merge PR #30. Next owner: GPT reviewer.
+
+---
+
+# WO-STAB-009 Remediation Record — 2026-08-26
+
+**Work order:** WO-STAB-009 remediation per
+`docs/ai/prompts/GPT56-REVIEW-PR29-REMEDIATION.md` (GPT verdict
+CHANGES_REQUIRED on PR #29 tip `703e371`).
+
+**Status:** `RE-REVIEW_REQUESTED` — branch `fix/p1-annotate-phi-boundary`,
+merge-reconcile commit `1f6f1b2` (main `1c40340` merged in additively),
+remediation commit `26713f0`, PR #29.
+
+## Branch reconciliation (was CONFLICTING/DIRTY)
+
+Main-side taken for `CURRENT-WORK.md` (newer verdicts superseded the
+branch's stale `REVIEW_REQUESTED` lines). Both sides kept in
+`HANDOFF.md`: the PR #29 execution record (branch-only) followed by
+main's PR #30 record + GPT review records. No record dropped; GitHub
+reports the PR mergeable again after push.
+
+## Root cause
+
+`TABLE_SAFE_FIELDS["wastewater.reading"]` classified unrestricted
+free-text UI inputs (`color_desc`, `smell_desc`, `note` — DailyFormPage
+"พิมพ์เอง" inputs + free Textarea) as provider-safe. The regex scrubber
+only recognizes email/phone/Thai-ID shapes, so free-text identifiers
+(e.g. `ผู้ป่วย สมชาย ใจดี HN 12345` — the name fragment matches no
+scrubber) survived projection and reached the external provider request
+body. Violates the binding rule: PHI never leaves the system.
+
+## RED → GREEN evidence
+
+- RED: 2 new regressions failed against the reviewed profile —
+  `projectSafeRow` returned the three fields, and the captured provider
+  wire body contained the patient-name fragment and both custom
+  color/smell values. (14 pre-existing tests stayed green.)
+- FIX: removed `color_desc`, `smell_desc`, `note` from the profile; only
+  bounded numeric/date/uuid/enum-contract fields remain allowlisted.
+  Existing email/phone/Thai-ID scrubber test moved onto a
+  still-permitted string field (`id`) — scrubbing stays
+  defense-in-depth, never the authorization boundary.
+- GREEN: focused 16/16.
+- Profile audit (remediation item 7): `carbon.reading`
+  (id/date/meter_value/consumption), `fuel.dispense_log`
+  (id/date/fuel_type/litres), `garbage.collection_log`
+  (id/date/waste_type/weight_kg), `wastewater.threshold_alert`
+  (id/created_at/read_at/severity) — all typed or enum-bounded; no other
+  unrestricted free-text field exists in any static profile.
+- Architecture preserved: runtime `ai_scope` ∩ static profile,
+  fail-closed unknown/ambiguous/missing/disabled/unreadable, zero
+  provider calls on refusal, unknown columns omitted, no
+  `STATIC_PHI_DENY` allowlist fallback, `projectSafeRow()` before prompt.
+
+## Gates (exact results)
+
+- Vitest: **195/195** (183 reviewed baseline + 2 remediation + 10 from
+  merged PR #30)
+- `npm run build`: PASS
+- `npm run lint`: 12 warnings / 0 errors (baseline)
+- `git diff --check`: clean
+- Full Playwright: **48/48**
+- GitHub CI on new PR #29 head: recorded below after push.
+
+## Defect memory (do not repeat)
+
+1. A field-level allowlist compiled from schema column names is NOT a
+   safety classification — the classifier must be "how does the
+   production UI populate this field?", not "what is the column type?".
+   Free-text-able inputs (even ones that LOOK like enums, e.g. color/smell
+   dropdowns with a "พิมพ์เอง" escape hatch) are unbounded by contract.
+2. Pattern scrubbers (email/phone/ID regex) only remove identifiers that
+   SHAPE-match known formats. Natural-language identifiers (names, room
+   references, HN-prefixed numbers) are invisible to them — which is why
+   scrubbing must never be load-bearing for authorization decisions.
+
+## Reviewer focus
+
+1. The three removed fields are absent from projection AND wire body
+   (both pinned by the 2 new regressions).
+2. No new free-text field snuck into any other profile (audit above).
+3. All previously-verified fail-closed behavior untouched (the fix is
+   field-list-only + tests).
+
+GLM must not merge PR #29. Next owner: GPT 5.6 Sol UltraMAX re-review.
