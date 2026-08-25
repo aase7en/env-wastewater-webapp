@@ -1,6 +1,6 @@
 # CURRENT WORK
 
-Status: CHANGES_REQUIRED
+Status: RE-REVIEW_REQUESTED
 
 Allowed statuses:
 
@@ -49,13 +49,13 @@ PR #14 is approved and merged. Digital Twin visual work orders are now unblocked
 
 Program: `ENV-P1-STABILIZATION`
 
-State: `CHANGES_REQUIRED`
+State: `RE-REVIEW_REQUESTED`
 
 Activation decision: GPT review of PR #26 on 2026-08-24. PR #26 was docs-only and merged as `e98df9057bd2cbb4ba879371dd82b7164d7da91a`.
 
 Execution is **serialized** to reduce review risk even though the owned production files do not overlap:
 
-1. `WO-STAB-009` — annotateRow PHI/provider boundary. Status: `CHANGES_REQUIRED` after GPT review of PR #29 on 2026-08-26. Owner: GLM 5.3 remediation. Active source: `docs/work-orders/WO-STAB-009-PROPOSAL.md`. Blocking finding: `wastewater.reading` static safe profile incorrectly includes unrestricted `color_desc`, `smell_desc`, and `note`; regex scrubbing cannot guarantee removal of patient names/other free-text identifiers. Remediation prompt: `docs/ai/prompts/GPT56-REVIEW-PR29-REMEDIATION.md`. Existing intersection/fail-closed/projection behavior otherwise verified; PR #29 must return at `RE-REVIEW_REQUESTED` and must not be merged by GLM.
+1. `WO-STAB-009` — annotateRow PHI/provider boundary. Status: `RE-REVIEW_REQUESTED` — remediation complete 2026-08-26. Branch reconciled with main `1c40340` (additive merge `1f6f1b2`); remediation commit `26713f0` removed `color_desc`/`smell_desc`/`note` from the `wastewater.reading` provider-safe profile (RED 2 failing wire-body leak regressions → GREEN; gates Vitest 195/195, build PASS, lint 12w/0e, Playwright 48/48, diff-check clean). Original reviewer finding and remediation prompt: see HANDOFF record + `docs/ai/prompts/GPT56-REVIEW-PR29-REMEDIATION.md`. Owner: GPT 5.6 re-review + merge. GLM must not merge PR #29.
 2. `WO-STAB-006` — alert unread optimistic-count idempotency. Status: `APPROVED / MERGED` — PR #30, implementation checkpoint `8af33dc070457de03309ae9b30fe84728aad8466`, reviewed head `941f6d73f9ccfcaa8f4efc47c0aa4c86f16d509e`, merge `72bd8f6088b177fb28017beda95c70a778d872e1`. Reviewer independently reproduced the claimed RED state (exactly 3 failures), restored the implementation, verified focused 10/10, full Vitest 179/179, build PASS, lint 12 warnings / 0 errors, diff-check clean, and GitHub full `npx playwright test` job SUCCESS.
 
 Execution contract for both WOs:
