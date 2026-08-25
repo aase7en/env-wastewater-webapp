@@ -1,6 +1,6 @@
 # HANDOFF
 
-Status: CHANGES_REQUIRED — PR #29 / WO-STAB-009 requires PHI-boundary remediation; PR #30 / WO-STAB-006 was GPT-approved and merged as `72bd8f6088b177fb28017beda95c70a778d872e1`. No deferred lane is activated.
+Status: APPROVED — PR #29 and PR #30 are both GPT-approved and merged. ENV-P1-STABILIZATION is closed for the two activated work orders; no deferred lane is activated.
 
 ## Active P1 Stabilization Queue — 2026-08-24
 
@@ -17,15 +17,22 @@ Decision source: GPT review of PR #26 (`e98df9057bd2cbb4ba879371dd82b7164d7da91a
 - Remediation prompt: `docs/ai/prompts/GPT56-REVIEW-PR29-REMEDIATION.md`.
 - Next owner for PR #29: GLM 5.3 remediation, then STOP at `RE-REVIEW_REQUESTED`; GPT remains merge owner.
 
-### 1. WO-STAB-009 — PHI/provider boundary
+### GPT Re-Review / Merge Record — PR #29 / WO-STAB-009 — 2026-08-26
 
-- Decision: **CHANGES_REQUIRED after GPT review of PR #29**.
-- Owner: GLM 5.3 remediation; GPT remains reviewer/merge owner.
-- Status: CHANGES_REQUIRED.
-- Work-order source: `docs/work-orders/WO-STAB-009-PROPOSAL.md`; remediation: `docs/ai/prompts/GPT56-REVIEW-PR29-REMEDIATION.md`.
-- Blocking issue: the static `wastewater.reading` profile includes unrestricted `color_desc`, `smell_desc`, and `note`; current regex scrubbing cannot guarantee removal of patient names/other identifying free text.
-- Required correction: remove unrestricted free-text fields from the provider-safe profile and add captured-body regressions; keep the verified runtime/static intersection, ambiguity fail-closed, projection-before-prompt, zero-call scope-error, and no-`STATIC_PHI_DENY`-fallback behavior.
-- GLM must push remediation to PR #29 and STOP at RE-REVIEW_REQUESTED; GLM must not merge.
+- Verdict: **APPROVED / MERGED**.
+- Remediation `26713f0`; reviewed exact head `676b432452ad1754708907fb0c1fbef9c77d325e`; merge `590f41303ba7c949eb44b9844ccc8dab4675b34a`.
+- Reviewer gates: focused **16/16**, Vitest **195/195**, build PASS, lint **12 warnings / 0 errors**, diff-check clean; exact-head GitHub checks SUCCESS.
+- Local reviewer Playwright transport terminated; GLM recorded **48/48 PASS**.
+- Worker 5 was used only as shell transport for final merge/SSoT after Worker 3 terminated; Worker 5 active project was not changed.
+- Closed.
+
+### 1. WO-STAB-009 — provider boundary
+
+- Decision: **APPROVED / MERGED after GPT re-review of PR #29**.
+- Implementation/remediation owner: GLM 5.3; final reviewer/merge owner: GPT.
+- Status: APPROVED / MERGED.
+- Reviewed head: `676b432452ad1754708907fb0c1fbef9c77d325e`; merge: `590f41303ba7c949eb44b9844ccc8dab4675b34a`.
+- Closed. Do not reopen unless a new regression is observed.
 
 ### 2. WO-STAB-006 — unread optimistic count
 
@@ -42,12 +49,12 @@ Deferred: WO-STAB-008 and all program-level visual/external lanes (`DT-VIS-P002/
 
 ### GPT Reviewer Session Checkpoint — 2026-08-26
 
-- PR #29 verdict: CHANGES_REQUIRED; remediation prompt `docs/ai/prompts/GPT56-REVIEW-PR29-REMEDIATION.md`.
+- PR #29 final verdict: APPROVED and merged `590f41303ba7c949eb44b9844ccc8dab4675b34a` after reviewed remediation head `676b432452ad1754708907fb0c1fbef9c77d325e`.
 - PR #30 verdict: APPROVED and merged `72bd8f6088b177fb28017beda95c70a778d872e1`.
-- Review work was isolated in `A:\GitHub\env-wastewater-webapp-review-worker3`; the dirty/stale primary worktree was not reset, cleaned, stashed, or mutated.
-- Worker 3 transport terminated during a local full-Playwright invocation. This was classified as transport failure, not test failure. The worker later reconnected; GitHub E2E evidence on exact PR #30 head independently confirms the workflow executes full `npx playwright test` and completed SUCCESS.
-- Live re-check on 2026-08-26: PR #29 remains OPEN at `703e371b8d8dbde38f698b0371d6ece9ecd7dbc7`; no remediation commit has been pushed. GitHub reports `CONFLICTING` / merge state `DIRTY` against current `main`. This is a handoff blocker, not a reviewer failure.
-- Next safe action: GLM 5.3 remediates PR #29 only, first reconciling current `main` additively while preserving both the PR #29 CHANGES_REQUIRED record and PR #30 merged record, then stops at `RE-REVIEW_REQUESTED`. `WO-STAB-008` remains inactive until explicit user go-ahead + Codex coordination.
+- Dirty/stale primary worktree was not reset, cleaned, stashed, or mutated.
+- Worker 3 transport terminated during final local Playwright for PR #29; this was transport failure, not test failure. Unit/build/lint/diff gates were independently green; GLM recorded Playwright 48/48; exact-head GitHub checks were green.
+- Worker 5 was used only as shell transport for final merge and SSoT closure; its active project was not changed.
+- Next safe action: no P1 work is active. `WO-STAB-008` remains inactive until explicit user go-ahead + Codex coordination.
 
 ## Completed Design Execution — 2026-08-23
 
