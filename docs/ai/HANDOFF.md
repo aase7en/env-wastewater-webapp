@@ -381,3 +381,97 @@ body. Violates the binding rule: PHI never leaves the system.
    field-list-only + tests).
 
 GLM must not merge PR #29. Next owner: GPT 5.6 Sol UltraMAX re-review.
+
+---
+
+# WO-STAB-009 Remediation-2 Record — 2026-08-26
+
+**Work order:** WO-STAB-009 remediation-2 per
+`docs/ai/prompts/GPT56-REVIEW-PR29-REMEDIATION-2.md` (GPT post-merge
+re-re-review of PR #29 merge `590f41303ba7c949eb44b9844ccc8dab4675b34a`).
+
+**Status:** `RE-REVIEW_REQUESTED` — fresh branch
+`fix/p1-annotate-phi-boundary-remediation-2` off `origin/main` `0f549f1`,
+fix commit `105ce8d`. PR #29 itself untouched (merged history preserved).
+
+## Root cause (remediation-2 scope)
+
+The remediation-1 field audit accepted three remaining profile entries on
+"enum-like" appearances without verifying the enforceable write contract:
+
+1. `fuel.dispense_log.fuel_type` — schema `text`, NO CHECK constraint
+   (`20260719000000_v2_schemas.sql:82`); bulk-import adapter accepts
+   arbitrary strings (`import-adapters/fuel.ts:21`
+   `str(raw["fuel_type"] ?? raw["type"])`); `core.ai_scope` seeds the table
+   patient_safe+enabled → arbitrary identifying text could reach the
+   provider.
+2. `garbage.collection_log.waste_type` — schema `text`, NO CHECK, legacy
+   field (`v2_schemas.sql:67`); authenticated writes allowed.
+3. `wastewater.threshold_alert.severity` — stale profile entry: the table
+   (`20260718000001_p17_threshold_alerts.sql:18-26`, V3a read_at add) has
+   no `severity` column. Dormant hazard: a future same-named plain-text
+   column would silently become provider-visible.
+
+## RED → GREEN evidence
+
+- RED: 5 new regressions in `annotate-boundary.test.ts`
+  ("Remediation-2" describe) failed against the merged behavior —
+  `ผู้ป่วย สมชาย ใจดี HN 12345` in `fuel_type`/`waste_type` survived BOTH
+  `projectSafeRow()` and the captured provider wire body; `severity` was
+  projected. 16 pre-existing tests stayed green.
+- FIX (smallest fail-closed correction, field-list only):
+  `fuel.dispense_log` → `[id, log_date, litres]`;
+  `garbage.collection_log` → `[id, log_date, weight_kg]`;
+  `wastewater.threshold_alert` → `[id, created_at, read_at]`.
+- GREEN: focused 21/21.
+
+## All-five-profile audit (post-fix, every surviving field verified)
+
+| Profile | Surviving fields | Structural bound (evidence) |
+|---|---|---|
+| wastewater.reading | id, reading_date, 17 numeric sensor fields, system_operating | uuid PK / date / numeric; `system_operating` boolean (`supabase-queries.ts:267` `=== false` contract) |
+| carbon.reading | id, reading_date, meter_value, consumption | uuid/date; meter_value + consumption `numeric` (`carbon.ts:9-10`) |
+| fuel.dispense_log | id, log_date, litres | uuid PK / date / `numeric(10,2)` (`v2_schemas.sql:79-88`) |
+| garbage.collection_log | id, log_date, weight_kg | uuid PK / date / `numeric(10,2)` (`v2_schemas.sql:64-72`) |
+| wastewater.threshold_alert | id, created_at, read_at | uuid / timestamptz ×2 (`p17_threshold_alerts.sql`, V3a) |
+
+No surviving provider-safe path can carry arbitrary identifying text.
+Unbounded schema columns that are NOT in any profile (e.g.
+`vehicle_or_use`, `disposal_route`, `note`, `field`, `message`) stay
+unprojected — omitted by default.
+
+## Gates (exact results)
+
+- Vitest: **200/200** (195 merged baseline + 5)
+- `npm run build`: PASS
+- `npm run lint`: 12 warnings / 0 errors (baseline)
+- `git diff --check`: clean
+- Full Playwright: **48/48**. First run 47/48 —
+  `ux-scale-mobile.spec.ts:85` (brand target 44x44, Codex visual lane,
+  untouched by this change) failed once, passed 3/3 on
+  `--repeat-each=3 --retries=0`, and the full-suite rerun returned 48/48.
+  Classified ENVIRONMENTAL/timing flake, not a regression.
+- GitHub CI on the exact PR head: recorded in CURRENT-WORK after push.
+
+## Defect memory (do not repeat)
+
+1. "Enum-like" is not a contract. A comment listing suggested values
+   (`-- diesel / gasoline / lpg / other`) or a dropdown in ONE UI is not
+   an enforceable bound. The audit question is: can ANY write path
+   (import adapter, SQL, future API) store arbitrary text? If yes, the
+   field is not provider-safe regardless of intended usage.
+2. Allowlist entries for columns that do not exist yet are latent
+   hazards: a stale entry (`severity`) auto-exposes any future
+   same-named column without a privacy review. Profiles must be diffed
+   against the live schema, not just maintained additively.
+
+## Reviewer focus
+
+1. The 5 RED regressions pin projection AND captured wire body (incl.
+   the non-regex patient-name fragment).
+2. Audit table above — every surviving field has schema-level evidence.
+3. Remediation-1 exclusions and all fail-closed behavior untouched
+   (fix is field-list-only + tests).
+
+GLM must not merge the remediation-2 PR. Next owner: GPT 5.6 Sol
+reviewer / merge owner.

@@ -33,10 +33,12 @@ lane is recorded as deferred rather than silently forgotten.
 
 | WO | PR | Checkpoint | State |
 |---|---|---|---|
-| WO-STAB-009 — annotateRow PHI/provider boundary | #29 (already merged) | reviewed `676b432`; merge `590f413` | **CHANGES_REQUIRED (post-merge re-re-review)** — original wastewater free-text remediation is valid, but all-profile audit found unbounded provider-safe `fuel_type` / legacy `waste_type` and stale `severity`; remediation-2: `docs/ai/prompts/GPT56-REVIEW-PR29-REMEDIATION-2.md` |
+| WO | PR | Checkpoint | State |
+|---|---|---|---|
+| WO-STAB-009 — annotateRow PHI/provider boundary | #29 merged `590f413`; remediation-2 on a fresh PR | remediation-2 `105ce8d` (branch `fix/p1-annotate-phi-boundary-remediation-2` off main `0f549f1`) | **RE-REVIEW_REQUESTED (remediation-2)** — `fuel_type` / `waste_type` (unbounded `text`) + stale `severity` removed from provider-safe profiles; RED 5 → GREEN; gates Vitest 200/200, build, lint 12w/0e, Playwright 48/48; awaiting GPT re-review |
 | WO-STAB-006 — alert unread idempotency | #30 | `8af33dc` (+docs `941f6d7`) | **APPROVED / MERGED** — merge `72bd8f6088b177fb28017beda95c70a778d872e1` |
 
-PR #29 is already merged. GLM 5.3 MAX owns remediation-2 on a fresh branch/PR from current `origin/main` and must stop at `RE-REVIEW_REQUESTED`; GPT remains independent review/merge owner. PR #30 is closed.
+PR #29 is already merged and stays untouched; remediation-2 lives on the fresh branch/PR above and GLM stops at `RE-REVIEW_REQUESTED`. GPT remains independent review/merge owner. PR #30 is closed.
 
 ## Explicitly deferred / NOT active
 

@@ -1,6 +1,6 @@
 # CURRENT WORK
 
-Status: CHANGES_REQUIRED
+Status: RE-REVIEW_REQUESTED
 
 Allowed statuses:
 
@@ -69,13 +69,13 @@ PR #14 is approved and merged. Digital Twin visual work orders are now unblocked
 
 Program: `ENV-P1-STABILIZATION`
 
-State: `CHANGES_REQUIRED`
+State: `RE-REVIEW_REQUESTED`
 
 Activation decision: GPT review of PR #26 on 2026-08-24. PR #26 was docs-only and merged as `e98df9057bd2cbb4ba879371dd82b7164d7da91a`.
 
 Execution is **serialized** to reduce review risk even though the owned production files do not overlap:
 
-1. `WO-STAB-009` — annotateRow PHI/provider boundary. Status: `CHANGES_REQUIRED (post-merge re-re-review)` — PR #29 already merged at `590f41303ba7c949eb44b9844ccc8dab4675b34a`; the original wastewater free-text remediation remains valid, but all-profile audit found unbounded provider-safe `fuel_type` / legacy `waste_type` plus stale `severity`. Reopened for remediation-2 on a fresh branch/PR; prompt: `docs/ai/prompts/GPT56-REVIEW-PR29-REMEDIATION-2.md`. GLM implements and stops at `RE-REVIEW_REQUESTED`; GPT remains review/merge owner.
+1. `WO-STAB-009` — annotateRow PHI/provider boundary. Status: `RE-REVIEW_REQUESTED (remediation-2)` — fresh branch `fix/p1-annotate-phi-boundary-remediation-2` off main `0f549f1`, remediation-2 commit `105ce8d`: removed unbounded `fuel.dispense_log.fuel_type` + `garbage.collection_log.waste_type` and stale `wastewater.threshold_alert.severity` from the provider-safe profiles (RED 5 failing regressions incl. captured wire-body leakage → GREEN; gates Vitest 200/200, build PASS, lint 12w/0e, Playwright 48/48, diff-check clean). Contract: `docs/ai/prompts/GPT56-REVIEW-PR29-REMEDIATION-2.md`. GPT re-reviews the exact new PR head and owns merge; GLM does not merge.
 2. `WO-STAB-006` — alert unread optimistic-count idempotency. Status: `APPROVED / MERGED` — PR #30, implementation checkpoint `8af33dc070457de03309ae9b30fe84728aad8466`, reviewed head `941f6d73f9ccfcaa8f4efc47c0aa4c86f16d509e`, merge `72bd8f6088b177fb28017beda95c70a778d872e1`. Reviewer independently reproduced the claimed RED state (exactly 3 failures), restored the implementation, verified focused 10/10, full Vitest 179/179, build PASS, lint 12 warnings / 0 errors, diff-check clean, and GitHub full `npx playwright test` job SUCCESS.
 
 Execution contract for both WOs:
