@@ -1,10 +1,23 @@
 # HANDOFF
 
-Status: CHANGES_REQUIRED — PR #29 was already merged, but a post-merge GPT re-re-review found remaining provider-boundary risk in other static profiles. WO-STAB-009 is reopened for remediation-2 on a fresh PR; PR #30 remains closed; no deferred lane is activated.
+Status: CHANGES_REQUIRED — open PR #33 remediation-2 correctly removes `fuel_type`, `waste_type`, and stale `severity`, but GPT re-review found 12 additional stale `wastewater.reading` positive-allowlist keys with no live-schema contract and independently reproduced PHI leakage through stale `ph_tank`. PR #33 must be remediated and re-reviewed before merge; PR #30 remains closed; no deferred lane is activated.
 
 ## Active P1 Stabilization Queue — 2026-08-24
 
 Decision source: GPT review of PR #26 (`e98df9057bd2cbb4ba879371dd82b7164d7da91a`).
+
+### GPT Re-Review Record — PR #33 / WO-STAB-009 remediation-2 — 2026-08-26
+
+- Verdict: **CHANGES_REQUIRED — DO NOT MERGE**.
+- Reviewed exact PR head: `44c35ee8d08863d88243da99c6ea851ac98b7d7d`; base at review `origin/main@0f549f17d70b44f70ff6f09aa7f0ea86a2d71ef7`; PR merge state CLEAN; exact-head GitHub `smoke`, `scripts`, and both `notify` checks SUCCESS.
+- Valid remediation confirmed: PR #33 removes `fuel.dispense_log.fuel_type`, `garbage.collection_log.waste_type`, and stale `wastewater.threshold_alert.severity` from provider-safe profiles.
+- Independent RED proof for GLM's new remediation-2 coverage: reviewer restored the pre-remediation-2 field list in an isolated worktree and reproduced exactly **5 failures**; captured provider bodies contained `ผู้ป่วย สมชาย ใจดี HN 12345` under `fuel_type` / `waste_type`, and `severity` was projected. Reviewer restored PR #33 code immediately; focused boundary tests returned **21/21 PASS**.
+- Independent full gates on the reviewed head: Vitest **200/200 PASS**, build PASS, lint **12 warnings / 0 errors**, `git diff --check` clean.
+- New blocking audit finding: `TABLE_SAFE_FIELDS["wastewater.reading"]` still contains 12 keys absent from the current live `wastewater.reading` schema: `do_inlet`, `do_tank`, `do_outlet`, `ph_inlet`, `ph_tank`, `ph_outlet`, `tds_inlet`, `tds_tank`, `tds_outlet`, `temperature`, `sludge_level_cm`, `wastewater_out`. `reports/schema-snapshot-live.md` was introspected from ENV_DB on 2026-08-03; later migrations do not add these keys. Repository search finds them only in the annotation allowlist/tests, not an enforceable DB/write contract.
+- Independent blocker reproducer on PR #33 head: reviewer temporarily passed `ph_tank = "ผู้ป่วย สมชาย ใจดี HN 12345"` through the existing approved-row test; the captured provider request contained the full value and the assertion `not.toContain("สมชาย")` failed. The reviewer test modification was restored immediately and tracked diff returned clean.
+- This is the same stale positive-allowlist hazard class that PR #33 correctly fixes for `severity`; therefore the PR's all-five-profile audit claim is incomplete.
+- Remediation contract: `docs/ai/prompts/GPT56-REVIEW-PR33-REMEDIATION.md`.
+- Next owner when GLM 5.3 MAX capacity returns: continue the **existing** branch `fix/p1-annotate-phi-boundary-remediation-2` / PR #33, fetch and integrate latest reviewer SSoT from `main`, remove the 12 stale wastewater keys using the smallest fail-closed correction, replace stale-field fixtures with actual schema-backed fields, add stale-key RED→GREEN protection, rerun all-five-profile live-schema audit + full gates, update to `RE-REVIEW_REQUESTED`, push, and STOP. GPT remains independent review/merge owner.
 
 ### GPT Post-Merge Re-Re-Review Record — PR #29 / WO-STAB-009 — 2026-08-26
 
@@ -41,11 +54,11 @@ Decision source: GPT review of PR #26 (`e98df9057bd2cbb4ba879371dd82b7164d7da91a
 ### 1. WO-STAB-009 — provider boundary
 
 - Historical merge: PR #29 was GPT-approved and merged at `590f41303ba7c949eb44b9844ccc8dab4675b34a` after remediation head `676b432452ad1754708907fb0c1fbef9c77d325e`.
-- Current decision: **CHANGES_REQUIRED (post-merge re-re-review)** because the all-profile audit found unbounded/stale provider-safe string fields outside the originally remediated wastewater row profile.
+- Current decision: **CHANGES_REQUIRED on open PR #33** after GPT re-review found 12 additional stale `wastewater.reading` positive-allowlist keys with no current live-schema contract; GPT independently reproduced provider-body leakage through stale `ph_tank`.
 - Implementation/remediation owner: GLM 5.3 MAX; final reviewer/merge owner: GPT.
-- Current status: remediation-2 required on a **fresh branch + fresh PR** from current `origin/main`; do not reopen or rewrite merged PR #29.
-- Contract: `docs/ai/prompts/GPT56-REVIEW-PR29-REMEDIATION-2.md`.
-- Completion gate: GLM stops at `RE-REVIEW_REQUESTED`; GPT re-reviews the exact new PR head, including RED-proof/captured-body evidence and full applicable gates, before any merge.
+- Current status: continue the existing branch `fix/p1-annotate-phi-boundary-remediation-2` / PR #33. Valid PR #33 removals (`fuel_type`, `waste_type`, `severity`) must be preserved.
+- Current contract: `docs/ai/prompts/GPT56-REVIEW-PR33-REMEDIATION.md`.
+- Completion gate: GLM integrates latest reviewer SSoT from `main`, removes all 12 stale wastewater keys, adds deterministic stale-key RED→GREEN coverage, re-audits every allowlisted key against live schema + later migrations, runs full gates, sets `RE-REVIEW_REQUESTED`, pushes PR #33, and stops. GPT re-reviews the exact new head before any merge.
 
 ### 2. WO-STAB-006 — unread optimistic count
 
@@ -62,12 +75,13 @@ Deferred: WO-STAB-008 and all program-level visual/external lanes (`DT-VIS-P002/
 
 ### GPT Reviewer Session Checkpoint — 2026-08-26
 
-- PR #29 historical merge: APPROVED and merged `590f41303ba7c949eb44b9844ccc8dab4675b34a` after reviewed remediation head `676b432452ad1754708907fb0c1fbef9c77d325e`; current WO-STAB-009 status is CHANGES_REQUIRED after the post-merge all-profile audit documented above.
+- PR #29 historical merge remains `590f41303ba7c949eb44b9844ccc8dab4675b34a`; the current WO-STAB-009 implementation continuation is open PR #33.
+- PR #33 GPT verdict at exact head `44c35ee8d08863d88243da99c6ea851ac98b7d7d`: **CHANGES_REQUIRED** for 12 stale `wastewater.reading` positive-allowlist keys despite valid remediation-2 removals and green 200/200/build/lint/CI evidence.
 - PR #30 verdict: APPROVED and merged `72bd8f6088b177fb28017beda95c70a778d872e1`.
 - Dirty/stale primary worktree was not reset, cleaned, stashed, or mutated.
 - Worker 3 transport terminated during final local Playwright for PR #29; this was transport failure, not test failure. Unit/build/lint/diff gates were independently green; GLM recorded Playwright 48/48; exact-head GitHub checks were green.
 - Worker 5 was used only as shell transport for final merge and SSoT closure; its active project was not changed.
-- Next safe action: GLM 5.3 MAX executes `docs/ai/prompts/GPT56-REVIEW-PR29-REMEDIATION-2.md` on a fresh branch/PR and stops at `RE-REVIEW_REQUESTED`. `WO-STAB-008` remains inactive until explicit user go-ahead + Codex coordination.
+- Next safe action: when GLM 5.3 MAX capacity returns, resume existing PR #33 and execute `docs/ai/prompts/GPT56-REVIEW-PR33-REMEDIATION.md`; first fetch/integrate latest `origin/main` so this reviewer record is preserved, then remediate only the stale wastewater safe-field finding and stop at `RE-REVIEW_REQUESTED`. `WO-STAB-008` remains inactive until explicit user go-ahead + Codex coordination.
 
 ## Completed Design Execution — 2026-08-23
 
