@@ -33,10 +33,10 @@ lane is recorded as deferred rather than silently forgotten.
 
 | WO | PR | Checkpoint | State |
 |---|---|---|---|
-| WO-STAB-009 — annotateRow PHI/provider boundary | #29 (already merged) | reviewed `676b432`; merge `590f413` | **CHANGES_REQUIRED (post-merge re-re-review)** — original wastewater free-text remediation is valid, but all-profile audit found unbounded provider-safe `fuel_type` / legacy `waste_type` and stale `severity`; remediation-2: `docs/ai/prompts/GPT56-REVIEW-PR29-REMEDIATION-2.md` |
+| WO-STAB-009 — annotateRow PHI/provider boundary | #33 (open; PR #29 historical merge) | GPT-reviewed `44c35ee` | **CHANGES_REQUIRED** — PR #33 validly removes `fuel_type`, `waste_type`, and stale `severity`, but 12 additional `wastewater.reading` positive-allowlist keys are absent from the live schema; GPT reproduced captured-provider leakage through stale `ph_tank`; remediation: `docs/ai/prompts/GPT56-REVIEW-PR33-REMEDIATION.md` |
 | WO-STAB-006 — alert unread idempotency | #30 | `8af33dc` (+docs `941f6d7`) | **APPROVED / MERGED** — merge `72bd8f6088b177fb28017beda95c70a778d872e1` |
 
-PR #29 is already merged. GLM 5.3 MAX owns remediation-2 on a fresh branch/PR from current `origin/main` and must stop at `RE-REVIEW_REQUESTED`; GPT remains independent review/merge owner. PR #30 is closed.
+PR #29 remains historical merged state. Open PR #33 is the current WO-STAB-009 implementation continuation and is **CHANGES_REQUIRED** at GPT-reviewed head `44c35ee8d08863d88243da99c6ea851ac98b7d7d`. GLM 5.3 MAX resumes the same branch/PR when capacity returns, integrates latest reviewer SSoT from `main`, executes `docs/ai/prompts/GPT56-REVIEW-PR33-REMEDIATION.md`, and stops at `RE-REVIEW_REQUESTED`; GPT remains independent review/merge owner. PR #30 is closed.
 
 ## Explicitly deferred / NOT active
 
@@ -81,7 +81,7 @@ Gaps filled by this branch:
 
 ## Next actions (no new authorization implied)
 
-1. GLM 5.3 MAX executes `docs/ai/prompts/GPT56-REVIEW-PR29-REMEDIATION-2.md` on a fresh branch/PR, proves the remaining provider-safe string boundary RED then GREEN, runs all required gates, updates SSoT, and stops at `RE-REVIEW_REQUESTED`.
-2. GPT independently re-reviews the exact new PR head and merges only if all blocking PHI findings are resolved and applicable gates are green.
+1. When GLM 5.3 MAX capacity returns, resume existing PR #33 and execute `docs/ai/prompts/GPT56-REVIEW-PR33-REMEDIATION.md`: integrate latest `origin/main`, remove the 12 stale `wastewater.reading` allowlist keys, prove stale-key RED→GREEN, re-audit every allowlisted key against live schema + later migrations, run full gates, update SSoT, push, and stop at `RE-REVIEW_REQUESTED`.
+2. GPT independently re-reviews the exact updated PR #33 head and merges only if every positive provider-safe key has an enforceable current schema contract and all applicable gates are green.
 3. After the P1 queue truly closes: WO-STAB-008 coordination with the Codex lane.
 4. P2 backlog triage.
