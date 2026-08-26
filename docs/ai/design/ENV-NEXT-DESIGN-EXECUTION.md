@@ -98,6 +98,12 @@ then that lane must stop and request temporary ownership before editing.
 
 Both planned P001 lanes are reviewed and merged. This execution plan is now a completed checkpoint, not permission to continue editing production code.
 
+## User-confirmed north-star update — 2026-08-27
+
+Before activating any next lane, reconcile its design/acceptance criteria against `docs/ai/design/ENV-PRODUCT-EXPERIENCE-GOAL.md` and the preserved prototype set under `docs/ai/design/references/`. Dashboard work must target the command-center north star without replacing the Digital Twin; operational data-entry work must be mobile-first; every material panel/layer must define responsive + interactive behavior for desktop/tablet/mobile.
+
+This update does not activate a production lane.
+
 ## Next lanes after review
 
 Do not start automatically. A new bounded work order / explicit approval is required before activating any candidate:
