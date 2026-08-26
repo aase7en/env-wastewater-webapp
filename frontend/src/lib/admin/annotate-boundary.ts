@@ -44,10 +44,15 @@ const TABLE_SAFE_FIELDS: Readonly<Record<string, readonly string[]>> = {
   "carbon.reading": [
     "id", "reading_date", "meter_value", "consumption",
   ],
-  "fuel.dispense_log": ["id", "log_date", "fuel_type", "litres"],
-  "garbage.collection_log": ["id", "log_date", "waste_type", "weight_kg"],
+  // Remediation 2 (all-profile audit): fuel_type / waste_type are
+  // unrestricted `text` (no CHECK; bulk import accepts arbitrary strings
+  // in fuel_type) — not structurally bounded, so not provider-safe.
+  // severity was a stale entry — no such column exists in the current
+  // wastewater.threshold_alert schema.
+  "fuel.dispense_log": ["id", "log_date", "litres"],
+  "garbage.collection_log": ["id", "log_date", "weight_kg"],
   "wastewater.threshold_alert": [
-    "id", "created_at", "read_at", "severity",
+    "id", "created_at", "read_at",
   ],
 };
 

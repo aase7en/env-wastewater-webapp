@@ -252,3 +252,73 @@ describe("PR29 remediation: unrestricted free-text fields never reach the provid
     expect(body).toContain("4.1");
   });
 });
+
+// ─── WO-STAB-009 remediation 2 — all-profile unbounded-text audit ──────────
+//
+// Post-merge all-five-profile audit (GPT 2026-08-26,
+// docs/ai/prompts/GPT56-REVIEW-PR29-REMEDIATION-2.md):
+//   - fuel.dispense_log.fuel_type: unrestricted `text`, no CHECK; the bulk
+//     import adapter (import-adapters/fuel.ts) accepts arbitrary strings.
+//   - garbage.collection_log.waste_type: unrestricted legacy `text`.
+//   - wastewater.threshold_alert.severity: stale entry — no such column
+//     exists in the current schema (dormant future-safe-field hazard).
+// None of these may stay in a provider-safe profile.
+
+const R2_PHI = "ผู้ป่วย สมชาย ใจดี HN 12345";
+
+describe("Remediation-2: fuel/garbage/threshold profiles carry no unbounded text", () => {
+  it("fuel.dispense_log: fuel_type value/field never projected", () => {
+    const out = projectSafeRow(
+      { id: "f1", log_date: "2026-08-26", litres: 40.5, fuel_type: R2_PHI },
+      "fuel.dispense_log",
+    );
+    expect(out).not.toHaveProperty("fuel_type");
+    expect(JSON.stringify(out)).not.toContain("สมชาย");
+    expect(out).toHaveProperty("litres", 40.5); // bounded fields still pass
+  });
+
+  it("fuel.dispense_log: captured provider body has no fuel_type key or value", async () => {
+    state.scopeResult = { data: { view_name: "fuel.dispense_log" }, error: null };
+    await annotateRow(
+      { id: "f1", log_date: "2026-08-26", litres: 40.5, fuel_type: R2_PHI },
+      "fuel.dispense_log",
+    );
+    expect(state.fetchBodies.length).toBe(1);
+    const body = state.fetchBodies[0]!;
+    expect(body).not.toContain("fuel_type");
+    expect(body).not.toContain("สมชาย");
+    expect(body).toContain("40.5");
+  });
+
+  it("garbage.collection_log: waste_type value/field never projected", () => {
+    const out = projectSafeRow(
+      { id: "g1", log_date: "2026-08-26", weight_kg: 12.3, waste_type: R2_PHI },
+      "garbage.collection_log",
+    );
+    expect(out).not.toHaveProperty("waste_type");
+    expect(JSON.stringify(out)).not.toContain("สมชาย");
+    expect(out).toHaveProperty("weight_kg", 12.3);
+  });
+
+  it("garbage.collection_log: captured provider body has no waste_type key or value", async () => {
+    state.scopeResult = { data: { view_name: "garbage.collection_log" }, error: null };
+    await annotateRow(
+      { id: "g1", log_date: "2026-08-26", weight_kg: 12.3, waste_type: R2_PHI },
+      "garbage.collection_log",
+    );
+    expect(state.fetchBodies.length).toBe(1);
+    const body = state.fetchBodies[0]!;
+    expect(body).not.toContain("waste_type");
+    expect(body).not.toContain("สมชาย");
+    expect(body).toContain("12.3");
+  });
+
+  it("wastewater.threshold_alert: stale severity entry is not projected", () => {
+    const out = projectSafeRow(
+      { id: "t1", created_at: "2026-08-26T00:00:00Z", read_at: null, severity: R2_PHI },
+      "wastewater.threshold_alert",
+    );
+    expect(out).not.toHaveProperty("severity");
+    expect(JSON.stringify(out)).not.toContain("สมชาย");
+  });
+});
