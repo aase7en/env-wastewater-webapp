@@ -178,8 +178,10 @@ describe("annotateRow boundary", () => {
 
   it("approved table: prompt body contains ONLY projected safe fields (amendment 5)", async () => {
     state.scopeResult = { data: { view_name: "wastewater.reading" }, error: null };
+    // Remediation-3: fixture uses a live-schema column (sv30) — the old
+    // ph_tank fixture relied on a stale allowlist key.
     await annotateRow(
-      { id: "r1", reading_date: "2026-08-01", ph_tank: 7.2, internal_flag: "secret-value" },
+      { id: "r1", reading_date: "2026-08-01", sv30: 7.2, internal_flag: "secret-value" },
       "wastewater.reading",
     );
     expect(state.fetchBodies.length).toBe(1);
@@ -219,7 +221,7 @@ const CUSTOM_SMELL = "กลิ่นเปรี้ยวผิดปกติ 
 const FREE_TEXT_ROW = {
   id: "r-free",
   reading_date: "2026-08-26",
-  do_tank: 4.1,
+  free_chlorine: 4.1,
   color_desc: CUSTOM_COLOR,
   smell_desc: CUSTOM_SMELL,
   note: PHI_NOTE,
@@ -320,5 +322,57 @@ describe("Remediation-2: fuel/garbage/threshold profiles carry no unbounded text
     );
     expect(out).not.toHaveProperty("severity");
     expect(JSON.stringify(out)).not.toContain("สมชาย");
+  });
+});
+
+// ─── WO-STAB-009 remediation 3 — stale-key allowlist hazard ────────────────
+//
+// GPT PR #33 re-review (docs/ai/prompts/GPT56-REVIEW-PR33-REMEDIATION.md):
+// 12 wastewater.reading allowlist keys have NO live-schema column
+// (reports/schema-snapshot-live.md §wastewater.reading uses do_aeration /
+// ph / tds_aeration ... — NOT do_inlet/ph_tank/...). Stale entries are
+// dormant hazards: projectSafeRow() authorizes by NAME, so any caller row
+// carrying a stale key leaks its full value to the provider (GPT
+// reproduced PHI leakage through stale ph_tank).
+
+const STALE_KEYS = [
+  "do_inlet", "do_tank", "do_outlet",
+  "ph_inlet", "ph_tank", "ph_outlet",
+  "tds_inlet", "tds_tank", "tds_outlet",
+  "temperature", "sludge_level_cm", "wastewater_out",
+] as const;
+
+describe("Remediation-3: no stale keys survive in the wastewater.reading allowlist", () => {
+  it("row carrying PHI under every stale/removed key projects only the audited schema-backed set", () => {
+    const row: Record<string, unknown> = {
+      id: "s1",
+      reading_date: "2026-08-26",
+      free_chlorine: 0.8,
+      sv30: 210,
+      wastewater_in: 55.5,
+      wastewater_discharged: true,
+      system_operating: true,
+    };
+    for (const k of [...STALE_KEYS, "color_desc", "smell_desc", "note"]) {
+      row[k] = "ผู้ป่วย สมชาย ใจดี HN 12345";
+    }
+    const out = projectSafeRow(row, "wastewater.reading");
+    expect(Object.keys(out).sort()).toEqual(
+      ["free_chlorine", "id", "reading_date", "sv30", "system_operating", "wastewater_discharged", "wastewater_in"],
+    );
+    expect(JSON.stringify(out)).not.toContain("สมชาย");
+  });
+
+  it("captured provider body never carries a stale ph_tank key or its value", async () => {
+    state.scopeResult = { data: { view_name: "wastewater.reading" }, error: null };
+    await annotateRow(
+      { id: "s1", reading_date: "2026-08-26", free_chlorine: 0.8, ph_tank: "ผู้ป่วย สมชาย ใจดี HN 12345" },
+      "wastewater.reading",
+    );
+    expect(state.fetchBodies.length).toBe(1);
+    const body = state.fetchBodies[0]!;
+    expect(body).not.toContain("ph_tank");
+    expect(body).not.toContain("สมชาย");
+    expect(body).toContain("0.8"); // schema-backed fields still annotated
   });
 });

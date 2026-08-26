@@ -34,12 +34,20 @@ import { supabase } from "../supabase";
  * identifiers, so they stay out of the profile entirely. Only bounded
  * (numeric/date/uuid/enum-contract) fields may be allowlisted. */
 const TABLE_SAFE_FIELDS: Readonly<Record<string, readonly string[]>> = {
+  // Remediation 3 (GPT PR #33 re-review): 12 previously-allowlisted keys
+  // (do_inlet/do_tank/do_outlet/ph_inlet/ph_tank/ph_outlet/tds_inlet/
+  // tds_tank/tds_outlet/temperature/sludge_level_cm/wastewater_out) have
+  // NO live-schema column — reports/schema-snapshot-live.md shows the real
+  // metric names are do_aeration/ph/tds_aeration/... Stale name-authorized
+  // entries are dormant PHI hazards (any caller row carrying the key leaks
+  // its full value). Kept keys are each backed by a live column + bounded
+  // type: id uuid, reading_date date, free_chlorine numeric(6,3),
+  // sv30 numeric(6,2), wastewater_in numeric(12,2), wastewater_discharged
+  // boolean, system_operating boolean. Adding new provider-visible metric
+  // names is a separate authorization decision, not done here.
   "wastewater.reading": [
-    "id", "reading_date", "do_inlet", "do_tank", "do_outlet",
-    "ph_inlet", "ph_tank", "ph_outlet", "tds_inlet", "tds_tank",
-    "tds_outlet", "free_chlorine", "temperature", "sv30",
-    "sludge_level_cm", "wastewater_in", "wastewater_out",
-    "wastewater_discharged", "system_operating",
+    "id", "reading_date", "free_chlorine", "sv30",
+    "wastewater_in", "wastewater_discharged", "system_operating",
   ],
   "carbon.reading": [
     "id", "reading_date", "meter_value", "consumption",
