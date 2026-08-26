@@ -1,6 +1,16 @@
 # HANDOFF
 
-Status: APPROVED — PR #33 / WO-STAB-009 remediation-3 passed independent GPT re-review and merged as `b33c630d6a10a262aa6cd16469efbf475c4338fd`. ENV-P1-STABILIZATION is closed for the two activated work orders; deferred lanes remain inactive.
+Status: APPROVED — PR #33 / WO-STAB-009 remediation-3 passed independent GPT re-review and merged as `b33c630d6a10a262aa6cd16469efbf475c4338fd`. ENV-P1-STABILIZATION is closed for the two activated work orders; deferred lanes remain inactive. The user-confirmed project-wide Goal-First Engineering Loop is now recorded in `docs/ai/ENV-ENGINEERING-LOOP.md` with reusable failure lessons in `docs/ai/DEFECT-MEMORY.md`.
+
+## Goal-First Engineering Loop Record — 2026-08-27
+
+- User decision: every future ENV workstream begins with **GOAL** and uses repository SSoT, not chat/model memory.
+- Binding process: `docs/ai/ENV-ENGINEERING-LOOP.md`.
+- Reusable defect lessons: `docs/ai/DEFECT-MEMORY.md`.
+- External engineering-flow research was reconciled with existing ENV practice: Grill With Docs → spec → vertical tickets/work orders → test-first implementation → independent review, plus primary-source research/prototype/debug subloops and GitHub exact-SHA PR/CI controls.
+- ENV-specific additions remain mandatory: PHI/security fail-closed boundaries, data honesty, Digital Twin semantics, mobile-first operational forms, responsive/interactivity/accessibility QA, one-writer-per-file ownership, real-user E2E, exact-head re-audit, post-merge fetch/deploy/smoke verification.
+- Repo-health is an outer milestone audit. Historical branch `docs/repo-health-100` is evidence only; future health audits start from current `origin/main` on a unique branch. Production defects found by an audit are not hidden in the docs audit branch; they become bounded work orders.
+- This process update does not activate `WO-STAB-008`, `DT-VIS-P002/P003`, `UX-FLOW-P001`, `ENV-INT-P001`, P2 backlog, or any other deferred implementation.
 
 ## User Design Direction Record — 2026-08-27
 

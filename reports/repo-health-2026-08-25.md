@@ -79,6 +79,12 @@ Gaps filled by this branch:
 3. Stale header ("future FastAPI/frontend") — the frontend is built and
    deployed; header now states what the repo actually is.
 
+## Process-governance update — 2026-08-27
+
+The user standardized future ENV work on the binding Goal-First Engineering Loop in `docs/ai/ENV-ENGINEERING-LOOP.md` with reusable verified failure lessons in `docs/ai/DEFECT-MEMORY.md`. This supersedes ad-hoc per-session loop wording while preserving the existing SSoT, ownership, PHI, data-honesty, review, CI/CD, and repo-health rules.
+
+Historical branch `docs/repo-health-100` remains evidence for this report. Future milestone audits must start from then-current `origin/main` on a unique repo-health branch (for example `docs/repo-health-100-YYYYMMDD`) rather than reusing this stale branch. Production defects discovered during audit are recorded and routed to bounded work-order branches; docs/governance gaps may be corrected on the audit branch itself.
+
 ## Next actions (no new authorization implied)
 
 1. `ENV-P1-STABILIZATION` is closed for the two activated WOs: WO-STAB-009 and WO-STAB-006 are both APPROVED / MERGED.

@@ -25,10 +25,12 @@ Before non-trivial product, architecture, UI, Digital Twin, data, or integration
 1. `docs/ai/PROJECT-BRIEF.md`
 2. `docs/ai/CURRENT-WORK.md`
 3. `docs/ai/HANDOFF.md`
-4. `docs/ai/design/ENV-EXPERIENCE-MASTER-PLAN.md`
-5. `docs/ai/design/ENV-PRODUCT-EXPERIENCE-GOAL.md` — user-confirmed dashboard prototype north star + mobile-first operational data-entry + responsive/interactive rules
-6. `docs/agent-handoff/AI_COLLABORATION_PROTOCOL.md` — the multi-agent ownership/review rules; mandatory whenever more than one agent (GLM / GPT / Codex / others) is active on this repo
-7. the relevant domain folder under `docs/ai/` (for example `digital-twin/`, `environmental-intelligence/`, or `tooling/`)
+4. `docs/ai/ENV-ENGINEERING-LOOP.md` — binding goal-first engineering/review/merge process
+5. `docs/ai/DEFECT-MEMORY.md` — reusable verified failure patterns; apply relevant prevention rules
+6. `docs/ai/design/ENV-EXPERIENCE-MASTER-PLAN.md`
+7. `docs/ai/design/ENV-PRODUCT-EXPERIENCE-GOAL.md` — user-confirmed dashboard prototype north star + mobile-first operational data-entry + responsive/interactive rules
+8. `docs/agent-handoff/AI_COLLABORATION_PROTOCOL.md` — the multi-agent ownership/review rules; mandatory whenever more than one agent (GLM / GPT / Codex / others) is active on this repo
+9. the relevant domain folder under `docs/ai/` (for example `digital-twin/`, `environmental-intelligence/`, or `tooling/`)
 
 For any wastewater-process, process-flow, Digital Twin wastewater, sludge, chlorination, bypass, or simulation work, also read `docs/ai/digital-twin/11-UTHAI-ACTIVATED-SLUDGE-PROCESS-KNOWLEDGE.md` before designing or editing behavior. It is the durable user-confirmed process-topology reference for Uthai Hospital's Activated Sludge system.
 
@@ -45,6 +47,7 @@ across the collaboration protocol and design docs (audit record:
 `docs/agent-handoff/AI_COLLABORATION_PROTOCOL.md` overlap, the protocol has
 the detailed wording; this section is the always-read summary.
 
+- **Goal-first engineering loop.** Significant work follows `docs/ai/ENV-ENGINEERING-LOOP.md`: define the goal first, fetch source reality, grill only unresolved decisions, specify/slice/assign ownership, establish RED or baseline evidence, implement narrowly, test like the real user, update SSoT + defect memory, review the exact diff/SHA independently, wait for applicable CI, re-audit, merge by the authorized reviewer, fetch main, verify deployment when applicable, then close. Repository SSoT is authoritative; chat/model memory is not.
 - **No unauthorized work.** Only the active work order in
   `docs/ai/CURRENT-WORK.md` (or an explicit user instruction) authorizes
   changes. No silent scope expansion; no starting deferred lanes.
