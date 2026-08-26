@@ -26,6 +26,8 @@ The shared product/visual direction is defined in `docs/ai/design/ENV-EXPERIENCE
 
 The user-confirmed end-state experience is recorded in `docs/ai/design/ENV-PRODUCT-EXPERIENCE-GOAL.md` with preserved prototype thumbnails under `docs/ai/design/references/`: dashboard/command-center surfaces use those prototypes as a visual north star, while operational data-entry/form surfaces are mobile-first. Every materially changed panel/layer must define responsive + interactive behavior across desktop, tablet, and mobile rather than merely shrinking the desktop layout.
 
+The project operating entry point is `docs/ai/PROJECT-OPERATING-MAP.md`. Current runtime/component architecture is consolidated in `docs/ai/architecture/SYSTEM-ARCHITECTURE.md`, dependency/ownership/risk/evidence/data-lineage relationships in `docs/ai/graph/PROJECT-GRAPH.md`, and milestone/critical-path sequencing in `docs/ai/ROADMAP.md`. These files point to deeper SSoT rather than replacing domain-specific documents.
+
 ## Current State
 
 High-confidence repository facts:

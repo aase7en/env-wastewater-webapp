@@ -1,0 +1,263 @@
+# UTH[AI]-ENV — Unified Roadmap
+
+Last updated: 2026-08-27
+Status: PROJECT ROADMAP SSoT
+
+## Goal
+
+Evolve the existing production app into the user-confirmed Hospital Environmental Intelligence Platform without discarding working operational workflows, the Digital Twin foundation, data-honesty rules, security/privacy boundaries, or mobile field usability.
+
+This roadmap is sequential authority for planning, not permission to edit every lane in parallel. Each production milestone is executed through bounded work orders in `CURRENT-WORK.md` under `ENV-ENGINEERING-LOOP.md`.
+
+## Authorization note — 2026-08-27
+
+The user explicitly authorized continued ENV development toward the project goal. Earlier deferred lanes may now be **planned and activated one bounded slice at a time** when their dependencies and ownership gates are satisfied. This does not authorize overlapping writers, speculative scope expansion, bypassing review, or collapsing multiple milestones into a mega-PR.
+
+## Milestone map
+
+```mermaid
+flowchart TD
+    F[Foundation / P1 stabilization\nCOMPLETE] --> A[ENV-ARCH-001\nOperating Architecture + Graph + Roadmap]
+    A --> M1[ENV-MOBILE-001\nWastewater DailyForm mobile-first]
+    M1 --> M2[ENV-MOBILE-002+\nOther field modules by domain]
+    A --> C1[ENV-CMD-001\nCommand-center composition contract]
+    C1 --> C2[ENV-CMD-002\nOverview vertical slice]
+    C2 --> W1[ENV-WASTE-CARBON-001\nWaste/Plastic/Carbon/T-VER slice]
+    C2 --> F1[UX-FLOW-P001\nWastewater truthful flow slice]
+    C2 --> O1[ENV-OPS-001\nOperations board]
+    A --> T2[DT-VIS-P002/P003\nTwin visual continuation]
+    A --> E1[ENV-INT-P001\nExternal source/provenance contract]
+    E1 --> H1[ENV-HAZARD-001\nHazard Map slice]
+    C2 --> R1[ENV-RESOURCE-001\nResource Explorer]
+    E1 --> N1[ENV-NET-001\nSystem/Data Network]
+    M2 --> SYS[ENV-SYSTEM-001\nCross-surface E2E + hardening]
+    W1 --> SYS
+    F1 --> SYS
+    O1 --> SYS
+    T2 --> SYS
+    H1 --> SYS
+    R1 --> SYS
+    N1 --> SYS
+    SYS --> REL[ENV-RELEASE-001\nMilestone repo-health / graph audit / production verification]
+```
+
+## Completed foundation
+
+### Foundation and stabilization — COMPLETE
+
+Merged work already provides:
+
+- Supabase-first production architecture;
+- Auth/RLS and pending-user controls;
+- working wastewater CRUD/history/reporting/dashboard;
+- Digital Twin foundation and first site-authentic visual slice;
+- analytics kit;
+- responsive header/navigation scale remediation;
+- PHI/provider safe-boundary remediation;
+- alert unread idempotency remediation;
+- exact-branch Playwright CI behavior;
+- goal-first engineering loop, defect memory and prototype north star.
+
+Do not reopen completed WOs without new evidence.
+
+## M0 — Project operating architecture
+
+### ENV-ARCH-001 — Operating Architecture + Graph + Roadmap
+
+**State:** IN PROGRESS in the architecture documentation branch at this checkpoint.
+
+Goal:
+
+- provide one resumable project operating index;
+- map current runtime/system architecture;
+- map dependencies, ownership, risks, evidence and lineage;
+- record current-state route/form/dashboard inventory;
+- create unified roadmap and critical path.
+
+Deliverables:
+
+- `PROJECT-OPERATING-MAP.md`;
+- `architecture/SYSTEM-ARCHITECTURE.md`;
+- `graph/PROJECT-GRAPH.md`;
+- this `ROADMAP.md`;
+- `research/CURRENT-STATE-INVENTORY-2026-08-27.md`;
+- updated AGENTS/CURRENT-WORK/HANDOFF references.
+
+No production source changes in this WO.
+
+## M1 — Mobile-first operational recording
+
+### ENV-MOBILE-001 — Wastewater DailyForm mobile-first completion
+
+**Priority:** P0 product-experience slice after ENV-ARCH-001.
+
+Why first:
+
+- daily wastewater recording is the densest observed operational flow;
+- field users primarily use phones;
+- source shows multiple unconditional two-column grids at phone widths;
+- correctness/hydration semantics are already strong, so layout/interaction can improve without redesigning the data model.
+
+Bounded objective:
+
+- make full DailyForm completion practical at 360–430 px;
+- preserve all current form/data semantics;
+- stack or selectively group numeric fields by mobile priority;
+- preserve sticky actions without obscuring content;
+- prove no horizontal overflow;
+- add real-user phone E2E for input, validation, save/error interaction and edit-hydration protection.
+
+Likely owner split:
+
+- GPT: responsive/UX contract + review;
+- Visual implementation owner: responsive layout/interaction;
+- Core Engineering only if test/data semantics require it.
+
+### ENV-MOBILE-002+ — Domain form convergence
+
+After Mobile-001 provides a proven pattern, audit and improve one domain per WO, prioritized by field frequency and control density:
+
+1. Chemical;
+2. Water Supply;
+3. Fuel;
+4. Garden / Garbage;
+5. Food / Safety / Building.
+
+Do not create one giant all-forms PR.
+
+## M2 — Shared command-center composition
+
+### ENV-CMD-001 — Responsive command-center composition contract
+
+Goal:
+
+- define reusable page/panel hierarchy for desktop/tablet/mobile using existing Aura/analytics/Twin foundations;
+- define KPI/situation/provenance/alert/panel states;
+- define drill-down and cross-surface behavior;
+- avoid a broad navigation rewrite.
+
+Output is a bounded design/component contract before production composition changes.
+
+### ENV-CMD-002 — Hospital Overview command-center vertical slice
+
+Upgrade the existing overview incrementally toward the prototype north star:
+
+- environmental situation summary;
+- decision-relevant freshness/source;
+- links into wastewater/Twin, carbon, waste, hazards and operations;
+- mobile recomposition rather than desktop shrink;
+- use truthful current data only; unavailable modules remain explicit.
+
+## M3 — Signature environmental intelligence slices
+
+### ENV-WASTE-CARBON-001 — Waste / Plastics / Carbon / T-VER
+
+Dependency: inventory actual waste/plastic/carbon/T-VER contracts first.
+
+Target: prototype-inspired integrated view for waste categories, emissions and evidence readiness, but never invent T-VER eligibility/status or carbon factors.
+
+### UX-FLOW-P001 — Wastewater environmental flow
+
+Inventory comparable quantities/units first; Sankey width encodes quantity only where period/unit semantics are valid. Missing quantities remain missing.
+
+### ENV-OPS-001 — Operations board
+
+Inventory incidents, repair requests, inspections, thresholds, responsible party and evidence contracts before UI implementation.
+
+## M4 — Digital Twin continuation
+
+### DT-VIS-P002 / P003
+
+Continue existing approved Digital Twin direction without replacing it with a 2D dashboard.
+
+Dependencies/guardrails remain in `docs/ai/digital-twin/03-MICRO-STEP-BOARD.md` and process-knowledge SSoT.
+
+Twin work may run parallel to independent non-overlapping slices only after ownership graph review.
+
+## M5 — External Environmental Intelligence
+
+### ENV-INT-P001 — Source + provenance contract
+
+Before map production work:
+
+- inventory actual GISTDA entitlement/endpoints;
+- research current TMD and ThaiWater/HII source options as applicable;
+- define normalized observation/forecast/model/source contract;
+- keep provider keys out of browser/Git/chat;
+- preserve valid time, ingestion time, freshness, units and location.
+
+### ENV-HAZARD-001 — Hazard Map vertical slice
+
+Only after ENV-INT-P001.
+
+Initial bounded map can start with the best-supported source family rather than pretending all PM2.5/heat/river/flood layers are production-ready simultaneously.
+
+## M6 — Advanced relationship surfaces
+
+### ENV-RESOURCE-001 — Resource Explorer
+
+Hierarchical contribution view after breakdown data is reliable.
+
+### ENV-NET-001 — System/Data Network
+
+Dependency/lineage view after identifiers and source relationships are stable. It should expose interpretable relationships, not decorative graph complexity.
+
+## M7 — Cross-surface integration and hardening
+
+### ENV-SYSTEM-001
+
+Goal: behave as one product rather than independent pages.
+
+Test and harden:
+
+- deep links between alert/operation → Twin/domain detail;
+- KPI/trend → analytics/history;
+- hazard status → map layer;
+- flow/resource nodes → source/history;
+- mobile field flows;
+- auth/session/RLS states;
+- stale/unknown/error/retry semantics;
+- touch/keyboard/reduced-motion accessibility;
+- failure recovery;
+- performance/bundle/rendering budgets;
+- security/PHI boundaries.
+
+Run full real-user E2E and targeted deep-bug scenarios.
+
+## M8 — Project completion audit / release checkpoint
+
+### ENV-RELEASE-001
+
+Create a fresh milestone audit branch from then-current `origin/main`, not the historical repo-health branch.
+
+Completion audit must verify:
+
+- all active roadmap WOs closed or explicitly deferred by user decision;
+- SSoT/graph/architecture consistency;
+- no stale ownership/branch claims;
+- full applicable unit/integration/E2E gates;
+- production deploy/smoke;
+- security/privacy/data-honesty review;
+- responsive/accessibility evidence;
+- dependency/package/CI health;
+- defect-memory regression coverage;
+- prototype goal coverage without fabricated data semantics.
+
+Only after this audit may the current major product milestone be called complete.
+
+## Critical-path rule
+
+The next eligible bounded slice is the first incomplete item whose dependencies are satisfied. Do not ask the user what to do next when this roadmap + CURRENT-WORK already provides an authorized next step, unless a product choice, irreversible trade-off, secret/access need, or ownership conflict requires user input.
+
+## Definition of project “finished” for this roadmap
+
+“Finished” does not mean every imaginable environmental feature exists. It means the current user-confirmed product goal is delivered to an auditable milestone:
+
+- mobile operational recording works safely and responsively;
+- command-center/dashboard experience substantially matches the confirmed north-star hierarchy;
+- Digital Twin remains integrated and truthful;
+- selected waste/carbon/flow/operations/hazard/resource/network surfaces are implemented only where data contracts support them;
+- cross-surface workflow works as one product;
+- all critical security/data-honesty/accessibility/reliability gates pass;
+- production deployment is verified;
+- remaining ideas are explicitly backlog/deferred rather than hidden incomplete work.
