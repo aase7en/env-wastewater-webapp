@@ -165,15 +165,15 @@ GLM must not silently expand scope beyond `CURRENT-WORK.md`.
 
 ## Shared Workflow
 
-### ChatGPT / GPT
+The binding project-wide process is `docs/ai/ENV-ENGINEERING-LOOP.md`.
 
-`DISCOVER → DESIGN → SPECIFY → REVIEW`
+Canonical loop:
 
-### GLM
+`GOAL → SSoT/FRESHNESS → GRILL WITH DOCS → SHAPE/RESEARCH/PROTOTYPE as needed → SPECIFY → VERTICAL-SLICE PLAN + OWNERSHIP → RED/BASELINE → IMPLEMENT → DEBUG → TEST/E2E → RESPONSIVE/ACCESSIBILITY/DATA-HONESTY REVIEW → REPORT/SSoT/DEFECT MEMORY → INDEPENDENT DIFF REVIEW → PR → EXACT-SHA CI → RE-AUDIT → MERGE → FETCH MAIN/DEPLOY VERIFY → CLOSE`
 
-`READ → IMPLEMENT → TEST → REPORT`
+GPT owns goal/spec/architecture/coordination and independent final review/merge. GLM owns approved Core Engineering implementation and stops at `REVIEW_REQUESTED`; Codex/visual engineering owns approved visual/responsive implementation and also stops at the review gate. Capability-dependent subagents may research/brainstorm/review in parallel but must not overlap writes.
 
-Shared state must live in repository files.
+Shared state and reusable defect lessons must live in repository files (`CURRENT-WORK.md`, `HANDOFF.md`, `ENV-ENGINEERING-LOOP.md`, `DEFECT-MEMORY.md`, and the relevant domain/design documents). Chat/model memory may point to these files but is never the project SSoT.
 
 ## Coordination Precedence
 
@@ -183,9 +183,11 @@ For day-to-day work, use this precedence:
 2. Security, privacy, and data integrity constraints.
 3. `docs/ai/CURRENT-WORK.md` — authoritative definition of the active task and allowed scope.
 4. Latest reviewer decision recorded in `docs/ai/CURRENT-WORK.md` or `docs/ai/HANDOFF.md`.
-5. `docs/ai/PROJECT-BRIEF.md`.
-6. `docs/ai/design/ENV-EXPERIENCE-MASTER-PLAN.md` for all non-trivial product/visual work, plus relevant domain/design specifications.
-7. Older/deeper coordination documents under `docs/agent-handoff/`.
+5. `docs/ai/ENV-ENGINEERING-LOOP.md` — binding execution/review/merge process.
+6. `docs/ai/DEFECT-MEMORY.md` — relevant verified prevention rules.
+7. `docs/ai/PROJECT-BRIEF.md`.
+8. `docs/ai/design/ENV-EXPERIENCE-MASTER-PLAN.md` for all non-trivial product/visual work, plus relevant domain/design specifications.
+9. Older/deeper coordination documents under `docs/agent-handoff/`.
 
 The lightweight `docs/ai/` workflow is now the **primary operational collaboration workflow**. The older `WORK ORDER COMPLETE` text format in `docs/agent-handoff/AI_COLLABORATION_PROTOCOL.md` is optional legacy guidance; for active work, GLM must report through `docs/ai/HANDOFF.md` and stop at `REVIEW_REQUESTED` or `RE-REVIEW_REQUESTED` as applicable.
 
@@ -206,13 +208,13 @@ Use them for deeper historical/domain decisions when relevant, but use `docs/ai/
 
 Use:
 
-> Read `docs/ai/PROJECT-BRIEF.md`, `docs/ai/CURRENT-WORK.md`, `docs/ai/HANDOFF.md`, `docs/ai/design/ENV-EXPERIENCE-MASTER-PLAN.md`, and the relevant domain/design files.
+> Read `AGENTS.md`, `docs/ai/PROJECT-BRIEF.md`, `docs/ai/CURRENT-WORK.md`, `docs/ai/HANDOFF.md`, `docs/ai/ENV-ENGINEERING-LOOP.md`, `docs/ai/DEFECT-MEMORY.md`, `docs/ai/design/ENV-EXPERIENCE-MASTER-PLAN.md`, `docs/ai/design/ENV-PRODUCT-EXPERIENCE-GOAL.md`, and the relevant domain/design files.
 >
 > Act as Architect + UX/UI + 3D/Visual Designer + Reviewer.
 >
-> Inspect the actual repository before making technical assumptions.
+> Start from GOAL. Fetch current source reality before asking questions, grill only unresolved decisions, and inspect the actual repository before making technical assumptions.
 >
-> If implementation work is needed: update `CURRENT-WORK.md` with a concrete work order.
+> If implementation work is needed: convert the settled goal/spec into a bounded vertical-slice work order in `CURRENT-WORK.md` with ownership, RED/baseline evidence, tests/E2E, and stop/review gate.
 >
 > If reviewing implementation: inspect the actual branch/diff/code and return either:
 >
@@ -229,19 +231,23 @@ Use:
 Use:
 
 > Read:
+> `AGENTS.md`
 > `docs/ai/PROJECT-BRIEF.md`
 > `docs/ai/CURRENT-WORK.md`
 > `docs/ai/HANDOFF.md`
+> `docs/ai/ENV-ENGINEERING-LOOP.md`
+> `docs/ai/DEFECT-MEMORY.md`
 > `docs/ai/design/ENV-EXPERIENCE-MASTER-PLAN.md`
+> `docs/ai/design/ENV-PRODUCT-EXPERIENCE-GOAL.md`
 > and the relevant domain/design files.
 >
-> Inspect the repository before implementing.
+> Inspect/fetch repository source reality before implementing.
 >
 > `CURRENT-WORK.md` is the authoritative task.
 >
-> Execution: `READ → IMPLEMENT → TEST → REPORT`
+> Execute only the already-settled implementation slice: `OWNERSHIP/FRESHNESS → RED/BASELINE → IMPLEMENT → DEBUG → FOCUSED TESTS → SYSTEM/E2E → REPORT/SSoT/DEFECT MEMORY → REVIEW_REQUESTED`.
 >
-> Reuse existing code before creating new systems. Do not expand scope.
+> Reuse existing code before creating new systems. Do not reopen the product goal or expand scope unless source reality contradicts the work order; if so, stop and escalate.
 >
 > When finished, update `docs/ai/HANDOFF.md` with:
 > - implementation summary

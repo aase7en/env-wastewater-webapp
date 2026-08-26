@@ -26,6 +26,8 @@ Divide work by **responsibility for correctness**:
 
 The agents are complementary, not competitors.
 
+All agents also follow the binding goal-first process in `docs/ai/ENV-ENGINEERING-LOOP.md`. The loop begins with GOAL + repository freshness/SSoT, uses Grill With Docs to resolve only genuine unknowns, and ends only after independent exact-diff review, applicable exact-SHA CI, authorized merge, fetch-main/post-deploy verification, SSoT closure, and reusable defect-memory update where needed.
+
 If a task crosses boundaries, the owner of the risky/authoritative layer leads and produces a stable contract for the other agent.
 
 ---

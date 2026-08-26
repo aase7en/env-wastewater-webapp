@@ -238,6 +238,16 @@ PR #14 merged as `da3b70bdc5338f36c600efb3a3feedea2dee5420`.
 
 The rendered top bar is now at least 64px high while `--topbar-h` in `frontend/src/styles/spacing.css` still documents 56px. The token is currently unused. Reconcile or retire it before a future consumer relies on it; do not expand PR #14 scope.
 
+## User-Confirmed Goal-First Engineering Process — 2026-08-27
+
+The user confirmed that the ENV project must use one durable Loop Engineer process for future work, with **GOAL as the first step** and repository SSoT instead of chat memory. Binding process: `docs/ai/ENV-ENGINEERING-LOOP.md`. Reusable verified failure lessons live in `docs/ai/DEFECT-MEMORY.md`.
+
+Process requirements now include: fetch/source-reality before questioning; Grill Me / Grill With Docs for unresolved decisions; primary-source research and optional independent brainstorm/prototype when useful; spec → bounded vertical-slice work orders → ownership gate; real RED/baseline evidence; narrow implementation + repro-driven debug; focused + system/E2E real-use testing; responsive/accessibility/data-honesty/security review; repo report + defect memory; independent exact-diff review; PR + applicable exact-SHA CI; re-audit against current main; authorized merge; fetch main + deployment/smoke verification; close before the next deferred slice.
+
+The historical `docs/repo-health-100` branch remains audit evidence and must not be reused as a stale working base. Future milestone audits use a fresh unique repo-health branch from then-current `origin/main`; documentation/governance gaps may be fixed there, while production defects discovered by audit are routed into their own bounded work orders/branches.
+
+This is a **process authorization**, not production-feature activation. Existing deferred lanes remain deferred.
+
 ## User-Confirmed Product Experience Goal — 2026-08-27
 
 The user confirmed the preserved prototype set under `docs/ai/design/references/` as the visual north star for ENV dashboard/command-center surfaces. The durable interpretation and execution constraints are in `docs/ai/design/ENV-PRODUCT-EXPERIENCE-GOAL.md`.
@@ -257,7 +267,7 @@ This record is **design/planning authorization only**. It does not activate any 
 1. `WO-STAB-009` is closed as `APPROVED / MERGED` — PR #33, reviewed head `468a3fec1808b4020d81e79df4d6ec7a03d459a9`, merge `b33c630d6a10a262aa6cd16469efbf475c4338fd`.
 2. `WO-STAB-006` remains closed as `APPROVED / MERGED` — PR #30, merge `72bd8f6088b177fb28017beda95c70a778d872e1`.
 3. `ENV-P1-STABILIZATION` is complete for the two explicitly activated work orders.
-4. Next design-planning action: GPT inventories current routes/components/mobile forms against `ENV-PRODUCT-EXPERIENCE-GOAL.md`, then proposes a prioritized bounded roadmap/work-order sequence. Do not implement production changes as part of that inventory.
+4. Next design-planning action: GPT starts a new Goal Contract for the current-state inventory, then follows `ENV-ENGINEERING-LOOP.md` through freshness/grill/source-reality before inventorying routes/components/mobile forms against `ENV-PRODUCT-EXPERIENCE-GOAL.md`. The output is a prioritized bounded roadmap/work-order sequence; do not implement production changes as part of that inventory.
 5. `WO-STAB-008` remains **DEFERRED / NOT ACTIVE** until explicit user go-ahead plus Codex coordination. Adding additional real wastewater metrics to the provider-safe AI profile is also a separate authorization decision and is not implied by this design-goal record.
 
 Deferred / not active without user authorization: `DT-VIS-P002`, `DT-VIS-P003`, `UX-FLOW-P001`, `ENV-INT-P001`, P2 backlog triage, and `--topbar-h` token reconciliation.

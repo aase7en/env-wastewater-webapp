@@ -102,6 +102,8 @@ Both planned P001 lanes are reviewed and merged. This execution plan is now a co
 
 Before activating any next lane, reconcile its design/acceptance criteria against `docs/ai/design/ENV-PRODUCT-EXPERIENCE-GOAL.md` and the preserved prototype set under `docs/ai/design/references/`. Dashboard work must target the command-center north star without replacing the Digital Twin; operational data-entry work must be mobile-first; every material panel/layer must define responsive + interactive behavior for desktop/tablet/mobile.
 
+Every next lane must also follow `docs/ai/ENV-ENGINEERING-LOOP.md`: GOAL first → source/SSoT freshness → Grill With Docs → spec → bounded vertical slice + ownership → RED/baseline → implementation/debug/test/E2E → responsive/accessibility/data-honesty review → SSoT/defect memory → independent exact-diff review → exact-SHA CI → re-audit → authorized merge → fetch-main/deploy verification → close.
+
 This update does not activate a production lane.
 
 ## Next lanes after review

@@ -319,10 +319,13 @@ All agents must follow this precedence for product/visual work:
 2. privacy/security/data-integrity constraints;
 3. `docs/ai/CURRENT-WORK.md`;
 4. `docs/ai/HANDOFF.md`;
-5. `docs/ai/PROJECT-BRIEF.md`;
-6. **this master plan**;
-7. domain-specific plans under `docs/ai/digital-twin/` and `docs/ai/environmental-intelligence/`;
-8. older historical design/handoff documents.
+5. `docs/ai/ENV-ENGINEERING-LOOP.md`;
+6. relevant rules from `docs/ai/DEFECT-MEMORY.md`;
+7. `docs/ai/PROJECT-BRIEF.md`;
+8. **this master plan**;
+9. `docs/ai/design/ENV-PRODUCT-EXPERIENCE-GOAL.md`;
+10. domain-specific plans under `docs/ai/digital-twin/` and `docs/ai/environmental-intelligence/`;
+11. older historical design/handoff documents.
 
 If this master plan and an active work order appear to conflict, do not silently reinterpret the task. Record the conflict and request architecture review.
 
@@ -373,8 +376,10 @@ Before non-trivial UTH[AI]-ENV product work, read at minimum:
 2. `docs/ai/PROJECT-BRIEF.md`
 3. `docs/ai/CURRENT-WORK.md`
 4. `docs/ai/HANDOFF.md`
-5. `docs/ai/design/ENV-EXPERIENCE-MASTER-PLAN.md`
-6. `docs/ai/design/ENV-PRODUCT-EXPERIENCE-GOAL.md`
+5. `docs/ai/ENV-ENGINEERING-LOOP.md`
+6. `docs/ai/DEFECT-MEMORY.md`
+7. `docs/ai/design/ENV-EXPERIENCE-MASTER-PLAN.md`
+8. `docs/ai/design/ENV-PRODUCT-EXPERIENCE-GOAL.md`
 
 Then read the relevant domain folder:
 

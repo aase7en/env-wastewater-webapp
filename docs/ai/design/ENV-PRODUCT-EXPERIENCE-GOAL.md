@@ -158,27 +158,34 @@ Shared files such as page shells, routing, shared UI/tokens, and `DashboardPage.
 
 ## 7. Engineer loop for future work
 
-Future implementation must be broken into bounded vertical slices and follow an evidence-driven loop:
+The binding project-wide loop is `docs/ai/ENV-ENGINEERING-LOOP.md` and begins with **GOAL**, not with implementation discovery.
+
+For ENV product/design work, the shorthand is:
 
 ```text
-DISCOVER
-→ BASELINE / SOURCE-REALITY CHECK
-→ DESIGN / SPECIFY
-→ PLAN + OWNERSHIP GATE
-→ RED / FAILURE EVIDENCE WHEN TESTABLE
+GOAL
+→ SSoT + FRESHNESS
+→ GRILL WITH DOCS
+→ SHAPE / RESEARCH / BRAINSTORM / PROTOTYPE when needed
+→ SPECIFY
+→ VERTICAL-SLICE PLAN + OWNERSHIP
+→ BASELINE / RED
 → IMPLEMENT
 → DEBUG
-→ TEST
-→ RESPONSIVE + INTERACTION QA
-→ DATA-HONESTY / ACCESSIBILITY REVIEW
-→ REPORT / SSoT
-→ INDEPENDENT REVIEW
+→ TEST / E2E like the real user
+→ RESPONSIVE + INTERACTION + ACCESSIBILITY + DATA-HONESTY REVIEW
+→ REPORT + SSoT + DEFECT MEMORY
+→ INDEPENDENT EXACT-DIFF REVIEW
+→ PR + EXACT-SHA CI
+→ RE-AUDIT
 → MERGE
+→ FETCH MAIN + DEPLOY/SMOKE VERIFY
+→ CLOSE
 ```
 
 For design-only slices, RED may be replaced by explicit **baseline evidence** such as current screenshots, route/component inventory, accessibility findings, or measured responsive defects. Do not fabricate a failing automated test merely to satisfy the loop.
 
-Implementation agents stop at the repository review gate; they do not self-approve their own implementation.
+Implementation agents stop at the repository review gate; they do not self-approve or self-merge their implementation.
 
 ## 8. Planning sequence toward the north star
 
