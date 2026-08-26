@@ -240,7 +240,7 @@ The rendered top bar is now at least 64px high while `--topbar-h` in `frontend/s
 
 ## User-Confirmed Goal-First Engineering Process — 2026-08-27
 
-The user confirmed that the ENV project must use one durable Loop Engineer process for future work, with **GOAL as the first step** and repository SSoT instead of chat memory. Binding process: `docs/ai/ENV-ENGINEERING-LOOP.md`. Reusable verified failure lessons live in `docs/ai/DEFECT-MEMORY.md`.
+The user confirmed that the ENV project must use one durable Loop Engineer process for future work, with **GOAL as the first step** and repository SSoT instead of chat memory. Binding process: `docs/ai/ENV-ENGINEERING-LOOP.md`. Reusable verified failure lessons live in `docs/ai/DEFECT-MEMORY.md`. Process adoption merged via PR #37: reviewed head `6ac3d430ea03e9feb433ff332d0475b81cb5e48f`, merge `8d9828a4974103b7b3744dc2dd336d2d697a7506`.
 
 Process requirements now include: fetch/source-reality before questioning; Grill Me / Grill With Docs for unresolved decisions; primary-source research and optional independent brainstorm/prototype when useful; spec → bounded vertical-slice work orders → ownership gate; real RED/baseline evidence; narrow implementation + repro-driven debug; focused + system/E2E real-use testing; responsive/accessibility/data-honesty/security review; repo report + defect memory; independent exact-diff review; PR + applicable exact-SHA CI; re-audit against current main; authorized merge; fetch main + deployment/smoke verification; close before the next deferred slice.
 
