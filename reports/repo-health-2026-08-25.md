@@ -81,7 +81,7 @@ Gaps filled by this branch:
 
 ## Process-governance update — 2026-08-27
 
-The user standardized future ENV work on the binding Goal-First Engineering Loop in `docs/ai/ENV-ENGINEERING-LOOP.md` with reusable verified failure lessons in `docs/ai/DEFECT-MEMORY.md`. This supersedes ad-hoc per-session loop wording while preserving the existing SSoT, ownership, PHI, data-honesty, review, CI/CD, and repo-health rules.
+The user standardized future ENV work on the binding Goal-First Engineering Loop in `docs/ai/ENV-ENGINEERING-LOOP.md` with reusable verified failure lessons in `docs/ai/DEFECT-MEMORY.md`. This supersedes ad-hoc per-session loop wording while preserving the existing SSoT, ownership, PHI, data-honesty, review, CI/CD, and repo-health rules. Adoption merged through PR #37 (reviewed head `6ac3d430ea03e9feb433ff332d0475b81cb5e48f`; merge `8d9828a4974103b7b3744dc2dd336d2d697a7506`).
 
 Historical branch `docs/repo-health-100` remains evidence for this report. Future milestone audits must start from then-current `origin/main` on a unique repo-health branch (for example `docs/repo-health-100-YYYYMMDD`) rather than reusing this stale branch. Production defects discovered during audit are recorded and routed to bounded work-order branches; docs/governance gaps may be corrected on the audit branch itself.
 

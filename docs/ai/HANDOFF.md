@@ -6,6 +6,7 @@ Status: APPROVED — PR #33 / WO-STAB-009 remediation-3 passed independent GPT r
 
 - User decision: every future ENV workstream begins with **GOAL** and uses repository SSoT, not chat/model memory.
 - Binding process: `docs/ai/ENV-ENGINEERING-LOOP.md`.
+- Process-adoption PR: #37 — reviewed head `6ac3d430ea03e9feb433ff332d0475b81cb5e48f`, merge `8d9828a4974103b7b3744dc2dd336d2d697a7506`; docs-only exact-head `scripts` + `notify` CI passed, frontend E2E/deploy not applicable because no `frontend/**` path changed.
 - Reusable defect lessons: `docs/ai/DEFECT-MEMORY.md`.
 - External engineering-flow research was reconciled with existing ENV practice: Grill With Docs → spec → vertical tickets/work orders → test-first implementation → independent review, plus primary-source research/prototype/debug subloops and GitHub exact-SHA PR/CI controls.
 - ENV-specific additions remain mandatory: PHI/security fail-closed boundaries, data honesty, Digital Twin semantics, mobile-first operational forms, responsive/interactivity/accessibility QA, one-writer-per-file ownership, real-user E2E, exact-head re-audit, post-merge fetch/deploy/smoke verification.
