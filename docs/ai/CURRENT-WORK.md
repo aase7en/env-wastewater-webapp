@@ -1,6 +1,6 @@
 # CURRENT WORK
 
-Status: APPROVED
+Status: CHANGES_REQUIRED
 
 Allowed statuses:
 
@@ -26,7 +26,7 @@ Allowed statuses:
 | 4 | #21 — `WO-UX-AN-P001` | APPROVED and merged | merge `553247fd38fb210702a18601644a62b86c5d2ee3` |
 | 5 | #23 — `DT-VIS-P001` | APPROVED and merged | merge `491ff6dd980e1e3b032b934588baefb9218b1b2b` |
 | 6 | #26 — P1 WO proposals | APPROVED and merged; activation decided | merge `e98df9057bd2cbb4ba879371dd82b7164d7da91a` |
-| 7 | #29 — `WO-STAB-009` | APPROVED and merged | reviewed head `676b432452ad1754708907fb0c1fbef9c77d325e`; merge `590f41303ba7c949eb44b9844ccc8dab4675b34a` |
+| 7 | #29 — `WO-STAB-009` | **CHANGES_REQUIRED (post-merge re-re-review)** | PR already merged at `590f41303ba7c949eb44b9844ccc8dab4675b34a`; reviewed head `676b432452ad1754708907fb0c1fbef9c77d325e`; remediation-2 follow-up required |
 | 8 | #30 — `WO-STAB-006` | APPROVED and merged | merge `72bd8f6088b177fb28017beda95c70a778d872e1` |
 
 ### GPT Review Verdict — PR #29 / WO-STAB-009 — 2026-08-26
@@ -45,6 +45,18 @@ Reviewer verified the remediation removes unrestricted `color_desc`, `smell_desc
 
 Independent reviewer gates: focused boundary **16/16 PASS**, full Vitest **195/195 PASS**, build PASS, lint **12 warnings / 0 errors**, diff-check clean. Reviewer local full Playwright was interrupted by Worker 3 transport termination (502/session terminated), not a test failure; GLM recorded **48/48 PASS**, and exact-head GitHub `smoke`, `scripts`, and both `notify` checks were SUCCESS. PR was CLEAN/MERGEABLE before merge.
 
+### GPT Post-Merge Re-Re-Review Verdict — PR #29 / WO-STAB-009 — 2026-08-26
+
+`CHANGES_REQUIRED (post-merge discovery)` — PR #29 was already merged before this re-re-review; do not attempt to rewrite or reopen the merged PR. Open a fresh remediation-2 branch/PR from current `origin/main`.
+
+The original remediation is valid: `color_desc`, `smell_desc`, and `note` are absent from `wastewater.reading`; the two new remediation tests genuinely pin the original defect. Independent RED-proof temporarily re-added those three fields and produced exactly **2 focused failures**, including captured provider-body leakage of `ผู้ป่วย สมชาย ใจดี HN 12345`; the reviewed source was restored immediately.
+
+Blocking all-profile audit findings remain in the static provider-safe map: `fuel.dispense_log.fuel_type` is unrestricted DB `text`, and the fuel bulk-import adapter accepts arbitrary strings; `garbage.collection_log.waste_type` is unrestricted legacy DB `text`; both tables are seeded `patient_safe=true` and `is_enabled=true` in `core.ai_scope`. `wastewater.threshold_alert.severity` is also statically allowlisted although the current threshold-alert schema has no `severity` column, creating a dormant future-safe-field hazard. Carbon and the remediated wastewater-reading profiles are bounded by the current contracts reviewed.
+
+Re-review evidence at exact reviewed head: focused boundary **16/16 PASS**, full Vitest **195/195 PASS**, build PASS, lint **12 warnings / 0 errors**, diff-check clean, exact-head GitHub `smoke`, `scripts`, and both `notify` checks SUCCESS. Local full Playwright was interrupted by transport/tool failure; accepted remote exact-head evidence remains green.
+
+Required next step: execute `docs/ai/prompts/GPT56-REVIEW-PR29-REMEDIATION-2.md` on a fresh GLM-owned branch/PR. Prefer the smallest fail-closed fix: remove unbounded/stale string fields from the provider-safe profile, add RED-first captured-body regressions, preserve runtime `ai_scope` ∩ static-profile authorization and all previously-good fail-closed behavior, then stop at `RE-REVIEW_REQUESTED`. GPT remains review/merge owner.
+
 ### GPT Review Verdict — PR #30 / WO-STAB-006 — 2026-08-26
 
 `APPROVED / MERGED` — merge `72bd8f6088b177fb28017beda95c70a778d872e1`.
@@ -57,13 +69,13 @@ PR #14 is approved and merged. Digital Twin visual work orders are now unblocked
 
 Program: `ENV-P1-STABILIZATION`
 
-State: `APPROVED`
+State: `CHANGES_REQUIRED`
 
 Activation decision: GPT review of PR #26 on 2026-08-24. PR #26 was docs-only and merged as `e98df9057bd2cbb4ba879371dd82b7164d7da91a`.
 
 Execution is **serialized** to reduce review risk even though the owned production files do not overlap:
 
-1. `WO-STAB-009` — annotateRow PHI/provider boundary. Status: `APPROVED / MERGED` — PR #29, remediation `26713f0`, reviewed head `676b432452ad1754708907fb0c1fbef9c77d325e`, merge `590f41303ba7c949eb44b9844ccc8dab4675b34a`. Reviewer verified free-text exclusion; focused 16/16, full Vitest 195/195, build PASS, lint 12 warnings / 0 errors, diff-check clean, exact-head GitHub checks SUCCESS. Closed.
+1. `WO-STAB-009` — annotateRow PHI/provider boundary. Status: `CHANGES_REQUIRED (post-merge re-re-review)` — PR #29 already merged at `590f41303ba7c949eb44b9844ccc8dab4675b34a`; the original wastewater free-text remediation remains valid, but all-profile audit found unbounded provider-safe `fuel_type` / legacy `waste_type` plus stale `severity`. Reopened for remediation-2 on a fresh branch/PR; prompt: `docs/ai/prompts/GPT56-REVIEW-PR29-REMEDIATION-2.md`. GLM implements and stops at `RE-REVIEW_REQUESTED`; GPT remains review/merge owner.
 2. `WO-STAB-006` — alert unread optimistic-count idempotency. Status: `APPROVED / MERGED` — PR #30, implementation checkpoint `8af33dc070457de03309ae9b30fe84728aad8466`, reviewed head `941f6d73f9ccfcaa8f4efc47c0aa4c86f16d509e`, merge `72bd8f6088b177fb28017beda95c70a778d872e1`. Reviewer independently reproduced the claimed RED state (exactly 3 failures), restored the implementation, verified focused 10/10, full Vitest 179/179, build PASS, lint 12 warnings / 0 errors, diff-check clean, and GitHub full `npx playwright test` job SUCCESS.
 
 Execution contract for both WOs:
@@ -203,8 +215,9 @@ The rendered top bar is now at least 64px high while `--topbar-h` in `frontend/s
 
 ## Next Action
 
-1. `WO-STAB-009` is closed as APPROVED / MERGED — PR #29, merge `590f41303ba7c949eb44b9844ccc8dab4675b34a`.
-2. `WO-STAB-006` is closed as APPROVED / MERGED — PR #30, merge `72bd8f6088b177fb28017beda95c70a778d872e1`.
-3. `ENV-P1-STABILIZATION` is complete for the two explicitly activated WOs. `WO-STAB-008` remains **DEFERRED / NOT ACTIVE** until explicit user go-ahead plus Codex coordination.
+1. Reopened `WO-STAB-009` as `CHANGES_REQUIRED` after post-merge all-profile audit. GLM 5.3 executes `docs/ai/prompts/GPT56-REVIEW-PR29-REMEDIATION-2.md` from fresh current `origin/main`, creates a new remediation PR, runs required gates, updates SSoT, and stops at `RE-REVIEW_REQUESTED`.
+2. GPT independently re-reviews the new exact PR head and merges only if the provider boundary is fully fail-closed and all applicable gates pass.
+3. `WO-STAB-006` remains closed as APPROVED / MERGED — PR #30, merge `72bd8f6088b177fb28017beda95c70a778d872e1`.
+4. `ENV-P1-STABILIZATION` is not closed until remediation-2 passes review. `WO-STAB-008` remains **DEFERRED / NOT ACTIVE** until explicit user go-ahead plus Codex coordination.
 
 Deferred / not active without user authorization: `DT-VIS-P002`, `DT-VIS-P003`, `UX-FLOW-P001`, `ENV-INT-P001`, P2 backlog triage, and `--topbar-h` token reconciliation.
