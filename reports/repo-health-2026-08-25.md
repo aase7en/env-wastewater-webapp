@@ -33,10 +33,10 @@ lane is recorded as deferred rather than silently forgotten.
 
 | WO | PR | Checkpoint | State |
 |---|---|---|---|
-| WO-STAB-009 — annotateRow PHI/provider boundary | #33 (open; PR #29 historical merge) | remediation-3 `3b85a3c` (reviewer SSoT integrated via merge `277b085`) | **RE-REVIEW_REQUESTED (remediation-3)** — all 12 stale `wastewater.reading` keys removed; profile = 7 snapshot-backed keys only; stale fixtures replaced; all-five profiles re-audited vs live snapshot; gates Vitest 202/202 · build · lint 12w/0e · Playwright 48/48; awaiting GPT re-review of the new head |
+| WO-STAB-009 — annotateRow PHI/provider boundary | #33 (merged; PR #29 historical merge) | reviewed `468a3fe`; merge `b33c630` | **APPROVED / MERGED** — all 12 stale `wastewater.reading` keys removed; profile = exact 7 live-schema-backed keys; GPT independently reproduced stale `ph_tank` RED (2 remediation-3 failures incl. captured PHI), restored, verified focused 23/23, Vitest 202/202, build, lint 12w/0e, diff-check clean, exact-head full-Playwright smoke CI SUCCESS |
 | WO-STAB-006 — alert unread idempotency | #30 | `8af33dc` (+docs `941f6d7`) | **APPROVED / MERGED** — merge `72bd8f6088b177fb28017beda95c70a778d872e1` |
 
-PR #29 remains historical merged state. Open PR #33 is the current WO-STAB-009 implementation continuation: GPT's CHANGES_REQUIRED verdict at `44c35ee` (12 stale allowlist keys) was remediated in `3b85a3c` after integrating the reviewer SSoT from main; GLM stops at `RE-REVIEW_REQUESTED`; GPT remains independent review/merge owner. PR #30 is closed.
+PR #29 remains historical merged state. PR #33 is now **APPROVED / MERGED** at reviewed head `468a3fec1808b4020d81e79df4d6ec7a03d459a9`, merge `b33c630d6a10a262aa6cd16469efbf475c4338fd`. WO-STAB-009 is closed after independent GPT RED-proof and full gate verification. PR #30 remains closed.
 
 ## Explicitly deferred / NOT active
 
@@ -81,7 +81,7 @@ Gaps filled by this branch:
 
 ## Next actions (no new authorization implied)
 
-1. When GLM 5.3 MAX capacity returns, resume existing PR #33 and execute `docs/ai/prompts/GPT56-REVIEW-PR33-REMEDIATION.md`: integrate latest `origin/main`, remove the 12 stale `wastewater.reading` allowlist keys, prove stale-key RED→GREEN, re-audit every allowlisted key against live schema + later migrations, run full gates, update SSoT, push, and stop at `RE-REVIEW_REQUESTED`.
-2. GPT independently re-reviews the exact updated PR #33 head and merges only if every positive provider-safe key has an enforceable current schema contract and all applicable gates are green.
-3. After the P1 queue truly closes: WO-STAB-008 coordination with the Codex lane.
-4. P2 backlog triage.
+1. `ENV-P1-STABILIZATION` is closed for the two activated WOs: WO-STAB-009 and WO-STAB-006 are both APPROVED / MERGED.
+2. `WO-STAB-008` remains deferred until explicit user go-ahead plus Codex coordination.
+3. Additional real wastewater metrics in the provider-safe AI profile remain a separate authorization decision; the approved profile is intentionally minimal.
+4. P2 backlog triage remains deferred pending explicit activation.
