@@ -238,11 +238,26 @@ PR #14 merged as `da3b70bdc5338f36c600efb3a3feedea2dee5420`.
 
 The rendered top bar is now at least 64px high while `--topbar-h` in `frontend/src/styles/spacing.css` still documents 56px. The token is currently unused. Reconcile or retire it before a future consumer relies on it; do not expand PR #14 scope.
 
+## User-Confirmed Product Experience Goal — 2026-08-27
+
+The user confirmed the preserved prototype set under `docs/ai/design/references/` as the visual north star for ENV dashboard/command-center surfaces. The durable interpretation and execution constraints are in `docs/ai/design/ENV-PRODUCT-EXPERIENCE-GOAL.md`.
+
+Binding planning direction:
+
+- Dashboard/intelligence surfaces target the prototype-level command-center hierarchy while preserving the existing Digital Twin as spatial/visual core.
+- Operational data-entry/form surfaces are mobile-first because field users will primarily record data on phones.
+- Every materially changed panel/layer must define responsive + interactive behavior for desktop, tablet, and mobile; mobile composition may stack/collapse/tab/drawer/bottom-sheet rather than shrink the desktop grid.
+- Prototype sample values/labels are reference-only and are not production data contracts.
+- Future work follows the engineer loop and must be activated as bounded vertical-slice work orders with explicit ownership, responsive evidence, tests where applicable, and independent review.
+
+This record is **design/planning authorization only**. It does not activate any previously deferred production lane.
+
 ## Next Action
 
 1. `WO-STAB-009` is closed as `APPROVED / MERGED` — PR #33, reviewed head `468a3fec1808b4020d81e79df4d6ec7a03d459a9`, merge `b33c630d6a10a262aa6cd16469efbf475c4338fd`.
 2. `WO-STAB-006` remains closed as `APPROVED / MERGED` — PR #30, merge `72bd8f6088b177fb28017beda95c70a778d872e1`.
 3. `ENV-P1-STABILIZATION` is complete for the two explicitly activated work orders.
-4. `WO-STAB-008` remains **DEFERRED / NOT ACTIVE** until explicit user go-ahead plus Codex coordination. Adding additional real wastewater metrics to the provider-safe AI profile is also a separate authorization decision and is not implied by this approval.
+4. Next design-planning action: GPT inventories current routes/components/mobile forms against `ENV-PRODUCT-EXPERIENCE-GOAL.md`, then proposes a prioritized bounded roadmap/work-order sequence. Do not implement production changes as part of that inventory.
+5. `WO-STAB-008` remains **DEFERRED / NOT ACTIVE** until explicit user go-ahead plus Codex coordination. Adding additional real wastewater metrics to the provider-safe AI profile is also a separate authorization decision and is not implied by this design-goal record.
 
 Deferred / not active without user authorization: `DT-VIS-P002`, `DT-VIS-P003`, `UX-FLOW-P001`, `ENV-INT-P001`, P2 backlog triage, and `--topbar-h` token reconciliation.

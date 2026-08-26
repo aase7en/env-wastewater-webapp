@@ -26,8 +26,9 @@ Before non-trivial product, architecture, UI, Digital Twin, data, or integration
 2. `docs/ai/CURRENT-WORK.md`
 3. `docs/ai/HANDOFF.md`
 4. `docs/ai/design/ENV-EXPERIENCE-MASTER-PLAN.md`
-5. `docs/agent-handoff/AI_COLLABORATION_PROTOCOL.md` — the multi-agent ownership/review rules; mandatory whenever more than one agent (GLM / GPT / Codex / others) is active on this repo
-6. the relevant domain folder under `docs/ai/` (for example `digital-twin/`, `environmental-intelligence/`, or `tooling/`)
+5. `docs/ai/design/ENV-PRODUCT-EXPERIENCE-GOAL.md` — user-confirmed dashboard prototype north star + mobile-first operational data-entry + responsive/interactive rules
+6. `docs/agent-handoff/AI_COLLABORATION_PROTOCOL.md` — the multi-agent ownership/review rules; mandatory whenever more than one agent (GLM / GPT / Codex / others) is active on this repo
+7. the relevant domain folder under `docs/ai/` (for example `digital-twin/`, `environmental-intelligence/`, or `tooling/`)
 
 For any wastewater-process, process-flow, Digital Twin wastewater, sludge, chlorination, bypass, or simulation work, also read `docs/ai/digital-twin/11-UTHAI-ACTIVATED-SLUDGE-PROCESS-KNOWLEDGE.md` before designing or editing behavior. It is the durable user-confirmed process-topology reference for Uthai Hospital's Activated Sludge system.
 

@@ -2,6 +2,17 @@
 
 Status: APPROVED — PR #33 / WO-STAB-009 remediation-3 passed independent GPT re-review and merged as `b33c630d6a10a262aa6cd16469efbf475c4338fd`. ENV-P1-STABILIZATION is closed for the two activated work orders; deferred lanes remain inactive.
 
+## User Design Direction Record — 2026-08-27
+
+- User confirmed the four preserved prototype references under `docs/ai/design/references/` as the dashboard/command-center visual north star.
+- Durable interpretation: `docs/ai/design/ENV-PRODUCT-EXPERIENCE-GOAL.md`.
+- Dashboard/intelligence pages may be desktop-led but must remain responsive + interactive; mobile must recompose panel hierarchy rather than shrink the desktop grid.
+- Operational data-entry/forms are explicitly mobile-first because field staff will primarily record data on phones. 360–430px completion, 44px+ touch targets, clear validation/save/error states, and no required horizontal-scroll form completion are first-class requirements.
+- Prototype sample values/labels/telemetry are visual references only; source reality/data-honesty rules remain authoritative.
+- Future implementation uses bounded engineer-loop slices with explicit GPT/GLM/Codex ownership and independent review.
+- This update records strategy/planning only. No deferred lane (`WO-STAB-008`, `DT-VIS-P002/P003`, `UX-FLOW-P001`, `ENV-INT-P001`, P2) is activated by this record.
+- The stale/dirty legacy primary worktree was not reset, cleaned, moved, or stashed; this design record was prepared from a clean worktree based on current `origin/main`.
+
 ## Active P1 Stabilization Queue — 2026-08-24
 
 Decision source: GPT review of PR #26 (`e98df9057bd2cbb4ba879371dd82b7164d7da91a`).

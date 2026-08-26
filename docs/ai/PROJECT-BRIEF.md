@@ -24,6 +24,8 @@ The Digital Twin must represent operational data honestly: missing values stay u
 
 The shared product/visual direction is defined in `docs/ai/design/ENV-EXPERIENCE-MASTER-PLAN.md`. All agents doing non-trivial product, UI, visualization, Digital Twin, map, analytics, flow, or operations-surface work must read it. The plan preserves the existing Digital Twin as the spatial/visual core and treats new 2D intelligence surfaces as complementary rather than replacements.
 
+The user-confirmed end-state experience is recorded in `docs/ai/design/ENV-PRODUCT-EXPERIENCE-GOAL.md` with preserved prototype thumbnails under `docs/ai/design/references/`: dashboard/command-center surfaces use those prototypes as a visual north star, while operational data-entry/form surfaces are mobile-first. Every materially changed panel/layer must define responsive + interactive behavior across desktop, tablet, and mobile rather than merely shrinking the desktop layout.
+
 ## Current State
 
 High-confidence repository facts:

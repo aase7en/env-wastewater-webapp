@@ -1,6 +1,6 @@
 # UTH[AI]-ENV — Experience & Visual Intelligence Master Plan
 
-Last updated: 2026-08-23
+Last updated: 2026-08-27
 Status: DESIGN SOURCE OF TRUTH
 
 ## 1. Purpose
@@ -39,6 +39,8 @@ Digital Twin work already recorded in `docs/ai/digital-twin/` remains valid and 
 ## 3. Design Intent
 
 The interface should feel like a premium operational-control and environmental-intelligence product rather than a collection of unrelated dashboards.
+
+The user-confirmed prototype set in `docs/ai/design/references/` is the dashboard/command-center visual north star. The authoritative interpretation is `docs/ai/design/ENV-PRODUCT-EXPERIENCE-GOAL.md`: dashboard surfaces may be desktop-led but must recompose responsively, while operational data-entry surfaces are explicitly mobile-first because field users primarily record data on phones. Responsive behavior means changing hierarchy/interaction where needed, not merely shrinking a desktop grid.
 
 Use these qualities consistently:
 
@@ -267,6 +269,8 @@ Prioritize:
 4. compact chart/map/twin preview;
 5. drill-down details.
 
+Operational data-entry/form workflows are mobile-first: 360–430px is a first-class completion target, touch targets stay 44px+, required form completion must not depend on horizontal scrolling, and entered values must survive validation/error feedback. Use stack/collapse/tabs/drawers/bottom sheets/progressive disclosure where they improve the task rather than squeezing desktop panels into the phone viewport.
+
 Avoid forcing desktop multi-column density into 360–430px widths.
 
 ### Tablet
@@ -370,6 +374,7 @@ Before non-trivial UTH[AI]-ENV product work, read at minimum:
 3. `docs/ai/CURRENT-WORK.md`
 4. `docs/ai/HANDOFF.md`
 5. `docs/ai/design/ENV-EXPERIENCE-MASTER-PLAN.md`
+6. `docs/ai/design/ENV-PRODUCT-EXPERIENCE-GOAL.md`
 
 Then read the relevant domain folder:
 
