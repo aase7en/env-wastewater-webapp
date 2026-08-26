@@ -23,14 +23,15 @@ A stale local checkout must never silently become the project memory just becaus
 Before non-trivial product, architecture, UI, Digital Twin, data, or integration work, read in this order:
 
 1. `docs/ai/PROJECT-BRIEF.md`
-2. `docs/ai/CURRENT-WORK.md`
-3. `docs/ai/HANDOFF.md`
-4. `docs/ai/ENV-ENGINEERING-LOOP.md` — binding goal-first engineering/review/merge process
-5. `docs/ai/DEFECT-MEMORY.md` — reusable verified failure patterns; apply relevant prevention rules
-6. `docs/ai/design/ENV-EXPERIENCE-MASTER-PLAN.md`
-7. `docs/ai/design/ENV-PRODUCT-EXPERIENCE-GOAL.md` — user-confirmed dashboard prototype north star + mobile-first operational data-entry + responsive/interactive rules
-8. `docs/agent-handoff/AI_COLLABORATION_PROTOCOL.md` — the multi-agent ownership/review rules; mandatory whenever more than one agent (GLM / GPT / Codex / others) is active on this repo
-9. the relevant domain folder under `docs/ai/` (for example `digital-twin/`, `environmental-intelligence/`, or `tooling/`)
+2. `docs/ai/PROJECT-OPERATING-MAP.md` — unified runtime/SSoT/graph/roadmap entry point
+3. `docs/ai/CURRENT-WORK.md`
+4. `docs/ai/HANDOFF.md`
+5. `docs/ai/ENV-ENGINEERING-LOOP.md` — binding goal-first engineering/review/merge process
+6. `docs/ai/DEFECT-MEMORY.md` — reusable verified failure patterns; apply relevant prevention rules
+7. `docs/ai/design/ENV-EXPERIENCE-MASTER-PLAN.md`
+8. `docs/ai/design/ENV-PRODUCT-EXPERIENCE-GOAL.md` — user-confirmed dashboard prototype north star + mobile-first operational data-entry + responsive/interactive rules
+9. `docs/agent-handoff/AI_COLLABORATION_PROTOCOL.md` — the multi-agent ownership/review rules; mandatory whenever more than one agent (GLM / GPT / Codex / others) is active on this repo
+10. the relevant domain folder under `docs/ai/` (for example `digital-twin/`, `environmental-intelligence/`, or `tooling/`)
 
 For any wastewater-process, process-flow, Digital Twin wastewater, sludge, chlorination, bypass, or simulation work, also read `docs/ai/digital-twin/11-UTHAI-ACTIVATED-SLUDGE-PROCESS-KNOWLEDGE.md` before designing or editing behavior. It is the durable user-confirmed process-topology reference for Uthai Hospital's Activated Sludge system.
 

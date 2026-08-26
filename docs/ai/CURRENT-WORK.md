@@ -1,6 +1,6 @@
 # CURRENT WORK
 
-Status: APPROVED
+Status: REVIEW_REQUESTED
 
 Allowed statuses:
 
@@ -247,6 +247,31 @@ Process requirements now include: fetch/source-reality before questioning; Grill
 The historical `docs/repo-health-100` branch remains audit evidence and must not be reused as a stale working base. Future milestone audits use a fresh unique repo-health branch from then-current `origin/main`; documentation/governance gaps may be fixed there, while production defects discovered by audit are routed into their own bounded work orders/branches.
 
 This is a **process authorization**, not production-feature activation. Existing deferred lanes remain deferred.
+
+## Active Work — ENV-ARCH-001 — 2026-08-27
+
+State: `REVIEW_REQUESTED`
+
+Goal: consolidate the missing project-operating layer so a new agent can resume ENV from repository SSoT without chat history.
+
+User authorization: continue ENV development toward the confirmed project goal. Earlier deferred feature lanes may now be planned and activated one bounded slice at a time after their dependencies/ownership gates are satisfied; this is not permission for parallel scope expansion or overlapping writers.
+
+Active branch: `docs/env-project-operating-architecture` from `origin/main@9abf1b02d09a14f5328fd03fac32c837c3d89bc2`.
+
+Owned scope:
+
+- `docs/ai/PROJECT-OPERATING-MAP.md`
+- `docs/ai/architecture/SYSTEM-ARCHITECTURE.md`
+- `docs/ai/graph/PROJECT-GRAPH.md`
+- `docs/ai/ROADMAP.md`
+- `docs/ai/research/CURRENT-STATE-INVENTORY-2026-08-27.md`
+- `docs/work-orders/ENV-ARCH-001.md`
+- `docs/work-orders/ENV-MOBILE-001.md`
+- minimal cross-links in project SSoT
+
+No production source changes are authorized in ENV-ARCH-001.
+
+Next eligible production slice after approval/merge: `ENV-MOBILE-001` — wastewater DailyForm mobile-first completion. Its contract is prepared but must not start until ENV-ARCH-001 closes on current main.
 
 ## User-Confirmed Product Experience Goal — 2026-08-27
 
