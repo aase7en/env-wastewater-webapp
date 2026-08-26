@@ -178,8 +178,10 @@ describe("annotateRow boundary", () => {
 
   it("approved table: prompt body contains ONLY projected safe fields (amendment 5)", async () => {
     state.scopeResult = { data: { view_name: "wastewater.reading" }, error: null };
+    // Remediation-3: fixture uses a live-schema column (sv30) — the old
+    // ph_tank fixture relied on a stale allowlist key.
     await annotateRow(
-      { id: "r1", reading_date: "2026-08-01", ph_tank: 7.2, internal_flag: "secret-value" },
+      { id: "r1", reading_date: "2026-08-01", sv30: 7.2, internal_flag: "secret-value" },
       "wastewater.reading",
     );
     expect(state.fetchBodies.length).toBe(1);
@@ -219,7 +221,7 @@ const CUSTOM_SMELL = "กลิ่นเปรี้ยวผิดปกติ 
 const FREE_TEXT_ROW = {
   id: "r-free",
   reading_date: "2026-08-26",
-  do_tank: 4.1,
+  free_chlorine: 4.1,
   color_desc: CUSTOM_COLOR,
   smell_desc: CUSTOM_SMELL,
   note: PHI_NOTE,
@@ -250,5 +252,127 @@ describe("PR29 remediation: unrestricted free-text fields never reach the provid
     expect(body).not.toContain(CUSTOM_SMELL);
     expect(body).toContain("r-free"); // annotation still works on safe fields
     expect(body).toContain("4.1");
+  });
+});
+
+// ─── WO-STAB-009 remediation 2 — all-profile unbounded-text audit ──────────
+//
+// Post-merge all-five-profile audit (GPT 2026-08-26,
+// docs/ai/prompts/GPT56-REVIEW-PR29-REMEDIATION-2.md):
+//   - fuel.dispense_log.fuel_type: unrestricted `text`, no CHECK; the bulk
+//     import adapter (import-adapters/fuel.ts) accepts arbitrary strings.
+//   - garbage.collection_log.waste_type: unrestricted legacy `text`.
+//   - wastewater.threshold_alert.severity: stale entry — no such column
+//     exists in the current schema (dormant future-safe-field hazard).
+// None of these may stay in a provider-safe profile.
+
+const R2_PHI = "ผู้ป่วย สมชาย ใจดี HN 12345";
+
+describe("Remediation-2: fuel/garbage/threshold profiles carry no unbounded text", () => {
+  it("fuel.dispense_log: fuel_type value/field never projected", () => {
+    const out = projectSafeRow(
+      { id: "f1", log_date: "2026-08-26", litres: 40.5, fuel_type: R2_PHI },
+      "fuel.dispense_log",
+    );
+    expect(out).not.toHaveProperty("fuel_type");
+    expect(JSON.stringify(out)).not.toContain("สมชาย");
+    expect(out).toHaveProperty("litres", 40.5); // bounded fields still pass
+  });
+
+  it("fuel.dispense_log: captured provider body has no fuel_type key or value", async () => {
+    state.scopeResult = { data: { view_name: "fuel.dispense_log" }, error: null };
+    await annotateRow(
+      { id: "f1", log_date: "2026-08-26", litres: 40.5, fuel_type: R2_PHI },
+      "fuel.dispense_log",
+    );
+    expect(state.fetchBodies.length).toBe(1);
+    const body = state.fetchBodies[0]!;
+    expect(body).not.toContain("fuel_type");
+    expect(body).not.toContain("สมชาย");
+    expect(body).toContain("40.5");
+  });
+
+  it("garbage.collection_log: waste_type value/field never projected", () => {
+    const out = projectSafeRow(
+      { id: "g1", log_date: "2026-08-26", weight_kg: 12.3, waste_type: R2_PHI },
+      "garbage.collection_log",
+    );
+    expect(out).not.toHaveProperty("waste_type");
+    expect(JSON.stringify(out)).not.toContain("สมชาย");
+    expect(out).toHaveProperty("weight_kg", 12.3);
+  });
+
+  it("garbage.collection_log: captured provider body has no waste_type key or value", async () => {
+    state.scopeResult = { data: { view_name: "garbage.collection_log" }, error: null };
+    await annotateRow(
+      { id: "g1", log_date: "2026-08-26", weight_kg: 12.3, waste_type: R2_PHI },
+      "garbage.collection_log",
+    );
+    expect(state.fetchBodies.length).toBe(1);
+    const body = state.fetchBodies[0]!;
+    expect(body).not.toContain("waste_type");
+    expect(body).not.toContain("สมชาย");
+    expect(body).toContain("12.3");
+  });
+
+  it("wastewater.threshold_alert: stale severity entry is not projected", () => {
+    const out = projectSafeRow(
+      { id: "t1", created_at: "2026-08-26T00:00:00Z", read_at: null, severity: R2_PHI },
+      "wastewater.threshold_alert",
+    );
+    expect(out).not.toHaveProperty("severity");
+    expect(JSON.stringify(out)).not.toContain("สมชาย");
+  });
+});
+
+// ─── WO-STAB-009 remediation 3 — stale-key allowlist hazard ────────────────
+//
+// GPT PR #33 re-review (docs/ai/prompts/GPT56-REVIEW-PR33-REMEDIATION.md):
+// 12 wastewater.reading allowlist keys have NO live-schema column
+// (reports/schema-snapshot-live.md §wastewater.reading uses do_aeration /
+// ph / tds_aeration ... — NOT do_inlet/ph_tank/...). Stale entries are
+// dormant hazards: projectSafeRow() authorizes by NAME, so any caller row
+// carrying a stale key leaks its full value to the provider (GPT
+// reproduced PHI leakage through stale ph_tank).
+
+const STALE_KEYS = [
+  "do_inlet", "do_tank", "do_outlet",
+  "ph_inlet", "ph_tank", "ph_outlet",
+  "tds_inlet", "tds_tank", "tds_outlet",
+  "temperature", "sludge_level_cm", "wastewater_out",
+] as const;
+
+describe("Remediation-3: no stale keys survive in the wastewater.reading allowlist", () => {
+  it("row carrying PHI under every stale/removed key projects only the audited schema-backed set", () => {
+    const row: Record<string, unknown> = {
+      id: "s1",
+      reading_date: "2026-08-26",
+      free_chlorine: 0.8,
+      sv30: 210,
+      wastewater_in: 55.5,
+      wastewater_discharged: true,
+      system_operating: true,
+    };
+    for (const k of [...STALE_KEYS, "color_desc", "smell_desc", "note"]) {
+      row[k] = "ผู้ป่วย สมชาย ใจดี HN 12345";
+    }
+    const out = projectSafeRow(row, "wastewater.reading");
+    expect(Object.keys(out).sort()).toEqual(
+      ["free_chlorine", "id", "reading_date", "sv30", "system_operating", "wastewater_discharged", "wastewater_in"],
+    );
+    expect(JSON.stringify(out)).not.toContain("สมชาย");
+  });
+
+  it("captured provider body never carries a stale ph_tank key or its value", async () => {
+    state.scopeResult = { data: { view_name: "wastewater.reading" }, error: null };
+    await annotateRow(
+      { id: "s1", reading_date: "2026-08-26", free_chlorine: 0.8, ph_tank: "ผู้ป่วย สมชาย ใจดี HN 12345" },
+      "wastewater.reading",
+    );
+    expect(state.fetchBodies.length).toBe(1);
+    const body = state.fetchBodies[0]!;
+    expect(body).not.toContain("ph_tank");
+    expect(body).not.toContain("สมชาย");
+    expect(body).toContain("0.8"); // schema-backed fields still annotated
   });
 });

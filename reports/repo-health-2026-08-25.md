@@ -33,10 +33,10 @@ lane is recorded as deferred rather than silently forgotten.
 
 | WO | PR | Checkpoint | State |
 |---|---|---|---|
-| WO-STAB-009 — annotateRow PHI/provider boundary | #33 (open; PR #29 historical merge) | GPT-reviewed `44c35ee` | **CHANGES_REQUIRED** — PR #33 validly removes `fuel_type`, `waste_type`, and stale `severity`, but 12 additional `wastewater.reading` positive-allowlist keys are absent from the live schema; GPT reproduced captured-provider leakage through stale `ph_tank`; remediation: `docs/ai/prompts/GPT56-REVIEW-PR33-REMEDIATION.md` |
+| WO-STAB-009 — annotateRow PHI/provider boundary | #33 (open; PR #29 historical merge) | remediation-3 `3b85a3c` (reviewer SSoT integrated via merge `277b085`) | **RE-REVIEW_REQUESTED (remediation-3)** — all 12 stale `wastewater.reading` keys removed; profile = 7 snapshot-backed keys only; stale fixtures replaced; all-five profiles re-audited vs live snapshot; gates Vitest 202/202 · build · lint 12w/0e · Playwright 48/48; awaiting GPT re-review of the new head |
 | WO-STAB-006 — alert unread idempotency | #30 | `8af33dc` (+docs `941f6d7`) | **APPROVED / MERGED** — merge `72bd8f6088b177fb28017beda95c70a778d872e1` |
 
-PR #29 remains historical merged state. Open PR #33 is the current WO-STAB-009 implementation continuation and is **CHANGES_REQUIRED** at GPT-reviewed head `44c35ee8d08863d88243da99c6ea851ac98b7d7d`. GLM 5.3 MAX resumes the same branch/PR when capacity returns, integrates latest reviewer SSoT from `main`, executes `docs/ai/prompts/GPT56-REVIEW-PR33-REMEDIATION.md`, and stops at `RE-REVIEW_REQUESTED`; GPT remains independent review/merge owner. PR #30 is closed.
+PR #29 remains historical merged state. Open PR #33 is the current WO-STAB-009 implementation continuation: GPT's CHANGES_REQUIRED verdict at `44c35ee` (12 stale allowlist keys) was remediated in `3b85a3c` after integrating the reviewer SSoT from main; GLM stops at `RE-REVIEW_REQUESTED`; GPT remains independent review/merge owner. PR #30 is closed.
 
 ## Explicitly deferred / NOT active
 

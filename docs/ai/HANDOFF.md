@@ -395,3 +395,196 @@ body. Violates the binding rule: PHI never leaves the system.
    field-list-only + tests).
 
 GLM must not merge PR #29. Next owner: GPT 5.6 Sol UltraMAX re-review.
+
+---
+
+# WO-STAB-009 Remediation-2 Record — 2026-08-26
+
+**Work order:** WO-STAB-009 remediation-2 per
+`docs/ai/prompts/GPT56-REVIEW-PR29-REMEDIATION-2.md` (GPT post-merge
+re-re-review of PR #29 merge `590f41303ba7c949eb44b9844ccc8dab4675b34a`).
+
+**Status:** `RE-REVIEW_REQUESTED` — fresh branch
+`fix/p1-annotate-phi-boundary-remediation-2` off `origin/main` `0f549f1`,
+fix commit `105ce8d`. PR #29 itself untouched (merged history preserved).
+
+## Root cause (remediation-2 scope)
+
+The remediation-1 field audit accepted three remaining profile entries on
+"enum-like" appearances without verifying the enforceable write contract:
+
+1. `fuel.dispense_log.fuel_type` — schema `text`, NO CHECK constraint
+   (`20260719000000_v2_schemas.sql:82`); bulk-import adapter accepts
+   arbitrary strings (`import-adapters/fuel.ts:21`
+   `str(raw["fuel_type"] ?? raw["type"])`); `core.ai_scope` seeds the table
+   patient_safe+enabled → arbitrary identifying text could reach the
+   provider.
+2. `garbage.collection_log.waste_type` — schema `text`, NO CHECK, legacy
+   field (`v2_schemas.sql:67`); authenticated writes allowed.
+3. `wastewater.threshold_alert.severity` — stale profile entry: the table
+   (`20260718000001_p17_threshold_alerts.sql:18-26`, V3a read_at add) has
+   no `severity` column. Dormant hazard: a future same-named plain-text
+   column would silently become provider-visible.
+
+## RED → GREEN evidence
+
+- RED: 5 new regressions in `annotate-boundary.test.ts`
+  ("Remediation-2" describe) failed against the merged behavior —
+  `ผู้ป่วย สมชาย ใจดี HN 12345` in `fuel_type`/`waste_type` survived BOTH
+  `projectSafeRow()` and the captured provider wire body; `severity` was
+  projected. 16 pre-existing tests stayed green.
+- FIX (smallest fail-closed correction, field-list only):
+  `fuel.dispense_log` → `[id, log_date, litres]`;
+  `garbage.collection_log` → `[id, log_date, weight_kg]`;
+  `wastewater.threshold_alert` → `[id, created_at, read_at]`.
+- GREEN: focused 21/21.
+
+## All-five-profile audit (post-fix, every surviving field verified)
+
+| Profile | Surviving fields | Structural bound (evidence) |
+|---|---|---|
+| wastewater.reading | id, reading_date, 17 numeric sensor fields, system_operating | uuid PK / date / numeric; `system_operating` boolean (`supabase-queries.ts:267` `=== false` contract) |
+| carbon.reading | id, reading_date, meter_value, consumption | uuid/date; meter_value + consumption `numeric` (`carbon.ts:9-10`) |
+| fuel.dispense_log | id, log_date, litres | uuid PK / date / `numeric(10,2)` (`v2_schemas.sql:79-88`) |
+| garbage.collection_log | id, log_date, weight_kg | uuid PK / date / `numeric(10,2)` (`v2_schemas.sql:64-72`) |
+| wastewater.threshold_alert | id, created_at, read_at | uuid / timestamptz ×2 (`p17_threshold_alerts.sql`, V3a) |
+
+No surviving provider-safe path can carry arbitrary identifying text.
+Unbounded schema columns that are NOT in any profile (e.g.
+`vehicle_or_use`, `disposal_route`, `note`, `field`, `message`) stay
+unprojected — omitted by default.
+
+## Gates (exact results)
+
+- Vitest: **200/200** (195 merged baseline + 5)
+- `npm run build`: PASS
+- `npm run lint`: 12 warnings / 0 errors (baseline)
+- `git diff --check`: clean
+- Full Playwright: **48/48**. First run 47/48 —
+  `ux-scale-mobile.spec.ts:85` (brand target 44x44, Codex visual lane,
+  untouched by this change) failed once, passed 3/3 on
+  `--repeat-each=3 --retries=0`, and the full-suite rerun returned 48/48.
+  Classified ENVIRONMENTAL/timing flake, not a regression.
+- GitHub CI on the exact PR head: recorded in CURRENT-WORK after push.
+
+## Defect memory (do not repeat)
+
+1. "Enum-like" is not a contract. A comment listing suggested values
+   (`-- diesel / gasoline / lpg / other`) or a dropdown in ONE UI is not
+   an enforceable bound. The audit question is: can ANY write path
+   (import adapter, SQL, future API) store arbitrary text? If yes, the
+   field is not provider-safe regardless of intended usage.
+2. Allowlist entries for columns that do not exist yet are latent
+   hazards: a stale entry (`severity`) auto-exposes any future
+   same-named column without a privacy review. Profiles must be diffed
+   against the live schema, not just maintained additively.
+
+## Reviewer focus
+
+1. The 5 RED regressions pin projection AND captured wire body (incl.
+   the non-regex patient-name fragment).
+2. Audit table above — every surviving field has schema-level evidence.
+3. Remediation-1 exclusions and all fail-closed behavior untouched
+   (fix is field-list-only + tests).
+
+GLM must not merge the remediation-2 PR. Next owner: GPT 5.6 Sol
+reviewer / merge owner.
+
+---
+
+# WO-STAB-009 Remediation-3 Record — 2026-08-26
+
+**Work order:** WO-STAB-009 continuation per
+`docs/ai/prompts/GPT56-REVIEW-PR33-REMEDIATION.md` (GPT re-review of
+PR #33 head `44c35ee` = CHANGES_REQUIRED: 12 stale
+`wastewater.reading` allowlist keys).
+
+**Status:** `RE-REVIEW_REQUESTED` — existing branch
+`fix/p1-annotate-phi-boundary-remediation-2` / PR #33. Reviewer SSoT
+integrated from main `5b1f88e` first (merge commit `277b085`, GPT verdict
+records preserved additively), then remediation-3 fix commit `3b85a3c`.
+
+## Root cause
+
+The remediation-2 all-five-profile audit verified TYPES but never diffed
+the pre-existing `wastewater.reading` allowlist keys against the LIVE
+schema. 12 keys (`do_inlet, do_tank, do_outlet, ph_inlet, ph_tank,
+ph_outlet, tds_inlet, tds_tank, tds_outlet, temperature,
+sludge_level_cm, wastewater_out`) exist nowhere in
+`reports/schema-snapshot-live.md` (real names: `do_aeration`, `ph`,
+`tds_aeration`, `temp_aeration`, ...) nor in any later migration — they
+survived from an assumed schema. Because `projectSafeRow()` authorizes by
+field NAME with no type validation, any caller row carrying a stale key
+leaks its full value to the provider (GPT reproduced with
+`ph_tank = "ผู้ป่วย สมชาย ใจดี HN 12345"`).
+
+## RED → GREEN evidence
+
+- RED (2 new regressions on the reviewed head, 21 existing green):
+  1. row carrying PHI under all 12 stale keys (+ the R1-removed
+     color/smell/note) projected them — only the audited 7-key set was
+     expected;
+  2. captured provider wire body contained `ph_tank` and `สมชาย`.
+- FIX: `wastewater.reading` profile → `[id, reading_date, free_chlorine,
+  sv30, wastewater_in, wastewater_discharged, system_operating]` — each
+  key backed by a live column + bounded type. NO replacement metric
+  names added (separate authorization decision per contract item 2).
+  Stale test fixtures replaced (`ph_tank: 7.2` → `sv30: 7.2`;
+  `do_tank: 4.1` → `free_chlorine: 4.1`).
+- GREEN: focused 23/23.
+
+## All-five-profile audit vs live snapshot + later migrations
+
+| Profile | Allowlisted key | Live column (snapshot §) | Type | Free-text storable? | Disposition |
+|---|---|---|---|---|---|
+| wastewater.reading | id | §488 row 2 | uuid | no | KEEP |
+| wastewater.reading | reading_date | §489 | date | no | KEEP |
+| wastewater.reading | free_chlorine | §499 | numeric(6,3) | no | KEEP |
+| wastewater.reading | sv30 | §498 | numeric(6,2) | no | KEEP |
+| wastewater.reading | wastewater_in | §516 | numeric(12,2) | no | KEEP |
+| wastewater.reading | wastewater_discharged | §517 | boolean | no | KEEP |
+| wastewater.reading | system_operating | §512 | boolean | no | KEEP |
+| carbon.reading | id | §93 | uuid | no | KEEP |
+| carbon.reading | reading_date | §95 | date | no | KEEP |
+| carbon.reading | meter_value | §96 | numeric(14,2) | no | KEEP |
+| carbon.reading | consumption | §97 | numeric(14,2) | no | KEEP |
+| fuel.dispense_log | id | §407 | uuid | no | KEEP |
+| fuel.dispense_log | log_date | §408 | date | no | KEEP |
+| fuel.dispense_log | litres | §410 | numeric(10,2) | no | KEEP |
+| garbage.collection_log | id | §427 | uuid | no | KEEP |
+| garbage.collection_log | log_date | §428 | date | no | KEEP |
+| garbage.collection_log | weight_kg | §431 | numeric(10,2) | no | KEEP |
+| wastewater.threshold_alert | id | §568 | uuid | no | KEEP |
+| wastewater.threshold_alert | created_at | §572 | timestamptz | no | KEEP |
+| wastewater.threshold_alert | read_at | V3a migration add (pre-snapshot 2026-08-03) | timestamptz | no | KEEP |
+
+No stale/nonexistent field remains in any positive allowlist. Removed
+this round: the 12 keys above. (Prior rounds: color_desc/smell_desc/note
+[R1], fuel_type/waste_type/severity [R2] — all stay removed.)
+
+## Gates (exact results)
+
+- Vitest: **202/202** (200 + 2)
+- `npm run build`: PASS · lint: **12 warnings / 0 errors** ·
+  `git diff --check`: clean · full Playwright: **48/48**
+- GitHub CI on the final PR head: see CURRENT-WORK (recorded after push).
+
+## Defect memory (do not repeat)
+
+1. An allowlist audit that verifies TYPES is incomplete — every key must
+   be diffed against the LIVE schema (snapshot/introspection), because
+   name-based authorization makes a stale key an immediate leak path for
+   any caller that supplies it, not just a dormant hazard.
+2. Test fixtures that repeat production allowlist names
+   (`ph_tank: 7.2`) silently validate the stale entries — fixtures must
+   come from the schema-backed set, and a profile-contract regression
+   (all stale keys in one test) must pin the exact audited key set.
+
+## Reviewer focus
+
+1. RED reproduction: re-add any of the 12 keys → the profile-contract
+   regression fails (key-set equality assertion).
+2. No new provider-visible fields added; payload narrowed only.
+3. All R1/R2 removals and fail-closed behavior untouched.
+
+GLM must not merge PR #33. Next owner: GPT 5.6 Sol reviewer / merge owner.
