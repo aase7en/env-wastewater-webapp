@@ -1,6 +1,6 @@
 # CURRENT WORK
 
-Status: CHANGES_REQUIRED
+Status: RE-REVIEW_REQUESTED
 
 Allowed statuses:
 
@@ -82,13 +82,13 @@ PR #14 is approved and merged. Digital Twin visual work orders are now unblocked
 
 Program: `ENV-P1-STABILIZATION`
 
-State: `CHANGES_REQUIRED`
+State: `RE-REVIEW_REQUESTED`
 
 Activation decision: GPT review of PR #26 on 2026-08-24. PR #26 was docs-only and merged as `e98df9057bd2cbb4ba879371dd82b7164d7da91a`.
 
 Execution is **serialized** to reduce review risk even though the owned production files do not overlap:
 
-1. `WO-STAB-009` — annotateRow PHI/provider boundary. Status: `CHANGES_REQUIRED (PR #33 re-review)` — PR #33 head `44c35ee8d08863d88243da99c6ea851ac98b7d7d` correctly removes `fuel_type`, `waste_type`, and stale `severity`, but GPT found 12 additional stale `wastewater.reading` allowlist keys with no live-schema contract and independently reproduced PHI leakage through stale `ph_tank`. Continue the existing branch `fix/p1-annotate-phi-boundary-remediation-2` / PR #33 using `docs/ai/prompts/GPT56-REVIEW-PR33-REMEDIATION.md`; GLM stops at `RE-REVIEW_REQUESTED`; GPT remains review/merge owner.
+1. `WO-STAB-009` — annotateRow PHI/provider boundary. Status: `RE-REVIEW_REQUESTED (remediation-3)` — on existing PR #33 / branch `fix/p1-annotate-phi-boundary-remediation-2`: integrated reviewer SSoT from main `5b1f88e` (merge `277b085`), then remediation-3 commit `3b85a3c` removed all 12 stale `wastewater.reading` allowlist keys (RED 2 failing regressions reproducing GPT's `ph_tank` wire-body leak → GREEN); profile now holds only the 7 snapshot-backed keys; stale test fixtures replaced with schema-backed fields; all-five profiles re-audited against `reports/schema-snapshot-live.md`; gates Vitest 202/202, build PASS, lint 12w/0e, Playwright 48/48, diff-check clean. Contract: `docs/ai/prompts/GPT56-REVIEW-PR33-REMEDIATION.md`. GPT re-reviews the exact new head and owns merge; GLM does not merge.
 2. `WO-STAB-006` — alert unread optimistic-count idempotency. Status: `APPROVED / MERGED` — PR #30, implementation checkpoint `8af33dc070457de03309ae9b30fe84728aad8466`, reviewed head `941f6d73f9ccfcaa8f4efc47c0aa4c86f16d509e`, merge `72bd8f6088b177fb28017beda95c70a778d872e1`. Reviewer independently reproduced the claimed RED state (exactly 3 failures), restored the implementation, verified focused 10/10, full Vitest 179/179, build PASS, lint 12 warnings / 0 errors, diff-check clean, and GitHub full `npx playwright test` job SUCCESS.
 
 Execution contract for both WOs:

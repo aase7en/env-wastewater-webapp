@@ -489,3 +489,102 @@ unprojected — omitted by default.
 
 GLM must not merge the remediation-2 PR. Next owner: GPT 5.6 Sol
 reviewer / merge owner.
+
+---
+
+# WO-STAB-009 Remediation-3 Record — 2026-08-26
+
+**Work order:** WO-STAB-009 continuation per
+`docs/ai/prompts/GPT56-REVIEW-PR33-REMEDIATION.md` (GPT re-review of
+PR #33 head `44c35ee` = CHANGES_REQUIRED: 12 stale
+`wastewater.reading` allowlist keys).
+
+**Status:** `RE-REVIEW_REQUESTED` — existing branch
+`fix/p1-annotate-phi-boundary-remediation-2` / PR #33. Reviewer SSoT
+integrated from main `5b1f88e` first (merge commit `277b085`, GPT verdict
+records preserved additively), then remediation-3 fix commit `3b85a3c`.
+
+## Root cause
+
+The remediation-2 all-five-profile audit verified TYPES but never diffed
+the pre-existing `wastewater.reading` allowlist keys against the LIVE
+schema. 12 keys (`do_inlet, do_tank, do_outlet, ph_inlet, ph_tank,
+ph_outlet, tds_inlet, tds_tank, tds_outlet, temperature,
+sludge_level_cm, wastewater_out`) exist nowhere in
+`reports/schema-snapshot-live.md` (real names: `do_aeration`, `ph`,
+`tds_aeration`, `temp_aeration`, ...) nor in any later migration — they
+survived from an assumed schema. Because `projectSafeRow()` authorizes by
+field NAME with no type validation, any caller row carrying a stale key
+leaks its full value to the provider (GPT reproduced with
+`ph_tank = "ผู้ป่วย สมชาย ใจดี HN 12345"`).
+
+## RED → GREEN evidence
+
+- RED (2 new regressions on the reviewed head, 21 existing green):
+  1. row carrying PHI under all 12 stale keys (+ the R1-removed
+     color/smell/note) projected them — only the audited 7-key set was
+     expected;
+  2. captured provider wire body contained `ph_tank` and `สมชาย`.
+- FIX: `wastewater.reading` profile → `[id, reading_date, free_chlorine,
+  sv30, wastewater_in, wastewater_discharged, system_operating]` — each
+  key backed by a live column + bounded type. NO replacement metric
+  names added (separate authorization decision per contract item 2).
+  Stale test fixtures replaced (`ph_tank: 7.2` → `sv30: 7.2`;
+  `do_tank: 4.1` → `free_chlorine: 4.1`).
+- GREEN: focused 23/23.
+
+## All-five-profile audit vs live snapshot + later migrations
+
+| Profile | Allowlisted key | Live column (snapshot §) | Type | Free-text storable? | Disposition |
+|---|---|---|---|---|---|
+| wastewater.reading | id | §488 row 2 | uuid | no | KEEP |
+| wastewater.reading | reading_date | §489 | date | no | KEEP |
+| wastewater.reading | free_chlorine | §499 | numeric(6,3) | no | KEEP |
+| wastewater.reading | sv30 | §498 | numeric(6,2) | no | KEEP |
+| wastewater.reading | wastewater_in | §516 | numeric(12,2) | no | KEEP |
+| wastewater.reading | wastewater_discharged | §517 | boolean | no | KEEP |
+| wastewater.reading | system_operating | §512 | boolean | no | KEEP |
+| carbon.reading | id | §93 | uuid | no | KEEP |
+| carbon.reading | reading_date | §95 | date | no | KEEP |
+| carbon.reading | meter_value | §96 | numeric(14,2) | no | KEEP |
+| carbon.reading | consumption | §97 | numeric(14,2) | no | KEEP |
+| fuel.dispense_log | id | §407 | uuid | no | KEEP |
+| fuel.dispense_log | log_date | §408 | date | no | KEEP |
+| fuel.dispense_log | litres | §410 | numeric(10,2) | no | KEEP |
+| garbage.collection_log | id | §427 | uuid | no | KEEP |
+| garbage.collection_log | log_date | §428 | date | no | KEEP |
+| garbage.collection_log | weight_kg | §431 | numeric(10,2) | no | KEEP |
+| wastewater.threshold_alert | id | §568 | uuid | no | KEEP |
+| wastewater.threshold_alert | created_at | §572 | timestamptz | no | KEEP |
+| wastewater.threshold_alert | read_at | V3a migration add (pre-snapshot 2026-08-03) | timestamptz | no | KEEP |
+
+No stale/nonexistent field remains in any positive allowlist. Removed
+this round: the 12 keys above. (Prior rounds: color_desc/smell_desc/note
+[R1], fuel_type/waste_type/severity [R2] — all stay removed.)
+
+## Gates (exact results)
+
+- Vitest: **202/202** (200 + 2)
+- `npm run build`: PASS · lint: **12 warnings / 0 errors** ·
+  `git diff --check`: clean · full Playwright: **48/48**
+- GitHub CI on the final PR head: see CURRENT-WORK (recorded after push).
+
+## Defect memory (do not repeat)
+
+1. An allowlist audit that verifies TYPES is incomplete — every key must
+   be diffed against the LIVE schema (snapshot/introspection), because
+   name-based authorization makes a stale key an immediate leak path for
+   any caller that supplies it, not just a dormant hazard.
+2. Test fixtures that repeat production allowlist names
+   (`ph_tank: 7.2`) silently validate the stale entries — fixtures must
+   come from the schema-backed set, and a profile-contract regression
+   (all stale keys in one test) must pin the exact audited key set.
+
+## Reviewer focus
+
+1. RED reproduction: re-add any of the 12 keys → the profile-contract
+   regression fails (key-set equality assertion).
+2. No new provider-visible fields added; payload narrowed only.
+3. All R1/R2 removals and fail-closed behavior untouched.
+
+GLM must not merge PR #33. Next owner: GPT 5.6 Sol reviewer / merge owner.
