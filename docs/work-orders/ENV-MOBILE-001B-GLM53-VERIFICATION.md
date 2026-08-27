@@ -18,7 +18,7 @@ Add deterministic regression coverage and an exact evidence packet for the remed
 - Parent work order: `docs/work-orders/ENV-MOBILE-001.md`
 - Dependency: exact pushed commit recorded in `docs/ai/handoffs/ENV-MOBILE-001A-SOLMAX.md`
 
-Before mutation, read the mandatory repository entry/SSoT sequence, fetch `origin/main`, verify exact repo/remote/branch/HEAD/dirty state/ownership, verify the dependency commit is an ancestor of HEAD, and state `SAFE_TO_MUTATE = YES`. Treat unknown `.serena/` content as protected. Do not reset, clean, delete, move, or stash it.
+Before mutation, read the mandatory repository entry/SSoT sequence plus `MIGRATION.md` section `ACTIVE — Two-track parallel work`, fetch `origin/main`, verify exact repo/remote/branch/HEAD/dirty state/ownership, verify the dependency commit is an ancestor of HEAD, confirm the coordinator changed the `ENV-MOBILE-001B` claim row from RESERVED/BLOCKED to ACTIVE, confirm no competing file claim exists, and state `SAFE_TO_MUTATE = YES`. Treat unknown `.serena/` content as protected. Do not reset, clean, delete, move, or stash it.
 
 ## Owned files
 
@@ -27,6 +27,7 @@ May edit only:
 - `frontend/tests/e2e/daily-form-mobile.spec.ts`
 - `docs/work-orders/ENV-MOBILE-001B-GLM53-VERIFICATION.md` for lane status only
 - `docs/ai/handoffs/ENV-MOBILE-001B-GLM53.md`
+- `MIGRATION.md` only to mark the existing `ENV-MOBILE-001B` claim row complete
 
 Production files, shared SSoT, workflow files, and the Sol MAX handoff are read-only.
 
@@ -93,6 +94,6 @@ Update `docs/ai/handoffs/ENV-MOBILE-001B-GLM53.md` with:
 
 ## Completion and stop gate
 
-1. Commit only owned files using `chunk(ENV-MOBILE-001B): <summary>` and push the existing branch.
-2. Set this lane to `RE-REVIEW_REQUESTED` only if every applicable gate passes; otherwise use `PRODUCTION_REMEDIATION_REQUIRED` or `BLOCKED` with exact evidence.
+1. Set this lane to `RE-REVIEW_REQUESTED` only if every applicable gate passes; otherwise use `PRODUCTION_REMEDIATION_REQUIRED` or `BLOCKED` with exact evidence. Mark only the `ENV-MOBILE-001B` claim row complete when the lane is no longer mutable.
+2. Before commit, fetch and use `git pull --ff-only`; if it cannot fast-forward, stop and report instead of rewriting history. Commit only owned files using `chunk(ENV-MOBILE-001B): <summary>` and push the existing branch.
 3. STOP. Do not edit production/shared SSoT/workflows, approve, merge, deploy, close ENV-MOBILE-001, or start another ROADMAP item.

@@ -18,7 +18,7 @@ Repair the bounded user-experience blockers found in the exact review of PR #40 
 - Review base: `origin/main@08db62c821cf7b95aaeb373c603d77ccc4d9b98a`
 - Parent work order: `docs/work-orders/ENV-MOBILE-001.md`
 
-Before mutation, read the mandatory repository entry/SSoT sequence, fetch `origin/main`, verify exact repo/remote/branch/HEAD/dirty state/ownership, and state `SAFE_TO_MUTATE = YES`. Treat unknown `.serena/` content as protected. Do not reset, clean, delete, move, or stash it.
+Before mutation, read the mandatory repository entry/SSoT sequence plus `MIGRATION.md` section `ACTIVE — Two-track parallel work`, fetch `origin/main`, verify exact repo/remote/branch/HEAD/dirty state/ownership, confirm the `ENV-MOBILE-001A` claim row is ACTIVE and no competing file claim exists, and state `SAFE_TO_MUTATE = YES`. Treat unknown `.serena/` content as protected. Do not reset, clean, delete, move, or stash it.
 
 If branch HEAD or `origin/main` differs from this record, reconcile current source reality and record the new SHAs before editing. Do not reuse the rejected review as approval.
 
@@ -29,6 +29,7 @@ May edit only:
 - `frontend/src/pages/DailyFormPage.tsx`
 - `docs/work-orders/ENV-MOBILE-001A-SOLMAX-UX-REMEDIATION.md` for lane status only
 - `docs/ai/handoffs/ENV-MOBILE-001A-SOLMAX.md`
+- `MIGRATION.md` only to mark the existing `ENV-MOBILE-001A` claim row complete
 
 Do not edit the Playwright spec; GLM-5.3 owns that file after this lane.
 
@@ -83,6 +84,6 @@ Classify missing Supabase environment values as an environment failure; do not w
 ## Completion and stop gate
 
 1. Update `docs/ai/handoffs/ENV-MOBILE-001A-SOLMAX.md` with before/after behavior, files changed, exact commands/results, screenshots/evidence locations, branch, commit, and exact HEAD.
-2. Commit only owned files using `chunk(ENV-MOBILE-001A): <summary>` and push the existing branch.
-3. Set this lane to `UX_REMEDIATED_AWAITING_VERIFICATION`.
+2. Set this lane to `UX_REMEDIATED_AWAITING_VERIFICATION` and mark only the `ENV-MOBILE-001A` claim row complete; leave the GLM row blocked for the coordinator to activate after verifying the pushed checkpoint.
+3. Before commit, fetch and use `git pull --ff-only`; if it cannot fast-forward, stop and report instead of rewriting history. Commit only owned files using `chunk(ENV-MOBILE-001A): <summary>` and push the existing branch.
 4. STOP. Do not edit GLM-owned tests/shared SSoT, approve, merge, deploy, close ENV-MOBILE-001, or start another ROADMAP item.
