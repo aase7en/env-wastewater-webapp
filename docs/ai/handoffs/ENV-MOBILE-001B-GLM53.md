@@ -141,10 +141,23 @@ not stop at `PRODUCTION_REMEDIATION_REQUIRED`.
 3. Local Playwright runs use the repository's documented vite-dev CI profile;
    there is no local exact-prod-build E2E profile (unchanged repo convention).
 
-## Remote / PR evidence
+## Remote / PR evidence (recorded after push, 2026-08-28)
 
-Recorded after push in the follow-up evidence-only commit (PR head/base,
-mergeability, check runs, and the exact ref CI checked out).
+- PR #40 head: `518d346d9297a3787160753f21c271d60db07498` (= lane commit,
+  verified equal to `origin/feat/env-mobile-001`); base `main`; state OPEN;
+  mergeability MERGEABLE / mergeStateStatus **CLEAN** after checks.
+- Checks on head `518d346…` — all SUCCESS:
+  - `smoke` (full `npx playwright test` via webServer profile) — pass, 2 m 38 s — run 33121779735
+  - `scripts` — pass — run 33121779756
+  - `notify` ×2 — pass
+- Exact CI checkout ref (from the smoke run's `actions/checkout@v4` log):
+  `HEAD is now at ebfe5e7 Merge 518d346d… into 08db62c8…` — i.e. GitHub's
+  synthetic PR merge ref `ebfe5e7`, **not the literal head SHA**. This is the
+  same documented caveat as the previous review round (no branch
+  protection/ruleset; `pull_request` events always test the merge ref). The
+  independent reviewer must decide whether merge-ref CI satisfies the
+  exact-head evidence gate; local evidence in this handoff was produced
+  directly at `2b50b2c` + lane commit content.
 
 ## Next action
 
