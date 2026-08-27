@@ -221,7 +221,7 @@ export function DailyFormPage() {
   const submitting = createMut.loading || updateMut.loading;
 
   return (
-    <form onSubmit={onSubmit} className="max-w-3xl mx-auto space-y-4 pb-28">
+    <form onSubmit={onSubmit} className="max-w-3xl mx-auto space-y-4 pb-48">
       {/* Header */}
       <header className="flex items-start justify-between gap-3 flex-wrap">
         <div>
@@ -304,7 +304,7 @@ export function DailyFormPage() {
 
       {/* SECTION 2 — คุณภาพน้ำ */}
       <AccordionSection title="คุณภาพน้ำ" subtitle="DO, pH, TDS, อุณหภูมิ, SV30, คลอรีนอิสระ">
-        <div className="grid grid-cols-2 gap-3">
+        <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
           <Field label="DO ถังเติมอากาศ" unit="mg/L">
             <NumberInput value={String(form.do_aeration)} onChange={(e) => set("do_aeration", e.target.value)} />
           </Field>
@@ -337,7 +337,7 @@ export function DailyFormPage() {
 
       {/* SECTION 3 — คลอรีนและสารเคมี */}
       <AccordionSection title="คลอรีนและสารเคมี" subtitle="ปริมาณคลอรีนที่ใช้, อัตราผสม, ตะกอนส่วนเกิน">
-        <div className="grid grid-cols-2 gap-3">
+        <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
           <Field label="คลอรีนที่ใช้" unit="ลิตร">
             <NumberInput value={String(form.chlorine_used)} onChange={(e) => set("chlorine_used", e.target.value)} />
           </Field>
@@ -367,7 +367,7 @@ export function DailyFormPage() {
 
       {/* SECTION 5 — มิเตอร์ + ปริมาณน้ำ */}
       <AccordionSection title="มิเตอร์ + ปริมาณน้ำ + ไฟฟ้า" subtitle="มิเตอร์ปั๊ม, ปริมาณน้ำเข้า/ออก, ไฟฟ้า">
-        <div className="grid grid-cols-2 gap-3">
+        <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
           <Field label="มิเตอร์ปั๊ม 1" unit="kWh">
             <NumberInput value={String(form.pump1_meter)} onChange={(e) => set("pump1_meter", e.target.value)} />
           </Field>
@@ -412,8 +412,8 @@ export function DailyFormPage() {
         </Field>
       </AccordionSection>
 
-      {/* Sticky submit bar — left offset matches the F2 sidebar (w-72) */}
-      <div className="fixed bottom-0 inset-x-0 md:left-72 border-t border-aura-borderSubtle bg-aura-bgDeep/90 backdrop-blur-xl px-4 py-3 flex items-center gap-3 z-30">
+      {/* Sticky submit bar — lifted above the floating ModuleDock so phone users can always tap the actions. */}
+      <div className="fixed bottom-24 inset-x-0 md:left-72 border-t border-aura-borderSubtle bg-aura-bgDeep/90 backdrop-blur-xl px-4 py-3 flex items-center gap-3 z-50">
         <Button type="submit" loading={submitting} size="lg" className="flex-1 sm:flex-none sm:min-w-40">
           {isEdit ? "อัปเดต" : "บันทึก"}
         </Button>
