@@ -1,10 +1,10 @@
 # ENV-MOBILE-001B — DailyForm Verification and Regression Evidence
 
-Status: BLOCKED_ON_ENV-MOBILE-001A
+Status: READY_FOR_IMPLEMENTATION
 Model tier: GLM-5.3
 Owner: GLM-5.3
-Coordinator / independent reviewer / merge owner: GPT-5.6 Sol Ultra
-Execution order: SECOND; start only after the Sol MAX lane is pushed and its exact commit is recorded.
+Coordinator: GPT-5.6 Sol current session; final independent exact-diff reviewer/merge owner must be a fresh reviewer context after this lane
+Execution order: SECOND; dependency satisfied by pushed checkpoint `74550da24af09a5afe506d2c269de89cb6392092`.
 
 ## Objective
 
@@ -16,7 +16,7 @@ Add deterministic regression coverage and an exact evidence packet for the remed
 - Branch: `feat/env-mobile-001`
 - PR: #40
 - Parent work order: `docs/work-orders/ENV-MOBILE-001.md`
-- Dependency: exact pushed commit recorded in `docs/ai/handoffs/ENV-MOBILE-001A-SOLMAX.md`
+- Dependency: `74550da24af09a5afe506d2c269de89cb6392092` (pushed ENV-MOBILE-001A production checkpoint; must be an ancestor of HEAD before GLM mutation)
 
 Before mutation, read the mandatory repository entry/SSoT sequence plus `MIGRATION.md` section `ACTIVE — Two-track parallel work`, fetch `origin/main`, verify exact repo/remote/branch/HEAD/dirty state/ownership, verify the dependency commit is an ancestor of HEAD, confirm the coordinator changed the `ENV-MOBILE-001B` claim row from RESERVED/BLOCKED to ACTIVE, confirm no competing file claim exists, and state `SAFE_TO_MUTATE = YES`. Treat unknown `.serena/` content as protected. Do not reset, clean, delete, move, or stash it.
 

@@ -7,7 +7,7 @@ Branch: `feat/env-mobile-001`
 PR: #40
 Base: `origin/main@08db62c821cf7b95aaeb373c603d77ccc4d9b98a`
 Lane starting HEAD: `fec0f1ba814e3df3c9b78c80c188c832a86d531f`
-Checkpoint commit: pending commit/push; coordinator must record the exact pushed dependency SHA before activating ENV-MOBILE-001B.
+Checkpoint commit: `74550da24af09a5afe506d2c269de89cb6392092` (pushed to `origin/feat/env-mobile-001`; verified remote head matched before ENV-MOBILE-001B activation).
 
 ## Before / root cause
 

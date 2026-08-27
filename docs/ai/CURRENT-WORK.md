@@ -268,7 +268,7 @@ Goal: make the wastewater daily recording workflow mobile-first at 360–430 px 
 
 Branch/worktree: `feat/env-mobile-001` / `A:\\GitHub\\envww-mobile-001` from `origin/main@08db62c821cf7b95aaeb373c603d77ccc4d9b98a`.
 
-Coordinator / independent reviewer / merge owner: GPT-5.6 Sol Ultra. Sequential remediation ownership is split without file overlap: GPT-5.6 Sol MAX owns `DailyFormPage.tsx`; after its pushed checkpoint, GLM-5.3 owns `daily-form-mobile.spec.ts`. Each uses only its own lane handoff. Neither remediation owner may merge.
+Coordinator: GPT-5.6 Sol current session (took over after Ultra limit). Final independent exact-diff review/merge still requires a fresh reviewer context after the GLM verification lane. Sequential remediation ownership remains split without file overlap: ENV-MOBILE-001A owns `DailyFormPage.tsx`; ENV-MOBILE-001B / GLM-5.3 owns only `daily-form-mobile.spec.ts`. Each uses only its own lane handoff. Neither remediation owner may merge.
 
 Contract: `docs/work-orders/ENV-MOBILE-001.md`.
 
@@ -291,7 +291,9 @@ Review-request evidence:
 - Remote state at review: OPEN and CLEAN/MERGEABLE; no branch protection/ruleset and no server-required checks. Visible checks succeeded, but E2E checked GitHub merge ref `e330b26ce966620c6e84bbb482746a5c68bf3a53` rather than the literal reviewed head SHA.
 - Blocking gaps: 36 px QuickChips versus 44 px minimum; incomplete 430 px/tablet/touch-target/keyboard/touch/edit/error-retry/repair-request/visual evidence; success-only save mock; stale PR/SSoT evidence; and prior implementer/reviewer role conflict.
 - Remediation contracts: `docs/work-orders/ENV-MOBILE-001A-SOLMAX-UX-REMEDIATION.md` then `docs/work-orders/ENV-MOBILE-001B-GLM53-VERIFICATION.md`.
-- Next gate: GPT-5.6 Sol MAX production UX checkpoint → GLM-5.3 verification checkpoint → isolated fresh exact-SHA re-review. Any HEAD change invalidates the review above.
+- ENV-MOBILE-001A: **UX_REMEDIATED_AWAITING_VERIFICATION / PUSHED** at `74550da24af09a5afe506d2c269de89cb6392092`. Local evidence: focused Playwright 3/3, Vitest 202/202, build PASS, lint 12 pre-existing warnings / 0 errors, diff-check PASS; rendered Chromium matrix covered 360/390/430/768/1024, dark/light, create/edit, abnormal focus, 44 px QuickChips, final-field clearance, and Dock scrim inactivation. Remote PR head was verified equal to this checkpoint before lane B activation.
+- ENV-MOBILE-001B: **READY_FOR_IMPLEMENTATION / ACTIVE CLAIM**. GLM-5.3 may edit only `frontend/tests/e2e/daily-form-mobile.spec.ts`, its lane status/handoff, and its claim row. Production code and shared coordinator SSoT are read-only. Dependency: `74550da24af09a5afe506d2c269de89cb6392092` must be an ancestor of HEAD.
+- Next gate: GLM-5.3 verification checkpoint → fresh isolated exact-SHA independent review. Any HEAD change invalidates prior review evidence.
 
 ## User-Confirmed Product Experience Goal — 2026-08-27
 

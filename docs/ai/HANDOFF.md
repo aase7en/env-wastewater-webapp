@@ -15,7 +15,7 @@
 - Branch/worktree: `feat/env-mobile-001` / `A:\\GitHub\\envww-mobile-001`.
 - Base: `origin/main@08db62c821cf7b95aaeb373c603d77ccc4d9b98a`.
 - Contract: `docs/work-orders/ENV-MOBILE-001.md`.
-- Coordinator / independent reviewer / merge owner: GPT-5.6 Sol Ultra. GPT-5.6 Sol MAX owns only `DailyFormPage.tsx` plus its lane handoff; after that checkpoint is pushed, GLM-5.3 owns only `daily-form-mobile.spec.ts` plus its lane handoff. Neither remediation owner may merge.
+- Coordinator: GPT-5.6 Sol current session (took over after Ultra limit). Final independent exact-diff review/merge still requires a fresh reviewer context. ENV-MOBILE-001A owns `DailyFormPage.tsx`; ENV-MOBILE-001B / GLM-5.3 owns only `daily-form-mobile.spec.ts` plus its lane handoff/status/claim. Neither remediation owner may merge.
 - RED: the first two dense water-quality inputs were 149 px apart at 360 px under the prior unconditional two-column grid. A second real-use RED showed the floating ModuleDock intercepting the fixed submit action.
 - Implementation checkpoint: `a99629935b68dac58a3e7fb8c1498e923fe5a174`.
 - Implementation: dense numeric groups are one-column below `sm` and remain two-column at larger widths; form completion clearance is increased; the sticky action bar is lifted above the dock with a local z-index high enough to receive taps. No AppShell/ModuleDock/data-contract source changed.
@@ -26,8 +26,10 @@
 - Remote state at review: OPEN and CLEAN/MERGEABLE; no branch protection/ruleset and no server-required checks. Visible checks succeeded, but E2E checked GitHub merge ref `e330b26ce966620c6e84bbb482746a5c68bf3a53` rather than the literal reviewed head SHA.
 - Blocking gaps: QuickChips are 36 px rather than 44 px minimum; 430 px/tablet/touch-target/keyboard/touch/edit/error-retry/repair-request/visual gates are not proven; the save mock covers success only; SSoT/PR evidence is stale; and prior role ownership was not independent.
 - Remediation contracts: `docs/work-orders/ENV-MOBILE-001A-SOLMAX-UX-REMEDIATION.md` then `docs/work-orders/ENV-MOBILE-001B-GLM53-VERIFICATION.md`.
-- Status: `CHANGES_REQUIRED`.
-- Next: Sol MAX production UX checkpoint → GLM-5.3 verification checkpoint → isolated fresh exact-SHA re-review. Any HEAD change invalidates the prior review evidence.
+- ENV-MOBILE-001A pushed production checkpoint: `74550da24af09a5afe506d2c269de89cb6392092`; remote branch head matched. Evidence: focused mobile Playwright 3/3 PASS, Vitest 202/202 PASS, build PASS, lint 12 pre-existing warnings / 0 errors, diff-check PASS, plus rendered 360/390/430/768/1024 Chromium matrix recorded in `docs/ai/handoffs/ENV-MOBILE-001A-SOLMAX.md`.
+- ENV-MOBILE-001B is now ACTIVE/READY. Dependency `74550da24af09a5afe506d2c269de89cb6392092` must be an ancestor of GLM HEAD. GLM may edit only `frontend/tests/e2e/daily-form-mobile.spec.ts`, its lane WO status/handoff, and its claim row; production/shared coordinator files are read-only.
+- Overall parent status remains `CHANGES_REQUIRED` until lane B passes and a fresh exact-SHA independent reviewer returns APPROVED.
+- Next: GLM-5.3 verification checkpoint → isolated fresh exact-SHA re-review. Any HEAD change invalidates prior review evidence.
 
 ### Worktree hygiene pass — 2026-08-27
 

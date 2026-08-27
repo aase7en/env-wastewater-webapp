@@ -315,8 +315,8 @@ The binding rules below still apply.
 
 | Chunk | Agent | Claimed | Scope (files) |
 |---|---|---|---|
-| ~~ENV-MOBILE-001A~~ | GPT-5.6 Sol MAX | 2026-08-27 | COMPLETE / PUSH CHECKPOINT PENDING — `frontend/src/pages/DailyFormPage.tsx`, lane WO/status, lane handoff, this claim row only. Coordinator must record exact pushed SHA before activating ENV-MOBILE-001B. |
-| ENV-MOBILE-001B | GLM-5.3 | 2026-08-27 | RESERVED/BLOCKED on ENV-MOBILE-001A — `frontend/tests/e2e/daily-form-mobile.spec.ts`, lane WO/status, lane handoff, this claim row only (same branch; no production edits) |
+| ~~ENV-MOBILE-001A~~ | GPT-5.6 Sol MAX | 2026-08-27 | COMPLETE / PUSHED `74550da24af09a5afe506d2c269de89cb6392092` — `frontend/src/pages/DailyFormPage.tsx`, lane WO/status, lane handoff, this claim row only. |
+| ENV-MOBILE-001B | GLM-5.3 | 2026-08-27 | ACTIVE — dependency `74550da24af09a5afe506d2c269de89cb6392092`; owns only `frontend/tests/e2e/daily-form-mobile.spec.ts`, lane WO/status, lane handoff, this claim row (same branch; **no production edits**) |
 | ~~WO-UX-SCALE-001~~ | Codex | 2026-08-22 | done — cb083a5; `frontend/tailwind.config.js`, typography/index styles, shared button/header controls and `AppShell` (branch `feat/ux-scale-001`; no `src/lib/**`) |
 | ~~WO-STAB-002~~ | GLM | 2026-08-15 | done — cdd6f6d | `frontend/src/lib/admin/ai-chat.ts`, `ai-chat.test.ts` (branch `fix/p0-stabilization`) |
 | ~~WO-STAB-003~~ | GLM | 2026-08-15 | done — e065253 | `frontend/src/components/AuthProvider.tsx` (branch `fix/p0-stabilization`) |
