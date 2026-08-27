@@ -262,13 +262,13 @@ State: `APPROVED / MERGED`
 
 ### Active Work — ENV-MOBILE-001
 
-State: `REVIEW_REQUESTED`
+State: `CHANGES_REQUIRED`
 
 Goal: make the wastewater daily recording workflow mobile-first at 360–430 px while preserving current data/validation/hydration/threshold/repair/null semantics.
 
 Branch/worktree: `feat/env-mobile-001` / `A:\\GitHub\\envww-mobile-001` from `origin/main@08db62c821cf7b95aaeb373c603d77ccc4d9b98a`.
 
-Implementation owner: GPT + SunDay-Worker 1 as the temporary responsive/visual writer for the bounded owned files. GPT remains final reviewer/merge owner and must review the exact implementation diff from an isolated review checkout before merge.
+Coordinator / independent reviewer / merge owner: GPT-5.6 Sol Ultra. Sequential remediation ownership is split without file overlap: GPT-5.6 Sol MAX owns `DailyFormPage.tsx`; after its pushed checkpoint, GLM-5.3 owns `daily-form-mobile.spec.ts`. Each uses only its own lane handoff. Neither remediation owner may merge.
 
 Contract: `docs/work-orders/ENV-MOBILE-001.md`.
 
@@ -287,7 +287,11 @@ Review-request evidence:
 - Implementation checkpoint: `a99629935b68dac58a3e7fb8c1498e923fe5a174`.
 - GREEN: responsive one-column below `sm`, preserved two-column density at 1024 px, elevated action bar + bottom clearance, focused Playwright 3/3 PASS.
 - Full gates: Playwright 51/51 PASS; Vitest 202/202 PASS; build PASS; oxlint 0 errors / 12 pre-existing warnings; `git diff --check` PASS.
-- Next gate: commit/push → isolated exact-diff review → PR/exact-SHA CI → re-audit → authorized merge/deploy verification.
+- Exact review: PR #40 head `87fdc7c0b014ed7279df93de7b4bdc539926debb` against `origin/main@08db62c821cf7b95aaeb373c603d77ccc4d9b98a` returned `CHANGES_REQUIRED — DO NOT MERGE`.
+- Remote state at review: OPEN and CLEAN/MERGEABLE; no branch protection/ruleset and no server-required checks. Visible checks succeeded, but E2E checked GitHub merge ref `e330b26ce966620c6e84bbb482746a5c68bf3a53` rather than the literal reviewed head SHA.
+- Blocking gaps: 36 px QuickChips versus 44 px minimum; incomplete 430 px/tablet/touch-target/keyboard/touch/edit/error-retry/repair-request/visual evidence; success-only save mock; stale PR/SSoT evidence; and prior implementer/reviewer role conflict.
+- Remediation contracts: `docs/work-orders/ENV-MOBILE-001A-SOLMAX-UX-REMEDIATION.md` then `docs/work-orders/ENV-MOBILE-001B-GLM53-VERIFICATION.md`.
+- Next gate: GPT-5.6 Sol MAX production UX checkpoint → GLM-5.3 verification checkpoint → isolated fresh exact-SHA re-review. Any HEAD change invalidates the review above.
 
 ## User-Confirmed Product Experience Goal — 2026-08-27
 
@@ -305,7 +309,7 @@ The original prototype record was design/planning authorization. The user's late
 
 ## Next Action
 
-1. Execute `ENV-MOBILE-001` through RED/baseline → responsive implementation → focused/full E2E → review/PR/CI/merge/deploy verification.
+1. Remediate `ENV-MOBILE-001` sequentially through the Sol MAX production lane and GLM-5.3 verification lane, then perform a fresh exact-SHA review. Do not merge PR #40 at `87fdc7c0b014ed7279df93de7b4bdc539926debb`.
 2. After closure, select the next eligible item from `docs/ai/ROADMAP.md` whose dependencies are satisfied; create/activate only that bounded work order.
 3. Previously deferred `DT-VIS-P002/P003`, `UX-FLOW-P001`, `ENV-INT-P001`, `WO-STAB-008`, P2 backlog, and token cleanup are no longer forgotten gates; they remain inactive until their roadmap turn and explicit per-WO activation/ownership check.
 4. Additional provider-visible wastewater metrics remain a separate data/security contract decision; continuation authorization does not implicitly expand the approved AI safe profile.

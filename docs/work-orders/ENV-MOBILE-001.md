@@ -1,10 +1,11 @@
 # ENV-MOBILE-001 — Wastewater DailyForm Mobile-First Completion
 
-Status: REVIEW_REQUESTED
+Status: CHANGES_REQUIRED
 
-Owner: GPT + SunDay-Worker 1 as temporary visual/responsive implementation writer for this bounded slice
+Coordinator / independent reviewer / merge owner: GPT-5.6 Sol Ultra
+UX remediation owner: GPT-5.6 Sol MAX via `ENV-MOBILE-001A-SOLMAX-UX-REMEDIATION.md`
+Verification owner: GLM-5.3 via `ENV-MOBILE-001B-GLM53-VERIFICATION.md`
 Core Engineering: no production data-contract change expected; escalate if source reality requires one
-Reviewer / merge owner: GPT
 
 ## Goal
 
@@ -145,6 +146,32 @@ Reviewer note: the deterministic submit mock confirms the existing form/API boun
 6. Desktop/tablet behavior does not materially regress.
 7. Exact-head CI is green and independent review returns APPROVED.
 
+## Independent exact-diff review — 2026-08-27
+
+Verdict: `CHANGES_REQUIRED — DO NOT MERGE`
+
+- Reviewed PR: #40.
+- Reviewed head: `87fdc7c0b014ed7279df93de7b4bdc539926debb`.
+- Reviewed base: `origin/main@08db62c821cf7b95aaeb373c603d77ccc4d9b98a`.
+- Remote state at review: OPEN, CLEAN/MERGEABLE, no branch protection/ruleset, and no server-required checks.
+- Visible `smoke`, `scripts`, and `notify` checks succeeded. The E2E job checked out GitHub's synthetic PR merge commit `e330b26ce966620c6e84bbb482746a5c68bf3a53`, not the literal reviewed head SHA, so the strict exact-head evidence gate remains unresolved.
+- The review is recorded on PR #40 as commit-anchored review `5038101969`. GitHub rejected a formal `REQUEST_CHANGES` event because the authenticated repository owner opened the PR; the review comment is therefore the durable blocking record.
+
+Blocking findings:
+
+1. `QuickChips` uses `min-h-[36px]`, below the binding 44 px touch-target minimum.
+2. The focused E2E does not prove the applicable 430 px/tablet, touch-target, keyboard/touch, save-failure/retry, repair-request, edit-action, or visual-evidence gates.
+3. The current success-only submit mock does not prove the required error lifecycle or value preservation after a failed save; existing SSoT overstates this coverage.
+4. The prior ownership record named GPT as both implementation writer and final reviewer/merge owner, violating the independent-review gate.
+5. CURRENT-WORK/HANDOFF and the PR body did not record the actual PR head/remote evidence packet.
+
+Remediation is sequential and file ownership must not overlap:
+
+1. GPT-5.6 Sol MAX owns only the production UX correction in `DailyFormPage.tsx` and its lane handoff.
+2. After that commit is pushed, GLM-5.3 owns only `daily-form-mobile.spec.ts` plus its lane handoff and verification evidence.
+3. GPT-5.6 Sol Ultra performs a fresh exact-SHA review only after both lanes stop at `RE-REVIEW_REQUESTED`.
+4. Any HEAD change invalidates the review evidence above; do not reuse it as approval.
+
 ## Stop gate
 
-Implementation owner stops at `REVIEW_REQUESTED`. No other module-form cleanup is included.
+Remediation owners stop at their lane-specific gates. Neither owner may merge. No other module-form cleanup is included.
