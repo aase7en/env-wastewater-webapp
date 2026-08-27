@@ -1,10 +1,11 @@
 # ENV-MOBILE-001B — DailyForm Verification and Regression Evidence
 
-Status: READY_FOR_IMPLEMENTATION
-Model tier: GLM-5.3
-Owner: GLM-5.3
-Coordinator: GPT-5.6 Sol current session; final independent exact-diff reviewer/merge owner must be a fresh reviewer context after this lane
+Status: RE-REVIEW_REQUESTED (GLM-5.3 resumed and completed 2026-08-28; evidence in `docs/ai/handoffs/ENV-MOBILE-001B-GLM53.md`)
+Model tier: GPT-5.6 Sol MAX (GLM-5.3 limit fallback)
+Owner: GPT-5.6 Sol MAX
+Coordinator: GPT-5.6 Sol Ultra current session; final independent exact-diff reviewer/merge owner must be a fresh reviewer context after this lane
 Execution order: SECOND; dependency satisfied by pushed checkpoint `74550da24af09a5afe506d2c269de89cb6392092`.
+Fallback continuity: the user authorized GPT Sol MAX to continue while GLM-5.3 is rate-limited. Preserve and resume the existing uncommitted `daily-form-mobile.spec.ts` partial; do not discard or rewrite it from baseline.
 
 ## Objective
 
