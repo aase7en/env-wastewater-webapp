@@ -1,6 +1,6 @@
 # ENV-MOBILE-001A — DailyForm UX Remediation
 
-Status: READY_FOR_IMPLEMENTATION
+Status: UX_REMEDIATED_AWAITING_VERIFICATION
 Model tier: GPT-5.6 Sol MAX
 Owner: GPT-5.6 Sol MAX
 Coordinator / independent reviewer / merge owner: GPT-5.6 Sol Ultra

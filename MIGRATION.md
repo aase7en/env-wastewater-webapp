@@ -315,7 +315,7 @@ The binding rules below still apply.
 
 | Chunk | Agent | Claimed | Scope (files) |
 |---|---|---|---|
-| ENV-MOBILE-001A | GPT-5.6 Sol MAX | 2026-08-27 | ACTIVE, sequential first — `frontend/src/pages/DailyFormPage.tsx`, lane WO/status, lane handoff, this claim row only (branch `feat/env-mobile-001`; must stop before GLM lane) |
+| ~~ENV-MOBILE-001A~~ | GPT-5.6 Sol MAX | 2026-08-27 | COMPLETE / PUSH CHECKPOINT PENDING — `frontend/src/pages/DailyFormPage.tsx`, lane WO/status, lane handoff, this claim row only. Coordinator must record exact pushed SHA before activating ENV-MOBILE-001B. |
 | ENV-MOBILE-001B | GLM-5.3 | 2026-08-27 | RESERVED/BLOCKED on ENV-MOBILE-001A — `frontend/tests/e2e/daily-form-mobile.spec.ts`, lane WO/status, lane handoff, this claim row only (same branch; no production edits) |
 | ~~WO-UX-SCALE-001~~ | Codex | 2026-08-22 | done — cb083a5; `frontend/tailwind.config.js`, typography/index styles, shared button/header controls and `AppShell` (branch `feat/ux-scale-001`; no `src/lib/**`) |
 | ~~WO-STAB-002~~ | GLM | 2026-08-15 | done — cdd6f6d | `frontend/src/lib/admin/ai-chat.ts`, `ai-chat.test.ts` (branch `fix/p0-stabilization`) |
