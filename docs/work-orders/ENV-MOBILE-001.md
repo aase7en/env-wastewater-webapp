@@ -1,8 +1,8 @@
 # ENV-MOBILE-001 — Wastewater DailyForm Mobile-First Completion
 
-Status: READY_FOR_IMPLEMENTATION AFTER ENV-ARCH-001 MERGES
+Status: REVIEW_REQUESTED
 
-Owner: visual/responsive implementation lane under GPT contract
+Owner: GPT + SunDay-Worker 1 as temporary visual/responsive implementation writer for this bounded slice
 Core Engineering: no production data-contract change expected; escalate if source reality requires one
 Reviewer / merge owner: GPT
 
@@ -107,6 +107,33 @@ Full gates:
 - `npm test`
 - full Playwright
 - `git diff --check`
+
+## Implementation evidence — 2026-08-27
+
+RED/baseline:
+
+- Added `frontend/tests/e2e/daily-form-mobile.spec.ts` at 360×800.
+- Before responsive implementation, the first two water-quality controls rendered 149 px apart on the x-axis, proving the unconditional two-column phone layout.
+- A second baseline run exposed a separate interaction collision: the floating `ModuleDock` intercepted pointer events over the fixed submit bar. This was fixed within the owned `DailyFormPage.tsx` scope by lifting the action bar above the dock and increasing bottom completion clearance; AppShell/ModuleDock were not modified.
+
+Implementation:
+
+- Implementation checkpoint: `a99629935b68dac58a3e7fb8c1498e923fe5a174`.
+- The three dense numeric groups now use one column below `sm` and preserve two-column density from `sm` upward.
+- The form bottom clearance increased so the final fields can scroll above the elevated action bar.
+- The action bar is lifted above the floating dock and given the higher local stacking order needed for reliable phone taps.
+- No schema, query, threshold, hydration, repair-request, null/unknown, AppShell, navigation, or Digital Twin contract changed.
+
+GREEN evidence:
+
+- focused ENV-MOBILE-001 Playwright: 3/3 PASS (360 px layout, desktop two-column preservation, real phone interaction/save/validation path);
+- full Playwright: 51/51 PASS, including the existing 34.7 s dirty-form hydration/reconnect regression;
+- Vitest: 202/202 PASS;
+- production build: PASS;
+- oxlint: 0 errors, 12 pre-existing warnings;
+- `git diff --check`: PASS.
+
+Reviewer note: the deterministic submit mock confirms the existing form/API boundary preserves typed measurement values as numeric strings (for example `"2.5"`) before PostgREST coercion. This WO intentionally preserves that existing data contract rather than expanding into numeric-payload normalization.
 
 ## Acceptance criteria
 

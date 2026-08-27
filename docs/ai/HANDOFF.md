@@ -1,17 +1,38 @@
 # HANDOFF
 
-## Active checkpoint — ENV-ARCH-001 — 2026-08-27
+## Active checkpoint — ENV-MOBILE-001 — 2026-08-27
 
-- Goal: complete the project operating architecture layer (unified architecture + graph + roadmap + source inventory) before resuming production feature work.
-- User authorization: continue ENV development toward the confirmed project goal using the goal-first loop, one bounded slice at a time.
-- Branch/worktree: `docs/env-project-operating-architecture` / `A:\\GitHub\\envww-operating-architecture`.
-- Base: `origin/main@9abf1b02d09a14f5328fd03fac32c837c3d89bc2`.
-- Production source changes in this slice: none.
-- New operating artifacts: `PROJECT-OPERATING-MAP.md`, `architecture/SYSTEM-ARCHITECTURE.md`, `graph/PROJECT-GRAPH.md`, `ROADMAP.md`, current-state inventory, ENV-ARCH-001 and ENV-MOBILE-001 work orders.
-- Source inventory finding: `DailyFormPage.tsx` is the densest field workflow and contains multiple unconditional two-column grids at phone width; it is the next highest-confidence mobile-first production slice.
-- Implementation checkpoint: `1d49fdd4e8bbde7851ad5ba61a366237980d9636`.
+### ENV-ARCH-001 closure
+
+- PR #39 reviewed exact head: `2d58c684330d4db0e80bda0c8fc2ebd8890e4eef`.
+- Merge on main: `08db62c821cf7b95aaeb373c603d77ccc4d9b98a`.
+- Reviewer verified docs-only diff, route inventory, schema-family claims, operating artifacts, current-main ancestry, clean diff-check, CLEAN merge state, and exact-head `scripts` + `notify` SUCCESS. Frontend E2E/deploy were not applicable to the docs-only paths.
+- Operating architecture/graph/roadmap/current-state inventory are now durable SSoT on main.
+
+### ENV-MOBILE-001 — REVIEW_REQUESTED
+
+- Goal: make the wastewater daily field form practical at 360–430 px without changing its data/validation/hydration semantics.
+- Branch/worktree: `feat/env-mobile-001` / `A:\\GitHub\\envww-mobile-001`.
+- Base: `origin/main@08db62c821cf7b95aaeb373c603d77ccc4d9b98a`.
+- Contract: `docs/work-orders/ENV-MOBILE-001.md`.
+- Temporary writer: GPT + SunDay-Worker 1, restricted to `DailyFormPage.tsx`, focused E2E, and lane SSoT/evidence. Final GPT review must use an isolated exact-head checkout before merge.
+- RED: the first two dense water-quality inputs were 149 px apart at 360 px under the prior unconditional two-column grid. A second real-use RED showed the floating ModuleDock intercepting the fixed submit action.
+- Implementation checkpoint: `a99629935b68dac58a3e7fb8c1498e923fe5a174`.
+- Implementation: dense numeric groups are one-column below `sm` and remain two-column at larger widths; form completion clearance is increased; the sticky action bar is lifted above the dock with a local z-index high enough to receive taps. No AppShell/ModuleDock/data-contract source changed.
+- Focused E2E: 3/3 PASS — mobile stack/no overflow, desktop two-column preservation, and phone abnormal-validation/value-persistence/save path including final-field/action-bar clearance.
+- Full gates: Playwright 51/51 PASS (including dirty-form reconnect regression), Vitest 202/202 PASS, production build PASS, oxlint 0 errors / 12 pre-existing warnings, `git diff --check` PASS.
+- Existing numeric-string payload behavior was observed and intentionally preserved; normalization is outside this WO.
 - Status: `REVIEW_REQUESTED`.
-- Next gate: independent review of ENV-ARCH-001 → PR/exact-SHA CI → merge/fetch-main closure → activate `ENV-MOBILE-001` only.
+- Next: commit/push exact branch → isolated exact-diff review → PR + exact-SHA CI → re-audit → authorized merge/deploy smoke.
+
+### Worktree hygiene pass — 2026-08-27
+
+- Removed only clean, already-merged worktrees with no untracked content: `env-wastewater-webapp-dt-v3-docs`, `envww-coord-pr21`, `envww-proposals`, and detached `envww-review-pr39`.
+- Deleted the corresponding merged local branches where applicable: `feature/digital-twin-v3`, `docs/coord-pr21`, and `fix/p1-annotate-phi-boundary-remediation-2`.
+- Ran `git worktree prune`.
+- Preserved the primary `A:\\GitHub\\env-wastewater-webapp` because it contains user/unknown untracked assets and remains intentionally untouched.
+- Preserved merged historical worktrees that still contain untracked `.serena/` metadata; project Git-safety rules prohibit forcing their deletion.
+- Preserved `envww-trackf` because its HEAD is not merged into current main.
 
 Status: APPROVED — PR #33 / WO-STAB-009 remediation-3 passed independent GPT re-review and merged as `b33c630d6a10a262aa6cd16469efbf475c4338fd`. ENV-P1-STABILIZATION is closed for the two activated work orders; deferred lanes remain inactive. The user-confirmed project-wide Goal-First Engineering Loop is now recorded in `docs/ai/ENV-ENGINEERING-LOOP.md` with reusable failure lessons in `docs/ai/DEFECT-MEMORY.md`.
 
