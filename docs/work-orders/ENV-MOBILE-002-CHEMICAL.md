@@ -1,6 +1,6 @@
 # ENV-MOBILE-002 — Chemical Form Mobile Convergence
 
-Status: REVIEW_REQUESTED
+Status: COMPLETE
 Owner: GPT-5.6 Sol (GLM-5.3 limit fallback authorized by user 2026-08-28)
 Independent reviewer / merge owner: fresh reviewer context after implementation stops
 Parent roadmap: `ENV-MOBILE-002+` Domain form convergence
@@ -153,6 +153,21 @@ Initial Vitest execution without local `VITE_SUPABASE_*` values was classified `
 
 Detailed evidence and residual findings: `docs/ai/handoffs/ENV-MOBILE-002-SOL.md`.
 
-## Completion gate
+## Final closure evidence — 2026-08-28
 
-Implementation is stopped at `REVIEW_REQUESTED`. Fresh reviewer must inspect the exact pushed PR head/diff and own approval/merge. Any code-changing push invalidates the evidence above. The separate `quantity=0` business/data-contract finding remains outside this responsive work order.
+Verdict: `APPROVED / MERGED / DEPLOYED / PRODUCTION-SMOKED`.
+
+- Final reviewed PR head: `795aefcf86442029923be87110831e08c589ad8d` against base `cca5a05d640c8262e0ef102d6fb9826f6f297553`.
+- Production checkpoint: `7b1baef8e70f3081fbc6e5088fdfac57c7341d92`; the following review checkpoint contains evidence/SSoT only.
+- Independent reviewer reran focused Chemical Playwright **7/7 PASS** and verified `git diff --check` clean plus the bounded page/test scope.
+- PR #42 CI at exact head: `scripts`, `notify`, and E2E `smoke` SUCCESS; GitHub E2E reported **66 passed** against the PR code.
+- PR #42 merged to `main` as `f26c753a6e49a65dfc9e5d43a482380f79dece0c`.
+- Post-merge main workflows: `test` run `33145908516` SUCCESS; Pages deploy run `33145908518` SUCCESS; E2E smoke run `33145908522` SUCCESS.
+- GitHub Pages deployment `6136344674` reports `success` for exact main SHA `f26c753...` at `https://aase7en.github.io/env-wastewater-webapp/`.
+- Live deployed-bundle mobile smoke at 390×844 with REST intercepted to avoid real data writes: Chemical heading rendered; catalog x-delta **0 px**; delete targets **44×44 px**; stock/history scroll remained local; document width remained 390 px with no page overflow. Direct GitHub Pages deep-link returned HTTP 404 before SPA recovery, which is a hosting/deep-link behavior rather than a Chemical layout regression.
+- Data-honesty/business scope preserved: no `lib/chemical.ts`, schema/RLS/query/balance/payload/shared-shell/other-form/Digital Twin changes.
+- Separate non-blocking finding remains: movement `quantity` initializes to `0` and DB has no positive-quantity CHECK. Any change requires a separate business/data-contract work order.
+
+## Stop gate — CLOSED
+
+ENV-MOBILE-002 Chemical is complete. The next domain-form convergence slice is Water Supply and must start under a new bounded work order after this closeout is merged to main.

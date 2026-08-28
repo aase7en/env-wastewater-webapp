@@ -117,7 +117,9 @@ Likely owner split:
 
 ### ENV-MOBILE-002+ — Domain form convergence
 
-**Active bounded slice:** `ENV-MOBILE-002` — Chemical form. Activated 2026-08-28 after ENV-MOBILE-001 closeout merged; implementation is now `REVIEW_REQUESTED` at production checkpoint `7b1baef8e70f3081fbc6e5088fdfac57c7341d92` with full Playwright 66/66 and Vitest 202/202 PASS. Fresh independent review/CI/merge/deploy/closure are the remaining gates. Contract: `docs/work-orders/ENV-MOBILE-002-CHEMICAL.md`.
+**Completed bounded slice:** `ENV-MOBILE-002` — Chemical form. PR #42 reviewed exact head `795aefcf86442029923be87110831e08c589ad8d`, merged as `f26c753a6e49a65dfc9e5d43a482380f79dece0c`, post-merge test/E2E/Pages green, deployment `6136344674` successful, and live mobile production smoke passed. Contract: `docs/work-orders/ENV-MOBILE-002-CHEMICAL.md`.
+
+**Next eligible slice:** `ENV-MOBILE-003` — Water Supply. It remains unactivated until the ENV-MOBILE-002 docs-only closeout reaches main; begin with source-reality audit and phone-width RED/baseline before production mutation.
 
 After Mobile-001 provides a proven pattern, audit and improve one domain per WO, prioritized by field frequency and control density:
 
