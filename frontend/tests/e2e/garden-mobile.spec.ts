@@ -7,6 +7,8 @@ import type { GardenInput } from "../../src/lib/garden";
  * Synthetic rows/values are deterministic layout and interaction evidence only.
  */
 const PHONE = { width: 360, height: 800 };
+const PHONE_320 = { width: 320, height: 800 };
+const PHONE_390 = { width: 390, height: 844 };
 const PHONE_430 = { width: 430, height: 900 };
 const TABLET = { width: 768, height: 1024 };
 const DESKTOP = { width: 1024, height: 900 };
@@ -27,6 +29,9 @@ const GARDEN_FIELDS = [
 const SAVE = "\u0e1a\u0e31\u0e19\u0e17\u0e36\u0e01";
 const DELETE = "\u0e25\u0e1a";
 const SAVE_OK = "\u0e1a\u0e31\u0e19\u0e17\u0e36\u0e01\u0e2a\u0e33\u0e40\u0e23\u0e47\u0e08";
+const HISTORY_REGION = "ประวัติการดูแลสวน";
+const DATE_ERROR_ID = "garden-round-date-error";
+const DATE_REQUIRED_ERROR = "กรุณาระบุวันที่ก่อนบันทึก";
 
 const GARDEN_ROW = {
   id: "50000000-0000-0000-0000-000000000001",
@@ -96,6 +101,31 @@ async function documentHasNoHorizontalOverflow(page: Page) {
   return page.evaluate(() => document.documentElement.scrollWidth <= window.innerWidth);
 }
 
+async function historyLayout(page: Page) {
+  return content(page).locator("table").evaluate((table) => {
+    const tableElement = table as HTMLElement;
+    const region = tableElement.closest<HTMLElement>('[role="region"]');
+    const boundary = region ?? tableElement;
+    const card = boundary.parentElement;
+    if (!card) throw new Error("Garden history containment card is missing");
+    const boundaryBox = boundary.getBoundingClientRect();
+    const cardBox = card.getBoundingClientRect();
+    return {
+      hasRegion: region !== null,
+      regionName: region?.getAttribute("aria-label") ?? null,
+      boundaryLeft: boundaryBox.left,
+      boundaryRight: boundaryBox.right,
+      cardLeft: cardBox.left,
+      cardRight: cardBox.right,
+      viewportWidth: window.innerWidth,
+      clientWidth: boundary.clientWidth,
+      scrollWidth: boundary.scrollWidth,
+      overflowX: getComputedStyle(boundary).overflowX,
+      documentScrollWidth: document.documentElement.scrollWidth,
+    };
+  });
+}
+
 test.describe("ENV-MOBILE-005 Garden mobile regression", () => {
   test.beforeEach(async ({ authed: page }) => {
     await mockGardenDependencies(page);
@@ -124,11 +154,80 @@ test.describe("ENV-MOBILE-005 Garden mobile regression", () => {
     }
   });
 
-  test("history table remains contained without document-level horizontal overflow", async ({ authed: page }) => {
-    await page.setViewportSize(PHONE);
+  test("history has a named local containment region at 320, 360, and 390 px", async ({ authed: page }) => {
+    for (const viewport of [PHONE_320, PHONE, PHONE_390]) {
+      await page.setViewportSize(viewport);
+      await page.goto("/garden");
+      await expect(content(page).locator("table")).toHaveCount(1);
+      const layout = await historyLayout(page);
+      const evidence = `${viewport.width}px history layout: ${JSON.stringify(layout)}`;
+
+      // These bounds catch the old false green where AppShell hid document
+      // overflow while the table and Delete action escaped the Garden card.
+      expect.soft(layout.hasRegion, evidence).toBe(true);
+      expect.soft(layout.regionName, evidence).toBe(HISTORY_REGION);
+      expect.soft(layout.boundaryLeft, evidence).toBeGreaterThanOrEqual(layout.cardLeft - 1);
+      expect.soft(layout.boundaryRight, evidence).toBeLessThanOrEqual(layout.cardRight + 1);
+      expect.soft(layout.boundaryLeft, evidence).toBeGreaterThanOrEqual(-1);
+      expect.soft(layout.boundaryRight, evidence).toBeLessThanOrEqual(layout.viewportWidth + 1);
+      expect.soft(layout.scrollWidth, evidence).toBeGreaterThan(layout.clientWidth);
+      expect.soft(["auto", "scroll"], evidence).toContain(layout.overflowX);
+      expect.soft(layout.documentScrollWidth, evidence).toBeLessThanOrEqual(layout.viewportWidth);
+    }
+  });
+
+  test("keyboard ArrowRight scroll makes the full Delete action reachable locally", async ({ authed: page }) => {
+    await page.setViewportSize(PHONE_320);
     await page.goto("/garden");
-    await expect(content(page).locator("table")).toHaveCount(1);
-    expect(await documentHasNoHorizontalOverflow(page)).toBe(true);
+    const region = content(page).getByRole("region", { name: HISTORY_REGION, exact: true });
+    await expect(region).toHaveCount(1);
+    await region.focus();
+    await expect(region).toBeFocused();
+    await expect(region).toHaveAttribute("tabindex", "0");
+
+    const initial = await region.evaluate((element) => ({
+      clientWidth: element.clientWidth,
+      scrollWidth: element.scrollWidth,
+      scrollLeft: element.scrollLeft,
+    }));
+    expect(initial.scrollWidth).toBeGreaterThan(initial.clientWidth);
+    expect(initial.scrollLeft).toBe(0);
+
+    for (let step = 0; step < 8; step += 1) await page.keyboard.press("ArrowRight");
+    await expect.poll(() => region.evaluate((element) => element.scrollLeft)).toBeGreaterThan(0);
+
+    const regionBox = await region.boundingBox();
+    const deleteBox = await content(page).getByRole("button", { name: DELETE, exact: true }).boundingBox();
+    expect(regionBox).not.toBeNull();
+    expect(deleteBox).not.toBeNull();
+    expect(deleteBox!.x).toBeGreaterThanOrEqual(regionBox!.x - 1);
+    expect(deleteBox!.x + deleteBox!.width).toBeLessThanOrEqual(regionBox!.x + regionBox!.width + 1);
+    expect(deleteBox!.x + deleteBox!.width).toBeLessThanOrEqual(PHONE_320.width + 1);
+  });
+
+  test("desktop history keeps full density without unnecessary local clipping", async ({ authed: page }) => {
+    await page.setViewportSize(DESKTOP);
+    await page.goto("/garden");
+    const region = content(page).getByRole("region", { name: HISTORY_REGION, exact: true });
+    await expect(region).toHaveCount(1);
+    const layout = await region.evaluate((element) => {
+      const tableBox = element.querySelector("table")!.getBoundingClientRect();
+      const regionBox = element.getBoundingClientRect();
+      return {
+        clientWidth: element.clientWidth,
+        scrollWidth: element.scrollWidth,
+        scrollLeft: element.scrollLeft,
+        tableLeft: tableBox.left,
+        tableRight: tableBox.right,
+        regionLeft: regionBox.left,
+        regionRight: regionBox.right,
+      };
+    });
+    expect(layout.scrollWidth).toBeLessThanOrEqual(layout.clientWidth + 1);
+    expect(layout.scrollLeft).toBe(0);
+    expect(layout.tableLeft).toBeGreaterThanOrEqual(layout.regionLeft - 1);
+    expect(layout.tableRight).toBeLessThanOrEqual(layout.regionRight + 1);
+    await expect(content(page).getByRole("button", { name: DELETE, exact: true })).toBeInViewport();
   });
 
   test("390 and 430 px keep one-column phone composition", async ({ authed: page }) => {
@@ -205,6 +304,49 @@ test.describe("ENV-MOBILE-005 Garden mobile regression", () => {
     const retryPayload = JSON.parse(posts[1]) as Record<string, unknown>;
     expect(retryPayload).toEqual(expectedGardenInput);
     expect(retryPayload).toEqual(failedPayload);
+  });
+
+  test("blank required date blocks POST, preserves values, and focuses an associated persistent error", async ({ authed: page }) => {
+    const posts: string[] = [];
+    await page.unroute("**/rest/v1/work_round**");
+    await mockGardenDependencies(page, { posts });
+    await page.setViewportSize(PHONE_390);
+    await page.goto("/garden");
+
+    const date = gardenField(page, GARDEN_FIELDS[0][0]);
+    const equipment = gardenField(page, GARDEN_FIELDS[6][0]);
+    const dateLabel = content(page).locator(`label[for="${GARDEN_FIELDS[0][1]}"]`);
+    await expect.soft(dateLabel.locator("..").getByText("*", { exact: true })).toBeVisible();
+    await expect.soft(date).toHaveAttribute("required", "");
+    await expect.soft(date).toHaveAttribute("aria-required", "true");
+
+    await equipment.fill("E2E mower preserved after date validation");
+    await date.fill("");
+    await content(page).getByRole("button", { name: SAVE, exact: true }).click();
+
+    const error = content(page).locator(`#${DATE_ERROR_ID}`);
+    expect.soft(posts).toHaveLength(0);
+    await expect.soft(equipment).toHaveValue("E2E mower preserved after date validation");
+    await expect.soft(error).toBeVisible();
+    await expect.soft(error).toHaveAttribute("role", "alert");
+    await expect.soft(error).toHaveText(DATE_REQUIRED_ERROR);
+    await expect.soft(date).toHaveAttribute("aria-invalid", "true");
+    await expect.soft(date).toHaveAttribute("aria-describedby", DATE_ERROR_ID);
+    await expect.soft(date).toBeFocused();
+
+    // The message persists while invalid, even after focus moves elsewhere.
+    await equipment.focus();
+    await expect.soft(error).toBeVisible();
+    await expect.soft(equipment).toHaveValue("E2E mower preserved after date validation");
+
+    await date.fill("2026-08-28");
+    await expect(error).toHaveCount(0);
+    await content(page).getByRole("button", { name: SAVE, exact: true }).click();
+    await expect(page.getByRole("status").filter({ hasText: SAVE_OK })).toBeVisible();
+    expect(posts).toHaveLength(1);
+    const payload = JSON.parse(posts[0]) as Record<string, unknown>;
+    expect(payload.round_date).toBe("2026-08-28");
+    expect(payload.equipment_used).toBe("E2E mower preserved after date validation");
   });
 
   test("all Garden controls have semantic labels with stable page-local IDs", async ({ authed: page }) => {
