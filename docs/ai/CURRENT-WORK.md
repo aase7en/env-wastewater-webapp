@@ -25,7 +25,7 @@ Allowed statuses:
 - Actual ENV schema confirms Garden extension fields. A-Wiki's pending-extension note is stale. Garden data/query/schema/carbon semantics remain read-only.
 - Garden is sequenced before Garbage because Garbage carries additional dual waste-type/segregation and compliance/manifest semantics that require separate Core scrutiny; Garbage remains inactive/read-only.
 - `ENV-MOBILE-001` through `ENV-MOBILE-004` are complete/read-only historical evidence.
-- Next gate: deterministic Garden RED/baseline before production mutation.
+- RED baseline captured: 360px x-delta 154px; delete width 19.125px; semantic date label resolves 0 controls; history containment and 1024px density already pass. Next gate: page-local implementation only.
 
 ## Review Queue — 2026-08-23
 

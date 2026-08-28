@@ -16,3 +16,15 @@ Contract: `docs/work-orders/ENV-MOBILE-005-GARDEN.md`
 - Actual ENV schema confirms Garden extension fields; A-Wiki's pending-extension note is stale and not used as authority.
 - `.serena/` remains protected/untracked and untouched.
 - Next step: establish deterministic phone-width RED/baseline before production edit.
+
+## RED / baseline evidence
+
+At activation head `1fce5132f7e667f9324a1ff0eca9110c73d9f2f1`, focused Garden baseline ran with retries 0 / worker 1: **2 PASS / 3 RED**.
+
+- phone control x-delta = 154 px;
+- delete width = 19.125 px (<44);
+- first semantic label lookup resolves 0 controls and source shows the same unassociated label pattern for all nine controls;
+- history/document containment already passes at 360 px;
+- desktop density already passes at 1024 px.
+
+The production page remained untouched. The implementation seam is therefore limited to phone grid composition, page-local label/control associations, and the delete touch target.

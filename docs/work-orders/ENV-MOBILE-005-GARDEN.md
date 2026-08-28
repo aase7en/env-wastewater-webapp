@@ -84,6 +84,19 @@ Before production edit, add the smallest deterministic Garden E2E coverage and m
 
 Record conditions that already pass; do not manufacture RED.
 
+
+## Baseline evidence - 2026-08-28
+
+Focused Garden baseline at exact activation head `1fce5132f7e667f9324a1ff0eca9110c73d9f2f1`, retries 0, worker 1: **2 PASS / 3 RED**.
+
+- 360 px first/second control x-delta: **154 px** - RED versus one phone column.
+- Delete target width: **19.125 px** - RED versus 44 px minimum (width failure alone is sufficient to fail the touch contract).
+- Semantic `getByLabel("date")` equivalent for the visible Thai date label resolves **0 controls** - RED. Source markup confirms the same missing `htmlFor`/`id` pattern for all nine visible controls.
+- History table/document containment at 360 px: **PASS**. Do not add a table wrapper solely by assumption.
+- 1024 px multi-column density: **PASS**. Preserve it.
+
+No production file was changed to obtain this RED/baseline.
+
 ## Implementation seam
 
 Prefer page-local changes only: responsive grid classes, page-local IDs/`htmlFor`, and page-local 44 px delete-action treatment. Do not rewrite shared primitives or the Garden data layer.
