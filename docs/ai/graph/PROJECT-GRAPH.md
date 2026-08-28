@@ -206,11 +206,11 @@ At this checkpoint:
 - ENV-MOBILE-001 is reviewed, merged, deployed, production-smoked, and closed; its remediation/test lanes are read-only historical evidence;
 - no active writer owns the completed DailyForm slice;
 - deferred design/external lanes remain recorded, not lost;
-- `ENV-MOBILE-002` Chemical is the active critical-path slice with an explicit work order/claim and page/test ownership;
-- its implementation is `REVIEW_REQUESTED` at production checkpoint `7b1baef8e70f3081fbc6e5088fdfac57c7341d92`; focused Chemical E2E 7/7, full Playwright 66/66, Vitest 202/202 and build/typecheck gates pass;
-- `frontend/src/lib/chemical.ts`, schema/RLS, shared UI/AppShell, other module forms, and Digital Twin remain outside its mutable scope;
-- Water Supply and later domain-form slices must not be started until Chemical passes independent review, CI, merge/deploy verification, and durable closure.
+- `ENV-MOBILE-002` Chemical is reviewed, merged, deployed, production-smoked, and closed; its page/test/evidence lane is now read-only history;
+- final reviewed head `795aefcf86442029923be87110831e08c589ad8d` merged as `f26c753a6e49a65dfc9e5d43a482380f79dece0c`; post-merge test/E2E/Pages and deployment `6136344674` are green;
+- the separate Chemical `quantity=0` business-rule question is not implicitly authorized by mobile convergence and remains outside the closed slice;
+- `ENV-MOBILE-003` Water Supply is the next critical-path candidate, but it must first establish a bounded work order/claim and phone-width source-reality baseline; Fuel and later forms must not start in parallel.
 
 Current critical-path handoff:
 
-`ENV-MOBILE-001 COMPLETE → ENV-MOBILE-002 Chemical REVIEW_REQUESTED → independent review → CI → merge/deploy/closure → ENV-MOBILE-003 Water Supply`
+`ENV-MOBILE-001 COMPLETE → ENV-MOBILE-002 Chemical COMPLETE → docs closeout on main → ENV-MOBILE-003 Water Supply audit/baseline → bounded implementation/review/verify loop`

@@ -1,6 +1,6 @@
 # ENV-MOBILE-002 — Chemical Mobile Convergence Handoff
 
-Status: REVIEW_REQUESTED
+Status: COMPLETE
 Date: 2026-08-28
 Owner: GPT-5.6 Sol (user-authorized GLM-5.3 limit fallback)
 Independent reviewer / merge owner: fresh reviewer context
@@ -79,6 +79,16 @@ Initial full Vitest attempt without local `VITE_SUPABASE_URL/VITE_SUPABASE_ANON_
 2. Tables intentionally retain local horizontal scrolling on phone rather than inventing a card schema/recomposition in this bounded slice.
 3. Toast error semantics remain existing shared behavior (`role=status`); this WO verifies error visibility/value preservation but does not rewrite shared toast accessibility.
 
-## Stop gate
+## Final review / merge / deploy closure
 
-Implementation owner stops at `REVIEW_REQUESTED`. Fresh reviewer must inspect the exact pushed PR diff/SHA, rerun or inspect applicable evidence, verify CI, and own merge. Any code-changing push invalidates this handoff evidence and requires fresh verification.
+- Final reviewed PR head: `795aefcf86442029923be87110831e08c589ad8d` against base `cca5a05d640c8262e0ef102d6fb9826f6f297553`.
+- Independent reviewer reran Chemical E2E 7/7 PASS and verified the exact bounded diff + diff-check.
+- PR #42 CI: scripts/notify SUCCESS; E2E smoke **66/66 PASS**.
+- Merge: `f26c753a6e49a65dfc9e5d43a482380f79dece0c` on main.
+- Main post-merge: test `33145908516` SUCCESS; Pages `33145908518` SUCCESS; E2E `33145908522` SUCCESS.
+- Pages deployment `6136344674` SUCCESS for exact main SHA.
+- Live deployed-bundle 390×844 smoke with mocked REST/no real writes: one-column Chemical form, delete targets 44×44, local table scroll, no document overflow. GitHub Pages direct deep-link returns 404 before SPA recovery; the rendered application behavior is correct.
+
+## Stop gate — CLOSED
+
+ENV-MOBILE-002 Chemical is complete. The `quantity=0` question remains explicitly separate. Water Supply is the next eligible mobile-convergence slice only after the docs closeout reaches main.
