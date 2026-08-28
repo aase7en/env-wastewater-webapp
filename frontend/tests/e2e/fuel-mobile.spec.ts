@@ -1,5 +1,6 @@
 import { test, expect } from "./fixtures";
 import { devices, type Page } from "@playwright/test";
+import type { FuelInput } from "../../src/lib/fuel";
 
 /**
  * ENV-MOBILE-004 — Fuel mobile convergence.
@@ -14,6 +15,20 @@ const PHONE_430 = { width: 430, height: 900 };
 const TABLET = { width: 768, height: 1024 };
 const DESKTOP = { width: 1024, height: 900 };
 const VISUAL_DIR = "test-results";
+
+const FUEL_FIELDS = [
+  ["วันที่", "fuel-log-date"],
+  ["ประเภท", "fuel-type"],
+  ["ปริมาณ (L)", "fuel-litres"],
+  ["มิเตอร์ก่อน", "fuel-meter-before"],
+  ["มิเตอร์หลัง", "fuel-meter-after"],
+  ["ทะเบียนรถ", "fuel-vehicle-id"],
+  ["ไมล์", "fuel-odometer"],
+  ["วัตถุประสงค์", "fuel-purpose"],
+  ["ราคา (บาท)", "fuel-cost-baht"],
+  ["Supplier", "fuel-supplier"],
+  ["หมายเหตุ", "fuel-note"],
+] as const;
 
 const FUEL_ROWS = [
   {
@@ -74,18 +89,6 @@ async function documentHasNoHorizontalOverflow(page: Page) {
   return page.evaluate(() => document.documentElement.scrollWidth <= window.innerWidth);
 }
 
-function formCard(page: Page) {
-  return page.getByRole("button", { name: "บันทึก", exact: true }).locator("..");
-}
-
-function formControls(page: Page) {
-  return formCard(page).locator("input, select");
-}
-
-function formInputs(page: Page) {
-  return formCard(page).locator("input");
-}
-
 test.describe("ENV-MOBILE-004 Fuel mobile regression", () => {
   test.beforeEach(async ({ authed: page }) => {
     await mockFuelDependencies(page);
@@ -96,9 +99,8 @@ test.describe("ENV-MOBILE-004 Fuel mobile regression", () => {
     await page.goto("/fuel");
     await expect(page.getByRole("heading", { name: "การใช้เชื้อเพลิง" })).toBeVisible();
 
-    const controls = formControls(page);
-    const first = await controls.nth(0).boundingBox();
-    const second = await controls.nth(1).boundingBox();
+    const first = await page.getByLabel("วันที่", { exact: true }).boundingBox();
+    const second = await page.getByLabel("ประเภท", { exact: true }).boundingBox();
     expect(first).not.toBeNull();
     expect(second).not.toBeNull();
     const xDelta = Math.abs(first!.x - second!.x);
@@ -135,9 +137,8 @@ test.describe("ENV-MOBILE-004 Fuel mobile regression", () => {
     for (const [label, viewport] of [["390", { width: 390, height: 844 }], ["430", PHONE_430]] as const) {
       await page.setViewportSize(viewport);
       await page.goto("/fuel");
-      const controls = formControls(page);
-      const first = await controls.nth(0).boundingBox();
-      const second = await controls.nth(1).boundingBox();
+      const first = await page.getByLabel("วันที่", { exact: true }).boundingBox();
+      const second = await page.getByLabel("ประเภท", { exact: true }).boundingBox();
       expect(first).not.toBeNull();
       expect(second).not.toBeNull();
       expect(Math.abs(first!.x - second!.x), `${label}px should remain one column`).toBeLessThan(8);
@@ -150,9 +151,8 @@ test.describe("ENV-MOBILE-004 Fuel mobile regression", () => {
     for (const [label, viewport] of [["768", TABLET], ["1024", DESKTOP]] as const) {
       await page.setViewportSize(viewport);
       await page.goto("/fuel");
-      const controls = formControls(page);
-      const first = await controls.nth(0).boundingBox();
-      const second = await controls.nth(1).boundingBox();
+      const first = await page.getByLabel("วันที่", { exact: true }).boundingBox();
+      const second = await page.getByLabel("ประเภท", { exact: true }).boundingBox();
       expect(first).not.toBeNull();
       expect(second).not.toBeNull();
       expect(Math.abs(first!.x - second!.x), `${label}px should preserve multi-column density`).toBeGreaterThan(80);
@@ -167,35 +167,49 @@ test.describe("ENV-MOBILE-004 Fuel mobile regression", () => {
 
     await page.setViewportSize(PHONE_430);
     await page.goto("/fuel");
-    const inputs = formInputs(page);
-    await inputs.nth(1).fill("10"); // litres
-    await inputs.nth(2).fill("100"); // meter_before
-    await inputs.nth(3).fill("110"); // meter_after
-    await inputs.nth(4).fill("E2E-RETRY-01"); // vehicle_id
-    await inputs.nth(6).fill("งานทดสอบ E2E"); // purpose
-    const note = formCard(page).locator("textarea");
+    await page.getByLabel("วันที่", { exact: true }).fill("2026-08-28");
+    await page.getByLabel("ปริมาณ (L)", { exact: true }).fill("10");
+    await page.getByLabel("มิเตอร์ก่อน", { exact: true }).fill("100");
+    await page.getByLabel("มิเตอร์หลัง", { exact: true }).fill("110");
+    await page.getByLabel("ทะเบียนรถ", { exact: true }).fill("E2E-RETRY-01");
+    await page.getByLabel("วัตถุประสงค์", { exact: true }).fill("งานทดสอบ E2E");
+    const note = page.getByLabel("หมายเหตุ", { exact: true });
     await note.fill("synthetic retry evidence");
+
+    const expectedFuelInput = {
+      log_date: "2026-08-28",
+      fuel_type: "diesel",
+      litres: 10,
+      meter_before: 100,
+      meter_after: 110,
+      vehicle_or_use: null,
+      vehicle_id: "E2E-RETRY-01",
+      odometer: null,
+      purpose: "งานทดสอบ E2E",
+      cost_baht: null,
+      supplier: null,
+      note: "synthetic retry evidence",
+    } satisfies FuelInput;
 
     const save = page.getByRole("button", { name: "บันทึก", exact: true });
     await save.click();
     await expect(page.getByRole("status").filter({ hasText: "ผิดพลาด: E2E fuel save failure" })).toBeVisible();
-    await expect(inputs.nth(1)).toHaveValue("10");
-    await expect(inputs.nth(2)).toHaveValue("100");
-    await expect(inputs.nth(3)).toHaveValue("110");
-    await expect(inputs.nth(4)).toHaveValue("E2E-RETRY-01");
+    await expect(page.getByLabel("ปริมาณ (L)", { exact: true })).toHaveValue("10");
+    await expect(page.getByLabel("มิเตอร์ก่อน", { exact: true })).toHaveValue("100");
+    await expect(page.getByLabel("มิเตอร์หลัง", { exact: true })).toHaveValue("110");
+    await expect(page.getByLabel("ทะเบียนรถ", { exact: true })).toHaveValue("E2E-RETRY-01");
+    await expect(page.getByLabel("วัตถุประสงค์", { exact: true })).toHaveValue("งานทดสอบ E2E");
     await expect(note).toHaveValue("synthetic retry evidence");
+    expect(posts).toHaveLength(1);
+    const failedPayload = JSON.parse(posts[0]) as Record<string, unknown>;
+    expect(failedPayload).toEqual(expectedFuelInput);
 
     await save.click();
     await expect(page.getByRole("status").filter({ hasText: "บันทึกสำเร็จ" })).toBeVisible();
     expect(posts).toHaveLength(2);
     const retryPayload = JSON.parse(posts[1]) as Record<string, unknown>;
-    expect(retryPayload.fuel_type).toBe("diesel");
-    expect(retryPayload.litres).toBe(10);
-    expect(retryPayload.meter_before).toBe(100);
-    expect(retryPayload.meter_after).toBe(110);
-    expect(retryPayload.vehicle_id).toBe("E2E-RETRY-01");
-    expect(retryPayload.purpose).toBe("งานทดสอบ E2E");
-    expect(retryPayload.note).toBe("synthetic retry evidence");
+    expect(retryPayload).toEqual(expectedFuelInput);
+    expect(retryPayload).toEqual(failedPayload);
   });
 
   test("meter delta mismatch remains visible and confirm controls whether save proceeds", async ({ authed: page }) => {
@@ -205,10 +219,9 @@ test.describe("ENV-MOBILE-004 Fuel mobile regression", () => {
 
     await page.setViewportSize(PHONE_430);
     await page.goto("/fuel");
-    const inputs = formInputs(page);
-    await inputs.nth(1).fill("8");
-    await inputs.nth(2).fill("100");
-    await inputs.nth(3).fill("110");
+    await page.getByLabel("ปริมาณ (L)", { exact: true }).fill("8");
+    await page.getByLabel("มิเตอร์ก่อน", { exact: true }).fill("100");
+    await page.getByLabel("มิเตอร์หลัง", { exact: true }).fill("110");
 
     await expect(page.getByText(/meter delta \(10\).*litres \(8\).*diff=2/)).toBeVisible();
 
@@ -228,6 +241,61 @@ test.describe("ENV-MOBILE-004 Fuel mobile regression", () => {
     await expect(page.getByRole("status").filter({ hasText: "บันทึกสำเร็จ" })).toBeVisible();
     expect(posts).toHaveLength(1);
   });
+
+  test("all Fuel controls have semantic labels with stable page-local IDs", async ({ authed: page }) => {
+    await page.setViewportSize(PHONE_430);
+    await page.goto("/fuel");
+
+    for (const [label, id] of FUEL_FIELDS) {
+      const control = page.getByLabel(label, { exact: true });
+      await expect(control).toHaveCount(1);
+      await expect(control).toBeVisible();
+      await expect(control).toHaveAttribute("id", id);
+      await expect(control).toHaveAccessibleName(label);
+    }
+  });
+
+  test("keyboard tab order reaches every Fuel control and Enter activates save", async ({ authed: page }) => {
+    const posts: string[] = [];
+    await page.unroute("**/rest/v1/dispense_log**");
+    await mockFuelDependencies(page, { posts });
+
+    await page.setViewportSize(PHONE_430);
+    await page.goto("/fuel");
+    await page.getByLabel("วันที่", { exact: true }).fill("2026-08-28");
+    await page.getByLabel("ปริมาณ (L)", { exact: true }).fill("5");
+    await page.getByLabel("มิเตอร์ก่อน", { exact: true }).fill("300");
+    await page.getByLabel("มิเตอร์หลัง", { exact: true }).fill("305");
+
+    const save = page.getByRole("button", { name: "บันทึก", exact: true });
+    const focusOrder = [
+      ...FUEL_FIELDS.map(([label]) => page.getByLabel(label, { exact: true })),
+      save,
+    ];
+    await focusOrder[0].focus();
+    await expect(focusOrder[0]).toBeFocused();
+
+    // Chromium's native date control can retain host focus while Tab moves
+    // through its internal segments. Before advancing, focus may remain only
+    // on that date host; all remaining Fuel controls require one exact Tab.
+    for (let attempt = 0; attempt < 4; attempt += 1) {
+      await page.keyboard.press("Tab");
+      if (await focusOrder[1].evaluate((element) => element === document.activeElement)) break;
+      await expect(focusOrder[0]).toBeFocused();
+    }
+    await expect(focusOrder[1]).toBeFocused();
+
+    for (let index = 1; index < focusOrder.length - 1; index += 1) {
+      await expect(focusOrder[index]).toBeFocused();
+      await page.keyboard.press("Tab");
+      await expect(focusOrder[index + 1]).toBeFocused();
+    }
+
+    await expect(save).toBeFocused();
+    await page.keyboard.press("Enter");
+    await expect(page.getByRole("status").filter({ hasText: "บันทึกสำเร็จ" })).toBeVisible();
+    expect(posts).toHaveLength(1);
+  });
 });
 
 test.describe("ENV-MOBILE-004 real touch context", () => {
@@ -239,11 +307,10 @@ test.describe("ENV-MOBILE-004 real touch context", () => {
     await mockFuelDependencies(page, { posts });
     await page.goto("/fuel");
 
-    const inputs = formInputs(page);
-    await inputs.nth(1).fill("5");
-    await inputs.nth(2).fill("200");
-    await inputs.nth(3).fill("205");
-    await inputs.nth(4).fill("E2E-TOUCH-01");
+    await page.getByLabel("ปริมาณ (L)", { exact: true }).fill("5");
+    await page.getByLabel("มิเตอร์ก่อน", { exact: true }).fill("200");
+    await page.getByLabel("มิเตอร์หลัง", { exact: true }).fill("205");
+    await page.getByLabel("ทะเบียนรถ", { exact: true }).fill("E2E-TOUCH-01");
     await page.getByRole("button", { name: "บันทึก", exact: true }).tap();
     await expect(page.getByRole("status").filter({ hasText: "บันทึกสำเร็จ" })).toBeVisible();
 
