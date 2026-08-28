@@ -86,6 +86,16 @@ No shared Input/Button, Fuel data/query/import adapter, carbon code, schema/RLS/
 
 `fuel.dispense_log.fuel_type` is free text. `frontend/src/lib/import-adapters/fuel.ts` can pass imported arbitrary strings through, while `carbon.v_unified_co2e` casts `d.fuel_type::carbon.source_type`. Current UI options (`diesel`, `gasoline`, `lpg`, `other`) match the enum, but legacy/import values outside the enum may make carbon rollup evaluation fail. This needs a separate Core Engineering data-contract/regression work order; do not silently change it in the mobile convergence PR.
 
-## Stop gate
+## Final review / merge / deployment closure
 
-Implementation owner stops at `RE-REVIEW_REQUESTED`. Fresh independent reviewer must inspect the exact pushed PR head/diff, rerun/inspect focused evidence, verify exact-head CI, and own approval/merge. Any code-changing push invalidates this evidence and requires fresh verification.
+- Fresh independent exact-SHA re-review at `8e871d225a67f1da2a1c143556c2b34aaf9e90c6`: APPROVED; reviewer focused Fuel rerun **10/10 PASS**, retries 0, worker 1; review record `5051826429`.
+- Exact-head PR CI: E2E `33164741371` SUCCESS; test `33164741375` SUCCESS.
+- Merge: PR #46 -> `57f0bb3dd5c9a7e74ee0deb84bb166b215a8706a`.
+- Post-merge exact-SHA workflows: test `33178476395`, E2E `33178476367`, Pages `33178476366` - all SUCCESS.
+- GitHub Pages deployment `6142569782`: `success`, exact merge SHA.
+- Live 390x844 deployed-bundle root-to-client `/fuel` smoke, all REST mocked/no real writes: x-delta 0; semantic associations 11/11; Save 71.89x48; Delete 44x44; document width 390; no console/page errors.
+- Direct deep-link full production-spec run observed two transient overflow assertions during shared ModuleDock settling; root-to-client settled smoke is clean. Shared shell was unchanged by this WO, so this is not a Fuel-page blocker.
+
+## Stop gate - CLOSED
+
+ENV-MOBILE-004 is complete/read-only. Next eligible mutable domain-form slice is Garden/Garbage after this docs-only closeout reaches main. The separate imported free-text `fuel_type` -> carbon enum-cast finding remains a Core Engineering follow-up.

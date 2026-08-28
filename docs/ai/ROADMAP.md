@@ -121,7 +121,10 @@ Likely owner split:
 
 **Completed bounded slice:** `ENV-MOBILE-003` — Water Supply. PR #44 reviewed exact head `5cd8f4aa304812868a669bab614177f8a4525c1b`, merged as `d3034d83954ec8287b9dab561f7802668207d23e`, post-merge test/E2E/Pages green, deployment `6137172294` successful, and live 390px deployed-bundle smoke passed without real writes. Contract: `docs/work-orders/ENV-MOBILE-003-WATER-SUPPLY.md`.
 
-**Active bounded slice:** `ENV-MOBILE-004` — Fuel. `REVIEW_REQUESTED` at production checkpoint `413d435cf780ee6b809175d15fc2b86a55baf01d`: focused Fuel E2E 8/8, full Playwright 81/81, Vitest 202/202, typecheck/build PASS, lint 12 baseline warnings / 0 errors, route smoke + diff-check PASS. Production scope is limited to the phone grid breakpoint + 44px delete target; Fuel data/import/carbon/meter-delta semantics are unchanged. GLM-5.3 MAX may continue a parallel read-only Core Engineering audit with no mutable scope. Separate import free-text `fuel_type` → carbon enum-cast risk remains outside this mobile slice. Contract: `docs/work-orders/ENV-MOBILE-004-FUEL.md`.
+**Completed bounded slice:** `ENV-MOBILE-004` - Fuel. PR #46 reviewed exact head `8e871d225a67f1da2a1c143556c2b34aaf9e90c6`, merged as `57f0bb3dd5c9a7e74ee0deb84bb166b215a8706a`; post-merge test/E2E/Pages are green, deployment `6142569782` succeeded for the exact merge SHA, and live 390px root-to-client deployed-bundle smoke passed with mocked REST/no real writes. Contract: `docs/work-orders/ENV-MOBILE-004-FUEL.md`.
+
+**Next eligible slice:** Garden / Garbage. It remains unactivated until the ENV-MOBILE-004 docs-only closeout reaches main; establish a fresh source audit, bounded work order/claim, and phone-width baseline before production mutation.
+
 
 After Mobile-001 provides a proven pattern, audit and improve one domain per WO, prioritized by field frequency and control density:
 

@@ -1,5 +1,20 @@
 # HANDOFF
 
+## Closed checkpoint - ENV-MOBILE-004 - Fuel - 2026-08-28
+
+- Goal: converge Fuel / fleet-dispense entry to the proven mobile-first operational pattern without changing Fuel data/query/schema, meter-delta, import, or carbon semantics.
+- Contract: `docs/work-orders/ENV-MOBILE-004-FUEL.md`; lane evidence: `docs/ai/handoffs/ENV-MOBILE-004-SOL.md`.
+- RED baseline: 360px first/second form-field x-delta 154px; delete target ~19.125x24.797px; document/table containment and desktop density already passed.
+- Production checkpoint `413d435cf780ee6b809175d15fc2b86a55baf01d`; remediation checkpoint `6ac3c96d42cd9b9eff15429e4436d24dcad22438`; final reviewed PR #46 head `8e871d225a67f1da2a1c143556c2b34aaf9e90c6`.
+- Prior exact review `5050262812` returned CHANGES_REQUIRED for unassociated labels/positional coverage/keyboard/retry proof; remediation resolved all four blockers. Fresh independent reviewer reran focused Fuel **10/10 PASS** and recorded APPROVED review `5051826429`.
+- PR #46 merged as `57f0bb3dd5c9a7e74ee0deb84bb166b215a8706a`.
+- Post-merge: test `33178476395`, E2E `33178476367`, and Pages `33178476366` all SUCCESS; deployment `6142569782` SUCCESS for exact merge SHA.
+- Live 390x844 deployed-bundle smoke via Pages root + client-side `/fuel`, with all REST mocked/no real writes: x-delta 0; semantic associations 11/11; Save 71.89x48; Delete 44x44; document width equals viewport; no console/page errors.
+- Direct deep-link production-spec layout checks can sample transient ModuleDock settling overflow; the settled root-to-client smoke is clean. This is a shared shell/hosting timing observation, not a Fuel-page blocker; shared shell was not changed.
+- Fuel data layer/import adapter/carbon view/schema/RLS/shared UI/AppShell remained unchanged. Separate imported free-text `fuel_type` -> carbon enum-cast risk remains a Core Engineering follow-up.
+- Protected `.serena/` remained untouched.
+- Next safe action: merge this docs-only closeout, then activate only the next Garden/Garbage bounded slice after fresh source audit/claim/baseline.
+
 ## Active checkpoint — ENV-MOBILE-004 — Fuel — 2026-08-28
 
 - Goal: converge Fuel / fleet-dispense entry to the proven mobile-first operational pattern without changing fuel data/query/schema, meter-delta, import, or carbon semantics.
