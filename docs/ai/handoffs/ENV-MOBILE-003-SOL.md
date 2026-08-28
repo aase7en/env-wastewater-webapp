@@ -65,6 +65,13 @@ Results:
 - Table remains the existing locally-contained table; this slice did not invent a mobile card schema because baseline did not establish a containment defect.
 - GitHub Pages direct deep-link behavior is a hosting concern and is reviewed separately during production smoke.
 
-## Stop gate
+## Final review / merge / deployment closure
 
-Implementation owner stops at `REVIEW_REQUESTED`. Fresh independent reviewer must inspect the exact pushed PR head/diff, rerun/inspect applicable evidence, verify exact-head CI, and own merge. Any code-changing push invalidates this evidence and requires fresh verification.
+- Final reviewed PR #44 head: `5cd8f4aa304812868a669bab614177f8a4525c1b`.
+- Independent review: APPROVED; exact production diff limited to Water Supply responsive breakpoint + 44px delete target; data layer/schema/RLS/compliance/shared shell unchanged; focused reviewer rerun 7/7 PASS.
+- Merge: `d3034d83954ec8287b9dab561f7802668207d23e`.
+- Post-merge exact-SHA runs: test `33150344819`, E2E `33150344767`, Pages `33150344886` — all SUCCESS.
+- Deployment: `6137172294` SUCCESS for exact merge SHA.
+- Live deployed-bundle 390×844 smoke via Pages root HTTP 200 + client-side `/water-supply`, mocked REST/no real writes: form x-delta 0; save target 71.89×48; delete target 44×44; document overflow false; no console/page errors.
+
+Lane status: COMPLETE. Next eligible domain slice is Fuel after this docs-only closure is merged to main.

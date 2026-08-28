@@ -119,7 +119,9 @@ Likely owner split:
 
 **Completed bounded slice:** `ENV-MOBILE-002` — Chemical form. PR #42 reviewed exact head `795aefcf86442029923be87110831e08c589ad8d`, merged as `f26c753a6e49a65dfc9e5d43a482380f79dece0c`, post-merge test/E2E/Pages green, deployment `6136344674` successful, and live mobile production smoke passed. Contract: `docs/work-orders/ENV-MOBILE-002-CHEMICAL.md`.
 
-**Active bounded slice:** `ENV-MOBILE-003` — Water Supply. Implementation is `REVIEW_REQUESTED` at production checkpoint `66e86dcb515d411b9e6b858ae89a4109f5ac3bc3` with focused E2E 7/7, full Playwright 73/73, Vitest 202/202 and build/typecheck gates passing. Fresh independent review/CI/merge/deploy/closure remain. Contract: `docs/work-orders/ENV-MOBILE-003-WATER-SUPPLY.md`.
+**Completed bounded slice:** `ENV-MOBILE-003` — Water Supply. PR #44 reviewed exact head `5cd8f4aa304812868a669bab614177f8a4525c1b`, merged as `d3034d83954ec8287b9dab561f7802668207d23e`, post-merge test/E2E/Pages green, deployment `6137172294` successful, and live 390px deployed-bundle smoke passed without real writes. Contract: `docs/work-orders/ENV-MOBILE-003-WATER-SUPPLY.md`.
+
+**Next eligible slice:** Fuel. It remains unactivated until the ENV-MOBILE-003 docs-only closeout reaches main. A GLM-5.3 MAX read-only Core Engineering audit may proceed in parallel; GPT must reconcile it against fresh main before creating the bounded Fuel work order/claim and phone-width baseline.
 
 After Mobile-001 provides a proven pattern, audit and improve one domain per WO, prioritized by field frequency and control density:
 
