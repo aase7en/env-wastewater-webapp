@@ -1,6 +1,6 @@
 # CURRENT WORK
 
-Status: IMPLEMENTING
+Status: REVIEW_REQUESTED
 
 Allowed statuses:
 
@@ -19,13 +19,14 @@ Allowed statuses:
 ## Current execution state - 2026-08-28
 
 - Active work order: `ENV-MOBILE-005` - Garden mobile convergence; contract `docs/work-orders/ENV-MOBILE-005-GARDEN.md`.
-- Branch/worktree: `feat/env-mobile-005-garden` / `A:\GitHub\envww-review-mobile-001` from exact `origin/main@19eb31ff725e746a1e5856db5c9e86badd1c725b`.
-- Owner: GPT-5.6 Sol for page-local responsive/accessibility/touch behavior plus focused E2E. Fresh reviewer owns final approval/merge.
-- Source audit: phone form currently uses two columns; visible labels are not programmatically associated; delete target is a small-target candidate; table containment must be measured rather than assumed.
-- Actual ENV schema confirms Garden extension fields. A-Wiki's pending-extension note is stale. Garden data/query/schema/carbon semantics remain read-only.
-- Garden is sequenced before Garbage because Garbage carries additional dual waste-type/segregation and compliance/manifest semantics that require separate Core scrutiny; Garbage remains inactive/read-only.
-- `ENV-MOBILE-001` through `ENV-MOBILE-004` are complete/read-only historical evidence.
-- RED baseline captured: 360px x-delta 154px; delete width 19.125px; semantic date label resolves 0 controls; history containment and 1024px density already pass. Next gate: page-local implementation only.
+- Branch/worktree: `feat/env-mobile-005-garden` / `A:\\GitHub\\envww-review-mobile-001` from exact `origin/main@19eb31ff725e746a1e5856db5c9e86badd1c725b`.
+- RED checkpoint `6f2af89426fe66e523d92dd7d7c4b16a2c5867ca`: 360px x-delta 154px; delete width 19.125px; semantic date label resolved 0 controls; history containment + 1024px density already passed.
+- Production checkpoint `356334641fb15b5c399579dc7cde9f5640cdbb90`: only `frontend/src/pages/GardenPage.tsx` + `frontend/tests/e2e/garden-mobile.spec.ts`; phone grid becomes one column with larger-breakpoint density preserved, all 9 visible controls receive stable label/ID association, and delete reaches the existing 44px touch minimum.
+- GREEN evidence: focused Garden Playwright **9/9 PASS**; full Playwright **92/92 PASS**; Vitest **202/202 PASS**; standalone typecheck PASS; production build PASS; lint **12 pre-existing warnings / 0 errors**; targeted lint 0/0; `git diff --check` PASS.
+- Rendered regression covers 360/390/430/768/1024 plus Pixel 7 touch, keyboard Tab/Enter, deterministic save-error/retry with equal complete null-aware `GardenInput`, and synthetic rows only.
+- Garden data/query/schema/RLS/carbon behavior, `location_id`/`photo_path` null semantics, shared UI/AppShell, Garbage, other forms, and `.serena/` are unchanged/read-only.
+- State: `REVIEW_REQUESTED`. Implementation is frozen. **Codex / fresh independent reviewer** owns exact pushed-head review, focused rerun, exact-head CI inspection, approval/changes verdict, merge, post-merge test/E2E/Pages + live smoke, then docs-only closure.
+- `ENV-MOBILE-001` through `ENV-MOBILE-004` remain complete/read-only history. Garbage remains inactive until Garden closure and its own fresh Core/data-contract audit.
 
 ## Review Queue — 2026-08-23
 

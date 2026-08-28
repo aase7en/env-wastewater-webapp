@@ -1,6 +1,6 @@
 # ENV-MOBILE-005 - Garden Mobile Convergence
 
-Status: IMPLEMENTING
+Status: REVIEW_REQUESTED
 Owner: GPT-5.6 Sol
 Independent reviewer / merge owner: fresh reviewer context after implementation stops
 Parent roadmap: `ENV-MOBILE-002+` Domain form convergence
@@ -118,6 +118,16 @@ Run and record:
 - rendered inspection/screenshots at 360, 390/430, 768, 1024 where practical.
 
 If tests expose a data/query/schema/carbon defect, stop that subproblem and route it to a separate Core Engineering work order. Do not silently broaden this mobile slice.
+
+## Implementation / verification evidence - 2026-08-28
+
+Production checkpoint: `356334641fb15b5c399579dc7cde9f5640cdbb90`.
+
+Implemented only the page-local responsive/accessibility/touch seam: one-column phone grid with `sm`/`md` density restoration, stable ID/`htmlFor` associations for all 9 controls, and the existing 44px touch minimum on delete. History containment was already green and was not rewritten.
+
+Verification: focused Garden **9/9 PASS**; full Playwright **92/92 PASS**; Vitest **202/202 PASS**; typecheck PASS; build PASS; lint **12 baseline warnings / 0 errors**; targeted Garden lint 0/0; diff-check PASS; 360/390/430/768/1024 + Pixel 7 + keyboard/Enter + save-error/retry equality covered.
+
+No Garden data/query/schema/RLS/carbon/shared primitive semantics changed. All E2E data is synthetic.
 
 ## Completion gate
 

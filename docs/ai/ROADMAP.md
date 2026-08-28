@@ -123,7 +123,7 @@ Likely owner split:
 
 **Completed bounded slice:** `ENV-MOBILE-004` - Fuel. PR #46 reviewed exact head `8e871d225a67f1da2a1c143556c2b34aaf9e90c6`, merged as `57f0bb3dd5c9a7e74ee0deb84bb166b215a8706a`; post-merge test/E2E/Pages are green, deployment `6142569782` succeeded for the exact merge SHA, and live 390px root-to-client deployed-bundle smoke passed with mocked REST/no real writes. Contract: `docs/work-orders/ENV-MOBILE-004-FUEL.md`.
 
-**Active bounded slice:** `ENV-MOBILE-005` - Garden. Fresh source audit selected Garden first as the lower-semantic-risk member of the Garden/Garbage roadmap pair. Establish phone-width RED/baseline before page mutation; Garden data/schema/carbon semantics remain read-only. Garbage remains the next candidate after Garden closure and a separate Core audit of its waste classification/compliance semantics.
+**Active bounded slice:** `ENV-MOBILE-005` - Garden. `REVIEW_REQUESTED` at production checkpoint `356334641fb15b5c399579dc7cde9f5640cdbb90`: focused Garden 9/9, full Playwright 92/92, Vitest 202/202, typecheck/build PASS, lint 12 baseline warnings / 0 errors, diff-check PASS. Production scope is page-local responsive/accessibility/touch only; Garden data/schema/carbon semantics remain unchanged. Codex/fresh reviewer owns exact-SHA review/CI/merge/deploy/closure. Garbage remains inactive until Garden closes and receives its own Core audit.
 
 
 After Mobile-001 provides a proven pattern, audit and improve one domain per WO, prioritized by field frequency and control density:

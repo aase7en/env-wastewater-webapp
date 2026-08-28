@@ -2,14 +2,17 @@
 
 ## Active checkpoint - ENV-MOBILE-005 - Garden - 2026-08-28
 
+- Status: `REVIEW_REQUESTED`; implementation is frozen for independent review.
 - Goal: converge Garden work-round entry to the proven mobile-first pattern without changing Garden data/query/schema/carbon semantics.
 - Contract: `docs/work-orders/ENV-MOBILE-005-GARDEN.md`; lane evidence: `docs/ai/handoffs/ENV-MOBILE-005-SOL.md`.
-- Base: `origin/main@19eb31ff725e746a1e5856db5c9e86badd1c725b`; branch `feat/env-mobile-005-garden`.
-- Owned production scope: `frontend/src/pages/GardenPage.tsx` only; dedicated Garden E2E plus bounded SSoT are the only other mutable paths.
-- Source audit established two-column phone composition, missing label/control association, and small delete-target pattern candidates. History containment must be measured before any wrapper is added.
-- Actual schema overrides stale A-Wiki pending-extension text. `location_id`/`photo_path` null payload behavior, free-text work/equipment/note fields, and `fuel_used_l` carbon semantics are preserved.
-- Garbage is deferred/read-only until Garden closes because its dual waste classification/compliance semantics need separate Core review.
-- Next: capture RED/baseline before production mutation. `.serena/` stays untouched.
+- Base: `origin/main@19eb31ff725e746a1e5856db5c9e86badd1c725b`; branch `feat/env-mobile-005-garden`; RED checkpoint `6f2af89426fe66e523d92dd7d7c4b16a2c5867ca`; production checkpoint `356334641fb15b5c399579dc7cde9f5640cdbb90`.
+- RED: phone x-delta 154px, delete width 19.125px, unassociated labels; history containment and 1024px density already passed and were preserved.
+- Production diff is page-local: one-column phone grid, stable ID/`htmlFor` associations for all 9 visible controls, and 44px delete target. Dedicated Garden E2E pins the behavior.
+- Verification: Garden focused **9/9**, full Playwright **92/92**, Vitest **202/202**, typecheck/build PASS, lint 12 baseline warnings / 0 errors, targeted lint 0/0, diff-check PASS; coverage includes 360/390/430/768/1024, Pixel 7, keyboard/Enter, and failed-save/retry payload equality.
+- Data honesty preserved: no Garden data-layer/schema/RLS/carbon changes; no invented location/photo UI or enum/business rules; all E2E rows are synthetic evidence only.
+- Garbage is still inactive/read-only because its dual waste classification + manifest/compliance semantics need separate Core scrutiny.
+- **Codex next action:** fetch exact pushed branch head, verify base/current-main ancestry + remote diff + no scope leak, rerun focused Garden spec, inspect exact-head CI, return APPROVED or CHANGES_REQUIRED. If approved, merge; then fetch main, verify post-merge test/E2E/Pages and exact deployment SHA, perform mocked/no-real-write live 390px `/garden` smoke, and close via docs-only checkpoint before activating Garbage.
+- Protected `.serena/` remains untouched.
 
 ## Closed checkpoint - ENV-MOBILE-004 - Fuel - 2026-08-28
 

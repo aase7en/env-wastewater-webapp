@@ -1,7 +1,7 @@
 # ENV-MOBILE-005 - Garden mobile convergence
 
 Date: 2026-08-28
-Status: IMPLEMENTING
+Status: REVIEW_REQUESTED
 Owner: GPT-5.6 Sol
 Branch/worktree: `feat/env-mobile-005-garden` / `A:\GitHub\envww-review-mobile-001`
 Base: `origin/main@19eb31ff725e746a1e5856db5c9e86badd1c725b`
@@ -28,3 +28,46 @@ At activation head `1fce5132f7e667f9324a1ff0eca9110c73d9f2f1`, focused Garden ba
 - desktop density already passes at 1024 px.
 
 The production page remained untouched. The implementation seam is therefore limited to phone grid composition, page-local label/control associations, and the delete touch target.
+
+## Implementation checkpoint
+
+Production checkpoint: `356334641fb15b5c399579dc7cde9f5640cdbb90`.
+
+- `GardenPage.tsx` phone grid: `grid-cols-1 sm:grid-cols-2 md:grid-cols-4`; larger-screen density preserved.
+- All nine visible Garden controls have stable page-local IDs with matching `Field htmlFor`.
+- Delete action uses the existing `--touch-min` minimum; shared Button/Input primitives were not changed.
+- History table was deliberately left unchanged because baseline containment already passed.
+- `frontend/src/lib/garden.ts`, schema/RLS/carbon/shared shell/Garbage/other modules were not edited.
+
+## GREEN verification
+
+- focused `garden-mobile.spec.ts`: **9/9 PASS**, worker 1, retries 0;
+- full Playwright: **92/92 PASS**, 2 workers, retries 0;
+- Vitest: **202/202 PASS** across 15 files;
+- standalone `tsc -b`: PASS;
+- production build: PASS (existing Vite plugin/chunk advisories only);
+- lint: **12 pre-existing warnings / 0 errors**; targeted Garden page/spec lint: 0/0;
+- `git diff --check`: PASS;
+- screenshots/viewport coverage: 360, 390, 430, 768, 1024;
+- Pixel 7 touch path: PASS;
+- keyboard Tab sequence + Enter Save: PASS;
+- first mocked save error preserves values; failed/retry POST bodies are equal and match the complete null-aware `GardenInput`, including `location_id: null` and `photo_path: null`.
+
+All representative rows are synthetic E2E evidence, never production operational/environmental data.
+
+## Codex continuation contract
+
+Start from repository SSoT and actual remote state, not chat memory.
+
+1. Repo/worktree: `A:\GitHub\envww-review-mobile-001`; branch `feat/env-mobile-005-garden`.
+2. Fetch `origin/main` + the feature branch; verify exact pushed head and no protected dirty state beyond untouched `.serena/`.
+3. Read `AGENTS.md`, `docs/ai/CURRENT-WORK.md`, this handoff, and `docs/work-orders/ENV-MOBILE-005-GARDEN.md`.
+4. Review exact diff against current main; production ownership is Garden page only and test ownership is Garden E2E only. Do not broaden into `lib/garden.ts`, schema/RLS/carbon/shared shell/Garbage.
+5. Rerun focused Garden Playwright with retries 0; inspect exact-head GitHub CI. Any code-changing push invalidates prior evidence and requires fresh verification.
+6. Return `APPROVED` or `CHANGES_REQUIRED`. If approved, merge using the exact reviewed head.
+7. After merge: fetch main, verify merge ancestry, post-merge `test` + E2E + Pages run against exact merge SHA, verify Pages deployment exact SHA, and live-smoke `/garden` at about 390x844 with all REST mocked/no real writes.
+8. Close Garden in a docs-only checkpoint (`CURRENT-WORK=IDLE`, claim complete, WO/handoff/roadmap/graph closure). Only then may Garbage be activated under a fresh WO/claim/audit.
+
+## Stop gate
+
+Implementation owner stops at `REVIEW_REQUESTED`. Codex / fresh independent reviewer owns the next gate.

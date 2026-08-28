@@ -216,9 +216,10 @@ At this checkpoint:
 - Post-merge test/E2E/Pages are green and deployment `6142569782` is successful for exact merge SHA; live 390px root-to-client Fuel smoke passed with mocked REST/no real writes, semantic label associations, 44px delete target, and no settled document overflow.
 - `frontend/src/lib/fuel.ts`, import adapter, carbon rollup/view, schema/RLS/migrations, shared UI/AppShell, other forms, and Digital Twin remain unchanged/read-only by the closed Fuel slice.
 - Separate Core finding remains: free-text imported `fuel_type` can conflict with the `carbon.source_type` cast. It requires a separate Core Engineering contract/regression lane and is not folded into mobile convergence.
-- `ENV-MOBILE-005` Garden is the active critical-path slice from current main. It owns only the Garden page, dedicated Garden E2E, and bounded SSoT; Garden data/schema/carbon/shared shell are read-only.
+- `ENV-MOBILE-005` Garden is `REVIEW_REQUESTED` at production checkpoint `356334641fb15b5c399579dc7cde9f5640cdbb90`; focused Garden 9/9, full Playwright 92/92, Vitest 202/202, typecheck/build and diff-check pass.
+- Garden production scope is page-local responsive/accessibility/touch only; Garden data/schema/carbon/shared shell remain read-only. Codex/fresh reviewer owns exact-SHA review/CI/merge/deploy/closure.
 - Garbage remains inactive/read-only until Garden closes; its dual waste classification and manifest/compliance semantics require separate Core scrutiny before mutation.
 
 Current critical-path handoff:
 
-`ENV-MOBILE-001 COMPLETE -> ENV-MOBILE-002 Chemical COMPLETE -> ENV-MOBILE-003 Water Supply COMPLETE -> ENV-MOBILE-004 Fuel COMPLETE -> ENV-MOBILE-005 Garden baseline/implementation -> review/CI/merge/deploy/closure -> Garbage audit`
+`ENV-MOBILE-001 COMPLETE -> ENV-MOBILE-002 Chemical COMPLETE -> ENV-MOBILE-003 Water Supply COMPLETE -> ENV-MOBILE-004 Fuel COMPLETE -> ENV-MOBILE-005 Garden REVIEW_REQUESTED -> Codex/fresh review -> CI -> merge/deploy/closure -> Garbage audit`
