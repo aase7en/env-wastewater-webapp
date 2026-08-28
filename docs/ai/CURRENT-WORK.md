@@ -21,7 +21,7 @@ Allowed statuses:
 - Active work order: `ENV-MOBILE-002` — Chemical form mobile convergence; contract `docs/work-orders/ENV-MOBILE-002-CHEMICAL.md`.
 - Branch/worktree: `feat/env-mobile-002-chemical` / `A:\\GitHub\\envww-review-mobile-001` from `origin/main@cca5a05d640c8262e0ef102d6fb9826f6f297553`.
 - Owner: GPT-5.6 Sol as the user-authorized GLM-5.3 limit fallback. Scope is page-local Chemical responsive/interaction work + one focused E2E spec; data layer/schema/shared UI/other forms remain read-only.
-- State: `READY_FOR_IMPLEMENTATION`. Source audit + RED baseline are complete: phone form x-delta 154px in both forms; delete targets ~19.125×24.797px; document overflow already passes; desktop density passes.
+- State: `REVIEW_REQUESTED`. Production checkpoint `7b1baef8e70f3081fbc6e5088fdfac57c7341d92`; Chemical E2E 7/7 PASS, full Playwright 66/66 PASS, Vitest 202/202 PASS, typecheck/build PASS, lint 12 baseline warnings / 0 errors, route smoke + diff-check PASS. Fresh independent reviewer owns approval/merge.
 - `ENV-MOBILE-001` is complete, merged, deployed, production-smoked, and read-only historical evidence.
 
 ## Review Queue — 2026-08-23
@@ -324,7 +324,7 @@ The original prototype record was design/planning authorization. The user's late
 
 ## Next Action
 
-1. Merge this docs-only closeout checkpoint and verify `origin/main` contains the ENV-MOBILE-001 closure record.
-2. Then activate the next eligible bounded slice from `ROADMAP.md`: `ENV-MOBILE-002` for the Chemical form, beginning with source-reality audit + mobile baseline before any production edit.
-3. Keep Water Supply, Fuel, Garden/Garbage, Food/Safety/Building, `DT-VIS-P002/P003`, `UX-FLOW-P001`, `ENV-INT-P001`, `WO-STAB-008`, P2 backlog, and token cleanup inactive until their roadmap turn and explicit ownership gate.
+1. Fresh independent reviewer inspects the exact pushed ENV-MOBILE-002 / Chemical PR head and verifies the bounded page/test diff plus evidence; implementation owner must not merge.
+2. If approved and CI is green, merge, verify `origin/main`, Pages deployment, and live `/chemical` auth/smoke behavior; then close ENV-MOBILE-002 durably.
+3. Only after Chemical closure may the roadmap activate `ENV-MOBILE-003` / Water Supply as the next single domain-form slice. Keep Fuel, Garden/Garbage, Food/Safety/Building, `DT-VIS-P002/P003`, `UX-FLOW-P001`, `ENV-INT-P001`, `WO-STAB-008`, P2 backlog, and token cleanup inactive until their turn and explicit ownership gate.
 4. Additional provider-visible wastewater metrics remain a separate data/security contract decision; continuation authorization does not implicitly expand the approved AI safe profile.

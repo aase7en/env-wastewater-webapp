@@ -207,10 +207,10 @@ At this checkpoint:
 - no active writer owns the completed DailyForm slice;
 - deferred design/external lanes remain recorded, not lost;
 - `ENV-MOBILE-002` Chemical is the active critical-path slice with an explicit work order/claim and page/test ownership;
-- its current gate is deterministic phone-width RED/baseline evidence before any production mutation;
+- its implementation is `REVIEW_REQUESTED` at production checkpoint `7b1baef8e70f3081fbc6e5088fdfac57c7341d92`; focused Chemical E2E 7/7, full Playwright 66/66, Vitest 202/202 and build/typecheck gates pass;
 - `frontend/src/lib/chemical.ts`, schema/RLS, shared UI/AppShell, other module forms, and Digital Twin remain outside its mutable scope;
-- Water Supply and later domain-form slices must not be started in parallel while Chemical is active.
+- Water Supply and later domain-form slices must not be started until Chemical passes independent review, CI, merge/deploy verification, and durable closure.
 
 Current critical-path handoff:
 
-`ENV-MOBILE-001 COMPLETE → ENV-MOBILE-002 Chemical DESIGNING/BASELINE_REQUIRED → bounded implementation → independent review → CI → merge/deploy/closure`
+`ENV-MOBILE-001 COMPLETE → ENV-MOBILE-002 Chemical REVIEW_REQUESTED → independent review → CI → merge/deploy/closure → ENV-MOBILE-003 Water Supply`

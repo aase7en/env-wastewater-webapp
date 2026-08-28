@@ -1,6 +1,6 @@
 # ENV-MOBILE-002 — Chemical Form Mobile Convergence
 
-Status: READY_FOR_IMPLEMENTATION
+Status: REVIEW_REQUESTED
 Owner: GPT-5.6 Sol (GLM-5.3 limit fallback authorized by user 2026-08-28)
 Independent reviewer / merge owner: fresh reviewer context after implementation stops
 Parent roadmap: `ENV-MOBILE-002+` Domain form convergence
@@ -124,6 +124,35 @@ Run and record:
 
 If tests expose a data/query/schema defect rather than a responsive/interaction defect, STOP that subproblem as `DECISION_REQUIRED` or create a separate bounded remediation WO; do not silently broaden this slice.
 
+## Implementation / verification evidence — 2026-08-28
+
+Production checkpoint: `7b1baef8e70f3081fbc6e5088fdfac57c7341d92`.
+
+Implemented only the page-local responsive/interaction seam:
+
+- catalog + movement grids are one column on phone, two columns from `sm`, four from `md`;
+- stock/history tables retain table semantics but own horizontal scroll locally;
+- delete actions use existing `--touch-min` for the 44 px target contract;
+- no data/query/schema/shared-shell semantics changed.
+
+GREEN evidence:
+
+- focused Chemical Playwright **7/7 PASS**;
+- full Playwright **66/66 PASS**;
+- Pixel 7 touch emulation PASS;
+- rendered screenshots at 360/390/430/768/1024 under ignored `frontend/test-results/`;
+- Vitest **202/202 PASS** with established non-secret Supabase test profile;
+- typecheck PASS;
+- production build PASS;
+- lint **12 pre-existing warnings / 0 errors**;
+- route/auth smoke PASS;
+- `git diff --check` PASS;
+- `ChemicalPage.tsx` diagnostics: none.
+
+Initial Vitest execution without local `VITE_SUPABASE_*` values was classified `ENVIRONMENT_FAILURE`; the same suite passed 202/202 after using the established non-secret test profile.
+
+Detailed evidence and residual findings: `docs/ai/handoffs/ENV-MOBILE-002-SOL.md`.
+
 ## Completion gate
 
-Stop implementation at `REVIEW_REQUESTED` with exact HEAD, changed paths, RED/GREEN evidence, visual evidence, commands/results, residual risks, and data-contract findings in `docs/ai/handoffs/ENV-MOBILE-002-SOL.md`. The implementation owner must not merge its own code-changing PR.
+Implementation is stopped at `REVIEW_REQUESTED`. Fresh reviewer must inspect the exact pushed PR head/diff and own approval/merge. Any code-changing push invalidates the evidence above. The separate `quantity=0` business/data-contract finding remains outside this responsive work order.

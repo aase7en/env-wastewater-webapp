@@ -11,7 +11,9 @@
 - Schema authority: actual `reports/schema-snapshot-live.md` + migrations confirm `chemical.master` and extended `chemical.movement`; A-Wiki's `chemical.master pending` statement is stale and is not used as the production contract.
 - Separate data-contract finding: movement `quantity` initializes to zero and DB has no positive-quantity CHECK. This WO must not invent a new quantity rule; defer/route separately if it becomes material.
 - RED baseline complete: catalog x-delta 154px; movement x-delta 154px; delete targets ~19.125×24.797px; document-level overflow already passes; 1024px multi-column density passes.
-- State: `READY_FOR_IMPLEMENTATION`. Next safe action: page-local responsive/touch correction in `ChemicalPage.tsx`, then rerun the unchanged RED assertions to GREEN before expanding verification.
+- State: `REVIEW_REQUESTED`. Production checkpoint `7b1baef8e70f3081fbc6e5088fdfac57c7341d92` is pushed; page-local grids/tables/delete targets are remediated without data-layer changes.
+- GREEN: focused Chemical Playwright 7/7 PASS; full Playwright 66/66 PASS; Vitest 202/202 PASS; typecheck/build PASS; lint 12 baseline warnings / 0 errors; route smoke + diff-check PASS; Pixel 7 touch path and screenshots at 360/390/430/768/1024 captured under ignored test-results.
+- Next safe action: fresh independent exact-SHA review + CI; implementation owner must not merge. Evidence: `docs/ai/handoffs/ENV-MOBILE-002-SOL.md`.
 - Protected state: `.serena/` remains unknown/protected and must not be touched.
 
 ## Closed checkpoint — ENV-MOBILE-001 — 2026-08-28
