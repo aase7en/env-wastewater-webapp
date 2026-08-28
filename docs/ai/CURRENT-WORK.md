@@ -1,6 +1,6 @@
 # CURRENT WORK
 
-Status: IDLE
+Status: REVIEW_REQUESTED
 
 Allowed statuses:
 
@@ -18,10 +18,11 @@ Allowed statuses:
 
 ## Current execution state — 2026-08-28
 
-- No production work order is active. `ENV-MOBILE-002` Chemical is complete, independently reviewed, merged, deployed, and production-smoked.
-- Final reviewed PR #42 head: `795aefcf86442029923be87110831e08c589ad8d`; production checkpoint `7b1baef8e70f3081fbc6e5088fdfac57c7341d92`; merge `f26c753a6e49a65dfc9e5d43a482380f79dece0c`.
-- Post-merge main `test`, E2E smoke, and GitHub Pages deployment are green; deployment `6136344674` is successful for exact merge SHA.
-- `ENV-MOBILE-001` and `ENV-MOBILE-002` are read-only historical evidence. The next eligible bounded slice is `ENV-MOBILE-003` Water Supply, but it remains unactivated until this docs-only closeout is merged to main.
+- Active work order: `ENV-MOBILE-003` — Water Supply mobile convergence; contract `docs/work-orders/ENV-MOBILE-003-WATER-SUPPLY.md`.
+- Branch/worktree: `feat/env-mobile-003-water-supply` / `A:\\GitHub\\envww-review-mobile-001` from exact `origin/main@2e70c81b54dc20809c37dbe7a4d6a0e973172d11`.
+- Owner: GPT-5.6 Sol under the user's continue-to-completion instruction while GLM is unavailable. Scope is page-local Water Supply responsive/interaction work + one focused E2E spec; data layer/schema/shared UI/other forms remain read-only.
+- State: `REVIEW_REQUESTED`. Production checkpoint `66e86dcb515d411b9e6b858ae89a4109f5ac3bc3`; focused Water Supply E2E 7/7 PASS, full Playwright 73/73 PASS, Vitest 202/202 PASS, typecheck/build PASS, lint 12 baseline warnings / 0 errors, route smoke + diff-check PASS. Fresh independent reviewer owns approval/merge.
+- `ENV-MOBILE-001` and `ENV-MOBILE-002` are complete/read-only historical evidence.
 
 ## Review Queue — 2026-08-23
 
