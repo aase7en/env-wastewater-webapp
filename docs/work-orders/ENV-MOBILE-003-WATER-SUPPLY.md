@@ -1,4 +1,4 @@
-Status: REVIEW_REQUESTED
+Status: COMPLETE
 Owner: GPT-5.6 Sol (user-directed continuation while GLM is unavailable)
 Independent reviewer / merge owner: fresh reviewer context after implementation stops
 Parent roadmap: `ENV-MOBILE-002+` Domain form convergence
@@ -119,6 +119,13 @@ GREEN evidence: focused Water Supply Playwright 7/7 PASS; full Playwright 73/73 
 
 Evidence packet: `docs/ai/handoffs/ENV-MOBILE-003-SOL.md`.
 
-## Completion gate
+## Completion / closure evidence
 
-Implementation stops at `REVIEW_REQUESTED`. Fresh reviewer must inspect the exact pushed PR head/diff and own approval/merge. Any code-changing push invalidates the evidence above. After merge/deploy/live verification, close the lane in a docs-only checkpoint before activating Fuel.
+- Final reviewed PR #44 head: `5cd8f4aa304812868a669bab614177f8a4525c1b` — independently APPROVED; reviewer focused rerun 7/7 PASS and exact production diff/data-layer non-change verified.
+- Merge: `d3034d83954ec8287b9dab561f7802668207d23e` on `main`.
+- Post-merge exact-SHA runs: test `33150344819` SUCCESS; E2E smoke `33150344767` SUCCESS; Pages deploy `33150344886` SUCCESS.
+- GitHub Pages deployment `6137172294` state SUCCESS for exact merge SHA.
+- Live deployed-bundle 390×844 smoke, entered through Pages root HTTP 200 then client-side `/water-supply`, with mocked REST and no real writes: form x-delta 0; save 71.89×48; delete 44×44; document overflow false; no console/page errors.
+- No `frontend/src/lib/water-supply.ts`, schema/RLS/migration, compliance/threshold, shared-shell, other-form, or Digital Twin mutation occurred.
+
+Status is `COMPLETE`. Fuel remains unactivated until this docs-only closeout reaches `main`; a read-only GLM-5.3 MAX Fuel Core Engineering audit may run in parallel without mutable ownership.

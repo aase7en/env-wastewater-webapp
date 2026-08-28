@@ -1,16 +1,19 @@
 # HANDOFF
 
-## Active checkpoint — ENV-MOBILE-003 — 2026-08-28
+## Closed checkpoint — ENV-MOBILE-003 — 2026-08-28
 
 - Goal: converge Water Supply / groundwater-quality entry to the proven mobile-first operational pattern without changing data/query/schema or compliance semantics.
-- Branch/worktree: `feat/env-mobile-003-water-supply` / `A:\\GitHub\\envww-review-mobile-001`; base `origin/main@2e70c81b54dc20809c37dbe7a4d6a0e973172d11`.
-- Contract: `docs/work-orders/ENV-MOBILE-003-WATER-SUPPLY.md`.
-- Source reality: form is currently `grid-cols-2 md:grid-cols-4`; recent-record table already owns an `overflow-x-auto` wrapper; delete target is plain text and unmeasured; no focused Water Supply E2E exists.
-- Schema authority: live ENV snapshot confirms all implemented Water Supply quality fields. A-Wiki's `MOD-WS-a pending` note is stale; no A-Wiki threshold is being promoted into production behavior by this WO.
-- State: `REVIEW_REQUESTED`. Production checkpoint `66e86dcb515d411b9e6b858ae89a4109f5ac3bc3`; page-local grid/touch correction is pushed with no data-layer change.
-- GREEN: focused Water Supply Playwright 7/7 PASS; full Playwright 73/73 PASS; Vitest 202/202 PASS; typecheck/build PASS; lint 12 baseline warnings / 0 errors; route smoke + diff-check PASS; Pixel 7 touch path + 360/390/430/768/1024 screenshots.
-- Next safe action: fresh independent exact-SHA review + CI; implementation owner must not merge. Evidence: `docs/ai/handoffs/ENV-MOBILE-003-SOL.md`.
-- Protected `.serena/` remains untouched. Fuel and later forms remain inactive while this lane owns the domain-form critical path.
+- Contract: `docs/work-orders/ENV-MOBILE-003-WATER-SUPPLY.md`; lane evidence: `docs/ai/handoffs/ENV-MOBILE-003-SOL.md`.
+- RED baseline: 360px first/second form-field x-delta 154px; delete target ~19.125×24.797px; document/table containment and desktop density already passed.
+- Production checkpoint: `66e86dcb515d411b9e6b858ae89a4109f5ac3bc3`; final reviewed PR #44 head: `5cd8f4aa304812868a669bab614177f8a4525c1b`.
+- Independent review: APPROVED; exact production diff limited to phone grid breakpoint + 44px delete target; `frontend/src/lib/water-supply.ts`, schema/RLS/compliance/shared shell unchanged; focused reviewer rerun 7/7 PASS.
+- Full evidence: full Playwright 73/73 PASS; Vitest 202/202 PASS; typecheck/build PASS; lint 12 baseline warnings / 0 errors; route smoke + diff-check PASS; Pixel 7 touch path and screenshots at 360/390/430/768/1024.
+- Merge: PR #44 merged as `d3034d83954ec8287b9dab561f7802668207d23e` on main.
+- Post-merge: test `33150344819`, E2E smoke `33150344767`, and Pages deploy `33150344886` all SUCCESS; deployment `6137172294` SUCCESS for exact merge SHA.
+- Live deployed-bundle 390×844 smoke via Pages root HTTP 200 + client-side `/water-supply` navigation with mocked REST/no real writes: form x-delta 0; save 71.89×48; delete 44×44; no document overflow; no console/page errors.
+- Schema authority remains actual ENV schema/migrations. A-Wiki's `MOD-WS-a pending` statement remains stale documentation only and was not used to invent threshold/compliance logic.
+- Protected `.serena/` remains untouched.
+- Next safe action: merge this docs-only closeout, then activate only the next Fuel slice after fresh source audit/claim/baseline. A GLM-5.3 MAX read-only Fuel Core Engineering audit may run in parallel and produce no repository mutation.
 
 ## Closed checkpoint — ENV-MOBILE-002 — 2026-08-28
 

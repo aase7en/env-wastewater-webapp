@@ -1,6 +1,6 @@
 # CURRENT WORK
 
-Status: REVIEW_REQUESTED
+Status: IDLE
 
 Allowed statuses:
 
@@ -18,11 +18,11 @@ Allowed statuses:
 
 ## Current execution state — 2026-08-28
 
-- Active work order: `ENV-MOBILE-003` — Water Supply mobile convergence; contract `docs/work-orders/ENV-MOBILE-003-WATER-SUPPLY.md`.
-- Branch/worktree: `feat/env-mobile-003-water-supply` / `A:\\GitHub\\envww-review-mobile-001` from exact `origin/main@2e70c81b54dc20809c37dbe7a4d6a0e973172d11`.
-- Owner: GPT-5.6 Sol under the user's continue-to-completion instruction while GLM is unavailable. Scope is page-local Water Supply responsive/interaction work + one focused E2E spec; data layer/schema/shared UI/other forms remain read-only.
-- State: `REVIEW_REQUESTED`. Production checkpoint `66e86dcb515d411b9e6b858ae89a4109f5ac3bc3`; focused Water Supply E2E 7/7 PASS, full Playwright 73/73 PASS, Vitest 202/202 PASS, typecheck/build PASS, lint 12 baseline warnings / 0 errors, route smoke + diff-check PASS. Fresh independent reviewer owns approval/merge.
-- `ENV-MOBILE-001` and `ENV-MOBILE-002` are complete/read-only historical evidence.
+- No production work order is active. `ENV-MOBILE-003` Water Supply is complete, independently reviewed, merged, deployed, and production-smoked.
+- Final reviewed PR #44 head: `5cd8f4aa304812868a669bab614177f8a4525c1b`; production checkpoint `66e86dcb515d411b9e6b858ae89a4109f5ac3bc3`; merge `d3034d83954ec8287b9dab561f7802668207d23e`.
+- Post-merge main `test` run `33150344819`, E2E smoke `33150344767`, and GitHub Pages deploy `33150344886` are SUCCESS; deployment `6137172294` is successful for exact merge SHA.
+- Live deployed-bundle 390×844 smoke via Pages root HTTP 200 + client-side `/water-supply` navigation, with mocked REST/no real writes: form x-delta 0; save target 71.89×48; delete target 44×44; document overflow false; no console/page errors.
+- `ENV-MOBILE-001`, `ENV-MOBILE-002`, and `ENV-MOBILE-003` are read-only historical evidence. The next eligible bounded slice is Fuel; it remains unactivated until this docs-only closeout is merged to main.
 
 ## Review Queue — 2026-08-23
 
@@ -324,7 +324,7 @@ The original prototype record was design/planning authorization. The user's late
 
 ## Next Action
 
-1. Merge this docs-only ENV-MOBILE-002 closeout checkpoint and verify `origin/main` contains the Chemical closure record.
-2. Then activate only `ENV-MOBILE-003` Water Supply: source-reality audit + phone-width baseline first, followed by a bounded page/test implementation if RED evidence warrants it.
-3. Keep Fuel, Garden/Garbage, Food/Safety/Building, `DT-VIS-P002/P003`, `UX-FLOW-P001`, `ENV-INT-P001`, `WO-STAB-008`, P2 backlog, and token cleanup inactive until their roadmap turn and explicit ownership gate.
+1. Merge this docs-only ENV-MOBILE-003 closeout checkpoint and verify `origin/main` contains the Water Supply closure record.
+2. Then activate only the next bounded Fuel slice: consume any available GLM-5.3 MAX read-only Core Engineering audit, verify it against fresh main, establish an explicit work order/claim, and capture phone-width baseline/RED before production mutation.
+3. Keep Garden/Garbage, Food/Safety/Building, `DT-VIS-P002/P003`, `UX-FLOW-P001`, `ENV-INT-P001`, `WO-STAB-008`, P2 backlog, and token cleanup inactive until their roadmap turn and explicit ownership gate.
 4. Additional provider-visible wastewater metrics remain a separate data/security contract decision; continuation authorization does not implicitly expand the approved AI safe profile.
