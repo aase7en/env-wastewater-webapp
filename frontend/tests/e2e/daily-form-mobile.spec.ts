@@ -16,6 +16,14 @@ import { devices, type Locator, type Page } from "@playwright/test";
  * boundary invocation, edit-mode actions, and the ModuleDock scrim contract.
  * This lane must not edit production code; a failing assertion here is a
  * production defect report, not a spec workaround.
+ *
+ * ENV-MOBILE-001D (GLM-5.3 MAX error-visibility regression): the
+ * first-save-failure test now submits from the bottom of the phone form and
+ * requires the committed error alert to receive focus and intersect the
+ * viewport. Production currently satisfies this only when its single-rAF
+ * focus lands after React's commit; a miss leaves focus on BODY with the
+ * alert above the fold (independently reproduced 1/20 at 3763b62). Failures
+ * here are production evidence — do not weaken the assertions.
  */
 
 const PHONE = { width: 360, height: 800 };
@@ -56,6 +64,12 @@ async function mockDailyFormDependencies(page: Page, repairRequests?: RepairCapt
       contentType: "application/json",
       body: JSON.stringify({ id: "22222222-3333-4444-5555-666666666666", status: "open" }),
     });
+  });
+
+  // ENV-MOBILE-001D: the dock/visibility layer fetches this on mount; stub
+  // it deterministically so no test relies on an unmocked network call.
+  await page.route("**/rest/v1/role_module_visibility**", async (route) => {
+    await route.fulfill({ status: 200, contentType: "application/json", body: "[]" });
   });
 }
 
@@ -393,18 +407,56 @@ test.describe("ENV-MOBILE-001 daily form on phone", () => {
     await measurements.nth(0).fill("2.5");
     await measurements.nth(8).fill("1.0");
 
+    // ENV-MOBILE-001D: submit from the BOTTOM of the phone form — the real
+    // phone position after finishing data entry. Independent exact-head
+    // review reproduced the error-visibility race from this position
+    // (focus left on BODY, alert fully above the viewport).
+    await page.evaluate(() => window.scrollTo(0, document.documentElement.scrollHeight));
+    const scrollYBeforeSubmit = await page.evaluate(() => window.scrollY);
+    expect(scrollYBeforeSubmit, "form is scrolled down before submit").toBeGreaterThan(0);
+
     const submit = page.getByRole("button", { name: "บันทึก", exact: true });
     await submit.click();
 
-    // The failure surfaces as an accessible, assertive alert. (001A also
-    // moves focus to the banner, but that rides one requestAnimationFrame
-    // racing React's concurrent commit, and the pending-state disabled
-    // submit drops focus to body first — observed reliably under full-suite
-    // load. That focus nicety is beyond this WO's required lifecycle and is
-    // recorded as a residual risk in the lane handoff instead.)
+    // The failure surfaces as an accessible, assertive alert.
     const alert = page.getByRole("alert").filter({ hasText: "e2e-forced-create-failure" });
     await expect(alert).toBeVisible();
     await expect(alert).toHaveAttribute("aria-live", "assertive");
+
+    // ENV-MOBILE-001D: the alert must receive focus AFTER React commits it.
+    // The poll waits honestly for the production focus move; if the
+    // single-requestAnimationFrame focus misses the commit, focus stays on
+    // BODY and this fails — that is the production defect, not test noise.
+    await expect
+      .poll(() =>
+        page.evaluate(() => {
+          const el = document.activeElement;
+          return (
+            el !== null &&
+            el.getAttribute("role") === "alert" &&
+            (el.textContent ?? "").includes("e2e-forced-create-failure")
+          );
+        }),
+      )
+      .toBe(true);
+
+    // ENV-MOBILE-001D: the committed alert must END UP intersecting the
+    // phone viewport — a banner fully above the fold is invisible to a user
+    // who submitted from the bottom of the form. revealTarget scrolls with
+    // smooth behavior, so poll until the scroll settles; if production never
+    // brings the alert into view (the reproduced defect), this times out.
+    await expect
+      .poll(async () => {
+        const box = await alert.boundingBox();
+        if (!box) return false;
+        return (
+          box.y < PHONE.height &&
+          box.y + box.height > 0 &&
+          box.x >= 0 &&
+          box.x + box.width <= PHONE.width
+        );
+      })
+      .toBe(true);
 
     // Entered values are kept, so retry does not cost the operator re-entry.
     await expect(measurements.nth(0)).toHaveValue("2.5");
