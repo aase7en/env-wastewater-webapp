@@ -55,6 +55,6 @@ This lane stops after commit/push at `RE_REVIEW_REQUESTED`. A fresh reviewer con
 
 ## Commit / remote checkpoint
 
-Implementation/evidence commit: PENDING
-Remote branch verification: PENDING
-Final lane branch HEAD after checkpoint: PENDING
+Implementation/evidence commit: `b7c2623168da4d6fac8990a7f90180ee1b1326f1`
+Remote branch verification: local `b7c2623168da4d6fac8990a7f90180ee1b1326f1` == `origin/feat/env-mobile-001` immediately after push.
+Production code is frozen at `b7c2623168da4d6fac8990a7f90180ee1b1326f1`; any following checkpoint commit is docs-only and actual Git branch state is authoritative for the final review target.
