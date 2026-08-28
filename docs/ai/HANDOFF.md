@@ -9,13 +9,13 @@
 - Reviewer verified docs-only diff, route inventory, schema-family claims, operating artifacts, current-main ancestry, clean diff-check, CLEAN merge state, and exact-head `scripts` + `notify` SUCCESS. Frontend E2E/deploy were not applicable to the docs-only paths.
 - Operating architecture/graph/roadmap/current-state inventory are now durable SSoT on main.
 
-### ENV-MOBILE-001 — CHANGES_REQUIRED
+### ENV-MOBILE-001 ? RE-REVIEW_REQUESTED
 
 - Goal: make the wastewater daily field form practical at 360–430 px without changing its data/validation/hydration semantics.
 - Branch/worktree: `feat/env-mobile-001` / `A:\\GitHub\\envww-mobile-001`.
 - Base: `origin/main@08db62c821cf7b95aaeb373c603d77ccc4d9b98a`.
 - Contract: `docs/work-orders/ENV-MOBILE-001.md`.
-- Coordinator: GPT-5.6 Sol current session (took over after Ultra limit). Final independent exact-diff review/merge still requires a fresh reviewer context. ENV-MOBILE-001A owns `DailyFormPage.tsx`; ENV-MOBILE-001B / GLM-5.3 owns only `daily-form-mobile.spec.ts` plus its lane handoff/status/claim. Neither remediation owner may merge.
+- Coordinator: GPT-5.6 Sol MAX production-remediation lane. GLM lane D is complete/read-only. Fresh isolated reviewer context owns PR #40 approval/merge; this lane must not merge.
 - RED: the first two dense water-quality inputs were 149 px apart at 360 px under the prior unconditional two-column grid. A second real-use RED showed the floating ModuleDock intercepting the fixed submit action.
 - Implementation checkpoint: `a99629935b68dac58a3e7fb8c1498e923fe5a174`.
 - Implementation: dense numeric groups are one-column below `sm` and remain two-column at larger widths; form completion clearance is increased; the sticky action bar is lifted above the dock with a local z-index high enough to receive taps. No AppShell/ModuleDock/data-contract source changed.
@@ -27,9 +27,11 @@
 - Blocking gaps: QuickChips are 36 px rather than 44 px minimum; 430 px/tablet/touch-target/keyboard/touch/edit/error-retry/repair-request/visual gates are not proven; the save mock covers success only; SSoT/PR evidence is stale; and prior role ownership was not independent.
 - Remediation contracts: `docs/work-orders/ENV-MOBILE-001A-SOLMAX-UX-REMEDIATION.md` then `docs/work-orders/ENV-MOBILE-001B-GLM53-VERIFICATION.md`.
 - ENV-MOBILE-001A pushed production checkpoint: `74550da24af09a5afe506d2c269de89cb6392092`; remote branch head matched. Evidence: focused mobile Playwright 3/3 PASS, Vitest 202/202 PASS, build PASS, lint 12 pre-existing warnings / 0 errors, diff-check PASS, plus rendered 360/390/430/768/1024 Chromium matrix recorded in `docs/ai/handoffs/ENV-MOBILE-001A-SOLMAX.md`.
-- ENV-MOBILE-001B is now ACTIVE/READY. Dependency `74550da24af09a5afe506d2c269de89cb6392092` must be an ancestor of GLM HEAD. GLM may edit only `frontend/tests/e2e/daily-form-mobile.spec.ts`, its lane WO status/handoff, and its claim row; production/shared coordinator files are read-only.
-- Overall parent status remains `CHANGES_REQUIRED` until lane B passes and a fresh exact-SHA independent reviewer returns APPROVED.
-- Next: GLM-5.3 verification checkpoint → isolated fresh exact-SHA re-review. Any HEAD change invalidates prior review evidence.
+- ENV-MOBILE-001B is COMPLETE/PUSHED; its `daily-form-mobile.spec.ts` is read-only during production remediation.
+- ENV-MOBILE-001D is COMPLETE/PUSHED at `cdaa1097022b7fbfedfff8302a628af630f6cfb1`; the unchanged failed-save regression reproduced the production race 2/20, then GLM stopped with no production edit.
+- ENV-MOBILE-001E is `RE_REVIEW_REQUESTED`: `DailyFormPage.tsx` now uses state-backed post-commit reveal and deterministic `auto` centered scrolling; the repair hint truthfully describes sequential save then repair creation.
+- Verification: focused failed-save 1/1 PASS; unchanged regression repeat 20/20 PASS; full mobile spec 11/11 PASS; Vitest 202/202 PASS; typecheck PASS; lint 12 baseline warnings / 0 errors; build PASS; diff-check PASS. Exact evidence: `docs/ai/handoffs/ENV-MOBILE-001E-SOLMAX.md`.
+- Next: fresh isolated reviewer context re-reviews the exact pushed PR #40 SHA/diff. Any code-changing push invalidates this evidence. Do not merge from this lane.
 
 ### Worktree hygiene pass — 2026-08-27
 

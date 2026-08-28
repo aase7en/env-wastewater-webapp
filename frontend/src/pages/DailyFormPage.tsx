@@ -104,6 +104,7 @@ export function DailyFormPage() {
 
   const [form, setForm] = useState<FormState>(emptyForm);
   const [banner, setBanner] = useState<{ kind: "success" | "error" | "warning"; msg: string } | null>(null);
+  const [revealRequest, setRevealRequest] = useState<{ target: "banner" | "cause" } | null>(null);
   const [dockOverlayOpen, setDockOverlayOpen] = useState(false);
   const bannerRef = useRef<HTMLDivElement>(null);
   const causeRef = useRef<HTMLTextAreaElement>(null);
@@ -183,25 +184,37 @@ export function DailyFormPage() {
     return out as unknown as ReadingCreate;
   };
 
-  const revealTarget = (target: HTMLElement | null) => {
-    if (!target) return;
-    target.focus({ preventScroll: true });
-    target.scrollIntoView({
-      behavior: window.matchMedia("(prefers-reduced-motion: reduce)").matches ? "auto" : "smooth",
-      block: "center",
+  // Reveal requests are committed as state so the effect runs only after React
+  // has mounted the conditional banner/field. Scheduling directly from the
+  // submit handler can race that commit and leave focus on <body>.
+  useEffect(() => {
+    if (!revealRequest) return;
+    const frameId = requestAnimationFrame(() => {
+      const target = revealRequest.target === "banner" ? bannerRef.current : causeRef.current;
+      if (!target) return;
+      target.focus({ preventScroll: true });
+      target.scrollIntoView({
+        // Error recovery is time-critical: an animated scroll can settle
+        // outside the viewport under concurrent layout updates. Reveal it
+        // synchronously; this also satisfies reduced-motion preferences.
+        behavior: "auto",
+        block: "center",
+        inline: "nearest",
+      });
     });
-  };
+    return () => cancelAnimationFrame(frameId);
+  }, [revealRequest]);
 
   const showApiError = (msg: string) => {
     setBanner({ kind: "error", msg });
-    requestAnimationFrame(() => revealTarget(bannerRef.current));
+    setRevealRequest({ target: "banner" });
   };
 
   const onSubmit = async (e: FormEvent) => {
     e.preventDefault();
     if (causeMissing) {
       setBanner({ kind: "error", msg: "กรุณาระบุสาเหตุที่ระบบผิดปกติ" });
-      requestAnimationFrame(() => revealTarget(causeRef.current));
+      setRevealRequest({ target: "cause" });
       return;
     }
     setBanner(null);
@@ -320,7 +333,7 @@ export function DailyFormPage() {
               <Field
                 label="สาเหตุที่ผิดปกติ"
                 required
-                hint={causeMissing ? undefined : "จะสร้างใบแจ้งซ่อม (core.repair_request) ในธุรกรรมเดียวกัน"}
+                hint={causeMissing ? undefined : "ระบบจะบันทึกรายการก่อน แล้วจึงพยายามสร้างใบแจ้งซ่อมแยกต่างหาก"}
                 htmlFor="abnormal_cause"
               >
                 <>

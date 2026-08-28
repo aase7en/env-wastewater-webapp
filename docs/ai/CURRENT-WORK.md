@@ -1,6 +1,6 @@
 # CURRENT WORK
 
-Status: REVIEW_REQUESTED
+Status: RE-REVIEW_REQUESTED
 
 Allowed statuses:
 
@@ -262,13 +262,13 @@ State: `APPROVED / MERGED`
 
 ### Active Work — ENV-MOBILE-001
 
-State: `CHANGES_REQUIRED`
+State: `RE-REVIEW_REQUESTED`
 
 Goal: make the wastewater daily recording workflow mobile-first at 360–430 px while preserving current data/validation/hydration/threshold/repair/null semantics.
 
 Branch/worktree: `feat/env-mobile-001` / `A:\\GitHub\\envww-mobile-001` from `origin/main@08db62c821cf7b95aaeb373c603d77ccc4d9b98a`.
 
-Coordinator: GPT-5.6 Sol current session (took over after Ultra limit). Final independent exact-diff review/merge still requires a fresh reviewer context after the GLM verification lane. Sequential remediation ownership remains split without file overlap: ENV-MOBILE-001A owns `DailyFormPage.tsx`; ENV-MOBILE-001B / GLM-5.3 owns only `daily-form-mobile.spec.ts`. Each uses only its own lane handoff. Neither remediation owner may merge.
+Coordinator: GPT-5.6 Sol MAX remediation lane. ENV-MOBILE-001D / GLM-5.3 is complete and read-only; ENV-MOBILE-001E owns the production error-reveal repair. Fresh reviewer context remains the approval/merge owner. PR #40 must not be merged from this lane.
 
 Contract: `docs/work-orders/ENV-MOBILE-001.md`.
 
@@ -292,8 +292,10 @@ Review-request evidence:
 - Blocking gaps: 36 px QuickChips versus 44 px minimum; incomplete 430 px/tablet/touch-target/keyboard/touch/edit/error-retry/repair-request/visual evidence; success-only save mock; stale PR/SSoT evidence; and prior implementer/reviewer role conflict.
 - Remediation contracts: `docs/work-orders/ENV-MOBILE-001A-SOLMAX-UX-REMEDIATION.md` then `docs/work-orders/ENV-MOBILE-001B-GLM53-VERIFICATION.md`.
 - ENV-MOBILE-001A: **UX_REMEDIATED_AWAITING_VERIFICATION / PUSHED** at `74550da24af09a5afe506d2c269de89cb6392092`. Local evidence: focused Playwright 3/3, Vitest 202/202, build PASS, lint 12 pre-existing warnings / 0 errors, diff-check PASS; rendered Chromium matrix covered 360/390/430/768/1024, dark/light, create/edit, abnormal focus, 44 px QuickChips, final-field clearance, and Dock scrim inactivation. Remote PR head was verified equal to this checkpoint before lane B activation.
-- ENV-MOBILE-001B: **READY_FOR_IMPLEMENTATION / ACTIVE CLAIM**. GLM-5.3 may edit only `frontend/tests/e2e/daily-form-mobile.spec.ts`, its lane status/handoff, and its claim row. Production code and shared coordinator SSoT are read-only. Dependency: `74550da24af09a5afe506d2c269de89cb6392092` must be an ancestor of HEAD.
-- Next gate: GLM-5.3 verification checkpoint → fresh isolated exact-SHA independent review. Any HEAD change invalidates prior review evidence.
+- ENV-MOBILE-001B: **COMPLETE / PUSHED** ? GLM verification lane finished before lane D; its E2E spec is now read-only for production remediation.
+- ENV-MOBILE-001D: **PRODUCTION_REMEDIATION_REQUIRED / COMPLETE / PUSHED** at `cdaa1097022b7fbfedfff8302a628af630f6cfb1`; unchanged GLM regression reproduced the failed-save focus/viewport race 2/20 and then stopped with no production edits.
+- ENV-MOBILE-001E: **RE_REVIEW_REQUESTED** ? state-backed post-commit reveal + deterministic `auto` scroll applied to `DailyFormPage.tsx`; failed-save 1/1 and repeat 20/20 PASS, full mobile spec 11/11, Vitest 202/202, typecheck/lint/build/diff-check PASS; lane evidence in `docs/ai/handoffs/ENV-MOBILE-001E-SOLMAX.md`.
+- Next gate: fresh reviewer context must inspect the exact pushed PR #40 SHA/diff. Any new code-changing push invalidates this evidence. Do not merge from the implementation lane.
 
 ## User-Confirmed Product Experience Goal — 2026-08-27
 
@@ -311,7 +313,7 @@ The original prototype record was design/planning authorization. The user's late
 
 ## Next Action
 
-1. Remediate `ENV-MOBILE-001` sequentially through the Sol MAX production lane and GLM-5.3 verification lane, then perform a fresh exact-SHA review. Do not merge PR #40 at `87fdc7c0b014ed7279df93de7b4bdc539926debb`.
+1. Fresh isolated reviewer context re-reviews the exact pushed ENV-MOBILE-001E / PR #40 SHA. Implementation lane is stopped at `RE_REVIEW_REQUESTED`; do not merge here.
 2. After closure, select the next eligible item from `docs/ai/ROADMAP.md` whose dependencies are satisfied; create/activate only that bounded work order.
 3. Previously deferred `DT-VIS-P002/P003`, `UX-FLOW-P001`, `ENV-INT-P001`, `WO-STAB-008`, P2 backlog, and token cleanup are no longer forgotten gates; they remain inactive until their roadmap turn and explicit per-WO activation/ownership check.
 4. Additional provider-visible wastewater metrics remain a separate data/security contract decision; continuation authorization does not implicitly expand the approved AI safe profile.
