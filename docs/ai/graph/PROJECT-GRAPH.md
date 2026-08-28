@@ -206,10 +206,11 @@ At this checkpoint:
 - ENV-MOBILE-001 is reviewed, merged, deployed, production-smoked, and closed; its remediation/test lanes are read-only historical evidence;
 - no active writer owns the completed DailyForm slice;
 - deferred design/external lanes remain recorded, not lost;
-- the next critical-path production candidate is `ENV-MOBILE-002` for the Chemical form because `ENV-MOBILE-001` now satisfies the M1 dependency;
-- `ENV-MOBILE-002` must still establish an explicit bounded work order, ownership, source-reality audit, and RED/baseline evidence before production mutation;
-- Water Supply and later domain-form slices must not be started in parallel merely because the parent milestone is eligible.
+- `ENV-MOBILE-002` Chemical is the active critical-path slice with an explicit work order/claim and page/test ownership;
+- its implementation is `REVIEW_REQUESTED` at production checkpoint `7b1baef8e70f3081fbc6e5088fdfac57c7341d92`; focused Chemical E2E 7/7, full Playwright 66/66, Vitest 202/202 and build/typecheck gates pass;
+- `frontend/src/lib/chemical.ts`, schema/RLS, shared UI/AppShell, other module forms, and Digital Twin remain outside its mutable scope;
+- Water Supply and later domain-form slices must not be started until Chemical passes independent review, CI, merge/deploy verification, and durable closure.
 
 Current critical-path handoff:
 
-`ENV-MOBILE-001 COMPLETE → docs closeout on main → ENV-MOBILE-002 Chemical audit/baseline → bounded implementation/review/verify loop`
+`ENV-MOBILE-001 COMPLETE → ENV-MOBILE-002 Chemical REVIEW_REQUESTED → independent review → CI → merge/deploy/closure → ENV-MOBILE-003 Water Supply`
