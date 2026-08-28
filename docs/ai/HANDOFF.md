@@ -1,5 +1,19 @@
 # HANDOFF
 
+## Active checkpoint - ENV-MOBILE-005 - Garden - 2026-08-29
+
+- Status: `RE-REVIEW_REQUESTED`; remediation is frozen for fresh independent review.
+- Goal: converge Garden work-round entry to the proven mobile-first pattern without changing Garden data/query/schema/carbon semantics.
+- Contract: `docs/work-orders/ENV-MOBILE-005-GARDEN.md`; lane evidence: `docs/ai/handoffs/ENV-MOBILE-005-SOL.md`.
+- Base: `origin/main@19eb31ff725e746a1e5856db5c9e86badd1c725b`; branch `feat/env-mobile-005-garden`; original PR head `39f25a92c0bbd10365c618c4477d4cca34f52f1f`; remediation checkpoint `e137cd468f628961dcfb697f0470cb3da76062bd`.
+- Independent review `PRR_kwDOTN3Mzc8AAAABLSqMwQ` returned `CHANGES_REQUIRED`: hidden document overflow masked history/card escape at 320/360 px, and empty `round_date` could reach the API despite the DB `NOT NULL` contract.
+- Remediation RED was **4 FAIL / 8 PASS** before production mutation. GREEN is focused Garden **12/12**, full Playwright **95/95**, Vitest **202/202**, typecheck/build PASS, lint 12 baseline warnings / 0 errors, targeted lint 0/0, and diff-check PASS.
+- Production diff remains page-local: original phone grid/labels/44px work plus a named, keyboard-scrollable local history boundary and a required-date error/focus guard. Coverage now includes 320/360/390/430/768/1024, Pixel 7, keyboard local-scroll/Tab/Enter, blank-date zero-POST/error/focus/value preservation, and failed-save/retry payload equality.
+- Data honesty preserved: no Garden data-layer/schema/RLS/carbon changes; no invented location/photo UI or enum/business rules; all E2E rows are synthetic evidence only.
+- Garbage is still inactive/read-only because its dual waste classification + manifest/compliance semantics need separate Core scrutiny.
+- **Fresh reviewer next action:** fetch the exact pushed branch head, verify base/current-main ancestry + remote diff + no scope leak, rerun focused Garden spec, inspect CI against that exact head, and return APPROVED or CHANGES_REQUIRED. If approved, merge the exact reviewed head; then fetch main, verify post-merge test/E2E/Pages and exact deployment SHA, perform mocked/no-real-write live 390px `/garden` smoke, and close via docs-only checkpoint before activating Garbage.
+- Protected `.serena/` remains untouched.
+
 ## Closed checkpoint - ENV-MOBILE-004 - Fuel - 2026-08-28
 
 - Goal: converge Fuel / fleet-dispense entry to the proven mobile-first operational pattern without changing Fuel data/query/schema, meter-delta, import, or carbon semantics.

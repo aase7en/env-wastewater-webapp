@@ -1,6 +1,6 @@
 # CURRENT WORK
 
-Status: IDLE
+Status: RE-REVIEW_REQUESTED
 
 Allowed statuses:
 
@@ -16,16 +16,19 @@ Allowed statuses:
 
 > `CURRENT-WORK.md` is the authoritative task definition. Agents must not silently expand task scope.
 
-## Current execution state - 2026-08-28
+## Current execution state - 2026-08-29
 
-- No production work order is active. `ENV-MOBILE-004` Fuel is complete, independently re-reviewed, merged, deployed, and production-smoked.
-- Final reviewed PR #46 head: `8e871d225a67f1da2a1c143556c2b34aaf9e90c6`; remediation production checkpoint `6ac3c96d42cd9b9eff15429e4436d24dcad22438`; merge `57f0bb3dd5c9a7e74ee0deb84bb166b215a8706a`.
-- Fresh reviewer rerun: focused Fuel Playwright **10/10 PASS** with retries 0; exact-head PR workflows `33164741371` (E2E smoke) and `33164741375` (test) SUCCESS; `git diff --check` clean and current base unchanged.
-- Post-merge exact-SHA runs: test `33178476395`, E2E `33178476367`, Pages deploy `33178476366` - all SUCCESS. GitHub Pages deployment `6142569782` is `success` for exact merge SHA.
-- Live deployed-bundle 390x844 smoke via Pages root HTTP 200 + client-side `/fuel`, with all REST mocked/no real writes: form x-delta 0; all 11 label/control associations present; Save 71.89x48; Delete 44x44; document width 390; no console/page errors.
-- A direct deep-link production-spec run observed two transient document-overflow assertions while the shared ModuleDock was still settling; after root-to-client navigation and settle, document width equals viewport. Shared shell was unchanged by this WO, so this is recorded as a non-blocking hosting/shell timing observation rather than a Fuel-page regression.
-- Separate Core Engineering finding remains open: imported arbitrary `fuel_type` can reach free-text `fuel.dispense_log` while carbon rollup casts it to `carbon.source_type`. It requires its own data-contract/regression work order.
-- `ENV-MOBILE-001` through `ENV-MOBILE-004` are read-only historical evidence. The next eligible bounded domain-form slice is Garden/Garbage and remains unactivated until this docs-only closeout reaches main.
+- Active work order: `ENV-MOBILE-005` - Garden mobile convergence; contract `docs/work-orders/ENV-MOBILE-005-GARDEN.md`.
+- Branch/worktree: `feat/env-mobile-005-garden` / `A:\\GitHub\\envww-review-mobile-001` from exact `origin/main@19eb31ff725e746a1e5856db5c9e86badd1c725b`.
+- Original RED checkpoint `6f2af89426fe66e523d92dd7d7c4b16a2c5867ca`; original production checkpoint `356334641fb15b5c399579dc7cde9f5640cdbb90`; original PR #48 head `39f25a92c0bbd10365c618c4477d4cca34f52f1f`.
+- Independent exact-head review `PRR_kwDOTN3Mzc8AAAABLSqMwQ` returned `CHANGES_REQUIRED`: AppShell's hidden document overflow made the initial history assertion false-green while the table/action escaped the Garden card at 320/360 px, and the schema-required `round_date` could be cleared and POSTed as an empty string.
+- Remediation RED added four deterministic checks before production mutation: **4 FAIL / 8 PASS**. It proved the missing named/local history boundary, unreachable delete action, and one invalid empty-date POST without an associated persistent error/focus target.
+- Remediation checkpoint `e137cd468f628961dcfb697f0470cb3da76062bd`: only `frontend/src/pages/GardenPage.tsx` + `frontend/tests/e2e/garden-mobile.spec.ts`; page-local named keyboard-scrollable history containment and page-local required-date validation were added without changing Garden data/query/schema/carbon semantics.
+- Fresh GREEN evidence: focused Garden Playwright **12/12 PASS**; full Playwright **95/95 PASS**; Vitest **202/202 PASS**; standalone typecheck PASS; production build PASS; lint **12 pre-existing warnings / 0 errors**; targeted lint 0/0; `git diff --check` PASS.
+- Rendered regression now covers 320/360/390/430/768/1024 plus Pixel 7 touch, local keyboard scroll/action reachability, keyboard Tab/Enter, required-date error/focus/value preservation, and deterministic save-error/retry with equal complete null-aware `GardenInput`.
+- Garden data/query/schema/RLS/carbon behavior, `location_id`/`photo_path` null semantics, shared UI/AppShell, Garbage, other forms, and `.serena/` are unchanged/read-only.
+- State: `RE-REVIEW_REQUESTED`. Remediation is frozen. **Fresh independent reviewer** owns exact pushed-head review, focused rerun, exact-head CI inspection, approval/changes verdict, merge, post-merge test/E2E/Pages + live smoke, then docs-only closure.
+- `ENV-MOBILE-001` through `ENV-MOBILE-004` remain complete/read-only history. Garbage remains inactive until Garden closure and its own fresh Core/data-contract audit.
 
 ## Review Queue — 2026-08-23
 

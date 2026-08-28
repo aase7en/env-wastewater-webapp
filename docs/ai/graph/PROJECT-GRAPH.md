@@ -216,8 +216,10 @@ At this checkpoint:
 - Post-merge test/E2E/Pages are green and deployment `6142569782` is successful for exact merge SHA; live 390px root-to-client Fuel smoke passed with mocked REST/no real writes, semantic label associations, 44px delete target, and no settled document overflow.
 - `frontend/src/lib/fuel.ts`, import adapter, carbon rollup/view, schema/RLS/migrations, shared UI/AppShell, other forms, and Digital Twin remain unchanged/read-only by the closed Fuel slice.
 - Separate Core finding remains: free-text imported `fuel_type` can conflict with the `carbon.source_type` cast. It requires a separate Core Engineering contract/regression lane and is not folded into mobile convergence.
-- Garden/Garbage is the next critical-path candidate but must first establish a bounded work order/claim and phone-width source-reality baseline after this closeout reaches main.
+- `ENV-MOBILE-005` Garden is `RE-REVIEW_REQUESTED` after exact-head review found hidden-overflow history containment and required-date defects; remediation checkpoint `e137cd468f628961dcfb697f0470cb3da76062bd` is GREEN at focused Garden 12/12, full Playwright 95/95, Vitest 202/202, typecheck/build and diff-check pass.
+- Garden production scope remains page-local responsive/accessibility/touch/validation only; Garden data/schema/carbon/shared shell remain read-only. Fresh reviewer owns exact-SHA review/CI/merge/deploy/closure.
+- Garbage remains inactive/read-only until Garden closes; its dual waste classification and manifest/compliance semantics require separate Core scrutiny before mutation.
 
 Current critical-path handoff:
 
-`ENV-MOBILE-001 COMPLETE -> ENV-MOBILE-002 Chemical COMPLETE -> ENV-MOBILE-003 Water Supply COMPLETE -> ENV-MOBILE-004 Fuel COMPLETE -> docs closeout on main -> Garden/Garbage audit/baseline`
+`ENV-MOBILE-001 COMPLETE -> ENV-MOBILE-002 Chemical COMPLETE -> ENV-MOBILE-003 Water Supply COMPLETE -> ENV-MOBILE-004 Fuel COMPLETE -> ENV-MOBILE-005 Garden RE-REVIEW_REQUESTED -> fresh exact-SHA review -> CI -> merge/deploy/closure -> Garbage audit`
