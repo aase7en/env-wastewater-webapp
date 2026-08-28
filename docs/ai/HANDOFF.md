@@ -1,5 +1,18 @@
 # HANDOFF
 
+## Active checkpoint — ENV-MOBILE-002 — 2026-08-28
+
+- Goal: converge the Chemical sub-store workflow to the proven mobile-first operational pattern without changing chemical data/query/schema semantics.
+- Branch/worktree: `feat/env-mobile-002-chemical` / `A:\\GitHub\\envww-review-mobile-001`.
+- Base: `origin/main@cca5a05d640c8262e0ef102d6fb9826f6f297553`.
+- Owner: GPT-5.6 Sol, user-authorized fallback while GLM-5.3 is rate-limited; fresh independent reviewer owns final approval/merge.
+- Contract: `docs/work-orders/ENV-MOBILE-002-CHEMICAL.md`.
+- Source audit: both Chemical forms currently use two columns below `md`; stock/history are raw multi-column tables; delete touch targets are unproven; no focused Chemical E2E exists.
+- Schema authority: actual `reports/schema-snapshot-live.md` + migrations confirm `chemical.master` and extended `chemical.movement`; A-Wiki's `chemical.master pending` statement is stale and is not used as the production contract.
+- Separate data-contract finding: movement `quantity` initializes to zero and DB has no positive-quantity CHECK. This WO must not invent a new quantity rule; defer/route separately if it becomes material.
+- Next safe action: create deterministic phone-width baseline/RED in `frontend/tests/e2e/chemical-mobile.spec.ts`; only after measured evidence may `ChemicalPage.tsx` be changed.
+- Protected state: `.serena/` remains unknown/protected and must not be touched.
+
 ## Closed checkpoint — ENV-MOBILE-001 — 2026-08-28
 
 ### ENV-ARCH-001 closure

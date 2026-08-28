@@ -1,6 +1,6 @@
 # CURRENT WORK
 
-Status: IDLE
+Status: DESIGNING
 
 Allowed statuses:
 
@@ -18,9 +18,11 @@ Allowed statuses:
 
 ## Current execution state — 2026-08-28
 
-- No production work order is active. `ENV-MOBILE-001` is complete, merged, deployed, and production-smoked.
-- The docs-only closeout checkpoint is being reconciled from current `origin/main`; it does not authorize production mutation.
-- After the closeout record is merged, the next eligible bounded slice is `ENV-MOBILE-002` for the Chemical form. It must begin with source-reality audit, explicit ownership, and phone-width RED/baseline evidence.
+- Active work order: `ENV-MOBILE-002` — Chemical form mobile convergence; contract `docs/work-orders/ENV-MOBILE-002-CHEMICAL.md`.
+- Branch/worktree: `feat/env-mobile-002-chemical` / `A:\\GitHub\\envww-review-mobile-001` from `origin/main@cca5a05d640c8262e0ef102d6fb9826f6f297553`.
+- Owner: GPT-5.6 Sol as the user-authorized GLM-5.3 limit fallback. Scope is page-local Chemical responsive/interaction work + one focused E2E spec; data layer/schema/shared UI/other forms remain read-only.
+- State: `DESIGNING / BASELINE_REQUIRED`. Source audit is complete; production mutation waits for deterministic 360–430 px RED/baseline evidence.
+- `ENV-MOBILE-001` is complete, merged, deployed, production-smoked, and read-only historical evidence.
 
 ## Review Queue — 2026-08-23
 

@@ -315,6 +315,7 @@ The binding rules below still apply.
 
 | Chunk | Agent | Claimed | Scope (files) |
 |---|---|---|---|
+| ENV-MOBILE-002 | GPT-5.6 Sol (GLM-5.3 limit fallback) | 2026-08-28 | ACTIVE / DESIGNING — `frontend/src/pages/ChemicalPage.tsx`, `frontend/tests/e2e/chemical-mobile.spec.ts`, `docs/work-orders/ENV-MOBILE-002-CHEMICAL.md`, lane handoff, and bounded SSoT status only. No `lib/chemical.ts`, schema/RLS, shared UI/AppShell, other forms, or Digital Twin edits. |
 | ~~ENV-MOBILE-001A~~ | GPT-5.6 Sol MAX | 2026-08-27 | COMPLETE / PUSHED `74550da24af09a5afe506d2c269de89cb6392092` — `frontend/src/pages/DailyFormPage.tsx`, lane WO/status, lane handoff, this claim row only. |
 | ~~ENV-MOBILE-001B~~ | GLM-5.3 (resumed 2026-08-28 after the Sol MAX fallback record; user-directed) | 2026-08-27 | COMPLETE / PUSHED — dependency `74550da24af09a5afe506d2c269de89cb6392092`; spec partial preserved and completed in place; owns only `frontend/tests/e2e/daily-form-mobile.spec.ts`, lane WO/status, lane handoff, this claim row (same branch; **no production edits**); evidence `docs/ai/handoffs/ENV-MOBILE-001B-GLM53.md` |
 | ~~ENV-MOBILE-001D~~ | GLM-5.3 MAX | 2026-08-28 | COMPLETE / PUSHED — stopped at PRODUCTION_REMEDIATION_REQUIRED; error-visibility race reproduced 2/20 in repeat run at starting HEAD `3763b6205a46a3819579dff5f890b4c536c3f6e9` (reviewer baseline 1/20); evidence `docs/ai/handoffs/ENV-MOBILE-001D-GLM53.md` |

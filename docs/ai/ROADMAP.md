@@ -117,7 +117,7 @@ Likely owner split:
 
 ### ENV-MOBILE-002+ — Domain form convergence
 
-**Next eligible slice:** `ENV-MOBILE-002` — Chemical form. It remains unactivated until the ENV-MOBILE-001 docs-only closeout is merged to main; activation begins with source-reality audit and phone-width baseline, not production mutation.
+**Active bounded slice:** `ENV-MOBILE-002` — Chemical form. Activated 2026-08-28 after ENV-MOBILE-001 closeout merged; current gate is source-reality audit + phone-width RED/baseline before production mutation. Contract: `docs/work-orders/ENV-MOBILE-002-CHEMICAL.md`.
 
 After Mobile-001 provides a proven pattern, audit and improve one domain per WO, prioritized by field frequency and control density:
 
