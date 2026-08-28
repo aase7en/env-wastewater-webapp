@@ -1,6 +1,6 @@
 # CURRENT WORK
 
-Status: READY_FOR_IMPLEMENTATION
+Status: REVIEW_REQUESTED
 
 Allowed statuses:
 
@@ -21,7 +21,7 @@ Allowed statuses:
 - Active work order: `ENV-MOBILE-003` — Water Supply mobile convergence; contract `docs/work-orders/ENV-MOBILE-003-WATER-SUPPLY.md`.
 - Branch/worktree: `feat/env-mobile-003-water-supply` / `A:\\GitHub\\envww-review-mobile-001` from exact `origin/main@2e70c81b54dc20809c37dbe7a4d6a0e973172d11`.
 - Owner: GPT-5.6 Sol under the user's continue-to-completion instruction while GLM is unavailable. Scope is page-local Water Supply responsive/interaction work + one focused E2E spec; data layer/schema/shared UI/other forms remain read-only.
-- State: `READY_FOR_IMPLEMENTATION`. RED baseline: phone form x-delta 154px and delete target ~19.125×24.797px. Document/table containment and 1024px density already pass, so they are preservation requirements rather than remediation claims.
+- State: `REVIEW_REQUESTED`. Production checkpoint `66e86dcb515d411b9e6b858ae89a4109f5ac3bc3`; focused Water Supply E2E 7/7 PASS, full Playwright 73/73 PASS, Vitest 202/202 PASS, typecheck/build PASS, lint 12 baseline warnings / 0 errors, route smoke + diff-check PASS. Fresh independent reviewer owns approval/merge.
 - `ENV-MOBILE-001` and `ENV-MOBILE-002` are complete/read-only historical evidence.
 
 ## Review Queue — 2026-08-23

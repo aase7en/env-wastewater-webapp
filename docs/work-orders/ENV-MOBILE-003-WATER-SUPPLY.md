@@ -1,4 +1,4 @@
-Status: READY_FOR_IMPLEMENTATION
+Status: REVIEW_REQUESTED
 Owner: GPT-5.6 Sol (user-directed continuation while GLM is unavailable)
 Independent reviewer / merge owner: fresh reviewer context after implementation stops
 Parent roadmap: `ENV-MOBILE-002+` Domain form convergence
@@ -109,6 +109,16 @@ Run and record:
 - `git diff --check`;
 - independent exact-head review + CI + merge + deployment/live smoke.
 
+## Implementation / verification evidence — 2026-08-28
+
+Production checkpoint: `66e86dcb515d411b9e6b858ae89a4109f5ac3bc3`.
+
+Implemented only the bounded page-local seam: phone one-column form grid plus 44px delete target. Existing table/data/query/schema/compliance behavior was preserved.
+
+GREEN evidence: focused Water Supply Playwright 7/7 PASS; full Playwright 73/73 PASS; Vitest 202/202 PASS; typecheck/build PASS; lint 12 baseline warnings / 0 errors; route smoke + diff-check PASS; Pixel 7 touch path PASS; screenshots at 360/390/430/768/1024; deterministic save failure preserves values and retry sends unchanged field semantics.
+
+Evidence packet: `docs/ai/handoffs/ENV-MOBILE-003-SOL.md`.
+
 ## Completion gate
 
-Implementation stops at `REVIEW_REQUESTED` with exact SHA/evidence. Implementation owner does not merge its own code-changing PR. After merge/deploy/live verification, close the lane in a docs-only checkpoint before activating Fuel.
+Implementation stops at `REVIEW_REQUESTED`. Fresh reviewer must inspect the exact pushed PR head/diff and own approval/merge. Any code-changing push invalidates the evidence above. After merge/deploy/live verification, close the lane in a docs-only checkpoint before activating Fuel.
