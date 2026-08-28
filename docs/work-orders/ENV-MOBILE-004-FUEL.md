@@ -1,4 +1,4 @@
-Status: READY_FOR_IMPLEMENTATION
+Status: REVIEW_REQUESTED
 Owner: GPT-5.6 Sol
 Parallel Core audit: GLM-5.3 MAX may perform read-only Fuel data-contract/schema/query/RLS audit; no mutable ownership
 Independent reviewer / merge owner: fresh reviewer context after implementation stops
@@ -118,6 +118,16 @@ Run and record:
 - `git diff --check`;
 - screenshots at 360, 390/430, 768, 1024 where practical.
 
+## Implementation / verification evidence — 2026-08-28
+
+Production checkpoint: `413d435cf780ee6b809175d15fc2b86a55baf01d`.
+
+Implemented only the bounded page-local seam: phone one-column form grid plus 44px delete target. Existing history containment, Fuel data/query/schema/RLS/carbon behavior, and `computeDelta` mismatch semantics were preserved.
+
+GREEN evidence: focused Fuel Playwright 8/8 PASS; full Playwright 81/81 PASS; Vitest 202/202 PASS; typecheck/build PASS; lint 12 baseline warnings / 0 errors; route smoke + diff-check PASS; Pixel 7 touch path PASS; 360/390/430/768/1024 coverage; deterministic save failure preserves values and retry sends unchanged Fuel payload semantics; meter-delta warning/confirm cancel/accept behavior preserved.
+
+Evidence packet: `docs/ai/handoffs/ENV-MOBILE-004-SOL.md`.
+
 ## Completion gate
 
-Stop implementation at `REVIEW_REQUESTED` with exact production SHA, changed paths, RED/GREEN evidence, commands/results, visual evidence, residual risks, and the separate import→carbon data-contract finding in `docs/ai/handoffs/ENV-MOBILE-004-SOL.md`. Implementation owner must not merge its own code-changing PR.
+Implementation stops at `REVIEW_REQUESTED`. Fresh reviewer must inspect the exact pushed PR head/diff and own approval/merge. Any code-changing push invalidates the evidence above. After merge/deploy/live verification, close the lane in a docs-only checkpoint before activating Garden/Garbage.
