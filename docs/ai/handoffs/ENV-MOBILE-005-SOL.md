@@ -1,7 +1,7 @@
 # ENV-MOBILE-005 - Garden mobile convergence
 
 Date: 2026-08-28
-Status: REVIEW_REQUESTED
+Status: RE-REVIEW_REQUESTED
 Owner: GPT-5.6 Sol
 Branch/worktree: `feat/env-mobile-005-garden` / `A:\GitHub\envww-review-mobile-001`
 Base: `origin/main@19eb31ff725e746a1e5856db5c9e86badd1c725b`
@@ -55,6 +55,17 @@ Production checkpoint: `356334641fb15b5c399579dc7cde9f5640cdbb90`.
 
 All representative rows are synthetic E2E evidence, never production operational/environmental data.
 
+## Independent review and remediation checkpoint
+
+Fresh review of exact original PR head `39f25a92c0bbd10365c618c4477d4cca34f52f1f` returned `CHANGES_REQUIRED` in review `PRR_kwDOTN3Mzc8AAAABLSqMwQ`:
+
+- AppShell's hidden document overflow made the original document-only containment assertion false-green; at 320/360 px the table/action escaped the Garden card and the complete delete action was not locally reachable.
+- The schema-required `round_date` could be cleared and POSTed as an empty string without a persistent associated error or focus recovery.
+
+Regression-first remediation produced **4 FAIL / 8 PASS** before production mutation. Checkpoint `e137cd468f628961dcfb697f0470cb3da76062bd` then added a named local horizontal-scroll region with keyboard ArrowRight support and a page-local required-date zero-POST/error/focus guard.
+
+Fresh GREEN evidence is focused Garden **12/12 PASS**, full Playwright **95/95 PASS**, Vitest **202/202 PASS**, standalone typecheck/build PASS, lint **12 baseline warnings / 0 errors**, targeted lint 0/0, and `git diff --check` PASS. Coverage includes local boundary/table/action geometry at 320/360/390, keyboard local-scroll reachability, desktop no-unnecessary-clipping, and corrected-date valid save. All Garden REST remains mocked/no-real-write.
+
 ## Codex continuation contract
 
 Start from repository SSoT and actual remote state, not chat memory.
@@ -66,8 +77,8 @@ Start from repository SSoT and actual remote state, not chat memory.
 5. Rerun focused Garden Playwright with retries 0; inspect exact-head GitHub CI. Any code-changing push invalidates prior evidence and requires fresh verification.
 6. Return `APPROVED` or `CHANGES_REQUIRED`. If approved, merge using the exact reviewed head.
 7. After merge: fetch main, verify merge ancestry, post-merge `test` + E2E + Pages run against exact merge SHA, verify Pages deployment exact SHA, and live-smoke `/garden` at about 390x844 with all REST mocked/no real writes.
-8. Close Garden in a docs-only checkpoint (`CURRENT-WORK=IDLE`, claim complete, WO/handoff/roadmap/graph closure). Only then may Garbage be activated under a fresh WO/claim/audit.
+8. Close Garden in a docs-only checkpoint (`CURRENT-WORK=IDLE`, claim complete, WO/handoff/roadmap/graph closure plus defect-memory entry for the hidden-overflow false-green class). Only then may Garbage be activated under a fresh WO/claim/audit.
 
 ## Stop gate
 
-Implementation owner stops at `REVIEW_REQUESTED`. Codex / fresh independent reviewer owns the next gate.
+Remediation owner stops at `RE-REVIEW_REQUESTED`. Fresh independent reviewer owns the next gate.

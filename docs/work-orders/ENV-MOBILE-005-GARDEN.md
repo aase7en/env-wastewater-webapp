@@ -1,6 +1,6 @@
 # ENV-MOBILE-005 - Garden Mobile Convergence
 
-Status: REVIEW_REQUESTED
+Status: RE-REVIEW_REQUESTED
 Owner: GPT-5.6 Sol
 Independent reviewer / merge owner: fresh reviewer context after implementation stops
 Parent roadmap: `ENV-MOBILE-002+` Domain form convergence
@@ -129,6 +129,17 @@ Verification: focused Garden **9/9 PASS**; full Playwright **92/92 PASS**; Vites
 
 No Garden data/query/schema/RLS/carbon/shared primitive semantics changed. All E2E data is synthetic.
 
+## Independent review / remediation evidence - 2026-08-29
+
+The exact original PR head `39f25a92c0bbd10365c618c4477d4cca34f52f1f` received `CHANGES_REQUIRED` in review `PRR_kwDOTN3Mzc8AAAABLSqMwQ` for two reproducible defects:
+
+- the document-level overflow assertion was false-green because AppShell hid overflow while the history table/delete action escaped its Garden card at 320/360 px;
+- `garden.work_round.round_date` is `NOT NULL`, but a cleared date could still submit `round_date: ""` with no page-local required state, persistent associated error, or focus recovery.
+
+Four new assertions failed before production remediation (**4 FAIL / 8 PASS**). Remediation checkpoint `e137cd468f628961dcfb697f0470cb3da76062bd` adds only a named, focusable local history scroll region with keyboard ArrowRight reachability and a page-local required-date guard/error/focus path. It does not change the Garden API payload shape or data layer.
+
+Fresh verification: focused Garden **12/12 PASS**; full Playwright **95/95 PASS**; Vitest **202/202 PASS**; standalone typecheck PASS; production build PASS; lint **12 baseline warnings / 0 errors**; targeted Garden lint 0/0; `git diff --check` PASS. REST is fully mocked in Garden E2E and no real writes occur.
+
 ## Completion gate
 
-Implementation owner stops at `REVIEW_REQUESTED`. Fresh reviewer must inspect exact pushed PR head/diff, rerun focused evidence, verify exact-head CI, and own approval/merge. After merge/deploy/live verification, close the lane in a docs-only checkpoint before activating Garbage.
+Implementation/remediation owner stops at `RE-REVIEW_REQUESTED`. A fresh reviewer must inspect the exact pushed PR head/diff, rerun focused evidence, verify exact-head CI, and own approval/merge. After merge/deploy/live verification, close the lane in a docs-only checkpoint before activating Garbage.

@@ -1,6 +1,6 @@
 # CURRENT WORK
 
-Status: REVIEW_REQUESTED
+Status: RE-REVIEW_REQUESTED
 
 Allowed statuses:
 
@@ -16,16 +16,18 @@ Allowed statuses:
 
 > `CURRENT-WORK.md` is the authoritative task definition. Agents must not silently expand task scope.
 
-## Current execution state - 2026-08-28
+## Current execution state - 2026-08-29
 
 - Active work order: `ENV-MOBILE-005` - Garden mobile convergence; contract `docs/work-orders/ENV-MOBILE-005-GARDEN.md`.
 - Branch/worktree: `feat/env-mobile-005-garden` / `A:\\GitHub\\envww-review-mobile-001` from exact `origin/main@19eb31ff725e746a1e5856db5c9e86badd1c725b`.
-- RED checkpoint `6f2af89426fe66e523d92dd7d7c4b16a2c5867ca`: 360px x-delta 154px; delete width 19.125px; semantic date label resolved 0 controls; history containment + 1024px density already passed.
-- Production checkpoint `356334641fb15b5c399579dc7cde9f5640cdbb90`: only `frontend/src/pages/GardenPage.tsx` + `frontend/tests/e2e/garden-mobile.spec.ts`; phone grid becomes one column with larger-breakpoint density preserved, all 9 visible controls receive stable label/ID association, and delete reaches the existing 44px touch minimum.
-- GREEN evidence: focused Garden Playwright **9/9 PASS**; full Playwright **92/92 PASS**; Vitest **202/202 PASS**; standalone typecheck PASS; production build PASS; lint **12 pre-existing warnings / 0 errors**; targeted lint 0/0; `git diff --check` PASS.
-- Rendered regression covers 360/390/430/768/1024 plus Pixel 7 touch, keyboard Tab/Enter, deterministic save-error/retry with equal complete null-aware `GardenInput`, and synthetic rows only.
+- Original RED checkpoint `6f2af89426fe66e523d92dd7d7c4b16a2c5867ca`; original production checkpoint `356334641fb15b5c399579dc7cde9f5640cdbb90`; original PR #48 head `39f25a92c0bbd10365c618c4477d4cca34f52f1f`.
+- Independent exact-head review `PRR_kwDOTN3Mzc8AAAABLSqMwQ` returned `CHANGES_REQUIRED`: AppShell's hidden document overflow made the initial history assertion false-green while the table/action escaped the Garden card at 320/360 px, and the schema-required `round_date` could be cleared and POSTed as an empty string.
+- Remediation RED added four deterministic checks before production mutation: **4 FAIL / 8 PASS**. It proved the missing named/local history boundary, unreachable delete action, and one invalid empty-date POST without an associated persistent error/focus target.
+- Remediation checkpoint `e137cd468f628961dcfb697f0470cb3da76062bd`: only `frontend/src/pages/GardenPage.tsx` + `frontend/tests/e2e/garden-mobile.spec.ts`; page-local named keyboard-scrollable history containment and page-local required-date validation were added without changing Garden data/query/schema/carbon semantics.
+- Fresh GREEN evidence: focused Garden Playwright **12/12 PASS**; full Playwright **95/95 PASS**; Vitest **202/202 PASS**; standalone typecheck PASS; production build PASS; lint **12 pre-existing warnings / 0 errors**; targeted lint 0/0; `git diff --check` PASS.
+- Rendered regression now covers 320/360/390/430/768/1024 plus Pixel 7 touch, local keyboard scroll/action reachability, keyboard Tab/Enter, required-date error/focus/value preservation, and deterministic save-error/retry with equal complete null-aware `GardenInput`.
 - Garden data/query/schema/RLS/carbon behavior, `location_id`/`photo_path` null semantics, shared UI/AppShell, Garbage, other forms, and `.serena/` are unchanged/read-only.
-- State: `REVIEW_REQUESTED`. Implementation is frozen. **Codex / fresh independent reviewer** owns exact pushed-head review, focused rerun, exact-head CI inspection, approval/changes verdict, merge, post-merge test/E2E/Pages + live smoke, then docs-only closure.
+- State: `RE-REVIEW_REQUESTED`. Remediation is frozen. **Fresh independent reviewer** owns exact pushed-head review, focused rerun, exact-head CI inspection, approval/changes verdict, merge, post-merge test/E2E/Pages + live smoke, then docs-only closure.
 - `ENV-MOBILE-001` through `ENV-MOBILE-004` remain complete/read-only history. Garbage remains inactive until Garden closure and its own fresh Core/data-contract audit.
 
 ## Review Queue — 2026-08-23
