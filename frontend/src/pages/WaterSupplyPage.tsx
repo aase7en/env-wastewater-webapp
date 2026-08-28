@@ -61,7 +61,7 @@ export function WaterSupplyPage() {
 
       <AuraCard className="p-4 space-y-3">
         <h2 className="text-lg font-semibold font-thai">กรอกข้อมูล</h2>
-        <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
+        <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-3">
           <Field label="วันที่ตรวจ">
             <Input type="date" value={form.check_date} onChange={(e) => set({ check_date: e.target.value })} />
           </Field>
@@ -110,7 +110,7 @@ export function WaterSupplyPage() {
                     <td className="text-right p-2">{r.free_chlorine_residual ?? "-"}</td>
                     <td className="text-right p-2">{r.turbidity ?? "-"}</td>
                     <td className="p-2">{r.total_coliform ?? "-"}</td>
-                    <td className="p-2"><button onClick={() => remove(r.id)} className="text-red-400 hover:underline font-thai">ลบ</button></td>
+                    <td className="p-2"><button onClick={() => remove(r.id)} className="min-h-[var(--touch-min)] min-w-[var(--touch-min)] px-2 rounded-lg text-red-400 hover:bg-alert-red/10 hover:underline font-thai">ลบ</button></td>
                   </tr>
                 ))}
               </tbody>
