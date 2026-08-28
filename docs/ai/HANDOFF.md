@@ -1,37 +1,33 @@
 # HANDOFF
 
-## Active checkpoint — ENV-MOBILE-001 — 2026-08-27
+## Closed checkpoint — ENV-MOBILE-001 — 2026-08-28
 
 ### ENV-ARCH-001 closure
 
 - PR #39 reviewed exact head: `2d58c684330d4db0e80bda0c8fc2ebd8890e4eef`.
 - Merge on main: `08db62c821cf7b95aaeb373c603d77ccc4d9b98a`.
-- Reviewer verified docs-only diff, route inventory, schema-family claims, operating artifacts, current-main ancestry, clean diff-check, CLEAN merge state, and exact-head `scripts` + `notify` SUCCESS. Frontend E2E/deploy were not applicable to the docs-only paths.
-- Operating architecture/graph/roadmap/current-state inventory are now durable SSoT on main.
+- Operating architecture/graph/roadmap/current-state inventory are durable SSoT on main.
 
-### ENV-MOBILE-001 ? RE-REVIEW_REQUESTED
+### ENV-MOBILE-001 — COMPLETE
 
-- Goal: make the wastewater daily field form practical at 360–430 px without changing its data/validation/hydration semantics.
-- Branch/worktree: `feat/env-mobile-001` / `A:\\GitHub\\envww-mobile-001`.
-- Base: `origin/main@08db62c821cf7b95aaeb373c603d77ccc4d9b98a`.
-- Contract: `docs/work-orders/ENV-MOBILE-001.md`.
-- Coordinator: GPT-5.6 Sol MAX production-remediation lane. GLM lane D is complete/read-only. Fresh isolated reviewer context owns PR #40 approval/merge; this lane must not merge.
-- RED: the first two dense water-quality inputs were 149 px apart at 360 px under the prior unconditional two-column grid. A second real-use RED showed the floating ModuleDock intercepting the fixed submit action.
-- Implementation checkpoint: `a99629935b68dac58a3e7fb8c1498e923fe5a174`.
-- Implementation: dense numeric groups are one-column below `sm` and remain two-column at larger widths; form completion clearance is increased; the sticky action bar is lifted above the dock with a local z-index high enough to receive taps. No AppShell/ModuleDock/data-contract source changed.
-- Focused E2E: 3/3 PASS — mobile stack/no overflow, desktop two-column preservation, and phone abnormal-validation/value-persistence/save path including final-field/action-bar clearance.
-- Full gates: Playwright 51/51 PASS (including dirty-form reconnect regression), Vitest 202/202 PASS, production build PASS, oxlint 0 errors / 12 pre-existing warnings, `git diff --check` PASS.
-- Existing numeric-string payload behavior was observed and intentionally preserved; normalization is outside this WO.
-- Exact review: PR #40 head `87fdc7c0b014ed7279df93de7b4bdc539926debb` against `origin/main@08db62c821cf7b95aaeb373c603d77ccc4d9b98a` returned `CHANGES_REQUIRED — DO NOT MERGE`.
-- Remote state at review: OPEN and CLEAN/MERGEABLE; no branch protection/ruleset and no server-required checks. Visible checks succeeded, but E2E checked GitHub merge ref `e330b26ce966620c6e84bbb482746a5c68bf3a53` rather than the literal reviewed head SHA.
-- Blocking gaps: QuickChips are 36 px rather than 44 px minimum; 430 px/tablet/touch-target/keyboard/touch/edit/error-retry/repair-request/visual gates are not proven; the save mock covers success only; SSoT/PR evidence is stale; and prior role ownership was not independent.
-- Remediation contracts: `docs/work-orders/ENV-MOBILE-001A-SOLMAX-UX-REMEDIATION.md` then `docs/work-orders/ENV-MOBILE-001B-GLM53-VERIFICATION.md`.
-- ENV-MOBILE-001A pushed production checkpoint: `74550da24af09a5afe506d2c269de89cb6392092`; remote branch head matched. Evidence: focused mobile Playwright 3/3 PASS, Vitest 202/202 PASS, build PASS, lint 12 pre-existing warnings / 0 errors, diff-check PASS, plus rendered 360/390/430/768/1024 Chromium matrix recorded in `docs/ai/handoffs/ENV-MOBILE-001A-SOLMAX.md`.
-- ENV-MOBILE-001B is COMPLETE/PUSHED; its `daily-form-mobile.spec.ts` is read-only during production remediation.
-- ENV-MOBILE-001D is COMPLETE/PUSHED at `cdaa1097022b7fbfedfff8302a628af630f6cfb1`; the unchanged failed-save regression reproduced the production race 2/20, then GLM stopped with no production edit.
-- ENV-MOBILE-001E is `RE_REVIEW_REQUESTED`: `DailyFormPage.tsx` now uses state-backed post-commit reveal and deterministic `auto` centered scrolling; the repair hint truthfully describes sequential save then repair creation.
-- Verification: focused failed-save 1/1 PASS; unchanged regression repeat 20/20 PASS; full mobile spec 11/11 PASS; Vitest 202/202 PASS; typecheck PASS; lint 12 baseline warnings / 0 errors; build PASS; diff-check PASS. Exact evidence: `docs/ai/handoffs/ENV-MOBILE-001E-SOLMAX.md`.
-- Next: fresh isolated reviewer context re-reviews the exact pushed PR #40 SHA/diff. Any code-changing push invalidates this evidence. Do not merge from this lane.
+- Goal: make the wastewater daily field form practical at 360–430 px without changing its data/validation/hydration/null/manual-vs-live semantics.
+- Final reviewed PR head: `f7af3027dafe52f06719a2e08de993a31045162f`.
+- Final production remediation commit: `b7c2623168da4d6fac8990a7f90180ee1b1326f1`; the following `f7af302...` checkpoint is docs/evidence only.
+- Independent final verification: failed-save regression 20/20 PASS; full mobile spec 11/11 PASS; Vitest 202/202 PASS; build PASS; lint 12 baseline warnings / 0 errors; `git diff --check` PASS.
+- Full local Playwright under parallel load had one unrelated `/chemical` navigation timeout in `modules.spec.ts`; isolated reproduction passed 10/10 and GitHub E2E smoke was green.
+- Final review verdict: `APPROVED`.
+- PR #40 merged as `74675a532a871c7bba78de15eccb35b6b0ba433b`.
+- Post-merge main evidence: `test` run `33142966683` SUCCESS; E2E smoke `33142966680` SUCCESS; GitHub Pages deploy `33142966767` SUCCESS.
+- Deployment `6135815691` reports `success` for exact main SHA `74675a5...`.
+- Live production smoke at 390×844: HTTP 200; login renders; protected `/form` routes to `login?next=/form`; no horizontal overflow; no browser console/page errors. Deployed JS includes the remediated DailyForm code.
+- Data-honesty/security scope preserved: no schema/RLS/query/payload normalization, sensor/live semantics, AppShell, shared UI, or Digital Twin contract change.
+- Reusable failure lesson: conditional error/focus UI must reveal only after React commits the target; direct submit-handler frame scheduling can race the mount. Regression is pinned in `daily-form-mobile.spec.ts`.
+- Parent contract: `docs/work-orders/ENV-MOBILE-001.md`.
+
+### Next safe action
+
+- Merge the docs-only closeout branch `docs/env-mobile-001-closeout` from current `origin/main@74675a532a871c7bba78de15eccb35b6b0ba433b`.
+- After main contains the closure record, activate only the next roadmap slice: `ENV-MOBILE-002` Chemical form source audit + mobile baseline. Do not start Water Supply or later domain forms in parallel.
 
 ### Worktree hygiene pass — 2026-08-27
 

@@ -1,6 +1,6 @@
 # UTH[AI]-ENV — Unified Roadmap
 
-Last updated: 2026-08-27
+Last updated: 2026-08-28
 Status: PROJECT ROADMAP SSoT
 
 ## Goal
@@ -64,7 +64,7 @@ Do not reopen completed WOs without new evidence.
 
 ### ENV-ARCH-001 — Operating Architecture + Graph + Roadmap
 
-**State:** IN PROGRESS in the architecture documentation branch at this checkpoint.
+**State:** COMPLETE — merged via PR #39 as `08db62c821cf7b95aaeb373c603d77ccc4d9b98a`.
 
 Goal:
 
@@ -88,6 +88,8 @@ No production source changes in this WO.
 ## M1 — Mobile-first operational recording
 
 ### ENV-MOBILE-001 — Wastewater DailyForm mobile-first completion
+
+**State:** COMPLETE — PR #40 merged as `74675a532a871c7bba78de15eccb35b6b0ba433b`; post-merge test/E2E/Pages deployment and live auth-gated production smoke passed.
 
 **Priority:** P0 product-experience slice after ENV-ARCH-001.
 
@@ -114,6 +116,8 @@ Likely owner split:
 - Core Engineering only if test/data semantics require it.
 
 ### ENV-MOBILE-002+ — Domain form convergence
+
+**Next eligible slice:** `ENV-MOBILE-002` — Chemical form. It remains unactivated until the ENV-MOBILE-001 docs-only closeout is merged to main; activation begins with source-reality audit and phone-width baseline, not production mutation.
 
 After Mobile-001 provides a proven pattern, audit and improve one domain per WO, prioritized by field frequency and control density:
 

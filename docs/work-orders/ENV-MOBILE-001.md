@@ -1,8 +1,8 @@
 # ENV-MOBILE-001 — Wastewater DailyForm Mobile-First Completion
 
-Status: CHANGES_REQUIRED
+Status: COMPLETE
 
-Coordinator / independent reviewer / merge owner: GPT-5.6 Sol Ultra
+Final independent reviewer / merge owner: GPT-5.6 Sol (fresh reviewer context, 2026-08-28)
 UX remediation owner: GPT-5.6 Sol MAX via `ENV-MOBILE-001A-SOLMAX-UX-REMEDIATION.md`
 Verification owner: GLM-5.3 via `ENV-MOBILE-001B-GLM53-VERIFICATION.md`
 Core Engineering: no production data-contract change expected; escalate if source reality requires one
@@ -172,6 +172,24 @@ Remediation is sequential and file ownership must not overlap:
 3. GPT-5.6 Sol Ultra performs a fresh exact-SHA review only after both lanes stop at `RE-REVIEW_REQUESTED`.
 4. Any HEAD change invalidates the review evidence above; do not reuse it as approval.
 
-## Stop gate
+## Final closure evidence — 2026-08-28
 
-Remediation owners stop at their lane-specific gates. Neither owner may merge. No other module-form cleanup is included.
+Verdict: `APPROVED / MERGED / DEPLOYED / PRODUCTION-SMOKED`.
+
+- Final reviewed PR head: `f7af3027dafe52f06719a2e08de993a31045162f` against base `08db62c821cf7b95aaeb373c603d77ccc4d9b98a`.
+- Final production remediation: `b7c2623168da4d6fac8990a7f90180ee1b1326f1`; the following `f7af302...` checkpoint was docs/evidence only.
+- Independent local verification at final head: failed-save regression **20/20 PASS**; full mobile DailyForm spec **11/11 PASS**; Vitest **202/202 PASS**; build PASS; lint **12 baseline warnings / 0 errors**; `git diff --check` PASS.
+- Full local Playwright under parallel load produced **58 PASS / 1 navigation timeout** in unrelated `modules.spec.ts` while loading `/chemical`; the exact failed test then passed **10/10** in isolated reproduction, so it is classified as a resource/navigation flake rather than an ENV-MOBILE-001 regression.
+- Final PR CI: `smoke`, `scripts`, and both `notify` checks SUCCESS. GitHub checked PR merge ref `05b101344c3e23d1deb28f00f8778cf6a6433d00`, recorded as `Merge f7af302... into 08db62c...`.
+- PR #40 merged to `main` as `74675a532a871c7bba78de15eccb35b6b0ba433b`; final feature head is an ancestor of that merge.
+- Post-merge main workflows: `test` run `33142966683` SUCCESS; E2E smoke run `33142966680` SUCCESS; GitHub Pages deploy run `33142966767` SUCCESS.
+- GitHub Pages deployment `6135815691` reports `success` for exact main SHA `74675a5...` at `https://aase7en.github.io/env-wastewater-webapp/`.
+- Live 390×844 production smoke: HTTP 200; login UI renders; protected `/form` routes to `login?next=/form`; no horizontal overflow and no browser console/page errors. Deployed JS bundle `assets/index-52kKWH_i.js` contains the new DailyForm remediation markers.
+- Data-honesty invariants remain unchanged: no schema/RLS/query/payload-normalization/manual-vs-live semantics were modified.
+- Residual non-blocking risk: the page-local action-bar guard observes ModuleDock's existing `z-[35]` scrim implementation detail because shared AppShell/ModuleDock were intentionally outside this WO. The regression suite pins the required interaction contract.
+
+All seven acceptance criteria are satisfied. Any future DailyForm behavior change requires a new bounded work order and fresh evidence.
+
+## Stop gate — CLOSED
+
+ENV-MOBILE-001 is complete. No other module-form cleanup is included in this work order; domain-form convergence continues only through a new `ENV-MOBILE-002+` bounded slice.
