@@ -1,6 +1,6 @@
 # CURRENT WORK
 
-Status: DESIGNING
+Status: READY_FOR_IMPLEMENTATION
 
 Allowed statuses:
 
@@ -21,7 +21,7 @@ Allowed statuses:
 - Active work order: `ENV-MOBILE-002` — Chemical form mobile convergence; contract `docs/work-orders/ENV-MOBILE-002-CHEMICAL.md`.
 - Branch/worktree: `feat/env-mobile-002-chemical` / `A:\\GitHub\\envww-review-mobile-001` from `origin/main@cca5a05d640c8262e0ef102d6fb9826f6f297553`.
 - Owner: GPT-5.6 Sol as the user-authorized GLM-5.3 limit fallback. Scope is page-local Chemical responsive/interaction work + one focused E2E spec; data layer/schema/shared UI/other forms remain read-only.
-- State: `DESIGNING / BASELINE_REQUIRED`. Source audit is complete; production mutation waits for deterministic 360–430 px RED/baseline evidence.
+- State: `READY_FOR_IMPLEMENTATION`. Source audit + RED baseline are complete: phone form x-delta 154px in both forms; delete targets ~19.125×24.797px; document overflow already passes; desktop density passes.
 - `ENV-MOBILE-001` is complete, merged, deployed, production-smoked, and read-only historical evidence.
 
 ## Review Queue — 2026-08-23

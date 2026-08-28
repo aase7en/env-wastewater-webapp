@@ -1,6 +1,6 @@
 # ENV-MOBILE-002 — Chemical Form Mobile Convergence
 
-Status: DESIGNING / BASELINE_REQUIRED
+Status: READY_FOR_IMPLEMENTATION
 Owner: GPT-5.6 Sol (GLM-5.3 limit fallback authorized by user 2026-08-28)
 Independent reviewer / merge owner: fresh reviewer context after implementation stops
 Parent roadmap: `ENV-MOBILE-002+` Domain form convergence
@@ -82,6 +82,21 @@ Before production edit, add the smallest deterministic Chemical E2E coverage usi
 - current delete target dimensions with representative rows.
 
 Do not fabricate RED for a condition that already passes; record measured baseline instead.
+
+## Baseline evidence — 2026-08-28
+
+Environment note: the clean worktree initially lacked local `node_modules`, so the first Playwright attempt was classified `ENVIRONMENT_FAILURE`. A gitignored local junction reuses the already-installed dependency tree from `A:\GitHub\envww-mobile-001\frontend\node_modules`; no package/lock/dependency source changed.
+
+Measured against unmodified `ChemicalPage.tsx` at branch checkpoint `c6ea6a873b03137e30ffe2fb1c70b7db347cbdc8`:
+
+- 360 px catalog first/second controls: **154 px x-axis delta** — RED; desired one phone column is <8 px delta.
+- 360 px movement first/second controls: **154 px x-axis delta** — RED.
+- 360 px document-level horizontal overflow: **PASS / none detected** — do not claim this as a production defect.
+- three representative delete actions: each approximately **19.125 × 24.797 CSS px** — RED versus 44×44 minimum.
+- 1024 px catalog density: PASS; first/second controls remain on separate columns as intended.
+- representative mocked stock/history rows were used only for deterministic layout evidence; they are not production inventory.
+
+The RED is therefore bounded to phone form composition and delete touch targets. Table/page containment already passes the document-overflow assertion; implementation should preserve that rather than invent a new failure.
 
 ## Implementation seam
 

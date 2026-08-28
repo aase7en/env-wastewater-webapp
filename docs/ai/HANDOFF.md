@@ -10,7 +10,8 @@
 - Source audit: both Chemical forms currently use two columns below `md`; stock/history are raw multi-column tables; delete touch targets are unproven; no focused Chemical E2E exists.
 - Schema authority: actual `reports/schema-snapshot-live.md` + migrations confirm `chemical.master` and extended `chemical.movement`; A-Wiki's `chemical.master pending` statement is stale and is not used as the production contract.
 - Separate data-contract finding: movement `quantity` initializes to zero and DB has no positive-quantity CHECK. This WO must not invent a new quantity rule; defer/route separately if it becomes material.
-- Next safe action: create deterministic phone-width baseline/RED in `frontend/tests/e2e/chemical-mobile.spec.ts`; only after measured evidence may `ChemicalPage.tsx` be changed.
+- RED baseline complete: catalog x-delta 154px; movement x-delta 154px; delete targets ~19.125×24.797px; document-level overflow already passes; 1024px multi-column density passes.
+- State: `READY_FOR_IMPLEMENTATION`. Next safe action: page-local responsive/touch correction in `ChemicalPage.tsx`, then rerun the unchanged RED assertions to GREEN before expanding verification.
 - Protected state: `.serena/` remains unknown/protected and must not be touched.
 
 ## Closed checkpoint — ENV-MOBILE-001 — 2026-08-28
