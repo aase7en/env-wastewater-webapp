@@ -1,6 +1,6 @@
 # REPO-HEALTH-100-R2 — 2026-08-28 repo-health loop
 
-Status: IMPLEMENTING
+Status: REVIEW_REQUESTED
 Owner: GPT-5.6 Sol
 Branch/worktree: `docs/repo-health-100-r2` / `A:\GitHub\envww-repo-health-100-r2`
 Base: `origin/main@19eb31ff725e746a1e5856db5c9e86badd1c725b`
@@ -56,6 +56,19 @@ Remove verified repository/CI hygiene defects without overlapping the active Gar
 - SSoT: several historical WO files retain stale non-final status text despite merged project state. Reconcile only after Garden closes to avoid shared SSoT collision.
 - Lint: 12 existing warnings remain; triage into bounded ownership-safe fixes rather than suppressing them.
 - Remote hygiene: stale draft PR #8 was closed after verifying its A-Wiki target file/companion PR does not exist.
+
+## Verification evidence
+
+- Workflow YAML parse: PASS for all `.github/workflows/*.yml`.
+- `actionlint`: unavailable locally; not claimed as PASS.
+- v4 first-party action references remaining: 0; checkout-v7: 5; setup-node-v7: 2.
+- `scripts/test_split_sql.py`: PASS.
+- Vitest with non-secret test env: 202/202 PASS.
+- standalone TypeScript build: PASS.
+- lint: 12 existing warnings / 0 errors.
+- production build: PASS.
+- `git diff --check`: PASS.
+- Dependency/security and Core data-contract findings are recorded in `reports/repo-health-2026-08-28-r2.md` and explicitly routed out of this diff.
 
 ## Stop / review gate
 

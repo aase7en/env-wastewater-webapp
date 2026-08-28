@@ -1,0 +1,102 @@
+# ENV Repo Health R2 — 2026-08-28
+
+Status: REVIEW_REQUESTED
+Branch: `docs/repo-health-100-r2`
+Base: `origin/main@19eb31ff725e746a1e5856db5c9e86badd1c725b`
+WO: `docs/work-orders/REPO-HEALTH-100-R2.md`
+
+## Goal and parallel boundary
+
+This audit runs in parallel with `ENV-MOBILE-005` Garden review. It does not edit Garden code/tests/SSoT, `.serena/`, schema/RLS/carbon/data adapters, raw hospital data, or secrets.
+
+Garden remains frozen at PR #48 review head `39f25a92c0bbd10365c618c4477d4cca34f52f1f`; Codex/fresh reviewer owns its review/merge/closure.
+
+## Closed remote clutter
+
+PR #8 was a stale July draft that proposed an ENV `AGENTS.md` pointer to `A-Wiki/agent-skills/engineering/reasoning-standards/SKILL.md`. Current A-Wiki has no such file and no companion PR was found. The draft was documented and closed without merge to avoid a dead reference.
+
+## Local checkout health
+
+Primary checkout `A:\GitHub\env-wastewater-webapp` is `main@7d73814782f8475731d886f6826da5bc9af36c11`, 110 commits behind current `origin/main` at audit time.
+The primary checkout has no tracked diff but has extensive unknown untracked state (`.serena/`, design assets, firmware, docs, a migration and other files). Ownership is unknown. Per repository safety rules it is protected: no reset/clean/delete/blind stash/unsafe fast-forward was performed.
+
+Current safe local execution uses isolated worktrees based on current remote state, including `A:\GitHub\envww-review-mobile-001` and `A:\GitHub\envww-repo-health-100-r2`.
+
+## CI action-runtime defect
+
+PR #48 exact-head E2E run `33184929519` emitted GitHub's Node 20 deprecation annotation for `actions/checkout@v4` and `actions/setup-node@v4`.
+
+Source audit found five checkout-v4 references and two setup-node-v4 references. The app workflows already request Node 24, so the defect is the JavaScript action runtime rather than the project Node version.
+
+Verified upstream on 2026-08-28:
+- `actions/checkout` latest release is v7.0.1;
+- `actions/setup-node` latest release is v7.0.0;
+- current GitHub guidance is the Node-24 action generation.
+
+Bounded remediation changes only first-party action majors: checkout `v4 -> v7`, setup-node `v4 -> v7`. Existing triggers, permissions, project Node version, cache settings, secrets, deploy logic and pinned third-party actions are unchanged.
+## Verification of CI-runtime slice
+
+- All five workflow YAML files parse successfully with PyYAML.
+- `actionlint` is not installed locally; recorded as unavailable, not a PASS.
+- `actions/checkout@v4` remaining count: 0; checkout-v7 count: 5.
+- `actions/setup-node@v4` remaining count: 0; setup-node-v7 count: 2.
+- `uv run python scripts/test_split_sql.py`: PASS.
+- Frontend dependencies installed with Node 24.15.0 / npm 11.12.1.
+- Vitest with non-secret deterministic test env: 15 files / **202 tests PASS**.
+- standalone `tsc -b`: PASS.
+- lint: **12 existing warnings / 0 errors**.
+- production build: PASS; existing chunk-size advisory only.
+- `git diff --check`: PASS before review checkpoint.
+
+The first Vitest attempt in this isolated worktree correctly failed two module-load suites because no `.env` was copied in. No secret was copied. The suite was rerun with dummy test-only `VITE_SUPABASE_URL` and `VITE_SUPABASE_ANON_KEY` and passed 202/202.
+
+## Dependency security baseline
+
+Fresh `npm ci` reports 9 total audit findings; production-only audit reports **7 findings: 4 high, 3 moderate**. Do not run `npm audit fix --force` blindly.
+Notable production-tree findings:
+- `pdfjs-dist 6.1.200`: HIGH arbitrary-JavaScript advisory; npm current/fixed line includes `6.2.108`.
+- `react-router-dom 7.18.1` / `react-router 7.18.1`: HIGH CSRF advisory; fixed after 7.18.1 and npm current is 7.18.3.
+- `exceljs 4.4.0` pulls `uuid 8.3.2`: MODERATE. npm audit's suggested `exceljs 3.4.0` is a breaking downgrade and is not accepted automatically.
+- `jspdf 4.2.1` pulls vulnerable `dompurify 3.4.12`: MODERATE.
+- vulnerable transitive `brace-expansion`: HIGH DoS.
+- full tree additionally includes direct dev `postcss 8.5.19`: MODERATE; npm current is 8.5.26.
+
+These require a separate dependency-security WO with focused PDF/import/router/regression evidence and lockfile review.
+
+## Core data-integrity findings — routed separately
+
+### Fuel
+
+`frontend/src/lib/import-adapters/fuel.ts` accepts arbitrary text into `fuel_type`; DB column is unrestricted text. `carbon.v_unified_co2e` casts `fuel_type` to `carbon.source_type`. A non-enum imported value can therefore fail carbon-view evaluation. UI values alone do not close the import path.
+
+### Garbage
+
+Schema migration states `segregation_type` is canonical and `waste_type` is legacy. Current UI initializes `waste_type="ทั่วไป"` while `segregation_type="general"`; changing the dropdown later makes the fields equal. Import adapter writes only canonical `segregation_type`, while carbon rollup still branches on legacy `waste_type`. Imported infectious/recyclable rows can therefore be treated as general by the rollup fallback.
+Both Core findings affect carbon/data truth and outrank Garbage visual/mobile polish. They need Core Engineering WOs, regression tests, and exact migration/view contract decisions rather than silent UI fixes.
+
+## SSoT drift findings
+
+Historical work-order files retain non-final status text even where the roadmap/main proves completion. Example: `ENV-ARCH-001.md` still says `REVIEW_REQUESTED`, while ROADMAP records PR #39 merged and the implementation commit is contained in main.
+
+Some Mobile-001 sub-lane statuses are deliberate stop-state evidence and must not be globally rewritten without classifying lane-history versus current-state semantics. Reconcile stale status fields in a bounded SSoT-health pass after Garden closure, not concurrently with Codex edits to shared coordination files.
+
+`WO-UX-AN-P001-GLM.md` still says `READY_FOR_IMPLEMENTATION` even though analytics components/tests exist in current main; source/commit history must be audited before deciding whether the WO status is stale or the implementation remains incomplete.
+
+## Lint / code-health findings
+
+Current lint baseline is 12 warnings / 0 errors. Higher-value follow-ups include:
+- `AuthProvider.tsx` hook dependency warning — Core/auth correctness review;
+- `EquipmentPage.tsx` missing effect dependency — potential stale-closure/reload behavior;
+- `import-engine.ts` unreachable/dead `sendChatTurn` reference — Core/AI import + privacy path review;
+- lower-risk structural/test/tool warnings in Toast, CSV import test, theme memo dependencies, and PWA icon script.
+
+No warning was suppressed or weakened in this slice.
+
+## Next bounded lanes
+
+1. Finish CI-runtime action upgrade through independent review + exact-head CI + merge/fetch.
+2. Core Fuel/Garbage carbon-contract repair before activating Garbage mobile convergence.
+3. Dependency security remediation, prioritizing `pdfjs-dist` and React Router high findings.
+4. Auth/import/effect lint correctness fixes, then low-risk warning cleanup.
+5. SSoT historical-status reconciliation after Garden closeout.
+6. Re-audit primary local checkout only with explicit ownership knowledge; never destroy unknown untracked files.
