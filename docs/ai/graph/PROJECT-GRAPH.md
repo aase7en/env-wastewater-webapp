@@ -1,6 +1,6 @@
 # UTH[AI]-ENV — Project Graph
 
-Last updated: 2026-08-27
+Last updated: 2026-08-28
 Status: GRAPH ENGINEERING SSoT
 
 ## Purpose
@@ -201,10 +201,15 @@ Examples not safe without coordination:
 
 At this checkpoint:
 
-- P1 stabilization activated work is closed;
-- deferred design/external lanes are recorded, not lost;
-- prototype north star and goal-first loop are merged into main;
-- architecture/graph/roadmap consolidation is the current documentation/coordination slice;
-- no production implementation should start until the next bounded work order records ownership and baseline evidence.
+- Foundation/P1 stabilization is closed;
+- ENV-ARCH-001 is merged and supplies the current operating architecture/graph/roadmap;
+- ENV-MOBILE-001 is reviewed, merged, deployed, production-smoked, and closed; its remediation/test lanes are read-only historical evidence;
+- no active writer owns the completed DailyForm slice;
+- deferred design/external lanes remain recorded, not lost;
+- the next critical-path production candidate is `ENV-MOBILE-002` for the Chemical form because `ENV-MOBILE-001` now satisfies the M1 dependency;
+- `ENV-MOBILE-002` must still establish an explicit bounded work order, ownership, source-reality audit, and RED/baseline evidence before production mutation;
+- Water Supply and later domain-form slices must not be started in parallel merely because the parent milestone is eligible.
 
-After this consolidation merges, the first planned production vertical slice is the highest-frequency wastewater mobile data-entry improvement, subject to the current-state inventory and explicit WO activation in `CURRENT-WORK.md`.
+Current critical-path handoff:
+
+`ENV-MOBILE-001 COMPLETE → docs closeout on main → ENV-MOBILE-002 Chemical audit/baseline → bounded implementation/review/verify loop`

@@ -1,6 +1,6 @@
 # UTH[AI]-ENV — Defect Memory
 
-Last updated: 2026-08-27
+Last updated: 2026-08-28
 Status: ACTIVE REUSABLE FAILURE MEMORY
 
 Purpose: retain only **reusable defect lessons** that should change how future ENV work is designed, tested, reviewed, or audited. This file is repository memory; chat memory is not a substitute.
@@ -110,6 +110,24 @@ Source record:
 **Regression/evidence:** PR #30 review record in `docs/ai/CURRENT-WORK.md` / `HANDOFF.md`; alert unread tests.
 
 **Domains affected:** alerts, optimistic React Query updates, counters/badges, repeated actions.
+
+---
+
+## ENV-DEFECT-006 — Conditional error reveal must wait for the committed target
+
+**Failure class:** accessibility / asynchronous UI focus and viewport race.
+
+**Symptom:** after a failed mobile save, the error alert existed but intermittently focus remained on `BODY` and the alert was fully above the viewport. The regression reproduced 2/20 in the verification lane.
+
+**Root cause:** focus/scroll was scheduled directly from the submit handler with `requestAnimationFrame`, which could run before React committed the conditionally rendered banner/validation target.
+
+**How detected:** independent mobile E2E review strengthened the failed-save path to assert `role=alert`, focus ownership, viewport intersection, entered-value preservation, and successful retry; repeated execution exposed the race.
+
+**Prevention rule:** when the focus/scroll target is conditionally rendered by state, represent the reveal as state and perform focus/scroll in an effect after the target is committed. Error recovery should be deterministic and must not depend on smooth-scroll timing. Preserve entered values and retry semantics.
+
+**Regression/evidence:** `frontend/tests/e2e/daily-form-mobile.spec.ts` failed-save regression; ENV-MOBILE-001D evidence at `cdaa1097022b7fbfedfff8302a628af630f6cfb1`; remediation `b7c2623168da4d6fac8990a7f90180ee1b1326f1`; final independent repeat 20/20 PASS at PR head `f7af3027dafe52f06719a2e08de993a31045162f`.
+
+**Domains affected:** mobile forms, async mutations, conditional validation/error banners, accessibility focus management.
 
 ---
 

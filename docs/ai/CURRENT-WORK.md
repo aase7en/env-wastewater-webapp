@@ -1,6 +1,6 @@
 # CURRENT WORK
 
-Status: RE-REVIEW_REQUESTED
+Status: IDLE
 
 Allowed statuses:
 
@@ -15,6 +15,12 @@ Allowed statuses:
 - BLOCKED
 
 > `CURRENT-WORK.md` is the authoritative task definition. Agents must not silently expand task scope.
+
+## Current execution state — 2026-08-28
+
+- No production work order is active. `ENV-MOBILE-001` is complete, merged, deployed, and production-smoked.
+- The docs-only closeout checkpoint is being reconciled from current `origin/main`; it does not authorize production mutation.
+- After the closeout record is merged, the next eligible bounded slice is `ENV-MOBILE-002` for the Chemical form. It must begin with source-reality audit, explicit ownership, and phone-width RED/baseline evidence.
 
 ## Review Queue — 2026-08-23
 
@@ -248,7 +254,7 @@ The historical `docs/repo-health-100` branch remains audit evidence and must not
 
 This is a **process authorization**, not production-feature activation. Existing deferred lanes remain deferred.
 
-## ENV-ARCH-001 Closure / ENV-MOBILE-001 Activation — 2026-08-27
+## ENV-ARCH-001 Closure / ENV-MOBILE-001 Closure — 2026-08-28
 
 ### ENV-ARCH-001
 
@@ -260,15 +266,15 @@ State: `APPROVED / MERGED`
 - Review evidence: docs-only paths; `origin/main` ancestry verified; `git diff --check` clean; route inventory matched `frontend/src/App.tsx`; schema-family claims matched `reports/schema-snapshot-live.md`; required operating artifacts present; exact-head `scripts` + `notify` CI SUCCESS. Frontend E2E/deploy were not applicable because no `frontend/**` path changed.
 - Result: project operating map, unified architecture, project graph, roadmap, current-state inventory and next work-order contract are now on main.
 
-### Active Work — ENV-MOBILE-001
+### Completed Work — ENV-MOBILE-001
 
-State: `RE-REVIEW_REQUESTED`
+State: `COMPLETE`
 
 Goal: make the wastewater daily recording workflow mobile-first at 360–430 px while preserving current data/validation/hydration/threshold/repair/null semantics.
 
 Branch/worktree: `feat/env-mobile-001` / `A:\\GitHub\\envww-mobile-001` from `origin/main@08db62c821cf7b95aaeb373c603d77ccc4d9b98a`.
 
-Coordinator: GPT-5.6 Sol MAX remediation lane. ENV-MOBILE-001D / GLM-5.3 is complete and read-only; ENV-MOBILE-001E owns the production error-reveal repair. Fresh reviewer context remains the approval/merge owner. PR #40 must not be merged from this lane.
+Final reviewer / merge owner: GPT-5.6 Sol fresh reviewer context. PR #40 is merged and the production deployment has been verified; all implementation/remediation lanes are closed and read-only.
 
 Contract: `docs/work-orders/ENV-MOBILE-001.md`.
 
@@ -291,11 +297,14 @@ Review-request evidence:
 - Remote state at review: OPEN and CLEAN/MERGEABLE; no branch protection/ruleset and no server-required checks. Visible checks succeeded, but E2E checked GitHub merge ref `e330b26ce966620c6e84bbb482746a5c68bf3a53` rather than the literal reviewed head SHA.
 - Blocking gaps: 36 px QuickChips versus 44 px minimum; incomplete 430 px/tablet/touch-target/keyboard/touch/edit/error-retry/repair-request/visual evidence; success-only save mock; stale PR/SSoT evidence; and prior implementer/reviewer role conflict.
 - Remediation contracts: `docs/work-orders/ENV-MOBILE-001A-SOLMAX-UX-REMEDIATION.md` then `docs/work-orders/ENV-MOBILE-001B-GLM53-VERIFICATION.md`.
-- ENV-MOBILE-001A: **UX_REMEDIATED_AWAITING_VERIFICATION / PUSHED** at `74550da24af09a5afe506d2c269de89cb6392092`. Local evidence: focused Playwright 3/3, Vitest 202/202, build PASS, lint 12 pre-existing warnings / 0 errors, diff-check PASS; rendered Chromium matrix covered 360/390/430/768/1024, dark/light, create/edit, abnormal focus, 44 px QuickChips, final-field clearance, and Dock scrim inactivation. Remote PR head was verified equal to this checkpoint before lane B activation.
-- ENV-MOBILE-001B: **COMPLETE / PUSHED** ? GLM verification lane finished before lane D; its E2E spec is now read-only for production remediation.
+- ENV-MOBILE-001A: **COMPLETE / PUSHED** at `74550da24af09a5afe506d2c269de89cb6392092`. Local evidence: focused Playwright 3/3, Vitest 202/202, build PASS, lint 12 pre-existing warnings / 0 errors, diff-check PASS; rendered Chromium matrix covered 360/390/430/768/1024, dark/light, create/edit, abnormal focus, 44 px QuickChips, final-field clearance, and Dock scrim inactivation. Remote PR head was verified equal to this checkpoint before lane B activation.
+- ENV-MOBILE-001B: **COMPLETE / PUSHED** — GLM verification lane finished before lane D; its E2E spec is now read-only historical regression evidence.
 - ENV-MOBILE-001D: **PRODUCTION_REMEDIATION_REQUIRED / COMPLETE / PUSHED** at `cdaa1097022b7fbfedfff8302a628af630f6cfb1`; unchanged GLM regression reproduced the failed-save focus/viewport race 2/20 and then stopped with no production edits.
-- ENV-MOBILE-001E: **RE_REVIEW_REQUESTED** ? production checkpoint `b7c2623168da4d6fac8990a7f90180ee1b1326f1`; state-backed post-commit reveal + deterministic `auto` scroll applied to `DailyFormPage.tsx`; failed-save 1/1 and repeat 20/20 PASS, full mobile spec 11/11, Vitest 202/202, typecheck/lint/build/diff-check PASS; lane evidence in `docs/ai/handoffs/ENV-MOBILE-001E-SOLMAX.md`.
-- Next gate: fresh reviewer context must inspect the exact pushed PR #40 SHA/diff. Any new code-changing push invalidates this evidence. Do not merge from the implementation lane.
+- ENV-MOBILE-001E: **COMPLETE / PUSHED** — production checkpoint `b7c2623168da4d6fac8990a7f90180ee1b1326f1`; state-backed post-commit reveal + deterministic `auto` scroll applied to `DailyFormPage.tsx`; failed-save 1/1 and repeat 20/20 PASS, full mobile spec 11/11, Vitest 202/202, typecheck/lint/build/diff-check PASS; lane evidence in `docs/ai/handoffs/ENV-MOBILE-001E-SOLMAX.md`.
+- Final independent review: **APPROVED** at exact PR head `f7af3027dafe52f06719a2e08de993a31045162f`. Independent rerun: failed-save 20/20 PASS; mobile spec 11/11 PASS; Vitest 202/202 PASS; build PASS; lint 12 baseline warnings / 0 errors; diff-check PASS. One unrelated `modules.spec.ts` navigation timeout under full parallel load passed 10/10 on isolated reproduction.
+- PR #40 merged as `74675a532a871c7bba78de15eccb35b6b0ba433b`. Post-merge `test`, E2E smoke, and GitHub Pages deploy all SUCCESS; deployment `6135815691` is `success` for that exact main SHA.
+- Live production smoke at 390×844: HTTP 200, login rendered, `/form` correctly auth-gated to `login?next=/form`, no horizontal overflow and no console/page errors. The deployed bundle contains the new DailyForm remediation.
+- Closure result: `COMPLETE`. No schema/RLS/query/payload/manual-vs-live semantics changed.
 
 ## User-Confirmed Product Experience Goal — 2026-08-27
 
@@ -313,7 +322,7 @@ The original prototype record was design/planning authorization. The user's late
 
 ## Next Action
 
-1. Fresh isolated reviewer context re-reviews the exact pushed ENV-MOBILE-001E / PR #40 SHA. Implementation lane is stopped at `RE_REVIEW_REQUESTED`; do not merge here.
-2. After closure, select the next eligible item from `docs/ai/ROADMAP.md` whose dependencies are satisfied; create/activate only that bounded work order.
-3. Previously deferred `DT-VIS-P002/P003`, `UX-FLOW-P001`, `ENV-INT-P001`, `WO-STAB-008`, P2 backlog, and token cleanup are no longer forgotten gates; they remain inactive until their roadmap turn and explicit per-WO activation/ownership check.
+1. Merge this docs-only closeout checkpoint and verify `origin/main` contains the ENV-MOBILE-001 closure record.
+2. Then activate the next eligible bounded slice from `ROADMAP.md`: `ENV-MOBILE-002` for the Chemical form, beginning with source-reality audit + mobile baseline before any production edit.
+3. Keep Water Supply, Fuel, Garden/Garbage, Food/Safety/Building, `DT-VIS-P002/P003`, `UX-FLOW-P001`, `ENV-INT-P001`, `WO-STAB-008`, P2 backlog, and token cleanup inactive until their roadmap turn and explicit ownership gate.
 4. Additional provider-visible wastewater metrics remain a separate data/security contract decision; continuation authorization does not implicitly expand the approved AI safe profile.
