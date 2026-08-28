@@ -12,6 +12,18 @@ import { useGardenRounds, createGardenRound, deleteGardenRound, type GardenInput
 
 const NUM = (v: string) => (v === "" ? null : Number(v));
 
+const FIELD_IDS = {
+  roundDate: "garden-round-date",
+  workType: "garden-work-type",
+  areaSqm: "garden-area-sqm",
+  workerCount: "garden-worker-count",
+  fuelUsedL: "garden-fuel-used-l",
+  durationHours: "garden-duration-hours",
+  equipmentUsed: "garden-equipment-used",
+  wasteCollectedKg: "garden-waste-collected-kg",
+  note: "garden-note",
+} as const;
+
 export function GardenPage() {
   const { data, loading, error, refresh } = useGardenRounds(30);
   const { toast } = useToast();
@@ -47,17 +59,17 @@ export function GardenPage() {
         </div>
       </header>
       <AuraCard className="p-4 space-y-3">
-        <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
-          <Field label="วันที่"><Input type="date" value={form.round_date} onChange={(e) => set({ round_date: e.target.value })} /></Field>
-          <Field label="ประเภทงาน"><Input value={form.work_type ?? ""} onChange={(e) => set({ work_type: e.target.value || null })} /></Field>
-          <Field label="พื้นที่ (ตร.ม)"><NumberInput value={form.area_sqm ?? ""} onChange={(e) => set({ area_sqm: NUM(e.target.value) })} /></Field>
-          <Field label="จำนวนคน"><NumberInput value={form.worker_count ?? ""} onChange={(e) => set({ worker_count: NUM(e.target.value) })} /></Field>
-          <Field label="น้ำมันที่ใช้ (L)"><NumberInput value={form.fuel_used_l ?? ""} onChange={(e) => set({ fuel_used_l: NUM(e.target.value) })} /></Field>
-          <Field label="ชั่วโมงทำงาน"><NumberInput value={form.duration_hours ?? ""} onChange={(e) => set({ duration_hours: NUM(e.target.value) })} /></Field>
-          <Field label="อุปกรณ์"><Input value={form.equipment_used ?? ""} onChange={(e) => set({ equipment_used: e.target.value || null })} placeholder="เครื่องตัดหญ้า, เป่าใบ" /></Field>
-          <Field label="ขยะที่เก็บ (kg)"><NumberInput value={form.waste_collected_kg ?? ""} onChange={(e) => set({ waste_collected_kg: NUM(e.target.value) })} /></Field>
+        <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-3">
+          <Field label="วันที่" htmlFor={FIELD_IDS.roundDate}><Input id={FIELD_IDS.roundDate} type="date" value={form.round_date} onChange={(e) => set({ round_date: e.target.value })} /></Field>
+          <Field label="ประเภทงาน" htmlFor={FIELD_IDS.workType}><Input id={FIELD_IDS.workType} value={form.work_type ?? ""} onChange={(e) => set({ work_type: e.target.value || null })} /></Field>
+          <Field label="พื้นที่ (ตร.ม)" htmlFor={FIELD_IDS.areaSqm}><NumberInput id={FIELD_IDS.areaSqm} value={form.area_sqm ?? ""} onChange={(e) => set({ area_sqm: NUM(e.target.value) })} /></Field>
+          <Field label="จำนวนคน" htmlFor={FIELD_IDS.workerCount}><NumberInput id={FIELD_IDS.workerCount} value={form.worker_count ?? ""} onChange={(e) => set({ worker_count: NUM(e.target.value) })} /></Field>
+          <Field label="น้ำมันที่ใช้ (L)" htmlFor={FIELD_IDS.fuelUsedL}><NumberInput id={FIELD_IDS.fuelUsedL} value={form.fuel_used_l ?? ""} onChange={(e) => set({ fuel_used_l: NUM(e.target.value) })} /></Field>
+          <Field label="ชั่วโมงทำงาน" htmlFor={FIELD_IDS.durationHours}><NumberInput id={FIELD_IDS.durationHours} value={form.duration_hours ?? ""} onChange={(e) => set({ duration_hours: NUM(e.target.value) })} /></Field>
+          <Field label="อุปกรณ์" htmlFor={FIELD_IDS.equipmentUsed}><Input id={FIELD_IDS.equipmentUsed} value={form.equipment_used ?? ""} onChange={(e) => set({ equipment_used: e.target.value || null })} placeholder="เครื่องตัดหญ้า, เป่าใบ" /></Field>
+          <Field label="ขยะที่เก็บ (kg)" htmlFor={FIELD_IDS.wasteCollectedKg}><NumberInput id={FIELD_IDS.wasteCollectedKg} value={form.waste_collected_kg ?? ""} onChange={(e) => set({ waste_collected_kg: NUM(e.target.value) })} /></Field>
         </div>
-        <Field label="หมายเหตุ"><Textarea value={form.note ?? ""} onChange={(e) => set({ note: e.target.value || null })} /></Field>
+        <Field label="หมายเหตุ" htmlFor={FIELD_IDS.note}><Textarea id={FIELD_IDS.note} value={form.note ?? ""} onChange={(e) => set({ note: e.target.value || null })} /></Field>
         <Button onClick={submit}>บันทึก</Button>
       </AuraCard>
 
@@ -71,7 +83,7 @@ export function GardenPage() {
                   <td className="p-2">{r.round_date}</td><td className="p-2">{r.work_type}</td>
                   <td className="text-right p-2">{r.area_sqm ?? "-"}</td><td className="text-right p-2">{r.worker_count ?? "-"}</td>
                   <td className="text-right p-2">{r.fuel_used_l ?? "-"}</td>
-                  <td className="p-2"><button onClick={() => remove(r.id)} className="text-red-400 hover:underline font-thai">ลบ</button></td>
+                  <td className="p-2"><button onClick={() => remove(r.id)} className="min-h-[var(--touch-min)] min-w-[var(--touch-min)] px-2 rounded-lg text-red-400 hover:bg-alert-red/10 hover:underline font-thai">ลบ</button></td>
                 </tr>
               ))}
             </tbody>
