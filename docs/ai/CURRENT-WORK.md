@@ -1,6 +1,6 @@
 # CURRENT WORK
 
-Status: REVIEW_REQUESTED
+Status: RE-REVIEW_REQUESTED
 
 Allowed statuses:
 
@@ -21,7 +21,8 @@ Allowed statuses:
 - Active work order: `ENV-MOBILE-004` — Fuel mobile convergence; contract `docs/work-orders/ENV-MOBILE-004-FUEL.md`.
 - Branch/worktree: `feat/env-mobile-004-fuel` / `A:\\GitHub\\envww-review-mobile-001` from exact `origin/main@4385379d9801998ba54e97560de1fe59ae29469d`.
 - Owner: GPT-5.6 Sol for page-local responsive/interaction + focused E2E baseline. GLM-5.3 MAX may run a parallel read-only Fuel Core Engineering audit with no repository mutation/claim.
-- State: `REVIEW_REQUESTED`. Production checkpoint `413d435cf780ee6b809175d15fc2b86a55baf01d`; focused Fuel E2E 8/8 PASS, full Playwright 81/81 PASS, Vitest 202/202 PASS, typecheck/build PASS, lint 12 baseline warnings / 0 errors, route smoke + diff-check PASS. Fresh independent reviewer owns approval/merge.
+- Exact review `5050262812` returned `CHANGES_REQUIRED` on PR head `1f4d29644573820e27c926bb9700d41037346c3d` for 11 unassociated labels, positional E2E coverage, missing keyboard/native activation proof, and incomplete retry-body proof.
+- State: `RE-REVIEW_REQUESTED`. Remediation production checkpoint `6ac3c96d42cd9b9eff15429e4436d24dcad22438` associates all 11 controls, adds semantic-name + strict keyboard/Enter coverage, and pins failed/retry POST equality against the complete null-aware `FuelInput`. Focused Fuel E2E 10/10 PASS; full Playwright 83/83 PASS; Vitest 202/202 PASS; standalone typecheck + production build PASS; lint 12 baseline warnings / 0 errors; diff-check PASS. Fresh independent reviewer owns approval/merge.
 - Separate Core Engineering finding: imported arbitrary `fuel_type` can reach free-text `fuel.dispense_log` while carbon rollup casts it to `carbon.source_type`; import/carbon/schema semantics are explicitly outside this mobile WO and require separate contract/regression handling.
 - `ENV-MOBILE-001` through `ENV-MOBILE-003` are complete/read-only historical evidence.
 
@@ -325,7 +326,7 @@ The original prototype record was design/planning authorization. The user's late
 
 ## Next Action
 
-1. Fresh independent reviewer inspects exact Fuel production checkpoint `413d435cf780ee6b809175d15fc2b86a55baf01d`, the final PR head/diff, focused E2E evidence, and exact-head CI; implementation owner must not merge its own code-changing PR.
+1. Fresh independent reviewer inspects Fuel remediation checkpoint `6ac3c96d42cd9b9eff15429e4436d24dcad22438`, the final PR head/diff, focused semantic/keyboard/retry evidence, and exact-head CI; implementation owner must not merge its own code-changing PR.
 2. Keep the GLM-5.3 MAX Fuel Core Engineering audit read-only and non-overlapping. Reconcile any returned findings before touching data/import/carbon contracts.
 3. After independent approval + CI, merge Fuel, verify post-merge main test/E2E/Pages, run deployed-bundle mobile smoke with mocked REST/no real writes, then close Fuel in a docs-only checkpoint.
 4. Garden/Garbage read-only Core audit may proceed in parallel, but mutable Garden/Garbage work remains inactive until Fuel durable closure reaches main. Food/Safety/Building and other deferred lanes remain inactive until their roadmap turn.

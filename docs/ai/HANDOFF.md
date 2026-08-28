@@ -11,8 +11,10 @@
 - Separate Core finding: Fuel import adapter accepts arbitrary free-text `fuel_type`, while unified carbon view casts `d.fuel_type::carbon.source_type`. Do not fix this inside ENV-MOBILE-004; route to a separate Core Engineering contract/regression lane.
 - RED baseline: phone form x-delta 154px; delete target ~19.125×24.797px; document/table containment and desktop density already passed.
 - Production checkpoint: `413d435cf780ee6b809175d15fc2b86a55baf01d`; page-local change only: one-column phone grid + 44px delete target. Fuel data/import/carbon/meter-delta semantics are unchanged.
-- GREEN: focused Fuel Playwright 8/8 PASS; full Playwright 81/81 PASS; Vitest 202/202 PASS; typecheck/build PASS; lint 12 baseline warnings / 0 errors; route smoke + diff-check PASS; Pixel 7 touch path + 360/390/430/768/1024 coverage; save-error retry and meter-delta confirm semantics preserved.
-- State: `REVIEW_REQUESTED`. Next safe action: fresh independent exact-SHA review + exact-head CI; implementation owner must not merge. Evidence: `docs/ai/handoffs/ENV-MOBILE-004-SOL.md`.
+- Exact review `5050262812`: `CHANGES_REQUIRED` on `1f4d29644573820e27c926bb9700d41037346c3d` for 11 unassociated labels, positional E2E, missing keyboard/native activation proof, and incomplete retry-body proof. Focused RED reproduced `getByLabel("วันที่")` count 0.
+- Remediation production checkpoint: `6ac3c96d42cd9b9eff15429e4436d24dcad22438`; all 11 page-local ID/`htmlFor` pairs added, semantic selectors and strict tab/Enter path added, and failed/retry JSON pinned equal to the complete null-aware `FuelInput`.
+- Remediation GREEN: focused Fuel Playwright 10/10 PASS; full Playwright 83/83 PASS; Vitest 202/202 PASS; standalone typecheck + production build PASS; lint 12 baseline warnings / 0 errors; diff-check PASS. Pixel 7 touch + 360/390/430/768/1024, save error/retry, meter-delta confirm, and route/auth evidence remain green.
+- State: `RE-REVIEW_REQUESTED`. Next safe action: fresh independent exact-SHA re-review + exact-head CI; implementation owner must not merge. Evidence: `docs/ai/handoffs/ENV-MOBILE-004-SOL.md`.
 - Protected `.serena/` remains untouched. Garden/Garbage and later forms remain inactive.
 
 ## Closed checkpoint — ENV-MOBILE-003 — 2026-08-28

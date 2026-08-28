@@ -1,4 +1,4 @@
-Status: REVIEW_REQUESTED
+Status: RE-REVIEW_REQUESTED
 Owner: GPT-5.6 Sol
 Parallel Core audit: GLM-5.3 MAX may perform read-only Fuel data-contract/schema/query/RLS audit; no mutable ownership
 Independent reviewer / merge owner: fresh reviewer context after implementation stops
@@ -128,6 +128,19 @@ GREEN evidence: focused Fuel Playwright 8/8 PASS; full Playwright 81/81 PASS; Vi
 
 Evidence packet: `docs/ai/handoffs/ENV-MOBILE-004-SOL.md`.
 
+## Exact review / bounded remediation — 2026-08-28
+
+Review `5050262812` returned `CHANGES_REQUIRED` against exact PR head `1f4d29644573820e27c926bb9700d41037346c3d`: all 11 visible Fuel labels lacked programmatic control associations, positional E2E selectors hid the defect, keyboard order/native activation were unproved, and retry coverage did not pin equal complete request bodies.
+
+The unchanged page reproduced the finding: focused semantic RED resolved `getByLabel("วันที่")` to 0 controls. Remediation production checkpoint `6ac3c96d42cd9b9eff15429e4436d24dcad22438` then:
+
+- adds stable page-local IDs plus matching `Field htmlFor` for all 11 Fuel controls;
+- replaces positional form interaction/layout selectors with semantic `getByLabel()` coverage and pins every ID/accessibility name;
+- proves keyboard order through every Fuel control and Enter activation from the focused native Save button; Chromium's native date input may retain its host focus while traversing internal segments, so that bounded exception is capped before the remaining controls require exact one-Tab order;
+- proves the failed and retry POST JSON bodies are equal and exactly match the complete `FuelInput` contract, including `vehicle_or_use`, `odometer`, `cost_baht`, and `supplier` as null.
+
+Remediation GREEN: focused Fuel Playwright **10/10 PASS** (retries 0, worker 1); full Playwright **83/83 PASS** (retries 0, 2 workers); Vitest **202/202 PASS** across 15 files; standalone TypeScript build PASS; production build PASS; lint **12 pre-existing warnings / 0 errors**; `git diff --check` PASS. Pixel 7 touch, 360/390/430/768/1024 layout evidence, save error/retry, meter-delta confirm cancel/accept, and auth/module routes remain covered. No Fuel data/import/carbon/schema/RLS/shared primitive behavior changed.
+
 ## Completion gate
 
-Implementation stops at `REVIEW_REQUESTED`. Fresh reviewer must inspect the exact pushed PR head/diff and own approval/merge. Any code-changing push invalidates the evidence above. After merge/deploy/live verification, close the lane in a docs-only checkpoint before activating Garden/Garbage.
+Implementation stops at `RE-REVIEW_REQUESTED`. Fresh reviewer must inspect the exact pushed PR head/diff and own approval/merge. Any code-changing push invalidates the remediation evidence above. After merge/deploy/live verification, close the lane in a docs-only checkpoint before activating Garden/Garbage.
