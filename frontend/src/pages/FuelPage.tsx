@@ -12,6 +12,20 @@ import { useFuelLogs, createFuelLog, deleteFuelLog, computeDelta, type FuelInput
 
 const NUM = (v: string) => (v === "" ? null : Number(v));
 
+const FIELD_IDS = {
+  logDate: "fuel-log-date",
+  fuelType: "fuel-type",
+  litres: "fuel-litres",
+  meterBefore: "fuel-meter-before",
+  meterAfter: "fuel-meter-after",
+  vehicleId: "fuel-vehicle-id",
+  odometer: "fuel-odometer",
+  purpose: "fuel-purpose",
+  costBaht: "fuel-cost-baht",
+  supplier: "fuel-supplier",
+  note: "fuel-note",
+} as const;
+
 export function FuelPage() {
   const { data, loading, error, refresh } = useFuelLogs(30);
   const { toast } = useToast();
@@ -52,27 +66,47 @@ export function FuelPage() {
         </div>
       </header>
       <AuraCard className="p-4 space-y-3">
-        <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
-          <Field label="วันที่"><Input type="date" value={form.log_date} onChange={(e) => set({ log_date: e.target.value })} /></Field>
-          <Field label="ประเภท">
-            <Select value={form.fuel_type ?? "diesel"} onChange={(e) => set({ fuel_type: e.target.value })}>
+        <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-3">
+          <Field label="วันที่" htmlFor={FIELD_IDS.logDate}>
+            <Input id={FIELD_IDS.logDate} type="date" value={form.log_date} onChange={(e) => set({ log_date: e.target.value })} />
+          </Field>
+          <Field label="ประเภท" htmlFor={FIELD_IDS.fuelType}>
+            <Select id={FIELD_IDS.fuelType} value={form.fuel_type ?? "diesel"} onChange={(e) => set({ fuel_type: e.target.value })}>
               <option value="diesel">ดีเซล</option><option value="gasoline">เบนซิน</option>
               <option value="lpg">LPG</option><option value="other">อื่นๆ</option>
             </Select>
           </Field>
-          <Field label="ปริมาณ (L)"><NumberInput value={form.litres ?? ""} onChange={(e) => set({ litres: NUM(e.target.value) })} /></Field>
-          <Field label="มิเตอร์ก่อน"><NumberInput value={form.meter_before ?? ""} onChange={(e) => set({ meter_before: NUM(e.target.value) })} /></Field>
-          <Field label="มิเตอร์หลัง"><NumberInput value={form.meter_after ?? ""} onChange={(e) => set({ meter_after: NUM(e.target.value) })} /></Field>
-          <Field label="ทะเบียนรถ"><Input value={form.vehicle_id ?? ""} onChange={(e) => set({ vehicle_id: e.target.value || null })} /></Field>
-          <Field label="ไมล์"><NumberInput value={form.odometer ?? ""} onChange={(e) => set({ odometer: NUM(e.target.value) })} /></Field>
-          <Field label="วัตถุประสงค์"><Input value={form.purpose ?? ""} onChange={(e) => set({ purpose: e.target.value || null })} /></Field>
-          <Field label="ราคา (บาท)"><NumberInput value={form.cost_baht ?? ""} onChange={(e) => set({ cost_baht: NUM(e.target.value) })} /></Field>
-          <Field label="Supplier"><Input value={form.supplier ?? ""} onChange={(e) => set({ supplier: e.target.value || null })} /></Field>
+          <Field label="ปริมาณ (L)" htmlFor={FIELD_IDS.litres}>
+            <NumberInput id={FIELD_IDS.litres} value={form.litres ?? ""} onChange={(e) => set({ litres: NUM(e.target.value) })} />
+          </Field>
+          <Field label="มิเตอร์ก่อน" htmlFor={FIELD_IDS.meterBefore}>
+            <NumberInput id={FIELD_IDS.meterBefore} value={form.meter_before ?? ""} onChange={(e) => set({ meter_before: NUM(e.target.value) })} />
+          </Field>
+          <Field label="มิเตอร์หลัง" htmlFor={FIELD_IDS.meterAfter}>
+            <NumberInput id={FIELD_IDS.meterAfter} value={form.meter_after ?? ""} onChange={(e) => set({ meter_after: NUM(e.target.value) })} />
+          </Field>
+          <Field label="ทะเบียนรถ" htmlFor={FIELD_IDS.vehicleId}>
+            <Input id={FIELD_IDS.vehicleId} value={form.vehicle_id ?? ""} onChange={(e) => set({ vehicle_id: e.target.value || null })} />
+          </Field>
+          <Field label="ไมล์" htmlFor={FIELD_IDS.odometer}>
+            <NumberInput id={FIELD_IDS.odometer} value={form.odometer ?? ""} onChange={(e) => set({ odometer: NUM(e.target.value) })} />
+          </Field>
+          <Field label="วัตถุประสงค์" htmlFor={FIELD_IDS.purpose}>
+            <Input id={FIELD_IDS.purpose} value={form.purpose ?? ""} onChange={(e) => set({ purpose: e.target.value || null })} />
+          </Field>
+          <Field label="ราคา (บาท)" htmlFor={FIELD_IDS.costBaht}>
+            <NumberInput id={FIELD_IDS.costBaht} value={form.cost_baht ?? ""} onChange={(e) => set({ cost_baht: NUM(e.target.value) })} />
+          </Field>
+          <Field label="Supplier" htmlFor={FIELD_IDS.supplier}>
+            <Input id={FIELD_IDS.supplier} value={form.supplier ?? ""} onChange={(e) => set({ supplier: e.target.value || null })} />
+          </Field>
         </div>
         {deltaCheck?.mismatch && (
           <p className="text-yellow-400 font-thai">⚠️ meter delta ({deltaCheck.delta}) ≠ litres ({deltaCheck.litres}) — diff={deltaCheck.diff}</p>
         )}
-        <Field label="หมายเหตุ"><Textarea value={form.note ?? ""} onChange={(e) => set({ note: e.target.value || null })} rows={2} /></Field>
+        <Field label="หมายเหตุ" htmlFor={FIELD_IDS.note}>
+          <Textarea id={FIELD_IDS.note} value={form.note ?? ""} onChange={(e) => set({ note: e.target.value || null })} rows={2} />
+        </Field>
         <Button onClick={submit}>บันทึก</Button>
       </AuraCard>
 
@@ -86,7 +120,7 @@ export function FuelPage() {
                   <td className="p-2">{r.log_date}</td><td className="p-2">{r.fuel_type}</td>
                   <td className="text-right p-2">{r.litres ?? "-"}</td><td className="p-2">{r.vehicle_id ?? "-"}</td>
                   <td className="text-right p-2">{r.cost_baht ?? "-"}</td>
-                  <td className="p-2"><button onClick={() => remove(r.id)} className="text-red-400 hover:underline font-thai">ลบ</button></td>
+                  <td className="p-2"><button onClick={() => remove(r.id)} className="min-h-[var(--touch-min)] min-w-[var(--touch-min)] px-2 rounded-lg text-red-400 hover:bg-alert-red/10 hover:underline font-thai">ลบ</button></td>
                 </tr>
               ))}
             </tbody>

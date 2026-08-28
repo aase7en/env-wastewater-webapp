@@ -1,5 +1,22 @@
 # HANDOFF
 
+## Active checkpoint — ENV-MOBILE-004 — Fuel — 2026-08-28
+
+- Goal: converge Fuel / fleet-dispense entry to the proven mobile-first operational pattern without changing fuel data/query/schema, meter-delta, import, or carbon semantics.
+- Branch/worktree: `feat/env-mobile-004-fuel` / `A:\\GitHub\\envww-review-mobile-001`; base `origin/main@4385379d9801998ba54e97560de1fe59ae29469d`.
+- Contract: `docs/work-orders/ENV-MOBILE-004-FUEL.md`.
+- Owner: GPT-5.6 Sol owns page-local responsive/interaction + focused E2E baseline. GLM-5.3 MAX may perform read-only Core Engineering audit only; no mutable claim.
+- Schema authority: actual ENV schema/migrations confirm all implemented Fuel columns and staff/admin RLS. A-Wiki's MOD-FU-a pending note is stale; historical MIG-FU CSV import remains blocked waiting user export but does not block responsive work.
+- Meter delta contract is read-only: mismatch only when all three values exist and `abs(round((after-before-litres),2)) > 0.1`; current confirm-before-save behavior remains covered by regression tests.
+- Separate Core finding: Fuel import adapter accepts arbitrary free-text `fuel_type`, while unified carbon view casts `d.fuel_type::carbon.source_type`. Do not fix this inside ENV-MOBILE-004; route to a separate Core Engineering contract/regression lane.
+- RED baseline: phone form x-delta 154px; delete target ~19.125×24.797px; document/table containment and desktop density already passed.
+- Production checkpoint: `413d435cf780ee6b809175d15fc2b86a55baf01d`; page-local change only: one-column phone grid + 44px delete target. Fuel data/import/carbon/meter-delta semantics are unchanged.
+- Exact review `5050262812`: `CHANGES_REQUIRED` on `1f4d29644573820e27c926bb9700d41037346c3d` for 11 unassociated labels, positional E2E, missing keyboard/native activation proof, and incomplete retry-body proof. Focused RED reproduced `getByLabel("วันที่")` count 0.
+- Remediation production checkpoint: `6ac3c96d42cd9b9eff15429e4436d24dcad22438`; all 11 page-local ID/`htmlFor` pairs added, semantic selectors and strict tab/Enter path added, and failed/retry JSON pinned equal to the complete null-aware `FuelInput`.
+- Remediation GREEN: focused Fuel Playwright 10/10 PASS; full Playwright 83/83 PASS; Vitest 202/202 PASS; standalone typecheck + production build PASS; lint 12 baseline warnings / 0 errors; diff-check PASS. Pixel 7 touch + 360/390/430/768/1024, save error/retry, meter-delta confirm, and route/auth evidence remain green.
+- State: `RE-REVIEW_REQUESTED`. Next safe action: fresh independent exact-SHA re-review + exact-head CI; implementation owner must not merge. Evidence: `docs/ai/handoffs/ENV-MOBILE-004-SOL.md`.
+- Protected `.serena/` remains untouched. Garden/Garbage and later forms remain inactive.
+
 ## Closed checkpoint — ENV-MOBILE-003 — 2026-08-28
 
 - Goal: converge Water Supply / groundwater-quality entry to the proven mobile-first operational pattern without changing data/query/schema or compliance semantics.
