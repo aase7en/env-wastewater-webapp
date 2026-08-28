@@ -121,7 +121,7 @@ Likely owner split:
 
 **Completed bounded slice:** `ENV-MOBILE-003` — Water Supply. PR #44 reviewed exact head `5cd8f4aa304812868a669bab614177f8a4525c1b`, merged as `d3034d83954ec8287b9dab561f7802668207d23e`, post-merge test/E2E/Pages green, deployment `6137172294` successful, and live 390px deployed-bundle smoke passed without real writes. Contract: `docs/work-orders/ENV-MOBILE-003-WATER-SUPPLY.md`.
 
-**Next eligible slice:** Fuel. It remains unactivated until the ENV-MOBILE-003 docs-only closeout reaches main. A GLM-5.3 MAX read-only Core Engineering audit may proceed in parallel; GPT must reconcile it against fresh main before creating the bounded Fuel work order/claim and phone-width baseline.
+**Active bounded slice:** `ENV-MOBILE-004` — Fuel. Activated from exact `main@4385379d9801998ba54e97560de1fe59ae29469d`; RED baseline is complete and state is `READY_FOR_IMPLEMENTATION`: phone form x-delta 154px and delete target ~19.125×24.797px fail, while history document containment + desktop density pass. GPT owns page/test responsive work; GLM-5.3 MAX may run a parallel read-only Core Engineering audit with no mutable scope. Separate import free-text `fuel_type` → carbon enum-cast risk is not authorized for remediation inside this mobile slice. Contract: `docs/work-orders/ENV-MOBILE-004-FUEL.md`.
 
 After Mobile-001 provides a proven pattern, audit and improve one domain per WO, prioritized by field frequency and control density:
 

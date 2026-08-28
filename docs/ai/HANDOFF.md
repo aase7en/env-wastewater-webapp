@@ -1,5 +1,19 @@
 # HANDOFF
 
+## Active checkpoint — ENV-MOBILE-004 — Fuel — 2026-08-28
+
+- Goal: converge Fuel / fleet-dispense entry to the proven mobile-first operational pattern without changing fuel data/query/schema, meter-delta, import, or carbon semantics.
+- Branch/worktree: `feat/env-mobile-004-fuel` / `A:\\GitHub\\envww-review-mobile-001`; base `origin/main@4385379d9801998ba54e97560de1fe59ae29469d`.
+- Contract: `docs/work-orders/ENV-MOBILE-004-FUEL.md`.
+- Owner: GPT-5.6 Sol owns page-local responsive/interaction + focused E2E baseline. GLM-5.3 MAX may perform read-only Core Engineering audit only; no mutable claim.
+- Source audit: form currently `grid-cols-2 md:grid-cols-4`; history is a raw table with no local overflow wrapper; delete is plain text; no focused Fuel mobile E2E exists.
+- Schema authority: actual ENV schema/migrations confirm all implemented Fuel columns and staff/admin RLS. A-Wiki's MOD-FU-a pending note is stale; historical MIG-FU CSV import remains blocked waiting user export but does not block responsive work.
+- Meter delta contract is read-only: mismatch only when all three values exist and `abs(round((after-before-litres),2)) > 0.1`; current confirm-before-save behavior must remain.
+- Separate Core finding: Fuel import adapter accepts arbitrary free-text `fuel_type`, while unified carbon view casts `d.fuel_type::carbon.source_type`. Do not fix this inside ENV-MOBILE-004; route to a separate Core Engineering contract/regression lane.
+- RED baseline complete against unchanged production: phone form x-delta 154px; delete target ~19.125×24.797px; document/table containment and desktop density already pass.
+- State: `READY_FOR_IMPLEMENTATION`. Next safe action: page-local one-column phone grid + 44px delete-target correction only, then rerun baseline assertions to GREEN before expanding verification.
+- Protected `.serena/` remains untouched. Garden/Garbage and later forms remain inactive.
+
 ## Closed checkpoint — ENV-MOBILE-003 — 2026-08-28
 
 - Goal: converge Water Supply / groundwater-quality entry to the proven mobile-first operational pattern without changing data/query/schema or compliance semantics.

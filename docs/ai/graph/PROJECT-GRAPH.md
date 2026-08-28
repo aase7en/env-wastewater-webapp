@@ -212,8 +212,11 @@ At this checkpoint:
 - `ENV-MOBILE-003` Water Supply is independently reviewed, merged, deployed, production-smoked, and closed; production `66e86dcb515d411b9e6b858ae89a4109f5ac3bc3`, reviewed head `5cd8f4aa304812868a669bab614177f8a4525c1b`, merge `d3034d83954ec8287b9dab561f7802668207d23e`.
 - Post-merge test/E2E/Pages and deployment `6137172294` are green; live 390px deployed-bundle smoke passed with mocked REST/no real writes and no console/page errors.
 - `frontend/src/lib/water-supply.ts`, schema/RLS, compliance/threshold rules, shared UI/AppShell, other forms, and Digital Twin remain unchanged by the closed slice.
-- Fuel is the next critical-path candidate, but it must first establish a bounded work order/claim and phone-width source-reality baseline after this docs-only closeout reaches main. A read-only GLM-5.3 MAX Fuel Core Engineering audit may run in parallel because it owns no mutable scope.
+- `ENV-MOBILE-004` Fuel is the active critical-path slice with an explicit work order/claim on `feat/env-mobile-004-fuel`; RED baseline is complete and state is `READY_FOR_IMPLEMENTATION` (phone form x-delta 154px; delete ~19.125×24.797px; history containment + desktop density pass).
+- GPT owns only Fuel page/test responsive scope + bounded evidence/status. `frontend/src/lib/fuel.ts`, import adapter, carbon rollup/view, schema/RLS/migrations, shared UI/AppShell, other forms, and Digital Twin remain read-only.
+- GLM-5.3 MAX may run a parallel read-only Fuel Core Engineering audit with no mutable scope. The free-text import `fuel_type` → `carbon.source_type` cast risk is a separate contract issue, not part of mobile remediation.
+- Garden/Garbage and later domain-form slices must not start in parallel while Fuel owns the domain-form critical path.
 
 Current critical-path handoff:
 
-`ENV-MOBILE-001 COMPLETE → ENV-MOBILE-002 Chemical COMPLETE → ENV-MOBILE-003 Water Supply COMPLETE → docs closeout on main → Fuel audit/baseline → bounded implementation/review/verify loop`
+`ENV-MOBILE-001 COMPLETE → ENV-MOBILE-002 Chemical COMPLETE → ENV-MOBILE-003 Water Supply COMPLETE → ENV-MOBILE-004 Fuel DESIGNING/BASELINE_REQUIRED → bounded implementation → independent review → CI → merge/deploy/closure`
