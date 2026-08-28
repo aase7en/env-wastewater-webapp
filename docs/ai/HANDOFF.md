@@ -1,5 +1,16 @@
 # HANDOFF
 
+## Active checkpoint - ENV-MOBILE-005 - Garden - 2026-08-28
+
+- Goal: converge Garden work-round entry to the proven mobile-first pattern without changing Garden data/query/schema/carbon semantics.
+- Contract: `docs/work-orders/ENV-MOBILE-005-GARDEN.md`; lane evidence: `docs/ai/handoffs/ENV-MOBILE-005-SOL.md`.
+- Base: `origin/main@19eb31ff725e746a1e5856db5c9e86badd1c725b`; branch `feat/env-mobile-005-garden`.
+- Owned production scope: `frontend/src/pages/GardenPage.tsx` only; dedicated Garden E2E plus bounded SSoT are the only other mutable paths.
+- Source audit established two-column phone composition, missing label/control association, and small delete-target pattern candidates. History containment must be measured before any wrapper is added.
+- Actual schema overrides stale A-Wiki pending-extension text. `location_id`/`photo_path` null payload behavior, free-text work/equipment/note fields, and `fuel_used_l` carbon semantics are preserved.
+- Garbage is deferred/read-only until Garden closes because its dual waste classification/compliance semantics need separate Core review.
+- Next: capture RED/baseline before production mutation. `.serena/` stays untouched.
+
 ## Closed checkpoint - ENV-MOBILE-004 - Fuel - 2026-08-28
 
 - Goal: converge Fuel / fleet-dispense entry to the proven mobile-first operational pattern without changing Fuel data/query/schema, meter-delta, import, or carbon semantics.

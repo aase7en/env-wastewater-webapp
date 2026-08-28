@@ -1,6 +1,6 @@
 # CURRENT WORK
 
-Status: IDLE
+Status: IMPLEMENTING
 
 Allowed statuses:
 
@@ -18,14 +18,14 @@ Allowed statuses:
 
 ## Current execution state - 2026-08-28
 
-- No production work order is active. `ENV-MOBILE-004` Fuel is complete, independently re-reviewed, merged, deployed, and production-smoked.
-- Final reviewed PR #46 head: `8e871d225a67f1da2a1c143556c2b34aaf9e90c6`; remediation production checkpoint `6ac3c96d42cd9b9eff15429e4436d24dcad22438`; merge `57f0bb3dd5c9a7e74ee0deb84bb166b215a8706a`.
-- Fresh reviewer rerun: focused Fuel Playwright **10/10 PASS** with retries 0; exact-head PR workflows `33164741371` (E2E smoke) and `33164741375` (test) SUCCESS; `git diff --check` clean and current base unchanged.
-- Post-merge exact-SHA runs: test `33178476395`, E2E `33178476367`, Pages deploy `33178476366` - all SUCCESS. GitHub Pages deployment `6142569782` is `success` for exact merge SHA.
-- Live deployed-bundle 390x844 smoke via Pages root HTTP 200 + client-side `/fuel`, with all REST mocked/no real writes: form x-delta 0; all 11 label/control associations present; Save 71.89x48; Delete 44x44; document width 390; no console/page errors.
-- A direct deep-link production-spec run observed two transient document-overflow assertions while the shared ModuleDock was still settling; after root-to-client navigation and settle, document width equals viewport. Shared shell was unchanged by this WO, so this is recorded as a non-blocking hosting/shell timing observation rather than a Fuel-page regression.
-- Separate Core Engineering finding remains open: imported arbitrary `fuel_type` can reach free-text `fuel.dispense_log` while carbon rollup casts it to `carbon.source_type`. It requires its own data-contract/regression work order.
-- `ENV-MOBILE-001` through `ENV-MOBILE-004` are read-only historical evidence. The next eligible bounded domain-form slice is Garden/Garbage and remains unactivated until this docs-only closeout reaches main.
+- Active work order: `ENV-MOBILE-005` - Garden mobile convergence; contract `docs/work-orders/ENV-MOBILE-005-GARDEN.md`.
+- Branch/worktree: `feat/env-mobile-005-garden` / `A:\GitHub\envww-review-mobile-001` from exact `origin/main@19eb31ff725e746a1e5856db5c9e86badd1c725b`.
+- Owner: GPT-5.6 Sol for page-local responsive/accessibility/touch behavior plus focused E2E. Fresh reviewer owns final approval/merge.
+- Source audit: phone form currently uses two columns; visible labels are not programmatically associated; delete target is a small-target candidate; table containment must be measured rather than assumed.
+- Actual ENV schema confirms Garden extension fields. A-Wiki's pending-extension note is stale. Garden data/query/schema/carbon semantics remain read-only.
+- Garden is sequenced before Garbage because Garbage carries additional dual waste-type/segregation and compliance/manifest semantics that require separate Core scrutiny; Garbage remains inactive/read-only.
+- `ENV-MOBILE-001` through `ENV-MOBILE-004` are complete/read-only historical evidence.
+- Next gate: deterministic Garden RED/baseline before production mutation.
 
 ## Review Queue — 2026-08-23
 
