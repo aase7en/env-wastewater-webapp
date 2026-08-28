@@ -81,7 +81,7 @@ export function ChemicalPage() {
 
       <AuraCard className="p-4 space-y-3">
         <h2 className="text-lg font-semibold font-thai">เพิ่มเคมีใหม่ใน catalog</h2>
-        <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
+        <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-3">
           <Field label="ชื่อ"><Input value={master.name} onChange={(e) => setM({ name: e.target.value })} /></Field>
           <Field label="CAS No."><Input value={master.cas_no ?? ""} onChange={(e) => setM({ cas_no: e.target.value || null })} /></Field>
           <Field label="Hazard class"><Input value={master.hazard_class ?? ""} onChange={(e) => setM({ hazard_class: e.target.value || null })} /></Field>
@@ -93,7 +93,7 @@ export function ChemicalPage() {
 
       <AuraCard className="p-4 space-y-3">
         <h2 className="text-lg font-semibold font-thai">บันทึกรับเข้า / จ่ายออก</h2>
-        <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
+        <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-3">
           <Field label="วันที่"><Input type="date" value={move.movement_date} onChange={(e) => setV({ movement_date: e.target.value })} /></Field>
           <Field label="ชื่อเคมี"><Input value={move.chemical_name} onChange={(e) => setV({ chemical_name: e.target.value })} /></Field>
           <Field label="ทิศทาง">
@@ -115,7 +115,8 @@ export function ChemicalPage() {
       <AuraCard className="p-4">
         <h2 className="text-lg font-semibold mb-3 font-thai">สต็อกปัจจุบัน</h2>
         {stock.loading ? <TableSkeleton rows={5} cols={5} /> : (
-          <table className="w-full text-sm">
+          <div className="overflow-x-auto">
+            <table className="w-full min-w-[36rem] text-sm">
             <thead><tr><th className="text-left p-2">ชื่อ</th><th className="text-right p-2">คงเหลือ</th><th className="text-right p-2">Reorder</th><th className="text-left p-2">หน่วย</th><th></th></tr></thead>
             <tbody>
               {stock.data.map((c) => (
@@ -124,18 +125,20 @@ export function ChemicalPage() {
                   <td className="text-right p-2">{c.current_balance}</td>
                   <td className="text-right p-2">{c.reorder_point ?? "-"}</td>
                   <td className="p-2">{c.unit}</td>
-                  <td className="p-2"><button onClick={() => removeMaster(c.id)} className="text-red-400 hover:underline font-thai">ลบ</button></td>
+                  <td className="p-2"><button onClick={() => removeMaster(c.id)} className="min-h-[var(--touch-min)] min-w-[var(--touch-min)] px-2 rounded-lg text-red-400 hover:bg-alert-red/10 hover:underline font-thai">ลบ</button></td>
                 </tr>
               ))}
             </tbody>
-          </table>
+            </table>
+          </div>
         )}
       </AuraCard>
 
       <AuraCard className="p-4">
         <h2 className="text-lg font-semibold mb-3 font-thai">ประวัติการเคลื่อนไหว (50 ล่าสุด)</h2>
         {moves.loading ? <TableSkeleton rows={5} cols={6} /> : (
-          <table className="w-full text-sm">
+          <div className="overflow-x-auto">
+            <table className="w-full min-w-[44rem] text-sm">
             <thead><tr><th className="text-left p-2">วันที่</th><th className="text-left p-2">เคมี</th><th className="text-left p-2">ทิศ</th><th className="text-right p-2">จำนวน</th><th className="text-left p-2">วัตถุประสงค์</th><th></th></tr></thead>
             <tbody>
               {moves.data.map((m) => (
@@ -145,11 +148,12 @@ export function ChemicalPage() {
                   <td className="p-2">{m.direction === "in" ? "↘ รับเข้า" : "↗ จ่ายออก"}</td>
                   <td className="text-right p-2">{m.quantity}</td>
                   <td className="p-2">{m.purpose ?? "-"}</td>
-                  <td className="p-2"><button onClick={() => removeMove(m.id)} className="text-red-400 hover:underline font-thai">ลบ</button></td>
+                  <td className="p-2"><button onClick={() => removeMove(m.id)} className="min-h-[var(--touch-min)] min-w-[var(--touch-min)] px-2 rounded-lg text-red-400 hover:bg-alert-red/10 hover:underline font-thai">ลบ</button></td>
                 </tr>
               ))}
             </tbody>
-          </table>
+            </table>
+          </div>
         )}
       </AuraCard>
     </div>

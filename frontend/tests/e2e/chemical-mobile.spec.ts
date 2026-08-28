@@ -1,5 +1,5 @@
 import { test, expect } from "./fixtures";
-import type { Page } from "@playwright/test";
+import { devices, type Page } from "@playwright/test";
 
 /**
  * ENV-MOBILE-002 — Chemical sub-store mobile convergence.
@@ -10,7 +10,10 @@ import type { Page } from "@playwright/test";
  */
 
 const PHONE = { width: 360, height: 800 };
+const PHONE_430 = { width: 430, height: 900 };
+const TABLET = { width: 768, height: 1024 };
 const DESKTOP = { width: 1024, height: 900 };
+const VISUAL_DIR = "test-results";
 
 const MASTER_ROWS = [
   {
@@ -58,7 +61,15 @@ const MOVEMENT_ROWS = [
   },
 ];
 
-async function mockChemicalDependencies(page: Page) {
+interface ChemicalMockOptions {
+  failMovementPostOnce?: boolean;
+  movementPosts?: string[];
+  masterPosts?: string[];
+}
+
+async function mockChemicalDependencies(page: Page, options: ChemicalMockOptions = {}) {
+  let movementPostCount = 0;
+
   await page.route("**/rest/v1/role_module_visibility**", async (route) => {
     await route.fulfill({ status: 200, contentType: "application/json", body: "[]" });
   });
@@ -70,19 +81,30 @@ async function mockChemicalDependencies(page: Page) {
   });
 
   await page.route("**/rest/v1/master**", async (route) => {
-    await route.fulfill({
-      status: 200,
-      contentType: "application/json",
-      body: JSON.stringify(MASTER_ROWS),
-    });
+    if (route.request().method() === "POST") {
+      options.masterPosts?.push(route.request().postData() ?? "");
+      await route.fulfill({ status: 201, contentType: "application/json", body: JSON.stringify(MASTER_ROWS[0]) });
+      return;
+    }
+    await route.fulfill({ status: 200, contentType: "application/json", body: JSON.stringify(MASTER_ROWS) });
   });
 
   await page.route("**/rest/v1/movement**", async (route) => {
-    await route.fulfill({
-      status: 200,
-      contentType: "application/json",
-      body: JSON.stringify(MOVEMENT_ROWS),
-    });
+    if (route.request().method() === "POST") {
+      movementPostCount += 1;
+      options.movementPosts?.push(route.request().postData() ?? "");
+      if (options.failMovementPostOnce && movementPostCount === 1) {
+        await route.fulfill({
+          status: 400,
+          contentType: "application/json",
+          body: JSON.stringify({ message: "E2E movement failure", code: "E2E" }),
+        });
+        return;
+      }
+      await route.fulfill({ status: 201, contentType: "application/json", body: JSON.stringify(MOVEMENT_ROWS[0]) });
+      return;
+    }
+    await route.fulfill({ status: 200, contentType: "application/json", body: JSON.stringify(MOVEMENT_ROWS) });
   });
 }
 
@@ -94,7 +116,7 @@ function sectionInputs(page: Page, heading: string) {
   return page.getByRole("heading", { name: heading }).locator("..").locator("input");
 }
 
-test.describe("ENV-MOBILE-002 Chemical mobile baseline", () => {
+test.describe("ENV-MOBILE-002 Chemical mobile regression", () => {
   test.beforeEach(async ({ authed: page }) => {
     await mockChemicalDependencies(page);
   });
@@ -125,9 +147,20 @@ test.describe("ENV-MOBILE-002 Chemical mobile baseline", () => {
     expect.soft(pageContained, "Chemical page should not overflow the 360px viewport").toBe(true);
   });
 
-  test("phone delete actions meet the 44 px touch minimum", async ({ authed: page }) => {
+  test("phone primary and delete actions meet the 44 px touch minimum", async ({ authed: page }) => {
     await page.setViewportSize(PHONE);
     await page.goto("/chemical");
+
+    const primaryActions = [
+      page.getByRole("button", { name: "เพิ่ม", exact: true }),
+      page.getByRole("button", { name: "บันทึก", exact: true }),
+    ];
+    for (const [index, action] of primaryActions.entries()) {
+      const box = await action.boundingBox();
+      expect(box).not.toBeNull();
+      expect.soft(box!.width, `primary action ${index + 1} width=${box!.width}px`).toBeGreaterThanOrEqual(44);
+      expect.soft(box!.height, `primary action ${index + 1} height=${box!.height}px`).toBeGreaterThanOrEqual(44);
+    }
 
     const deleteButtons = page.getByRole("button", { name: "ลบ", exact: true });
     await expect(deleteButtons).toHaveCount(3);
@@ -139,15 +172,115 @@ test.describe("ENV-MOBILE-002 Chemical mobile baseline", () => {
     }
   });
 
-  test("desktop preserves useful multi-column form density", async ({ authed: page }) => {
-    await page.setViewportSize(DESKTOP);
+  test("390 and 430 px keep one-column phone composition", async ({ authed: page }) => {
+    for (const [label, viewport] of [["390", { width: 390, height: 844 }], ["430", PHONE_430]] as const) {
+      await page.setViewportSize(viewport);
+      await page.goto("/chemical");
+      const catalogInputs = sectionInputs(page, "เพิ่มเคมีใหม่ใน catalog");
+      const first = await catalogInputs.nth(0).boundingBox();
+      const second = await catalogInputs.nth(1).boundingBox();
+      expect(first).not.toBeNull();
+      expect(second).not.toBeNull();
+      expect(Math.abs(first!.x - second!.x), `${label}px should remain one column`).toBeLessThan(8);
+      expect(await documentHasNoHorizontalOverflow(page)).toBe(true);
+      await page.screenshot({ path: `${VISUAL_DIR}/chemical-${label}.png`, fullPage: true });
+    }
+  });
+
+  test("tablet and desktop preserve useful multi-column form density", async ({ authed: page }) => {
+    for (const [label, viewport] of [["768", TABLET], ["1024", DESKTOP]] as const) {
+      await page.setViewportSize(viewport);
+      await page.goto("/chemical");
+      const catalogInputs = sectionInputs(page, "เพิ่มเคมีใหม่ใน catalog");
+      const first = await catalogInputs.nth(0).boundingBox();
+      const second = await catalogInputs.nth(1).boundingBox();
+      expect(first).not.toBeNull();
+      expect(second).not.toBeNull();
+      expect(Math.abs(first!.x - second!.x), `${label}px should preserve multi-column density`).toBeGreaterThan(80);
+      await page.screenshot({ path: `${VISUAL_DIR}/chemical-${label}.png`, fullPage: true });
+    }
+  });
+
+  test("wide stock and history tables scroll locally without page overflow", async ({ authed: page }) => {
+    await page.setViewportSize(PHONE);
+    await page.goto("/chemical");
+
+    const tables = page.locator("table");
+    await expect(tables).toHaveCount(2);
+    for (let i = 0; i < await tables.count(); i += 1) {
+      const scrollBox = tables.nth(i).locator("..");
+      const metrics = await scrollBox.evaluate((el) => ({ clientWidth: el.clientWidth, scrollWidth: el.scrollWidth }));
+      expect(metrics.scrollWidth, `table ${i + 1} should own its horizontal scroll`).toBeGreaterThan(metrics.clientWidth);
+    }
+    expect(await documentHasNoHorizontalOverflow(page)).toBe(true);
+    await page.screenshot({ path: `${VISUAL_DIR}/chemical-360.png`, fullPage: true });
+  });
+
+  test("movement save error preserves entered values and retry succeeds", async ({ authed: page }) => {
+    const movementPosts: string[] = [];
+    let postCount = 0;
+    await page.unroute("**/rest/v1/movement**");
+    await page.route("**/rest/v1/movement**", async (route) => {
+      if (route.request().method() === "POST") {
+        postCount += 1;
+        movementPosts.push(route.request().postData() ?? "");
+        if (postCount === 1) {
+          await route.fulfill({ status: 400, contentType: "application/json", body: JSON.stringify({ message: "E2E movement failure", code: "E2E" }) });
+          return;
+        }
+        await route.fulfill({ status: 201, contentType: "application/json", body: JSON.stringify(MOVEMENT_ROWS[0]) });
+        return;
+      }
+      await route.fulfill({ status: 200, contentType: "application/json", body: JSON.stringify(MOVEMENT_ROWS) });
+    });
+
+    await page.setViewportSize(PHONE_430);
+    await page.goto("/chemical");
+    const movementInputs = sectionInputs(page, "บันทึกรับเข้า / จ่ายออก");
+    await movementInputs.nth(1).fill("สารส้ม E2E");
+    await movementInputs.nth(2).fill("3.5");
+    const purpose = page.getByRole("heading", { name: "บันทึกรับเข้า / จ่ายออก" }).locator("..").locator("textarea");
+    await purpose.fill("ทดสอบงานภาคสนาม");
+
+    const save = page.getByRole("button", { name: "บันทึก", exact: true });
+    await save.click();
+    await expect(page.getByRole("status").filter({ hasText: "ผิดพลาด: E2E movement failure" })).toBeVisible();
+    await expect(movementInputs.nth(1)).toHaveValue("สารส้ม E2E");
+    await expect(movementInputs.nth(2)).toHaveValue("3.5");
+    await expect(purpose).toHaveValue("ทดสอบงานภาคสนาม");
+
+    await save.click();
+    await expect(page.getByRole("status").filter({ hasText: "บันทึกการเคลื่อนไหว" })).toBeVisible();
+    expect(movementPosts).toHaveLength(2);
+    const retryPayload = JSON.parse(movementPosts[1]) as Record<string, unknown>;
+    expect(retryPayload.chemical_name).toBe("สารส้ม E2E");
+    expect(retryPayload.quantity).toBe(3.5);
+  });
+});
+
+test.describe("ENV-MOBILE-002 real touch context", () => {
+  const { defaultBrowserType: _browserType, ...pixel7Touch } = devices["Pixel 7"];
+  test.use(pixel7Touch);
+
+  test("tap path can add a catalog item and record a movement", async ({ authed: page }) => {
+    const masterPosts: string[] = [];
+    const movementPosts: string[] = [];
+    await mockChemicalDependencies(page, { masterPosts, movementPosts });
     await page.goto("/chemical");
 
     const catalogInputs = sectionInputs(page, "เพิ่มเคมีใหม่ใน catalog");
-    const first = await catalogInputs.nth(0).boundingBox();
-    const second = await catalogInputs.nth(1).boundingBox();
-    expect(first).not.toBeNull();
-    expect(second).not.toBeNull();
-    expect(Math.abs(first!.x - second!.x)).toBeGreaterThan(80);
+    await catalogInputs.nth(0).fill("E2E Touch Chemical");
+    await page.getByRole("button", { name: "เพิ่ม", exact: true }).tap();
+    await expect(page.getByRole("status").filter({ hasText: "เพิ่มเคมีใหม่" })).toBeVisible();
+
+    const movementInputs = sectionInputs(page, "บันทึกรับเข้า / จ่ายออก");
+    await movementInputs.nth(1).fill("E2E Touch Chemical");
+    await movementInputs.nth(2).fill("1.25");
+    await page.getByRole("button", { name: "บันทึก", exact: true }).tap();
+    await expect(page.getByRole("status").filter({ hasText: "บันทึกการเคลื่อนไหว" })).toBeVisible();
+
+    expect(masterPosts).toHaveLength(1);
+    expect(movementPosts).toHaveLength(1);
+    expect(await documentHasNoHorizontalOverflow(page)).toBe(true);
   });
 });
