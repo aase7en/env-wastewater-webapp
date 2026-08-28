@@ -1,5 +1,15 @@
 # HANDOFF
 
+## Active checkpoint — ENV-MOBILE-003 — 2026-08-28
+
+- Goal: converge Water Supply / groundwater-quality entry to the proven mobile-first operational pattern without changing data/query/schema or compliance semantics.
+- Branch/worktree: `feat/env-mobile-003-water-supply` / `A:\\GitHub\\envww-review-mobile-001`; base `origin/main@2e70c81b54dc20809c37dbe7a4d6a0e973172d11`.
+- Contract: `docs/work-orders/ENV-MOBILE-003-WATER-SUPPLY.md`.
+- Source reality: form is currently `grid-cols-2 md:grid-cols-4`; recent-record table already owns an `overflow-x-auto` wrapper; delete target is plain text and unmeasured; no focused Water Supply E2E exists.
+- Schema authority: live ENV snapshot confirms all implemented Water Supply quality fields. A-Wiki's `MOD-WS-a pending` note is stale; no A-Wiki threshold is being promoted into production behavior by this WO.
+- State: `READY_FOR_IMPLEMENTATION`. RED: 360px form x-delta 154px; delete target ~19.125×24.797px. Document/table containment and 1024px density already pass and must be preserved.
+- Protected `.serena/` remains untouched. Fuel and later forms remain inactive while this lane owns the domain-form critical path.
+
 ## Closed checkpoint — ENV-MOBILE-002 — 2026-08-28
 
 - Goal: converge the Chemical sub-store workflow to the proven mobile-first operational pattern without changing chemical data/query/schema semantics.

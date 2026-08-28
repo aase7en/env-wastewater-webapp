@@ -209,8 +209,10 @@ At this checkpoint:
 - `ENV-MOBILE-002` Chemical is reviewed, merged, deployed, production-smoked, and closed; its page/test/evidence lane is now read-only history;
 - final reviewed head `795aefcf86442029923be87110831e08c589ad8d` merged as `f26c753a6e49a65dfc9e5d43a482380f79dece0c`; post-merge test/E2E/Pages and deployment `6136344674` are green;
 - the separate Chemical `quantity=0` business-rule question is not implicitly authorized by mobile convergence and remains outside the closed slice;
-- `ENV-MOBILE-003` Water Supply is the next critical-path candidate, but it must first establish a bounded work order/claim and phone-width source-reality baseline; Fuel and later forms must not start in parallel.
+- `ENV-MOBILE-003` Water Supply is now the active critical-path slice with an explicit bounded work order/claim; its current gate is deterministic phone-width RED/baseline before production mutation.
+- `frontend/src/lib/water-supply.ts`, schema/RLS, compliance/threshold rules, shared UI/AppShell, other forms, and Digital Twin remain outside its mutable scope.
+- Fuel and later domain-form slices must not start in parallel while Water Supply is active.
 
 Current critical-path handoff:
 
-`ENV-MOBILE-001 COMPLETE → ENV-MOBILE-002 Chemical COMPLETE → docs closeout on main → ENV-MOBILE-003 Water Supply audit/baseline → bounded implementation/review/verify loop`
+`ENV-MOBILE-001 COMPLETE → ENV-MOBILE-002 Chemical COMPLETE → ENV-MOBILE-003 Water Supply DESIGNING/BASELINE_REQUIRED → bounded implementation → independent review → CI → merge/deploy/closure`
