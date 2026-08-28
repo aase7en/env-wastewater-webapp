@@ -52,7 +52,7 @@ export function FuelPage() {
         </div>
       </header>
       <AuraCard className="p-4 space-y-3">
-        <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
+        <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-3">
           <Field label="วันที่"><Input type="date" value={form.log_date} onChange={(e) => set({ log_date: e.target.value })} /></Field>
           <Field label="ประเภท">
             <Select value={form.fuel_type ?? "diesel"} onChange={(e) => set({ fuel_type: e.target.value })}>
@@ -86,7 +86,7 @@ export function FuelPage() {
                   <td className="p-2">{r.log_date}</td><td className="p-2">{r.fuel_type}</td>
                   <td className="text-right p-2">{r.litres ?? "-"}</td><td className="p-2">{r.vehicle_id ?? "-"}</td>
                   <td className="text-right p-2">{r.cost_baht ?? "-"}</td>
-                  <td className="p-2"><button onClick={() => remove(r.id)} className="text-red-400 hover:underline font-thai">ลบ</button></td>
+                  <td className="p-2"><button onClick={() => remove(r.id)} className="min-h-[var(--touch-min)] min-w-[var(--touch-min)] px-2 rounded-lg text-red-400 hover:bg-alert-red/10 hover:underline font-thai">ลบ</button></td>
                 </tr>
               ))}
             </tbody>
