@@ -123,7 +123,7 @@ Likely owner split:
 
 **Completed bounded slice:** `ENV-MOBILE-004` - Fuel. PR #46 reviewed exact head `8e871d225a67f1da2a1c143556c2b34aaf9e90c6`, merged as `57f0bb3dd5c9a7e74ee0deb84bb166b215a8706a`; post-merge test/E2E/Pages are green, deployment `6142569782` succeeded for the exact merge SHA, and live 390px root-to-client deployed-bundle smoke passed with mocked REST/no real writes. Contract: `docs/work-orders/ENV-MOBILE-004-FUEL.md`.
 
-**Active bounded slice:** `ENV-MOBILE-005` - Garden. `RE-REVIEW_REQUESTED` after exact-head review found hidden-overflow containment and required-date defects; remediation checkpoint `e137cd468f628961dcfb697f0470cb3da76062bd` is GREEN at focused Garden 12/12, full Playwright 95/95, Vitest 202/202, typecheck/build PASS, lint 12 baseline warnings / 0 errors, and diff-check PASS. Production scope remains page-local responsive/accessibility/touch/validation only; Garden data/schema/carbon semantics remain unchanged. Fresh reviewer owns exact-SHA review/CI/merge/deploy/closure. Garbage remains inactive until Garden closes and receives its own Core audit.
+**Completed bounded slice:** `ENV-MOBILE-005` - Garden. Fresh review APPROVED exact head `327ae8b541f3e29f5727acc7edb3ed76b12f20bc`; PR #48 merged as `001ef532b1203b3bd2def7c28bdd6845a948dec8`; exact merge-SHA test/E2E/Pages are green; deployment `6150037544` succeeded; live 390px root-to-client deployed-bundle smoke passed with mocked REST/no real writes. Garden data/schema/carbon/shared-shell semantics remain unchanged. Garbage remains gated by its own Core data-contract audit.
 
 
 After Mobile-001 provides a proven pattern, audit and improve one domain per WO, prioritized by field frequency and control density:

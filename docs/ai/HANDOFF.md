@@ -1,17 +1,21 @@
 # HANDOFF
 
-## Active checkpoint - ENV-MOBILE-005 - Garden - 2026-08-29
+## Closed checkpoint - ENV-MOBILE-005 - Garden - 2026-08-29
 
-- Status: `RE-REVIEW_REQUESTED`; remediation is frozen for fresh independent review.
+- Status: `COMPLETE / MERGED / DEPLOYED / PRODUCTION-SMOKED`.
 - Goal: converge Garden work-round entry to the proven mobile-first pattern without changing Garden data/query/schema/carbon semantics.
 - Contract: `docs/work-orders/ENV-MOBILE-005-GARDEN.md`; lane evidence: `docs/ai/handoffs/ENV-MOBILE-005-SOL.md`.
-- Base: `origin/main@19eb31ff725e746a1e5856db5c9e86badd1c725b`; branch `feat/env-mobile-005-garden`; original PR head `39f25a92c0bbd10365c618c4477d4cca34f52f1f`; remediation checkpoint `e137cd468f628961dcfb697f0470cb3da76062bd`.
+- Base: `origin/main@19eb31ff725e746a1e5856db5c9e86badd1c725b`; branch `feat/env-mobile-005-garden`; original PR head `39f25a92c0bbd10365c618c4477d4cca34f52f1f`; remediation checkpoint `e137cd468f628961dcfb697f0470cb3da76062bd`; final reviewed head `327ae8b541f3e29f5727acc7edb3ed76b12f20bc`.
 - Independent review `PRR_kwDOTN3Mzc8AAAABLSqMwQ` returned `CHANGES_REQUIRED`: hidden document overflow masked history/card escape at 320/360 px, and empty `round_date` could reach the API despite the DB `NOT NULL` contract.
 - Remediation RED was **4 FAIL / 8 PASS** before production mutation. GREEN is focused Garden **12/12**, full Playwright **95/95**, Vitest **202/202**, typecheck/build PASS, lint 12 baseline warnings / 0 errors, targeted lint 0/0, and diff-check PASS.
+- Fresh Standards + Spec/UX review APPROVED; approval record `5055767858`. Exact-head CI runs `33219010216` and `33219010234` passed against a synthetic-merge tree identical to `327ae8b...`.
+- PR #48 merged as `001ef532b1203b3bd2def7c28bdd6845a948dec8`. Post-merge test `33219682337`, E2E `33219682275` (**95/95**), Pages `33219682308`, and exact-SHA deployment `6150037544` are SUCCESS.
+- Live 390x844 root-to-client Pages smoke loaded `assets/index-BIvntuDt.js`, verified 9/9 labels, card-contained keyboard-scrollable history, 71.89x48 Save, 44x44 Delete, blank-date zero-POST/error/focus/value preservation, corrected intercepted save, 390px document/body width, and no browser errors; all REST was mocked/no-real-write.
+- Direct Pages deep-link produced a one-frame 365px width during the expected HTTP-404-to-SPA fallback and settled to 360 within 25 ms. Root-to-client production stayed stable; retain this as a hosting/test-timing follow-up rather than attributing it to Garden.
 - Production diff remains page-local: original phone grid/labels/44px work plus a named, keyboard-scrollable local history boundary and a required-date error/focus guard. Coverage now includes 320/360/390/430/768/1024, Pixel 7, keyboard local-scroll/Tab/Enter, blank-date zero-POST/error/focus/value preservation, and failed-save/retry payload equality.
 - Data honesty preserved: no Garden data-layer/schema/RLS/carbon changes; no invented location/photo UI or enum/business rules; all E2E rows are synthetic evidence only.
-- Garbage is still inactive/read-only because its dual waste classification + manifest/compliance semantics need separate Core scrutiny.
-- **Fresh reviewer next action:** fetch the exact pushed branch head, verify base/current-main ancestry + remote diff + no scope leak, rerun focused Garden spec, inspect CI against that exact head, and return APPROVED or CHANGES_REQUIRED. If approved, merge the exact reviewed head; then fetch main, verify post-merge test/E2E/Pages and exact deployment SHA, perform mocked/no-real-write live 390px `/garden` smoke, and close via docs-only checkpoint before activating Garbage.
+- Garbage remains inactive/read-only because its dual waste classification + manifest/compliance/carbon semantics need separate Core scrutiny before UI mutation.
+- **Next critical path:** fresh review/remediation of repo-health PR #49, then bounded Fuel/Garbage Core data-contract work; do not reopen Garden or activate Garbage UI without a new claim.
 - Protected `.serena/` remains untouched.
 
 ## Closed checkpoint - ENV-MOBILE-004 - Fuel - 2026-08-28

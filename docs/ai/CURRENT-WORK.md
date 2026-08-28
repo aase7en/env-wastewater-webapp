@@ -1,6 +1,6 @@
 # CURRENT WORK
 
-Status: RE-REVIEW_REQUESTED
+Status: IDLE
 
 Allowed statuses:
 
@@ -18,17 +18,14 @@ Allowed statuses:
 
 ## Current execution state - 2026-08-29
 
-- Active work order: `ENV-MOBILE-005` - Garden mobile convergence; contract `docs/work-orders/ENV-MOBILE-005-GARDEN.md`.
-- Branch/worktree: `feat/env-mobile-005-garden` / `A:\\GitHub\\envww-review-mobile-001` from exact `origin/main@19eb31ff725e746a1e5856db5c9e86badd1c725b`.
-- Original RED checkpoint `6f2af89426fe66e523d92dd7d7c4b16a2c5867ca`; original production checkpoint `356334641fb15b5c399579dc7cde9f5640cdbb90`; original PR #48 head `39f25a92c0bbd10365c618c4477d4cca34f52f1f`.
-- Independent exact-head review `PRR_kwDOTN3Mzc8AAAABLSqMwQ` returned `CHANGES_REQUIRED`: AppShell's hidden document overflow made the initial history assertion false-green while the table/action escaped the Garden card at 320/360 px, and the schema-required `round_date` could be cleared and POSTed as an empty string.
-- Remediation RED added four deterministic checks before production mutation: **4 FAIL / 8 PASS**. It proved the missing named/local history boundary, unreachable delete action, and one invalid empty-date POST without an associated persistent error/focus target.
-- Remediation checkpoint `e137cd468f628961dcfb697f0470cb3da76062bd`: only `frontend/src/pages/GardenPage.tsx` + `frontend/tests/e2e/garden-mobile.spec.ts`; page-local named keyboard-scrollable history containment and page-local required-date validation were added without changing Garden data/query/schema/carbon semantics.
-- Fresh GREEN evidence: focused Garden Playwright **12/12 PASS**; full Playwright **95/95 PASS**; Vitest **202/202 PASS**; standalone typecheck PASS; production build PASS; lint **12 pre-existing warnings / 0 errors**; targeted lint 0/0; `git diff --check` PASS.
-- Rendered regression now covers 320/360/390/430/768/1024 plus Pixel 7 touch, local keyboard scroll/action reachability, keyboard Tab/Enter, required-date error/focus/value preservation, and deterministic save-error/retry with equal complete null-aware `GardenInput`.
-- Garden data/query/schema/RLS/carbon behavior, `location_id`/`photo_path` null semantics, shared UI/AppShell, Garbage, other forms, and `.serena/` are unchanged/read-only.
-- State: `RE-REVIEW_REQUESTED`. Remediation is frozen. **Fresh independent reviewer** owns exact pushed-head review, focused rerun, exact-head CI inspection, approval/changes verdict, merge, post-merge test/E2E/Pages + live smoke, then docs-only closure.
-- `ENV-MOBILE-001` through `ENV-MOBILE-004` remain complete/read-only history. Garbage remains inactive until Garden closure and its own fresh Core/data-contract audit.
+- No active mutable production work order. `ENV-MOBILE-001` through `ENV-MOBILE-005` are complete/merged/deployed history.
+- `ENV-MOBILE-005` Garden: original exact-head review `PRR_kwDOTN3Mzc8AAAABLSqMwQ` returned `CHANGES_REQUIRED` for false-green history containment and missing required-date validation; remediation checkpoint `e137cd468f628961dcfb697f0470cb3da76062bd` closed both with regression-first evidence.
+- Fresh Standards + Spec/UX reviews APPROVED exact PR #48 head `327ae8b541f3e29f5727acc7edb3ed76b12f20bc`; commit-anchored approval record `5055767858`. Focused reviewer rerun **12/12 PASS** and exact-head CI runs `33219010216` / `33219010234` passed, including full Playwright **95/95**.
+- PR #48 merged as `001ef532b1203b3bd2def7c28bdd6845a948dec8`. Post-merge exact-SHA test `33219682337`, E2E `33219682275` (**95/95**), and Pages `33219682308` are SUCCESS; deployment `6150037544` is successful for the exact merge SHA.
+- Live 390x844 root-to-client deployed-bundle smoke loaded `assets/index-BIvntuDt.js` with the new Garden markers; all 9 labels/IDs passed; history remained inside its card with keyboard local scroll; Save was 71.89x48 and Delete 44x44; blank date made zero POSTs and preserved/focused its associated error; corrected save made one intercepted POST; document/body width stayed 390; no browser errors; all REST was mocked/no-real-write.
+- A direct GitHub Pages deep-link run observed a first-frame hosting transition (`HTTP 404` SPA fallback, document width 365 at a 360 viewport) that settled to 360 within 25 ms. This did not reproduce through the root-to-client production path and is recorded as a separate hosting/test-timing observation, not hidden as a Garden pass.
+- Garden data/query/schema/RLS/carbon behavior, `location_id`/`photo_path` null semantics, shared UI/AppShell, Garbage, other forms, and protected `.serena/` were unchanged.
+- Next eligible bounded action: finish fresh review/remediation of repo-health PR #49, then resolve the routed Fuel/Garbage Core data-contract defects before activating Garbage responsive/UI mutation.
 
 ## Review Queue — 2026-08-23
 

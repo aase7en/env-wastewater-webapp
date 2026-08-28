@@ -1,7 +1,7 @@
 # ENV-MOBILE-005 - Garden mobile convergence
 
 Date: 2026-08-28
-Status: RE-REVIEW_REQUESTED
+Status: COMPLETE / MERGED / DEPLOYED / PRODUCTION-SMOKED
 Owner: GPT-5.6 Sol
 Branch/worktree: `feat/env-mobile-005-garden` / `A:\GitHub\envww-review-mobile-001`
 Base: `origin/main@19eb31ff725e746a1e5856db5c9e86badd1c725b`
@@ -66,19 +66,15 @@ Regression-first remediation produced **4 FAIL / 8 PASS** before production muta
 
 Fresh GREEN evidence is focused Garden **12/12 PASS**, full Playwright **95/95 PASS**, Vitest **202/202 PASS**, standalone typecheck/build PASS, lint **12 baseline warnings / 0 errors**, targeted lint 0/0, and `git diff --check` PASS. Coverage includes local boundary/table/action geometry at 320/360/390, keyboard local-scroll reachability, desktop no-unnecessary-clipping, and corrected-date valid save. All Garden REST remains mocked/no-real-write.
 
-## Codex continuation contract
+## Final closure evidence
 
-Start from repository SSoT and actual remote state, not chat memory.
+- Fresh Standards + Spec/UX review APPROVED exact final head `327ae8b541f3e29f5727acc7edb3ed76b12f20bc`; commit-anchored approval record `5055767858`; focused reviewer rerun **12/12 PASS**.
+- Exact-head runs `33219010216` / `33219010234` passed; CI Playwright **95/95**; tested synthetic-merge tree matched the exact reviewed head.
+- PR #48 merged as `001ef532b1203b3bd2def7c28bdd6845a948dec8`.
+- Post-merge exact-SHA test `33219682337`, E2E `33219682275` (**95/95**), Pages `33219682308`, and deployment `6150037544` are SUCCESS.
+- Live 390x844 root-to-client deployed-bundle smoke loaded `assets/index-BIvntuDt.js`: 9/9 labels, contained keyboard-scrollable history, Save 71.89x48, Delete 44x44, blank-date zero POST/error/focus/value preservation, corrected intercepted POST, document/body 390, no browser errors, all REST mocked/no-real-write.
+- Direct Pages deep-link first frame measured 365px at a 360px viewport during the HTTP-404-to-SPA handoff, then 360px by 25 ms. Stable root-to-client did not reproduce it; treat this as a separate hosting/test-timing observation.
 
-1. Repo/worktree: `A:\GitHub\envww-review-mobile-001`; branch `feat/env-mobile-005-garden`.
-2. Fetch `origin/main` + the feature branch; verify exact pushed head and no protected dirty state beyond untouched `.serena/`.
-3. Read `AGENTS.md`, `docs/ai/CURRENT-WORK.md`, this handoff, and `docs/work-orders/ENV-MOBILE-005-GARDEN.md`.
-4. Review exact diff against current main; production ownership is Garden page only and test ownership is Garden E2E only. Do not broaden into `lib/garden.ts`, schema/RLS/carbon/shared shell/Garbage.
-5. Rerun focused Garden Playwright with retries 0; inspect exact-head GitHub CI. Any code-changing push invalidates prior evidence and requires fresh verification.
-6. Return `APPROVED` or `CHANGES_REQUIRED`. If approved, merge using the exact reviewed head.
-7. After merge: fetch main, verify merge ancestry, post-merge `test` + E2E + Pages run against exact merge SHA, verify Pages deployment exact SHA, and live-smoke `/garden` at about 390x844 with all REST mocked/no real writes.
-8. Close Garden in a docs-only checkpoint (`CURRENT-WORK=IDLE`, claim complete, WO/handoff/roadmap/graph closure plus defect-memory entry for the hidden-overflow false-green class). Only then may Garbage be activated under a fresh WO/claim/audit.
+## Final state
 
-## Stop gate
-
-Remediation owner stops at `RE-REVIEW_REQUESTED`. Fresh independent reviewer owns the next gate.
+Garden is closed. `frontend/src/lib/garden.ts`, schema/RLS/carbon/shared UI/AppShell/Garbage/other modules and protected `.serena/` were not changed. Any future Garden or Garbage mutation requires a new bounded claim; Garbage remains gated by its Core data-contract audit.
