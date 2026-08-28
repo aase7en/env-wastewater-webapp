@@ -71,7 +71,7 @@ function QuickChips({ options, value, onPick }: { options: string[]; value: stri
           type="button"
           onClick={() => onPick(o)}
           className={cn(
-            "px-3.5 py-1.5 rounded-full text-xs font-thai border transition-colors min-h-[36px]",
+            "px-3.5 py-1.5 rounded-full text-xs font-thai border transition-colors min-h-[var(--touch-min)] min-w-[var(--touch-min)]",
             value === o
               ? "bg-aura-cyan text-aura-onAccent border-transparent font-semibold"
               : "bg-aura-surfaceHigh/40 border-aura-borderSubtle text-aura-textMuted hover:text-aura-textMain hover:border-aura-cyan/40"
@@ -104,12 +104,28 @@ export function DailyFormPage() {
 
   const [form, setForm] = useState<FormState>(emptyForm);
   const [banner, setBanner] = useState<{ kind: "success" | "error" | "warning"; msg: string } | null>(null);
+  const [revealRequest, setRevealRequest] = useState<{ target: "banner" | "cause" } | null>(null);
+  const [dockOverlayOpen, setDockOverlayOpen] = useState(false);
+  const bannerRef = useRef<HTMLDivElement>(null);
+  const causeRef = useRef<HTMLTextAreaElement>(null);
 
   const { data: existing, loading: loadingExisting } = useReading(isEdit ? id : null);
   const { data: equipment } = useEquipment();
   const createMut = useCreateReading();
   const updateMut = useUpdateReading();
   const deleteMut = useDeleteReading();
+
+  // ModuleDock renders its modal scrim outside this page. Keep the form actions
+  // above the dock during normal use, but demote + inert them whenever that
+  // shared scrim is mounted so actions cannot render/click through the sheet.
+  useEffect(() => {
+    const overlaySelector = 'div[aria-hidden="true"][class*="fixed inset-0"][class*="z-[35]"]';
+    const sync = () => setDockOverlayOpen(Boolean(document.querySelector(overlaySelector)));
+    sync();
+    const observer = new MutationObserver(sync);
+    observer.observe(document.body, { childList: true, subtree: true });
+    return () => observer.disconnect();
+  }, []);
 
   // Edit mode: hydrate the form from the reading record — gated.
   // WO-STAB-004 (P0 #4): React Query background/window-focus refetches
@@ -168,10 +184,37 @@ export function DailyFormPage() {
     return out as unknown as ReadingCreate;
   };
 
+  // Reveal requests are committed as state so the effect runs only after React
+  // has mounted the conditional banner/field. Scheduling directly from the
+  // submit handler can race that commit and leave focus on <body>.
+  useEffect(() => {
+    if (!revealRequest) return;
+    const frameId = requestAnimationFrame(() => {
+      const target = revealRequest.target === "banner" ? bannerRef.current : causeRef.current;
+      if (!target) return;
+      target.focus({ preventScroll: true });
+      target.scrollIntoView({
+        // Error recovery is time-critical: an animated scroll can settle
+        // outside the viewport under concurrent layout updates. Reveal it
+        // synchronously; this also satisfies reduced-motion preferences.
+        behavior: "auto",
+        block: "center",
+        inline: "nearest",
+      });
+    });
+    return () => cancelAnimationFrame(frameId);
+  }, [revealRequest]);
+
+  const showApiError = (msg: string) => {
+    setBanner({ kind: "error", msg });
+    setRevealRequest({ target: "banner" });
+  };
+
   const onSubmit = async (e: FormEvent) => {
     e.preventDefault();
     if (causeMissing) {
       setBanner({ kind: "error", msg: "กรุณาระบุสาเหตุที่ระบบผิดปกติ" });
+      setRevealRequest({ target: "cause" });
       return;
     }
     setBanner(null);
@@ -182,7 +225,7 @@ export function DailyFormPage() {
         setBanner({ kind: "success", msg: "อัปเดตรายการสำเร็จ" });
         setTimeout(() => navigate("/readings"), 900);
       } else {
-        setBanner({ kind: "error", msg: error ?? "อัปเดตไม่สำเร็จ" });
+        showApiError(error ?? "อัปเดตไม่สำเร็จ");
       }
     } else {
       const { data, error } = await createMut.mutate(payload);
@@ -190,7 +233,7 @@ export function DailyFormPage() {
         setBanner({ kind: "success", msg: "บันทึกรายการสำเร็จ" });
         setTimeout(() => navigate("/readings"), 900);
       } else {
-        setBanner({ kind: "error", msg: error ?? "บันทึกไม่สำเร็จ" });
+        showApiError(error ?? "บันทึกไม่สำเร็จ");
       }
     }
   };
@@ -221,7 +264,7 @@ export function DailyFormPage() {
   const submitting = createMut.loading || updateMut.loading;
 
   return (
-    <form onSubmit={onSubmit} className="max-w-3xl mx-auto space-y-4 pb-28">
+    <form onSubmit={onSubmit} className="max-w-3xl mx-auto space-y-4 pb-48">
       {/* Header */}
       <header className="flex items-start justify-between gap-3 flex-wrap">
         <div>
@@ -238,8 +281,13 @@ export function DailyFormPage() {
       {/* Banner */}
       {banner && (
         <div
+          ref={bannerRef}
+          role={banner.kind === "error" ? "alert" : "status"}
+          aria-live={banner.kind === "error" ? "assertive" : "polite"}
+          aria-atomic="true"
+          tabIndex={-1}
           className={cn(
-            "rounded-2xl px-4 py-3 text-sm font-thai flex items-center gap-2 border",
+            "rounded-2xl px-4 py-3 text-sm font-thai flex items-center gap-2 border focus:outline-none focus-visible:ring-2 focus-visible:ring-aura-cyan/70",
             banner.kind === "success" && "bg-alert-green/10 border-alert-green/40 text-alert-green",
             banner.kind === "error" && "bg-alert-red/10 border-alert-red/40 text-alert-red",
             banner.kind === "warning" && "bg-alert-amber/10 border-alert-amber/40 text-alert-amber"
@@ -285,17 +333,26 @@ export function DailyFormPage() {
               <Field
                 label="สาเหตุที่ผิดปกติ"
                 required
-                error={causeMissing ? "จำเป็นต้องระบุเมื่อระบบผิดปกติ" : undefined}
-                hint="จะสร้างใบแจ้งซ่อม (core.repair_request) ในธุรกรรมเดียวกัน"
+                hint={causeMissing ? undefined : "ระบบจะบันทึกรายการก่อน แล้วจึงพยายามสร้างใบแจ้งซ่อมแยกต่างหาก"}
                 htmlFor="abnormal_cause"
               >
-                <Textarea
-                  id="abnormal_cause"
-                  rows={2}
-                  value={String(form.abnormal_cause ?? "")}
-                  onChange={(e) => set("abnormal_cause", e.target.value)}
-                  placeholder="เช่น เครื่องเติมอากาศ 2 ขัดข้อง, ปั๊มน้ำเสีย 1 หยุดทำงาน"
-                />
+                <>
+                  <Textarea
+                    ref={causeRef}
+                    id="abnormal_cause"
+                    rows={2}
+                    value={String(form.abnormal_cause ?? "")}
+                    onChange={(e) => set("abnormal_cause", e.target.value)}
+                    aria-invalid={causeMissing || undefined}
+                    aria-describedby={causeMissing ? "abnormal-cause-error" : undefined}
+                    placeholder="เช่น เครื่องเติมอากาศ 2 ขัดข้อง, ปั๊มน้ำเสีย 1 หยุดทำงาน"
+                  />
+                  {causeMissing && (
+                    <p id="abnormal-cause-error" role="alert" className="text-xs text-alert-red font-thai">
+                      จำเป็นต้องระบุเมื่อระบบผิดปกติ
+                    </p>
+                  )}
+                </>
               </Field>
             </div>
           )}
@@ -304,7 +361,7 @@ export function DailyFormPage() {
 
       {/* SECTION 2 — คุณภาพน้ำ */}
       <AccordionSection title="คุณภาพน้ำ" subtitle="DO, pH, TDS, อุณหภูมิ, SV30, คลอรีนอิสระ">
-        <div className="grid grid-cols-2 gap-3">
+        <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
           <Field label="DO ถังเติมอากาศ" unit="mg/L">
             <NumberInput value={String(form.do_aeration)} onChange={(e) => set("do_aeration", e.target.value)} />
           </Field>
@@ -337,7 +394,7 @@ export function DailyFormPage() {
 
       {/* SECTION 3 — คลอรีนและสารเคมี */}
       <AccordionSection title="คลอรีนและสารเคมี" subtitle="ปริมาณคลอรีนที่ใช้, อัตราผสม, ตะกอนส่วนเกิน">
-        <div className="grid grid-cols-2 gap-3">
+        <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
           <Field label="คลอรีนที่ใช้" unit="ลิตร">
             <NumberInput value={String(form.chlorine_used)} onChange={(e) => set("chlorine_used", e.target.value)} />
           </Field>
@@ -367,7 +424,7 @@ export function DailyFormPage() {
 
       {/* SECTION 5 — มิเตอร์ + ปริมาณน้ำ */}
       <AccordionSection title="มิเตอร์ + ปริมาณน้ำ + ไฟฟ้า" subtitle="มิเตอร์ปั๊ม, ปริมาณน้ำเข้า/ออก, ไฟฟ้า">
-        <div className="grid grid-cols-2 gap-3">
+        <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
           <Field label="มิเตอร์ปั๊ม 1" unit="kWh">
             <NumberInput value={String(form.pump1_meter)} onChange={(e) => set("pump1_meter", e.target.value)} />
           </Field>
@@ -412,8 +469,15 @@ export function DailyFormPage() {
         </Field>
       </AccordionSection>
 
-      {/* Sticky submit bar — left offset matches the F2 sidebar (w-72) */}
-      <div className="fixed bottom-0 inset-x-0 md:left-72 border-t border-aura-borderSubtle bg-aura-bgDeep/90 backdrop-blur-xl px-4 py-3 flex items-center gap-3 z-30">
+      {/* Sticky submit bar — lifted above the floating ModuleDock so phone users can always tap the actions. */}
+      <div
+        aria-hidden={dockOverlayOpen || undefined}
+        inert={dockOverlayOpen || undefined}
+        className={cn(
+          "fixed bottom-24 inset-x-0 md:left-72 border-t border-aura-borderSubtle bg-aura-bgDeep/90 backdrop-blur-xl px-4 py-3 flex items-center gap-3",
+          dockOverlayOpen ? "z-30 pointer-events-none" : "z-50",
+        )}
+      >
         <Button type="submit" loading={submitting} size="lg" className="flex-1 sm:flex-none sm:min-w-40">
           {isEdit ? "อัปเดต" : "บันทึก"}
         </Button>

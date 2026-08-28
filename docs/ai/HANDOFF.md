@@ -1,17 +1,46 @@
 # HANDOFF
 
-## Active checkpoint — ENV-ARCH-001 — 2026-08-27
+## Active checkpoint — ENV-MOBILE-001 — 2026-08-27
 
-- Goal: complete the project operating architecture layer (unified architecture + graph + roadmap + source inventory) before resuming production feature work.
-- User authorization: continue ENV development toward the confirmed project goal using the goal-first loop, one bounded slice at a time.
-- Branch/worktree: `docs/env-project-operating-architecture` / `A:\\GitHub\\envww-operating-architecture`.
-- Base: `origin/main@9abf1b02d09a14f5328fd03fac32c837c3d89bc2`.
-- Production source changes in this slice: none.
-- New operating artifacts: `PROJECT-OPERATING-MAP.md`, `architecture/SYSTEM-ARCHITECTURE.md`, `graph/PROJECT-GRAPH.md`, `ROADMAP.md`, current-state inventory, ENV-ARCH-001 and ENV-MOBILE-001 work orders.
-- Source inventory finding: `DailyFormPage.tsx` is the densest field workflow and contains multiple unconditional two-column grids at phone width; it is the next highest-confidence mobile-first production slice.
-- Implementation checkpoint: `1d49fdd4e8bbde7851ad5ba61a366237980d9636`.
-- Status: `REVIEW_REQUESTED`.
-- Next gate: independent review of ENV-ARCH-001 → PR/exact-SHA CI → merge/fetch-main closure → activate `ENV-MOBILE-001` only.
+### ENV-ARCH-001 closure
+
+- PR #39 reviewed exact head: `2d58c684330d4db0e80bda0c8fc2ebd8890e4eef`.
+- Merge on main: `08db62c821cf7b95aaeb373c603d77ccc4d9b98a`.
+- Reviewer verified docs-only diff, route inventory, schema-family claims, operating artifacts, current-main ancestry, clean diff-check, CLEAN merge state, and exact-head `scripts` + `notify` SUCCESS. Frontend E2E/deploy were not applicable to the docs-only paths.
+- Operating architecture/graph/roadmap/current-state inventory are now durable SSoT on main.
+
+### ENV-MOBILE-001 ? RE-REVIEW_REQUESTED
+
+- Goal: make the wastewater daily field form practical at 360–430 px without changing its data/validation/hydration semantics.
+- Branch/worktree: `feat/env-mobile-001` / `A:\\GitHub\\envww-mobile-001`.
+- Base: `origin/main@08db62c821cf7b95aaeb373c603d77ccc4d9b98a`.
+- Contract: `docs/work-orders/ENV-MOBILE-001.md`.
+- Coordinator: GPT-5.6 Sol MAX production-remediation lane. GLM lane D is complete/read-only. Fresh isolated reviewer context owns PR #40 approval/merge; this lane must not merge.
+- RED: the first two dense water-quality inputs were 149 px apart at 360 px under the prior unconditional two-column grid. A second real-use RED showed the floating ModuleDock intercepting the fixed submit action.
+- Implementation checkpoint: `a99629935b68dac58a3e7fb8c1498e923fe5a174`.
+- Implementation: dense numeric groups are one-column below `sm` and remain two-column at larger widths; form completion clearance is increased; the sticky action bar is lifted above the dock with a local z-index high enough to receive taps. No AppShell/ModuleDock/data-contract source changed.
+- Focused E2E: 3/3 PASS — mobile stack/no overflow, desktop two-column preservation, and phone abnormal-validation/value-persistence/save path including final-field/action-bar clearance.
+- Full gates: Playwright 51/51 PASS (including dirty-form reconnect regression), Vitest 202/202 PASS, production build PASS, oxlint 0 errors / 12 pre-existing warnings, `git diff --check` PASS.
+- Existing numeric-string payload behavior was observed and intentionally preserved; normalization is outside this WO.
+- Exact review: PR #40 head `87fdc7c0b014ed7279df93de7b4bdc539926debb` against `origin/main@08db62c821cf7b95aaeb373c603d77ccc4d9b98a` returned `CHANGES_REQUIRED — DO NOT MERGE`.
+- Remote state at review: OPEN and CLEAN/MERGEABLE; no branch protection/ruleset and no server-required checks. Visible checks succeeded, but E2E checked GitHub merge ref `e330b26ce966620c6e84bbb482746a5c68bf3a53` rather than the literal reviewed head SHA.
+- Blocking gaps: QuickChips are 36 px rather than 44 px minimum; 430 px/tablet/touch-target/keyboard/touch/edit/error-retry/repair-request/visual gates are not proven; the save mock covers success only; SSoT/PR evidence is stale; and prior role ownership was not independent.
+- Remediation contracts: `docs/work-orders/ENV-MOBILE-001A-SOLMAX-UX-REMEDIATION.md` then `docs/work-orders/ENV-MOBILE-001B-GLM53-VERIFICATION.md`.
+- ENV-MOBILE-001A pushed production checkpoint: `74550da24af09a5afe506d2c269de89cb6392092`; remote branch head matched. Evidence: focused mobile Playwright 3/3 PASS, Vitest 202/202 PASS, build PASS, lint 12 pre-existing warnings / 0 errors, diff-check PASS, plus rendered 360/390/430/768/1024 Chromium matrix recorded in `docs/ai/handoffs/ENV-MOBILE-001A-SOLMAX.md`.
+- ENV-MOBILE-001B is COMPLETE/PUSHED; its `daily-form-mobile.spec.ts` is read-only during production remediation.
+- ENV-MOBILE-001D is COMPLETE/PUSHED at `cdaa1097022b7fbfedfff8302a628af630f6cfb1`; the unchanged failed-save regression reproduced the production race 2/20, then GLM stopped with no production edit.
+- ENV-MOBILE-001E is `RE_REVIEW_REQUESTED`: `DailyFormPage.tsx` now uses state-backed post-commit reveal and deterministic `auto` centered scrolling; the repair hint truthfully describes sequential save then repair creation.
+- Verification: focused failed-save 1/1 PASS; unchanged regression repeat 20/20 PASS; full mobile spec 11/11 PASS; Vitest 202/202 PASS; typecheck PASS; lint 12 baseline warnings / 0 errors; build PASS; diff-check PASS. Exact evidence: `docs/ai/handoffs/ENV-MOBILE-001E-SOLMAX.md`.
+- Next: fresh isolated reviewer context re-reviews the exact pushed PR #40 SHA/diff. Any code-changing push invalidates this evidence. Do not merge from this lane.
+
+### Worktree hygiene pass — 2026-08-27
+
+- Removed only clean, already-merged worktrees with no untracked content: `env-wastewater-webapp-dt-v3-docs`, `envww-coord-pr21`, `envww-proposals`, and detached `envww-review-pr39`.
+- Deleted the corresponding merged local branches where applicable: `feature/digital-twin-v3`, `docs/coord-pr21`, and `fix/p1-annotate-phi-boundary-remediation-2`.
+- Ran `git worktree prune`.
+- Preserved the primary `A:\\GitHub\\env-wastewater-webapp` because it contains user/unknown untracked assets and remains intentionally untouched.
+- Preserved merged historical worktrees that still contain untracked `.serena/` metadata; project Git-safety rules prohibit forcing their deletion.
+- Preserved `envww-trackf` because its HEAD is not merged into current main.
 
 Status: APPROVED — PR #33 / WO-STAB-009 remediation-3 passed independent GPT re-review and merged as `b33c630d6a10a262aa6cd16469efbf475c4338fd`. ENV-P1-STABILIZATION is closed for the two activated work orders; deferred lanes remain inactive. The user-confirmed project-wide Goal-First Engineering Loop is now recorded in `docs/ai/ENV-ENGINEERING-LOOP.md` with reusable failure lessons in `docs/ai/DEFECT-MEMORY.md`.
 
