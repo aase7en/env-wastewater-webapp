@@ -1,6 +1,6 @@
 # CURRENT WORK
 
-Status: RE-REVIEW_REQUESTED
+Status: IDLE
 
 Allowed statuses:
 
@@ -16,15 +16,16 @@ Allowed statuses:
 
 > `CURRENT-WORK.md` is the authoritative task definition. Agents must not silently expand task scope.
 
-## Current execution state — 2026-08-28
+## Current execution state - 2026-08-28
 
-- Active work order: `ENV-MOBILE-004` — Fuel mobile convergence; contract `docs/work-orders/ENV-MOBILE-004-FUEL.md`.
-- Branch/worktree: `feat/env-mobile-004-fuel` / `A:\\GitHub\\envww-review-mobile-001` from exact `origin/main@4385379d9801998ba54e97560de1fe59ae29469d`.
-- Owner: GPT-5.6 Sol for page-local responsive/interaction + focused E2E baseline. GLM-5.3 MAX may run a parallel read-only Fuel Core Engineering audit with no repository mutation/claim.
-- Exact review `5050262812` returned `CHANGES_REQUIRED` on PR head `1f4d29644573820e27c926bb9700d41037346c3d` for 11 unassociated labels, positional E2E coverage, missing keyboard/native activation proof, and incomplete retry-body proof.
-- State: `RE-REVIEW_REQUESTED`. Remediation production checkpoint `6ac3c96d42cd9b9eff15429e4436d24dcad22438` associates all 11 controls, adds semantic-name + strict keyboard/Enter coverage, and pins failed/retry POST equality against the complete null-aware `FuelInput`. Focused Fuel E2E 10/10 PASS; full Playwright 83/83 PASS; Vitest 202/202 PASS; standalone typecheck + production build PASS; lint 12 baseline warnings / 0 errors; diff-check PASS. Fresh independent reviewer owns approval/merge.
-- Separate Core Engineering finding: imported arbitrary `fuel_type` can reach free-text `fuel.dispense_log` while carbon rollup casts it to `carbon.source_type`; import/carbon/schema semantics are explicitly outside this mobile WO and require separate contract/regression handling.
-- `ENV-MOBILE-001` through `ENV-MOBILE-003` are complete/read-only historical evidence.
+- No production work order is active. `ENV-MOBILE-004` Fuel is complete, independently re-reviewed, merged, deployed, and production-smoked.
+- Final reviewed PR #46 head: `8e871d225a67f1da2a1c143556c2b34aaf9e90c6`; remediation production checkpoint `6ac3c96d42cd9b9eff15429e4436d24dcad22438`; merge `57f0bb3dd5c9a7e74ee0deb84bb166b215a8706a`.
+- Fresh reviewer rerun: focused Fuel Playwright **10/10 PASS** with retries 0; exact-head PR workflows `33164741371` (E2E smoke) and `33164741375` (test) SUCCESS; `git diff --check` clean and current base unchanged.
+- Post-merge exact-SHA runs: test `33178476395`, E2E `33178476367`, Pages deploy `33178476366` - all SUCCESS. GitHub Pages deployment `6142569782` is `success` for exact merge SHA.
+- Live deployed-bundle 390x844 smoke via Pages root HTTP 200 + client-side `/fuel`, with all REST mocked/no real writes: form x-delta 0; all 11 label/control associations present; Save 71.89x48; Delete 44x44; document width 390; no console/page errors.
+- A direct deep-link production-spec run observed two transient document-overflow assertions while the shared ModuleDock was still settling; after root-to-client navigation and settle, document width equals viewport. Shared shell was unchanged by this WO, so this is recorded as a non-blocking hosting/shell timing observation rather than a Fuel-page regression.
+- Separate Core Engineering finding remains open: imported arbitrary `fuel_type` can reach free-text `fuel.dispense_log` while carbon rollup casts it to `carbon.source_type`. It requires its own data-contract/regression work order.
+- `ENV-MOBILE-001` through `ENV-MOBILE-004` are read-only historical evidence. The next eligible bounded domain-form slice is Garden/Garbage and remains unactivated until this docs-only closeout reaches main.
 
 ## Review Queue — 2026-08-23
 

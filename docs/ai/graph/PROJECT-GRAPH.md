@@ -212,11 +212,12 @@ At this checkpoint:
 - `ENV-MOBILE-003` Water Supply is independently reviewed, merged, deployed, production-smoked, and closed; production `66e86dcb515d411b9e6b858ae89a4109f5ac3bc3`, reviewed head `5cd8f4aa304812868a669bab614177f8a4525c1b`, merge `d3034d83954ec8287b9dab561f7802668207d23e`.
 - Post-merge test/E2E/Pages and deployment `6137172294` are green; live 390px deployed-bundle smoke passed with mocked REST/no real writes and no console/page errors.
 - `frontend/src/lib/water-supply.ts`, schema/RLS, compliance/threshold rules, shared UI/AppShell, other forms, and Digital Twin remain unchanged by the closed slice.
-- `ENV-MOBILE-004` Fuel is the active critical-path slice and is `REVIEW_REQUESTED` at production checkpoint `413d435cf780ee6b809175d15fc2b86a55baf01d`; focused Fuel E2E 8/8, full Playwright 81/81, Vitest 202/202 and build/typecheck gates pass.
-- GPT owns only Fuel page/test responsive scope + bounded evidence/status. `frontend/src/lib/fuel.ts`, import adapter, carbon rollup/view, schema/RLS/migrations, shared UI/AppShell, other forms, and Digital Twin remain unchanged/read-only.
-- GLM-5.3 MAX may run a parallel read-only Fuel Core Engineering audit with no mutable scope. The free-text import `fuel_type` → `carbon.source_type` cast risk is a separate contract issue, not part of mobile remediation.
-- Garden/Garbage and later mutable domain-form slices must not start until Fuel passes independent review, CI, merge/deploy verification, and durable closure; read-only Core audits may proceed in parallel with no mutable ownership.
+- `ENV-MOBILE-004` Fuel is independently reviewed, merged, deployed, production-smoked, and closed; production `413d435cf780ee6b809175d15fc2b86a55baf01d`, remediation `6ac3c96d42cd9b9eff15429e4436d24dcad22438`, reviewed head `8e871d225a67f1da2a1c143556c2b34aaf9e90c6`, merge `57f0bb3dd5c9a7e74ee0deb84bb166b215a8706a`.
+- Post-merge test/E2E/Pages are green and deployment `6142569782` is successful for exact merge SHA; live 390px root-to-client Fuel smoke passed with mocked REST/no real writes, semantic label associations, 44px delete target, and no settled document overflow.
+- `frontend/src/lib/fuel.ts`, import adapter, carbon rollup/view, schema/RLS/migrations, shared UI/AppShell, other forms, and Digital Twin remain unchanged/read-only by the closed Fuel slice.
+- Separate Core finding remains: free-text imported `fuel_type` can conflict with the `carbon.source_type` cast. It requires a separate Core Engineering contract/regression lane and is not folded into mobile convergence.
+- Garden/Garbage is the next critical-path candidate but must first establish a bounded work order/claim and phone-width source-reality baseline after this closeout reaches main.
 
 Current critical-path handoff:
 
-`ENV-MOBILE-001 COMPLETE → ENV-MOBILE-002 Chemical COMPLETE → ENV-MOBILE-003 Water Supply COMPLETE → ENV-MOBILE-004 Fuel REVIEW_REQUESTED → independent review → CI → merge/deploy/closure → Garden/Garbage`
+`ENV-MOBILE-001 COMPLETE -> ENV-MOBILE-002 Chemical COMPLETE -> ENV-MOBILE-003 Water Supply COMPLETE -> ENV-MOBILE-004 Fuel COMPLETE -> docs closeout on main -> Garden/Garbage audit/baseline`
