@@ -1,6 +1,6 @@
 # REPO-HEALTH-100-R2 — 2026-08-28 repo-health loop
 
-Status: RE_REVIEW_REQUESTED
+Status: CLOSED
 Owner: GPT-5.6 Sol
 Branch/worktree: `docs/repo-health-100-r2` / `A:\GitHub\envww-repo-health-100-r2`
 Original base: `origin/main@19eb31ff725e746a1e5856db5c9e86badd1c725b`
@@ -91,3 +91,17 @@ Remove every verified Node-20 GitHub Action runtime residue from the active work
 ## Stop / review gate
 
 After remediation this slice stops at `REVIEW_REQUESTED`; implementation owner does not self-merge. A fresh reviewer must verify the exact workflow diff and exact-head CI, then owns merge. After merge/fetch, the lead must verify exact-main test/E2E/Pages annotations, record closure in the repo-health report, and continue the next bounded defect lane.
+
+## Final review / merge / post-merge closure — 2026-08-30
+
+- Fresh independent GLM-5.3 MAX read-only review: **APPROVED** at exact PR head `42e585a2e1e7780eb058cd32eecf03ebb246eabe`; reviewer independently verified the 9-file scope, workflow semantics/default preservation, upstream Node-24-era action manifests, checker 14/14, repository scan, and exact-head annotations.
+- Lead re-audit before merge: remote PR head still `42e585a...`, base `34d656888f589a6e86adc9ce83a5e69959c871f0`, no unresolved review threads; exact-head `scripts`/smoke checks were green and annotations contained no Node-20 warning.
+- PR #49 merged with expected-head protection as `64aae63f4739e39528044c25d3e9f9145ffa04b0`. `origin/main` was fetched and both the reviewed head and merge commit were verified as ancestors of current main.
+- Exact-main post-merge `test` run `33272276256`: **SUCCESS**; scripts job had zero annotations.
+- Exact-main E2E run `33272276111`: **SUCCESS, 95/95 PASS**; annotation contained only the Playwright pass summary and no Node-20 warning.
+- Exact-main Pages run `33272276131`: build/deploy/smoke **SUCCESS**; smoke annotation = `All smoke checks passed`; no Node-20 warning.
+- GitHub Pages deployment `6159528625`: **success** for exact SHA `64aae63f...` at the production Pages environment.
+- The earlier single PFD keyboard flake notice was confined to one pre-merge exact-head smoke run; clean exact-main post-merge E2E passed 95/95, so no retry/suppression was added to this workflow-only slice.
+- External review result has been ingested here; `A-Wiki/inbox/ENV-PR49-GLM53-REVIEW.md` is supporting evidence, not project authority.
+
+**Closure:** `REPO-HEALTH-100-R2` is VERIFIED/CLOSED. Next active critical lane is `SEC-DEPS-001` base-sync and re-verification; Fuel/Garbage Core remain serialized behind the security hygiene lane.

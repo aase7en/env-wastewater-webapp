@@ -1,6 +1,6 @@
 # ENV Repo Health R2 — 2026-08-28
 
-Status: RE_REVIEW_REQUESTED
+Status: CLOSED / VERIFIED
 Branch: `docs/repo-health-100-r2`
 Original base: `origin/main@19eb31ff725e746a1e5856db5c9e86badd1c725b`
 Current-base sync: `origin/main@34d656888f589a6e86adc9ce83a5e69959c871f0` via merge `ab38204`
@@ -103,9 +103,19 @@ No warning was suppressed or weakened in this slice.
 
 ## Next bounded lanes
 
-1. Finish CI-runtime action upgrade through current-base exact-head CI/manual E2E + fresh review + merge/fetch.
-2. Core Fuel/Garbage carbon-contract repair before activating Garbage mobile convergence.
-3. Dependency security remediation, prioritizing `pdfjs-dist` and React Router high findings.
-4. Auth/import/effect lint correctness fixes, then low-risk warning cleanup.
-5. SSoT historical-status reconciliation after Garden closeout.
-6. Re-audit primary local checkout only with explicit ownership knowledge; never destroy unknown untracked files.
+1. `SEC-DEPS-001`: integrate exact current `main` after PR #49, reconcile shared defect memory, rerun clean-install audits + PDF/import/router/full deterministic gates, then stop at fresh independent review before merge.
+2. Fuel Core: repair the imported free-text `fuel_type` / `carbon.source_type` contract with regression-first evidence.
+3. Garbage Core/data-contract audit and repair: reconcile canonical `segregation_type`, legacy `waste_type`, import, manifest/compliance, and carbon semantics before Garbage UI mutation.
+4. Garbage responsive/mobile UI only after its Core contract is verified and merged.
+5. Lint correctness lane, then agent-operations/SSoT coordination work and final repo-health audit as bounded non-overlapping work orders.
+6. Re-audit the protected primary local checkout only with explicit ownership knowledge; never destroy unknown untracked files.
+
+## Final closure — PR #49
+
+Fresh independent GLM-5.3 MAX review **APPROVED** exact head `42e585a2e1e7780eb058cd32eecf03ebb246eabe`. The lead independently rechecked remote head/base, the 9-file diff boundary, runtime checker, mergeability and exact-head annotations before merge.
+
+PR #49 merged with expected-head protection as `64aae63f4739e39528044c25d3e9f9145ffa04b0`. After fetch, current `origin/main` equals that merge SHA and contains the reviewed head. Exact-main evidence: `test` run `33272276256` SUCCESS; E2E run `33272276111` SUCCESS with **95/95 PASS**; Pages run `33272276131` SUCCESS for build/deploy/live static smoke; deployment `6159528625` SUCCESS for the exact merge SHA. Post-merge check annotations contain no Node-20 runtime warning.
+
+The pre-merge one-off PFD keyboard flake notice remains a separate test-stability observation; the exact-main full E2E run was clean and no retry/suppression was introduced. The external review inbox file has been ingested into this canonical report/work order and is supporting evidence only.
+
+**Result:** CI-runtime hygiene goal VERIFIED/CLOSED. Security dependency remediation is now the active serialized hygiene lane before Fuel/Garbage Core work.
