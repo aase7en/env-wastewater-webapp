@@ -1,9 +1,10 @@
 # REPO-HEALTH-100-R2 — 2026-08-28 repo-health loop
 
-Status: REVIEW_REQUESTED
+Status: RE_REVIEW_REQUESTED
 Owner: GPT-5.6 Sol
 Branch/worktree: `docs/repo-health-100-r2` / `A:\GitHub\envww-repo-health-100-r2`
-Base: `origin/main@19eb31ff725e746a1e5856db5c9e86badd1c725b`
+Original base: `origin/main@19eb31ff725e746a1e5856db5c9e86badd1c725b`
+Current-base sync: `origin/main@34d656888f589a6e86adc9ce83a5e69959c871f0` via merge `ab38204`
 
 ## Goal
 
@@ -68,6 +69,10 @@ Remove verified repository/CI hygiene defects without overlapping the active Gar
 - lint: 12 existing warnings / 0 errors.
 - production build: PASS.
 - `git diff --check`: PASS.
+- Current-base merge `ab38204`: PASS, no conflict and no scope expansion in `origin/main...HEAD`.
+- Current-base focused Chemical Playwright: 7/7 PASS after correcting the local test-profile contamination.
+- Current-base full Playwright: 95/95 PASS with the non-secret project-ref test URL and `test-anon-key`.
+- Invalid E2E evidence from the leaked `example.invalid` Vitest env/orphan Vite reuse is explicitly excluded from product-regression evidence and preserved in the repo-health report as a harness lesson.
 - Dependency/security and Core data-contract findings are recorded in `reports/repo-health-2026-08-28-r2.md` and explicitly routed out of this diff.
 
 ## Stop / review gate

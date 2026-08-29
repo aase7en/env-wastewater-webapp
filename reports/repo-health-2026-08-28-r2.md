@@ -1,15 +1,16 @@
 # ENV Repo Health R2 — 2026-08-28
 
-Status: REVIEW_REQUESTED
+Status: RE_REVIEW_REQUESTED
 Branch: `docs/repo-health-100-r2`
-Base: `origin/main@19eb31ff725e746a1e5856db5c9e86badd1c725b`
+Original base: `origin/main@19eb31ff725e746a1e5856db5c9e86badd1c725b`
+Current-base sync: `origin/main@34d656888f589a6e86adc9ce83a5e69959c871f0` via merge `ab38204`
 WO: `docs/work-orders/REPO-HEALTH-100-R2.md`
 
 ## Goal and parallel boundary
 
-This audit runs in parallel with `ENV-MOBILE-005` Garden review. It does not edit Garden code/tests/SSoT, `.serena/`, schema/RLS/carbon/data adapters, raw hospital data, or secrets.
+This audit began in parallel with `ENV-MOBILE-005` Garden review and never edited Garden-owned code/tests/SSoT, `.serena/`, schema/RLS/carbon/data adapters, raw hospital data, or secrets.
 
-Garden remains frozen at PR #48 review head `39f25a92c0bbd10365c618c4477d4cca34f52f1f`; Codex/fresh reviewer owns its review/merge/closure.
+Garden is now closed: PR #48 merged at `001ef532b1203b3bd2def7c28bdd6845a948dec8`, its post-merge test/E2E/Pages checks passed, and docs-only closeout PR #50 merged at `34d656888f589a6e86adc9ce83a5e69959c871f0`. PR #49 merged that current main into its branch before re-review; the PR diff remains limited to the four workflow files plus this WO/report.
 
 ## Closed remote clutter
 
@@ -17,7 +18,7 @@ PR #8 was a stale July draft that proposed an ENV `AGENTS.md` pointer to `A-Wiki
 
 ## Local checkout health
 
-Primary checkout `A:\GitHub\env-wastewater-webapp` is `main@7d73814782f8475731d886f6826da5bc9af36c11`, 110 commits behind current `origin/main` at audit time.
+Primary checkout `A:\GitHub\env-wastewater-webapp` is `main@7d73814782f8475731d886f6826da5bc9af36c11`, 119 commits behind current `origin/main` at the 2026-08-29 re-audit checkpoint.
 The primary checkout has no tracked diff but has extensive unknown untracked state (`.serena/`, design assets, firmware, docs, a migration and other files). Ownership is unknown. Per repository safety rules it is protected: no reset/clean/delete/blind stash/unsafe fast-forward was performed.
 
 Current safe local execution uses isolated worktrees based on current remote state, including `A:\GitHub\envww-review-mobile-001` and `A:\GitHub\envww-repo-health-100-r2`.
@@ -47,6 +48,10 @@ Bounded remediation changes only first-party action majors: checkout `v4 -> v7`,
 - lint: **12 existing warnings / 0 errors**.
 - production build: PASS; existing chunk-size advisory only.
 - `git diff --check`: PASS before review checkpoint.
+- Current-base merge `ab38204` integrated `origin/main@34d656888f589a6e86adc9ce83a5e69959c871f0` without conflict; `origin/main...HEAD` still contains only four workflow files plus this WO/report.
+- Current-base focused Chemical E2E: **7/7 PASS** (`--retries=0 --workers=1`).
+- Current-base full Playwright: **95/95 PASS** (`--retries=0`).
+- A first full-E2E attempt was invalidated because the Vitest-only dummy `VITE_SUPABASE_URL=https://example.invalid` leaked into Playwright and an orphan Vite process on port 5173 was reused. This mismatched the fixture's project-ref-specific Supabase storage key and caused cross-spec auth failures. After terminating only that owned orphan server and using the non-secret project-ref test URL plus `test-anon-key`, the Chemical focus and full suite passed. The invalid run is recorded as harness evidence, not product regression.
 
 The first Vitest attempt in this isolated worktree correctly failed two module-load suites because no `.env` was copied in. No secret was copied. The suite was rerun with dummy test-only `VITE_SUPABASE_URL` and `VITE_SUPABASE_ANON_KEY` and passed 202/202.
 
@@ -94,7 +99,7 @@ No warning was suppressed or weakened in this slice.
 
 ## Next bounded lanes
 
-1. Finish CI-runtime action upgrade through independent review + exact-head CI + merge/fetch.
+1. Finish CI-runtime action upgrade through current-base exact-head CI/manual E2E + fresh review + merge/fetch.
 2. Core Fuel/Garbage carbon-contract repair before activating Garbage mobile convergence.
 3. Dependency security remediation, prioritizing `pdfjs-dist` and React Router high findings.
 4. Auth/import/effect lint correctness fixes, then low-risk warning cleanup.
