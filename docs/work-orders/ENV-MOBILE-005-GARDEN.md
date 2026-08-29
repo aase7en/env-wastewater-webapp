@@ -1,6 +1,6 @@
 # ENV-MOBILE-005 - Garden Mobile Convergence
 
-Status: RE-REVIEW_REQUESTED
+Status: COMPLETE / MERGED / DEPLOYED / PRODUCTION-SMOKED
 Owner: GPT-5.6 Sol
 Independent reviewer / merge owner: fresh reviewer context after implementation stops
 Parent roadmap: `ENV-MOBILE-002+` Domain form convergence
@@ -140,6 +140,17 @@ Four new assertions failed before production remediation (**4 FAIL / 8 PASS**). 
 
 Fresh verification: focused Garden **12/12 PASS**; full Playwright **95/95 PASS**; Vitest **202/202 PASS**; standalone typecheck PASS; production build PASS; lint **12 baseline warnings / 0 errors**; targeted Garden lint 0/0; `git diff --check` PASS. REST is fully mocked in Garden E2E and no real writes occur.
 
+## Final review / merge / production closure - 2026-08-29
+
+- Fresh Standards + Spec/UX review APPROVED exact final head `327ae8b541f3e29f5727acc7edb3ed76b12f20bc`; approval record `5055767858`; focused reviewer Garden **12/12 PASS**.
+- Exact-head test `33219010216` and E2E `33219010234` succeeded; full CI Playwright was **95/95** and the tested synthetic-merge tree was identical to the reviewed head.
+- PR #48 merged as `001ef532b1203b3bd2def7c28bdd6845a948dec8`.
+- Exact merge-SHA test `33219682337`, E2E `33219682275` (**95/95**), and Pages `33219682308` succeeded; deployment `6150037544` reports success for the exact merge SHA.
+- Live 390x844 root-to-client Pages smoke loaded deployed asset `assets/index-BIvntuDt.js` and found the new error/field/history markers. It verified 9/9 label associations, local history containment + keyboard ArrowRight reachability, Save 71.89x48, Delete 44x44, blank-date zero POST + persistent associated error/focus/value preservation, one corrected intercepted POST, document/body width 390, and zero browser errors. Every REST request was intercepted; no real write occurred.
+- Direct deep-link production execution showed a first-frame 365px document at a 360px viewport during the GitHub Pages HTTP-404-to-SPA transition, then settled to 360 within 25 ms. The stable root-to-client path did not reproduce it; this remains a separately routed hosting/test-timing observation.
+
+Garden data/query/schema/RLS/carbon/shared-shell semantics remain unchanged. The lane is closed.
+
 ## Completion gate
 
-Implementation/remediation owner stops at `RE-REVIEW_REQUESTED`. A fresh reviewer must inspect the exact pushed PR head/diff, rerun focused evidence, verify exact-head CI, and own approval/merge. After merge/deploy/live verification, close the lane in a docs-only checkpoint before activating Garbage.
+Satisfied. Any future Garden change requires a new bounded work order/claim. Garbage may proceed only after its separate Core data-contract audit resolves the routed classification/carbon semantics.

@@ -216,10 +216,10 @@ At this checkpoint:
 - Post-merge test/E2E/Pages are green and deployment `6142569782` is successful for exact merge SHA; live 390px root-to-client Fuel smoke passed with mocked REST/no real writes, semantic label associations, 44px delete target, and no settled document overflow.
 - `frontend/src/lib/fuel.ts`, import adapter, carbon rollup/view, schema/RLS/migrations, shared UI/AppShell, other forms, and Digital Twin remain unchanged/read-only by the closed Fuel slice.
 - Separate Core finding remains: free-text imported `fuel_type` can conflict with the `carbon.source_type` cast. It requires a separate Core Engineering contract/regression lane and is not folded into mobile convergence.
-- `ENV-MOBILE-005` Garden is `RE-REVIEW_REQUESTED` after exact-head review found hidden-overflow history containment and required-date defects; remediation checkpoint `e137cd468f628961dcfb697f0470cb3da76062bd` is GREEN at focused Garden 12/12, full Playwright 95/95, Vitest 202/202, typecheck/build and diff-check pass.
-- Garden production scope remains page-local responsive/accessibility/touch/validation only; Garden data/schema/carbon/shared shell remain read-only. Fresh reviewer owns exact-SHA review/CI/merge/deploy/closure.
-- Garbage remains inactive/read-only until Garden closes; its dual waste classification and manifest/compliance semantics require separate Core scrutiny before mutation.
+- `ENV-MOBILE-005` Garden is independently reviewed, merged, deployed, production-smoked, and closed; final reviewed head `327ae8b541f3e29f5727acc7edb3ed76b12f20bc`, PR #48 merge `001ef532b1203b3bd2def7c28bdd6845a948dec8`.
+- Exact merge-SHA test/E2E/Pages are green; deployment `6150037544` succeeded; live 390px root-to-client smoke passed with mocked REST/no real writes, 9/9 labels, contained keyboard-scrollable history, required-date zero-POST recovery, and no browser errors.
+- Garden data/schema/RLS/carbon/shared shell remain unchanged. Garbage remains inactive until its dual classification + manifest/compliance/carbon semantics pass a separate Core audit and remediation.
 
 Current critical-path handoff:
 
-`ENV-MOBILE-001 COMPLETE -> ENV-MOBILE-002 Chemical COMPLETE -> ENV-MOBILE-003 Water Supply COMPLETE -> ENV-MOBILE-004 Fuel COMPLETE -> ENV-MOBILE-005 Garden RE-REVIEW_REQUESTED -> fresh exact-SHA review -> CI -> merge/deploy/closure -> Garbage audit`
+`ENV-MOBILE-001 COMPLETE -> ENV-MOBILE-002 Chemical COMPLETE -> ENV-MOBILE-003 Water Supply COMPLETE -> ENV-MOBILE-004 Fuel COMPLETE -> ENV-MOBILE-005 Garden COMPLETE -> repo-health exact-SHA review/remediation -> Fuel/Garbage Core contracts -> Garbage mobile eligibility`

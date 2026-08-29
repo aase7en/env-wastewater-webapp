@@ -1,6 +1,6 @@
 # UTH[AI]-ENV — Defect Memory
 
-Last updated: 2026-08-28
+Last updated: 2026-08-29
 Status: ACTIVE REUSABLE FAILURE MEMORY
 
 Purpose: retain only **reusable defect lessons** that should change how future ENV work is designed, tested, reviewed, or audited. This file is repository memory; chat memory is not a substitute.
@@ -128,6 +128,24 @@ Source record:
 **Regression/evidence:** `frontend/tests/e2e/daily-form-mobile.spec.ts` failed-save regression; ENV-MOBILE-001D evidence at `cdaa1097022b7fbfedfff8302a628af630f6cfb1`; remediation `b7c2623168da4d6fac8990a7f90180ee1b1326f1`; final independent repeat 20/20 PASS at PR head `f7af3027dafe52f06719a2e08de993a31045162f`.
 
 **Domains affected:** mobile forms, async mutations, conditional validation/error banners, accessibility focus management.
+
+---
+
+## ENV-DEFECT-007 — Hidden document overflow can make local containment false-green
+
+**Failure class:** responsive UI / false-green geometry assertion / action reachability.
+
+**Symptom:** a mobile table and most of its 44px Delete action escaped the owning card/viewport, while `documentElement.scrollWidth <= innerWidth` still passed.
+
+**Root cause:** an ancestor (`AppShell` main) used `overflow-x: hidden`, clipping escaped content and suppressing document-level overflow without creating a usable local scroll/reflow boundary.
+
+**How detected:** independent ENV-MOBILE-005 review measured the Garden card, table, viewport, and action bounds at 320/360px rather than trusting document width alone.
+
+**Prevention rule:** for wide content, assert the actual local boundary against its card and viewport, assert `scrollWidth/clientWidth` + overflow behavior, and prove the full terminal action is reachable by keyboard/touch. A document-width assertion is supplemental, never sufficient when an ancestor clips overflow.
+
+**Regression/evidence:** `frontend/tests/e2e/garden-mobile.spec.ts` local boundary/table/action geometry and ArrowRight reachability; Garden remediation `e137cd468f628961dcfb697f0470cb3da76062bd`; reviewed PR #48 head `327ae8b541f3e29f5727acc7edb3ed76b12f20bc`.
+
+**Domains affected:** every mobile table/chart/canvas, nested scroll regions, AppShell-contained forms, keyboard action reachability.
 
 ---
 
