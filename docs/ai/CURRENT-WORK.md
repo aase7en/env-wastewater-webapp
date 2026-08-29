@@ -18,7 +18,7 @@ Allowed statuses:
 
 ## Current execution state - 2026-08-29
 
-- **ACTIVE `SEC-DEPS-001`** - dependency security remediation on `fix/security-deps-001` from `origin/main@34d656888f589a6e86adc9ce83a5e69959c871f0`; owns package/lock + PDF import scripting hardening/test + bounded security SSoT only. Scratch simulation reached npm audit 0 without force/downgrade; production mutation has not started at this claim checkpoint.
+- **ACTIVE `SEC-DEPS-001` / IMPLEMENTED_AWAITING_BASE_SYNC** - `fix/security-deps-001` from `origin/main@34d656888f589a6e86adc9ce83a5e69959c871f0`; dependency/PDF hardening implementation is locally green (audit 0/0, Vitest 203/203, focused E2E 12/12, full Playwright 96/96 retries=0, typecheck/build PASS). Do not request final review/merge until PR #49 merges and this branch integrates new main.
 - Repo-health PR #49 is a parallel review/release lane. Its remediation now also owns `docs/ai/DEFECT-MEMORY.md`; Security must not edit any PR #49-owned file until #49 is merged and the Security branch has integrated that main.
 - No active mutable production work order. `ENV-MOBILE-001` through `ENV-MOBILE-005` are complete/merged/deployed history.
 - `ENV-MOBILE-005` Garden: original exact-head review `PRR_kwDOTN3Mzc8AAAABLSqMwQ` returned `CHANGES_REQUIRED` for false-green history containment and missing required-date validation; remediation checkpoint `e137cd468f628961dcfb697f0470cb3da76062bd` closed both with regression-first evidence.
@@ -27,7 +27,7 @@ Allowed statuses:
 - Live 390x844 root-to-client deployed-bundle smoke loaded `assets/index-BIvntuDt.js` with the new Garden markers; all 9 labels/IDs passed; history remained inside its card with keyboard local scroll; Save was 71.89x48 and Delete 44x44; blank date made zero POSTs and preserved/focused its associated error; corrected save made one intercepted POST; document/body width stayed 390; no browser errors; all REST was mocked/no-real-write.
 - A direct GitHub Pages deep-link run observed a first-frame hosting transition (`HTTP 404` SPA fallback, document width 365 at a 360 viewport) that settled to 360 within 25 ms. This did not reproduce through the root-to-client production path and is recorded as a separate hosting/test-timing observation, not hidden as a Garden pass.
 - Garden data/query/schema/RLS/carbon behavior, `location_id`/`photo_path` null semantics, shared UI/AppShell, Garbage, other forms, and protected `.serena/` were unchanged.
-- Next safe action: `SEC-DEPS-001` RED security regression -> patched dependency/source GREEN -> full audit/tests/E2E/review. Repo-health #49 continues independently at its review/merge gate; Fuel/Garbage Core follow after these non-overlapping hygiene lanes.
+- Next safe action: obtain PR #49 fresh independent verdict -> merge/verify Pages runtime -> integrate that exact main into `SEC-DEPS-001` -> reconcile defect memory -> rerun security gates -> `REVIEW_REQUESTED`. Fuel/Garbage Core remain serialized after these hygiene lanes.
 
 ## Review Queue — 2026-08-23
 
