@@ -10,7 +10,7 @@ WO: `docs/work-orders/REPO-HEALTH-100-R2.md`
 
 This audit began in parallel with `ENV-MOBILE-005` Garden review and never edited Garden-owned code/tests/SSoT, `.serena/`, schema/RLS/carbon/data adapters, raw hospital data, or secrets.
 
-Garden is now closed: PR #48 merged at `001ef532b1203b3bd2def7c28bdd6845a948dec8`, its post-merge test/E2E/Pages checks passed, and docs-only closeout PR #50 merged at `34d656888f589a6e86adc9ce83a5e69959c871f0`. PR #49 merged that current main into its branch before re-review; the PR diff remains limited to the four workflow files plus this WO/report.
+Garden is now closed: PR #48 merged at `001ef532b1203b3bd2def7c28bdd6845a948dec8`, its post-merge test/E2E/Pages checks passed, and docs-only closeout PR #50 merged at `34d656888f589a6e86adc9ce83a5e69959c871f0`. PR #49 merged that current main into its branch before re-review. Its remediation contract now also owns a small workflow-runtime checker/test and one defect-memory entry.
 
 ## Closed remote clutter
 
@@ -34,7 +34,9 @@ Verified upstream on 2026-08-28:
 - `actions/setup-node` latest release is v7.0.0;
 - current GitHub guidance is the Node-24 action generation.
 
-Bounded remediation changes only first-party action majors: checkout `v4 -> v7`, setup-node `v4 -> v7`. Existing triggers, permissions, project Node version, cache settings, secrets, deploy logic and pinned third-party actions are unchanged.
+The first review at exact SHA `3b61f1c3053e4d0cb8fc0e69a82aa6d18752420a` found the original conclusion was incomplete: green check-run `99035942437` still emitted a Node-20 warning for `astral-sh/setup-uv@v3`. The latest main Pages run also exposed the remaining artifact/deploy chain. Review `5056855963` therefore recorded `CHANGES_REQUIRED`; earlier prose claiming the annotation was absent is superseded.
+
+Official upstream manifests verified on 2026-08-29 identify the Node-24-era replacements: `astral-sh/setup-uv` v10.0.1 at commit `20cfd1bf945f4377ade1205e4dbc17946fc9a30d`, `actions/upload-artifact@v7`, `actions/upload-pages-artifact@v5` (composite over upload-artifact v7), and `actions/deploy-pages@v5`. Because setup-uv has no moving `v10` tag, the workflow pins that exact verified commit. Independent manifest review also found three default changes that would otherwise alter behavior: setup-uv v10 enables cache automatically and defaults downloads to Astral's mirror, while upload-pages-artifact v5 excludes hidden files. The workflow therefore sets `enable-cache: false`, `download-from-astral-mirror: false`, and `include-hidden-files: true`, preserving the old cache/download path and the deployed `.nojekyll` file. Other inputs, triggers, permissions, project Node version, secrets and deployment semantics remain unchanged.
 ## Verification of CI-runtime slice
 
 - All five workflow YAML files parse successfully with PyYAML.
@@ -52,6 +54,8 @@ Bounded remediation changes only first-party action majors: checkout `v4 -> v7`,
 - Current-base focused Chemical E2E: **7/7 PASS** (`--retries=0 --workers=1`).
 - Current-base full Playwright: **95/95 PASS** (`--retries=0`).
 - A first full-E2E attempt was invalidated because the Vitest-only dummy `VITE_SUPABASE_URL=https://example.invalid` leaked into Playwright and an orphan Vite process on port 5173 was reused. This mismatched the fixture's project-ref-specific Supabase storage key and caused cross-spec auth failures. After terminating only that owned orphan server and using the non-secret project-ref test URL plus `test-anon-key`, the Chemical focus and full suite passed. The invalid run is recorded as harness evidence, not product regression.
+- Remediation RED proof against exact reviewed head `3b61f1c`: runtime checker exits 1 with exactly four mapped stale references (`setup-uv@v3`, `upload-artifact@v4`, `upload-pages-artifact@v3`, `deploy-pages@v4`).
+- Remediation GREEN before push: runtime-checker tests **14/14 PASS**; repository runtime scan PASS for **5 workflow files**; workflow YAML parse **5/5 PASS**; split-SQL regression PASS; diff-check PASS. Frontend source is unchanged by this remediation; exact-head GitHub E2E remains the release proof after push.
 
 The first Vitest attempt in this isolated worktree correctly failed two module-load suites because no `.env` was copied in. No secret was copied. The suite was rerun with dummy test-only `VITE_SUPABASE_URL` and `VITE_SUPABASE_ANON_KEY` and passed 202/202.
 

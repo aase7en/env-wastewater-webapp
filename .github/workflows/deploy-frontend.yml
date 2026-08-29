@@ -72,9 +72,12 @@ jobs:
         working-directory: frontend
         run: touch dist/.nojekyll
 
-      - uses: actions/upload-pages-artifact@v3
+      - uses: actions/upload-pages-artifact@v5
         with:
           path: frontend/dist
+          # v5 excludes hidden files by default. Keep the generated .nojekyll
+          # in the Pages artifact so deployment semantics remain unchanged.
+          include-hidden-files: true
 
   deploy:
     needs: build
@@ -84,7 +87,7 @@ jobs:
       url: ${{ steps.deployment.outputs.page_url }}
     steps:
       - id: deployment
-        uses: actions/deploy-pages@v4
+        uses: actions/deploy-pages@v5
 
   # ─────────────────────────────────────────────────────────────────
   # Smoke-test production URL after deploy.
