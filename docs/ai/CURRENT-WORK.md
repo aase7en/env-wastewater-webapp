@@ -16,16 +16,16 @@ Allowed statuses:
 
 > `CURRENT-WORK.md` is the authoritative task definition. Agents must not silently expand task scope.
 
-## Current execution state - 2026-08-28
+## Current execution state - 2026-08-29
 
-- No production work order is active. `ENV-MOBILE-004` Fuel is complete, independently re-reviewed, merged, deployed, and production-smoked.
-- Final reviewed PR #46 head: `8e871d225a67f1da2a1c143556c2b34aaf9e90c6`; remediation production checkpoint `6ac3c96d42cd9b9eff15429e4436d24dcad22438`; merge `57f0bb3dd5c9a7e74ee0deb84bb166b215a8706a`.
-- Fresh reviewer rerun: focused Fuel Playwright **10/10 PASS** with retries 0; exact-head PR workflows `33164741371` (E2E smoke) and `33164741375` (test) SUCCESS; `git diff --check` clean and current base unchanged.
-- Post-merge exact-SHA runs: test `33178476395`, E2E `33178476367`, Pages deploy `33178476366` - all SUCCESS. GitHub Pages deployment `6142569782` is `success` for exact merge SHA.
-- Live deployed-bundle 390x844 smoke via Pages root HTTP 200 + client-side `/fuel`, with all REST mocked/no real writes: form x-delta 0; all 11 label/control associations present; Save 71.89x48; Delete 44x44; document width 390; no console/page errors.
-- A direct deep-link production-spec run observed two transient document-overflow assertions while the shared ModuleDock was still settling; after root-to-client navigation and settle, document width equals viewport. Shared shell was unchanged by this WO, so this is recorded as a non-blocking hosting/shell timing observation rather than a Fuel-page regression.
-- Separate Core Engineering finding remains open: imported arbitrary `fuel_type` can reach free-text `fuel.dispense_log` while carbon rollup casts it to `carbon.source_type`. It requires its own data-contract/regression work order.
-- `ENV-MOBILE-001` through `ENV-MOBILE-004` are read-only historical evidence. The next eligible bounded domain-form slice is Garden/Garbage and remains unactivated until this docs-only closeout reaches main.
+- No active mutable production work order. `ENV-MOBILE-001` through `ENV-MOBILE-005` are complete/merged/deployed history.
+- `ENV-MOBILE-005` Garden: original exact-head review `PRR_kwDOTN3Mzc8AAAABLSqMwQ` returned `CHANGES_REQUIRED` for false-green history containment and missing required-date validation; remediation checkpoint `e137cd468f628961dcfb697f0470cb3da76062bd` closed both with regression-first evidence.
+- Fresh Standards + Spec/UX reviews APPROVED exact PR #48 head `327ae8b541f3e29f5727acc7edb3ed76b12f20bc`; commit-anchored approval record `5055767858`. Focused reviewer rerun **12/12 PASS** and exact-head CI runs `33219010216` / `33219010234` passed, including full Playwright **95/95**.
+- PR #48 merged as `001ef532b1203b3bd2def7c28bdd6845a948dec8`. Post-merge exact-SHA test `33219682337`, E2E `33219682275` (**95/95**), and Pages `33219682308` are SUCCESS; deployment `6150037544` is successful for the exact merge SHA.
+- Live 390x844 root-to-client deployed-bundle smoke loaded `assets/index-BIvntuDt.js` with the new Garden markers; all 9 labels/IDs passed; history remained inside its card with keyboard local scroll; Save was 71.89x48 and Delete 44x44; blank date made zero POSTs and preserved/focused its associated error; corrected save made one intercepted POST; document/body width stayed 390; no browser errors; all REST was mocked/no-real-write.
+- A direct GitHub Pages deep-link run observed a first-frame hosting transition (`HTTP 404` SPA fallback, document width 365 at a 360 viewport) that settled to 360 within 25 ms. This did not reproduce through the root-to-client production path and is recorded as a separate hosting/test-timing observation, not hidden as a Garden pass.
+- Garden data/query/schema/RLS/carbon behavior, `location_id`/`photo_path` null semantics, shared UI/AppShell, Garbage, other forms, and protected `.serena/` were unchanged.
+- Next eligible bounded action: finish fresh review/remediation of repo-health PR #49, then resolve the routed Fuel/Garbage Core data-contract defects before activating Garbage responsive/UI mutation.
 
 ## Review Queue — 2026-08-23
 
