@@ -149,6 +149,24 @@ Source record:
 
 ---
 
+## ENV-DEFECT-008 — Green CI can still carry a deprecated Action runtime
+
+**Failure class:** false-green CI / runner compatibility / evidence quality.
+
+**Symptom:** an exact-head check concluded `SUCCESS`, while its annotations warned that a referenced action still targeted deprecated Node 20 and was only being forced onto Node 24. The review report incorrectly claimed the warning was absent because it relied on the green conclusion and selected step output.
+
+**Root cause:** application runtime versions and GitHub Action JavaScript runtimes were treated as the same boundary, and review did not inspect check-run annotations or the composite Pages action chain.
+
+**How detected:** PR #49 exact-head re-review queried annotations for check-run `99035942437` and traced every active `uses:` reference to the official upstream `action.yml` runtime.
+
+**Prevention rule:** inspect exact-SHA check annotations in addition to conclusions; inventory every active action and relevant composite dependency; keep mapped actions at or above the verified Node-24 generation. Never reuse warning-free evidence after HEAD changes.
+
+**Regression/evidence:** `scripts/check_workflow_action_runtimes.py`, its unit tests, and the `test.yml` runtime-regression step. Post-merge Pages annotations remain a required release gate.
+
+**Domains affected:** GitHub Actions, CI/CD, release review, evidence reports.
+
+---
+
 ## Adding future entries
 
 Add a new entry only after the root cause is verified. The entry should change at least one future behavior: a guardrail, test, spec rule, audit item, or implementation pattern.

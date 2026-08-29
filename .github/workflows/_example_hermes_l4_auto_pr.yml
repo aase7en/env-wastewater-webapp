@@ -76,7 +76,7 @@ jobs:
         env:
           DISPATCH_PAYLOAD: ${{ toJson(github.event.client_payload) }}
 
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v7
 
       - name: Apply patch on a fix branch
         # patch_diff MUST have been PHI-scrubbed on the Pi5 before Hermes
