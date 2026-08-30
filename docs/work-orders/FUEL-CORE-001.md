@@ -1,15 +1,32 @@
 # FUEL-CORE-001 - fuel_type data honesty and carbon rollup safety
 
-Status: CLAIMED
+Status: REVIEW_REQUESTED
 Owner: GLM-5.3 MAX (Core Engineering / Track Z)
 Lead / review owner: GPT-5.6 Sol
 Repository: `aase7en/env-wastewater-webapp`
 Worktree: `A:\\GitHub\\envww-fuel-core-001`
 Branch: `fix/fuel-core-001`
 Base: `origin/main@2db209e88f61b4471784a6540dc67a65930fb894`
-Exact HEAD: `PENDING_CHECKPOINT`
+Exact HEAD: literal SHA frozen in the pushed PR head + external review packet per governance §17
 Handoff path: `docs/ai/HANDOFF.md` + temporary external review/implementation packet while active
 Last updated: 2026-08-30
+
+## Implementation evidence — 2026-08-30
+
+- RED (before implementation, focused `fuel.test.ts`): **10 failed / 1 passed** —
+  - `expected 'diesel' to be null` (missing fuel_type fabricated into diesel) ×2;
+  - `expected 'DIESEL' to be 'diesel'` (no canonical normalization);
+  - `token: biodiesel: expected [Function] to throw` (arbitrary token passed through);
+  - migration contract ×6 (no additive hardening migration existed).
+  The 1 pass = canonical values accepted (already correct pre-change).
+  Static defect record: original unsafe cast at `supabase/migrations/20260719000002_v2_unified_rollup.sql:51` (`ef.source = d.fuel_type::carbon.source_type`).
+- Implementation (smallest fail-closed correction):
+  - `frontend/src/lib/import-adapters/fuel.ts` — new `mapFuelType()`: blank/missing → `null` (drops the `?? "diesel"` fabrication); trim/case-fold normalization to the canonical token only; non-canonical non-empty token throws `ประเภทน้ำมันไม่รองรับ (ต้องเป็น diesel/gasoline/lpg/other หรือเว้นว่าง): …` into the existing adapter row-error path before any REST write. No synonym/Thai mapping invented.
+  - `supabase/migrations/20260830000000_fuel_core_001_rollup_safety.sql` — additive `CREATE OR REPLACE VIEW carbon.v_unified_co2e`: fuel branch join changed to `ef.source::text = d.fuel_type` (enum side cast to text). Unknown/legacy values now match no factor (kg_co2e NULL = unknown stays unknown) instead of raising an enum-cast error; canonical values match exactly as before; all other UNION branches reproduced verbatim; no emission-factor data touched.
+- Test-harness notes: the migration contract test strips `--` comments before asserting so the migration's defect-documentation prose cannot mask/trip assertions; assertions bind to executable SQL.
+- GREEN gates: focused `fuel.test.ts` **11/11 PASS**; full Vitest **214/214 PASS**; standalone `tsc -b` PASS; lint **12 pre-existing warnings / 0 errors** (no new); production build PASS (existing chunk-size advisory only); `git diff --check` PASS.
+- Bulk Import E2E: **not practical within this WO's mutable scope** — a new e2e spec file is outside the declared mutable file list, so browser-level proof is deferred rather than scope-expanded; adapter rejection is proven at unit level through the same `mapRow` throw path Bulk Import renders.
+- No real hospital data, no real REST writes, no legacy data cleanup, no UI/schema-RLS/factor changes.
 
 ## Objective
 

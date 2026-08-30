@@ -185,6 +185,24 @@ Source record:
 
 ---
 
+## ENV-DEFECT-010 — Unknown categorical data must stay unknown at every boundary
+
+**Failure class:** data honesty / import validation / SQL enum boundary.
+
+**Symptom:** importing a Fuel row with a missing `fuel_type` silently classified it as `diesel`, any arbitrary non-empty text passed validation, and the unified carbon view cast that free text to `carbon.source_type` inside its JOIN — so one legacy/imported dirty value could crash every carbon surface reading `v_unified_co2e` (or, pre-cast, quietly misclassify fuel).
+
+**Root cause:** an import adapter treated "missing categorical value" as "default categorical value" (`?? "diesel"`), and a view compared a free-text column to an enum column via text→enum cast instead of comparing the enum side as text.
+
+**How detected:** FUEL-CORE-001 Core audit (read-only schema→adapter→view trace) followed by RED-first regression: `expected 'diesel' to be null`, `token: biodiesel … to throw`, and a static migration contract asserting the executable SQL contains no `d.fuel_type::carbon.source_type` cast.
+
+**Prevention rule:** categorical imports fail closed — blank/missing stays `null`, only canonical values pass (trim/case normalization at most), and everything else errors the row before any write. SQL joining a free-text column to an enum column must cast the enum side to text (`ef.source::text = d.fuel_type`) so unknown values match nothing instead of erroring or being reclassified. Never default an unknown category to a real value.
+
+**Regression/evidence:** `frontend/src/lib/import-adapters/fuel.test.ts` (adapter honesty + migration static contract); `supabase/migrations/20260830000000_fuel_core_001_rollup_safety.sql`; FUEL-CORE-001 WO evidence.
+
+**Domains affected:** bulk import adapters, carbon rollup/views, any free-text column feeding enum comparisons (watch other domains' legacy text fields).
+
+---
+
 ## Adding future entries
 
 Add a new entry only after the root cause is verified. The entry should change at least one future behavior: a guardrail, test, spec rule, audit item, or implementation pattern.
