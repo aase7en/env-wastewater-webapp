@@ -1,23 +1,33 @@
 # CURRENT WORK
 
-Status: IDLE
+Status: REVIEW_REQUESTED
 
 Allowed statuses:
 
 - IDLE
 - DESIGNING
 - READY_FOR_IMPLEMENTATION
+- READY
+- CLAIMED
 - IMPLEMENTING
+- VERIFYING
 - REVIEW_REQUESTED
 - CHANGES_REQUIRED
 - RE-REVIEW_REQUESTED
 - APPROVED
+- MERGE_READY
+- MERGED
+- POSTMERGE_VERIFY
+- CLOSED
 - BLOCKED
+- DECISION_REQUIRED
+- HUMAN_ACTION_REQUIRED
 
 > `CURRENT-WORK.md` is the authoritative task definition. Agents must not silently expand task scope.
 
 ## Current execution state - 2026-08-30
 
+- **ACTIVE `ENV-AGENT-OPS-001` / REVIEW_REQUESTED** - governance-only foundation on `docs/env-agent-ops-001` at worktree `A:\\GitHub\\envww-agent-ops-001`, base `origin/main@817266d4ee74b95fbf23ee97c96bf8367715d615`. Owner/lead: GPT-5.6 Sol. Mutable scope is coordination SSoT/protocol only; production code, schema/RLS/carbon/domain UI and `.serena/**` are forbidden. Contract: `docs/work-orders/ENV-AGENT-OPS-001.md`. Exact review HEAD will be frozen from actual pushed remote state in the PR/review packet.
 - **CLOSED `SEC-DEPS-001`** - reviewed exact head `1d41e0896dd4a8d32532202e4b5f4ca0f70e4310` received fresh independent GLM-5.3 MAX **APPROVED**; exact-head PR E2E passed **96/96**. PR #51 merged as `4e8b4fe90354c3e25939c940a74e6ea47f3fbf26`. Post-merge exact-SHA test, full E2E, Pages build/deploy and deployment smoke are SUCCESS; deployment `6163951586` is SUCCESS. No real environmental data writes were used.
 - Repo-health PR #49 is CLOSED/VERIFIED; PR #52 ingested its final review/post-merge evidence into canonical SSoT. `docs/ai/DEFECT-MEMORY.md` is now available to the Security lane after the additive main integration; prior ENV-DEFECT-008 history is preserved.
 - No active mutable production work order. `ENV-MOBILE-001` through `ENV-MOBILE-005` are complete/merged/deployed history.
@@ -27,7 +37,7 @@ Allowed statuses:
 - Live 390x844 root-to-client deployed-bundle smoke loaded `assets/index-BIvntuDt.js` with the new Garden markers; all 9 labels/IDs passed; history remained inside its card with keyboard local scroll; Save was 71.89x48 and Delete 44x44; blank date made zero POSTs and preserved/focused its associated error; corrected save made one intercepted POST; document/body width stayed 390; no browser errors; all REST was mocked/no-real-write.
 - A direct GitHub Pages deep-link run observed a first-frame hosting transition (`HTTP 404` SPA fallback, document width 365 at a 360 viewport) that settled to 360 within 25 ms. This did not reproduce through the root-to-client production path and is recorded as a separate hosting/test-timing observation, not hidden as a Garden pass.
 - Garden data/query/schema/RLS/carbon behavior, `location_id`/`photo_path` null semantics, shared UI/AppShell, Garbage, other forms, and protected `.serena/` were unchanged.
-- Next safe action: activate the minimal `ENV-AGENT-OPS-001` governance foundation on a fresh worktree/branch, extending existing SSoT rather than creating a parallel control-plane. After that gate is reviewed/merged, proceed to Fuel Core, then Garbage Core/data-contract, then Garbage UI.
+- Next safe action: finish `ENV-AGENT-OPS-001` protocol/SSoT foundation -> diff-check/self-review -> checkpoint exact HEAD -> exact-head CI -> fresh independent review. Merge only after approval; then activate Fuel Core, followed by Garbage Core/data-contract and Garbage UI.
 
 ## Review Queue — 2026-08-23
 
