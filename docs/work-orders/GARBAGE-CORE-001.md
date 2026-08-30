@@ -1,13 +1,13 @@
 # GARBAGE-CORE-001 — canonical waste classification and carbon data honesty
 
-Status: REVIEW_REQUESTED
+Status: CLOSED
 Owner: GLM-5.3 MAX (Core Engineering / Track Z)
 Lead / review / merge owner: GPT-5.6 Sol
 Repository: `aase7en/env-wastewater-webapp`
 Worktree: `A:\GitHub\envww-garbage-core-001`
 Branch: `fix/garbage-core-001`
 Base: `origin/main@196d023b9f2f2b3bfb1837ad2ad1bd6d713fde84`
-Exact HEAD: literal SHA frozen in the pushed PR head + external packet per governance §17
+Reviewed exact SHA: `f7d9c82c6d583da01861f06374ac2b0b1c55ccf0` (frozen PR head; any later head would require re-review)
 Handoff: `docs/ai/HANDOFF.md` + temporary external packet while active
 Last updated: 2026-08-31
 
@@ -191,6 +191,17 @@ Post-merge/live verification remains GPT-owned:
 - Full applicable verification passes.
 - Implementation stops at `REVIEW_REQUESTED`; GLM does not merge.
 
+## Closeout evidence — 2026-08-31
+
+- GPT-5.6 Sol independently reviewed and APPROVED exact implementation SHA `f7d9c82c6d583da01861f06374ac2b0b1c55ccf0` after actual remote diff/scope review, focused **15/15**, full Vitest **229/229**, `tsc -b`, lint **12 pre-existing warnings / 0 errors**, build, and `git diff --check` all passed.
+- Independent migration comparison proved all four non-Garbage `carbon.v_unified_co2e` branches remained byte-equivalent to current main; only the Garbage branch changed, now using canonical `segregation_type` and never `c.waste_type`.
+- PR #61 merged with expected-head protection as `a2b7823a09d85bd8e116a37e654d05fdd3b8c012`; reviewed-head ancestry verified.
+- Exact-main CI/CD: test `33342456911`, E2E smoke `33342456910`, and Pages deploy `33342456899` — all SUCCESS.
+- Reviewed migration Git blob `c24cb9f3875448c1a2b61d08b7bee7cdca1ac0f6` matched current main. Fresh current-main Management API probe passed; migration apply returned **3/3 OK**.
+- Live read-only verification: canonical CHECK exists/validated and contains the four allowed values; carbon view uses canonical `segregation_type`, legacy `waste_type` is absent, unclassified semantics are present, chemical/NULL match no waste factor, and both `carbon.v_unified_co2e` + `public.v_unified_co2e` full scans pass.
+- `garbage.collection_log` remained empty throughout; no environmental row insert/update/delete/backfill occurred. Temporary `.env`/`.venv` artifacts created by the live gate were removed.
+- External GLM packet is eligible for `INGESTED_TO_SSOT -> ARCHIVED/CLEARED` after this closeout reaches main.
+
 ## One next safe action
 
-GLM-5.3 MAX reads repo SSoT + this WO, verifies actual git/ownership state, establishes RED/baseline evidence, implements the smallest bounded repair, runs verification, updates SSoT/defect memory, pushes/opens PR, writes the result to the external packet, and stops at `REVIEW_REQUESTED`.
+Activate the bounded Garbage responsive/mobile UI slice from current `origin/main`; preserve the verified canonical `segregation_type` contract and keep schema/factor/RLS semantics out of the visual lane unless new evidence requires a separate Core decision.
