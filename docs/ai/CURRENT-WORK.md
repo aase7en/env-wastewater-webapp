@@ -1,6 +1,6 @@
 # CURRENT WORK
 
-Status: REVIEW_REQUESTED
+Status: IDLE
 
 Allowed statuses:
 
@@ -18,7 +18,7 @@ Allowed statuses:
 
 ## Current execution state - 2026-08-30
 
-- **ACTIVE `SEC-DEPS-001` / REVIEW_REQUESTED** - `fix/security-deps-001`; current `origin/main@375cce37aadbefe5f777c41b5c89f3ae6a304f0f` integrated additively via merge checkpoint `a19f7a86038b63b83dc9e15c4d80a2f4f6a523e2` with no conflict. Post-sync verification: clean npm install + production/full audit 0/0, ExcelJS+uuid11 runtime smoke PASS, focused PDF Vitest 1/1, full Vitest 203/203, typecheck/build PASS, lint 12 baseline warnings/0 errors, synthetic PDF browser 1/1 zero writes, expanded auth/router/import/smoke E2E 19/19. Local full Playwright transport terminated before a capturable final summary, so it is not claimed as a post-sync PASS; exact-head GitHub E2E is required before approval.
+- **CLOSED `SEC-DEPS-001`** - reviewed exact head `1d41e0896dd4a8d32532202e4b5f4ca0f70e4310` received fresh independent GLM-5.3 MAX **APPROVED**; exact-head PR E2E passed **96/96**. PR #51 merged as `4e8b4fe90354c3e25939c940a74e6ea47f3fbf26`. Post-merge exact-SHA test, full E2E, Pages build/deploy and deployment smoke are SUCCESS; deployment `6163951586` is SUCCESS. No real environmental data writes were used.
 - Repo-health PR #49 is CLOSED/VERIFIED; PR #52 ingested its final review/post-merge evidence into canonical SSoT. `docs/ai/DEFECT-MEMORY.md` is now available to the Security lane after the additive main integration; prior ENV-DEFECT-008 history is preserved.
 - No active mutable production work order. `ENV-MOBILE-001` through `ENV-MOBILE-005` are complete/merged/deployed history.
 - `ENV-MOBILE-005` Garden: original exact-head review `PRR_kwDOTN3Mzc8AAAABLSqMwQ` returned `CHANGES_REQUIRED` for false-green history containment and missing required-date validation; remediation checkpoint `e137cd468f628961dcfb697f0470cb3da76062bd` closed both with regression-first evidence.
@@ -27,7 +27,7 @@ Allowed statuses:
 - Live 390x844 root-to-client deployed-bundle smoke loaded `assets/index-BIvntuDt.js` with the new Garden markers; all 9 labels/IDs passed; history remained inside its card with keyboard local scroll; Save was 71.89x48 and Delete 44x44; blank date made zero POSTs and preserved/focused its associated error; corrected save made one intercepted POST; document/body width stayed 390; no browser errors; all REST was mocked/no-real-write.
 - A direct GitHub Pages deep-link run observed a first-frame hosting transition (`HTTP 404` SPA fallback, document width 365 at a 360 viewport) that settled to 360 within 25 ms. This did not reproduce through the root-to-client production path and is recorded as a separate hosting/test-timing observation, not hidden as a Garden pass.
 - Garden data/query/schema/RLS/carbon behavior, `location_id`/`photo_path` null semantics, shared UI/AppShell, Garbage, other forms, and protected `.serena/` were unchanged.
-- Next safe action: commit/push the reconciled Security checkpoint -> inspect PR #51 remote diff -> require exact-head CI/E2E -> fresh independent security review on that exact SHA -> merge only if approved -> post-merge test/E2E/Pages/live smoke. Fuel Core then Garbage Core remain serialized behind this gate; governance/agent-ops work must not overlap mutable Security files.
+- Next safe action: activate the minimal `ENV-AGENT-OPS-001` governance foundation on a fresh worktree/branch, extending existing SSoT rather than creating a parallel control-plane. After that gate is reviewed/merged, proceed to Fuel Core, then Garbage Core/data-contract, then Garbage UI.
 
 ## Review Queue — 2026-08-23
 
