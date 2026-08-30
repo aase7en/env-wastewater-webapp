@@ -1,5 +1,16 @@
 # HANDOFF
 
+## Active checkpoint - ENV-AGENT-OPS-001 - 2026-08-30
+
+- Status: `REVIEW_REQUESTED`.
+- Objective: add the minimum durable multi-agent governance needed before Fuel/Garbage lanes, by extending existing SSoT rather than creating a parallel control-plane.
+- Repository/worktree/branch: `aase7en/env-wastewater-webapp` / `A:\\GitHub\\envww-agent-ops-001` / `docs/env-agent-ops-001`.
+- Base: `origin/main@817266d4ee74b95fbf23ee97c96bf8367715d615`; exact review HEAD will be frozen from actual pushed remote state in the PR/review packet.
+- Contract: `docs/work-orders/ENV-AGENT-OPS-001.md`; canonical active-task registry remains `docs/ai/CURRENT-WORK.md`.
+- Mutable scope: collaboration protocol + CURRENT-WORK + this HANDOFF + the new WO only. Production code, schema/RLS/carbon/domain UI, workflows and `.serena/**` are no-touch.
+- Key decisions: single canonical active registry; bounded lane fields; explicit state machine; external handoff lifecycle; exact-SHA approval invalidation; current-evidence model-fit rationale; one-writer rule.
+- One next safe action: complete bounded docs diff, verify no shadow SSoT/scope leak, checkpoint exact HEAD, push/open PR, exact-head CI, then fresh independent review.
+
 ## Closed checkpoint - ENV-MOBILE-005 - Garden - 2026-08-29
 
 - Status: `COMPLETE / MERGED / DEPLOYED / PRODUCTION-SMOKED`.

@@ -570,3 +570,58 @@ Codex makes the system understandable and beautiful.
 
 If one agent needs to guess what the other agent owns, stop and hand off instead of guessing.
 ```
+
+
+---
+
+## 16. Runtime SSoT roles
+
+Use existing repository documents; do not create a parallel task-control system.
+
+- `docs/ai/CURRENT-WORK.md` = canonical active-task/ownership registry.
+- `docs/work-orders/<WO>.md` = bounded task contract and acceptance criteria.
+- `docs/ai/HANDOFF.md` = resumable checkpoint/evidence claim; never authority over actual repo state.
+- `docs/ai/DEFECT-MEMORY.md` = verified reusable failure/prevention knowledge only.
+- External inbox/review files = temporary transport only; after ingestion into repo SSoT they are non-authoritative and must be archived/cleared.
+
+A new agent must reconcile these records with actual worktree, remote branch/PR, exact HEAD, dirty state, and ownership before mutation.
+
+## 17. Required active-lane contract
+
+Every mutable lane must expose through `CURRENT-WORK.md` + its Work Order: Task, Owner, Agent/Model, Worktree, Branch, Base, Exact HEAD, Status, Mutable Scope, Forbidden Scope, Dependencies, Acceptance, Verification, Evidence, Review Owner, Handoff Path, Last Updated, and One Next Safe Action.
+
+`Exact HEAD` may be `PENDING_CHECKPOINT` while actively implementing. At `REVIEW_REQUESTED`, freeze the literal SHA from actual local/remote git state into the PR/review evidence or external transport packet before the reviewer starts. Do not create a self-referential commit merely to write its own SHA into itself; the repository record must instead point to the frozen review evidence and the reviewer must verify the remote ref still equals that SHA. One writer owns each mutable file/scope at a time. Parallel work is allowed only for independent READY lanes with disjoint mutable scope or an explicit reconciliation plan.
+
+## 18. Canonical task state machine
+
+Preferred lifecycle for new work:
+
+```text
+READY -> CLAIMED -> IMPLEMENTING -> VERIFYING -> REVIEW_REQUESTED
+      -> CHANGES_REQUIRED -> IMPLEMENTING ...
+      -> APPROVED -> MERGE_READY -> MERGED -> POSTMERGE_VERIFY -> CLOSED
+```
+
+Exceptional states: `BLOCKED`, `DECISION_REQUIRED`, `HUMAN_ACTION_REQUIRED`. Historical labels such as `READY_FOR_IMPLEMENTATION` and `RE-REVIEW_REQUESTED` remain valid compatibility states. State transitions require evidence; an agent saying DONE/PASS is not sufficient.
+
+## 19. External-agent handoff lifecycle
+
+For GLM/ZCode/Codex/other sessions that GPT cannot directly invoke, use one bounded transport file and one-way human launch:
+
+```text
+REQUESTED -> RESULT_WRITTEN -> INGESTED_TO_SSOT -> ARCHIVED/CLEARED
+```
+
+Lead writes exact repo/path/task/SHA/scope/verification/output destination into the transport file. The human launch prompt stays minimal: repo/path + read this file + execute only this lane + write result back to the same file + STOP. The user must not copy the result between agents. Lead reads the result file directly and reconciles it against actual repo/remote state. Temporary transport files must not accumulate indefinitely.
+
+## 20. Exact-SHA review and merge validity
+
+Independent approval is bound to the exact reviewed commit SHA. Any head change invalidates that approval unless the reviewer explicitly approves that later exact SHA. Before merge require, as applicable: remote PR diff inspected, exact PR head confirmed, exact-head required CI/E2E green, independent review bound to that head, no unresolved blocker/ownership conflict, and authorized merge with expected-head protection where available. Post-merge fetch, ancestry verification, exact-main CI/deployment/live-safe verification, and SSoT closeout are part of DONE when applicable.
+
+## 21. Model/worker assignment rationale
+
+For material external delegation, briefly record selection date, task category, chosen model/worker, current credible benchmark or primary-source evidence when relevant, why that evidence maps to the task, and an important limitation. Benchmarks are evidence, not universal ranking. Task fit still follows this protocol: GPT leads decomposition/synthesis/review, GLM owns Core correctness/security/data-contract work, Codex owns visual experience, and workers provide bounded repository/tool execution.
+
+## 22. Resume and session-rotation checkpoint
+
+Before model/worker/session rotation persist objective, task/status, repo/worktree/branch/base/HEAD/dirty state, verified completed work, files changed, evidence, decisions, blockers, ownership, warnings, and exactly one next safe action. The receiving agent starts with `AGENTS.md`, `CURRENT-WORK.md`, assigned Work Order, `HANDOFF.md`, and actual git/remote state; it must reach `SAFE_TO_MUTATE = YES` before editing.
