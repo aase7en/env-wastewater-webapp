@@ -1,6 +1,6 @@
 # FUEL-CORE-001 - fuel_type data honesty and carbon rollup safety
 
-Status: REVIEW_REQUESTED
+Status: HUMAN_ACTION_REQUIRED / POSTMERGE_VERIFY
 Owner: GLM-5.3 MAX (Core Engineering / Track Z)
 Lead / review owner: GPT-5.6 Sol
 Repository: `aase7en/env-wastewater-webapp`
@@ -112,4 +112,11 @@ Implementation owner stops at `REVIEW_REQUESTED` with exact pushed SHA, remote d
 
 ## One next safe action
 
-GLM-5.3 MAX reads repo SSoT + this WO, verifies actual state/ownership, establishes RED regressions, implements the smallest fail-closed adapter + additive rollup hardening, runs gates, updates SSoT, pushes/open PR, then stops at REVIEW_REQUESTED.
+Restore authenticated Supabase access; apply only the merged Fuel migration; perform read-only live rollup verification; then close Fuel before Garbage Core.
+
+## Post-merge checkpoint - 2026-08-30
+
+- Independent GPT-5.6 Sol review APPROVED exact SHA `d613d6b4090b30a1bc3169e56330d50cad05f025`; PR #56 merged as `b2d12d3f860e1403faf77688edc325c044d438b9`.
+- Exact-main test `33312236099`, E2E `33312236077`, and Pages `33312236092` are SUCCESS.
+- Production DB migration is NOT APPLIED. Both `apply_migration_api.py` and Supabase CLI stopped before mutation because no authenticated Supabase access token/session is available. No environmental rows were changed.
+- Closure condition: apply the merged `20260830000000_fuel_core_001_rollup_safety.sql` and perform read-only live rollup verification.
