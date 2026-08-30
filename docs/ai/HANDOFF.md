@@ -1,5 +1,15 @@
 # HANDOFF
 
+## Active checkpoint - FUEL-CORE-001 - 2026-08-30
+
+- Status: `CLAIMED`; implementation owner GLM-5.3 MAX, review/merge owner GPT-5.6 Sol.
+- Repo/worktree/branch/base: `aase7en/env-wastewater-webapp` / `A:\\GitHub\\envww-fuel-core-001` / `fix/fuel-core-001` / `origin/main@2db209e88f61b4471784a6540dc67a65930fb894`.
+- Defect: Bulk Import writes adapter output directly; Fuel adapter defaults missing `fuel_type` to diesel and permits arbitrary text, while carbon rollup casts that text to `carbon.source_type`.
+- Data-honesty decision: missing remains null; unsupported non-empty import fails closed; no unknown -> diesel/other mapping. Carbon view must avoid free-text-to-enum cast so legacy dirty text cannot crash rollup.
+- Mutable scope and acceptance: `docs/work-orders/FUEL-CORE-001.md`. FuelPage/mobile/UI, emission factors, RLS, other modules and `.serena/**` are no-touch.
+- Exact HEAD: `PENDING_CHECKPOINT`. No real hospital data writes for tests.
+- One next safe action: GLM establishes RED regressions, implements smallest adapter + additive migration fix, verifies full gates, updates SSoT/pushes PR, stops at `REVIEW_REQUESTED`.
+
 ## Closed checkpoint - ENV-AGENT-OPS-001 - 2026-08-30
 
 - Status: `CLOSED / MERGED / POST-MERGE VERIFIED`.
