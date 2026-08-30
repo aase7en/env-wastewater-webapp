@@ -23,7 +23,16 @@ export interface GarbageLog {
   created_at: string;
 }
 
-export type GarbageInput = Omit<GarbageLog, "id" | "recorded_by" | "created_at">;
+/**
+ * GARBAGE-CORE-001 — `segregation_type` is the canonical write/classification
+ * field. Legacy `waste_type` stays readable (GarbageLog/COLUMNS keep it for
+ * display fallback of historical rows) but is NOT writable: new UI/import
+ * flows must never set it, and canonical data is never auto-copied into it.
+ */
+export type GarbageInput = Omit<
+  GarbageLog,
+  "id" | "recorded_by" | "created_at" | "waste_type"
+>;
 
 const COLUMNS =
   "id, log_date, location_id, waste_type, weight_kg, disposal_route, segregation_type, contractor, vehicle_plate, manifest_no, destination, recorded_by, note, created_at";

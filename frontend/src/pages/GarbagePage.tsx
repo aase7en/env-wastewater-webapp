@@ -16,8 +16,10 @@ export function GarbagePage() {
   const { data, loading, error, refresh } = useGarbageLogs(30);
   const { toast } = useToast();
   const today = toLocalISODate();
+  // GARBAGE-CORE-001: segregation_type is the only classification write.
+  // Legacy waste_type is no longer initialized or written by this form.
   const [form, setForm] = useState<GarbageInput>({
-    log_date: today, location_id: null, waste_type: "ทั่วไป",
+    log_date: today, location_id: null,
     weight_kg: null, disposal_route: null, segregation_type: "general",
     contractor: null, vehicle_plate: null, manifest_no: null,
     destination: null, note: null,
@@ -50,7 +52,7 @@ export function GarbagePage() {
         <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
           <Field label="วันที่"><Input type="date" value={form.log_date} onChange={(e) => set({ log_date: e.target.value })} /></Field>
           <Field label="ประเภท">
-            <Select value={form.segregation_type ?? "general"} onChange={(e) => set({ segregation_type: e.target.value, waste_type: e.target.value })}>
+            <Select value={form.segregation_type ?? "general"} onChange={(e) => set({ segregation_type: e.target.value })}>
               <option value="general">ทั่วไป</option><option value="infectious">ติดเชื้อ</option>
               <option value="recyclable">รีไซเคิล</option><option value="chemical">เคมี</option>
             </Select>

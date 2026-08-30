@@ -203,6 +203,24 @@ Source record:
 
 ---
 
+## ENV-DEFECT-011 — Legacy compatibility fields must not stay the source of truth, and SQL CASE fallbacks must not invent factors
+
+**Failure class:** data honesty / schema drift / silent misclassification.
+
+**Symptom:** Garbage stored a canonical classification (`segregation_type`) plus a legacy free-text twin (`waste_type`). The UI wrote BOTH (with a Thai-vs-English vocabulary clash), Bulk Import fabricated missing classification into `general`, and the carbon rollup still branched on the LEGACY field whose `ELSE` bucketed `chemical`/missing/unknown onto the general-waste factor — producing carbon numbers that do not exist.
+
+**Root cause:** a canonical replacement column was introduced while every consumer (UI write path, import adapter, rollup view) kept reading/writing the legacy column, and the view's CASE used a default branch instead of explicit mapping with no-match semantics.
+
+**How detected:** GARBAGE-CORE-001 RED evidence — `expected 'general' to be null`, `expected 'ทั่วไป' to be 'general'`, `token: hazardous … to throw`, migration contract failures, and a TypeScript type-RED proving `GarbageInput` still exposed the legacy field as writable.
+
+**Prevention rule:** when a canonical column replaces a legacy one, remove the legacy field from every WRITE type/path (compiler-enforced where possible), keep it read-only for display of historical rows, and switch every query/view to the canonical column in the same change. Categorical SQL mapping must list every classification explicitly and use ELSE NULL (no factor / UNAVAILABLE) — never an ELSE that borrows another category's factor. UI/import defaults must not fabricate a real category for missing data.
+
+**Regression/evidence:** `frontend/src/lib/import-adapters/garbage.test.ts` (adapter honesty + type contract + migration static contract incl. `ELSE NULL`, no `CASE c.waste_type`, fuel-join preservation); `supabase/migrations/20260831000000_garbage_core_001_canonical_classification.sql`; GARBAGE-CORE-001 WO evidence.
+
+**Domains affected:** schema migrations introducing canonical columns, import adapters, rollup views with categorical CASE mapping, any module carrying legacy twin fields.
+
+---
+
 ## Adding future entries
 
 Add a new entry only after the root cause is verified. The entry should change at least one future behavior: a guardrail, test, spec rule, audit item, or implementation pattern.

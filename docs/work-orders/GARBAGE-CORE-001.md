@@ -1,15 +1,30 @@
 # GARBAGE-CORE-001 — canonical waste classification and carbon data honesty
 
-Status: CLAIMED
+Status: REVIEW_REQUESTED
 Owner: GLM-5.3 MAX (Core Engineering / Track Z)
 Lead / review / merge owner: GPT-5.6 Sol
 Repository: `aase7en/env-wastewater-webapp`
 Worktree: `A:\GitHub\envww-garbage-core-001`
 Branch: `fix/garbage-core-001`
 Base: `origin/main@196d023b9f2f2b3bfb1837ad2ad1bd6d713fde84`
-Exact HEAD: `PENDING_CHECKPOINT` until activation commit is frozen
+Exact HEAD: literal SHA frozen in the pushed PR head + external packet per governance §17
 Handoff: `docs/ai/HANDOFF.md` + temporary external packet while active
 Last updated: 2026-08-31
+
+## Implementation evidence — 2026-08-31
+
+- RED (focused `garbage.test.ts` + `tsc -b`, before implementation):
+  - Vitest **13 failed / 2 passed** — `expected 'general' to be null` ×2 (missing/blank fabricated to general); `expected 'General' to be 'general'` + `expected 'ทั่วไป' to be 'general'` (no normalization / no verified Thai mapping); `token: hazardous … to throw` (arbitrary token accepted); migration contract ×8 (no canonical migration existed). The 2 passes = canonical English accept + adapter never writes `waste_type` (already true).
+  - TypeScript **TS2322** at the type-contract assertion — proving `GarbageInput` still exposed legacy `waste_type` as writable (UI write path: `GarbagePage.tsx` initial `waste_type:"ทั่วไป"` + Select writing both fields — static defect, fixed by the type change).
+- Implementation (smallest fail-closed repair):
+  - `import-adapters/garbage.ts` — `mapSegregationType()`: blank/missing → `null`; trim/case normalization of the 4 canonical English tokens; ONLY the 4 verified Thai labels (A-Wiki garbage page) mapped; anything else non-empty throws `ประเภทขยะไม่รองรับ…` before any REST write. Never writes legacy `waste_type`.
+  - `lib/garbage.ts` — `GarbageInput` now `Omit`s `waste_type` (legacy column stays readable in `GarbageLog`/COLUMNS for display fallback; no auto-copy into legacy).
+  - `pages/GarbagePage.tsx` — semantic wiring only: initial state no longer seeds `waste_type`; the Select writes `segregation_type` only. No layout/style change.
+  - `supabase/migrations/20260831000000_garbage_core_001_canonical_classification.sql` — (A) idempotent CHECK `segregation_type IS NULL OR IN ('general','infectious','recyclable','chemical')` (DROP IF EXISTS + ADD revalidates → fails closed on dirty data; no backfill); (B) `CREATE OR REPLACE VIEW carbon.v_unified_co2e` waste branch now reads canonical `c.segregation_type` with explicit general/infectious/recyclable factor mapping and **ELSE NULL** — chemical/missing/unsupported match no factor (`kg_co2e NULL` = UNAVAILABLE), never general; missing labels `waste_unclassified`; every non-Garbage branch (incl. the merged FUEL-CORE-001 fuel join) reproduced verbatim; no emission-factor data touched.
+- Test-harness note: migration contract strips `--` comments before asserting (executable SQL only); the ALTER TABLE assertion pins the constraint pair to `garbage.collection_log` exclusively.
+- GREEN gates: focused **15/15 PASS**; full Vitest **229/229 PASS** (18 files); standalone `tsc -b` PASS (type contract now GREEN — `waste_type` unwritable); lint **12 pre-existing warnings / 0 errors** (no new); production build PASS (existing chunk-size advisory only); `git diff --check` PASS.
+- Browser/Bulk-Import E2E deferred: a new e2e spec file is outside this WO's mutable scope; adapter rejection + payload shape are proven at unit/type level through the same `mapRow` throw path Bulk Import renders, and the UI write path is enforced by the compiler.
+- No real environmental data, no real REST writes, no production migration apply, no RLS/factor/other-domain changes.
 
 ## Goal
 
