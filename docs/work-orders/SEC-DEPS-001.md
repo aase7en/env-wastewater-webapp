@@ -1,9 +1,10 @@
 # SEC-DEPS-001 - frontend dependency security remediation
 
-Status: IMPLEMENTED_AWAITING_BASE_SYNC
+Status: REVIEW_REQUESTED
 Owner: GPT-5.6 Sol
 Branch/worktree: `fix/security-deps-001` / `A:\\GitHub\\envww-security-deps-001`
-Base: `origin/main@34d656888f589a6e86adc9ce83a5e69959c871f0`
+Original base: `origin/main@34d656888f589a6e86adc9ce83a5e69959c871f0`
+Current base: `origin/main@375cce37aadbefe5f777c41b5c89f3ae6a304f0f` integrated additively at merge checkpoint `a19f7a86038b63b83dc9e15c4d80a2f4f6a523e2`
 
 ## Goal
 
@@ -65,7 +66,7 @@ Remove the verified frontend npm security findings without `npm audit fix --forc
 
 ## Parallel ownership
 
-PR #49 currently owns its workflow/runtime-checker/report remediation plus `docs/ai/DEFECT-MEMORY.md`. `SEC-DEPS-001` will not mutate that shared file until #49 merges and this branch integrates the resulting main; all current mutable Security production files otherwise remain non-overlapping.
+PR #49 and its docs closeout PR #52 are CLOSED/VERIFIED on current main. Their `ENV-DEFECT-008` history is preserved after additive integration. Security now owns one new dependency-hardening defect-memory entry only; workflow/runtime-checker/report files remain no-touch. Fuel/Garbage Core and agent-governance lanes remain serialized/non-overlapping until this Security PR closes.
 
 ## Implementation checkpoint - 2026-08-29
 
@@ -79,3 +80,16 @@ PR #49 currently owns its workflow/runtime-checker/report remediation plus `docs
 - Real-browser proof: synthetic admin PDF upload through `/import` and actual patched PDF.js = 1/1 PASS with zero REST writes; auth/router/import focused = 12/12 PASS; full Playwright with `--retries=0` = 96/96 PASS.
 - `git diff --check` PASS.
 - Next safe action: checkpoint/push this implementation, wait for PR #49 independent review + merge, integrate exact new `main`, reconcile shared defect memory, rerun affected/full gates, then move to `REVIEW_REQUESTED`.
+
+
+## Base-sync re-verification - 2026-08-30
+
+- Integrated current `origin/main@375cce37aadbefe5f777c41b5c89f3ae6a304f0f` additively with no conflict; merge checkpoint `a19f7a86038b63b83dc9e15c4d80a2f4f6a523e2`. No rebase/reset/clean was used.
+- Clean `npm ci`: PASS, 735 packages; install audit reported 0 vulnerabilities. `npm audit --omit=dev`: 0; full `npm audit`: 0.
+- ExcelJS + forced `uuid@11.1.1` workbook write/read + conditional-formatting smoke: PASS.
+- Focused PDF security Vitest: 1/1 PASS; full Vitest: 203/203 PASS; standalone TypeScript: PASS.
+- Lint: 12 pre-existing warnings / 0 errors; production build: PASS with existing chunk-size advisory only.
+- Actual-browser synthetic PDF import through patched PDF.js: 1/1 PASS, zero REST writes/no real hospital data. Expanded auth/router/error-boundary/import/smoke Playwright: 19/19 PASS (`workers=2`, `retries=0`).
+- A local full Playwright attempt was started through remote Worker transports that timed out/terminated before a capturable final summary. Process checks showed no lingering owned Playwright process afterward. This is transport/evidence loss, not a product PASS or FAIL. Exact-head GitHub E2E is mandatory final system evidence before approval.
+- `git diff --check`: PASS; post-sync Security diff remains bounded to package/lock/import tests+source and Security SSoT, plus the now-unblocked single defect-memory entry.
+- State: `REVIEW_REQUESTED` after checkpoint/push. Fresh independent review must bind to the exact remote PR #51 SHA and may not reuse pre-sync evidence as final approval.

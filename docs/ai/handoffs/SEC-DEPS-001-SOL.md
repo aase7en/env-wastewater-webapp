@@ -1,6 +1,6 @@
 # SEC-DEPS-001 handoff
 
-Status: IMPLEMENTED_AWAITING_BASE_SYNC
+Status: REVIEW_REQUESTED
 Owner: GPT-5.6 Sol
 Branch: `fix/security-deps-001`
 Worktree: `A:\\GitHub\\envww-security-deps-001`
@@ -29,10 +29,21 @@ Original base: `origin/main@34d656888f589a6e86adc9ce83a5e69959c871f0`
 
 ## Ownership / stop gate
 
-- PR #49 still owns its workflow/runtime report plus `docs/ai/DEFECT-MEMORY.md`; this Security branch must not modify that shared file until #49 merges and the branch integrates new main.
+- PR #49/#52 are closed and current main is integrated; Security has reconciled the shared defect-memory history and may add only its bounded dependency-hardening lesson.
 - `.serena/**`, schema/RLS/carbon/module UI remain no-touch.
-- Do not merge Security from this checkpoint. After base sync, rerun gates and request fresh independent review.
+- Do not merge Security from this checkpoint. Exact-head GitHub CI/E2E + fresh independent review are still mandatory.
 
 ## One next safe action
 
-After PR #49 receives a fresh independent verdict and merges, fetch exact `origin/main`, integrate it additively into this branch, reconcile the shared defect-memory entry without dropping #49 history, rerun security/full gates, and advance to `REVIEW_REQUESTED`.
+Push the reconciled checkpoint, inspect PR #51 actual remote diff and exact head, require GitHub exact-head CI/E2E, obtain a fresh independent Security verdict for that exact SHA, then merge only if APPROVED. After merge: fetch main -> verify ancestry -> post-merge tests/E2E/Pages/deployment/live smoke -> docs closure -> Fuel Core.
+
+
+## Post-base-sync evidence
+
+- Current main integrated: `origin/main@375cce37aadbefe5f777c41b5c89f3ae6a304f0f`; additive merge checkpoint `a19f7a86038b63b83dc9e15c4d80a2f4f6a523e2`; no conflict.
+- Clean install PASS; production/full npm audit = 0/0 vulnerabilities.
+- ExcelJS + uuid11 runtime smoke PASS; focused PDF Vitest 1/1; full Vitest 203/203; typecheck/build PASS; lint 12 baseline warnings / 0 errors.
+- Synthetic PDF actual-browser import 1/1 PASS, zero REST writes/no real data; expanded auth/router/error/import/smoke E2E 19/19 PASS.
+- Full local Playwright post-sync is intentionally **not claimed**: Worker transport lost the final summary. Exact-head GitHub E2E is the required final system-level proof.
+- `git diff --check` PASS before SSoT reconciliation.
+- Review target must be the exact pushed PR #51 head after this handoff/defect-memory checkpoint; pre-sync head `91cb332...` is superseded.
