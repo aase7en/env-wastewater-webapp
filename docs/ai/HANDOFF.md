@@ -1,5 +1,19 @@
 # HANDOFF
 
+## Active checkpoint - GARBAGE-CORE-001 - 2026-08-31
+
+- Status: `REVIEW_REQUESTED`; implementation owner GLM-5.3 MAX, lead/review/merge owner GPT-5.6 Sol.
+- Repo/worktree/branch/base: `aase7en/env-wastewater-webapp` / `A:\\GitHub\\envww-garbage-core-001` / `fix/garbage-core-001` / `origin/main@196d023b9f2f2b3bfb1837ad2ad1bd6d713fde84`.
+- Contract: `docs/work-orders/GARBAGE-CORE-001.md`; exact review SHA frozen in the pushed PR head + external packet (governance §17).
+- Implementation result 2026-08-31: `mapSegregationType()` in `frontend/src/lib/import-adapters/garbage.ts` (blank→null, canonical English trim/case normalization, only the 4 verified Thai labels mapped, anything else non-empty → row-error throw before REST write); `GarbageInput` in `frontend/src/lib/garbage.ts` omits legacy `waste_type` (column stays readable for display fallback, never auto-copied); `GarbagePage.tsx` writes `segregation_type` only (semantic wiring, no layout change); additive `supabase/migrations/20260831000000_garbage_core_001_canonical_classification.sql` — idempotent canonical CHECK (fails closed on dirty data, no backfill) + `CREATE OR REPLACE VIEW` waste branch on canonical `segregation_type` with ELSE NULL (chemical/missing/unsupported → no factor, `kg_co2e NULL`; missing labels `waste_unclassified`); non-Garbage branches verbatim including the FUEL-CORE-001 fuel join.
+- Source truth: migration explicitly makes `segregation_type` canonical and retains `waste_type` only for backwards compatibility. A-Wiki confirms canonical categories `general/infectious/recyclable/chemical` and Thai labels.
+- Defect chain: UI initially writes conflicting legacy/canonical values; Bulk Import writes canonical only but currently fabricates blank → general and accepts arbitrary text; carbon rollup still consumes legacy `waste_type` and its ELSE path turns chemical/unknown/missing into the general factor.
+- Factor truth: verified garbage factors exist for general, infectious, recyclable only. There is no verified garbage-chemical factor; chemical/missing carbon must remain unavailable, not borrow general or reagent-disposal semantics.
+- Production read-only evidence 2026-08-31: `garbage.collection_log` returned no classification pairs/rows; `legacy_only=0`, `canonical_only=0`, `disagree=0`. No backfill/cleanup is needed or authorized.
+- Mutable scope: adapter + focused test, Garbage input/write semantics, semantic-only page wiring, one additive migration, this WO/CURRENT-WORK/HANDOFF and bounded DEFECT-MEMORY after verification. No visual/mobile redesign, no factor changes, no RLS/other modules, no production data writes.
+- Worktree caveat: Serena activation auto-created an untracked `.serena/` tool directory in this isolated worktree. Ownership is known, it is outside task scope, protected/no-touch, and must never be staged/committed/edited by this lane.
+- One next safe action: GPT-5.6 Sol independently reviews the exact pushed PR head (head change invalidates approval), owns merge + Management-API migration apply + read-only live verification (constraint/view/full rollup scan), then closes this lane before any Garbage mobile work.
+
 ## Closed checkpoint - FUEL-CORE-001 - 2026-08-31
 
 - Status: `CLOSED / MERGED / POST-MERGE / LIVE VERIFIED`; implementation owner GLM-5.3 MAX, review/merge/live-verification owner GPT-5.6 Sol.
