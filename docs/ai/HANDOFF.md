@@ -1,15 +1,16 @@
 # HANDOFF
 
-## Active checkpoint - ENV-AGENT-OPS-001 - 2026-08-30
+## Closed checkpoint - ENV-AGENT-OPS-001 - 2026-08-30
 
-- Status: `REVIEW_REQUESTED`.
+- Status: `CLOSED / MERGED / POST-MERGE VERIFIED`.
 - Objective: add the minimum durable multi-agent governance needed before Fuel/Garbage lanes, by extending existing SSoT rather than creating a parallel control-plane.
 - Repository/worktree/branch: `aase7en/env-wastewater-webapp` / `A:\\GitHub\\envww-agent-ops-001` / `docs/env-agent-ops-001`.
-- Base: `origin/main@817266d4ee74b95fbf23ee97c96bf8367715d615`; exact review HEAD will be frozen from actual pushed remote state in the PR/review packet.
+- Base: `origin/main@817266d4ee74b95fbf23ee97c96bf8367715d615`; exact reviewed head `784c75a6df42e6c43ad45ade9674515fe43a46a4`; PR #54 merge `a1aafb00696253d386446fb518508e9a6753e71c`.
 - Contract: `docs/work-orders/ENV-AGENT-OPS-001.md`; canonical active-task registry remains `docs/ai/CURRENT-WORK.md`.
 - Mutable scope: collaboration protocol + CURRENT-WORK + this HANDOFF + the new WO only. Production code, schema/RLS/carbon/domain UI, workflows and `.serena/**` are no-touch.
 - Key decisions: single canonical active registry; bounded lane fields; explicit state machine; external handoff lifecycle; exact-SHA approval invalidation; current-evidence model-fit rationale; one-writer rule.
-- One next safe action: complete bounded docs diff, verify no shadow SSoT/scope leak, checkpoint exact HEAD, push/open PR, exact-head CI, then fresh independent review.
+- Review/verification: fresh GLM-5.3 MAX APPROVED exact reviewed SHA; exact-head CI passed; reviewed-head ancestry verified; post-merge test `33306776806` passed.
+- One next safe action: activate bounded Fuel Core from current main, centered on `fuel_type` import/data-contract vs carbon enum-cast/data-honesty.
 
 ## Closed checkpoint - ENV-MOBILE-005 - Garden - 2026-08-29
 
