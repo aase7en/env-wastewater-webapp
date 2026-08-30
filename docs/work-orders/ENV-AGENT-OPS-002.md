@@ -1,12 +1,12 @@
 # ENV-AGENT-OPS-002 — human-launch multi-agent orchestration
 
-Status: REVIEW_REQUESTED
+Status: CLOSED
 Owner / lead: GPT-5.6 Sol
 Repository: `aase7en/env-wastewater-webapp`
 Worktree: `A:\GitHub\envww-agent-ops-002`
 Branch: `docs/env-agent-ops-002`
 Base: `origin/main@8e53d5c0dbc9237f511ec9e530f52eb553a44559`
-Exact HEAD: `PENDING_CHECKPOINT`
+Reviewed exact SHA: `c603a25e7dbc19f9e17e5300b91e5f35446485f8`
 Review owner: independent exact-diff reviewer chosen by lead
 Last updated: 2026-08-30
 
@@ -113,6 +113,15 @@ ENV keeps its stronger repository-safety, SSoT, post-merge, E2E, defect-memory a
 
 Implementation stops at `REVIEW_REQUESTED`; implementation author does not merge.
 
+## Closeout evidence
+
+- Independent reviewer: GLM-5.3 MAX — APPROVED exact SHA `c603a25e7dbc19f9e17e5300b91e5f35446485f8`.
+- PR #58 merged as `077a18d59d605f8b0f50fe7d67cce8771b296fa2`.
+- Reviewed head is an ancestor of `origin/main`.
+- Exact-main test run `33329666902` — SUCCESS.
+- Scope remained docs-only; no runtime/schema/data/workflow/package/`.serena/**` changes.
+- External review packet may now be marked `INGESTED_TO_SSOT` and cleared after this closeout reaches main.
+
 ## One next safe action
 
-Implement the bounded protocol/engineering-loop wording, verify diff/scope, push/open PR, then request independent exact-SHA review.
+Restore authenticated Supabase access and finish `FUEL-CORE-001` live migration/read-only verification before Garbage Core.
