@@ -1,13 +1,13 @@
 # ENV-AGENT-OPS-001 - minimal multi-agent governance foundation
 
-Status: REVIEW_REQUESTED
+Status: CLOSED
 Owner: GPT-5.6 Sol (lead / governance author)
 Review owner: fresh independent reviewer; implementation author must not self-merge
 Repository: `aase7en/env-wastewater-webapp`
 Worktree: `A:\\GitHub\\envww-agent-ops-001`
 Branch: `docs/env-agent-ops-001`
 Base: `origin/main@817266d4ee74b95fbf23ee97c96bf8367715d615`
-Exact HEAD: `FROZEN_IN_PR_REVIEW_PACKET_AFTER_PUSH`
+Exact reviewed HEAD: `784c75a6df42e6c43ad45ade9674515fe43a46a4`
 Last updated: 2026-08-30
 
 ## Objective
@@ -86,3 +86,14 @@ Complete the bounded docs implementation, verify the diff, checkpoint/push exact
 - No production code, schema/RLS/migrations/carbon/domain UI, workflow/runtime script, or `.serena/**` file changed.
 - Self-review against all 10 governance requirements: PASS; no shadow active-task registry introduced.
 - Literal review SHA must be frozen from actual pushed remote state in PR/review evidence before the independent reviewer starts.
+
+
+## Final closure - 2026-08-30
+
+- Fresh independent review: GLM-5.3 MAX **APPROVED** exact SHA `784c75a6df42e6c43ad45ade9674515fe43a46a4`; no blockers.
+- Reviewer verified all 10 governance requirements, no shadow registry, state-machine compatibility, one-writer/disjoint-scope safety, external transport lifecycle, exact-SHA invalidation, self-referential SHA handling, model-fit rationale, resume packet, and no forbidden scope leak.
+- Exact-head CI: scripts + notify SUCCESS.
+- PR #54 merged with expected-head protection as `a1aafb00696253d386446fb518508e9a6753e71c`; reviewed-head ancestry into `origin/main` verified.
+- Post-merge test run `33306776806` SUCCESS at exact merge SHA. Docs-only path set did not require E2E/Pages.
+- State: **CLOSED / MERGED / POST-MERGE VERIFIED**.
+- One next safe action: activate Fuel Core on a fresh branch/worktree from current main.
