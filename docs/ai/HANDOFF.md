@@ -1,8 +1,8 @@
 # HANDOFF
 
-## Active checkpoint - FUEL-CORE-001 - 2026-08-30
+## Closed checkpoint - FUEL-CORE-001 - 2026-08-31
 
-- Status: `HUMAN_ACTION_REQUIRED / POSTMERGE_VERIFY`; implementation owner GLM-5.3 MAX, review/merge/post-merge owner GPT-5.6 Sol.
+- Status: `CLOSED / MERGED / POST-MERGE / LIVE VERIFIED`; implementation owner GLM-5.3 MAX, review/merge/live-verification owner GPT-5.6 Sol.
 - Repo/worktree/branch/base: `aase7en/env-wastewater-webapp` / `A:\\GitHub\\envww-fuel-core-001` / `fix/fuel-core-001` / `origin/main@2db209e88f61b4471784a6540dc67a65930fb894`.
 - Defect: Bulk Import writes adapter output directly; Fuel adapter defaults missing `fuel_type` to diesel and permits arbitrary text, while carbon rollup casts that text to `carbon.source_type`.
 - Data-honesty decision: missing remains null; unsupported non-empty import fails closed; no unknown -> diesel/other mapping. Carbon view must avoid free-text-to-enum cast so legacy dirty text cannot crash rollup.
@@ -11,8 +11,8 @@
 - Implementation result 2026-08-30: `mapFuelType()` in `frontend/src/lib/import-adapters/fuel.ts` (blank→null, trim/case canonical normalization, non-canonical → row-error throw before REST write); additive `supabase/migrations/20260830000000_fuel_core_001_rollup_safety.sql` (`CREATE OR REPLACE VIEW carbon.v_unified_co2e`, fuel join `ef.source::text = d.fuel_type`, other branches verbatim). New focused `frontend/src/lib/import-adapters/fuel.test.ts` (adapter honesty + migration static contract).
 - Evidence: RED 10 failed / 1 passed → GREEN focused 11/11; full Vitest 214/214; `tsc -b` PASS; lint 12 pre-existing warnings / 0 errors; build PASS; `git diff --check` PASS. Bulk-Import browser E2E deferred — a new e2e spec file is outside this WO's mutable scope.
 - Review/merge: GPT-5.6 Sol APPROVED exact SHA `d613d6b4090b30a1bc3169e56330d50cad05f025`; PR #56 merged as `b2d12d3f860e1403faf77688edc325c044d438b9`; exact-main test/E2E/Pages all succeeded.
-- Production DB gate: NOT APPLIED; both Management API script and Supabase CLI reported missing authentication before mutation. No environmental rows were changed.
-- One next safe action: restore authenticated Supabase access, apply only the merged Fuel migration, then read-only verify live rollup behavior and close Fuel before Garbage Core.
+- Production DB gate 2026-08-31: APPLIED from fresh current-main worktree after confirming the reviewed migration Git tree blob still matched current main. A gitignored redirect stub resolved the existing Drive-backed credential; Management API `SELECT 1` passed; migration apply returned 1/1 OK. Live definition check confirmed `ef.source::text = d.fuel_type` semantics and absence of `d.fuel_type::carbon.source_type`; full scans of `carbon.v_unified_co2e` and `public.v_unified_co2e` passed. No environmental rows were inserted/updated/deleted; temporary `.env` stub and `.venv` were removed afterward.
+- One next safe action: activate bounded Garbage Core/data-contract from current `origin/main`; resolve canonical `segregation_type` vs legacy `waste_type` semantics before Garbage UI work.
 
 ## Closed checkpoint - ENV-AGENT-OPS-001 - 2026-08-30
 
