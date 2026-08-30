@@ -2,7 +2,7 @@
 
 ## Active checkpoint - FUEL-CORE-001 - 2026-08-30
 
-- Status: `REVIEW_REQUESTED`; implementation owner GLM-5.3 MAX, review/merge owner GPT-5.6 Sol.
+- Status: `HUMAN_ACTION_REQUIRED / POSTMERGE_VERIFY`; implementation owner GLM-5.3 MAX, review/merge/post-merge owner GPT-5.6 Sol.
 - Repo/worktree/branch/base: `aase7en/env-wastewater-webapp` / `A:\\GitHub\\envww-fuel-core-001` / `fix/fuel-core-001` / `origin/main@2db209e88f61b4471784a6540dc67a65930fb894`.
 - Defect: Bulk Import writes adapter output directly; Fuel adapter defaults missing `fuel_type` to diesel and permits arbitrary text, while carbon rollup casts that text to `carbon.source_type`.
 - Data-honesty decision: missing remains null; unsupported non-empty import fails closed; no unknown -> diesel/other mapping. Carbon view must avoid free-text-to-enum cast so legacy dirty text cannot crash rollup.
@@ -10,7 +10,9 @@
 - Exact HEAD: literal SHA frozen in the pushed PR head + external review packet (governance §17 — no self-referential commit). No real hospital data writes for tests.
 - Implementation result 2026-08-30: `mapFuelType()` in `frontend/src/lib/import-adapters/fuel.ts` (blank→null, trim/case canonical normalization, non-canonical → row-error throw before REST write); additive `supabase/migrations/20260830000000_fuel_core_001_rollup_safety.sql` (`CREATE OR REPLACE VIEW carbon.v_unified_co2e`, fuel join `ef.source::text = d.fuel_type`, other branches verbatim). New focused `frontend/src/lib/import-adapters/fuel.test.ts` (adapter honesty + migration static contract).
 - Evidence: RED 10 failed / 1 passed → GREEN focused 11/11; full Vitest 214/214; `tsc -b` PASS; lint 12 pre-existing warnings / 0 errors; build PASS; `git diff --check` PASS. Bulk-Import browser E2E deferred — a new e2e spec file is outside this WO's mutable scope.
-- One next safe action: GPT-5.6 Sol exact-SHA independent review of the pushed PR head, then merge + post-merge verification before Garbage Core.
+- Review/merge: GPT-5.6 Sol APPROVED exact SHA `d613d6b4090b30a1bc3169e56330d50cad05f025`; PR #56 merged as `b2d12d3f860e1403faf77688edc325c044d438b9`; exact-main test/E2E/Pages all succeeded.
+- Production DB gate: NOT APPLIED; both Management API script and Supabase CLI reported missing authentication before mutation. No environmental rows were changed.
+- One next safe action: restore authenticated Supabase access, apply only the merged Fuel migration, then read-only verify live rollup behavior and close Fuel before Garbage Core.
 
 ## Closed checkpoint - ENV-AGENT-OPS-001 - 2026-08-30
 
