@@ -1,6 +1,6 @@
 # SEC-DEPS-001 - frontend dependency security remediation
 
-Status: CLOSED
+Status: REVIEW_REQUESTED
 Owner: GPT-5.6 Sol
 Branch/worktree: `fix/security-deps-001` / `A:\\GitHub\\envww-security-deps-001`
 Original base: `origin/main@34d656888f589a6e86adc9ce83a5e69959c871f0`
@@ -93,16 +93,3 @@ PR #49 and its docs closeout PR #52 are CLOSED/VERIFIED on current main. Their `
 - A local full Playwright attempt was started through remote Worker transports that timed out/terminated before a capturable final summary. Process checks showed no lingering owned Playwright process afterward. This is transport/evidence loss, not a product PASS or FAIL. Exact-head GitHub E2E is mandatory final system evidence before approval.
 - `git diff --check`: PASS; post-sync Security diff remains bounded to package/lock/import tests+source and Security SSoT, plus the now-unblocked single defect-memory entry.
 - State: `REVIEW_REQUESTED` after checkpoint/push. Fresh independent review must bind to the exact remote PR #51 SHA and may not reuse pre-sync evidence as final approval.
-
-
-## Independent review + merge closure - 2026-08-30
-
-- Fresh independent reviewer: GLM-5.3 MAX, STRICT READ-ONLY, bound to exact PR #51 head `1d41e0896dd4a8d32532202e4b5f4ca0f70e4310`: **APPROVED**, no blockers.
-- Reviewer independently rechecked scope containment, patched dependency resolutions, PDF.js API contract and CVE-fix-vs-defense-in-depth distinction, ExcelJS+uuid override, zero-write synthetic PDF E2E, no casts/suppressions, and no schema/RLS/carbon scope leak.
-- Exact-head GitHub evidence: scripts/notify green; E2E run `33285068996`, smoke job `99186717963`, annotation **96 passed (2.1m)**.
-- PR #51 was made ready and merged with expected-head protection. Merge commit: `4e8b4fe90354c3e25939c940a74e6ea47f3fbf26`. Reviewed head ancestry into `origin/main` verified.
-- Post-merge exact-SHA evidence: test run `33296980433` SUCCESS; E2E run `33296980446` SUCCESS; Pages run `33296980442` SUCCESS including build, deploy, deployment smoke and notify. GitHub Pages deployment `6163951586` state SUCCESS for exact merge SHA.
-- Rollback job was skipped because deployment smoke passed. No real environmental data mutation was used.
-- External review inbox is supporting evidence only after ingestion; canonical authority is this repo SSoT.
-
-State: **CLOSED / MERGED / POST-MERGE VERIFIED**.

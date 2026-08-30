@@ -1,6 +1,6 @@
 # SEC-DEPS-001 handoff
 
-Status: CLOSED
+Status: REVIEW_REQUESTED
 Owner: GPT-5.6 Sol
 Branch: `fix/security-deps-001`
 Worktree: `A:\\GitHub\\envww-security-deps-001`
@@ -47,12 +47,3 @@ Push the reconciled checkpoint, inspect PR #51 actual remote diff and exact head
 - Full local Playwright post-sync is intentionally **not claimed**: Worker transport lost the final summary. Exact-head GitHub E2E is the required final system-level proof.
 - `git diff --check` PASS before SSoT reconciliation.
 - Review target must be the exact pushed PR #51 head after this handoff/defect-memory checkpoint; pre-sync head `91cb332...` is superseded.
-
-
-## Final closure - 2026-08-30
-
-- Fresh GLM-5.3 MAX independent review: **APPROVED** for exact head `1d41e0896dd4a8d32532202e4b5f4ca0f70e4310`.
-- Exact-head GitHub E2E: **96/96 PASS**.
-- PR #51 merge commit: `4e8b4fe90354c3e25939c940a74e6ea47f3fbf26`; reviewed-head ancestry verified on `origin/main`.
-- Post-merge: test `33296980433` SUCCESS; E2E `33296980446` SUCCESS; Pages/deploy/smoke `33296980442` SUCCESS; deployment `6163951586` SUCCESS.
-- Security scope is closed. The next safe project action is the minimal Agent-Ops governance foundation, then Fuel Core.
