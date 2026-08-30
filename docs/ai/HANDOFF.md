@@ -1,5 +1,17 @@
 # HANDOFF
 
+## Active checkpoint - FUEL-CORE-001 - 2026-08-30
+
+- Status: `REVIEW_REQUESTED`; implementation owner GLM-5.3 MAX, review/merge owner GPT-5.6 Sol.
+- Repo/worktree/branch/base: `aase7en/env-wastewater-webapp` / `A:\\GitHub\\envww-fuel-core-001` / `fix/fuel-core-001` / `origin/main@2db209e88f61b4471784a6540dc67a65930fb894`.
+- Defect: Bulk Import writes adapter output directly; Fuel adapter defaults missing `fuel_type` to diesel and permits arbitrary text, while carbon rollup casts that text to `carbon.source_type`.
+- Data-honesty decision: missing remains null; unsupported non-empty import fails closed; no unknown -> diesel/other mapping. Carbon view must avoid free-text-to-enum cast so legacy dirty text cannot crash rollup.
+- Mutable scope and acceptance: `docs/work-orders/FUEL-CORE-001.md`. FuelPage/mobile/UI, emission factors, RLS, other modules and `.serena/**` are no-touch.
+- Exact HEAD: literal SHA frozen in the pushed PR head + external review packet (governance §17 — no self-referential commit). No real hospital data writes for tests.
+- Implementation result 2026-08-30: `mapFuelType()` in `frontend/src/lib/import-adapters/fuel.ts` (blank→null, trim/case canonical normalization, non-canonical → row-error throw before REST write); additive `supabase/migrations/20260830000000_fuel_core_001_rollup_safety.sql` (`CREATE OR REPLACE VIEW carbon.v_unified_co2e`, fuel join `ef.source::text = d.fuel_type`, other branches verbatim). New focused `frontend/src/lib/import-adapters/fuel.test.ts` (adapter honesty + migration static contract).
+- Evidence: RED 10 failed / 1 passed → GREEN focused 11/11; full Vitest 214/214; `tsc -b` PASS; lint 12 pre-existing warnings / 0 errors; build PASS; `git diff --check` PASS. Bulk-Import browser E2E deferred — a new e2e spec file is outside this WO's mutable scope.
+- One next safe action: GPT-5.6 Sol exact-SHA independent review of the pushed PR head, then merge + post-merge verification before Garbage Core.
+
 ## Closed checkpoint - ENV-AGENT-OPS-001 - 2026-08-30
 
 - Status: `CLOSED / MERGED / POST-MERGE VERIFIED`.

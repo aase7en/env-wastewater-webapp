@@ -1,6 +1,6 @@
 # CURRENT WORK
 
-Status: IDLE
+Status: REVIEW_REQUESTED
 
 Allowed statuses:
 
@@ -27,6 +27,7 @@ Allowed statuses:
 
 ## Current execution state - 2026-08-30
 
+- **ACTIVE `FUEL-CORE-001` / REVIEW_REQUESTED** - GLM-5.3 MAX Core Engineering lane on `fix/fuel-core-001`, worktree `A:\\GitHub\\envww-fuel-core-001`, base `origin/main@2db209e88f61b4471784a6540dc67a65930fb894`. Implemented the smallest fail-closed correction: import adapter no longer fabricates missing `fuel_type` into `diesel` (blank → null, case/trim canonical normalization only, non-canonical token → row error before any REST write) and additive migration `20260830000000_fuel_core_001_rollup_safety.sql` replaces the free-text→enum cast with `ef.source::text = d.fuel_type` so legacy dirty values match no factor instead of crashing the rollup. RED 10-failed/1-passed → GREEN focused 11/11, full Vitest 214/214, tsc PASS, lint 12w/0e (no new), build PASS, diff-check PASS. Exact HEAD frozen in the PR head + review packet (§17). Contract + evidence: `docs/work-orders/FUEL-CORE-001.md`; review owner GPT-5.6 Sol. No UI/schema-RLS/factor/legacy-data changes; no real writes.
 - **CLOSED `ENV-AGENT-OPS-001`** - exact reviewed head `784c75a6df42e6c43ad45ade9674515fe43a46a4`; fresh GLM-5.3 MAX independent review **APPROVED** with no blockers; exact-head CI passed. PR #54 merged as `a1aafb00696253d386446fb518508e9a6753e71c`; reviewed-head ancestry verified and post-merge test run `33306776806` succeeded. Governance foundation is now canonical; no production/schema/RLS/carbon/UI/workflow scope changed.
 - **CLOSED `SEC-DEPS-001`** - reviewed exact head `1d41e0896dd4a8d32532202e4b5f4ca0f70e4310` received fresh independent GLM-5.3 MAX **APPROVED**; exact-head PR E2E passed **96/96**. PR #51 merged as `4e8b4fe90354c3e25939c940a74e6ea47f3fbf26`. Post-merge exact-SHA test, full E2E, Pages build/deploy and deployment smoke are SUCCESS; deployment `6163951586` is SUCCESS. No real environmental data writes were used.
 - Repo-health PR #49 is CLOSED/VERIFIED; PR #52 ingested its final review/post-merge evidence into canonical SSoT. `docs/ai/DEFECT-MEMORY.md` is now available to the Security lane after the additive main integration; prior ENV-DEFECT-008 history is preserved.
@@ -37,7 +38,7 @@ Allowed statuses:
 - Live 390x844 root-to-client deployed-bundle smoke loaded `assets/index-BIvntuDt.js` with the new Garden markers; all 9 labels/IDs passed; history remained inside its card with keyboard local scroll; Save was 71.89x48 and Delete 44x44; blank date made zero POSTs and preserved/focused its associated error; corrected save made one intercepted POST; document/body width stayed 390; no browser errors; all REST was mocked/no-real-write.
 - A direct GitHub Pages deep-link run observed a first-frame hosting transition (`HTTP 404` SPA fallback, document width 365 at a 360 viewport) that settled to 360 within 25 ms. This did not reproduce through the root-to-client production path and is recorded as a separate hosting/test-timing observation, not hidden as a Garden pass.
 - Garden data/query/schema/RLS/carbon behavior, `location_id`/`photo_path` null semantics, shared UI/AppShell, Garbage, other forms, and protected `.serena/` were unchanged.
-- Next safe action: activate a bounded Fuel Core work order from current `origin/main`, starting with the `fuel_type` import/data-contract vs carbon enum-cast/data-honesty defect; then independently review and verify before Garbage Core.
+- Next safe action: GPT-5.6 Sol performs exact-SHA independent review of `FUEL-CORE-001` (bind to the pushed PR head; head change invalidates approval), then owns merge + post-merge verification before Garbage Core.
 
 ## Review Queue — 2026-08-23
 
