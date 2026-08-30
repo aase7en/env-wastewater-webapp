@@ -770,12 +770,13 @@ this round: the 12 keys above. (Prior rounds: color_desc/smell_desc/note
 GLM must not merge PR #33. Next owner: GPT 5.6 Sol reviewer / merge owner.
 
 
-## Active checkpoint - ENV-AGENT-OPS-002 - 2026-08-30
+## Closed checkpoint - ENV-AGENT-OPS-002 - 2026-08-30
 
-- Status: `REVIEW_REQUESTED`; owner/lead GPT-5.6 Sol.
+- Status: `CLOSED / MERGED / POST-MERGE VERIFIED`; owner/lead GPT-5.6 Sol; independent reviewer GLM-5.3 MAX.
 - Repo/worktree/branch/base: `aase7en/env-wastewater-webapp` / `A:\\GitHub\\envww-agent-ops-002` / `docs/env-agent-ops-002` / `origin/main@8e53d5c0dbc9237f511ec9e530f52eb553a44559`.
 - Objective: close the remaining orchestration gap for human-launch-only GPT/GLM/Codex/future-agent collaboration without creating a shadow SSoT.
 - Mutable scope: `docs/agent-handoff/AI_COLLABORATION_PROTOCOL.md`, `docs/ai/ENV-ENGINEERING-LOOP.md`, `docs/ai/CURRENT-WORK.md`, `docs/ai/HANDOFF.md`, `docs/work-orders/ENV-AGENT-OPS-002.md` only.
 - Fuel remains separately `HUMAN_ACTION_REQUIRED / POSTMERGE_VERIFY`; Garbage Core remains blocked behind Fuel live migration verification.
 - Evidence snapshot: current Z.ai GLM-5.3 release material + Artificial Analysis support GLM as a strong Core/long-horizon/security candidate, with explicit limitation that benchmark results are task-fit evidence rather than universal ranking. Current Matt Pocock engineering docs still support the grill-with-docs -> to-spec -> to-tickets -> implement -> code-review chain and red-capable diagnosing-bugs loop.
-- One next safe action: finish bounded docs changes, verify actual diff/scope, push/open PR, then stop at `REVIEW_REQUESTED` for independent exact-SHA review.
+- Review/merge evidence: GLM-5.3 MAX APPROVED exact SHA `c603a25e7dbc19f9e17e5300b91e5f35446485f8`; PR #58 merged as `077a18d59d605f8b0f50fe7d67cce8771b296fa2`; exact-main test `33329666902` SUCCESS; no runtime/schema/data/workflow/package changes.
+- One next safe action: restore authenticated Supabase access and finish `FUEL-CORE-001` live migration/read-only verification before Garbage Core.
