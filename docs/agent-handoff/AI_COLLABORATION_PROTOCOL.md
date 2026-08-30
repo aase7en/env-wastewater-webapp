@@ -625,3 +625,105 @@ For material external delegation, briefly record selection date, task category, 
 ## 22. Resume and session-rotation checkpoint
 
 Before model/worker/session rotation persist objective, task/status, repo/worktree/branch/base/HEAD/dirty state, verified completed work, files changed, evidence, decisions, blockers, ownership, warnings, and exactly one next safe action. The receiving agent starts with `AGENTS.md`, `CURRENT-WORK.md`, assigned Work Order, `HANDOFF.md`, and actual git/remote state; it must reach `SAFE_TO_MUTATE = YES` before editing.
+
+
+## 23. Human-launch-only external-agent orchestration
+
+When two AI products cannot invoke each other directly, the human may act only as a **launch bridge**, never as project memory or a result courier.
+
+Canonical flow:
+
+```text
+GOAL / ROADMAP
+-> lead resolves dependency frontier + ownership
+-> lead records model-fit evidence when material
+-> lead creates/reuses ONE bounded transport packet
+-> human launches external agent with a tiny direction-only prompt
+-> external agent reads repo SSoT + packet + actual git state
+-> external agent executes only its lane
+-> external agent writes result back to the SAME packet and stops
+-> human may send only a completion signal (for example: "GLM เสร็จแล้ว")
+-> lead reads packet directly
+-> lead verifies actual repo/remote/tests/PR independently
+-> durable facts are ingested into CURRENT-WORK / HANDOFF / WO / DEFECT-MEMORY
+-> transport packet becomes INGESTED_TO_SSOT then ARCHIVED/CLEARED
+```
+
+The human launch prompt should normally contain only:
+
+```text
+Repo/worktree: <absolute path>
+Read and follow: <transport packet path>
+Execute only the assigned lane, write the result back to the same packet, and STOP at <state>.
+```
+
+Do not put the agent's result into the launch prompt. Do not ask the human to copy the agent's response back to GPT/Codex/another model. A human message saying an agent is finished is a trigger to inspect evidence, not evidence itself.
+
+The external agent must independently read `AGENTS.md`, `CURRENT-WORK.md`, its Work Order, `HANDOFF.md`, and actual git/remote state before mutation. It must write the packet's result schema completely enough for a zero-chat-history lead to verify it: lifecycle, status, exact pushed SHA, PR, changed files, RED/baseline evidence, GREEN/tests, limitations/blockers, and one next safe action.
+
+
+## 24. Parallel-lane arbitration and integration ownership
+
+The lead derives the execution frontier from Roadmap + `CURRENT-WORK.md` + Work Order dependencies. Parallelism is allowed only for independent `READY` work with disjoint mutable scopes.
+
+Every parallel lane must state:
+
+- owner/model;
+- worktree + branch + base;
+- exact mutable and forbidden scope;
+- dependencies and blockers;
+- acceptance and verification;
+- review owner;
+- integration/merge order when another lane depends on it.
+
+Shared-file collisions serialize by default. If two lanes genuinely require the same file, one lane owns that file until checkpoint/merge or the lead records an explicit reconciliation contract. Never let two external agents concurrently edit the same mutable file merely because their conceptual goals differ.
+
+The lead owns synthesis, base-refresh decisions, conflict reconciliation, merge ordering and final judgment. An implementation owner never self-merges its implementation PR.
+
+If the critical path is `HUMAN_ACTION_REQUIRED`, independent non-production lanes may proceed only when they are explicitly authorized, dependency-independent and disjoint. They must not silently reinterpret the blocker as permission to skip to a downstream production milestone.
+
+
+## 25. Model-fit evidence and routing freshness
+
+For material delegation, record a compact dated routing note in the Work Order or transport packet:
+
+```text
+Selection date:
+Task category:
+Candidate model/agent:
+Credible current evidence:
+Why the evidence maps to this task:
+Important limitation / counter-evidence:
+Fallback/review owner:
+```
+
+Prefer primary model/vendor benchmark disclosures plus an independent benchmark source when available. Vendor-reported scores are useful evidence but are not neutral ground truth. Benchmark fit must map to the actual task (for example terminal coding, security review, long-context synthesis, visual implementation), not to a single global leaderboard number.
+
+Do not permanently encode "model X is best" into project governance. Re-check evidence when the task category changes, a new model/version is used, or the recorded evidence is stale enough to affect assignment confidence.
+
+Current ENV routing defaults remain role-based, not rank-based: GPT leads goal decomposition/cross-domain synthesis/ownership/review; GLM is a strong candidate for Core correctness/security/data-contract/long-horizon terminal lanes; Codex/visual agents are candidates for approved UI/responsive/3D work; workers provide bounded repository/tool execution. Each material assignment can override these defaults when current evidence and task fit justify it.
+
+
+## 26. Multi-agent Loop Engineer closure rule
+
+A lane is not finished because an external packet says DONE. For each material slice, the lead must reconcile the full applicable loop:
+
+```text
+SSoT + source reality
+-> Grill Me / Grill With Docs (only unresolved decisions)
+-> research / brainstorm / prototype when useful
+-> spec / vertical-slice plan / ownership
+-> RED or truthful baseline
+-> implement <-> diagnose/debug
+-> focused verification -> full suite -> realistic E2E
+-> responsive/accessibility/data-honesty/security/performance checks as applicable
+-> report + SSoT + executable defect prevention
+-> independent Standards review + Spec review on exact diff/SHA
+-> PR remote-diff check -> exact-head CI
+-> re-audit current head/base
+-> authorized expected-head merge
+-> fetch main -> deployment/live-safe verification
+-> close -> next eligible roadmap slice
+```
+
+Do not mechanically rerun settled upstream phases. Start at the earliest unresolved/failed gate. Any material failure loops back to the earliest responsible stage rather than being carried forward as a warning to DONE.
