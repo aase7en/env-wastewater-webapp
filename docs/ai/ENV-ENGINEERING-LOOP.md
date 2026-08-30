@@ -490,3 +490,19 @@ GOAL_DEFINED
 ## 26. One-line rule
 
 > **Goal first. Fetch reality. Grill only the unknown. Specify. Slice vertically. Prove the failure. Build narrowly. Debug from a repro. Test like the real user. Write reusable lessons into SSoT. Review independently on the exact diff. Let CI verify the exact SHA. Re-audit, merge, fetch main, verify production, close — then choose the next goal.**
+
+
+## 27. Multi-agent orchestration inside the engineering loop
+
+For work split across GPT, GLM, Codex or future agents, treat orchestration as part of engineering evidence rather than chat coordination.
+
+1. The lead derives independent READY lanes from Roadmap + `CURRENT-WORK.md` + Work Order dependencies.
+2. Each mutable lane gets one writer, isolated branch/worktree, bounded scope and a review owner.
+3. For material model assignment, record dated benchmark/source evidence and its task-fit limitation; do not use model reputation as authority.
+4. If the external model cannot be invoked directly, use the human only as a one-way launch bridge. The lead writes one temporary transport packet; the external agent reads it and repo SSoT, executes, and writes its result back to that same packet.
+5. The user never needs to copy the external agent's result back. A short completion signal only tells the lead to inspect the packet.
+6. The lead independently verifies git/remote/PR/tests rather than trusting the packet, ingests durable facts into canonical SSoT, then archives/clears the temporary transport.
+7. Parallel lanes merge only through explicit dependency/integration order. Shared files serialize unless the lead records explicit temporary ownership/reconciliation.
+8. The implementation owner stops at `REVIEW_REQUESTED`; independent exact-SHA review, merge and post-merge verification remain separate gates.
+
+This is the preferred human-in-the-loop fallback until the execution environment can directly invoke all participating agents. It deliberately minimizes human prompting without pretending cross-product automation exists when it does not.
