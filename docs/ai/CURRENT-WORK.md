@@ -1,6 +1,6 @@
 # CURRENT WORK
 
-Status: HUMAN_ACTION_REQUIRED
+Status: READY
 
 Allowed statuses:
 
@@ -25,10 +25,10 @@ Allowed statuses:
 
 > `CURRENT-WORK.md` is the authoritative task definition. Agents must not silently expand task scope.
 
-## Current execution state - 2026-08-30
+## Current execution state - 2026-08-31
 
-- **CLOSED `ENV-AGENT-OPS-002`** — GLM-5.3 MAX independently APPROVED exact head `c603a25e7dbc19f9e17e5300b91e5f35446485f8`; PR #58 merged as `077a18d59d605f8b0f50fe7d67cce8771b296fa2`; reviewed-head ancestry verified and exact-main test `33329666902` succeeded. Human-launch-only orchestration, same-packet result return, READY/disjoint parallel-lane arbitration, model-fit evidence freshness, and full multi-agent Loop Engineer closure are now canonical. Fuel remains the active critical-path blocker.
-- **ACTIVE `FUEL-CORE-001` / HUMAN_ACTION_REQUIRED** - exact reviewed head `d613d6b4090b30a1bc3169e56330d50cad05f025` APPROVED and PR #56 merged as `b2d12d3f860e1403faf77688edc325c044d438b9`. Exact-main test `33312236099`, E2E `33312236077`, and Pages `33312236092` are SUCCESS. Production DB migration remains unapplied because both supported Supabase paths lack authentication; both attempts stopped before mutation and no environmental rows changed. Fuel remains open until the merged migration is applied and the live rollup is verified.
+- **CLOSED `ENV-AGENT-OPS-002`** — GLM-5.3 MAX independently APPROVED exact head `c603a25e7dbc19f9e17e5300b91e5f35446485f8`; PR #58 merged as `077a18d59d605f8b0f50fe7d67cce8771b296fa2`; reviewed-head ancestry verified and exact-main test `33329666902` succeeded. Human-launch-only orchestration, same-packet result return, READY/disjoint parallel-lane arbitration, model-fit evidence freshness, and full multi-agent Loop Engineer closure are now canonical.
+- **CLOSED `FUEL-CORE-001`** — reviewed exact head `d613d6b4090b30a1bc3169e56330d50cad05f025` APPROVED; PR #56 merged as `b2d12d3f860e1403faf77688edc325c044d438b9`; exact-main test/E2E/Pages succeeded. On 2026-08-31, the reviewed migration was confirmed unchanged in current main, Management API authentication was safely resolved through the repo's Drive-backed redirect path, migration `20260830000000_fuel_core_001_rollup_safety.sql` applied 1/1 OK, live `carbon.v_unified_co2e` definition contains the safe text-side fuel join and no free-text-to-enum cast, and full scans of carbon/public rollups passed. No environmental rows were inserted/updated/deleted.
 - **CLOSED `ENV-AGENT-OPS-001`** - exact reviewed head `784c75a6df42e6c43ad45ade9674515fe43a46a4`; fresh GLM-5.3 MAX independent review **APPROVED** with no blockers; exact-head CI passed. PR #54 merged as `a1aafb00696253d386446fb518508e9a6753e71c`; reviewed-head ancestry verified and post-merge test run `33306776806` succeeded. Governance foundation is now canonical; no production/schema/RLS/carbon/UI/workflow scope changed.
 - **CLOSED `SEC-DEPS-001`** - reviewed exact head `1d41e0896dd4a8d32532202e4b5f4ca0f70e4310` received fresh independent GLM-5.3 MAX **APPROVED**; exact-head PR E2E passed **96/96**. PR #51 merged as `4e8b4fe90354c3e25939c940a74e6ea47f3fbf26`. Post-merge exact-SHA test, full E2E, Pages build/deploy and deployment smoke are SUCCESS; deployment `6163951586` is SUCCESS. No real environmental data writes were used.
 - Repo-health PR #49 is CLOSED/VERIFIED; PR #52 ingested its final review/post-merge evidence into canonical SSoT. `docs/ai/DEFECT-MEMORY.md` is now available to the Security lane after the additive main integration; prior ENV-DEFECT-008 history is preserved.
@@ -39,7 +39,7 @@ Allowed statuses:
 - Live 390x844 root-to-client deployed-bundle smoke loaded `assets/index-BIvntuDt.js` with the new Garden markers; all 9 labels/IDs passed; history remained inside its card with keyboard local scroll; Save was 71.89x48 and Delete 44x44; blank date made zero POSTs and preserved/focused its associated error; corrected save made one intercepted POST; document/body width stayed 390; no browser errors; all REST was mocked/no-real-write.
 - A direct GitHub Pages deep-link run observed a first-frame hosting transition (`HTTP 404` SPA fallback, document width 365 at a 360 viewport) that settled to 360 within 25 ms. This did not reproduce through the root-to-client production path and is recorded as a separate hosting/test-timing observation, not hidden as a Garden pass.
 - Garden data/query/schema/RLS/carbon behavior, `location_id`/`photo_path` null semantics, shared UI/AppShell, Garbage, other forms, and protected `.serena/` were unchanged.
-- Next safe action: restore authenticated Supabase access, apply only the already-merged `20260830000000_fuel_core_001_rollup_safety.sql`, verify the live carbon rollup without environmental row writes, then close Fuel before Garbage Core.
+- Next safe action: activate bounded Garbage Core/data-contract from current `origin/main`; resolve `segregation_type` vs legacy `waste_type` semantics before any Garbage UI expansion.
 
 ## Review Queue — 2026-08-23
 

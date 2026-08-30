@@ -1,6 +1,6 @@
 # FUEL-CORE-001 - fuel_type data honesty and carbon rollup safety
 
-Status: HUMAN_ACTION_REQUIRED / POSTMERGE_VERIFY
+Status: CLOSED
 Owner: GLM-5.3 MAX (Core Engineering / Track Z)
 Lead / review owner: GPT-5.6 Sol
 Repository: `aase7en/env-wastewater-webapp`
@@ -9,7 +9,7 @@ Branch: `fix/fuel-core-001`
 Base: `origin/main@2db209e88f61b4471784a6540dc67a65930fb894`
 Exact HEAD: literal SHA frozen in the pushed PR head + external review packet per governance §17
 Handoff path: `docs/ai/HANDOFF.md` + temporary external review/implementation packet while active
-Last updated: 2026-08-30
+Last updated: 2026-08-31
 
 ## Implementation evidence — 2026-08-30
 
@@ -112,11 +112,15 @@ Implementation owner stops at `REVIEW_REQUESTED` with exact pushed SHA, remote d
 
 ## One next safe action
 
-Restore authenticated Supabase access; apply only the merged Fuel migration; perform read-only live rollup verification; then close Fuel before Garbage Core.
+Activate bounded Garbage Core/data-contract from current `origin/main`; resolve canonical `segregation_type` vs legacy `waste_type` semantics before Garbage UI work.
 
 ## Post-merge checkpoint - 2026-08-30
 
 - Independent GPT-5.6 Sol review APPROVED exact SHA `d613d6b4090b30a1bc3169e56330d50cad05f025`; PR #56 merged as `b2d12d3f860e1403faf77688edc325c044d438b9`.
 - Exact-main test `33312236099`, E2E `33312236077`, and Pages `33312236092` are SUCCESS.
-- Production DB migration is NOT APPLIED. Both `apply_migration_api.py` and Supabase CLI stopped before mutation because no authenticated Supabase access token/session is available. No environmental rows were changed.
-- Closure condition: apply the merged `20260830000000_fuel_core_001_rollup_safety.sql` and perform read-only live rollup verification.
+- Initial production apply attempts were blocked before mutation because the fresh worktree lacked the repo `.env` redirect stub; no environmental rows changed.
+- Live closeout 2026-08-31: fresh worktree `A:\\GitHub\\envww-fuel-core-001-live` at current main `d62623f252b4f2c283f560c0451cd9e481a8843f`; reviewed Fuel head remained an ancestor and Fuel files had no Git-tree drift. Migration Git tree blob matched reviewed/current main exactly.
+- A temporary gitignored `__LOAD_FROM_DRIVE__=true` stub allowed the existing Drive-backed secret resolver to load authentication without copying/printing secrets. Management API `SELECT 1` passed.
+- `uv run python scripts/apply_migration_api.py supabase/migrations/20260830000000_fuel_core_001_rollup_safety.sql` -> **1/1 OK**.
+- Live verification: view definition fetch PASS; safe Fuel join present; unsafe free-text→enum cast absent; full scans of `carbon.v_unified_co2e` and `public.v_unified_co2e` PASS. No environmental rows were inserted/updated/deleted.
+- Temporary `.env` stub and `.venv` created for the live gate were removed; worktree returned clean. Fuel is eligible for canonical closeout; external packet can be cleared after closeout reaches main.
