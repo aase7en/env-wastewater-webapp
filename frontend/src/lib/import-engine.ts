@@ -142,7 +142,7 @@ async function parsePdf(file: File): Promise<ParsedTable> {
   // @ts-expect-error — build-time worker path
   await import("pdfjs-dist/build/pdf.worker.min.mjs");
   const buf = await file.arrayBuffer();
-  const doc = await pdfjs.getDocument({ data: buf }).promise;
+  const doc = await pdfjs.getDocument({ data: buf, enableXfa: false }).promise;
 
   type Item = { str: string; x: number; y: number };
   const pageItems: Item[] = [];

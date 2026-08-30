@@ -167,6 +167,24 @@ Source record:
 
 ---
 
+## ENV-DEFECT-009 — Security hardening must use the library's real API contract
+
+**Failure class:** dependency security / false hardening / type-safety bypass risk.
+
+**Symptom:** while remediating the PDF.js advisory, an initial hardening attempt passed `enableScripting: false` to `pdfjs.getDocument()`. The patched `pdfjs-dist@6.2.108` TypeScript contract rejected it because `enableScripting` is not a `DocumentInitParameters` option. Forcing it through with a cast would have created a false sense of security.
+
+**Root cause:** a viewer-level security concept was assumed to be a document-loader option without first verifying the patched package's actual API/types and the advisory's real remediation boundary.
+
+**How detected:** the focused security regression became green, but `tsc -b` failed on the unsupported option. Upstream/type inspection showed the CVE fix is the patched dependency version; ENV's valid `enableXfa: false` remains defense-in-depth/parser intent, not the CVE fix.
+
+**Prevention rule:** for dependency-security work, verify the advisory's patched version and the exact installed API/type contract before adding controls. Never use casts, `any`, suppressions, or unrelated options to make a security claim compile. Distinguish the actual vulnerability fix from defense-in-depth settings in tests, docs, and review evidence.
+
+**Regression/evidence:** `frontend/src/lib/import-engine.security.test.ts`, `frontend/tests/e2e/import-security.spec.ts`, patched `pdfjs-dist@6.2.108`, clean npm audits 0/0, and TypeScript/build gates.
+
+**Domains affected:** PDF/import parsing, dependency upgrades, security reviews, typed third-party APIs.
+
+---
+
 ## Adding future entries
 
 Add a new entry only after the root cause is verified. The entry should change at least one future behavior: a guardrail, test, spec rule, audit item, or implementation pattern.
