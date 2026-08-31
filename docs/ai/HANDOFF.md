@@ -1,5 +1,16 @@
 # HANDOFF
 
+## Active checkpoint - ENV-MOBILE-006-GARBAGE - 2026-08-31
+
+- Status: `CLAIMED`; owner/implementer GPT-5.6 Sol via Serena Visual Engineering fallback; independent exact-SHA review remains separate.
+- Repo/worktree/branch/base: `aase7en/env-wastewater-webapp` / `A:\\GitHub\\envww-mobile-006-garbage` / `feat/env-mobile-006-garbage` / `origin/main@b165a7209a4fa2a14f2471e3b0cdf36f9a806e25`.
+- Contract: `docs/work-orders/ENV-MOBILE-006-GARBAGE.md`; exact activation SHA will be frozen after this docs checkpoint.
+- Dependency gate: `GARBAGE-CORE-001` is CLOSED/MERGED/LIVE VERIFIED. Canonical `segregation_type`, legacy read fallback, DB CHECK, import behavior, carbon mapping, factors and RLS are read-only in this visual lane.
+- Source baseline: current Garbage form uses two phone columns; nine visible controls lack page-local ID/label associations; delete is a plain text action with unproven 44px target; history containment must be measured rather than assumed; no dedicated Garbage mobile E2E exists.
+- Browser plugin is unavailable in this session, so the repo Playwright path is the declared rendered-validation fallback. No Browser-plugin evidence will be claimed.
+- Mutable scope: `GarbagePage.tsx`, new `garbage-mobile.spec.ts`, this WO + bounded handoff/status/roadmap/graph records only. Shared UI, Garbage lib/import/Core/schema/carbon/RLS, other modules and `.serena/**` are no-touch.
+- One next safe action: commit/push this activation checkpoint, then establish deterministic Garbage mobile RED/baseline before changing production page code.
+
 ## Closed checkpoint - GARBAGE-CORE-001 - 2026-08-31
 
 - Status: `CLOSED / MERGED / POST-MERGE / LIVE VERIFIED`; implementation owner GLM-5.3 MAX, independent review/merge/live-verification owner GPT-5.6 Sol.
