@@ -1,6 +1,6 @@
 # ENV-MOBILE-006 — Garbage Mobile Convergence
 
-Status: REVIEW_REQUESTED
+Status: CLOSED
 Owner / implementer: GPT-5.6 Sol via Serena (Visual Engineering fallback)
 Independent review owner: external GLM-5.3 MAX or fresh independent reviewer after implementation stops
 Parent roadmap: `ENV-MOBILE-002+` Domain form convergence
@@ -8,8 +8,8 @@ Repository: `aase7en/env-wastewater-webapp`
 Worktree: `A:\GitHub\envww-mobile-006-garbage`
 Branch: `feat/env-mobile-006-garbage`
 Base: `origin/main@b165a7209a4fa2a14f2471e3b0cdf36f9a806e25`
-Exact HEAD: resolve from actual pushed branch/PR head at review time; review is invalidated by any head change
-Last updated: 2026-08-31
+Exact reviewed HEAD: `e723d07359ebd8c1ddb7fed772c083ee1b0e32db`; PR #63 merged with expected-head guard as `c975291c59e9c462120948af60c7ae04d5b2fbeb`
+Last updated: 2026-09-01
 
 ## Goal
 
@@ -147,12 +147,17 @@ Fresh-worktree failures caused by missing `VITE_SUPABASE_URL` / `VITE_SUPABASE_A
 
 No Garbage data/import/schema/RLS/carbon/factor/shared-shell semantics changed. No real environmental writes were used.
 
-## Review gate
+## Review / release closure — 2026-09-01
 
-Status: `REVIEW_REQUESTED`.
+- External GLM-5.3 MAX independently reviewed exact SHA `e723d07359ebd8c1ddb7fed772c083ee1b0e32db`: **APPROVED**, Standards PASS, Spec/UX PASS, no blockers. Reviewer independently reran focused Garbage Playwright 9/9, Vitest 229/229, TypeScript, lint, build, full Playwright 105/105, diff/scope and remote-head checks.
+- PR #63 exact-head CI was green and remote diff matched the eight allowed files. Expected-head merge produced `c975291c59e9c462120948af60c7ae04d5b2fbeb`; reviewed-head ancestry is verified in `origin/main`.
+- Exact-main GitHub runs: `test` `33496925087` SUCCESS; E2E smoke `33496925046` SUCCESS; Pages `33496925085` SUCCESS. Deployment `6199171927` is SUCCESS for the merge SHA.
+- Live deployed-bundle root-to-client probes at 360x844 and 390x844 passed with document width equal to viewport, 9/9 labels, Save/Delete >=44px, no browser errors, and all REST mocked/no real environmental writes.
+- Direct Pages `/garbage` reproduced the known shared-shell/hosting first-frame condition: 365px document width at a 360px viewport while ModuleDock settled after the expected 404-to-SPA handoff, returning to 360px within about 250ms. Garbage content was not an overflow offender; stable root-to-client navigation was clean. This is recorded as a shared hosting/shell timing observation, not hidden as a Garbage pass and not expanded into this WO.
+- No Garbage Core/import/schema/RLS/carbon/factor/shared-shell semantics changed. Canonical `segregation_type`-only write behavior remains intact.
 
-The implementer must freeze/push the branch, then an independent reviewer must resolve the actual remote branch/PR head SHA and review Standards + Spec/UX against that exact SHA. Any head change invalidates the review and requires re-review. The implementation owner does not self-merge.
+Status: `CLOSED`.
 
 ## One next safe action
 
-Freeze/push the verified implementation checkpoint and perform independent exact-SHA review before PR merge readiness.
+Run a bounded read-only audit of Food / Safety / Building on current main, compare operational frequency/control density and source/data-contract risk, then activate exactly one next mobile WO with disjoint ownership. Do not fold business-rule/schema changes into the visual lane.
