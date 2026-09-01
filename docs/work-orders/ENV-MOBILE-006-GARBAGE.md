@@ -1,6 +1,6 @@
 # ENV-MOBILE-006 — Garbage Mobile Convergence
 
-Status: CLAIMED
+Status: REVIEW_REQUESTED
 Owner / implementer: GPT-5.6 Sol via Serena (Visual Engineering fallback)
 Independent review owner: external GLM-5.3 MAX or fresh independent reviewer after implementation stops
 Parent roadmap: `ENV-MOBILE-002+` Domain form convergence
@@ -8,7 +8,7 @@ Repository: `aase7en/env-wastewater-webapp`
 Worktree: `A:\GitHub\envww-mobile-006-garbage`
 Branch: `feat/env-mobile-006-garbage`
 Base: `origin/main@b165a7209a4fa2a14f2471e3b0cdf36f9a806e25`
-Exact HEAD: `PENDING_CHECKPOINT` until activation docs commit is frozen
+Exact HEAD: resolve from actual pushed branch/PR head at review time; review is invalidated by any head change
 Last updated: 2026-08-31
 
 ## Goal
@@ -113,3 +113,46 @@ Implementation stops at `REVIEW_REQUESTED` with exact pushed SHA, remote diff, f
 ## One next safe action
 
 Freeze the activation docs checkpoint, establish focused Garbage mobile RED/baseline against unchanged production page, then implement only the smallest page-local responsive/accessibility/touch repair.
+
+## Baseline / implementation evidence — 2026-09-01
+
+Activation fixed point: `02eb11828a2326048e2c04f008cb7293aac43855`.
+
+Deterministic baseline against the unchanged page:
+
+- 360 px first/second control x-delta: **154 px** — RED versus one phone column.
+- Programmatic label associations: **0/9** — RED.
+- Delete target: **19.125 × 24.797 CSS px** — RED versus 44 px minimum.
+- Blank required date: **1 POST**, no persistent associated error, no focus recovery — RED.
+- 1024 px first/second control x-delta: **235 px** — PASS; preserve desktop density.
+- Initial history/document containment with the baseline row: PASS; no wrapper was added by assumption.
+
+Implementation is bounded to `GarbagePage.tsx` plus the focused Playwright spec. It adds one-column phone composition with larger-screen density restoration, stable IDs/labels for all nine controls, local required-date validation/error/focus recovery, and a 44 px Delete target while preserving canonical `segregation_type` write semantics. The 44 px Delete repair then exposed a new history-card containment regression with the representative focused-spec row; a named/focusable local horizontal-scroll region with ArrowRight reachability was added as the smallest regression repair.
+
+GREEN evidence:
+
+- focused `garbage-mobile.spec.ts`: **9/9 PASS**, retries 0, worker 1;
+- Pixel-class touch save: PASS;
+- save failure/retry preserves entered values and sends equal complete canonical request bodies; `waste_type` absent;
+- blank date: zero POST + persistent associated error + focus recovery;
+- 360/390/430/768/1024 coverage;
+- full Vitest: **229/229 PASS**;
+- standalone TypeScript: PASS;
+- lint: **12 pre-existing warnings / 0 errors**;
+- production build: PASS;
+- full Playwright: **105/105 PASS**;
+- `git diff --check`: PASS.
+
+Fresh-worktree failures caused by missing `VITE_SUPABASE_URL` / `VITE_SUPABASE_ANON_KEY` were classified as `ENVIRONMENT_FAILURE`; verification was rerun with process-only values loaded from existing secure local configuration without copying or printing secrets. Worker 502/timeouts were classified as `TRANSPORT_FAILURE`; artifact/process inspection confirmed full Playwright completed passed and left no port-5173 listener.
+
+No Garbage data/import/schema/RLS/carbon/factor/shared-shell semantics changed. No real environmental writes were used.
+
+## Review gate
+
+Status: `REVIEW_REQUESTED`.
+
+The implementer must freeze/push the branch, then an independent reviewer must resolve the actual remote branch/PR head SHA and review Standards + Spec/UX against that exact SHA. Any head change invalidates the review and requires re-review. The implementation owner does not self-merge.
+
+## One next safe action
+
+Freeze/push the verified implementation checkpoint and perform independent exact-SHA review before PR merge readiness.

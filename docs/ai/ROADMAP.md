@@ -125,7 +125,7 @@ Likely owner split:
 
 **Completed bounded slice:** `ENV-MOBILE-005` - Garden. Fresh review APPROVED exact head `327ae8b541f3e29f5727acc7edb3ed76b12f20bc`; PR #48 merged as `001ef532b1203b3bd2def7c28bdd6845a948dec8`; exact merge-SHA test/E2E/Pages are green; deployment `6150037544` succeeded; live 390px root-to-client deployed-bundle smoke passed with mocked REST/no real writes. Garden data/schema/carbon/shared-shell semantics remain unchanged.
 
-**Active bounded slice:** `ENV-MOBILE-006` — Garbage. `GARBAGE-CORE-001` is CLOSED/MERGED/LIVE VERIFIED, so the prior classification/carbon gate is satisfied. This slice is visual-only: phone layout, semantic labels, touch targets, contained history, required-date recovery, canonical payload preservation, and real-use Playwright evidence. Contract: `docs/work-orders/ENV-MOBILE-006-GARBAGE.md`.
+**Review-requested bounded slice:** `ENV-MOBILE-006` — Garbage. `GARBAGE-CORE-001` is CLOSED/MERGED/LIVE VERIFIED. Baseline RED and bounded page-local repair are complete; focused Playwright 9/9, Vitest 229/229, build/type/lint gates, and full Playwright 105/105 are green. Independent exact-SHA Standards + Spec/UX review and release gates remain. Contract: `docs/work-orders/ENV-MOBILE-006-GARBAGE.md`.
 
 
 After Mobile-001 provides a proven pattern, audit and improve one domain per WO, prioritized by field frequency and control density:
