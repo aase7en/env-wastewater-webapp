@@ -65,6 +65,22 @@ recorded in `docs/work-orders/FOOD-CORE-001.md` for a separate decision/WO.
   documented as non-contract). Building `repair_needed` DECISION_REQUIRED
   and Building adapter defects are OUT of scope (separate lane).
 
+## Review verdicts (implementer self-review, 2026-09-02)
+
+- **Standards review: PASS.** Repo freshness gate honored (fresh worktree from verified `origin/main@2194411c`); work-order containment exact (7 files, remote diff = local diff); data honesty preserved (unknown ≠ real category, blank → null, only canonical + verified labels, no invented mappings); schema/adapter agree (CHECK sets = adapter sets); migration additive/idempotent/fail-closed/no-data-mutation, trigger + chemical schema untouched (pinned by contract tests); no secrets exposed (env values process-only, never printed); no real writes (all REST mocked/synthetic); regression adequacy: 19 focused tests + full suites (248 Vitest, 115 Playwright); `.serena/**` never staged/touched; no shared SSoT edited (coordinator owns reconciliation).
+- **Spec review: PASS.** Missing/blank `sample_type`/`test_type` remain null; non-canonical tokens fail closed per row before any REST write; canonical values (5 Thai sample types, 3 English test types) import correctly incl. trim/case/verified-label normalization; existing valid Food workflows compatible (page form defaults/submit unchanged semantically; only `reagent_used` removed from a write path that never populated it); reagent trigger remains DORMANT (compiler-enforced via `FoodInput` Omit; migration + tests pin no-trigger-touch); no mobile/UI behavior changed (no layout/style/markup-structure edits).
+- Independent GPT review remains the merge gate; these self-verdicts do not approve the merge.
+
+## Exact-SHA CI (observed 2026-09-02)
+
+- Final PR head at review freeze: `597b679fbe319763e9fa9b1435dcd4e9613f5c00` (docs-freeze commit).
+- All four GitHub check runs verified bound to exactly that SHA via the check-runs API (`head_sha=597b679`): **smoke PASS (3m31s, full Playwright E2E), scripts PASS, notify PASS ×2**.
+- If this handoff is later amended by a docs-only completeness commit, the binding head is that latest PR head — resolve via PR #66 `headRefOid`; per collaboration protocol §17 no commit writes its own SHA into itself.
+
+## Dirty state at freeze
+
+Worktree `A:\GitHub\envww-food-core-001` clean (no modified/untracked tracked-path files; `git status --short` empty) on `fix/food-core-001` at the pushed head. Protected `.serena/**` does not exist in this worktree.
+
 ## Remote PR / CI (frozen 2026-09-02)
 
 - Implementation checkpoint SHA: `5f0407a94223a6b07709f5ab10ceb17d15b430e8` (7 files, exactly the WO scope)
