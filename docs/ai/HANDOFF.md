@@ -1,5 +1,16 @@
 # HANDOFF
 
+## Active checkpoint - ENV-MOBILE-007-SAFETY - 2026-09-01
+
+- Status: `CLAIMED`; owner/implementer GPT-5.6 Sol via Serena visual fallback; independent exact-SHA review remains separate after implementation stops.
+- Repo/worktree/branch/base: `aase7en/env-wastewater-webapp` / `A:\\GitHub\\envww-mobile-007-safety` / `feat/env-mobile-007-safety` / `origin/main@59224e9482ade4d740cfb4c1fffc62880575204b`; activation SHA will be frozen by this docs checkpoint.
+- Selection gate: fresh exact-main read-only comparison chose Safety over Food/Building. Safety exposes 12 visible input controls and monthly/next-due field workflow with direct single-domain CRUD; Food has reagent→`chemical.movement` trigger coupling; Building has `repair_needed`→`core.repair_request` app-layer intent. Food/Building remain inactive/read-only.
+- A-Wiki context confirms Safety is a monthly fire/emergency-light inspection domain, including extinguisher and emergency-light checks; QR/equipment expansion exists as broader domain context but is not authorized by this mobile slice.
+- Mutable scope: `frontend/src/pages/SafetyPage.tsx`, new `frontend/tests/e2e/safety-mobile.spec.ts`, `docs/work-orders/ENV-MOBILE-007-SAFETY.md`, `docs/ai/handoffs/ENV-MOBILE-007-SOL.md`, and bounded CURRENT-WORK/HANDOFF/ROADMAP/PROJECT-GRAPH records only.
+- No-touch: `frontend/src/lib/safety.ts`, Safety import adapter/tests, schema/RLS/migrations, due-date/count/boolean/alert semantics, shared UI/AppShell/ModuleDock/styles, Food/Building/other modules, `.serena/**`, real hospital/environmental/safety data.
+- Browser-plugin/visual external surface is not available in this harness; repository Playwright is the declared rendered-validation path. No Browser-plugin evidence will be claimed.
+- One next safe action: freeze/push this activation checkpoint, establish truthful focused Safety mobile RED/baseline against the unchanged page, then implement only the smallest page-local responsive/accessibility/touch repair.
+
 ## Closed checkpoint - ENV-MOBILE-006-GARBAGE - 2026-09-01
 
 - Status: `CLOSED / MERGED / POST-MERGE / DEPLOYED VERIFIED`; owner/implementer GPT-5.6 Sol via Serena; external GLM-5.3 MAX independently APPROVED Standards + Spec/UX for the exact implementation SHA with no blockers.
