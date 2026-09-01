@@ -1,13 +1,13 @@
 # ENV-MOBILE-006-GARBAGE — Implementation / Review Handoff
 
-Status: REVIEW_REQUESTED
+Status: CLOSED
 Date: 2026-09-01
 Repo: `aase7en/env-wastewater-webapp`
 Worktree: `A:\GitHub\envww-mobile-006-garbage`
 Branch: `feat/env-mobile-006-garbage`
 Base: `origin/main@b165a7209a4fa2a14f2471e3b0cdf36f9a806e25`
 Activation SHA: `02eb11828a2326048e2c04f008cb7293aac43855`
-Review SHA: resolve from the actual pushed remote branch/PR head after freeze; any head change invalidates the review.
+Reviewed SHA: `e723d07359ebd8c1ddb7fed772c083ee1b0e32db`; PR #63 merge: `c975291c59e9c462120948af60c7ae04d5b2fbeb`.
 
 ## Objective
 
@@ -64,15 +64,15 @@ Fresh-worktree missing `VITE_SUPABASE_URL` / `VITE_SUPABASE_ANON_KEY` was classi
 
 No real environmental writes were used.
 
-## Independent review contract
+## Independent review / release closure
 
-Reviewer must independently inspect the actual diff and work order at the exact pushed branch/PR head. Review separately:
-
-1. **Standards** — repository rules, scope, accessibility/test quality, maintainability.
-2. **Spec/UX** — all mobile/tablet/desktop acceptance criteria, failure/retry behavior, canonical payload preservation, no scope creep.
-
-Return `APPROVED`, `CHANGES_REQUIRED`, or `BLOCKED` bound to the exact reviewed SHA. Do not merge.
+- External GLM-5.3 MAX independently APPROVED exact SHA `e723d07359ebd8c1ddb7fed772c083ee1b0e32db`: Standards PASS, Spec/UX PASS, no blockers. Independent commands included focused Garbage Playwright 9/9, Vitest 229/229, TypeScript, lint, build, full Playwright 105/105, diff/scope and remote-head checks.
+- PR #63 merged with expected-head guard as `c975291c59e9c462120948af60c7ae04d5b2fbeb`; reviewed-head ancestry is verified.
+- Exact-main runs: `test` `33496925087`, E2E smoke `33496925046`, Pages `33496925085` — all SUCCESS. GitHub Pages deployment `6199171927` is SUCCESS for the exact merge SHA.
+- Live root-to-client Pages probes at 360x844 and 390x844 passed: document width equals viewport, 9/9 labels, Save/Delete >=44px, no browser errors; all REST mocked/no real writes.
+- Direct `/garbage` deep-link showed the known Pages/shared-ModuleDock settling condition: document 365px at 360px while the 404-to-SPA handoff settles, then 360px within about 250ms. Garbage content was not the offender and stable root-to-client navigation remained clean.
+- No Core/import/schema/RLS/carbon/factor/shared-shell semantics changed; canonical `segregation_type`-only writes remain intact.
 
 ## One next safe action
 
-Freeze/push the branch, resolve the exact remote head SHA, then perform independent exact-SHA review before PR merge readiness.
+Audit Food / Safety / Building read-only on current main and activate exactly one bounded next mobile WO based on operational frequency/control density and source/data-contract risk.

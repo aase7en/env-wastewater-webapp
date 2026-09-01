@@ -125,7 +125,7 @@ Likely owner split:
 
 **Completed bounded slice:** `ENV-MOBILE-005` - Garden. Fresh review APPROVED exact head `327ae8b541f3e29f5727acc7edb3ed76b12f20bc`; PR #48 merged as `001ef532b1203b3bd2def7c28bdd6845a948dec8`; exact merge-SHA test/E2E/Pages are green; deployment `6150037544` succeeded; live 390px root-to-client deployed-bundle smoke passed with mocked REST/no real writes. Garden data/schema/carbon/shared-shell semantics remain unchanged.
 
-**Review-requested bounded slice:** `ENV-MOBILE-006` — Garbage. `GARBAGE-CORE-001` is CLOSED/MERGED/LIVE VERIFIED. Baseline RED and bounded page-local repair are complete; focused Playwright 9/9, Vitest 229/229, build/type/lint gates, and full Playwright 105/105 are green. Independent exact-SHA Standards + Spec/UX review and release gates remain. Contract: `docs/work-orders/ENV-MOBILE-006-GARBAGE.md`.
+**Completed bounded slice:** `ENV-MOBILE-006` — Garbage. External GLM-5.3 MAX APPROVED exact head `e723d07359ebd8c1ddb7fed772c083ee1b0e32db`; PR #63 merged as `c975291c59e9c462120948af60c7ae04d5b2fbeb`; exact-main test/E2E/Pages and deployment `6199171927` succeeded. Live root-to-client 360/390px deployed-bundle probes passed with mocked REST/no real writes, 9/9 labels, >=44px Save/Delete, and no settled document overflow. Direct Pages deep-link retains the known shared ModuleDock/404-to-SPA settling observation and is not a Garbage-page regression. Contract: `docs/work-orders/ENV-MOBILE-006-GARBAGE.md`.
 
 
 After Mobile-001 provides a proven pattern, audit and improve one domain per WO, prioritized by field frequency and control density:

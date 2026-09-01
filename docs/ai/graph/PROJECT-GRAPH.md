@@ -218,8 +218,8 @@ At this checkpoint:
 - Separate Core finding remains: free-text imported `fuel_type` can conflict with the `carbon.source_type` cast. It requires a separate Core Engineering contract/regression lane and is not folded into mobile convergence.
 - `ENV-MOBILE-005` Garden is independently reviewed, merged, deployed, production-smoked, and closed; final reviewed head `327ae8b541f3e29f5727acc7edb3ed76b12f20bc`, PR #48 merge `001ef532b1203b3bd2def7c28bdd6845a948dec8`.
 - Exact merge-SHA test/E2E/Pages are green; deployment `6150037544` succeeded; live 390px root-to-client smoke passed with mocked REST/no real writes, 9/9 labels, contained keyboard-scrollable history, required-date zero-POST recovery, and no browser errors.
-- Garden data/schema/RLS/carbon/shared shell remain unchanged. `GARBAGE-CORE-001` subsequently closed the dual-classification/import/carbon contract with production live verification; Garbage mobile is now eligible and active as `ENV-MOBILE-006-GARBAGE` with Core/schema/carbon/RLS read-only.
+- Garden data/schema/RLS/carbon/shared shell remain unchanged. `GARBAGE-CORE-001` closed the dual-classification/import/carbon contract with production live verification; `ENV-MOBILE-006-GARBAGE` is now independently reviewed, merged, deployed and production-smoked, with Core/schema/carbon/RLS/shared-shell scope unchanged.
 
 Current critical-path handoff:
 
-`ENV-MOBILE-001 COMPLETE -> ENV-MOBILE-002 Chemical COMPLETE -> ENV-MOBILE-003 Water Supply COMPLETE -> ENV-MOBILE-004 Fuel COMPLETE -> ENV-MOBILE-005 Garden COMPLETE -> repo-health exact-SHA review/remediation -> FUEL-CORE-001 CLOSED -> GARBAGE-CORE-001 CLOSED -> ENV-MOBILE-006 Garbage REVIEW_REQUESTED`
+`ENV-MOBILE-001 COMPLETE -> ENV-MOBILE-002 Chemical COMPLETE -> ENV-MOBILE-003 Water Supply COMPLETE -> ENV-MOBILE-004 Fuel COMPLETE -> ENV-MOBILE-005 Garden COMPLETE -> repo-health exact-SHA review/remediation -> FUEL-CORE-001 CLOSED -> GARBAGE-CORE-001 CLOSED -> ENV-MOBILE-006 Garbage COMPLETE -> Food/Safety/Building read-only selection audit READY`
