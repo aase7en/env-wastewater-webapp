@@ -1,13 +1,13 @@
 # ENV-MOBILE-007-SAFETY — Implementation / Review Handoff
 
-Status: CLAIMED
-Date: 2026-09-01
+Status: REVIEW_REQUESTED
+Date: 2026-09-02
 Repo: `aase7en/env-wastewater-webapp`
 Worktree: `A:\GitHub\envww-mobile-007-safety`
 Branch: `feat/env-mobile-007-safety`
 Base: `origin/main@59224e9482ade4d740cfb4c1fffc62880575204b`
-Activation SHA: PENDING_CHECKPOINT
-Review SHA: resolve from actual pushed branch/PR head; any head change invalidates review.
+Activation SHA: `f4d953eeb83530c707e154ddf94e48e2b12aac45`
+Review SHA: freeze from the actual pushed branch/PR head after the allowed-files checkpoint commit; any head change invalidates review.
 
 ## Objective
 
@@ -33,20 +33,21 @@ Safety therefore has the highest control density and cleanest visual-only seam. 
 
 No-touch: Safety lib/import/schema/RLS/alerts/business semantics, shared UI/AppShell/ModuleDock/styles, Food/Building/other modules, `.serena/**`, real hospital data.
 
-## Current source findings
+## Baseline and implementation result
 
-- phone form uses two columns (`grid-cols-2 md:grid-cols-4`);
-- six grid fields + five Toggles + issues textarea;
-- non-Toggle controls lack stable `id`/`htmlFor` associations;
-- Delete target is text-only/unproven for 44 px;
-- history is a raw 5-column table; containment must be measured;
-- `check_date` is DB/import-required but page has no explicit local blank-date recovery;
-- `next_check_due` default and alert semantics are read-only.
+- Truthful focused baseline after correcting the harness: 5 FAIL / 5 PASS. RED: 154px phone x-delta, 0/7 non-Toggle label associations, 19.125px Delete width, blank required `check_date` issuing 1 POST, and keyboard traversal blocked by the missing label seam.
+- Already green at baseline: all five existing Toggles remained named/keyboard-operable with >=44px touch rows; history containment; tablet/desktop density; failed-save retry exact body; Pixel touch semantics; `next_check_due`, count, and boolean value preservation.
+- Page-local repair: stable page IDs + associated labels for all 7 non-Toggle controls; `grid-cols-1 sm:grid-cols-2 md:grid-cols-4`; required-date local zero-POST guard with persistent associated error and input focus recovery; Delete >=44px. History wrapper was not added because measured containment did not require it.
+- Forbidden Safety Core/import/schema/RLS/alert/date/count/boolean/shared-UI scope remained untouched; `.serena/**` remains protected/untracked.
 
-## Verification target
+## Verification evidence
 
-Focused RED/baseline first, then smallest page-local repair. Require 360/390/430/768/1024 evidence, labels/toggles, 44 px actions, history containment, keyboard/touch, failed-save retry equality, blank-date zero POST/error/focus, full deterministic suites, exact-SHA independent review, CI, merge, Pages and production mocked-REST smoke.
+- Focused Safety Playwright: 10/10 PASS, `--workers=1 --retries=0`, covering 360/390/430/768/1024, keyboard, Pixel 7 touch, failure/retry equality, required-date recovery and history containment.
+- Vitest: 229/229 PASS. Standalone `tsc -b`: PASS. Lint: 12 pre-existing warnings / 0 errors. Production build: PASS. `git diff --check`: PASS.
+- Full Playwright: 115/115 PASS, exit 0, one worker/retries 0; Safety itself passed 10/10 within the full regression set.
+- Fresh-shell false failures were classified `ENVIRONMENT_FAILURE`: missing Vite Supabase config prevented boot, then a localhost synthetic URL changed the Supabase storage namespace and redirected the seeded fixture to `/login`. Final runs used the canonical project-ref URL with a fake process-only anon value. Safety REST remained mocked and no real safety/environmental writes occurred.
+- Self-review: no forbidden production file changes or business/data-contract expansion found.
 
 ## One next safe action
 
-Freeze activation docs checkpoint, then establish Safety mobile RED/baseline before editing production page behavior.
+Explicitly stage only the allowed Safety implementation/test/SSoT files, commit/push, freeze the exact remote SHA, open the PR, audit the actual remote diff, then request independent exact-SHA Standards + Spec/UX review. Do not merge before valid independent review and required CI.

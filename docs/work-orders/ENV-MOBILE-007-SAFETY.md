@@ -1,15 +1,15 @@
 # ENV-MOBILE-007 — Safety Mobile Convergence
 
-Status: CLAIMED
+Status: REVIEW_REQUESTED
 Owner / implementer: GPT-5.6 Sol via Serena (Visual Engineering fallback)
-Independent review owner: external GLM-5.3 MAX or fresh independent reviewer after implementation stops
+Independent review owner: external GLM-5.3 MAX or fresh independent reviewer; review must bind to the frozen pushed head
 Parent roadmap: `ENV-MOBILE-002+` Domain form convergence
 Repository: `aase7en/env-wastewater-webapp`
 Worktree: `A:\GitHub\envww-mobile-007-safety`
 Branch: `feat/env-mobile-007-safety`
 Base: `origin/main@59224e9482ade4d740cfb4c1fffc62880575204b`
-Exact HEAD: resolve from actual pushed branch/PR head at review time; any head change invalidates review
-Last updated: 2026-09-01
+Exact HEAD: freeze from the actual pushed branch/PR head immediately after this checkpoint commit; any head change invalidates review
+Last updated: 2026-09-02
 
 ## Goal
 
@@ -114,10 +114,19 @@ Record already-green conditions; do not manufacture RED.
 
 If a Safety business/data/import/schema/alert defect appears, stop that subproblem and route it to a separate Core WO. Do not broaden this visual slice.
 
+## Implementation / verification checkpoint — 2026-09-02
+
+- Truthful RED after harness correction: 5 FAIL / 5 PASS. REDs were phone two-column composition (154 px x-delta), 0/7 programmatic non-Toggle labels, 19.125 px Delete width, blank required `check_date` issuing 1 POST, and keyboard traversal blocked by the missing label seam. Existing Toggle semantics/touch rows, history containment, tablet/desktop density, retry-body preservation, Pixel touch semantics, and due-date/count/boolean values were already green.
+- Page-local repair only: stable IDs/labels for 7 non-Toggle controls; one-column phone grid with `sm`/`md` density restoration; local required-date guard with persistent associated error and focus recovery; Delete >=44 px. No history wrapper was added because measured containment was already green.
+- Fresh focused Playwright: 10/10 PASS (`--workers=1 --retries=0`) across 360/390/430/768/1024, keyboard, Pixel 7 touch, failed-save retry equality, zero-POST blank-date recovery, history containment, and preserved `next_check_due`/count/boolean semantics.
+- Full deterministic gates: Vitest 229/229 PASS; standalone `tsc -b` PASS; lint 12 pre-existing warnings / 0 errors; production build PASS; `git diff --check` PASS.
+- Full Playwright: 115/115 PASS, exit 0, one worker/retries 0. Local fresh-shell false failures were classified `ENVIRONMENT_FAILURE`: missing Vite Supabase config first crashed app boot; a localhost synthetic URL then changed the Supabase storage namespace and redirected the seeded fixture to `/login`. Re-run used the canonical project-ref URL plus a fake process-only anon value; all Safety REST remained mocked and no real safety/environmental writes occurred.
+- Self-review found no forbidden production changes. `.serena/**` remains protected/untracked and must not be staged.
+
 ## Stop condition
 
 Implementation stops at `REVIEW_REQUESTED` with exact pushed SHA, remote diff, focused/full verification, known limitations, and one next safe action. Implementer does not self-merge.
 
 ## One next safe action
 
-Freeze/push this activation checkpoint, establish focused Safety mobile RED/baseline against the unchanged page, then implement only the smallest page-local responsive/accessibility/touch repair.
+Explicitly stage only the allowed Safety implementation/test/SSoT files, commit and push them, freeze the exact remote SHA, open the PR, audit the actual remote diff, then request independent Standards + Spec/UX review against that exact SHA. Do not merge before exact-head review and required CI are valid.
