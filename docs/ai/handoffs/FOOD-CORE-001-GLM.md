@@ -65,12 +65,13 @@ recorded in `docs/work-orders/FOOD-CORE-001.md` for a separate decision/WO.
   documented as non-contract). Building `repair_needed` DECISION_REQUIRED
   and Building adapter defects are OUT of scope (separate lane).
 
-## Remote PR / CI (filled at freeze)
+## Remote PR / CI (frozen 2026-09-02)
 
-- Implementation checkpoint SHA: `<filled at freeze>`
-- PR: `<filled at freeze>`
-- Exact PR head SHA at review freeze: `<filled at freeze>`
-- Remote diff audit + exact-head CI status: `<filled at freeze>`
+- Implementation checkpoint SHA: `5f0407a94223a6b07709f5ab10ceb17d15b430e8` (7 files, exactly the WO scope)
+- PR: https://github.com/aase7en/env-wastewater-webapp/pull/66 (OPEN, base `main`, MERGEABLE at freeze)
+- Remote diff audited: file list identical to the local diff — no `.serena/**`, no shared SSoT/UI, no other-domain files
+- This docs-only freeze commit follows the implementation checkpoint; independent review binds to the actual PR head at review time (any head change invalidates review)
+- Exact-head CI status: observe on the PR at review time (checks triggered by the push; reviewer must require them green on the latest head before merge)
 
 ## One next safe action
 
