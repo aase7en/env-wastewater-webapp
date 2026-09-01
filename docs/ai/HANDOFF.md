@@ -1,5 +1,17 @@
 # HANDOFF
 
+## Active checkpoint - ENV-MOBILE-006-GARBAGE - 2026-09-01
+
+- Status: `REVIEW_REQUESTED`; owner/implementer GPT-5.6 Sol via Serena; independent exact-SHA Standards + Spec/UX review is next and implementer must not self-merge.
+- Repo/worktree/branch/base: `aase7en/env-wastewater-webapp` / `A:\GitHub\envww-mobile-006-garbage` / `feat/env-mobile-006-garbage` / `origin/main@b165a7209a4fa2a14f2471e3b0cdf36f9a806e25`; activation SHA `02eb11828a2326048e2c04f008cb7293aac43855`; implementation SHA pending freeze/push.
+- Dependency gate: `GARBAGE-CORE-001` remains CLOSED/MERGED/LIVE VERIFIED. `segregation_type`, legacy read fallback, import/schema/carbon/factors/RLS remain read-only; no real environmental writes were used.
+- RED/baseline at unchanged activation head: 360px first/second control x-delta 154px; semantic label associations 0/9; Delete 19.125x24.797px; blank date made 1 POST with no associated error/focus. Desktop 1024px density x-delta 235px and initial table/document containment were already green.
+- Implementation: page-local one-column phone grid with larger-screen density restoration; stable ID/htmlFor associations for all 9 controls; required-date local guard with persistent associated error and focus recovery; Delete 44px minimum; exact canonical save/retry behavior retained. Enlarging Delete exposed a new history-card containment regression, so a named/focusable local horizontal-scroll region with ArrowRight keyboard reachability was added as the smallest repair.
+- Verification: focused Garbage Playwright 9/9 PASS (retries 0, worker 1); Pixel-class touch path PASS; save-error/retry exact-body equality PASS and no `waste_type`; required-date zero-POST/error/focus PASS; 360/390/430/768/1024 coverage; Vitest 229/229 PASS; standalone TypeScript PASS; lint 12 pre-existing warnings/0 errors; production build PASS; full Playwright 105/105 PASS; `git diff --check` PASS.
+- Environment note: fresh worktree initially lacked `VITE_SUPABASE_URL`/`VITE_SUPABASE_ANON_KEY`; this was classified as ENVIRONMENT_FAILURE and tests were rerun with process-only values loaded from existing secure local config without copying/printing secrets. Worker 502/timeouts were TRANSPORT_FAILURE; artifact/process inspection confirmed the full Playwright run completed passed with no failed tests and no port-5173 listener left behind.
+- Mutable scope remains only `GarbagePage.tsx`, `garbage-mobile.spec.ts`, this WO and bounded SSoT. Shared UI, Garbage lib/import/Core/schema/carbon/RLS, other modules and `.serena/**` remain no-touch.
+- One next safe action: freeze/push the implementation checkpoint, independently review the exact SHA, then open/audit PR and require exact-head CI before merge.
+
 ## Closed checkpoint - GARBAGE-CORE-001 - 2026-08-31
 
 - Status: `CLOSED / MERGED / POST-MERGE / LIVE VERIFIED`; implementation owner GLM-5.3 MAX, independent review/merge/live-verification owner GPT-5.6 Sol.
