@@ -127,6 +127,8 @@ Likely owner split:
 
 **Completed bounded slice:** `ENV-MOBILE-006` — Garbage. External GLM-5.3 MAX APPROVED exact head `e723d07359ebd8c1ddb7fed772c083ee1b0e32db`; PR #63 merged as `c975291c59e9c462120948af60c7ae04d5b2fbeb`; exact-main test/E2E/Pages and deployment `6199171927` succeeded. Live root-to-client 360/390px deployed-bundle probes passed with mocked REST/no real writes, 9/9 labels, >=44px Save/Delete, and no settled document overflow. Direct Pages deep-link retains the known shared ModuleDock/404-to-SPA settling observation and is not a Garbage-page regression. Contract: `docs/work-orders/ENV-MOBILE-006-GARBAGE.md`.
 
+**Review-requested bounded slice:** `ENV-MOBILE-007` — Safety. Fresh exact-main read-only selection audit chose Safety from Food / Safety / Building because it has the highest current control density (12 visible controls), monthly/next-due field cadence, and a direct single-domain CRUD seam. Food reagent-stock coupling and Building repair-request coupling remain out of scope/read-only. Truthful Safety baseline was 5 FAIL / 5 PASS; the bounded page-local repair now passes focused Safety Playwright 10/10, Vitest 229/229, TypeScript, lint with 12 pre-existing warnings/0 errors, production build, full Playwright 115/115, and `git diff --check`, with mocked REST/no real writes. Safety Core/import/schema/RLS/alert/date/count/boolean semantics remain unchanged. Exact pushed SHA + PR remote-diff audit + independent exact-SHA Standards/Spec review remain before merge. Contract: `docs/work-orders/ENV-MOBILE-007-SAFETY.md`.
+
 
 After Mobile-001 provides a proven pattern, audit and improve one domain per WO, prioritized by field frequency and control density:
 

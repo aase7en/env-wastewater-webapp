@@ -222,4 +222,4 @@ At this checkpoint:
 
 Current critical-path handoff:
 
-`ENV-MOBILE-001 COMPLETE -> ENV-MOBILE-002 Chemical COMPLETE -> ENV-MOBILE-003 Water Supply COMPLETE -> ENV-MOBILE-004 Fuel COMPLETE -> ENV-MOBILE-005 Garden COMPLETE -> repo-health exact-SHA review/remediation -> FUEL-CORE-001 CLOSED -> GARBAGE-CORE-001 CLOSED -> ENV-MOBILE-006 Garbage COMPLETE -> Food/Safety/Building read-only selection audit READY`
+`ENV-MOBILE-001 COMPLETE -> ENV-MOBILE-002 Chemical COMPLETE -> ENV-MOBILE-003 Water Supply COMPLETE -> ENV-MOBILE-004 Fuel COMPLETE -> ENV-MOBILE-005 Garden COMPLETE -> repo-health exact-SHA review/remediation -> FUEL-CORE-001 CLOSED -> GARBAGE-CORE-001 CLOSED -> ENV-MOBILE-006 Garbage COMPLETE -> Food/Safety/Building selection audit COMPLETE -> ENV-MOBILE-007 Safety REVIEW_REQUESTED`
