@@ -1,6 +1,6 @@
 # UX-FLOW-P001 — Truthful Wastewater Environmental Flow
 
-Status: REVIEW_REQUESTED
+Status: RE-REVIEW_REQUESTED
 Owner / implementer: GPT-5.6 Sol via Serena visual/product lane
 Independent review owner: fresh exact-SHA reviewer
 Repository: `aase7en/env-wastewater-webapp`
@@ -190,3 +190,14 @@ Stop only for material decision/ownership/safety/dependency blockers or at `REVI
 - Full local Playwright was attempted but the connector returned HTTP 502 / session termination before a trustworthy completion result. Classified `TOOL/TRANSPORT_FAILURE`; exact-head GitHub E2E is mandatory release authority for the full suite.
 - No real environmental/application writes; no schema/RLS/provider/Digital-Twin mutation.
 - Candidate diff must remain exactly the 9 owned files listed in the task handoff; `.serena/**` remains protected and unstaged.
+
+## R2 independent-review remediation — 2026-09-02
+
+- Independent exact-SHA review of `806f6992212855ee10cfc97447e15126a5f587fc` returned `CHANGES_REQUIRED` on one material topology finding: the pure Environmental Flow model omitted the user-confirmed chlorine-dosing branch even though the rendered UI hard-coded a dosing card.
+- Repair keeps chlorine dosing structural only: `chlorine_solution_storage → chlorine_contact_tank`, `medium=chemical`, `quantity=null`, `unit=null`, `activity=structural`. No dose rate, pump state or active-flow inference is introduced.
+- Added pure-model regression pinning the chlorine edge and rendered Playwright assertions for the dosing route + unavailable quantity wording.
+- Focused pure-model suite after repair: **12/12 PASS**.
+- `npx tsc -b`: PASS.
+- First local Playwright attempts hit a stale/misconfigured local server and then a branch server without `VITE_SUPABASE_*`; the app correctly failed fast at module load. Classified `ENVIRONMENT_FAILURE`, not application failure.
+- Re-run used a branch-owned Vite server with secure local Supabase config injected process-only (values never printed/persisted) and fully mocked test REST/session. Focused Playwright: **9/9 PASS**.
+- Branch will reconcile current `origin/main` before candidate freeze; any main integration or head change requires full relevant verification and a fresh exact-SHA review.

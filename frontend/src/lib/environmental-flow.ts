@@ -1,4 +1,4 @@
-export type EnvironmentalFlowMedium = "water" | "sludge";
+export type EnvironmentalFlowMedium = "water" | "sludge" | "chemical";
 export type EnvironmentalFlowEdgeKind = "normal" | "return" | "exception";
 export type EnvironmentalFlowActivity = "structural" | "unknown";
 
@@ -131,6 +131,7 @@ export function toEnvironmentalFlowModel(
       edge("ras-return", "secondary_clarifier", "aeration_tank", "sludge", "return"),
       edge("was-to-drying-beds", "secondary_clarifier", "sludge_drying_beds", "sludge", "normal", "structural", excessSludge),
       edge("filtrate-return", "sludge_drying_beds", "pump_sump", "water", "return"),
+      edge("chlorine-dosing", "chlorine_solution_storage", "chlorine_contact_tank", "chemical"),
       edge("pump-sump-bypass", "pump_sump", "flow_measurement_weir", "water", "exception", "unknown"),
       edge("emergency-overflow", "pump_sump", "flow_measurement_weir", "water", "exception", "unknown"),
     ],

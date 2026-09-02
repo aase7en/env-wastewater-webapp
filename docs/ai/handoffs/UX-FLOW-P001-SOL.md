@@ -1,12 +1,13 @@
 # UX-FLOW-P001 — GPT-5.6 Sol Handoff
 
-Status: REVIEW_REQUESTED
+Status: RE-REVIEW_REQUESTED
 Date: 2026-09-02
 Repo: `aase7en/env-wastewater-webapp`
 Worktree: `A:\\GitHub\\envww-flow-p001`
 Branch: `feat/ux-flow-p001`
 Activation base: `origin/main@64f9f89cec1e0abe6b81d50a9bc6f26ecc500098`
-Integrated main before freeze: `origin/main@6c36ebe4f3b7e6e5106da317d6935d3cd9119340`
+Integrated main before first freeze: `origin/main@6c36ebe4f3b7e6e5106da317d6935d3cd9119340`
+Current main to reconcile before R2 freeze: `origin/main@b6256616216bc0b657fbcf15ff9a5dabde0f321a` (PR #72 merged after independent approval)
 Owner / implementer: GPT-5.6 Sol via Serena
 Independent review owner: fresh exact-SHA reviewer
 
@@ -82,6 +83,15 @@ Expected diff against current `origin/main` is exactly 9 owned files:
 
 Forbidden/no-touch remains: `frontend/src/lib/env-int/**`, Building/Repair, Carbon rollup/migrations, old `flow-model.ts` / `use-flow-data.ts`, Digital Twin/R3F, AppShell/ModuleDock, schema/RLS and `.serena/**`.
 
+## R2 independent-review remediation
+
+- Independent reviewer bound to exact SHA `806f6992212855ee10cfc97447e15126a5f587fc` and recorded `CHANGES_REQUIRED` on PR #77.
+- Finding: the pure model omitted chlorine dosing although the user-confirmed topology requires it as a separate graph edge/state; the component only hard-coded a text card, leaving model/UI drift possible.
+- Repair: add `chlorine-dosing` edge from `chlorine_solution_storage` to `chlorine_contact_tank` using `medium=chemical`, structural activity and unavailable quantity/unit. No chlorine dose, pump state, flow rate or Live state is inferred.
+- Regression: pure model now pins this edge; focused suite **12/12 PASS**. Rendered E2E pins Chlorine dosing route and unavailable quantity text; focused browser suite **9/9 PASS** on a branch-owned Vite server with process-only secure config and mocked REST/session.
+- Local 9/9 failures before that successful run were root-caused to missing `VITE_SUPABASE_*` on a fresh branch server (module-load fail-fast) / stale dev-server reuse; classified `ENVIRONMENT_FAILURE`, not application failure.
+- PR #72 provenance core was independently approved and merged as main `b6256616216bc0b657fbcf15ff9a5dabde0f321a`; Flow must integrate that file-disjoint main before candidate freeze.
+
 ## Review gate
 
-Freeze a new exact SHA after this handoff/work-order evidence update, push it, verify actual remote diff, then perform fresh detached exact-SHA Standards + Spec/UX/Data-honesty review. Any finding requires repair → NEW SHA → review again. Implementation owner does not self-merge.
+Freeze a new exact SHA after current-main integration and verification, push it, verify actual remote diff, then perform fresh detached exact-SHA Standards + Spec/UX/Data-honesty review. Any finding requires repair → NEW SHA → review again. Implementation owner does not self-merge.

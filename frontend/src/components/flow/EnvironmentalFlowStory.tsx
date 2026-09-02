@@ -177,7 +177,13 @@ export function EnvironmentalFlowStory({ model }: { model: EnvironmentalFlowMode
           <BranchCard
             title="Chlorine dosing"
             route="ถังสารละลายคลอรีน → ขั้น final-treatment/contact"
-            detail="ยืนยันการเชื่อมต่อเท่านั้น ไม่อนุมานสถานะปั๊มหรืออัตราจ่ายคลอรีน"
+            detail={
+              model.edges.some(
+                (edge) => edge.id === "chlorine-dosing" && edge.medium === "chemical" && edge.quantity === null,
+              )
+                ? "ยืนยันการเชื่อมต่อจาก structural model; ไม่มีข้อมูลปริมาณ/อัตราจ่าย และไม่อนุมานสถานะปั๊ม"
+                : "โครงสร้าง chlorine dosing ไม่พร้อม — ไม่อนุมานสถานะหรือปริมาณ"
+            }
           />
         </div>
       </section>

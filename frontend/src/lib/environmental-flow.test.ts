@@ -88,6 +88,19 @@ describe("UX-FLOW-P001 environmental flow model", () => {
     expect(model.edges.find((edge) => edge.id === "filtrate-return")?.quantity).toBeNull();
   });
 
+  it("keeps chlorine dosing as a separate chemical structural edge with unavailable quantity", () => {
+    const model = toEnvironmentalFlowModel(READING);
+    expect(model.edges.find((edge) => edge.id === "chlorine-dosing")).toMatchObject({
+      from: "chlorine_solution_storage",
+      to: "chlorine_contact_tank",
+      medium: "chemical",
+      kind: "normal",
+      activity: "structural",
+      quantity: null,
+      unit: null,
+    });
+  });
+
   it.each([true, false, null] as const)(
     "never converts wastewater_discharged=%s into a discharge volume",
     (recorded) => {

@@ -143,6 +143,8 @@ test("renders RAS, WAS, filtrate, bypass and emergency truthfully without fabric
   await expect(structural).toContainText(/filtrate|น้ำกรอง|น้ำที่เหลือจากการกรอง/i);
   await expect(structural).toContainText(/Bypass|บายพาส/i);
   await expect(structural).toContainText(/ฉุกเฉิน|Emergency/i);
+  await expect(structural).toContainText(/Chlorine dosing/i);
+  await expect(structural).toContainText(/ถังสารละลายคลอรีน/);
   await expect(structural).toContainText(/ไม่มีข้อมูลปริมาณ|ปริมาณ.*ไม่พร้อม/);
 });
 
