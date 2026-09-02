@@ -1,13 +1,13 @@
 # ENV-MOBILE-007-SAFETY — Implementation / Review Handoff
 
-Status: REVIEW_REQUESTED
+Status: CLOSED
 Date: 2026-09-02
 Repo: `aase7en/env-wastewater-webapp`
 Worktree: `A:\GitHub\envww-mobile-007-safety`
 Branch: `feat/env-mobile-007-safety`
 Base: `origin/main@59224e9482ade4d740cfb4c1fffc62880575204b`
 Activation SHA: `f4d953eeb83530c707e154ddf94e48e2b12aac45`
-Review SHA: freeze from the actual pushed branch/PR head after the allowed-files checkpoint commit; any head change invalidates review.
+Review SHA: `a81f4c1d6090b79094f7f07bebfc65dca1b36b3f` — independently APPROVED by external GLM-5.3 MAX before merge.
 
 ## Objective
 
@@ -48,6 +48,14 @@ No-touch: Safety lib/import/schema/RLS/alerts/business semantics, shared UI/AppS
 - Fresh-shell false failures were classified `ENVIRONMENT_FAILURE`: missing Vite Supabase config prevented boot, then a localhost synthetic URL changed the Supabase storage namespace and redirected the seeded fixture to `/login`. Final runs used the canonical project-ref URL with a fake process-only anon value. Safety REST remained mocked and no real safety/environmental writes occurred.
 - Self-review: no forbidden production file changes or business/data-contract expansion found.
 
+## Independent review / merge / production closeout
+
+- External GLM-5.3 MAX independently **APPROVED** Standards + Spec/UX at exact head `a81f4c1d6090b79094f7f07bebfc65dca1b36b3f`; no blocking finding and no head drift before merge.
+- PR #65 merged with expected-head guard as `2194411c4cc2e63eefc89218328d34116a2b7b81`; reviewed-head ancestry verified.
+- Exact-main GitHub: test `33569794371` SUCCESS; E2E smoke `33569794373` **115/115 PASS**; Pages `33569794415` SUCCESS.
+- Live production root-to-client probe at 390px: document/body width 390px, Save 48px, 7/7 programmatic non-Toggle labels, no console/page/HTTP errors, all REST mocked/no real writes. Direct deep-link/reload exposed only the known GitHub Pages 404→SPA handoff and is not classified as a Safety regression.
+- Safety Core/import/schema/RLS/alert/date/count/boolean/shared-shell scope remained unchanged.
+
 ## One next safe action
 
-Explicitly stage only the allowed Safety implementation/test/SSoT files, commit/push, freeze the exact remote SHA, open the PR, audit the actual remote diff, then request independent exact-SHA Standards + Spec/UX review. Do not merge before valid independent review and required CI.
+After the bounded Safety + FOOD-CORE-001 closeout reaches main, activate `ENV-MOBILE-008-FOOD` from fresh current main and keep Food Core/import/schema/RLS/reagent-trigger/shared UI read-only.

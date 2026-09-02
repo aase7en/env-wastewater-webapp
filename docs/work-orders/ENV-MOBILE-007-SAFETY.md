@@ -1,6 +1,6 @@
 # ENV-MOBILE-007 — Safety Mobile Convergence
 
-Status: REVIEW_REQUESTED
+Status: CLOSED
 Owner / implementer: GPT-5.6 Sol via Serena (Visual Engineering fallback)
 Independent review owner: external GLM-5.3 MAX or fresh independent reviewer; review must bind to the frozen pushed head
 Parent roadmap: `ENV-MOBILE-002+` Domain form convergence
@@ -123,10 +123,20 @@ If a Safety business/data/import/schema/alert defect appears, stop that subprobl
 - Full Playwright: 115/115 PASS, exit 0, one worker/retries 0. Local fresh-shell false failures were classified `ENVIRONMENT_FAILURE`: missing Vite Supabase config first crashed app boot; a localhost synthetic URL then changed the Supabase storage namespace and redirected the seeded fixture to `/login`. Re-run used the canonical project-ref URL plus a fake process-only anon value; all Safety REST remained mocked and no real safety/environmental writes occurred.
 - Self-review found no forbidden production changes. `.serena/**` remains protected/untracked and must not be staged.
 
+## Closeout evidence — 2026-09-02
+
+- External GLM-5.3 MAX independently reviewed and **APPROVED** exact Safety head `a81f4c1d6090b79094f7f07bebfc65dca1b36b3f` with Standards PASS + Spec/UX PASS and no blockers. The remote PR head was rechecked unchanged before merge.
+- PR #65 merged with expected-head protection as `2194411c4cc2e63eefc89218328d34116a2b7b81`; reviewed-head ancestry was verified.
+- Exact-main GitHub evidence: test `33569794371` SUCCESS; E2E smoke `33569794373` **115/115 PASS**; Pages `33569794415` build/deploy/smoke SUCCESS for the exact merge SHA.
+- Exact-merge local evidence: Vitest 229/229 PASS; TypeScript PASS; lint 12 pre-existing warnings / 0 errors; production build PASS; focused Safety Playwright 10/10 PASS.
+- Live deployed root-to-client 390px smoke: viewport/document/body width 390px; Save height 48px; all 7 non-Toggle controls have programmatic labels; no console/page/HTTP errors; all Supabase REST was mocked and no real safety/environmental writes occurred.
+- A direct `/safety` reload probe first observed the known GitHub Pages deep-link 404→SPA fallback. The clean root-to-client navigation probe passed, so this is recorded as hosting/test-method evidence rather than hidden as a Safety regression.
+- Safety Core/import/schema/RLS/alert/date/count/boolean/shared UI/AppShell/ModuleDock semantics remained unchanged throughout the slice.
+
 ## Stop condition
 
-Implementation stops at `REVIEW_REQUESTED` with exact pushed SHA, remote diff, focused/full verification, known limitations, and one next safe action. Implementer does not self-merge.
+Satisfied. The implementation was independently approved at an exact frozen SHA, merged by the authorized reviewer, verified on exact main and the deployed production bundle, and is eligible for durable closure.
 
 ## One next safe action
 
-Explicitly stage only the allowed Safety implementation/test/SSoT files, commit and push them, freeze the exact remote SHA, open the PR, audit the actual remote diff, then request independent Standards + Spec/UX review against that exact SHA. Do not merge before exact-head review and required CI are valid.
+After the Safety + FOOD-CORE-001 docs-only closeout reaches main, activate `ENV-MOBILE-008-FOOD` from fresh current `origin/main` with its own worktree/branch and truthful mobile RED baseline. Keep Food Core/import/schema/RLS/reagent-trigger/shared UI out of that visual slice; Building remains decision-gated.

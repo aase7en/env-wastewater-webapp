@@ -1,6 +1,6 @@
 # FOOD-CORE-001 — canonical food categorical honesty
 
-Status: REVIEW_REQUESTED
+Status: CLOSED
 Owner / implementer: GLM-5.3 MAX (Core Engineering / Track Z)
 Lead / review / merge owner: GPT-5.6 Sol
 Repository: `aase7en/env-wastewater-webapp`
@@ -146,16 +146,23 @@ to be resolved by a separate decision/WO before any UI/import path sets
   live verification remain with the merge owner post-merge (FUEL/GARBAGE
   pattern).
 
+## Independent review / merge / live closeout — 2026-09-02
+
+- GPT-5.6 Sol independently reviewed and **APPROVED** exact PR #66 head `459890276f0b7dece784755665448f5f0222fbb6` after actual remote diff/source tracing. The canonical 5 sample types were re-verified against A-Wiki `origin/main` and current FoodPage; the 3 test types matched the durable Food contract.
+- Reviewer-run evidence: focused Food Vitest **19/19 PASS**; first full Vitest attempt in the detached worktree hit the expected missing `VITE_SUPABASE_URL/ANON_KEY` module-load environment failure, then a secure process-only rerun from existing local config passed **248/248**; TypeScript PASS; `git diff --check` PASS. Exact-head GitHub checks were green and the head did not drift.
+- PR #66 merged with expected-head protection as `09f2603308255879e2989ae25c985b7b75ddd118`; reviewed head remains an ancestor of the merge.
+- Exact-main CI/CD: test `33583581168` SUCCESS; E2E smoke `33583581189` **115/115 PASS**; Pages `33583581182` SUCCESS with deployed `pages_build_version=09f2603308255879e2989ae25c985b7b75ddd118`; CDN smoke passed root 200, `/login` SPA fallback and production JS asset 200.
+- Production DB gate used a fresh detached current-main worktree and the supported Drive-backed Management API secret resolver without copying/printing credentials. Reviewed migration blob `bfb0926311bee315f29852d632f3de6453f9247e` matched merged main.
+- Read-only pre-apply probe: `food.lab_test` **0 rows**, invalid sample/test categorical counts **0/0**, canonical constraints absent, `trg_decrement_reagent` present with its existing function.
+- `uv run python scripts/apply_migration_api.py supabase/migrations/20260902000000_food_core_001_canonical_categories.sql` → **4/4 OK, 0 FAIL**.
+- Post-apply read-only probe: both canonical CHECK constraints exist with `convalidated=true`; row count remains 0; reagent trigger definition is unchanged. No environmental/application row was inserted, updated, deleted or backfilled.
+- Reagent decrement remains deliberately **DORMANT**. The six trigger-hardening hazards above remain a separate future decision/WO, not silently activated by this closeout.
+- Non-blocking pre-existing import finding from independent review: `foodAdapter.requiredColumns=["date"]` is evaluated before `mapRow`, while `mapRow` also supports Thai header `วันที่`; a Thai-only header can therefore be rejected before the alias path. This was not introduced by FOOD-CORE-001 and is recorded in `ENV-DEFECT-012` for a separate bounded import-contract repair.
+
 ## Review gate
 
-Status: `REVIEW_REQUESTED`. Implementation owner does NOT self-merge.
-Independent reviewer must bind to the exact pushed PR head SHA; any head
-change invalidates review. Required before merge: independent Standards +
-Spec review, exact-head CI, remote-diff audit.
+Satisfied. Independent exact-head review, exact-head CI, expected-head merge, exact-main CI/CD and production migration/live verification are complete.
 
 ## One next safe action
 
-GPT lead: resolve the reagent hardening backlog decision (activate-with-
-hardening vs keep-dormant), independently review the exact PR head, require
-exact-head CI, then merge via the authorized owner and apply/live-verify
-the migration read-only (FUEL/GARBAGE post-merge pattern).
+After this closeout reaches canonical main, activate `ENV-MOBILE-008-FOOD` from fresh current `origin/main` with a dedicated visual worktree and truthful mobile RED baseline. Keep Food Core/import/schema/RLS/reagent trigger/shared UI read-only. Building remains decision-gated.

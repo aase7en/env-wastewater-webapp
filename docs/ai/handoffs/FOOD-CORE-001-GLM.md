@@ -1,6 +1,6 @@
 # FOOD-CORE-001 — Implementation / Review Handoff (GLM lane)
 
-Status: REVIEW_REQUESTED
+Status: CLOSED
 Date: 2026-09-02
 Repo: `aase7en/env-wastewater-webapp`
 Worktree: `A:\GitHub\envww-food-core-001`
@@ -89,10 +89,14 @@ Worktree `A:\GitHub\envww-food-core-001` clean (no modified/untracked tracked-pa
 - This docs-only freeze commit follows the implementation checkpoint; independent review binds to the actual PR head at review time (any head change invalidates review)
 - Exact-head CI status: observe on the PR at review time (checks triggered by the push; reviewer must require them green on the latest head before merge)
 
+## Independent review / merge / live closeout — 2026-09-02
+
+- GPT-5.6 Sol independently APPROVED the actual final PR #66 head `459890276f0b7dece784755665448f5f0222fbb6`; reviewer-run Food 19/19 and full Vitest 248/248 passed, TypeScript and `git diff --check` passed, exact-head CI was green, and the remote diff remained bounded.
+- PR #66 merged with expected-head guard as `09f2603308255879e2989ae25c985b7b75ddd118`; exact-main test `33583581168`, E2E `33583581189` (115/115), and Pages `33583581182` succeeded.
+- Production preflight found `food.lab_test` empty with zero invalid categorical rows. The merged migration applied 4/4 OK; both canonical CHECKs are validated live; the reagent trigger definition is unchanged; no application/environmental row was inserted, updated, deleted, or backfilled.
+- Reagent decrement remains deliberately dormant. The separate trigger-hardening backlog remains unresolved by design.
+- Independent review also found a pre-existing Bulk Import header-alias gap (`requiredColumns=["date"]` can reject a Thai-only `วันที่` header before `mapRow` alias handling). This is recorded as `ENV-DEFECT-012`, not folded into FOOD-CORE-001.
+
 ## One next safe action
 
-GPT lead ingests this handoff, performs independent exact-SHA Standards +
-Spec review on the actual remote diff, requires exact-head CI, then merges
-via the authorized owner and applies/live-verifies the migration read-only
-(FUEL/GARBAGE post-merge pattern). Reagent hardening backlog decision can
-proceed in parallel.
+After the bounded closeout reaches canonical main, activate `ENV-MOBILE-008-FOOD` from fresh current `origin/main`; keep Food Core/import/schema/RLS/reagent-trigger/shared UI read-only.

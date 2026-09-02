@@ -221,6 +221,24 @@ Source record:
 
 ---
 
+## ENV-DEFECT-012 — Required-column gates must honor the same aliases as row mapping
+
+**Failure class:** import contract / localization / false rejection before validation.
+
+**Symptom:** an adapter can advertise a valid localized header in `mapRow` but still reject the file before row mapping because `applyAdapter()` validates `requiredColumns` first against a narrower token set. FOOD-CORE-001 review found `foodAdapter.requiredColumns=["date"]` while `mapRow` also accepts Thai `วันที่`; a Thai-only file can therefore fail with “คอลัมน์ที่จำเป็นขาด” before the supported alias is used.
+
+**Root cause:** required-column discovery and row-value lookup use different alias contracts. The preflight gate checks one generic token while the mapper later accepts several concrete aliases, so supported localized inputs are not actually end-to-end supported.
+
+**How detected:** independent GPT-5.6 Sol FOOD-CORE-001 source trace through `BulkImportPage` → `applyAdapter()` → `foodAdapter`: required columns are checked before the proxy/mapper alias path, and only `mapped.valid` rows reach batch insert.
+
+**Prevention rule:** required-field discovery and row mapping must share one explicit alias definition per semantic field, with regression coverage for every advertised alias. Do not fix this by weakening required-field validation globally or by inventing fuzzy mappings that can bind the wrong column.
+
+**Regression/evidence required for repair:** a focused Bulk Import/adapter test proving English and Thai supported date headers both pass the required-column gate, genuinely missing date still fails before write, and unrelated columns cannot satisfy the date requirement accidentally. Audit other adapters for the same alias mismatch before choosing the bounded repair scope.
+
+**Domains affected:** Bulk Import, localized CSV/XLSX/OCR column mapping, every adapter whose `requiredColumns` vocabulary is narrower than its `mapRow` aliases.
+
+---
+
 ## Adding future entries
 
 Add a new entry only after the root cause is verified. The entry should change at least one future behavior: a guardrail, test, spec rule, audit item, or implementation pattern.
