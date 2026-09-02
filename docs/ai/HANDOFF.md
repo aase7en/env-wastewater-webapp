@@ -1,19 +1,24 @@
 # HANDOFF
 
-## Active checkpoint - ENV-MOBILE-007-SAFETY - 2026-09-02
+## Closed checkpoint - FOOD-CORE-001 - 2026-09-02
 
-- Status: `REVIEW_REQUESTED`; owner/implementer GPT-5.6 Sol via Serena visual fallback; independent Standards + Spec/UX review must bind to the exact pushed PR SHA before merge.
-- Repo/worktree/branch/base: `aase7en/env-wastewater-webapp` / `A:\\GitHub\\envww-mobile-007-safety` / `feat/env-mobile-007-safety` / `origin/main@59224e9482ade4d740cfb4c1fffc62880575204b`; activation SHA `f4d953eeb83530c707e154ddf94e48e2b12aac45`; exact review SHA freezes after the allowed-files checkpoint commit/push.
-- Selection gate: fresh exact-main read-only comparison chose Safety over Food/Building. Safety exposes 12 visible input controls and monthly/next-due field workflow with direct single-domain CRUD; Food has reagent→`chemical.movement` trigger coupling; Building has `repair_needed`→`core.repair_request` app-layer intent. Food/Building remain inactive/read-only.
-- A-Wiki context confirms Safety is a monthly fire/emergency-light inspection domain, including extinguisher and emergency-light checks; QR/equipment expansion exists as broader domain context but is not authorized by this mobile slice.
-- Mutable scope: `frontend/src/pages/SafetyPage.tsx`, new `frontend/tests/e2e/safety-mobile.spec.ts`, `docs/work-orders/ENV-MOBILE-007-SAFETY.md`, `docs/ai/handoffs/ENV-MOBILE-007-SOL.md`, and bounded CURRENT-WORK/HANDOFF/ROADMAP/PROJECT-GRAPH records only.
-- No-touch: `frontend/src/lib/safety.ts`, Safety import adapter/tests, schema/RLS/migrations, due-date/count/boolean/alert semantics, shared UI/AppShell/ModuleDock/styles, Food/Building/other modules, `.serena/**`, real hospital/environmental/safety data.
-- Truthful RED after correcting the test harness: 5 FAIL / 5 PASS — 154px phone x-delta, 0/7 programmatic labels, 19.125px Delete width, blank required date issuing 1 POST, and keyboard traversal blocked by the missing label seam. Existing Toggles, history containment, tablet/desktop density, retry-body preservation, Pixel touch, and due-date/count/boolean semantics were already green.
-- Implementation is page-local: stable IDs/labels for all 7 non-Toggle controls, one-column phone composition with larger-screen density restoration, required-date zero-POST/persistent-error/focus recovery, and >=44px Delete. History remained contained so no wrapper was added.
-- Verification: focused Safety Playwright 10/10 PASS; Vitest 229/229 PASS; standalone TypeScript PASS; lint 12 pre-existing warnings / 0 errors; production build PASS; full Playwright 115/115 PASS; `git diff --check` PASS. All Safety REST was mocked and no real safety/environmental writes occurred.
-- Fresh-shell false Playwright failures were `ENVIRONMENT_FAILURE`, not code failures: missing Vite Supabase config first prevented app boot; then a localhost synthetic URL changed the Supabase storage namespace and sent the seeded auth fixture to `/login`. Final reruns used the canonical project-ref URL plus a fake process-only anon test value.
-- Browser-plugin/visual external surface is not available in this harness; repository Playwright is the declared rendered-validation path. No Browser-plugin evidence will be claimed.
-- One next safe action: explicitly stage only allowed Safety implementation/test/SSoT files, commit/push, freeze the exact remote SHA, open the PR, audit the actual remote diff, and request independent exact-SHA Standards + Spec/UX review before merge.
+- Status: `CLOSED / MERGED / POST-MERGE / LIVE VERIFIED`; implementation owner GLM-5.3 MAX; independent review/merge/live-verification owner GPT-5.6 Sol.
+- Base `origin/main@2194411c4cc2e63eefc89218328d34116a2b7b81`; exact reviewed PR #66 head `459890276f0b7dece784755665448f5f0222fbb6`; merge `09f2603308255879e2989ae25c985b7b75ddd118`.
+- Contract: blank/missing Food `sample_type`/`test_type` stays `null`; canonical values only (5 verified sample types, 3 verified test types); unsupported non-empty tokens fail per row before REST write. `FoodInput` omits `reagent_used`; the reagent decrement trigger remains dormant and untouched.
+- Independent reviewer evidence: focused Food Vitest 19/19 PASS; full Vitest 248/248 PASS after the expected fresh-worktree Supabase-config environment failure was resolved with process-only values from existing secure local config; TypeScript PASS; `git diff --check` PASS; actual remote diff stayed bounded to the seven WO files. Exact-head CI was green before merge.
+- Exact-main evidence at `09f26033…`: test `33583581168` SUCCESS; E2E smoke `33583581189` **115/115 PASS**; Pages `33583581182` SUCCESS and deployed build version matched the merge SHA; production CDN smoke passed root 200, `/login` SPA fallback, and JS asset 200.
+- Production DB gate: reviewed migration blob `bfb0926311bee315f29852d632f3de6453f9247e` matched merged main. Read-only preflight found `food.lab_test` 0 rows, zero invalid categorical rows, no canonical checks yet, and the existing reagent trigger intact. Migration `20260902000000_food_core_001_canonical_categories.sql` applied **4/4 OK** through the supported Management API path. Post-apply both CHECKs exist with `convalidated=true`, row count remains 0, trigger definition is unchanged, and no environmental data was inserted/updated/deleted/backfilled.
+- Non-blocking pre-existing import gap discovered by GPT review: `foodAdapter.requiredColumns=["date"]` is validated before `mapRow`, while `mapRow` also advertises Thai header `วันที่`; a Thai-only date header can therefore be rejected before the alias is used. This did not originate in FOOD-CORE-001 and is recorded as a reusable import-contract defect rather than silently fixed here.
+- One next safe action: activate `ENV-MOBILE-008-FOOD` only after this docs closeout reaches main; keep Food Core/import/schema/RLS/reagent-trigger/shared UI read-only.
+
+## Closed checkpoint - ENV-MOBILE-007-SAFETY - 2026-09-02
+
+- Status: `CLOSED / MERGED / POST-MERGE / DEPLOYED VERIFIED`; owner/implementer GPT-5.6 Sol; external GLM-5.3 MAX independently APPROVED Standards + Spec/UX with no blockers on exact head `a81f4c1d6090b79094f7f07bebfc65dca1b36b3f`.
+- PR #65 merged with expected-head guard as `2194411c4cc2e63eefc89218328d34116a2b7b81`; reviewed-head ancestry was verified.
+- Pre-merge/focused evidence: Safety Playwright 10/10 PASS; Vitest 229/229 PASS; TypeScript PASS; lint 12 pre-existing warnings / 0 errors; build PASS; full Playwright 115/115; `git diff --check` PASS. Safety Core/import/schema/RLS/alert/date/count/boolean/shared UI were unchanged.
+- Exact-main release evidence: test `33569794371` SUCCESS; E2E smoke `33569794373` **115/115 PASS**; Pages `33569794415` build/deploy/smoke SUCCESS on exact merge SHA.
+- Live production root-to-client probe at 390px passed with document/body width 390px, Save 48px, all 7 non-Toggle programmatic labels present, no console/page/HTTP errors, all Supabase REST mocked and no real safety/environmental writes. A direct deep-link/reload attempt exposed the known GitHub Pages 404→SPA transition and was classified as hosting/test-method evidence, not a Safety regression; root-to-client navigation was clean.
+- One next safe action: Food Core has now been independently reviewed/merged/live-verified; after this docs closeout reaches main, activate `ENV-MOBILE-008-FOOD`. Building remains `DECISION_REQUIRED` on its repair-link contract.
 
 ## Closed checkpoint - ENV-MOBILE-006-GARBAGE - 2026-09-01
 
