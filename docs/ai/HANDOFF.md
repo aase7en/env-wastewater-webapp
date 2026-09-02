@@ -2,7 +2,7 @@
 
 ## ENV-OPS-001 contract checkpoint - 2026-09-03
 
-- Status: `CONTRACT_READY_FOR_REVIEW`; branch `docs/env-ops-001-contract`, base `origin/main@b39964498f585c1f1b10c01f5477ad6042d498e2`.
+- Status: `REVIEW_REQUESTED`; branch `docs/env-ops-001-contract`, base `origin/main@b39964498f585c1f1b10c01f5477ad6042d498e2`.
 - Archaeology confirms two real first-slice sources only: `core.repair_request` with durable lifecycle `open | in_progress | resolved | cancelled`, and `wastewater.threshold_alert` with read/delivery state but no repair-resolution lifecycle or verified severity.
 - First slice `ENV-OPS-001A`: read-only Operations Attention Board; repairs and threshold events remain separate source-local concepts and must not be normalized into a fabricated generic incident.
 - Building inspection rows are excluded from linkage: actual `BuildingPage.submit()` does not create linked repairs, while the Building repair contract remains Ultra-owned / `DECISION_REQUIRED`. `core.attachment` remains generic capability only; no canonical Operations evidence relation was found.

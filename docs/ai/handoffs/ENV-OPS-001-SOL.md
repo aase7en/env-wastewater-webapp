@@ -1,6 +1,6 @@
 # ENV-OPS-001 - GPT-5.6 Sol contract handoff
 
-Status: CONTRACT_READY_FOR_REVIEW
+Status: REVIEW_REQUESTED
 Date: 2026-09-03
 Repo: `aase7en/env-wastewater-webapp`
 Worktree: `A:\GitHub\envww-ops-001`
