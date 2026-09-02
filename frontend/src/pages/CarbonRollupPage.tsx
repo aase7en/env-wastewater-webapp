@@ -34,6 +34,11 @@ export function CarbonRollupPage() {
             ⚠️ ข้อมูลยังไม่ครบ: {data.incompleteSources.length} source ยังไม่มีข้อมูล ({data.incompleteSources.join(", ")})
           </p>
         )}
+        {data.hasUnavailableContribution && (
+          <p className="text-xs text-yellow-400 mt-1 font-thai">
+            ⚠️ แสดงเฉพาะส่วนที่คำนวณได้ — {data.unavailableSources.length} source ไม่มี emission factor ที่ใช้ได้ ({data.unavailableSources.join(", ")}) จึงไม่นับรวม (ไม่ใช่ค่า 0)
+          </p>
+        )}
       </AuraCard>
 
       <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
@@ -48,6 +53,9 @@ export function CarbonRollupPage() {
                   {(s.total_kg_co2e / 1000).toFixed(3)} <span className="text-sm">tCO₂e</span>
                 </p>
                 <p className="text-xs text-aura-textMuted font-thai">{s.source_count} sources</p>
+                {s.has_unavailable && (
+                  <p className="text-xs text-yellow-400 font-thai">บาง source คำนวณไม่ได้ (ไม่มี factor ที่ใช้ได้)</p>
+                )}
               </>
             )}
           </AuraCard>
@@ -65,7 +73,8 @@ export function CarbonRollupPage() {
                   <td className="p-2 font-mono">{r.month}</td>
                   <td className="p-2">{r.scope}</td>
                   <td className="p-2">{r.source}</td>
-                  <td className="text-right p-2 font-mono">{Number(r.kg_co2e).toFixed(3)}</td>
+                  {/* NULL = factor unavailable (UNKNOWN) — never rendered as 0.000 */}
+                  <td className="text-right p-2 font-mono">{r.kg_co2e === null ? "—" : r.kg_co2e.toFixed(3)}</td>
                   <td className="text-right p-2">{r.row_count}</td>
                 </tr>
               ))}
