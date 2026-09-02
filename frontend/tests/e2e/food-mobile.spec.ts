@@ -1,0 +1,325 @@
+import { test, expect } from "./fixtures";
+import { devices, type Page } from "@playwright/test";
+import type { FoodInput } from "../../src/lib/food";
+
+/** ENV-MOBILE-008 — Food mobile convergence. Synthetic evidence only. */
+const PHONE = { width: 360, height: 800 };
+const PHONE_390 = { width: 390, height: 844 };
+const PHONE_430 = { width: 430, height: 900 };
+const TABLET = { width: 768, height: 1024 };
+const DESKTOP = { width: 1024, height: 900 };
+
+const FIELDS = [
+  ["วันที่เก็บตัวอย่าง", "food-sample-date"],
+  ["วันที่รายงานผล", "food-reported-date"],
+  ["ประเภทตัวอย่าง", "food-sample-type"],
+  ["จุดเก็บ", "food-sample-point"],
+  ["การทดสอบ", "food-test-type"],
+  ["MPN/100ml", "food-mpn-value"],
+  ["ผลลัพธ์", "food-result"],
+  ["เทคนิค", "food-technician"],
+  ["การติดตามผล", "food-follow-up-action"],
+] as const;
+
+const SAVE = "บันทึก";
+const SAVE_OK = "บันทึกสำเร็จ";
+const DELETE = "ลบ";
+const DATE_ERROR_ID = "food-sample-date-error";
+const DATE_REQUIRED_ERROR = "กรุณาระบุวันที่เก็บตัวอย่างก่อนบันทึก";
+const HISTORY_REGION = "ประวัติผลตรวจอาหาร";
+
+const ROW = {
+  id: "80000000-0000-0000-0000-000000000001",
+  sample_date: "2026-09-01",
+  sample_type: "น้ำประปา",
+  test_type: "total_coliform",
+  result: "ไม่พบ",
+  reported_date: "2026-09-02",
+  technician: "synthetic tech",
+  sample_point: "synthetic tap",
+  mpn_value: 1,
+  reagent_used: null,
+  reported_by_lab_tech: null,
+  follow_up_action: "synthetic follow-up",
+  recorded_by: null,
+  note: null,
+  created_at: "2026-09-01T00:00:00Z",
+};
+
+interface MockOptions {
+  failPostOnce?: boolean;
+  posts?: string[];
+}
+
+async function mockDependencies(page: Page, options: MockOptions = {}) {
+  let postCount = 0;
+  await page.route("**/rest/v1/role_module_visibility**", (route) =>
+    route.fulfill({ status: 200, contentType: "application/json", body: "[]" }),
+  );
+  await page.route("**/rest/v1/threshold_alert**", async (route) => {
+    const headers: Record<string, string> = {};
+    if ((route.request().headers()["prefer"] ?? "").includes("count=")) headers["content-range"] = "*/0";
+    await route.fulfill({ status: 200, contentType: "application/json", headers, body: "[]" });
+  });
+  await page.route("**/rest/v1/lab_test**", async (route) => {
+    const method = route.request().method();
+    if (method === "POST") {
+      postCount += 1;
+      options.posts?.push(route.request().postData() ?? "");
+      if (options.failPostOnce && postCount === 1) {
+        await route.fulfill({ status: 400, contentType: "application/json", body: JSON.stringify({ message: "E2E food save failure", code: "E2E" }) });
+        return;
+      }
+      await route.fulfill({ status: 201, contentType: "application/json", body: JSON.stringify(ROW) });
+      return;
+    }
+    if (method === "DELETE") {
+      await route.fulfill({ status: 204, body: "" });
+      return;
+    }
+    await route.fulfill({ status: 200, contentType: "application/json", body: JSON.stringify([ROW]) });
+  });
+}
+
+function content(page: Page) { return page.locator("main"); }
+function field(page: Page, label: string) { return content(page).getByLabel(label, { exact: true }); }
+function controls(page: Page) { return content(page).locator("input, select, textarea"); }
+
+async function documentHasNoHorizontalOverflow(page: Page) {
+  return page.evaluate(() => document.documentElement.scrollWidth <= window.innerWidth);
+}
+
+async function historyLayout(page: Page) {
+  return content(page).locator("table").evaluate((table) => {
+    const tableElement = table as HTMLElement;
+    const region = tableElement.closest<HTMLElement>('[role="region"]');
+    const boundary = region ?? tableElement;
+    const card = boundary.parentElement;
+    if (!card) throw new Error("Food history containment card is missing");
+    const boundaryBox = boundary.getBoundingClientRect();
+    const cardBox = card.getBoundingClientRect();
+    return {
+      hasRegion: region !== null,
+      regionName: region?.getAttribute("aria-label") ?? null,
+      boundaryLeft: boundaryBox.left,
+      boundaryRight: boundaryBox.right,
+      cardLeft: cardBox.left,
+      cardRight: cardBox.right,
+      viewportWidth: window.innerWidth,
+      clientWidth: boundary.clientWidth,
+      scrollWidth: boundary.scrollWidth,
+      overflowX: getComputedStyle(boundary).overflowX,
+      documentScrollWidth: document.documentElement.scrollWidth,
+    };
+  });
+}
+
+async function focusNext(page: Page, current: ReturnType<typeof field>, next: ReturnType<typeof field>, attempts = 4) {
+  for (let attempt = 0; attempt < attempts; attempt += 1) {
+    await page.keyboard.press("Tab");
+    if (await next.evaluate((element) => element === document.activeElement)) return;
+    await expect(current).toBeFocused();
+  }
+  await expect(next).toBeFocused();
+}
+
+test.describe("ENV-MOBILE-008 Food mobile regression", () => {
+  test.beforeEach(async ({ authed: page }) => { await mockDependencies(page); });
+
+  test("360/390/430 px primary fields form one phone column with no settled document overflow", async ({ authed: page }) => {
+    await page.setViewportSize(PHONE);
+    await page.goto("/food");
+    for (const viewport of [PHONE, PHONE_390, PHONE_430]) {
+      await page.setViewportSize(viewport);
+      const dates = content(page).locator('input[type="date"]');
+      const first = await dates.nth(0).boundingBox();
+      const second = await dates.nth(1).boundingBox();
+      expect(first).not.toBeNull();
+      expect(second).not.toBeNull();
+      expect(Math.abs(first!.x - second!.x)).toBeLessThan(8);
+      expect(await documentHasNoHorizontalOverflow(page)).toBe(true);
+    }
+  });
+
+  test("all nine controls have stable ids and programmatic labels", async ({ authed: page }) => {
+    await page.setViewportSize(PHONE_390);
+    await page.goto("/food");
+    for (const [label, id] of FIELDS) {
+      const control = field(page, label);
+      await expect(control).toHaveCount(1);
+      await expect(control).toHaveAttribute("id", id);
+      await expect(content(page).locator(`label[for="${id}"]`)).toHaveCount(1);
+    }
+  });
+
+  test("phone save and delete actions meet the 44 px touch minimum", async ({ authed: page }) => {
+    await page.setViewportSize(PHONE);
+    await page.goto("/food");
+    for (const target of [content(page).getByRole("button", { name: SAVE, exact: true }), content(page).getByRole("button", { name: DELETE, exact: true })]) {
+      const box = await target.boundingBox();
+      expect(box).not.toBeNull();
+      expect(box!.width).toBeGreaterThanOrEqual(44);
+      expect(box!.height).toBeGreaterThanOrEqual(44);
+    }
+  });
+
+  test("history remains locally contained; any required horizontal scroll is named and keyboard reachable", async ({ authed: page }) => {
+    await page.setViewportSize(PHONE);
+    await page.goto("/food");
+    const layout = await historyLayout(page);
+    const evidence = JSON.stringify(layout);
+    expect.soft(layout.boundaryLeft, evidence).toBeGreaterThanOrEqual(layout.cardLeft - 1);
+    expect.soft(layout.boundaryRight, evidence).toBeLessThanOrEqual(layout.cardRight + 1);
+    expect.soft(layout.boundaryLeft, evidence).toBeGreaterThanOrEqual(-1);
+    expect.soft(layout.boundaryRight, evidence).toBeLessThanOrEqual(layout.viewportWidth + 1);
+    expect.soft(layout.documentScrollWidth, evidence).toBeLessThanOrEqual(layout.viewportWidth);
+
+    if (layout.scrollWidth > layout.clientWidth) {
+      expect(layout.hasRegion, evidence).toBe(true);
+      expect(layout.regionName, evidence).toBe(HISTORY_REGION);
+      expect(layout.overflowX, evidence).toMatch(/auto|scroll/);
+      const region = content(page).getByRole("region", { name: HISTORY_REGION, exact: true });
+      await region.focus();
+      await expect(region).toBeFocused();
+      const before = await region.evaluate((element) => element.scrollLeft);
+      await page.keyboard.press("ArrowRight");
+      await expect.poll(() => region.evaluate((element) => element.scrollLeft)).toBeGreaterThan(before);
+    }
+  });
+
+  test("tablet and desktop preserve useful multi-column density", async ({ authed: page }) => {
+    await page.setViewportSize(TABLET);
+    await page.goto("/food");
+    for (const viewport of [TABLET, DESKTOP]) {
+      await page.setViewportSize(viewport);
+      const dates = content(page).locator('input[type="date"]');
+      const first = await dates.nth(0).boundingBox();
+      const second = await dates.nth(1).boundingBox();
+      expect(first).not.toBeNull();
+      expect(second).not.toBeNull();
+      expect(Math.abs(first!.x - second!.x)).toBeGreaterThan(80);
+    }
+  });
+
+  test("save error preserves values and retry sends the same complete FoodInput body", async ({ authed: page }) => {
+    const posts: string[] = [];
+    await page.unroute("**/rest/v1/lab_test**");
+    await mockDependencies(page, { failPostOnce: true, posts });
+    await page.setViewportSize(PHONE_430);
+    await page.goto("/food");
+
+    const all = controls(page);
+    await all.nth(0).fill("2026-09-15");
+    await all.nth(1).fill("2026-09-16");
+    await all.nth(2).selectOption("น้ำแข็ง");
+    await all.nth(3).fill("synthetic kitchen tap");
+    await all.nth(4).selectOption("e_coli");
+    await all.nth(5).fill("7");
+    await all.nth(6).fill("ไม่พบ");
+    await all.nth(7).fill("synthetic tech");
+    await all.nth(8).fill("synthetic retry evidence");
+
+    const expected = {
+      sample_date: "2026-09-15",
+      sample_type: "น้ำแข็ง",
+      test_type: "e_coli",
+      result: "ไม่พบ",
+      reported_date: "2026-09-16",
+      technician: "synthetic tech",
+      sample_point: "synthetic kitchen tap",
+      mpn_value: 7,
+      reported_by_lab_tech: null,
+      follow_up_action: "synthetic retry evidence",
+      note: null,
+    } satisfies FoodInput;
+
+    const save = content(page).getByRole("button", { name: SAVE, exact: true });
+    await save.click();
+    await expect(page.getByRole("status").filter({ hasText: "E2E food save failure" })).toBeVisible();
+    await expect(all.nth(3)).toHaveValue("synthetic kitchen tap");
+    await expect(all.nth(8)).toHaveValue("synthetic retry evidence");
+    expect(posts).toHaveLength(1);
+    const failed = JSON.parse(posts[0]) as FoodInput & { reagent_used?: unknown };
+    expect(failed).toEqual(expected);
+    expect(failed).not.toHaveProperty("reagent_used");
+
+    await save.click();
+    expect(posts).toHaveLength(2);
+    const retried = JSON.parse(posts[1]) as FoodInput & { reagent_used?: unknown };
+    expect(retried).toEqual(expected);
+    expect(retried).toEqual(failed);
+    expect(retried).not.toHaveProperty("reagent_used");
+  });
+
+  test("blank required sample date blocks POST and focuses an associated persistent error", async ({ authed: page }) => {
+    const posts: string[] = [];
+    await page.unroute("**/rest/v1/lab_test**");
+    await mockDependencies(page, { posts });
+    await page.setViewportSize(PHONE_390);
+    await page.goto("/food");
+
+    const all = controls(page);
+    const date = all.nth(0);
+    const followUp = all.nth(8);
+    await followUp.fill("preserve me");
+    await date.fill("");
+    await content(page).getByRole("button", { name: SAVE, exact: true }).click();
+
+    const error = content(page).locator(`#${DATE_ERROR_ID}`);
+    expect(posts).toHaveLength(0);
+    await expect(followUp).toHaveValue("preserve me");
+    await expect(error).toBeVisible();
+    await expect(error).toHaveAttribute("role", "alert");
+    await expect(error).toHaveText(DATE_REQUIRED_ERROR);
+    await expect(date).toHaveAttribute("required", "");
+    await expect(date).toHaveAttribute("aria-required", "true");
+    await expect(date).toHaveAttribute("aria-invalid", "true");
+    await expect(date).toHaveAttribute("aria-describedby", DATE_ERROR_ID);
+    await expect(date).toBeFocused();
+  });
+
+  test("keyboard traversal reaches all nine controls and Enter Save", async ({ authed: page }) => {
+    const posts: string[] = [];
+    await page.unroute("**/rest/v1/lab_test**");
+    await mockDependencies(page, { posts });
+    await page.setViewportSize(PHONE_430);
+    await page.goto("/food");
+
+    const fieldControls = FIELDS.map(([label]) => field(page, label));
+    const save = content(page).getByRole("button", { name: SAVE, exact: true });
+    const focusOrder = [...fieldControls, save];
+    await focusOrder[0].focus();
+    await expect(focusOrder[0]).toBeFocused();
+    for (let index = 0; index < focusOrder.length - 1; index += 1) {
+      await focusNext(page, focusOrder[index], focusOrder[index + 1]);
+    }
+    await expect(save).toBeFocused();
+    await page.keyboard.press("Enter");
+    await expect(page.getByRole("status").filter({ hasText: SAVE_OK })).toBeVisible();
+    expect(posts).toHaveLength(1);
+  });
+});
+
+test.describe("ENV-MOBILE-008 real touch context", () => {
+  const { defaultBrowserType: _browserType, ...pixel7Touch } = devices["Pixel 7"];
+  test.use(pixel7Touch);
+
+  test("tap path preserves canonical Food payload and avoids document overflow", async ({ authed: page }) => {
+    const posts: string[] = [];
+    await mockDependencies(page, { posts });
+    await page.goto("/food");
+    const all = controls(page);
+    await all.nth(2).selectOption("ผัก");
+    await all.nth(4).selectOption("fecal_coliform");
+    await all.nth(5).fill("4");
+    await content(page).getByRole("button", { name: SAVE, exact: true }).tap();
+    await expect(page.getByRole("status").filter({ hasText: SAVE_OK })).toBeVisible();
+    expect(posts).toHaveLength(1);
+    const payload = JSON.parse(posts[0]) as FoodInput & { reagent_used?: unknown };
+    expect(payload.sample_type).toBe("ผัก");
+    expect(payload.test_type).toBe("fecal_coliform");
+    expect(payload.mpn_value).toBe(4);
+    expect(payload).not.toHaveProperty("reagent_used");
+    expect(await documentHasNoHorizontalOverflow(page)).toBe(true);
+  });
+});
