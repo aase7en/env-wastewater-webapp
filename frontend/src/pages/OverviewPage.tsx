@@ -194,14 +194,24 @@ export function OverviewPage() {
                 เปิดบริบทเชิงพื้นที่และผังกระบวนการของระบบบำบัดน้ำเสียในหน้าที่มี 3D runtime โดยตรง หน้าภาพรวมนี้ไม่สร้าง Canvas หรือจำลองสถานะการเดินเครื่อง
               </p>
             </div>
-            <Link
-              to="/dashboard"
-              data-command-action="true"
-              className="inline-flex min-h-11 items-center justify-center gap-2 rounded-xl bg-aura-cyan px-4 py-2 text-sm font-semibold text-aura-onAccent transition-opacity hover:opacity-90 font-thai"
-            >
-              เปิดมุมมอง Digital Twin / Process
-              <MSymbol name="arrow_forward" className="text-[18px]" />
-            </Link>
+            <div className="grid gap-2 sm:grid-cols-2 md:grid-cols-1">
+              <Link
+                to="/dashboard"
+                data-command-action="true"
+                className="inline-flex min-h-11 items-center justify-center gap-2 rounded-xl bg-aura-cyan px-4 py-2 text-sm font-semibold text-aura-onAccent transition-opacity hover:opacity-90 font-thai"
+              >
+                เปิดมุมมอง Digital Twin / Process
+                <MSymbol name="arrow_forward" className="text-[18px]" />
+              </Link>
+              <Link
+                to="/flow"
+                data-command-action="true"
+                className="inline-flex min-h-11 items-center justify-center gap-2 rounded-xl border border-aura-cyan/40 px-4 py-2 text-sm font-semibold text-aura-cyan transition-colors hover:bg-aura-cyan/10 font-thai"
+              >
+                เปิด Environmental Flow
+                <MSymbol name="account_tree" className="text-[18px]" />
+              </Link>
+            </div>
           </div>
         </AuraCard>
       </section>

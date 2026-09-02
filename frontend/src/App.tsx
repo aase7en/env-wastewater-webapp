@@ -16,6 +16,7 @@ import { NotFoundPage } from "./pages/NotFoundPage";
 import { ReportsPage } from "./pages/ReportsPage";
 import { EquipmentPage } from "./pages/EquipmentPage";
 import { OverviewPage } from "./pages/OverviewPage";
+import { FlowDiagramPage } from "./pages/FlowDiagramPage";
 import { BulkImportPage } from "./pages/BulkImportPage";
 import { WaterSupplyPage } from "./pages/WaterSupplyPage";
 import { GarbagePage } from "./pages/GarbagePage";
@@ -95,6 +96,14 @@ export default function App() {
                     element={
                       <RequireAuth>
                         <DashboardPage />
+                      </RequireAuth>
+                    }
+                  />
+                  <Route
+                    path="/flow"
+                    element={
+                      <RequireAuth>
+                        <FlowDiagramPage />
                       </RequireAuth>
                     }
                   />
