@@ -166,9 +166,9 @@ Target: prototype-inspired integrated view for waste categories, emissions and e
 
 Final reviewed head `c60d3af50b6d5a9317efa3fdbae953233ee61b8a`; expected-head merge `eaf7fe4469868400e913d2690aee8bd5cdff06d4`. The production `/flow` surface now separates latest recorded daily quantity evidence from structural Activated Sludge topology; missing quantities remain unavailable, discharge boolean never becomes volume, influent is not propagated downstream, and chlorine dosing is a separate structural chemical edge with no inferred dose/activity.
 
-### ENV-OPS-001 - Operations board - NEXT GPT MAX READY
+### ENV-OPS-001 - Operations board - CONTRACT MERGE READY
 
-Dependencies from Command Center and truthful Flow are satisfied. Start with a read-only requirement/contract inventory of incidents, repair requests, inspections, thresholds, responsible party, evidence, lifecycle and ownership before UI implementation. Do not couple this lane to the still-protected Building/Repair worktree or invent repair linkage semantics.
+Contract archaeology is complete. `ENV-OPS-001A` is the first implementable vertical slice: a read-only Operations Attention Board that presents unresolved repair requests and wastewater threshold events as distinct source-local concepts. Generic incident/CAPA/assignee/severity/evidence linkage remains unavailable rather than fabricated; Building inspection-to-repair linkage stays Ultra-owned / decision-gated and outside this slice.
 
 ## M4 — Digital Twin continuation
 
