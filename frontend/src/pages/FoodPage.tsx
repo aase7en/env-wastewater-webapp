@@ -17,10 +17,12 @@ export function FoodPage() {
   const { data, loading, error, refresh } = useFoodLabTests(30);
   const { toast } = useToast();
   const today = toLocalISODate();
+  // FOOD-CORE-001: canonical categoricals only; reagent_used is never
+  // written (dormant trigger) and is not part of FoodInput.
   const [form, setForm] = useState<FoodInput>({
     sample_date: today, sample_type: "น้ำประปา", test_type: "total_coliform",
     result: null, reported_date: null, technician: null, sample_point: null,
-    mpn_value: null, reagent_used: null, reported_by_lab_tech: null,
+    mpn_value: null, reported_by_lab_tech: null,
     follow_up_action: null, note: null,
   });
   const set = (patch: Partial<FoodInput>) => setForm({ ...form, ...patch });
@@ -74,7 +76,7 @@ export function FoodPage() {
         </div>
         <Field label="การติดตามผล"><Textarea value={form.follow_up_action ?? ""} onChange={(e) => set({ follow_up_action: e.target.value || null })} rows={2} /></Field>
         <Button onClick={submit}>บันทึก</Button>
-        <p className="text-xs text-aura-textMuted font-thai">หมายเหตุ: reagent_used จะถูก auto-decrement จาก chemical.movement ผ่าน trigger — หากใส่ในฟอร์ม DB โดยตรง</p>
+        <p className="text-xs text-aura-textMuted font-thai">หมายเหตุ: ปัจจุบันแบบฟอร์ม/การนำเข้าไม่บันทึก reagent_used — trigger หักสต๊อก reagent (chemical.movement) จึงยังไม่ทำงาน (FOOD-CORE-001)</p>
       </AuraCard>
 
       <AuraCard className="p-4">

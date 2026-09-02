@@ -29,7 +29,20 @@ export interface FoodLabTest {
   created_at: string;
 }
 
-export type FoodInput = Omit<FoodLabTest, "id" | "recorded_by" | "created_at">;
+/**
+ * FOOD-CORE-001 — `sample_type`/`test_type` are canonical categoricals
+ * (import adapter + DB CHECK enforce the value sets; blank stays null).
+ * `reagent_used` stays READ-ONLY: the AFTER INSERT trigger
+ * `fn_decrement_reagent` → `chemical.movement` cross-domain decrement is
+ * DORMANT (no app/import path writes it) and is excluded from the write
+ * type so it cannot be silently activated; re-opening it requires a
+ * separate evidence-backed scope decision (trigger hardening backlog in
+ * docs/work-orders/FOOD-CORE-001.md).
+ */
+export type FoodInput = Omit<
+  FoodLabTest,
+  "id" | "recorded_by" | "created_at" | "reagent_used"
+>;
 
 const COLUMNS =
   "id, sample_date, sample_type, test_type, result, reported_date, technician, sample_point, mpn_value, reagent_used, reported_by_lab_tech, follow_up_action, recorded_by, note, created_at";
