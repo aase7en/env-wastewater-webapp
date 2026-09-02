@@ -1,6 +1,6 @@
 # ENV-CMD-002 — GPT-5.6 Sol Implementation Handoff
 
-Status: REVIEW_REQUESTED
+Status: RE-REVIEW_REQUESTED
 Date: 2026-09-02
 Repo: `aase7en/env-wastewater-webapp`
 Worktree: `A:\\GitHub\\envww-cmd-002`
@@ -44,6 +44,12 @@ Mutable production scope is only `frontend/src/pages/OverviewPage.tsx` plus new 
 
 Production mutation is confined to `frontend/src/pages/OverviewPage.tsx`. New verification/continuity files are the focused E2E, this handoff and the work order. GLM `frontend/src/lib/env-int/**`, Building/repair, Overview query/data libs, analytics kit, Twin runtime, router/shell/shared UI and schema remain untouched.
 
+## Independent review round 1 → remediation
+
+Fresh detached review of exact SHA `2d403f9baf943dbfdad925e6f735954659e72a9d` found one data-honesty issue in the presentation seam: Energy and Carbon shared one computed month label even though period metadata should remain source-local. Current `useOverview()` happens to supply the same aggregate month to both, but the composition contract should not couple two domain cards through a shared period variable.
+
+Remediation keeps the data/query contract untouched and computes `energyMonthLabel` and `carbonMonthLabel` independently from each card's own `latest?.month`. Focused isolated E2E rerun: **9/9 PASS**. Full Vitest with process-only secure env: **248/248 PASS**. Build PASS; lint remains **12 baseline warnings / 0 errors**; `OverviewPage.tsx` LSP diagnostics: none. No new scope was added.
+
 ## Stop gate
 
-Do not self-merge. Freeze/push the bounded candidate, audit actual remote diff, obtain fresh exact-SHA Standards + Spec/UX/Data-honesty review, require exact-head CI/E2E, and stop at `REVIEW_REQUESTED` until independent approval.
+Do not self-merge. Freeze/push the repaired bounded candidate, audit actual remote diff, obtain fresh exact-SHA Standards + Spec/UX/Data-honesty re-review, require exact-head CI/E2E, and stop at `RE-REVIEW_REQUESTED` until independent approval.

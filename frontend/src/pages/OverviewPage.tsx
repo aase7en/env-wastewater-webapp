@@ -37,8 +37,8 @@ export function OverviewPage() {
       ? { label: "บันทึกล่าสุด: ปกติ", cls: "text-alert-green border-alert-green/50 bg-alert-green/10" }
       : { label: "ยังไม่ทราบสถานะ", cls: "text-aura-textMuted border-aura-borderSubtle" };
 
-  const latestMonth = energy.latest?.month ?? carbon.latest?.month ?? null;
-  const latestMonthLabel = thaiMonth(latestMonth);
+  const energyMonthLabel = thaiMonth(energy.latest?.month);
+  const carbonMonthLabel = thaiMonth(carbon.latest?.month);
 
   return (
     <div className="mx-auto max-w-7xl space-y-5 md:space-y-6">
@@ -109,7 +109,7 @@ export function OverviewPage() {
             ) : (
               <>
                 <Metric value={fmt(energy.latest?.kwh_total, 0)} unit="kWh" caption="ยอดรวมของเดือนล่าสุด" />
-                <EvidenceLine>{latestMonthLabel ? `ช่วงเวลา ${latestMonthLabel}` : "ยังไม่มีช่วงเวลาอ้างอิง"}</EvidenceLine>
+                <EvidenceLine>{energyMonthLabel ? `ช่วงเวลา ${energyMonthLabel}` : "ยังไม่มีช่วงเวลาอ้างอิง"}</EvidenceLine>
               </>
             )}
           </SystemCard>
@@ -141,7 +141,7 @@ export function OverviewPage() {
               <>
                 <Metric value={fmt(carbon.latest?.tco2e, 4)} unit="tCO₂e" caption="เดือนล่าสุด" />
                 <EvidenceLine>
-                  {latestMonthLabel ? `ช่วงเวลา ${latestMonthLabel} · provenance ระดับ provider ยังไม่พร้อมใน view นี้` : "ยังไม่มีช่วงเวลาอ้างอิง"}
+                  {carbonMonthLabel ? `ช่วงเวลา ${carbonMonthLabel} · provenance ระดับ provider ยังไม่พร้อมใน view นี้` : "ยังไม่มีช่วงเวลาอ้างอิง"}
                 </EvidenceLine>
               </>
             )}

@@ -1,6 +1,6 @@
 # ENV-CMD-002 — Hospital Overview Command-Center Vertical Slice
 
-Status: REVIEW_REQUESTED
+Status: RE-REVIEW_REQUESTED
 Owner / implementer: GPT-5.6 Sol via Serena visual lane
 Independent review owner: fresh exact-SHA reviewer
 Parent: `ENV-CMD-001` canonical composition contract
