@@ -1,6 +1,6 @@
 # UX-FLOW-P001 — GPT-5.6 Sol Handoff
 
-Status: RE-REVIEW_REQUESTED
+Status: CLOSED / MERGED / POST-MERGE / DEPLOYED VERIFIED
 Date: 2026-09-02
 Repo: `aase7en/env-wastewater-webapp`
 Worktree: `A:\\GitHub\\envww-flow-p001`
@@ -96,3 +96,10 @@ Forbidden/no-touch remains: `frontend/src/lib/env-int/**`, Building/Repair, Carb
 ## Review gate
 
 Freeze a new exact SHA after current-main integration and verification, push it, verify actual remote diff, then perform fresh detached exact-SHA Standards + Spec/UX/Data-honesty review. Any finding requires repair → NEW SHA → review again. Implementation owner does not self-merge.
+
+## Final closeout - 2026-09-03
+
+- Reviewed exact head `c60d3af50b6d5a9317efa3fdbae953233ee61b8a`; expected-head merge `eaf7fe4469868400e913d2690aee8bd5cdff06d4`.
+- Exact-main test `33669384513`, E2E `33669384543`, Pages/deploy/smoke `33669384574`: SUCCESS.
+- Deployed root-to-client 390px probe: exact Flow evidence + chlorine branch present, 390/390/390 document/body/viewport on 3 repeated stable runs, mocked REST/session and no real writes.
+- Lane is CLOSED. Next GPT MAX lane: `ENV-OPS-001` contract inventory after shared SSoT closeout reaches main.

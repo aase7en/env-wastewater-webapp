@@ -1,6 +1,6 @@
 # UX-FLOW-P001 — Truthful Wastewater Environmental Flow
 
-Status: RE-REVIEW_REQUESTED
+Status: CLOSED / MERGED / POST-MERGE / DEPLOYED VERIFIED
 Owner / implementer: GPT-5.6 Sol via Serena visual/product lane
 Independent review owner: fresh exact-SHA reviewer
 Repository: `aase7en/env-wastewater-webapp`
@@ -203,3 +203,10 @@ Stop only for material decision/ownership/safety/dependency blockers or at `REVI
 - Integrated `origin/main@b6256616216bc0b657fbcf15ff9a5dabde0f321a` cleanly before R2 freeze; no Flow/ENV-INT conflict.
 - Post-integration gates: focused model **12/12 PASS**; full Vitest **22 files / 327 tests PASS**; lint **12 baseline warnings / 0 errors**; production build + `tsc -b` PASS (existing large-chunk warning only); focused Playwright **9/9 PASS** with mocked REST/session and process-only secure config; `git diff --check origin/main...HEAD` PASS; diff remains exactly the 9 owned Flow files.
 - Any subsequent head change still requires fresh exact-SHA review and exact-head CI before merge.
+
+## Final closeout - 2026-09-03
+
+- Final reviewed head: `c60d3af50b6d5a9317efa3fdbae953233ee61b8a`; independent detached review verdict APPROVED with no blocking findings.
+- Expected-head merge: `eaf7fe4469868400e913d2690aee8bd5cdff06d4`. Exact-main test `33669384513`, E2E `33669384543`, and Pages/deploy/smoke `33669384574` all SUCCESS.
+- Deployed root-to-client 390px probe used mocked REST/session only, rendered the exact latest evidence and chlorine structural branch, and held document/body/viewport at 390/390/390 across 3 repeated stable runs after font settling. One earlier first-frame 395px measurement disappeared after settling and is retained as transient timing/font evidence, not stable Flow overflow.
+- No real environmental/application write, schema/RLS/provider/Building/Carbon/Twin mutation, or dummy operational quantity was introduced.

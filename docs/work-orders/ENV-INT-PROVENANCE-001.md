@@ -1,6 +1,6 @@
 # ENV-INT-PROVENANCE-001 — Environmental Intelligence provenance/freshness/availability core
 
-Status: RE-REVIEW_REQUESTED (R2 remediation of the 2026-09-02 GPT MAX CHANGES_REQUIRED review; fresh exact-SHA review requested)
+Status: CLOSED / MERGED / POST-MERGE / DEPLOYED VERIFIED
 Owner / implementer: GLM-5.3 MAX (Core Engineering / Track Z)
 Lead / review / merge owner: GPT-5.6 Sol
 Repository: `aase7en/env-wastewater-webapp`
@@ -165,3 +165,9 @@ review, exact-head CI, remote-diff audit.
 GPT lead: independent exact-SHA review of this PR, then (after merge)
 activate `ENV-INT-GISTDA-001`, consuming this core per the source-contract
 packet ordering (PROVENANCE → GISTDA → HII → TMD).
+
+## Final closeout - 2026-09-03
+
+- Final reviewed R2 head `ffbb740f6a5dd4ebf174150b130db11bc83625bc`; expected-head merge `b6256616216bc0b657fbcf15ff9a5dabde0f321a`.
+- Exact-main test/E2E/Pages succeeded; merged core is provider-agnostic and deployed.
+- Next provider work must consume this core rather than duplicate its availability/freshness/provenance/time semantics.

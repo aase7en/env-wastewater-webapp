@@ -162,13 +162,13 @@ Dependency: inventory actual waste/plastic/carbon/T-VER contracts first.
 
 Target: prototype-inspired integrated view for waste categories, emissions and evidence readiness, but never invent T-VER eligibility/status or carbon factors.
 
-### UX-FLOW-P001 — Wastewater environmental flow
+### UX-FLOW-P001 - Wastewater environmental flow - CLOSED / MERGED
 
-Inventory comparable quantities/units first; Sankey width encodes quantity only where period/unit semantics are valid. Missing quantities remain missing.
+Final reviewed head `c60d3af50b6d5a9317efa3fdbae953233ee61b8a`; expected-head merge `eaf7fe4469868400e913d2690aee8bd5cdff06d4`. The production `/flow` surface now separates latest recorded daily quantity evidence from structural Activated Sludge topology; missing quantities remain unavailable, discharge boolean never becomes volume, influent is not propagated downstream, and chlorine dosing is a separate structural chemical edge with no inferred dose/activity.
 
-### ENV-OPS-001 — Operations board
+### ENV-OPS-001 - Operations board - NEXT GPT MAX READY
 
-Inventory incidents, repair requests, inspections, thresholds, responsible party and evidence contracts before UI implementation.
+Dependencies from Command Center and truthful Flow are satisfied. Start with a read-only requirement/contract inventory of incidents, repair requests, inspections, thresholds, responsible party, evidence, lifecycle and ownership before UI implementation. Do not couple this lane to the still-protected Building/Repair worktree or invent repair linkage semantics.
 
 ## M4 — Digital Twin continuation
 
@@ -182,9 +182,11 @@ Twin work may run parallel to independent non-overlapping slices only after owne
 
 ## M5 — External Environmental Intelligence
 
-### ENV-INT-P001 — Source + provenance contract — CHANGES_REQUIRED / GLM QUOTA-PAUSED
+### ENV-INT-P001 - Source + provenance contract - CLOSED / MERGED
 
-PR #72 exact head `2415607f0572ec1a04aa0237078562dff439f1d1` reached green exact-head CI, but GPT MAX independent review returned CHANGES_REQUIRED: keep stale as freshness rather than availability, make loading reachable, forbid unavailable+value contradictions, harden the structural guard, and reject impossible wall-clock timestamps. GLM retains ownership for remediation when quota returns.
+`ENV-INT-PROVENANCE-001` R2 exact head `ffbb740f6a5dd4ebf174150b130db11bc83625bc` was independently reviewed APPROVED and merged by expected-head guard as `b6256616216bc0b657fbcf15ff9a5dabde0f321a`; exact-main test/E2E/Pages succeeded. Canonical core now keeps availability, freshness and provenance orthogonal; fails closed on schema/value/time contradictions; and contains no provider/network/UI logic.
+
+Next provider implementation must remain source-contract gated. The safe GLM long-horizon candidate is `ENV-INT-GISTDA-CORE-001`: fixture-driven adapter/normalization only, consuming the merged core, with no UI/public redistribution and no real-network CI. Public GISTDA display/redistribution remains gated by D1 license posture; hospital point queries remain gated by authoritative coordinates; heat/flood semantics remain RESEARCH_REQUIRED.
 
 Before map production work:
 
