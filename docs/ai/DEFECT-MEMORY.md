@@ -257,6 +257,24 @@ Source record:
 
 ---
 
+## ENV-DEFECT-014 — NULL must survive every aggregation boundary; transport state must not be named "live"
+
+**Failure class:** rollup aggregation / NULL-vs-zero collapse / misleading realtime naming.
+
+**Symptom:** `carbon.v_unified_co2e` legitimately emits `kg_co2e = NULL` when an emission factor is unavailable (missing factor, unsupported classification, unit mismatch, pre-effective-date period), but three layers each independently collapsed that UNKNOWN into a numeric zero: the electricity SQL branch `COALESCE(SUM(consumption) * ef.kg_co2e, 0)`, the TypeScript shaping `total += Number(r.kg_co2e)` (`Number(null) === 0`) inside scope totals and `grandTotalKg`, and the page cell `Number(r.kg_co2e).toFixed(3)` rendering NULL as `"0.000"`. Separately, every branch LEFT JOINed the factor table with only `effective_from <= month`, so two applicable factors (the documented annual TGO update path) would fan the join out and double-count every affected month. And `useCarbonRollupRealtime()` exported a boolean named `live` for Supabase subscription connectivity, inviting monthly manual aggregates to be labeled live environmental data.
+
+**Root cause:** NULL semantics were never made a cross-layer contract — each layer independently chose a convenient default (COALESCE-to-zero in SQL, Number() coercion in TS, toFixed in UI), and factor selection had no "exactly one row" rule, so an intentional future factor update was structurally a double-counting bug. The realtime flag was named after what the UI might want to claim rather than what it measures.
+
+**How detected:** ENV-WASTE-CARBON-001A Core archaeology traced every UNION branch of every migration defining `v_unified_co2e` (including the FUEL-CORE-001/GARBAGE-CORE-001 supersessions), then read the TS shaping and page consumers line-by-line against the data-honesty invariants.
+
+**Prevention rule:** any column that can be NULL crosses a layer boundary as `T | null` in the type contract, and every aggregate over it must either exclude-and-flag (known subtotal + explicit unavailable coverage) or fail — never `Number(x)`, `COALESCE(... , 0)`, or `?? 0`. Effective-dated reference joins must select at most one row (LATERAL `ORDER BY effective_from DESC LIMIT 1` or equivalent). A boolean describing subscription/socket state must be named for transport (`realtimeConnected`), never `live`, on any manual/aggregate data path.
+
+**Regression/evidence:** `frontend/src/lib/carbon-rollup.test.ts` — NULL excluded from totals and flagged unavailable (R3/R17), explicit-zero stays zero (R2), all-NULL source stays unavailable-not-complete (R7), known-subtotal completeness flag (R8), `realtimeConnected` type contract (R13); static migration contract S2/S3/S4 pin the SQL-side COALESCE removal, 5× latest-effective LATERAL, and explicit unclassified fuel label.
+
+**Domains affected:** carbon rollup views and every TS consumer of nullable aggregates; effective-dated reference tables (emission factors and any future rate/version tables); realtime hooks over manual aggregate data.
+
+---
+
 ## Adding future entries
 
 Add a new entry only after the root cause is verified. The entry should change at least one future behavior: a guardrail, test, spec rule, audit item, or implementation pattern.

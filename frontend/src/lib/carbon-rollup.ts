@@ -1,5 +1,5 @@
 /**
- * CRB-1..4 — Carbon rollup data layer (Scope 1+2+3 unified).
+ * CRB-1..4 + ENV-WASTE-CARBON-001A — Carbon rollup data layer (Scope 1+2+3).
  *
  * Reads `carbon.v_unified_co2e` (SCHEMA-3 view) which UNIONs every
  * carbon-contributing table across all schemas. Per-scope + per-source
@@ -8,6 +8,16 @@
  * Scope 1 (direct): fuel + garden
  * Scope 2 (indirect electricity): carbon.reading
  * Scope 3 (other indirect): waste + chemical
+ *
+ * ENV-WASTE-CARBON-001A data-honesty contract:
+ *   The view legitimately emits kg_co2e = NULL when an emission factor is
+ *   unavailable for a source/month (missing factor, unsupported
+ *   classification, unit mismatch, period outside factor validity). NULL is
+ *   UNKNOWN — it must never be coerced through Number(null) into a numeric
+ *   zero inside scope totals or the grand total. Totals are therefore
+ *   KNOWN subtotals: sums over non-NULL rows only, with explicit
+ *   `unavailableSources` / `hasUnavailableContribution` flags so no
+ *   incomplete total can be presented as complete.
  */
 import { useEffect, useState } from "react";
 import { useQuery } from "@tanstack/react-query";
@@ -18,26 +28,44 @@ export interface RollupRow {
   month: string;       // YYYY-MM-01
   scope: number;       // 1, 2, 3
   source: string;
-  kg_co2e: number;
+  /** NULL = factor unavailable for that source/month (UNKNOWN, not zero). */
+  kg_co2e: number | null;
   row_count: number;
 }
 
 export interface ScopeSummary {
   scope: number;
+  /** Known subtotal: sum of non-NULL kg_co2e rows in this scope. */
   total_kg_co2e: number;
   source_count: number;
   has_data: boolean;
+  /** True when at least one row in this scope had kg_co2e NULL. */
+  has_unavailable: boolean;
 }
 
 export interface RollupSummary {
   rows: RollupRow[];
   byScope: ScopeSummary[];
+  /** Known total (sum of known subtotals) — not a complete total while
+   * hasUnavailableContribution is true. */
   grandTotalKg: number;
-  /** Sources still without data — UI shows "ข้อมูล incomplete" flag. */
+  /** Expected factor-backed sources still without data — UI shows "ข้อมูล
+   * incomplete" flag. Label-presence semantics: a source needs rows in the
+   * window to leave this list. */
   incompleteSources: string[];
+  /** Sources seen in-window with at least one NULL-kg row (factor
+   * unavailable). Distinct from incompleteSources: these have data but an
+   * unavailable contribution. Sorted for deterministic display. */
+  unavailableSources: string[];
+  /** True when any NULL-kg row exists — the grand total is then a known
+   * subtotal, never a "complete total". */
+  hasUnavailableContribution: boolean;
 }
 
-const EXPECTED_SOURCES = [
+/** Factor-backed target labels per scope. States like waste_unclassified /
+ * waste_chemical / fuel_unclassified are deliberately NOT expected targets:
+ * they describe unavailable classifications, not sources with factors. */
+export const EXPECTED_SOURCES = [
   // Scope 1
   "diesel", "gasoline", "lpg", "garden_fuel",
   // Scope 2
@@ -46,6 +74,8 @@ const EXPECTED_SOURCES = [
   "waste_general", "waste_infectious", "waste_recyclable",
   "chemical_chlorine", "chemical_alum", "chemical_kmno4",
 ];
+
+const ALL_SCOPES = [1, 2, 3] as const;
 
 export async function fetchRollup(months = 12): Promise<RollupSummary> {
   const cutoff = new Date();
@@ -66,13 +96,27 @@ export async function fetchRollup(months = 12): Promise<RollupSummary> {
 
   const rows = ((data ?? []) as unknown[]) as RollupRow[];
 
-  // Aggregate by scope.
-  const scopeMap = new Map<number, ScopeSummary>();
+  // Aggregate by scope. All three scopes are always represented so the UI
+  // can render its "ยังไม่มีข้อมูล" branch instead of silently dropping
+  // empty scope cards.
+  const scopeMap = new Map<number, ScopeSummary>(
+    ALL_SCOPES.map((scope) => [
+      scope,
+      { scope, total_kg_co2e: 0, source_count: 0, has_data: false, has_unavailable: false },
+    ]),
+  );
   for (const r of rows) {
     const cur = scopeMap.get(r.scope) ?? {
-      scope: r.scope, total_kg_co2e: 0, source_count: 0, has_data: false,
+      scope: r.scope, total_kg_co2e: 0, source_count: 0, has_data: false, has_unavailable: false,
     };
-    cur.total_kg_co2e += Number(r.kg_co2e);
+    if (r.kg_co2e === null || r.kg_co2e === undefined) {
+      // UNKNOWN contribution — never Number(null) === 0.
+      cur.has_unavailable = true;
+    } else {
+      const n = Number(r.kg_co2e);
+      if (Number.isFinite(n)) cur.total_kg_co2e += n;
+      else cur.has_unavailable = true;
+    }
     cur.has_data = true;
     scopeMap.set(r.scope, cur);
   }
@@ -91,7 +135,24 @@ export async function fetchRollup(months = 12): Promise<RollupSummary> {
   const seenSources = new Set(rows.map((r) => r.source));
   const incompleteSources = EXPECTED_SOURCES.filter((s) => !seenSources.has(s));
 
-  return { rows, byScope, grandTotalKg, incompleteSources };
+  // A source is unavailable when any of its rows carries NULL kg (factor
+  // unavailable for at least one month in the window).
+  const unavailable = new Set<string>();
+  for (const r of rows) {
+    if (r.kg_co2e === null || r.kg_co2e === undefined || !Number.isFinite(Number(r.kg_co2e))) {
+      unavailable.add(r.source);
+    }
+  }
+  const unavailableSources = Array.from(unavailable).sort();
+
+  return {
+    rows,
+    byScope,
+    grandTotalKg,
+    incompleteSources,
+    unavailableSources,
+    hasUnavailableContribution: unavailableSources.length > 0,
+  };
 }
 
 export function useCarbonRollup(months = 12) {
@@ -114,21 +175,23 @@ export function useCarbonRollup(months = 12) {
  * the rollup so the page shows fresh totals without a manual refresh.
  *
  * Scope: Track Z (logic only). Track F owns the decision of *whether* a
- * page uses this hook vs the polling variant — wire it from
- * CarbonRollupPage when ready. Realtime on the underlying view itself is
- * not supported by Supabase (views can't be broadcast), so we watch the
- * most-frequently-written base table. Other sources (fuel, garbage,
- * garden, chemical) will land on next manual refresh; covering them all
- * would need 5 channels — defer until usage proves the need.
+ * page uses this hook vs the polling variant. Realtime on the underlying
+ * view itself is not supported by Supabase (views can't be broadcast), so
+ * we watch the most-frequently-written base table. Other sources (fuel,
+ * garbage, garden, chemical) will land on next manual refresh; covering
+ * them all would need 5 channels — defer until usage proves the need.
  *
- * Returns the same shape as useCarbonRollup plus a `live` flag the UI can
- * use to show a "live" indicator.
+ * ENV-WASTE-CARBON-001A: `realtimeConnected` describes TRANSPORT state
+ * only — whether the Supabase realtime subscription is connected. It is
+ * NOT a claim that carbon measurement is live: v_unified_co2e serves
+ * monthly aggregates over manual field recordings, so "live environmental
+ * data" semantics never apply to this hook's output.
  */
 export function useCarbonRollupRealtime(months = 12) {
   const [data, setData] = useState<RollupSummary | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
-  const [live, setLive] = useState(false);
+  const [realtimeConnected, setRealtimeConnected] = useState(false);
 
   useEffect(() => {
     let cancelled = false;
@@ -152,16 +215,17 @@ export function useCarbonRollupRealtime(months = 12) {
       )
       .subscribe((status) => {
         if (cancelled) return;
-        // "SUBSCRIBED" === connected; anything else (TIMED_OUT/CLOSED/CHANNEL_ERROR) = offline.
-        setLive(status === "SUBSCRIBED");
+        // "SUBSCRIBED" === transport connected; anything else
+        // (TIMED_OUT/CLOSED/CHANNEL_ERROR) = transport offline.
+        setRealtimeConnected(status === "SUBSCRIBED");
       });
 
     // Resilience (2026-08-03): the status callback fires only on status
     // CHANGES. Supabase's socket layer auto-reconnects, but on a transient
-    // drop+recover the callback can stay silent, leaving `live=false`
+    // drop+recover the callback can stay silent, leaving the flag false
     // forever even though the channel is secretly healthy again. Poll the
     // channel's binding state every 10s as a backstop — if it has resubscribed
-    // (REALTIME_SUBSCRIBE_STATES.SUBSCRIBED) flip `live` back to true, and if
+    // (REALTIME_SUBSCRIBE_STATES.SUBSCRIBED) flip it back to true, and if
     // the socket is dead we refetch on a timer so data isn't silently stale.
     // Cheap: one property read + at most one fetch when offline.
     const state = setInterval(() => {
@@ -170,12 +234,12 @@ export function useCarbonRollupRealtime(months = 12) {
       // is the same enum the subscribe callback reports.
       const bound = (channel as unknown as { state?: string }).state;
       if (bound === "SUBSCRIBED") {
-        setLive(true);
+        setRealtimeConnected(true);
         return;
       }
-      // Offline: refetch on the timer so the page shows fresh-ish data even
-      // while the realtime layer is down (no silent staleness).
-      setLive(false);
+      // Transport offline: refetch on the timer so the page shows fresh-ish
+      // data even while the realtime layer is down (no silent staleness).
+      setRealtimeConnected(false);
       fetchRollup(months)
         .then((d) => { if (!cancelled) { setData(d); setError(null); } })
         .catch(() => { /* swallow — poll will retry */ });
@@ -185,9 +249,9 @@ export function useCarbonRollupRealtime(months = 12) {
       cancelled = true;
       clearInterval(state);
       supabase.removeChannel(channel);
-      setLive(false);
+      setRealtimeConnected(false);
     };
   }, [months]);
 
-  return { data, loading, error, live };
+  return { data, loading, error, realtimeConnected };
 }

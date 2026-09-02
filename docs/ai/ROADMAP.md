@@ -146,26 +146,13 @@ Do not create one giant all-forms PR.
 
 ## M2 — Shared command-center composition
 
-### ENV-CMD-001 — Responsive command-center composition contract
+### ENV-CMD-001 — Responsive command-center composition contract — COMPLETE
 
-Goal:
+PR #70 exact reviewed head `260c60862842f47fe1ff67e6fd511c61efb20be7` independently APPROVED Standards + Spec/Product/Data-honesty and merged with expected-head guard as `c9542b2fc51e25bf30b2b0e68b38a91c35192b92`; exact-main post-merge test `33623435110` succeeded. The contract fixes responsive page/panel hierarchy, orthogonal availability/freshness/provenance/operational-status semantics, real-route drill-down, no fake global live/normal state, and no second Overview R3F Canvas. No production code/schema/provider/data writes occurred.
 
-- define reusable page/panel hierarchy for desktop/tablet/mobile using existing Aura/analytics/Twin foundations;
-- define KPI/situation/provenance/alert/panel states;
-- define drill-down and cross-surface behavior;
-- avoid a broad navigation rewrite.
+### ENV-CMD-002 — Hospital Overview command-center vertical slice — COMPLETE
 
-Output is a bounded design/component contract before production composition changes.
-
-### ENV-CMD-002 — Hospital Overview command-center vertical slice
-
-Upgrade the existing overview incrementally toward the prototype north star:
-
-- environmental situation summary;
-- decision-relevant freshness/source;
-- links into wastewater/Twin, carbon, waste, hazards and operations;
-- mobile recomposition rather than desktop shrink;
-- use truthful current data only; unavailable modules remain explicit.
+PR #73 final reviewed head `28f3b5aaed21b87684280744a1023d97fb6fb84a` merged with expected-head guard as `ff9e6672e4f194ced6d5288f7726033c56de1e18`. Exact-main test succeeded, E2E **133/133 PASS**, Pages/deployment succeeded, and production bundle smoke confirmed the new Command Center. The slice now provides responsive situation/action/evidence hierarchy, truthful latest-record and monthly-period semantics, real drill-downs, and a lightweight Twin/Process entry without a second Canvas.
 
 ## M3 — Signature environmental intelligence slices
 
@@ -195,7 +182,9 @@ Twin work may run parallel to independent non-overlapping slices only after owne
 
 ## M5 — External Environmental Intelligence
 
-### ENV-INT-P001 — Source + provenance contract
+### ENV-INT-P001 — Source + provenance contract — CHANGES_REQUIRED / GLM QUOTA-PAUSED
+
+PR #72 exact head `2415607f0572ec1a04aa0237078562dff439f1d1` reached green exact-head CI, but GPT MAX independent review returned CHANGES_REQUIRED: keep stale as freshness rather than availability, make loading reachable, forbid unavailable+value contradictions, harden the structural guard, and reject impossible wall-clock timestamps. GLM retains ownership for remediation when quota returns.
 
 Before map production work:
 
