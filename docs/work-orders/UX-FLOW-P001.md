@@ -200,4 +200,6 @@ Stop only for material decision/ownership/safety/dependency blockers or at `REVI
 - `npx tsc -b`: PASS.
 - First local Playwright attempts hit a stale/misconfigured local server and then a branch server without `VITE_SUPABASE_*`; the app correctly failed fast at module load. Classified `ENVIRONMENT_FAILURE`, not application failure.
 - Re-run used a branch-owned Vite server with secure local Supabase config injected process-only (values never printed/persisted) and fully mocked test REST/session. Focused Playwright: **9/9 PASS**.
-- Branch will reconcile current `origin/main` before candidate freeze; any main integration or head change requires full relevant verification and a fresh exact-SHA review.
+- Integrated `origin/main@b6256616216bc0b657fbcf15ff9a5dabde0f321a` cleanly before R2 freeze; no Flow/ENV-INT conflict.
+- Post-integration gates: focused model **12/12 PASS**; full Vitest **22 files / 327 tests PASS**; lint **12 baseline warnings / 0 errors**; production build + `tsc -b` PASS (existing large-chunk warning only); focused Playwright **9/9 PASS** with mocked REST/session and process-only secure config; `git diff --check origin/main...HEAD` PASS; diff remains exactly the 9 owned Flow files.
+- Any subsequent head change still requires fresh exact-SHA review and exact-head CI before merge.

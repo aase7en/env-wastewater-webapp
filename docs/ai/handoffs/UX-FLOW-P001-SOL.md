@@ -7,7 +7,7 @@ Worktree: `A:\\GitHub\\envww-flow-p001`
 Branch: `feat/ux-flow-p001`
 Activation base: `origin/main@64f9f89cec1e0abe6b81d50a9bc6f26ecc500098`
 Integrated main before first freeze: `origin/main@6c36ebe4f3b7e6e5106da317d6935d3cd9119340`
-Current main to reconcile before R2 freeze: `origin/main@b6256616216bc0b657fbcf15ff9a5dabde0f321a` (PR #72 merged after independent approval)
+Integrated main for R2 freeze: `origin/main@b6256616216bc0b657fbcf15ff9a5dabde0f321a` (PR #72 merged after independent approval; clean file-disjoint merge)
 Owner / implementer: GPT-5.6 Sol via Serena
 Independent review owner: fresh exact-SHA reviewer
 
@@ -90,7 +90,8 @@ Forbidden/no-touch remains: `frontend/src/lib/env-int/**`, Building/Repair, Carb
 - Repair: add `chlorine-dosing` edge from `chlorine_solution_storage` to `chlorine_contact_tank` using `medium=chemical`, structural activity and unavailable quantity/unit. No chlorine dose, pump state, flow rate or Live state is inferred.
 - Regression: pure model now pins this edge; focused suite **12/12 PASS**. Rendered E2E pins Chlorine dosing route and unavailable quantity text; focused browser suite **9/9 PASS** on a branch-owned Vite server with process-only secure config and mocked REST/session.
 - Local 9/9 failures before that successful run were root-caused to missing `VITE_SUPABASE_*` on a fresh branch server (module-load fail-fast) / stale dev-server reuse; classified `ENVIRONMENT_FAILURE`, not application failure.
-- PR #72 provenance core was independently approved and merged as main `b6256616216bc0b657fbcf15ff9a5dabde0f321a`; Flow must integrate that file-disjoint main before candidate freeze.
+- PR #72 provenance core was independently approved and merged as main `b6256616216bc0b657fbcf15ff9a5dabde0f321a`; Flow integrated that file-disjoint main cleanly before candidate freeze.
+- Post-integration verification: focused model **12/12 PASS**; full Vitest **22 files / 327 tests PASS**; `npm run lint` **12 baseline warnings / 0 errors**; `npm run build` PASS including `tsc -b` (existing large-chunk warning only); focused Playwright **9/9 PASS** on the integrated head with process-only secure config and mocked REST/session; `git diff --check origin/main...HEAD` PASS; candidate diff remains exactly the 9 Flow-owned files.
 
 ## Review gate
 
