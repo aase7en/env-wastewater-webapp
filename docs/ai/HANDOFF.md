@@ -1,5 +1,15 @@
 # HANDOFF
 
+## Active checkpoint - ENV-MOBILE-008-FOOD - 2026-09-02
+
+- Status: `REVIEW_REQUESTED`; owner GPT-5.6 Sol via Serena visual fallback; independent exact-head Standards + Spec/UX review required before merge.
+- Repo/worktree/branch/base: `aase7en/env-wastewater-webapp` / `A:\\GitHub\\envww-mobile-008-food` / `feat/env-mobile-008-food` / `origin/main@b05a25e182ddd648414f2d1d35be79ef67776e15`.
+- Dependency gate: `FOOD-CORE-001` CLOSED/MERGED/LIVE VERIFIED; canonical Food categoricals and dormant reagent policy are fixed/read-only in this visual lane.
+- Mutable production scope: `FoodPage.tsx` + new `food-mobile.spec.ts`; WO/lane handoff + bounded SSoT only. Food lib/import/schema/RLS/reagent trigger/shared UI/AppShell/ModuleDock/Building/Safety/other modules and `.serena/**` are no-touch.
+- RED contract: phone one-column 360/390/430, 9 labels/ids, >=44px Save/Delete, local history containment, tablet/desktop density, exact failed-save retry body with no `reagent_used`, required-date zero-POST/error/focus, keyboard traversal and Pixel-class touch.
+- Evidence: truthful RED 6 FAIL / 3 PASS → focused Food Playwright 9/9 PASS; full Vitest 248/248 PASS; TypeScript PASS; lint 12 pre-existing warnings / 0 errors; `git diff --check` PASS; post-edit production build PASS (`tsc -b && vite build`, 3305 modules). Full Playwright attempts through Worker 5 and fresh Worker 1 returned connector/upstream HTTP 502 before any test result, classified `TOOL/TRANSPORT_FAILURE`, not E2E failure.
+- One next safe action: explicitly stage only the bounded Food implementation/test/WO/handoff/SSoT files, commit/push, freeze the exact PR head, audit the actual remote diff, obtain independent exact-SHA Standards + Spec/UX review, and require exact-head GitHub CI/Pages/full E2E before merge.
+
 ## Closed checkpoint - FOOD-CORE-001 - 2026-09-02
 
 - Status: `CLOSED / MERGED / POST-MERGE / LIVE VERIFIED`; implementation owner GLM-5.3 MAX; independent review/merge/live-verification owner GPT-5.6 Sol.
