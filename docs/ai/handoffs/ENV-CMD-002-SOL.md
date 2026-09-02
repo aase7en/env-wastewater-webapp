@@ -1,6 +1,6 @@
 # ENV-CMD-002 — GPT-5.6 Sol Implementation Handoff
 
-Status: RE-REVIEW_REQUESTED
+Status: CLOSED / MERGED / POST-MERGE / DEPLOYED VERIFIED
 Date: 2026-09-02
 Repo: `aase7en/env-wastewater-webapp`
 Worktree: `A:\\GitHub\\envww-cmd-002`
@@ -50,6 +50,14 @@ Fresh detached review of exact SHA `2d403f9baf943dbfdad925e6f735954659e72a9d` fo
 
 Remediation keeps the data/query contract untouched and computes `energyMonthLabel` and `carbonMonthLabel` independently from each card's own `latest?.month`. Focused isolated E2E rerun: **9/9 PASS**. Full Vitest with process-only secure env: **248/248 PASS**. Build PASS; lint remains **12 baseline warnings / 0 errors**; `OverviewPage.tsx` LSP diagnostics: none. No new scope was added.
 
-## Stop gate
+## Release closure
 
-Do not self-merge. Freeze/push the repaired bounded candidate, audit actual remote diff, obtain fresh exact-SHA Standards + Spec/UX/Data-honesty re-review, require exact-head CI/E2E, and stop at `RE-REVIEW_REQUESTED` until independent approval.
+- Final reviewed PR #73 head `28f3b5aaed21b87684280744a1023d97fb6fb84a` APPROVED after the source-local period remediation.
+- PR #73 merged with expected-head guard as `ff9e6672e4f194ced6d5288f7726033c56de1e18`; reviewed-head ancestry verified.
+- Exact-main `test` `33631499783` SUCCESS; E2E `33631499778` **133/133 PASS**; Pages `33631499745` SUCCESS.
+- Deployment `6222615886` targets the exact merge SHA; root HTTP 200 and served production JS contains the new Overview situation/spatial markers.
+- Production/schema/RLS/query/Building/env-int/Twin-runtime scope remained unchanged; no real writes.
+
+## One next safe action
+
+After this docs-only closeout reaches main, activate `UX-FLOW-P001` from fresh main. First settle comparable quantity/unit/period semantics. Keep the current dummy `/flow` 2.5D PFD explicitly separate from the future quantity/Sankey flow and do not infer missing discharge/stage quantities.
