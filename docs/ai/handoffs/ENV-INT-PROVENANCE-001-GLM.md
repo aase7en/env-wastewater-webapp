@@ -95,14 +95,13 @@ or Command-Center files, no DB/schema/RLS/carbon, no shared SSoT, no
   no fabricated environmental data anywhere.
 - Independent GPT review remains the merge gate.
 
-## Remote PR / CI (frozen at push)
+## Remote PR / CI (frozen 2026-09-02)
 
-- Implementation checkpoint SHA: `<frozen below after push>`
-- PR: `<frozen below after push>`
-- Remote diff audited: file list identical to the local diff; no
-  forbidden/unrelated files.
-- Exact-head CI: reviewer must require checks green on the latest PR head
-  before merge.
+- Implementation checkpoint SHA: `baaeb2c25449e5c9bab20a90663253e63fe4cb7a` (6 files, exactly the WO scope, +1014 lines)
+- PR: https://github.com/aase7en/env-wastewater-webapp/pull/72 (OPEN, base `main`, MERGEABLE at freeze)
+- Remote diff audited: file list identical to the local diff — only `frontend/src/lib/env-int/core/**` + the two lane docs; no `.serena/**`, no shared SSoT/UI, no Building/Command-Center files
+- This docs-only freeze commit follows the checkpoint; independent review binds to the actual PR head at review time (any head change invalidates review)
+- Exact-head CI: observe on the PR at review time; reviewer must require checks green on the latest head before merge
 
 ## Decisions / blockers
 
