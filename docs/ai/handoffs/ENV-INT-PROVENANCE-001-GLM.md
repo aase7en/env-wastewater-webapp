@@ -1,6 +1,6 @@
 # ENV-INT-PROVENANCE-001 — Implementation / Review Handoff (GLM lane)
 
-Status: REVIEW_REQUESTED
+Status: CLOSED / MERGED / POST-MERGE / DEPLOYED VERIFIED
 Date: 2026-09-02
 Repo: `aase7en/env-wastewater-webapp`
 Worktree: `A:\GitHub\envww-env-int-provenance-001`
@@ -164,3 +164,9 @@ ENVIRONMENTAL WRITES = NONE.
 
 New exact SHA / actual PR #72 remote head: recorded in the PR review-request
 comment at push time (this handoff is committed inside the candidate).
+
+## Final closeout - 2026-09-03
+
+- GPT-5.6 Sol independently approved exact R2 head `ffbb740f6a5dd4ebf174150b130db11bc83625bc`.
+- Expected-head merge `b6256616216bc0b657fbcf15ff9a5dabde0f321a`; exact-main test/E2E/Pages succeeded.
+- This GLM lane is CLOSED. Any GISTDA/HII/TMD work must start in a new isolated lane and consume the merged core unchanged unless a separately reviewed core defect is reproduced.

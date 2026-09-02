@@ -1,5 +1,21 @@
 # HANDOFF
 
+## Closed checkpoint - UX-FLOW-P001 - 2026-09-03
+
+- Status: `CLOSED / MERGED / POST-MERGE / DEPLOYED VERIFIED`; owner/implementer GPT-5.6 Sol. Initial exact-SHA review found one blocking topology drift: chlorine dosing existed only as UI text, not in the pure Environmental Flow graph. R2 repaired it as `chlorine_solution_storage -> chlorine_contact_tank`, `medium=chemical`, structural activity, quantity/unit unavailable; no dose/pump/Live inference.
+- Final reviewed PR #77 head `c60d3af50b6d5a9317efa3fdbae953233ee61b8a`; fresh detached Standards + Spec/UX/Data-honesty review verdict APPROVED. GitHub cannot formally APPROVE a PR authored by the same repository account, so the independent agent verdict is recorded as an exact-SHA review comment.
+- Integrated verification: focused model **12/12 PASS**; focused Flow Playwright **9/9 PASS** including 360/390/430, error/empty/keyboard/chlorine cases; full Vitest **327/327 PASS**; build + `tsc -b` PASS; lint **12 baseline warnings / 0 errors**; diff-check PASS. Exact-head PR test/E2E succeeded; remote diff exactly 9 task-owned files.
+- Expected-head merge produced `eaf7fe4469868400e913d2690aee8bd5cdff06d4`; `origin/main` contains it. Exact-main test `33669384513`, E2E `33669384543`, and Pages/deploy/smoke `33669384574` are SUCCESS. Deployed root-to-client 390px Flow probe (mocked REST/session; no real writes) rendered exact quantity evidence + chlorine branch and held document/body/viewport at 390/390/390 across 3 repeated stable runs after font settling. One earlier first-frame 395px observation disappeared after settling and is classified as transient test-timing/font evidence, not a stable Flow overflow.
+- Next GPT lane after closeout: `ENV-OPS-001` requirement/contract inventory. Keep Building/Repair no-touch.
+
+## Closed checkpoint - ENV-INT-PROVENANCE-001 - 2026-09-03
+
+- Status: `CLOSED / MERGED / POST-MERGE / DEPLOYED VERIFIED`; implementation owner GLM-5.3 MAX; independent review/merge owner GPT-5.6 Sol.
+- R2 exact head `ffbb740f6a5dd4ebf174150b130db11bc83625bc` closed all five blocking findings from the first review: freshness is orthogonal to availability; loading is reachable; unavailable cannot carry a value; structural observation guards fail closed; impossible wall-clock timestamps throw.
+- Reviewer evidence: focused core **47/47 PASS**, `tsc -b` PASS, exact-head `test` + `E2E smoke` SUCCESS, bounded 4 core files + 2 lane docs, no provider/network/UI/schema/RLS/real-write scope.
+- Expected-head merge produced `b6256616216bc0b657fbcf15ff9a5dabde0f321a`; exact-main test/E2E/Pages all succeeded.
+- Next GLM-fit lane is a separate `ENV-INT-GISTDA-CORE-001` deterministic adapter/contract slice only after a fresh ownership gate. Public redistribution/UI remains decision-gated by GISTDA license posture; no provider secret may enter browser/Git/docs/logs.
+
 ## Closed checkpoint - ENV-CMD-002 - 2026-09-02
 
 - Status: `CLOSED / MERGED / POST-MERGE / DEPLOYED VERIFIED`; owner GPT-5.6 Sol. Final reviewed PR #73 head `28f3b5aaed21b87684280744a1023d97fb6fb84a`; expected-head merge `ff9e6672e4f194ced6d5288f7726033c56de1e18`.
