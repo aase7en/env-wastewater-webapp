@@ -146,18 +146,11 @@ Do not create one giant all-forms PR.
 
 ## M2 — Shared command-center composition
 
-### ENV-CMD-001 — Responsive command-center composition contract
+### ENV-CMD-001 — Responsive command-center composition contract — COMPLETE
 
-Goal:
+PR #70 exact reviewed head `260c60862842f47fe1ff67e6fd511c61efb20be7` independently APPROVED Standards + Spec/Product/Data-honesty and merged with expected-head guard as `c9542b2fc51e25bf30b2b0e68b38a91c35192b92`; exact-main post-merge test `33623435110` succeeded. The contract fixes responsive page/panel hierarchy, orthogonal availability/freshness/provenance/operational-status semantics, real-route drill-down, no fake global live/normal state, and no second Overview R3F Canvas. No production code/schema/provider/data writes occurred.
 
-- define reusable page/panel hierarchy for desktop/tablet/mobile using existing Aura/analytics/Twin foundations;
-- define KPI/situation/provenance/alert/panel states;
-- define drill-down and cross-surface behavior;
-- avoid a broad navigation rewrite.
-
-Output is a bounded design/component contract before production composition changes.
-
-### ENV-CMD-002 — Hospital Overview command-center vertical slice
+### ENV-CMD-002 — Hospital Overview command-center vertical slice — READY AFTER CLOSEOUT
 
 Upgrade the existing overview incrementally toward the prototype north star:
 

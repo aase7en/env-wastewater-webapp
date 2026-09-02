@@ -1,10 +1,10 @@
-# ENV-CMD-001 — Responsive Command-Center Composition Contract
+﻿# ENV-CMD-001 โ€” Responsive Command-Center Composition Contract
 
-Status: REVIEW_REQUESTED / CONTRACT-ONLY
-Owner: GPT-5.6 Sol — product architecture / IA / UX contract
+Status: CLOSED / MERGED / POST-MERGE VERIFIED
+Owner: GPT-5.6 Sol โ€” product architecture / IA / UX contract
 Implementation owner: none in this work order
 Independent review: fresh reviewer on exact docs SHA before merge
-Parent roadmap: M2 — Shared command-center composition
+Parent roadmap: M2 โ€” Shared command-center composition
 Repository: `aase7en/env-wastewater-webapp`
 Worktree: `A:\GitHub\envww-cmd-001`
 Branch: `docs/env-cmd-001-contract`
@@ -15,7 +15,7 @@ Date: 2026-09-02
 
 **Goal ID:** `ENV-CMD-001`
 
-**User outcome:** a hospital operator can open the future command-center overview and quickly determine (1) what situation is known now, (2) what needs attention, (3) how trustworthy/fresh each statement is, and (4) where to drill down for evidence or action — on desktop, tablet, or phone.
+**User outcome:** a hospital operator can open the future command-center overview and quickly determine (1) what situation is known now, (2) what needs attention, (3) how trustworthy/fresh each statement is, and (4) where to drill down for evidence or action โ€” on desktop, tablet, or phone.
 
 **Why this matters:** the repository already has a unified overview, wastewater dashboard, Digital Twin, Aura primitives, and Situation/Trend components, but they are not yet composed into one cross-domain command-center experience matching the user-confirmed north star.
 
@@ -109,7 +109,7 @@ Required before review:
 - no second R3F Canvas requirement;
 - no fake global `LIVE`/`normal`/health score;
 - every future panel class defines loading/ready/empty/unavailable/error plus freshness/source behavior where applicable;
-- command-center action state cannot say “all normal” when material sources are stale/unavailable/unknown;
+- command-center action state cannot say โ€all normalโ€ when material sources are stale/unavailable/unknown;
 - `ENV-CMD-002` can implement without changing Building or GLM provenance contracts.
 
 ## Verification
@@ -127,6 +127,16 @@ Because this work order is docs-only:
 
 No Playwright/build run is required solely for docs-only changes.
 
+## Release Closure
+
+- Exact reviewed PR head: `260c60862842f47fe1ff67e6fd511c61efb20be7`.
+- Independent exact-SHA review: Standards APPROVED; Spec/Product/Data-honesty APPROVED; evidence comment `issuecomment-5508635456`.
+- PR #70 actual remote diff: exactly 3 contract docs files.
+- Exact-head checks `notify` + `scripts`: PASS.
+- Expected-head merge: `c9542b2fc51e25bf30b2b0e68b38a91c35192b92`.
+- Exact-main post-merge test run `33623435110`: SUCCESS.
+- Production UI/schema/provider/data writes: NONE.
+
 ## Stop / Review Gate
 
-Stop at `REVIEW_REQUESTED` after the exact docs candidate is committed/pushed and independently reviewed. Do not begin `ENV-CMD-002` production edits from this worktree until `ENV-CMD-001` is merged/reconciled and a fresh production ownership gate is established.
+`CLOSED`. `ENV-CMD-002` may be activated only from a fresh current-main worktree after a new ownership gate. Building remains separately decision-gated; GLM Environmental Intelligence remains a separate writer.

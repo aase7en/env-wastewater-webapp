@@ -1,6 +1,6 @@
 # ENV-CMD-001 — GPT-5.6 Sol Contract Handoff
 
-Status: DESIGNING / CONTRACT CANDIDATE
+Status: CLOSED / MERGED / POST-MERGE VERIFIED
 Date: 2026-09-02
 Repo: `aase7en/env-wastewater-webapp`
 Worktree: `A:\GitHub\envww-cmd-001`
@@ -14,7 +14,7 @@ Create the reusable responsive command-center composition contract before any pr
 
 ## Concurrency / Ownership
 
-- GPT Ultra Building lane is active separately; Building/repair files are no-touch.
+- GPT Ultra Building campaign is paused at the durable `DECISION_REQUIRED` gate after its usage limit; Building/repair files remain no-touch until the C1-vs-C2 decision is supplied or Ultra resumes.
 - GLM Environmental Intelligence provenance lane is separate; no competing provenance implementation is created here.
 - This lane is docs-only and initially avoids global `CURRENT-WORK/HANDOFF/ROADMAP/PROJECT-GRAPH` mutation to reduce shared-file collision while other agents run.
 - `.serena/**` is protected/no-touch.
@@ -85,19 +85,18 @@ Expected first implementation seams for CMD-002:
 - any Carbon public-view provenance expansion → separate Core Engineering work if CMD-002 proves it necessary;
 - Hazard Map / Operations / Resource Explorer / System Network routes → later roadmap slices.
 
-## Verification Still Required
+## Release Evidence
 
-Before changing status to `REVIEW_REQUESTED`:
-
-- source-reference spot check;
-- contract consistency scan;
-- `git diff --check`;
-- exact changed-file audit;
-- independent Standards review;
-- independent Spec/Product/Data-honesty review.
-
-No production code/schema/data change exists in this lane.
+- Contract candidate committed as `260c60862842f47fe1ff67e6fd511c61efb20be7`.
+- PR #70 remote diff contained exactly the 3 contract docs files.
+- Fresh detached exact-SHA review APPROVED Standards + Spec/Product/Data-honesty; evidence comment `issuecomment-5508635456`.
+- Exact-head `notify` + `scripts` checks PASS.
+- Expected-head merge commit: `c9542b2fc51e25bf30b2b0e68b38a91c35192b92`.
+- Reviewed head is verified as an ancestor of merged `origin/main`.
+- Exact-main post-merge `test` run `33623435110` SUCCESS.
+- No production UI, schema, RLS, provider integration, or environmental/application data writes occurred.
+- Concurrent Building Ultra lane remains decision-gated and isolated; GLM `ENV-INT-PROVENANCE-001` remains a separate implementation writer.
 
 ## One Next Safe Action
 
-Audit the three docs as a candidate, correct any contradiction/overreach, commit/push the exact docs SHA, obtain independent review, audit actual remote diff and CI, then merge/reconcile `ENV-CMD-001`. Only after that create a fresh production worktree/ownership gate for `ENV-CMD-002`.
+After this docs-only closeout reaches main, recover fresh SSoT and activate `ENV-CMD-002` in a new production worktree with explicit ownership. Do not absorb Building repair semantics or unfinished GLM provenance implementation into the visual slice.
