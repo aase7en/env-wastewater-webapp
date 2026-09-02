@@ -1,6 +1,6 @@
 # ENV-MOBILE-008 — Food Mobile Convergence
 
-Status: REVIEW_REQUESTED
+Status: CLOSED
 Owner / implementer: GPT-5.6 Sol via Serena visual fallback
 Independent review owner: external GLM-5.3 MAX or fresh independent reviewer; review must bind to the exact pushed head
 Parent roadmap: `ENV-MOBILE-002+` Domain form convergence
@@ -94,6 +94,16 @@ Only after RED:
 - Post-edit production build is **PASS** (`tsc -b && vite build`, 3305 modules transformed). Earlier build retries across Serena Workers 2–4 were transport-blocked; a later Worker 5 retry completed successfully. Full Playwright attempts through Worker 5 and a fresh Worker 1 both returned connector/upstream HTTP 502 before any test result, classified `TOOL/TRANSPORT_FAILURE`, not an E2E failure. Exact-head GitHub CI / Pages build and full E2E remain mandatory release authority before merge.
 - No real REST/environmental writes occurred; Food REST in Playwright remained mocked/synthetic.
 
+## Review / release closure — 2026-09-02
+
+- Frozen implementation / PR head: `d894c58611ba455f813d4e8c5698098ebc64f5c4` on PR #68; actual remote diff remained exactly the 8 bounded Food page/test/WO/handoff/SSoT files.
+- Fresh detached exact-SHA review APPROVED Standards + Spec/UX with no blockers; review evidence comment `issuecomment-5507086478`.
+- Exact-head GitHub test and E2E workflows succeeded. The PR full-E2E run contained one unrelated pre-existing error-boundary navigation retry; Food-focused acceptance remained 9/9 with retries=0.
+- Expected-head merge produced `73f76cd42636be0253c0a2e4a9c906d8fe164582`.
+- Exact-main test `33611702436` SUCCESS; full E2E `33611702467` **124/124 PASS clean run**; Pages `33611702477` SUCCESS.
+- Deployed root→client mocked/synthetic production probe passed at 360/390/430 with document/body width equal to viewport while Food rendered. Direct Pages `/food` deep-link testing separately reproduced the known hosting/shared-shell transition and failed only the document-width assertion while 8/9 Food checks passed; this is tracked as hosting/test-path evidence rather than hidden as a Food regression.
+- No real REST/application/environmental writes occurred. Food Core/import/schema/RLS/reagent trigger/shared UI/AppShell/ModuleDock remained unchanged.
+
 ## Verification
 
 At minimum:
@@ -112,8 +122,8 @@ At minimum:
 
 ## Stop condition
 
-Stop at `REVIEW_REQUESTED` after exact pushed SHA, actual remote diff, deterministic evidence, known limitations, and one next safe action. Implementer does not self-merge.
+`CLOSED` only after exact-SHA independent review, expected-head merge, exact-main CI/E2E/Pages, deployed root→client mobile verification, no-real-write audit, and durable SSoT closeout evidence. These gates are now satisfied for ENV-MOBILE-008-FOOD.
 
 ## One next safe action
 
-Explicitly stage only the allowed Food page/test/WO/handoff/bounded SSoT files, commit and push, freeze the exact remote PR head, audit the actual remote diff, then obtain fresh independent exact-SHA Standards + Spec/UX review. Require exact-head GitHub CI/Pages/full E2E because local build verification is currently transport-blocked. Implementer does not merge.
+Merge the bounded docs-only Food closeout, fetch/reconcile current `origin/main`, then activate `ENV-CMD-001` only after a fresh SSoT/ownership gate. Building is reserved for the separately running GPT Ultra `ENV-BUILDING-REPAIR-001` campaign; Environmental Intelligence remains a separate GLM lane.
