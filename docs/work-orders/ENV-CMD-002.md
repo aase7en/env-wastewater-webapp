@@ -1,6 +1,6 @@
 # ENV-CMD-002 — Hospital Overview Command-Center Vertical Slice
 
-Status: RE-REVIEW_REQUESTED
+Status: CLOSED
 Owner / implementer: GPT-5.6 Sol via Serena visual lane
 Independent review owner: fresh exact-SHA reviewer
 Parent: `ENV-CMD-001` canonical composition contract
@@ -193,6 +193,16 @@ Before review:
 - A full local Playwright attempt was interrupted by connector HTTP 502 before a result was returned; classified `TOOL/TRANSPORT_FAILURE`. Exact-head GitHub E2E/CI is therefore the release authority for the full suite.
 - No real hospital/environmental writes; focused browser tests use fake staff auth + mocked REST.
 
-## Stop condition
+## Release closure — 2026-09-02
 
-Stop at `REVIEW_REQUESTED` after exact pushed SHA, actual remote diff, deterministic evidence and independent review request. Implementer does not self-merge.
+- First exact review of `2d403f9baf943dbfdad925e6f735954659e72a9d` found one period-coupling defect; remediation kept Energy and Carbon month labels source-local.
+- Final independently reviewed PR #73 head: `28f3b5aaed21b87684280744a1023d97fb6fb84a`; Standards + Spec/UX/Data-honesty APPROVED (`issuecomment-5509656107`).
+- Actual remote diff remained exactly 4 bounded files; exact-head `scripts`, `notify`, and `smoke` checks passed.
+- Expected-head merge: `ff9e6672e4f194ced6d5288f7726033c56de1e18`; reviewed-head ancestry verified.
+- Exact-main `test` run `33631499783`: SUCCESS; exact-main E2E run `33631499778`: **133/133 PASS**; Pages workflow `33631499745`: SUCCESS.
+- GitHub Pages deployment `6222615886` is bound to exact merge SHA `ff9e667...`; deployed root returns HTTP 200 and the served bundle contains the new Command Center situation/spatial markers.
+- No schema/RLS/provider/Building/Twin-runtime/query contract mutation and no real environmental/application writes.
+
+## Final status
+
+`CLOSED`. The next GPT MAX roadmap candidate is `UX-FLOW-P001`, but its quantity/Sankey contract must be shaped before production mutation. Existing `/flow` dummy PFD is not production quantity evidence.

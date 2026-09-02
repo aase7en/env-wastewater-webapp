@@ -1,5 +1,14 @@
 # HANDOFF
 
+## Closed checkpoint - ENV-CMD-002 - 2026-09-02
+
+- Status: `CLOSED / MERGED / POST-MERGE / DEPLOYED VERIFIED`; owner GPT-5.6 Sol. Final reviewed PR #73 head `28f3b5aaed21b87684280744a1023d97fb6fb84a`; expected-head merge `ff9e6672e4f194ced6d5288f7726033c56de1e18`.
+- RED→GREEN: focused Command Center Playwright **9 FAIL → 9/9 PASS** on isolated worktree Vite; Vitest **248/248 PASS**; build PASS; lint 12 baseline warnings/0 errors. First exact review caught Energy/Carbon period coupling; repaired to source-local period labels and re-reviewed APPROVED.
+- Exact-head PR checks passed. Exact-main `test` `33631499783` SUCCESS; E2E `33631499778` **133/133 PASS**; Pages `33631499745` SUCCESS. GitHub Pages deployment `6222615886` targets exact main and deployed root/bundle smoke confirms Command Center markers.
+- Scope remained Overview composition + focused E2E/task docs only; no schema/RLS/provider/Building/query/Twin-runtime mutation and no real environmental/application writes.
+- `ENV-INT-PROVENANCE-001`: GLM implementation is quota-paused at PR #72 exact head `2415607f0572ec1a04aa0237078562dff439f1d1`; GPT MAX review returned `CHANGES_REQUIRED` (`issuecomment-5509699398`). Keep `frontend/src/lib/env-int/**` GLM-owned/no-touch until quota recovery and remediation.
+- Next GPT MAX lane: `UX-FLOW-P001`. Requirement gate first: the existing `/flow` surface is a dummy 2.5D process PFD, while the roadmap requests truthful quantity/Sankey semantics. Do not use dummy data, boolean discharge, DO/pH, or equipment state as flow quantity; line width may encode quantity only for comparable units/periods.
+
 ## Closed checkpoint - ENV-CMD-001 - 2026-09-02
 
 - Status: `CLOSED / MERGED / POST-MERGE VERIFIED`; owner GPT-5.6 Sol architecture/IA/UX contract.

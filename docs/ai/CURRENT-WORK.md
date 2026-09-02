@@ -1,6 +1,6 @@
 # CURRENT WORK
 
-Status: IMPLEMENTING
+Status: READY
 
 Allowed statuses:
 
@@ -27,7 +27,8 @@ Allowed statuses:
 
 ## Current execution state - 2026-09-02
 
-- **ACTIVE `ENV-INT-PROVENANCE-001` / IMPLEMENTING** — user launched the GLM-5.3 MAX / ZCode long-horizon Goal lane in dedicated worktree `A:\\GitHub\\envww-env-int-provenance-001`, branch `feat/env-int-provenance-001`, activation base `436dbe77095cdc9c8e205ba5438a3850392d3c7c`. Current read-only coordinator check found mutation only under `frontend/src/lib/env-int/`; global SSoT, Building and Command Center files remain untouched. GLM retains sole ownership of this implementation lane and must stop at its exact-SHA review gate.
+- **`ENV-INT-PROVENANCE-001` / CHANGES_REQUIRED / GLM QUOTA-PAUSED** — GLM-5.3 MAX reached PR #72 review gate at exact head `2415607f0572ec1a04aa0237078562dff439f1d1`; exact-head CI is green and the 6-file scope is bounded. Fresh GPT MAX exact-SHA review returned CHANGES_REQUIRED (`issuecomment-5509699398`): stale must remain freshness rather than availability, `loading` is unreachable, unavailable envelopes can still carry values, the structural guard is too permissive, and impossible wall-clock timestamps are not fully rejected. GLM retains ownership of `frontend/src/lib/env-int/**`; no GPT MAX mutation is authorized while its 5-hour quota is paused.
+- **CLOSED `ENV-CMD-002`** — final reviewed PR #73 head `28f3b5aaed21b87684280744a1023d97fb6fb84a` APPROVED after source-local Energy/Carbon period remediation; expected-head merge `ff9e6672e4f194ced6d5288f7726033c56de1e18`. Exact-main test `33631499783` SUCCESS, E2E `33631499778` **133/133 PASS**, Pages `33631499745` SUCCESS; deployment `6222615886` targets the exact merge SHA and production root/bundle smoke passed. No schema/RLS/provider/Building/query/Twin-runtime mutation or real writes. `UX-FLOW-P001` is the next GPT MAX candidate after this closeout reaches main.
 - **CLOSED `ENV-CMD-001`** — responsive Command Center composition contract reviewed and merged. Exact reviewed PR #70 head `260c60862842f47fe1ff67e6fd511c61efb20be7`; fresh detached Standards + Spec/Product/Data-honesty review APPROVED (`issuecomment-5508635456`); remote diff exactly 3 docs files; exact-head `notify` + `scripts` checks PASS; expected-head merge `c9542b2fc51e25bf30b2b0e68b38a91c35192b92`; exact-main post-merge test run `33623435110` SUCCESS. No production UI/schema/RLS/provider/data writes occurred. `ENV-CMD-002` becomes READY only after this closeout reaches main and a fresh ownership gate is established.
 - **`ENV-BUILDING-REPAIR-001` / DECISION_REQUIRED** — GPT-5.6 Ultra reached the correct human-decision gate before its usage limit. Durable draft exists at `A:\\GitHub\\envww-building-repair-decision-001\docs\work-orders\ENV-BUILDING-REPAIR-001.md`; no production mutation was started. Decision: one inspection round creates at most one aggregate repair request (C1) vs multiple issue-level repair requests (C2). Option B (unlinked client-side auto-repair) is rejected. Building remains no-touch until the user decides C1/C2 or Ultra resumes.
 
@@ -48,7 +49,7 @@ Allowed statuses:
 - Live 390x844 root-to-client deployed-bundle smoke loaded `assets/index-BIvntuDt.js` with the new Garden markers; all 9 labels/IDs passed; history remained inside its card with keyboard local scroll; Save was 71.89x48 and Delete 44x44; blank date made zero POSTs and preserved/focused its associated error; corrected save made one intercepted POST; document/body width stayed 390; no browser errors; all REST was mocked/no-real-write.
 - A direct GitHub Pages deep-link run observed a first-frame hosting transition (`HTTP 404` SPA fallback, document width 365 at a 360 viewport) that settled to 360 within 25 ms. This did not reproduce through the root-to-client production path and is recorded as a separate hosting/test-timing observation, not hidden as a Garden pass.
 - Garden data/query/schema/RLS/carbon behavior, `location_id`/`photo_path` null semantics, shared UI/AppShell, Garbage, other forms, and protected `.serena/` were unchanged.
-- Next safe action: merge this bounded `ENV-CMD-001` closeout, fetch/reconcile fresh main, then activate `ENV-CMD-002` in a new production worktree without touching GLM-owned `frontend/src/lib/env-int/**` or Building/repair scope. Building waits at the C1-vs-C2 human decision gate; GLM continues its Goal lane independently.
+- Next safe action: merge this bounded `ENV-CMD-002` closeout, fetch/reconcile fresh main, then activate `UX-FLOW-P001` in a new GPT MAX worktree for contract/readiness first. Preserve GLM-owned `frontend/src/lib/env-int/**` at CHANGES_REQUIRED/paused, keep the unstarted Waste/Carbon GLM prompt reserved for quota recovery, and keep Building/repair decision-gated.
 
 ## Review Queue — 2026-08-23
 
