@@ -1,6 +1,6 @@
 # ENV-OPS-001 - Operations attention board contract
 
-Status: REVIEW_REQUESTED (contract candidate; production mutation not yet started)
+Status: MERGE_READY (contract reviewed at c830672b1e31b178970937fe18666f862788004a; production mutation not yet started)
 Owner / architect: GPT-5.6 Sol
 Implementation/review owner: assigned per bounded slice
 Repository: `aase7en/env-wastewater-webapp`
