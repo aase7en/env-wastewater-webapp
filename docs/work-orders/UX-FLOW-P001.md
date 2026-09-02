@@ -1,6 +1,6 @@
 # UX-FLOW-P001 — Truthful Wastewater Environmental Flow
 
-Status: IMPLEMENTING
+Status: REVIEW_REQUESTED
 Owner / implementer: GPT-5.6 Sol via Serena visual/product lane
 Independent review owner: fresh exact-SHA reviewer
 Repository: `aase7en/env-wastewater-webapp`
@@ -175,3 +175,18 @@ R16. `/flow` discoverability link exists from the current Command Center without
 ## Stop conditions
 
 Stop only for material decision/ownership/safety/dependency blockers or at `REVIEW_REQUESTED` after exact candidate freeze. Implementation owner does not self-merge.
+
+## Implementation / verification checkpoint — 2026-09-02
+
+- Activation base: `64f9f89cec1e0abe6b81d50a9bc6f26ecc500098`; current main integrated cleanly through `6c36ebe4f3b7e6e5106da317d6935d3cd9119340` with no Flow/Carbon overlap.
+- RED: focused model test initially failed because the production `environmental-flow` module did not exist.
+- GREEN: pure model **11/11 PASS** after null/whitespace/provenance hardening.
+- Real browser repair loop: first discharge-evidence browser assertion failed because `AuraCard` does not forward arbitrary DOM props; moved the test id to an owned DOM wrapper, then the single regression passed.
+- Final focused Playwright: **9/9 PASS** in CI mode with a non-reused local server, mocked staff/session and mocked REST only. Covers 360/390/430 geometry, source error, empty state, missing values, discharge semantics, structural branches, no dummy copy, discoverability and keyboard reachability.
+- TypeScript PASS; changed production files have clean LSP diagnostics.
+- Full Vitest after current-main integration: **21 files / 279 tests PASS**.
+- oxlint: **12 baseline warnings / 0 errors**; no new Flow warning.
+- Production build PASS (3308 modules); existing large-chunk warning only.
+- Full local Playwright was attempted but the connector returned HTTP 502 / session termination before a trustworthy completion result. Classified `TOOL/TRANSPORT_FAILURE`; exact-head GitHub E2E is mandatory release authority for the full suite.
+- No real environmental/application writes; no schema/RLS/provider/Digital-Twin mutation.
+- Candidate diff must remain exactly the 9 owned files listed in the task handoff; `.serena/**` remains protected and unstaged.

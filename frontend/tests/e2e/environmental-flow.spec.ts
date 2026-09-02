@@ -112,6 +112,7 @@ test("shows exact latest evidence without inventing mass balance or discharge vo
   await expect(discharge).toContainText(/ปริมาณ.*ไม่มีข้อมูล/);
   await expect(discharge).not.toContainText(/82\.25.*ปริมาณระบาย/);
   await expect(page.getByText(/สมดุลน้ำ|mass balance/i)).toContainText(/ไม่|ไม่ได้|ห้าม|ไม่ใช่/);
+  await expect(page.getByText(/dummy|ข้อมูลตัวอย่าง/i)).toHaveCount(0);
 });
 
 test("keeps missing quantities unavailable instead of zero", async ({ page }) => {
@@ -152,6 +153,23 @@ test("empty source stays an explicit empty state", async ({ page }) => {
 
   await expect(page.getByText(/ยังไม่มีบันทึก|ไม่มีข้อมูลการไหล/)).toBeVisible();
   await expect(page.getByTestId("flow-quantity-evidence")).toContainText("—");
+});
+
+test("source failure stays local and never fabricates quantity", async ({ page }) => {
+  await installStaffSession(page);
+  await page.route("**/rest/v1/v_dashboard_14day**", async (route) => {
+    await route.fulfill({
+      status: 500,
+      contentType: "application/json",
+      body: JSON.stringify({ message: "synthetic source failure" }),
+    });
+  });
+  await page.goto("/flow");
+
+  await expect(page.getByText("โหลดหลักฐานล่าสุดไม่สำเร็จ")).toBeVisible();
+  await expect(page.getByTestId("flow-quantity-evidence").getByText("—")).toHaveCount(3);
+  await expect(page.getByTestId("flow-structural-story")).toContainText("Activated Sludge");
+  await expect(page.getByText(/dummy|ข้อมูลตัวอย่าง/i)).toHaveCount(0);
 });
 
 test("command center exposes the flow surface and all flow drill-down links are keyboard reachable", async ({ page }) => {
