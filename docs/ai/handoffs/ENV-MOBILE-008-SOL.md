@@ -1,6 +1,6 @@
 # ENV-MOBILE-008-FOOD — Implementation / Review Handoff
 
-Status: REVIEW_REQUESTED
+Status: CLOSED / MERGED / POST-MERGE / DEPLOYED VERIFIED
 Date: 2026-09-02
 Repo: `aase7en/env-wastewater-webapp`
 Worktree: `A:\GitHub\envww-mobile-008-food`
@@ -43,6 +43,17 @@ Focused Food Playwright measures:
 - Post-edit production build is **PASS** (`tsc -b && vite build`, 3305 modules transformed). Earlier Serena Workers 2–4 transport-blocked the build rerun; Worker 5 later completed it successfully. Full Playwright attempts through Worker 5 and fresh Worker 1 both returned connector/upstream HTTP 502 before any test result. Classified `TOOL/TRANSPORT_FAILURE`, not app/E2E failure; exact-head GitHub CI/Pages/full E2E remain mandatory release authority.
 - Food Core/import/schema/RLS/reagent trigger/shared UI were not modified; all Food REST in tests remained mocked/synthetic and no real writes occurred.
 
+## Review / release closure
+
+- Implementation commit / PR head: `d894c58611ba455f813d4e8c5698098ebc64f5c4` on PR #68.
+- Actual remote diff remained exactly the 8 bounded Food page/test/WO/handoff/SSoT files.
+- Fresh detached exact-SHA review: Standards **APPROVED** and Spec/UX **APPROVED** with no blockers; review evidence comment `issuecomment-5507086478`.
+- Exact-head GitHub `test` and full E2E workflows succeeded. The PR full-E2E run completed with one unrelated pre-existing error-boundary navigation retry; Food-focused acceptance remained retries=0.
+- Expected-head merge produced `73f76cd42636be0253c0a2e4a9c906d8fe164582`.
+- Exact-main run `33611702436` (`test`) SUCCESS; `33611702467` full E2E **124/124 PASS clean run**; Pages `33611702477` SUCCESS.
+- Deployed root→client mocked/synthetic production probe passed at **360/390/430** with `documentElement` and body width equal to viewport while Food rendered. A direct Pages `/food` deep-link separately reproduced the known hosting/shared-shell transition and failed only the document-width assertion while the other 8/9 Food checks passed; this is classified as hosting/test-path evidence, not a Food-page content regression.
+- No real application/environmental writes occurred. Food Core/import/schema/RLS/reagent trigger/shared UI/AppShell/ModuleDock remained unchanged.
+
 ## One next safe action
 
-Explicitly stage only the bounded Food implementation/test/SSoT files, commit/push, freeze exact PR head, audit actual remote diff, obtain independent exact-SHA Standards + Spec/UX review, and require exact-head GitHub CI/Pages/full E2E before merge. Implementer does not self-merge.
+Merge the bounded docs-only Food closeout, fetch/reconcile current `origin/main`, then activate `ENV-CMD-001` only after a fresh SSoT/ownership gate. Building is reserved for the separately running GPT Ultra `ENV-BUILDING-REPAIR-001` campaign; Environmental Intelligence is a separate GLM lane.

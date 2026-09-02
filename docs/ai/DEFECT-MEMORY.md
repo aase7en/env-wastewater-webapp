@@ -239,6 +239,24 @@ Source record:
 
 ---
 
+## ENV-DEFECT-013 — GitHub Pages direct deep-links can distort production geometry evidence
+
+**Failure class:** deployment hosting / SPA deep-link / false attribution in responsive acceptance.
+
+**Symptom:** a direct deployed domain-route load can briefly enter GitHub Pages' 404→SPA fallback/shared-shell transition and report mobile document geometry wider than the viewport even though the same deployed bundle is stable after normal root→client navigation. Garden, Garbage, Safety, and Food production checks all exposed variants of this signal; Food direct `/food` failed only the document-width assertion while the remaining Food acceptance checks passed, and a separate deployed root→client probe measured exact viewport width at 360/390/430.
+
+**Root cause:** the test path mixes hosting/fallback-shell behavior with domain-page geometry. During the direct deep-link transition, shared shell/ModuleDock elements can temporarily sit outside the viewport before client routing settles, so attributing first-frame document width to the domain page is not evidence-backed.
+
+**How detected:** deployed ENV-MOBILE-005/006/007/008 browser probes compared direct deep-link/reload behavior against stable root→client SPA navigation and measured the actual offending/shared elements rather than assuming the domain content caused overflow.
+
+**Prevention rule:** production responsive acceptance must use stable root→client SPA navigation for domain-content geometry and interaction assertions, while direct deep-link/reload remains a separate hosting/routing test. Never hide a deep-link failure, but do not classify it as a domain regression without element-level or settled root→client evidence tying the overflow to that domain's content. Keep local card/table containment checks from ENV-DEFECT-007 as an independent requirement.
+
+**Regression/evidence:** deployed root→client probes for Garden, Garbage, Safety, and Food; ENV-MOBILE-008 Food root→client 360/390/430 measured document/body width equal to viewport with mocked REST/no real writes, while direct `/food` reproduced only the hosting-path geometry failure.
+
+**Domains affected:** every GitHub Pages SPA route used for production mobile E2E/smoke, shared shell/ModuleDock transitions, domain responsive acceptance methodology.
+
+---
+
 ## Adding future entries
 
 Add a new entry only after the root cause is verified. The entry should change at least one future behavior: a guardrail, test, spec rule, audit item, or implementation pattern.

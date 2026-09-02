@@ -1,14 +1,14 @@
 # HANDOFF
 
-## Active checkpoint - ENV-MOBILE-008-FOOD - 2026-09-02
+## Closed checkpoint - ENV-MOBILE-008-FOOD - 2026-09-02
 
-- Status: `REVIEW_REQUESTED`; owner GPT-5.6 Sol via Serena visual fallback; independent exact-head Standards + Spec/UX review required before merge.
-- Repo/worktree/branch/base: `aase7en/env-wastewater-webapp` / `A:\\GitHub\\envww-mobile-008-food` / `feat/env-mobile-008-food` / `origin/main@b05a25e182ddd648414f2d1d35be79ef67776e15`.
-- Dependency gate: `FOOD-CORE-001` CLOSED/MERGED/LIVE VERIFIED; canonical Food categoricals and dormant reagent policy are fixed/read-only in this visual lane.
-- Mutable production scope: `FoodPage.tsx` + new `food-mobile.spec.ts`; WO/lane handoff + bounded SSoT only. Food lib/import/schema/RLS/reagent trigger/shared UI/AppShell/ModuleDock/Building/Safety/other modules and `.serena/**` are no-touch.
-- RED contract: phone one-column 360/390/430, 9 labels/ids, >=44px Save/Delete, local history containment, tablet/desktop density, exact failed-save retry body with no `reagent_used`, required-date zero-POST/error/focus, keyboard traversal and Pixel-class touch.
-- Evidence: truthful RED 6 FAIL / 3 PASS → focused Food Playwright 9/9 PASS; full Vitest 248/248 PASS; TypeScript PASS; lint 12 pre-existing warnings / 0 errors; `git diff --check` PASS; post-edit production build PASS (`tsc -b && vite build`, 3305 modules). Full Playwright attempts through Worker 5 and fresh Worker 1 returned connector/upstream HTTP 502 before any test result, classified `TOOL/TRANSPORT_FAILURE`, not E2E failure.
-- One next safe action: explicitly stage only the bounded Food implementation/test/WO/handoff/SSoT files, commit/push, freeze the exact PR head, audit the actual remote diff, obtain independent exact-SHA Standards + Spec/UX review, and require exact-head GitHub CI/Pages/full E2E before merge.
+- Status: `CLOSED / MERGED / POST-MERGE / DEPLOYED VERIFIED`; implementation owner GPT-5.6 Sol via Serena; fresh detached exact-SHA reviewer APPROVED Standards + Spec/UX with no blockers on PR #68 head `d894c58611ba455f813d4e8c5698098ebc64f5c4`.
+- Base / branch / PR: `origin/main@b05a25e182ddd648414f2d1d35be79ef67776e15` / `feat/env-mobile-008-food` / PR #68. Actual remote diff was exactly 8 bounded files and head remained frozen for review.
+- RED → GREEN: truthful baseline **6 FAIL / 3 PASS** → focused Food Playwright **9/9 PASS**, `workers=1`, `retries=0`; TypeScript PASS; full Vitest **248/248**; lint 12 pre-existing warnings / 0 errors; `git diff --check` PASS; post-edit production build PASS (`tsc -b && vite build`, 3305 modules).
+- Review/release: PR #68 review evidence comment `issuecomment-5507086478`; expected-head merge produced `73f76cd42636be0253c0a2e4a9c906d8fe164582`. Exact-main test `33611702436` SUCCESS, full E2E `33611702467` **124/124 PASS clean run**, and Pages `33611702477` SUCCESS.
+- Production smoke: direct deployed `/food` ran 8/9 Food checks but document-width assertion failed on the Pages deep-link path; a separate root→client probe at 360/390/430 then proved document/body width exactly equals viewport on every size while Food rendered from the deployed bundle. Off-viewport ModuleDock children remained contained and did not expand document width. This is hosting/test-path evidence, not a Food-page regression.
+- Scope/data honesty: Food Core/import/schema/RLS/reagent trigger/shared UI/AppShell/ModuleDock remained unchanged; canonical categoricals and dormant reagent policy were preserved; all browser REST evidence was mocked/synthetic and no real environmental/application write occurred.
+- One next safe action: merge the docs-only Food closeout, then recover current main and activate `ENV-CMD-001` as the GPT MAX lane after a fresh ownership gate. Building remains decision-gated and may be handled by the separately launched GPT Ultra campaign only once that task actually claims its scope.
 
 ## Closed checkpoint - FOOD-CORE-001 - 2026-09-02
 
