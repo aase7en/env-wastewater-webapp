@@ -1,5 +1,22 @@
 # HANDOFF
 
+## Closed checkpoint - ENV-CMD-001 - 2026-09-02
+
+- Status: `CLOSED / MERGED / POST-MERGE VERIFIED`; owner GPT-5.6 Sol architecture/IA/UX contract.
+- Base / branch / PR: `origin/main@436dbe77095cdc9c8e205ba5438a3850392d3c7c` / `docs/env-cmd-001-contract` / PR #70; exact reviewed head `260c60862842f47fe1ff67e6fd511c61efb20be7`.
+- Scope: exactly `docs/work-orders/ENV-CMD-001.md`, `docs/ai/design/ENV-CMD-001-COMPOSITION-CONTRACT.md`, and `docs/ai/handoffs/ENV-CMD-001-SOL.md`; no production code/schema/RLS/provider/data writes.
+- Independent detached exact-SHA review APPROVED Standards + Spec/Product/Data-honesty with no blockers; evidence `issuecomment-5508635456`. Source spot-checks confirmed authenticated Overview/Dashboard routes, latest-row seam, lazy TwinCanvas, and manual-latest vs live-sensor analytics semantics.
+- Exact-head `notify` + `scripts` checks PASS; expected-head merge `c9542b2fc51e25bf30b2b0e68b38a91c35192b92`; reviewed head ancestry verified; exact-main post-merge `test` run `33623435110` SUCCESS.
+- Contract outcome: Command Center uses Situation → Action → Trust/Freshness → Drill-down; availability/freshness/provenance/operational status stay orthogonal; no second Overview R3F Canvas; 360/390/430/768/1024/1440 recomposition and truthful unavailable/stale/unknown states are mandatory for `ENV-CMD-002`.
+- Concurrency: GLM `ENV-INT-PROVENANCE-001` is actively implementing only under `frontend/src/lib/env-int/**`; Building Ultra campaign is paused at `DECISION_REQUIRED` with no implementation mutation.
+- One next safe action: merge this closeout, recover fresh main, then activate `ENV-CMD-002` in a new worktree after an ownership gate. Do not touch GLM env-int or Building/repair scope.
+
+## Decision checkpoint - ENV-BUILDING-REPAIR-001 - 2026-09-02
+
+- GPT-5.6 Ultra completed a docs-only Building/Repair archaeology + live read-only schema preflight before hitting its usage limit. Durable draft: `A:\\GitHub\\envww-building-repair-decision-001\docs\work-orders\ENV-BUILDING-REPAIR-001.md`; branch `docs/building-repair-001-decision`; no production code/schema/live write started.
+- Verified current reality: Building `repair_needed` is flag-only; no linked repair request is created. Option B (two client inserts without durable linkage) is rejected.
+- Human decision required: **C1** = at most one aggregate repair request per inspection round, or **C2** = multiple durable issue-level repair requests per round. Building remains no-touch until this decision is supplied or Ultra resumes.
+
 ## Closed checkpoint - ENV-MOBILE-008-FOOD - 2026-09-02
 
 - Status: `CLOSED / MERGED / POST-MERGE / DEPLOYED VERIFIED`; implementation owner GPT-5.6 Sol via Serena; fresh detached exact-SHA reviewer APPROVED Standards + Spec/UX with no blockers on PR #68 head `d894c58611ba455f813d4e8c5698098ebc64f5c4`.

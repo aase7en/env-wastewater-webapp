@@ -1,6 +1,6 @@
 # CURRENT WORK
 
-Status: CLOSED
+Status: IMPLEMENTING
 
 Allowed statuses:
 
@@ -27,6 +27,10 @@ Allowed statuses:
 
 ## Current execution state - 2026-09-02
 
+- **ACTIVE `ENV-INT-PROVENANCE-001` / IMPLEMENTING** — user launched the GLM-5.3 MAX / ZCode long-horizon Goal lane in dedicated worktree `A:\\GitHub\\envww-env-int-provenance-001`, branch `feat/env-int-provenance-001`, activation base `436dbe77095cdc9c8e205ba5438a3850392d3c7c`. Current read-only coordinator check found mutation only under `frontend/src/lib/env-int/`; global SSoT, Building and Command Center files remain untouched. GLM retains sole ownership of this implementation lane and must stop at its exact-SHA review gate.
+- **CLOSED `ENV-CMD-001`** — responsive Command Center composition contract reviewed and merged. Exact reviewed PR #70 head `260c60862842f47fe1ff67e6fd511c61efb20be7`; fresh detached Standards + Spec/Product/Data-honesty review APPROVED (`issuecomment-5508635456`); remote diff exactly 3 docs files; exact-head `notify` + `scripts` checks PASS; expected-head merge `c9542b2fc51e25bf30b2b0e68b38a91c35192b92`; exact-main post-merge test run `33623435110` SUCCESS. No production UI/schema/RLS/provider/data writes occurred. `ENV-CMD-002` becomes READY only after this closeout reaches main and a fresh ownership gate is established.
+- **`ENV-BUILDING-REPAIR-001` / DECISION_REQUIRED** — GPT-5.6 Ultra reached the correct human-decision gate before its usage limit. Durable draft exists at `A:\\GitHub\\envww-building-repair-decision-001\docs\work-orders\ENV-BUILDING-REPAIR-001.md`; no production mutation was started. Decision: one inspection round creates at most one aggregate repair request (C1) vs multiple issue-level repair requests (C2). Option B (unlinked client-side auto-repair) is rejected. Building remains no-touch until the user decides C1/C2 or Ultra resumes.
+
 - **CLOSED `ENV-MOBILE-008-FOOD`** — truthful RED **6 FAIL / 3 PASS** closed to focused Food Playwright **9/9 PASS** (`workers=1`, `retries=0`), TypeScript PASS, full Vitest **248/248**, lint 12 pre-existing warnings/0 errors, `git diff --check` PASS, and post-edit production build PASS. Fresh exact-SHA review APPROVED Standards + Spec/UX for PR #68 head `d894c58611ba455f813d4e8c5698098ebc64f5c4`; exact-head test + E2E workflows succeeded. PR #68 merged with expected-head guard as `73f76cd42636be0253c0a2e4a9c906d8fe164582`; exact-main test `33611702436`, full E2E `33611702467` (**124/124 PASS clean run**) and Pages `33611702477` all succeeded. Deployed root-to-client synthetic/mocked probe passed at **360/390/430** with document/body width exactly equal to viewport; a direct `/food` Pages deep-link reproduced the known hosting/shell-path overflow signal while 8/9 Food checks still passed, so it is recorded separately as test-path/hosting evidence rather than hidden as a Food regression. Food Core/import/schema/RLS/reagent trigger/shared UI/AppShell/ModuleDock were not modified; no real writes occurred. Contract: `docs/work-orders/ENV-MOBILE-008-FOOD.md`.
 
 - **CLOSED `ENV-AGENT-OPS-002`** — GLM-5.3 MAX independently APPROVED exact head `c603a25e7dbc19f9e17e5300b91e5f35446485f8`; PR #58 merged as `077a18d59d605f8b0f50fe7d67cce8771b296fa2`; reviewed-head ancestry verified and exact-main test `33329666902` succeeded. Human-launch-only orchestration, same-packet result return, READY/disjoint parallel-lane arbitration, model-fit evidence freshness, and full multi-agent Loop Engineer closure are now canonical.
@@ -44,7 +48,7 @@ Allowed statuses:
 - Live 390x844 root-to-client deployed-bundle smoke loaded `assets/index-BIvntuDt.js` with the new Garden markers; all 9 labels/IDs passed; history remained inside its card with keyboard local scroll; Save was 71.89x48 and Delete 44x44; blank date made zero POSTs and preserved/focused its associated error; corrected save made one intercepted POST; document/body width stayed 390; no browser errors; all REST was mocked/no-real-write.
 - A direct GitHub Pages deep-link run observed a first-frame hosting transition (`HTTP 404` SPA fallback, document width 365 at a 360 viewport) that settled to 360 within 25 ms. This did not reproduce through the root-to-client production path and is recorded as a separate hosting/test-timing observation, not hidden as a Garden pass.
 - Garden data/query/schema/RLS/carbon behavior, `location_id`/`photo_path` null semantics, shared UI/AppShell, Garbage, other forms, and protected `.serena/` were unchanged.
-- Next safe action: merge this bounded Food closeout, then recover current main and activate `ENV-CMD-001` as the GPT MAX lane only after a fresh source/ownership gate. Building remains `DECISION_REQUIRED` and is reserved for the separately launched GPT Ultra Building repair-contract campaign; ENV-INT remains a separate GLM lane.
+- Next safe action: merge this bounded `ENV-CMD-001` closeout, fetch/reconcile fresh main, then activate `ENV-CMD-002` in a new production worktree without touching GLM-owned `frontend/src/lib/env-int/**` or Building/repair scope. Building waits at the C1-vs-C2 human decision gate; GLM continues its Goal lane independently.
 
 ## Review Queue — 2026-08-23
 

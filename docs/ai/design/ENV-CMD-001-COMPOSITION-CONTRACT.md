@@ -1,6 +1,6 @@
 # ENV-CMD-001 — Responsive Command-Center Composition Contract
 
-Status: REVIEW_REQUESTED — EXACT-DIFF CANDIDATE
+Status: CLOSED — CANONICAL CONTRACT (PR #70 / merge c9542b2fc51e25bf30b2b0e68b38a91c35192b92)
 Date: 2026-09-02
 Authority: `docs/work-orders/ENV-CMD-001.md`
 Source baseline: `origin/main@436dbe77095cdc9c8e205ba5438a3850392d3c7c`
