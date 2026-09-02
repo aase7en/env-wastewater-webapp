@@ -1,5 +1,14 @@
 # HANDOFF
 
+## ENV-OPS-001 contract checkpoint - 2026-09-03
+
+- Status: `CONTRACT_READY_FOR_REVIEW`; branch `docs/env-ops-001-contract`, base `origin/main@b39964498f585c1f1b10c01f5477ad6042d498e2`.
+- Archaeology confirms two real first-slice sources only: `core.repair_request` with durable lifecycle `open | in_progress | resolved | cancelled`, and `wastewater.threshold_alert` with read/delivery state but no repair-resolution lifecycle or verified severity.
+- First slice `ENV-OPS-001A`: read-only Operations Attention Board; repairs and threshold events remain separate source-local concepts and must not be normalized into a fabricated generic incident.
+- Building inspection rows are excluded from linkage: actual `BuildingPage.submit()` does not create linked repairs, while the Building repair contract remains Ultra-owned / `DECISION_REQUIRED`. `core.attachment` remains generic capability only; no canonical Operations evidence relation was found.
+- Contract: `docs/work-orders/ENV-OPS-001.md`; lane handoff: `docs/ai/handoffs/ENV-OPS-001-SOL.md`. No production/schema/RLS/provider/data mutation or real write occurred.
+- Next safe action after this docs contract reaches main: fresh isolated `feat/env-ops-001a` ownership gate -> RED browser evidence -> bounded read-only UI implementation -> exact-SHA review.
+
 ## Closed checkpoint - UX-FLOW-P001 - 2026-09-03
 
 - Status: `CLOSED / MERGED / POST-MERGE / DEPLOYED VERIFIED`; owner/implementer GPT-5.6 Sol. Initial exact-SHA review found one blocking topology drift: chlorine dosing existed only as UI text, not in the pure Environmental Flow graph. R2 repaired it as `chlorine_solution_storage -> chlorine_contact_tank`, `medium=chemical`, structural activity, quantity/unit unavailable; no dose/pump/Live inference.
