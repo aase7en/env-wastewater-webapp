@@ -14,7 +14,7 @@ Create the reusable responsive command-center composition contract before any pr
 
 ## Concurrency / Ownership
 
-- GPT Ultra Building lane is active separately; Building/repair files are no-touch.
+- GPT Ultra Building campaign is paused at the durable `DECISION_REQUIRED` gate after its usage limit; Building/repair files remain no-touch until the C1-vs-C2 decision is supplied or Ultra resumes.
 - GLM Environmental Intelligence provenance lane is separate; no competing provenance implementation is created here.
 - This lane is docs-only and initially avoids global `CURRENT-WORK/HANDOFF/ROADMAP/PROJECT-GRAPH` mutation to reduce shared-file collision while other agents run.
 - `.serena/**` is protected/no-touch.
