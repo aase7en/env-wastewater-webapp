@@ -114,3 +114,53 @@ or Command-Center files, no DB/schema/RLS/carbon, no shared SSoT, no
 
 GPT lead: independent exact-SHA Standards + Spec review of this PR; after
 merge, activate `ENV-INT-GISTDA-001` consuming this core.
+
+---
+
+# R2 remediation — 2026-09-02 (CHANGES_REQUIRED → RE-REVIEW_REQUESTED)
+
+Old reviewed SHA: `2415607f0572ec1a04aa0237078562dff439f1d1` (review base
+`51d7421`). All five blocking findings closed in `frontend/src/lib/env-int/core/**`
+only; origin/main reconciled to `6c36ebe4f3b7e6e5106da317d6935d3cd9119340`
+(carbon PR #76 + CMD-002 closeout, file-disjoint) via clean merge.
+
+- **F1:** `stale` removed from `EnvIntAvailability`; new
+  `EnvIntFreshness = current|stale|unknown` + `classifyFreshness` (canonical
+  CMD-001 §5.1/§5.2; current requires data time AND policy; boundary age ==
+  threshold stays current; negative age = lead time, never clamped).
+- **F2:** explicit `loading` input; ordered machine
+  `license_blocked > error > schema_mismatch > loading > unavailable(target)
+  > empty > unavailable(unknown age) > ready` (known failures outrank pending).
+- **F3:** builder THROWS on `unavailable` + non-null value (incl. explicit 0);
+  guard rejects the same contradiction.
+- **F4:** guard validates non-empty identity strings, string url/unit/license,
+  finite-number-or-null value (rejects "18.4"/NaN/±Infinity/objects/arrays),
+  `isEnvIntZone` membership, geo level enum + number/null id + ±90/±180
+  lat/lng + string/null label, valid-Date-or-null on every timestamp
+  (Invalid Date rejected), string-or-null class fields, and all class
+  invariants (forecast never carries observed_at; unavailable never a value).
+- **F5:** strict anchored parser with explicit calendar/time range validation
+  and suffix syntax validation + constructed-Date validity check. Month 00/13,
+  day 00, Feb 31, invalid leap day, hour 24/25, minute 60, second 60, trailing
+  junk, malformed offset, naive-with-suffix → THROW (previously Invalid Date
+  or silently normalized). Genuine leap days / valid offsets still parse;
+  unreliable-Z-as-ICT no-double-shift preserved.
+- **Non-blocking note:** unused `freshWithinMs` removed from the public input.
+
+RED (round 1, before production edits): focused **13 failed / 26 passed**
+(one granular failure per finding area: F1 availability-side, F2, F3, F4 ×7,
+F5 ×3) + tsc **TS2322** on `Extract<EnvIntAvailability,"stale">`. The
+`classifyFreshness` tests were authored with its implementation (the export
+did not exist at the reviewed head).
+
+GREEN (post-merge integrated state): focused **47/47**; full Vitest
+**315/315** (dummy env); `tsc -b` PASS; oxlint 12 pre-existing warnings /
+0 errors; production build PASS; `git diff --check` PASS. Changed files:
+`frontend/src/lib/env-int/core/{time,provenance,freshness,env-int-core.test}.ts`
++ this WO/handoff. Forbidden scope untouched: no provider adapters, no
+network, no Building/Carbon/Flow/Command-Center/Twin files, no schema/RLS,
+no shared SSoT, no `.serena/**`. REAL NETWORK CALLS = NONE; REAL
+ENVIRONMENTAL WRITES = NONE.
+
+New exact SHA / actual PR #72 remote head: recorded in the PR review-request
+comment at push time (this handoff is committed inside the candidate).

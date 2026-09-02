@@ -31,9 +31,17 @@ import {
   formatProvenanceLine,
   type EnvIntObservation,
   type EnvIntObservationInput,
+  type EnvIntAvailability,
 } from "./provenance";
 import { parseWallClockAs, parseNaiveLocal } from "./time";
-import { computeFreshnessAge, classifyAvailability } from "./freshness";
+import { computeFreshnessAge, classifyAvailability, classifyFreshness } from "./freshness";
+
+// F1 type contract (checked by `tsc -b`): canonical CMD-001 semantics —
+// `stale` is a FRESHNESS state, never an availability state. RED at the
+// reviewed head: EnvIntAvailability still includes "stale".
+type StaleIsNotAvailability = Extract<EnvIntAvailability, "stale"> extends never ? true : never;
+const _staleIsNotAvailability: StaleIsNotAvailability = true;
+void _staleIsNotAvailability;
 
 // ─── Sanitized fixtures (source-contract packet §11; retrieval 2026-09-02 ICT) ───
 
@@ -99,6 +107,50 @@ describe("env-int time parsing", () => {
   it("rejects unparseable timestamps instead of guessing", () => {
     expect(() => parseWallClockAs("not-a-date", "Asia/Bangkok")).toThrowError(/timestamp/);
     expect(() => parseNaiveLocal("", "Asia/Bangkok")).toThrowError(/timestamp/);
+  });
+
+  // F5 (review finding 5): impossible wall clocks must THROW — never return
+  // an Invalid Date, never silently normalize. RED at the reviewed head: the
+  // prefix regex accepted these and new Date(...) produced Invalid Date.
+  it("rejects impossible calendar components instead of returning Invalid Date", () => {
+    const impossible = [
+      "2026-00-05T10:00", // month 00
+      "2026-13-05T10:00", // month 13
+      "2026-09-00T10:00", // day 00
+      "2026-02-31T10:00", // Feb 31
+      "2023-02-29T10:00", // invalid leap day (2023 is not a leap year)
+    ];
+    for (const s of impossible) {
+      expect(() => parseWallClockAs(s, "Asia/Bangkok"), s).toThrowError(/timestamp/);
+      expect(() => parseNaiveLocal(s.replace("T", " "), "Asia/Bangkok"), s).toThrowError(/timestamp/);
+    }
+  });
+
+  it("rejects impossible time components (hour 24/25, minute 60, second 60)", () => {
+    expect(() => parseWallClockAs("2026-09-02T24:00", "Asia/Bangkok")).toThrowError(/timestamp/);
+    expect(() => parseWallClockAs("2026-09-02T25:10", "Asia/Bangkok")).toThrowError(/timestamp/);
+    expect(() => parseWallClockAs("2026-09-02T10:60", "Asia/Bangkok")).toThrowError(/timestamp/);
+    expect(() => parseWallClockAs("2026-09-02T10:20:60", "Asia/Bangkok")).toThrowError(/timestamp/);
+  });
+
+  it("rejects trailing junk and malformed suffix/offset instead of silently normalizing", () => {
+    expect(() => parseWallClockAs("2026-09-02 10:20junk", "Asia/Bangkok")).toThrowError(/timestamp/);
+    // A syntactically impossible offset used to be silently stripped and the
+    // string re-parsed as valid ICT — that is silent normalization.
+    expect(() => parseWallClockAs("2026-09-02T10:00+99:99", "Asia/Bangkok")).toThrowError(/timestamp/);
+    // The naive-local contract carries NO zone designator at all.
+    expect(() => parseNaiveLocal("2026-09-02 10:20Z", "Asia/Bangkok")).toThrowError(/timestamp/);
+  });
+
+  it("accepts a real leap day and preserves compact/valid offset forms (unreliable suffix ignored)", () => {
+    expect(parseWallClockAs("2024-02-29T10:00", "Asia/Bangkok").toISOString())
+      .toBe("2024-02-29T03:00:00.000Z");
+    // +0700/-05:30 are syntactically valid suffixes; the wall-clock contract
+    // ignores them (products using this parser have unreliable suffixes).
+    expect(parseWallClockAs("2026-09-02T10:00+0700", "Asia/Bangkok").toISOString())
+      .toBe("2026-09-02T03:00:00.000Z");
+    expect(parseWallClockAs("2026-09-02T10:00-05:30", "Asia/Bangkok").toISOString())
+      .toBe("2026-09-02T03:00:00.000Z");
   });
 });
 
@@ -199,6 +251,32 @@ describe("env-int observation envelope", () => {
     ).toThrowError(/simulation/);
   });
 
+  // F3 (review finding 3): explicit unavailability must NEVER carry a value —
+  // fail closed at the builder instead of silently discarding it. RED at the
+  // reviewed head: unavailable + value 18.4 built without complaint.
+  it("UNAVAILABLE + non-null value is rejected by the builder (fail closed)", () => {
+    const base = {
+      provider: "GISTDA",
+      source_product: "pm25_check_amphoe",
+      source_method: "satellite_ground_calibrated_ai_analysis",
+      source_url: "https://pm25.gistda.or.th/rest/getPM25byAmphoe24hrs?ap_idn=1414",
+      source_geo_id: { level: "amphoe" as const, id: 1414, label: "อุทัย" },
+      received_at: RECEIVED_AT,
+      timezone: "Asia/Bangkok" as const,
+      unit: "ug/m3" as const,
+    };
+    expect(() =>
+      envIntObservation({ ...base, data_class: "unavailable", value: 18.4 }),
+    ).toThrowError(/unavailable.*value|value.*unavailable/);
+    // Explicit zero is equally contradictory: unavailable ≠ measured zero.
+    expect(() =>
+      envIntObservation({ ...base, data_class: "unavailable", value: 0 }),
+    ).toThrowError(/unavailable.*value|value.*unavailable/);
+    const u = envIntObservation({ ...base, data_class: "unavailable" });
+    expect(u.data_class).toBe("unavailable");
+    expect(u.value).toBeNull();
+  });
+
   it("preserves provider string units verbatim (m MSL as number, negatives intact)", () => {
     const o = envIntObservation({
       provider: "HII",
@@ -239,6 +317,96 @@ describe("env-int observation envelope", () => {
     const drifted = { ...driftedBase, unitX: "m_msl" } as unknown as EnvIntObservation;
     expect(isEnvIntObservation(drifted)).toBe(false);
     expect(isEnvIntObservation({ pm25value: 18.6 })).toBe(false);
+  });
+
+  // F4 (review finding 4): the guard is the provider-adapter boundary — it
+  // must validate TYPES and ranges, not just key presence. Every case below
+  // must be `false` so malformed payloads map to schema_mismatch upstream
+  // instead of passing as observations. RED at the reviewed head.
+  describe("structural guard hardening (F4)", () => {
+    const VALID_OBSERVED = envIntObservation({
+      provider: "HII",
+      source_product: "thaiwater30_waterlevel",
+      source_method: "telemetry_observation",
+      source_url: "https://api-v3.thaiwater.net/api/v1/thaiwater30/public/waterlevel_load",
+      source_geo_id: { level: "station", id: 471583, label: "คลองชองสะเดา" },
+      data_class: "observed",
+      observed_at: parseNaiveLocal(HII_UTHAI.waterlevel_datetime, "Asia/Bangkok"),
+      received_at: RECEIVED_AT,
+      timezone: "Asia/Bangkok",
+      unit: "m_msl",
+      value: 1.78,
+    });
+    const mutate = (over: Record<string, unknown>): unknown =>
+      ({ ...VALID_OBSERVED, ...over });
+
+    it("accepts the valid envelope (control)", () => {
+      expect(isEnvIntObservation(VALID_OBSERVED)).toBe(true);
+    });
+
+    it("value must be a finite number or null — never string/NaN/Infinity/object/array", () => {
+      expect(isEnvIntObservation(mutate({ value: "18.4" }))).toBe(false);
+      expect(isEnvIntObservation(mutate({ value: Number.NaN }))).toBe(false);
+      expect(isEnvIntObservation(mutate({ value: Number.POSITIVE_INFINITY }))).toBe(false);
+      expect(isEnvIntObservation(mutate({ value: Number.NEGATIVE_INFINITY }))).toBe(false);
+      expect(isEnvIntObservation(mutate({ value: { v: 18.4 } }))).toBe(false);
+      expect(isEnvIntObservation(mutate({ value: [18.4] }))).toBe(false);
+      expect(isEnvIntObservation(mutate({ value: true }))).toBe(false);
+      expect(isEnvIntObservation(mutate({ value: null }))).toBe(true); // null is the honest unknown
+    });
+
+    it("timezone must be a verified EnvIntZone (Asia/Bangkok only today)", () => {
+      expect(isEnvIntObservation(mutate({ timezone: "Asia/Tokyo" }))).toBe(false);
+      expect(isEnvIntObservation(mutate({ timezone: "asia/bangkok" }))).toBe(false);
+      expect(isEnvIntObservation(mutate({ timezone: "UTC" }))).toBe(false);
+    });
+
+    it("identity strings must be non-empty; url/unit/license must be strings", () => {
+      expect(isEnvIntObservation(mutate({ provider: "" }))).toBe(false);
+      expect(isEnvIntObservation(mutate({ provider: "   " }))).toBe(false);
+      expect(isEnvIntObservation(mutate({ source_product: "" }))).toBe(false);
+      expect(isEnvIntObservation(mutate({ source_method: "" }))).toBe(false);
+      expect(isEnvIntObservation(mutate({ source_url: 123 }))).toBe(false);
+      expect(isEnvIntObservation(mutate({ unit: 5 }))).toBe(false);
+      expect(isEnvIntObservation(mutate({ license: 5 }))).toBe(false);
+    });
+
+    it("source_geo_id must be an object with a valid level and number/null id, ranged lat/lng, string/null label", () => {
+      expect(isEnvIntObservation(mutate({ source_geo_id: null }))).toBe(false);
+      expect(isEnvIntObservation(mutate({ source_geo_id: "station" }))).toBe(false);
+      expect(isEnvIntObservation(mutate({ source_geo_id: { level: "country", id: 1 } }))).toBe(false);
+      expect(isEnvIntObservation(mutate({ source_geo_id: { id: 1 } }))).toBe(false); // no level
+      expect(isEnvIntObservation(mutate({ source_geo_id: { level: "station", id: "1414" } }))).toBe(false);
+      expect(isEnvIntObservation(mutate({ source_geo_id: { level: "point", lat: 90.0001, lng: 100 } }))).toBe(false);
+      expect(isEnvIntObservation(mutate({ source_geo_id: { level: "point", lat: -91, lng: 100 } }))).toBe(false);
+      expect(isEnvIntObservation(mutate({ source_geo_id: { level: "point", lat: 14.3, lng: 180.5 } }))).toBe(false);
+      expect(isEnvIntObservation(mutate({ source_geo_id: { level: "point", lat: 14.3, lng: -181 } }))).toBe(false);
+      expect(isEnvIntObservation(mutate({ source_geo_id: { level: "point", lat: "14.3", lng: 100 } }))).toBe(false);
+      expect(isEnvIntObservation(mutate({ source_geo_id: { level: "point", lat: Number.POSITIVE_INFINITY, lng: 100 } }))).toBe(false);
+      expect(isEnvIntObservation(mutate({ source_geo_id: { level: "station", id: 471583, label: 7 } }))).toBe(false);
+      // Boundary coordinates are legitimate.
+      expect(isEnvIntObservation(mutate({ source_geo_id: { level: "point", lat: 90, lng: -180 } }))).toBe(true);
+    });
+
+    it("Dates must be valid Dates — Invalid Date is malformed, not data", () => {
+      expect(isEnvIntObservation(mutate({ received_at: new Date("not-a-date") }))).toBe(false);
+      expect(isEnvIntObservation(mutate({ received_at: "2026-09-02T04:30:00.000Z" }))).toBe(false);
+      expect(isEnvIntObservation(mutate({ observed_at: new Date(Number.NaN) }))).toBe(false);
+      expect(isEnvIntObservation(mutate({ issued_at: new Date(Number.NaN) }))).toBe(false);
+      expect(isEnvIntObservation(mutate({ valid_at: "2026-09-02" }))).toBe(false);
+    });
+
+    it("class-contract string fields must be string or null (never numbers)", () => {
+      expect(isEnvIntObservation(mutate({ aggregation_window: 24 }))).toBe(false);
+      expect(isEnvIntObservation(mutate({ forecast_horizon: 3 }))).toBe(false);
+      expect(isEnvIntObservation(mutate({ simulation_ref: 42 }))).toBe(false);
+      expect(isEnvIntObservation(mutate({ data_class: "estimated" }))).toBe(false);
+    });
+
+    it("unavailable carrying a value is rejected by the guard too (F3)", () => {
+      const contradictory = { ...VALID_OBSERVED, data_class: "unavailable", value: 5 };
+      expect(isEnvIntObservation(contradictory)).toBe(false);
+    });
   });
 });
 
@@ -355,7 +523,6 @@ describe("env-int availability classification", () => {
     schemaValid: true,
     dataPresent: true,
     ageMs: 30 * 60 * 1000,
-    freshWithinMs: 2 * 3600 * 1000,
     staleBeyondMs: 6 * 3600 * 1000,
   };
 
@@ -367,10 +534,12 @@ describe("env-int availability classification", () => {
     expect(classifyAvailability({ ...READY_INPUT, dataPresent: false })).toBe("empty");
   });
 
-  it("the 4-days-stale HII row classifies as stale with its age preserved", () => {
+  it("the 4-days-old HII row stays AVAILABLE (ready); staleness is a freshness fact, not availability (F1)", () => {
     const observedAt = parseNaiveLocal(HII_STALE_UTHAI_NEIGHBOR.waterlevel_datetime, "Asia/Bangkok");
     const age = RECEIVED_AT.getTime() - observedAt.getTime(); // ~4 days
-    expect(classifyAvailability({ ...READY_INPUT, ageMs: age })).toBe("stale");
+    // Old data with a valid factor chain is still usable evidence — canonical
+    // CMD-001: "stale is not an availability state".
+    expect(classifyAvailability({ ...READY_INPUT, ageMs: age })).toBe("ready");
   });
 
   it("http error/timeout outranks data presence; schema drift outranks emptiness", () => {
@@ -391,11 +560,29 @@ describe("env-int availability classification", () => {
     expect(classifyAvailability({ ...READY_INPUT, ageMs: null })).toBe("unavailable");
   });
 
+  // F2 (review finding 2): `loading` was declared but unreachable — an
+  // unknown/not-started transport fell through to `unavailable`. RED at the
+  // reviewed head: classifyAvailability({loading:true}) returned "unavailable".
+  it("loading input → loading (declared states must be reachable)", () => {
+    expect(classifyAvailability({ loading: true })).toBe("loading");
+    expect(classifyAvailability({ ...READY_INPUT, loading: true })).toBe("loading");
+  });
+
+  it("loading never masks a KNOWN license/schema/transport failure", () => {
+    expect(classifyAvailability({ ...READY_INPUT, loading: true, licenseBlocked: true }))
+      .toBe("license_blocked");
+    expect(classifyAvailability({ ...READY_INPUT, loading: true, httpState: "error" }))
+      .toBe("error");
+    expect(classifyAvailability({ ...READY_INPUT, loading: true, schemaValid: false }))
+      .toBe("schema_mismatch");
+  });
+
   it("never returns 0 / NORMAL / SAFE / LIVE under any input", () => {
     const forbidden = new Set(["0", "NORMAL", "SAFE", "LIVE", "normal", "safe", "live"]);
     const probes = [
       {}, { httpState: "ok" }, { httpState: "error" }, { schemaValid: false },
       { dataPresent: false }, { ageMs: null }, { ageMs: 0 }, { licenseBlocked: true },
+      { loading: true },
       { httpState: "timeout", dataPresent: true, schemaValid: false },
     ];
     for (const p of probes) {
@@ -403,5 +590,56 @@ describe("env-int availability classification", () => {
       expect(forbidden.has(s)).toBe(false);
       expect(typeof s).toBe("string");
     }
+  });
+});
+
+// ─── 6. Freshness dimension (F1 split — canonical CMD-001 §5.2) ───
+
+describe("env-int freshness dimension (classifyFreshness)", () => {
+  const POLICY = 6 * 3600 * 1000; // 6h verified cadence
+
+  it("current: data time within the verified cadence policy", () => {
+    expect(classifyFreshness({ ageMs: 30 * 60 * 1000, staleBeyondMs: POLICY })).toBe("current");
+  });
+
+  it("stale: data time strictly beyond the policy", () => {
+    expect(classifyFreshness({ ageMs: 4 * 24 * 3600 * 1000, staleBeyondMs: POLICY })).toBe("stale");
+  });
+
+  it("boundary: age exactly at the threshold is still current (stale is strictly beyond)", () => {
+    expect(classifyFreshness({ ageMs: POLICY, staleBeyondMs: POLICY })).toBe("current");
+  });
+
+  it("unknown age → unknown — never zero, never current", () => {
+    expect(classifyFreshness({ ageMs: null, staleBeyondMs: POLICY })).toBe("unknown");
+    expect(classifyFreshness({ staleBeyondMs: POLICY })).toBe("unknown");
+    expect(classifyFreshness({ ageMs: Number.NaN, staleBeyondMs: POLICY })).toBe("unknown");
+  });
+
+  it("no verified cadence policy → unknown (current is never claimed without policy support)", () => {
+    expect(classifyFreshness({ ageMs: 1000, staleBeyondMs: null })).toBe("unknown");
+    expect(classifyFreshness({ ageMs: 1000 })).toBe("unknown");
+  });
+
+  it("negative age (future forecast valid time) is legitimate lead time — current, never clamped", () => {
+    expect(classifyFreshness({ ageMs: -2 * 3600 * 1000, staleBeyondMs: POLICY })).toBe("current");
+  });
+
+  it("orthogonal composition: old-but-valid data is ready availability + stale freshness", () => {
+    const age = 4 * 24 * 3600 * 1000;
+    const input = {
+      httpState: "ok" as const,
+      schemaValid: true,
+      dataPresent: true,
+      ageMs: age,
+      staleBeyondMs: POLICY,
+    };
+    expect(classifyAvailability(input)).toBe("ready");
+    expect(classifyFreshness(input)).toBe("stale");
+  });
+
+  it("unavailable target composes with unknown freshness (no data time to judge)", () => {
+    expect(classifyAvailability({ stationPresent: false })).toBe("unavailable");
+    expect(classifyFreshness({ ageMs: null, staleBeyondMs: POLICY })).toBe("unknown");
   });
 });

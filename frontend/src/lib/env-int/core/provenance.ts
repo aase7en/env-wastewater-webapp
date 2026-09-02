@@ -20,6 +20,7 @@
  * value is never fabricated into zero/normal/safe/live.
  */
 import type { EnvIntZone } from "./time";
+import { isEnvIntZone } from "./time";
 
 export type { EnvIntZone } from "./time";
 
@@ -34,14 +35,20 @@ export type EnvIntDataClass =
   | "unavailable";
 
 /**
- * Availability is source availability, NOT environmental severity.
- * Ordered state machine lives in ./freshness (classifyAvailability).
+ * Availability is source availability, NOT environmental severity, and NOT
+ * freshness. Aligned with the canonical merged ENV-CMD-001 contract §5.1:
+ * `stale` is a FRESHNESS state (see ./freshness classifyFreshness), never an
+ * availability state — old-but-valid data stays `ready` availability with
+ * `stale` freshness. `schema_mismatch` and `license_blocked` are env-int's
+ * domain-level availability reasons, explicitly permitted by the canonical
+ * contract ("a domain may additionally expose a schema/license-specific
+ * reason through its own data contract"). Ordered classifier lives in
+ * ./freshness (classifyAvailability).
  */
 export type EnvIntAvailability =
   | "loading"
   | "ready"
   | "empty"
-  | "stale"
   | "unavailable"
   | "error"
   | "schema_mismatch"
@@ -143,6 +150,12 @@ export function envIntObservation(input: EnvIntObservationInput): EnvIntObservat
     if (!input.simulation_ref) {
       throw new Error("env-int simulated data requires an explicit simulation_ref");
     }
+  } else if (data_class === "unavailable") {
+    // F3 (review finding 3): explicit unavailability must never carry a
+    // value — fail closed instead of silently discarding a contradictory one.
+    if (value !== null) {
+      throw new Error("env-int unavailable data must not carry a value (explicit absence, never zero)");
+    }
   }
 
   const observed_at = input.observed_at ?? null;
@@ -175,14 +188,53 @@ const DATA_CLASSES: readonly EnvIntDataClass[] = [
   "unavailable",
 ];
 
+const GEO_LEVELS: readonly string[] = [
+  "province",
+  "amphoe",
+  "tambon",
+  "point",
+  "station",
+];
+
+function isPlainObject(v: unknown): v is Record<string, unknown> {
+  return typeof v === "object" && v !== null && !Array.isArray(v);
+}
+
+function isNonEmptyString(v: unknown): boolean {
+  return typeof v === "string" && v.trim().length > 0;
+}
+
+function isStringOrNull(v: unknown): boolean {
+  return v === null || typeof v === "string";
+}
+
+function isFiniteNumberOrNull(v: unknown): boolean {
+  return v === null || (typeof v === "number" && Number.isFinite(v));
+}
+
+function isValidDate(v: unknown): v is Date {
+  return v instanceof Date && !Number.isNaN(v.getTime());
+}
+
+function isDateOrNull(v: unknown): boolean {
+  return v === null || isValidDate(v);
+}
+
+/** Optional geo field: absent, explicitly null, or a finite number. */
+function isFiniteNumberOrNullish(v: unknown): boolean {
+  return v === undefined || v === null || (typeof v === "number" && Number.isFinite(v));
+}
+
 /**
- * Structural guard for provider adapters: detects schema drift loudly so a
- * malformed payload maps to availability `schema_mismatch` — never silently
- * repaired or coerced.
+ * Structural guard for provider adapters (R2-hardened, review finding 4):
+ * validates types, ranges, Date validity, timezone membership, geo shape and
+ * every data-class invariant — not just key presence. Malformed payloads map
+ * to availability `schema_mismatch` upstream — never silently repaired,
+ * never coerced.
  */
 export function isEnvIntObservation(candidate: unknown): candidate is EnvIntObservation {
-  if (typeof candidate !== "object" || candidate === null) return false;
-  const o = candidate as Record<string, unknown>;
+  if (!isPlainObject(candidate)) return false;
+  const o = candidate;
   const keys = [
     "provider",
     "source_product",
@@ -206,19 +258,57 @@ export function isEnvIntObservation(candidate: unknown): candidate is EnvIntObse
     if (!(k in o)) return false;
   }
   if (!DATA_CLASSES.includes(o.data_class as EnvIntDataClass)) return false;
-  if (!(o.received_at instanceof Date)) return false;
-  if (typeof o.provider !== "string" || typeof o.unit !== "string") return false;
-  if (o.data_class === "observed" && !(o.observed_at instanceof Date)) return false;
+  if (!isEnvIntZone(o.timezone)) return false;
   if (
-    o.data_class === "forecast" &&
-    (!(o.valid_at instanceof Date) ||
-      !(o.issued_at instanceof Date) ||
-      typeof o.forecast_horizon !== "string")
+    !isNonEmptyString(o.provider) ||
+    !isNonEmptyString(o.source_product) ||
+    !isNonEmptyString(o.source_method)
   ) {
     return false;
   }
-  if (o.data_class === "derived" && typeof o.aggregation_window !== "string") return false;
-  if (o.data_class === "simulated" && typeof o.simulation_ref !== "string") return false;
+  if (typeof o.source_url !== "string") return false;
+  if (typeof o.unit !== "string" || typeof o.license !== "string") return false;
+  if (!isValidDate(o.received_at)) return false;
+  if (!isFiniteNumberOrNull(o.value)) return false;
+  if (
+    !isStringOrNull(o.aggregation_window) ||
+    !isStringOrNull(o.forecast_horizon) ||
+    !isStringOrNull(o.simulation_ref)
+  ) {
+    return false;
+  }
+  if (!isDateOrNull(o.observed_at) || !isDateOrNull(o.valid_at) || !isDateOrNull(o.issued_at)) {
+    return false;
+  }
+  if (!isPlainObject(o.source_geo_id)) return false;
+  const g = o.source_geo_id;
+  if (typeof g.level !== "string" || !GEO_LEVELS.includes(g.level)) return false;
+  if (!isFiniteNumberOrNullish(g.id)) return false;
+  if (g.label !== undefined && !isStringOrNull(g.label)) return false;
+  if (!isFiniteNumberOrNullish(g.lat) || !isFiniteNumberOrNullish(g.lng)) return false;
+  if (typeof g.lat === "number" && (g.lat < -90 || g.lat > 90)) return false;
+  if (typeof g.lng === "number" && (g.lng < -180 || g.lng > 180)) return false;
+
+  // Class invariants enforced by the guard itself.
+  switch (o.data_class) {
+    case "observed":
+      if (!isValidDate(o.observed_at)) return false;
+      break;
+    case "forecast":
+      if (o.observed_at !== null) return false;
+      if (!isValidDate(o.valid_at) || !isValidDate(o.issued_at)) return false;
+      if (typeof o.forecast_horizon !== "string") return false;
+      break;
+    case "derived":
+      if (typeof o.aggregation_window !== "string") return false;
+      break;
+    case "simulated":
+      if (typeof o.simulation_ref !== "string") return false;
+      break;
+    case "unavailable":
+      if (o.value !== null) return false;
+      break;
+  }
   return true;
 }
 
