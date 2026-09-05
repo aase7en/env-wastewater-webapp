@@ -1,23 +1,50 @@
 # Work Orders — หน่วยงานที่ agent ไหนก็หยิบทำต่อได้
 
-ทุก chunk มีไฟล์ WO ของตัวเอง สถานะ:
-`open` → `claimed(<agent>)` → (`⏸ paused`) → `done`
+## Current authority
 
-## Model tier (ประหยัด credit — cost-first pyramid)
+For new work, use this order:
 
-ทุก WO ประกาศ `Model tier` บนหัวไฟล์ — dispatch ตามนี้:
+1. `AGENTS.md` + repository freshness/ownership gate.
+2. `docs/ai/PROJECT-OPERATING-MAP.md` for FAST / STANDARD / HIGH-RISK routing.
+3. the active/frontier section of `docs/ai/CURRENT-WORK.md`.
+4. the exact Work Order.
+5. `docs/ai/ENV-ENGINEERING-LOOP.md` sections required by the selected risk path.
 
-| Tier | Model | เหมาะกับ |
+Do not use the historical queue or vendor table later in this file as current activation authority.
+
+Every meaningful multi-context chunk should remain resumable from its Work Order. Small FAST-PATH work may use the explicit user instruction + existing active scope without manufacturing a heavyweight ticket solely for ceremony.
+
+## Capability-first model routing
+
+Route by the work's dominant capability, then select the cheapest/fastest currently available model that satisfies the task and verification contract.
+
+| Capability | Use for |
+|---|---|
+| **LIGHT / deterministic executor** | classify, format, summarize, lint, mechanical edits, bounded repetitive checks |
+| **CODING** | implementation, debugging, refactor, regression tests |
+| **REASONING** | architecture, incident/root-cause analysis, cross-system trade-offs, security/privacy, critical review |
+| **VISION** | screenshot/UI/diagram/visual regression and rendered-behavior analysis |
+
+Escalation: `light/fast → capable coding → specialist → strongest reasoning`.
+
+- Do not route by vendor reputation alone; use current task-fit evidence where material.
+- Independent review for material/high-risk work should use a different agent/model/context from the implementer when practical.
+- Verification depth is chosen by risk, not by model price.
+- Each delegated mutable lane still needs bounded scope, owner, dependencies, acceptance criteria, verification, and no overlapping writer.
+
+## Historical model tier (legacy — do not use for new dispatch)
+
+The table below is retained only to interpret older Work Orders. It reflects the July 2026 tool/model setup and is **not** current routing authority.
+
+| Legacy tier | Historical model | Historical intended use |
 |---|---|---|
-| **cheap-ok** | GLM (ZCode) / Claude Sonnet 5 | งาน mechanical มี Reference pattern ให้ copy ครบ (conformance, icon swap, CRUD UI ตาม golden reference) |
-| **mid** | Claude Opus 4.8 | reasoning ปานกลาง แต่ spec ปิดช่องแล้ว (interactive component, refactor ที่ acceptance ชัด) |
-| **primary-only** | Fable5 | design ใหม่, security, cross-system, แก้ protocol — และเป็นผู้ตรวจ diff งาน tier ล่าง |
+| **cheap-ok** | GLM (ZCode) / Claude Sonnet 5 | mechanical work with a complete reference pattern |
+| **mid** | Claude Opus 4.8 | moderate reasoning with a closed spec |
+| **primary-only** | Fable5 | new design/security/cross-system/protocol review |
 
-WO ระดับ cheap-ok/mid ต้องมีครบ: `Reference pattern` (ชี้ไฟล์+สิ่งที่ copy),
-`Forbidden` (ข้อห้าม — เจอเกิน scope ให้หยุดแล้วบันทึก checkpoint แทนการเดา),
-`Verify commands` (copy-paste ได้)
+Older `cheap-ok/mid` Work Orders expected `Reference pattern`, `Forbidden`, and copy-paste `Verify commands`; preserve those contracts when resuming historical work.
 
-## Dispatch prompts (user ใช้สั่งงาน)
+## Historical dispatch prompts (legacy reference)
 
 **ZCode (GLM):**
 ```
@@ -54,7 +81,7 @@ Checkpoint (commit hash + เหลืออะไร + กับดัก) → 
 ZCode รับงานที่ค้างบน `track-f`: merge `track-f` เข้า tree ตัวเอง —
 **ห้าม checkout `track-f` ตรง ๆ** (mount อยู่ใน worktree `A:\GitHub\envww-trackf`)
 
-## คิวปัจจุบัน (อัปเดต 2026-07-20 — post GLM sweep #4: Q1/Q2/Q3 done; Q4 blocked)
+## Historical queue snapshot (2026-07-20 — not current activation authority)
 
 - **cheap-ok แบบมีเงื่อนไข (ต้อง Fable5 WO verbatim ก่อน — Track F scope)**:
   - `Material Symbols subset keep-axes` (3.9MB → subset; nit Fable5 review #5)
