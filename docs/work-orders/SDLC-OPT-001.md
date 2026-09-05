@@ -1,6 +1,6 @@
 # SDLC-OPT-001 — Risk-based SDLC and context-efficiency pass
 
-Status: IMPLEMENTING
+Status: REVIEW_REQUESTED
 Risk: LOW (governance/docs only)
 Owner: GPT-5.6 Sol / SDLC Architect
 Base: `origin/main@685037e5c6c94bc11bf307ac2b739eaeec3eebd2`
@@ -73,3 +73,14 @@ Revert this docs-only branch/PR. No runtime, schema, or data migration exists.
 
 Implementation owner does not self-merge. Stop at `REVIEW_REQUESTED` after
 remote-diff and applicable deterministic verification.
+
+
+## Implementation / verification checkpoint — 2026-09-05
+
+- Added progressive context routing in `AGENTS.md`; closed history is no longer default startup context.
+- Added FAST / STANDARD / HIGH-RISK paths, DoR/DoD, WIP/frontier rules, and `STATE_DRIFT` handling to the operating map and binding loop.
+- Changed new-work model guidance to capability-first routing; retained the July vendor table/queue only as labeled history.
+- Remote compare from base shows exactly 5 allowed docs files, 0 production/schema/workflow files; branch was 5 commits ahead / 0 behind at verification.
+- Deterministic content checks: required route/context/DoR/DoD/WIP/state-drift/capability markers all present; all referenced canonical files resolve; no trailing whitespace detected.
+- Existing CI/E2E/release/PHI/data-honesty gates are unchanged. Full frontend E2E is intentionally not part of this docs-only FAST-PATH verification.
+- Next owner: independent reviewer / PR CI. Implementation owner must not self-merge.
