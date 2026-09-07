@@ -60,6 +60,29 @@ North-Star production lanes are dispatched.
   HARDENED;
 - broken guard has bounded CONTROL_MAINTENANCE and human-only BREAK_GLASS.
 
+## R2 review / remediation
+
+R1 remediation was pushed at exact SHA
+`92bf8803f73ca950dd4d73a964ad740caecf236a`.
+
+Fresh Astra review returned `CHANGES_REQUIRED` with one remaining P1:
+already-admitted mutation invocations could theoretically cross a generation
+transfer after preflight.
+
+R2 remediation now defines:
+
+- one `execution_holder_id` per generation;
+- atomic admission gate + active-admission set;
+- `QUIESCING -> admission gate CLOSED -> active_admissions = 0 ->
+  QUIESCENCE_ATTESTATION -> TRANSFER_READY -> g+1`;
+- no new generation while any admitted invocation is paused/hung/unknown;
+- no hot reassignment on platforms that cannot reliably prove drain/cancel;
+- second live context requires explicit transfer/new generation;
+- first GoalStart uses `GENESIS`; later goals require terminal Goal-End;
+- in-root link targets are re-authorized against lane scopes;
+- duplicated HANDOFF heading removed;
+- R2 chaos cases added.
+
 ## Evidence
 
 Architecture contract:
@@ -74,10 +97,12 @@ PR:
 R0 reviewed SHA:
 `708bac20b03aa2d6c1ef3b4afc2c50a7c6df1c33`
 
+R1 reviewed SHA:
+`92bf8803f73ca950dd4d73a964ad740caecf236a`
+
 ## Blockers
 
-`ENV-COORD-002` remains blocked until R1 remediation is pushed and a fresh
-independent exact-SHA architecture review returns `APPROVED`.
+`ENV-COORD-002` remains blocked until R2 remediation is pushed and a fresh independent exact-SHA architecture review returns `APPROVED`.
 
 ## Do not do
 
@@ -89,5 +114,4 @@ independent exact-SHA architecture review returns `APPROVED`.
 
 ## One next safe action
 
-Run docs-only R1 verification against all six blocking findings, freeze/push a
-new exact SHA to PR #82, then request fresh independent adversarial review.
+Run docs-only R2 verification for transfer ordering, duplicate live contexts, GoalStart genesis, and resolved-link authorization; freeze/push a new exact SHA to PR #82; then request fresh independent adversarial review.

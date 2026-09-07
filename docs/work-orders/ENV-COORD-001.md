@@ -177,14 +177,52 @@ R1 remediation adds:
 | Checkpoint durability / replay / side effects | §5.2–§5.6, §8.1 | commit+push+remote verify; event ID/order; terminal Goal-End; OPERATION_INTENT and UNKNOWN outcome blocks retry |
 | Bootstrap / broken-guard repair | §11.6–§11.7, §12 | BOOTSTRAP_CONTROL -> SHADOW -> ENFORCING -> HARDENED; bounded CONTROL_MAINTENANCE; human-only BREAK_GLASS |
 
+## Independent adversarial review R2 — CHANGES_REQUIRED
+
+Reviewer verdict is bound to exact SHA
+`92bf8803f73ca950dd4d73a964ad740caecf236a`.
+
+One P1 architecture gap remained:
+
+- generation fencing covered preflight/reassignment state but did not prove that
+  an invocation already admitted under generation `g` had drained/cancelled
+  before `g+1` could become active.
+
+Required ordering guarantee:
+
+- stop new admissions;
+- drain/cancel already-admitted mutations;
+- prove no unresolved mutation/external-operation remains;
+- only then transfer ownership; otherwise retain the scope lock.
+
+Non-blocking review items also requested in-root resolved-link re-authorization,
+removal of the duplicated historical HANDOFF heading, and explicit chaos cases
+for paused admitted mutation, duplicate live contexts, link cross-lane target,
+and first-goal genesis.
+
+## R2 remediation contract
+
+R2 adds:
+
+- exactly one trusted `execution_holder_id` per claim generation;
+- atomic mutation admission gate and active-admission set;
+- `QUIESCING -> TRANSFER_READY` barrier before generation transfer;
+- `QUIESCENCE_ATTESTATION` with `active_admissions = 0` and no unresolved
+  external operation;
+- no hot reassignment when a platform cannot reliably expose/drain admissions;
+- second live context cannot reuse the same claim generation;
+- first GoalStart uses `GENESIS`, later GoalStart requires terminal Goal-End;
+- in-root symlink/junction targets are re-authorized against all active lane
+  scopes;
+- duplicated HANDOFF heading removed;
+- four new deterministic/chaos cases covering the R2 schedule.
+
 ## Stop / review state
 
-R1 remediation must stop at `REVIEW_REQUESTED` on a new exact pushed SHA.
+R2 remediation must stop at `REVIEW_REQUESTED` on a new exact pushed SHA.
 Do not activate `ENV-COORD-002` until a fresh independent reviewer returns
 `APPROVED` for that exact SHA.
 
 ## One next safe action
 
-Verify the R1 remediation diff against all six blocking findings, freeze/push
-the new candidate, inspect the actual remote PR diff, and request fresh
-independent adversarial review.
+Verify the R2 transfer-ordering remediation and non-blocking cleanup, freeze/push the new candidate, inspect the actual remote PR diff, and request fresh independent adversarial review.

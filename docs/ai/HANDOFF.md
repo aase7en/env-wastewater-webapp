@@ -2,7 +2,7 @@
 
 ## ENV-COORD-001 architecture checkpoint - 2026-09-07
 
-- Status: `REVIEW_REQUESTED` (R1 remediation); owner/coordinator GPT-5.6 Sol; worktree `A:\\GitHub\\envww-coord-001`; branch `docs/env-coord-001`; base `origin/main@a8fa47137d640a479d3dbc88f6e8c198d266c7f0`.
+- Status: `REVIEW_REQUESTED` (R2 remediation); owner/coordinator GPT-5.6 Sol; worktree `A:\\GitHub\\envww-coord-001`; branch `docs/env-coord-001`; base `origin/main@a8fa47137d640a479d3dbc88f6e8c198d266c7f0`.
 - R0 exact reviewed SHA `708bac20b03aa2d6c1ef3b4afc2c50a7c6df1c33` received independent adversarial verdict `CHANGES_REQUIRED`; `ENV-COORD-002` is explicitly blocked.
 - Six blocking gaps: trusted coordinator/policy authority, atomic claim transition + generation fencing, trusted server CI/current-main freshness, deterministic scope semantics, durable checkpoint/replay + external-operation uncertainty, and bootstrap/broken-guard repair admission.
 - R1 remediation now defines authoritative-current-main-only policy inputs; candidate Work Orders cannot widen authority; claim ID/generation fencing; expected policy revision/registry hash transitions; `RECOVERY_HOLD`; durable event ordering/publication; operation intent/outcome journal; deterministic exact-path/subtree grammar; trusted CI evidence tuple + current-main revalidation; BOOTSTRAP/SHADOW/ENFORCING/HARDENED stages; and CONTROL_MAINTENANCE / human-only BREAK_GLASS repair.
@@ -14,9 +14,10 @@
 - Work Order: `docs/work-orders/ENV-COORD-001.md`.
 - Lane handoff: `docs/ai/handoffs/ENV-COORD-001-SOL.md`.
 - No frontend/schema/RLS/provider/hook/CI/runtime mutation is authorized or performed in this architecture slice.
-- One next safe action: verify the R1 docs-only remediation against every blocking finding, freeze/push a new exact SHA to PR #82, then request fresh independent adversarial review. Do not activate `ENV-COORD-002`.
+- R1 exact SHA `92bf8803f73ca950dd4d73a964ad740caecf236a` received fresh Astra `CHANGES_REQUIRED`: one P1 remained because an already-admitted mutation could theoretically resume after generation transfer. R2 now adds exclusive `execution_holder_id`, mutation admission tracking, `QUIESCING`/drain barrier, `QUIESCENCE_ATTESTATION`, no-hot-transfer fallback, first-goal `GENESIS`, resolved-link re-authorization, and the requested chaos scenarios. The duplicate historical ENV-OPS heading is also repaired.
+- One next safe action: verify the R2 docs-only remediation, freeze/push a new exact SHA to PR #82, then request fresh independent adversarial review. Do not activate `ENV-COORD-002`.
 
-## ENV-OPS-001 contract checkpoint - 2026-09-03## ENV-OPS-001 contract checkpoint - 2026-09-03
+## ENV-OPS-001 contract checkpoint - 2026-09-03
 
 - Status: `MERGE_READY`; branch `docs/env-ops-001-contract`, base `origin/main@b39964498f585c1f1b10c01f5477ad6042d498e2`.
 - Archaeology confirms two real first-slice sources only: `core.repair_request` with durable lifecycle `open | in_progress | resolved | cancelled`, and `wastewater.threshold_alert` with read/delivery state but no repair-resolution lifecycle or verified severity.

@@ -1,6 +1,6 @@
 # ENV Coordination Guard — architecture contract
 
-Status: R1_REVIEW_REQUESTED
+Status: R2_REVIEW_REQUESTED
 Task: `ENV-COORD-001`
 Owner / architecture lead: GPT-5.6 Sol
 Repository: `aase7en/env-wastewater-webapp`
@@ -66,6 +66,7 @@ claim_id
 claim_generation
 status
 owner_role
+execution_holder_id
 branch
 base_sha
 mutable_scope
@@ -225,6 +226,77 @@ worker that resumes later receives `STALE_CLAIM_GENERATION` and
 `SAFE_TO_MUTATE = NO`, even if it uses the same GitHub identity, branch name,
 or machine account.
 
+### 4.2A Exclusive execution holder and mutation admissions
+
+A claim generation authorizes exactly one live mutation execution context,
+identified by opaque `execution_holder_id`. Multiple agents/processes/sessions
+must not concurrently mutate under the same claim generation, even if they use
+the same model, user, GitHub identity, worktree, goal ID, or branch.
+
+Changing the live execution holder is a transfer and MUST increment
+`claim_generation`; a second context cannot simply reuse the current
+generation.
+
+Within the current holder, every mutation-capable invocation uses an admission
+protocol:
+
+```text
+ADMISSION_OPEN
+  -> admit operation_id / admission_id
+  -> IN_FLIGHT
+  -> EFFECT_COMPLETE | EFFECT_FAILED | EFFECT_UNKNOWN
+  -> admission closed
+```
+
+The holder maintains an atomic admission gate and active-admission set shared by
+all mutation-capable tool invocations in that execution context.
+
+An invocation is considered **already admitted** from the moment its admission
+record is created until the adapter records one of the terminal effect states
+above. Passing an earlier preflight is not sufficient to remove it from this
+set.
+
+Where an execution platform can re-check authorization immediately at the
+actual mutation boundary, it SHOULD re-read the claim generation there as an
+additional fence. The architecture MUST NOT rely on that capability because
+some hook surfaces can only gate before invocation.
+
+### 4.2B Quiesce/drain transfer barrier
+
+Ownership/execution transfer uses this ordering:
+
+```text
+ACTIVE(g, holder=A)
+  -> QUIESCING(g, holder=A)
+  -> admission gate CLOSED
+  -> wait/cancel until active_admissions == 0
+  -> verify no unresolved EFFECT_UNKNOWN / OPERATION_INTENT
+  -> publish QUIESCENCE_ATTESTATION
+  -> TRANSFER_READY(g)
+  -> authorized claim transition
+  -> ACTIVE(g+1, holder=B)
+```
+
+Entering `QUIESCING` closes the holder's admission gate before transfer; all
+new mutation admissions fail closed.
+
+A `QUIESCENCE_ATTESTATION` is valid only when it identifies the current
+`claim_id`, `claim_generation`, `execution_holder_id`, latest lifecycle
+event/checkpoint, admission sequence high-water mark, and proves
+`active_admissions = 0` with no unresolved external-operation outcome.
+
+The coordinator MUST NOT release/reassign the scope until that attestation is
+verified against current policy and actual runtime/worktree/remote evidence.
+
+If an already-admitted invocation is paused, hung, detached, or cannot be
+demonstrably cancelled/drained, the claim remains locked. State becomes
+`RECOVERY_HOLD` (or stays `QUIESCING`) rather than allocating generation
+`g+1`.
+
+If the execution platform cannot expose a reliable admission lifecycle, it is
+not eligible for hot reassignment. The current execution must be demonstrably
+stopped and reconciled; otherwise the scope remains locked.
+
 ### 4.3 Serialized claim transition
 
 A coordinator control transition is optimistic-concurrency-controlled.
@@ -256,7 +328,9 @@ For multi-agent mutable work, a worker may mutate only after:
 1. the authorized claim transition exists on authoritative main;
 2. its local branch/worktree matches the trusted record;
 3. its recorded claim generation matches current main;
-4. its preflight passes against the latest fetched policy revision.
+4. its `execution_holder_id` matches the one trusted for that generation;
+5. its admission gate is `OPEN` and the mutation invocation obtains a unique active admission record;
+6. its preflight passes against the latest fetched policy revision.
 
 A worker MUST NOT start production mutation merely because:
 
@@ -268,8 +342,7 @@ A worker MUST NOT start production mutation merely because:
 
 ### 4.5 Claim release, stale claims and inaccessible workers
 
-Claims are released only by an authorized control transition after checking
-actual worktree/remote branch/PR/uncheckpointed mutation/dependencies.
+Claims are released or reassigned only after the quiesce/drain transfer barrier in §4.2B completes and an authorized control transition revalidates the current policy. Checking only the apparent worktree/remote branch/PR/dirty state is insufficient because an already-admitted invocation may still be pending.
 
 Time inactivity may classify a claim as `STALE_CLAIM`, but MUST NOT make the
 scope available automatically.
@@ -315,6 +388,8 @@ previous_event_id
 
 `event_seq` is monotonically increasing inside a claim generation.
 `event_id` is stable for retries of the same semantic event.
+
+The first-ever `GOAL_START` in a new claim generation uses a distinguished `previous_event_id = GENESIS` and is valid only when no prior goal event exists for that generation. Every subsequent `GOAL_START` must reference the previous durable terminal `GOAL_END`; an unterminated predecessor blocks the next goal.
 
 ### 5.1 GOAL_START
 
@@ -573,6 +648,7 @@ Symlink/junction policy:
 - scope is defined over Git repository paths, not resolved external targets;
 - mutation through a symlink/junction that resolves outside the worktree root
   is denied;
+- an in-root resolved target is re-authorized as if that resolved repository path had been requested directly: it must fall inside the same claim's mutable scope, outside its forbidden scope, and outside every other active lane's protected scope unless an explicit shared-file exception applies;
 - guard/runtime code must resolve the actual target before mutation when the
   tool can traverse filesystem links.
 
@@ -973,6 +1049,10 @@ below with explicit expected outcomes.
     authorization; before/after policy and defect evidence are recorded.
 33. **Worker says DONE while verification failed** — Goal-End cannot be
     `COMPLETED_VERIFIED`; integration remains blocked.
+34. **Paused admitted invocation during reassignment** — pause a mutation after admission but before effect; transfer must remain blocked in `QUIESCING`/`RECOVERY_HOLD` until the invocation is cancelled/drained and `active_admissions = 0`; generation `g+1` must not activate earlier.
+35. **Two live contexts resume the same claim/generation/goal** — only the trusted `execution_holder_id` may obtain mutation admission; the second context fails closed and must use an explicit transfer with a new generation.
+36. **In-root link crosses lane boundary** — an allowed symlink/junction path resolving into another lane's protected in-root path is denied unless an explicit shared-file exception authorizes that exact resolved target.
+37. **Goal-chain genesis vs predecessor** — the first-ever GoalStart in a generation may use `GENESIS`; every later GoalStart rejects an unterminated or non-terminal predecessor.
 
 ## 14. Acceptance for architecture freeze
 
@@ -982,15 +1062,14 @@ fresh independent adversarial review confirms that:
 - no second live SSoT is introduced;
 - trusted authorization comes only from authoritative current-main policy, not
   candidate-branch Work Orders or model/GitHub identity claims;
-- coordinator/control transitions have expected-revision serialization and
-  claim-generation fencing;
+- coordinator/control transitions have expected-revision serialization, claim-generation fencing, exactly one live `execution_holder_id` per generation, and a quiesce/drain transfer barrier that prevents already-admitted mutations from crossing ownership transfer;
 - stale/inaccessible workers cannot silently free or retain mutation rights;
 - task-level vs goal-level state ownership and terminal Goal-End requirements
   are unambiguous;
 - checkpoint publication/replay ordering is durable and idempotent;
 - non-idempotent external operation uncertainty fails closed;
 - deterministic path/scope grammar covers new files, rename endpoints,
-  case aliases and link escapes;
+  case aliases, link escapes, and re-authorization of in-root resolved link targets against all active lane scopes;
 - hookless agents remain governed at integration by a trusted server-required
   check evaluated against latest main;
 - missing/skipped/spoofed/head-stale review/check evidence fails closed;
