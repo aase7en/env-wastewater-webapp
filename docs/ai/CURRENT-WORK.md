@@ -27,7 +27,7 @@ Allowed statuses:
 
 ## Active frontier - 2026-09-07
 
-- **`ENV-COORD-001` / REVIEW_REQUESTED / CLAIMED BY GPT-5.6 SOL (COORDINATOR)** — High-risk multi-agent control architecture is now the project-control priority before new North-Star production lanes are distributed. Worktree `A:\\GitHub\\envww-coord-001`, branch `docs/env-coord-001`, base `origin/main@a8fa47137d640a479d3dbc88f6e8c198d266c7f0`. Mutable scope is limited to the coordination architecture Work Order, architecture contract, lane handoff, and bounded central `CURRENT-WORK/HANDOFF` reconciliation. No hook/CI/runtime/frontend/schema mutation is authorized in this slice. Independent adversarial architecture review is required before `ENV-COORD-002`.
+- **`ENV-COORD-001` / REVIEW_REQUESTED (R1 REMEDIATION) / CLAIMED BY GPT-5.6 SOL (COORDINATOR)** — High-risk multi-agent control architecture is now the project-control priority before new North-Star production lanes are distributed. Worktree `A:\\GitHub\\envww-coord-001`, branch `docs/env-coord-001`, base `origin/main@a8fa47137d640a479d3dbc88f6e8c198d266c7f0`. Mutable scope is limited to the coordination architecture Work Order, architecture contract, lane handoff, and bounded central `CURRENT-WORK/HANDOFF` reconciliation. No hook/CI/runtime/frontend/schema mutation is authorized in this slice. Independent adversarial architecture review is required before `ENV-COORD-002`.
 - **`ENV-INT-GISTDA-CORE-001` / REVIEW_REQUESTED / PR #80** — GLM-5.3 MAX implementation remains isolated under `frontend/src/lib/env-int/gistda/**` + its WO/lane handoff. Keep that scope no-touch while coordination architecture proceeds.
 - **`ENV-BUILDING-REPAIR-001` / DECISION_REQUIRED / PR #75** — Building/repair remains no-touch until the C1/C2 product contract is resolved.
 - **`ENV-OPS-001A` / READY BUT DISPATCH-PAUSED** — contract is merged and implementation-ready, but new production dispatch is intentionally paused until the coordination guard architecture is independently reviewed and the implementation rollout gate is defined.
@@ -38,7 +38,7 @@ Current coordination authority:
 - architecture contract: `docs/ai/architecture/ENV-COORDINATION-GUARD.md`;
 - Work Order: `docs/work-orders/ENV-COORD-001.md`;
 - lane checkpoint: `docs/ai/handoffs/ENV-COORD-001-SOL.md`;
-- one next safe action: finish docs-only architecture verification, freeze exact SHA, open PR, then obtain independent adversarial review.
+- one next safe action: finish R1 remediation verification against all six blocking findings, freeze/push a new exact SHA to PR #82, then obtain fresh independent adversarial review. `ENV-COORD-002` remains blocked.
 
 ## Prior execution state - 2026-09-02
 

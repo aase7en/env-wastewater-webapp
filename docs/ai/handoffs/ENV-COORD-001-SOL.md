@@ -6,7 +6,7 @@ Owner: GPT-5.6 Sol
 Worktree: `A:\\GitHub\\envww-coord-001`
 Branch: `docs/env-coord-001`
 Base: `origin/main@a8fa47137d640a479d3dbc88f6e8c198d266c7f0`
-HEAD: PENDING_CHECKPOINT
+HEAD: PENDING_REMEDIATION_CHECKPOINT
 Dirty state: expected task-owned docs changes only after drafting
 Last updated: 2026-09-07
 
@@ -22,18 +22,43 @@ North-Star production lanes are dispatched.
 - Verified open PR #80 and #75 do not overlap this lane.
 - Protected the stale/dirty primary checkout by creating a clean isolated
   worktree from current `origin/main`.
+- R0 architecture candidate pushed/opened as PR #82 at exact SHA
+  `708bac20b03aa2d6c1ef3b4afc2c50a7c6df1c33`.
+- Independent Astra review returned `CHANGES_REQUIRED` and explicitly blocked
+  `ENV-COORD-002`.
+- Remote API was independently rechecked: `main` is not branch protected and
+  repository rulesets are empty. Current state is therefore
+  `ENFORCEMENT_NOT_ACTIVE`.
 
-## Architecture direction
+## R1 findings being remediated
 
-- `CURRENT-WORK.md` remains the central claim/ownership registry.
-- Project Chat files are bootstrap pointers only, never a live task mirror.
-- Coordinator owns central claim allocation.
-- Worker owns its lane Work Order/handoff/source scope, not central claims.
-- Every long-running goal has GoalStart / Checkpoint / GoalEnd lifecycle.
-- Stale claim never auto-releases.
-- One deterministic guard core serves ZCode/Codex/Chat/Work adapters.
-- CI is the non-bypassable backstop when hooks are absent.
-- Material defect memory requires executable prevention first.
+1. trusted coordinator authorization/policy precedence;
+2. atomic expected-revision claim transitions + generation fencing;
+3. trusted server CI/current-main freshness/bypass handling;
+4. deterministic scope/path overlap semantics;
+5. durable checkpoint ordering/replay + external side-effect uncertainty;
+6. cold bootstrap and broken-guard repair admission.
+
+## R1 architecture direction
+
+- trusted authorization comes only from latest fetched `origin/main` claim
+  policy, never a candidate Work Order or agent identity;
+- candidate Work Orders cannot widen central scope;
+- claims carry `claim_id` + monotonic `claim_generation`;
+- control transitions carry expected policy revision/registry hash/generation;
+- stale generations are fenced even when sessions share one GitHub identity;
+- inaccessible previous workers enter `RECOVERY_HOLD`, never auto-release;
+- GoalStart requires prior durable terminal Goal-End;
+- checkpoint publication means commit + fast-forward push + remote-head verify;
+- lifecycle events have stable ID/sequence/predecessor for idempotent replay;
+- non-idempotent external actions require published intent/outcome journal;
+- path grammar is exact-path or subtree-only with cross-platform canonical
+  normalization, forbidden-first precedence and rename/link handling;
+- CI approval is bound to PR head + current policy revision + claim generation +
+  trusted producer + review evidence and must re-evaluate against current main;
+- bootstrap proceeds through BOOTSTRAP_CONTROL -> SHADOW -> ENFORCING ->
+  HARDENED;
+- broken guard has bounded CONTROL_MAINTENANCE and human-only BREAK_GLASS.
 
 ## Evidence
 
@@ -43,19 +68,26 @@ Architecture contract:
 Work Order:
 `docs/work-orders/ENV-COORD-001.md`
 
+PR:
+`#82`
+
+R0 reviewed SHA:
+`708bac20b03aa2d6c1ef3b4afc2c50a7c6df1c33`
+
 ## Blockers
 
-No implementation blocker. Architecture must receive independent adversarial
-review before guard implementation begins.
+`ENV-COORD-002` remains blocked until R1 remediation is pushed and a fresh
+independent exact-SHA architecture review returns `APPROVED`.
 
 ## Do not do
 
 - do not start `ENV-COORD-002`;
-- do not modify hook/CI/runtime code;
+- do not modify hook/CI/runtime code in this lane;
 - do not touch PR #80/#75 scope;
-- do not clean/reset the primary checkout.
+- do not clean/reset the primary checkout;
+- do not claim branch protection/server enforcement exists yet.
 
 ## One next safe action
 
-Finish docs-only verification, freeze exact SHA, open the architecture PR, and
-send the exact review packet to an independent high-reasoning reviewer.
+Run docs-only R1 verification against all six blocking findings, freeze/push a
+new exact SHA to PR #82, then request fresh independent adversarial review.

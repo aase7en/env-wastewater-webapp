@@ -2,19 +2,21 @@
 
 ## ENV-COORD-001 architecture checkpoint - 2026-09-07
 
-- Status: `REVIEW_REQUESTED`; owner/coordinator GPT-5.6 Sol; worktree `A:\\GitHub\\envww-coord-001`; branch `docs/env-coord-001`; base `origin/main@a8fa47137d640a479d3dbc88f6e8c198d266c7f0`.
-- Precondition closed first: `SDLC-OPT-001` PR #81 was independently reviewed at exact head `d9b5ea0bb7b67f6e41f9328174dd220df7d1767d`, merged with expected-head protection as `a8fa47137d640a479d3dbc88f6e8c198d266c7f0`, then current main was fetched before this lane was created.
-- Primary checkout `A:\\GitHub\\env-wastewater-webapp` remains stale/dirty/protected and was not cleaned/reset/stashed. This lane uses a clean isolated worktree from current main.
-- Remote ownership reconciliation: PR #80 owns only GISTDA adapter + its WO/handoff; PR #75 owns only the Building repair decision WO. No open PR overlaps the coordination architecture files.
-- Draft architecture now defines: no live SSoT mirror in Chat Project files; coordinator-only central claim allocation; worker-owned lane-local goal checkpoints; GoalStart/Checkpoint/GoalEnd lifecycle; no automatic stale-claim release; material defect promotion to executable prevention; one platform-independent guard core; ZCode/Codex/Chat/Work adapters; CI as hook-independent enforcement; crash/drift/collision recovery; and required chaos scenarios.
+- Status: `REVIEW_REQUESTED` (R1 remediation); owner/coordinator GPT-5.6 Sol; worktree `A:\\GitHub\\envww-coord-001`; branch `docs/env-coord-001`; base `origin/main@a8fa47137d640a479d3dbc88f6e8c198d266c7f0`.
+- R0 exact reviewed SHA `708bac20b03aa2d6c1ef3b4afc2c50a7c6df1c33` received independent adversarial verdict `CHANGES_REQUIRED`; `ENV-COORD-002` is explicitly blocked.
+- Six blocking gaps: trusted coordinator/policy authority, atomic claim transition + generation fencing, trusted server CI/current-main freshness, deterministic scope semantics, durable checkpoint/replay + external-operation uncertainty, and bootstrap/broken-guard repair admission.
+- R1 remediation now defines authoritative-current-main-only policy inputs; candidate Work Orders cannot widen authority; claim ID/generation fencing; expected policy revision/registry hash transitions; `RECOVERY_HOLD`; durable event ordering/publication; operation intent/outcome journal; deterministic exact-path/subtree grammar; trusted CI evidence tuple + current-main revalidation; BOOTSTRAP/SHADOW/ENFORCING/HARDENED stages; and CONTROL_MAINTENANCE / human-only BREAK_GLASS repair.
+- Remote server reality independently rechecked: GitHub API reports `main` is not protected and repository rulesets are empty. Current coordination state is `ENFORCEMENT_NOT_ACTIVE`; existing `scripts`/`notify` checks are not coordination enforcement.
+- Precondition history: `SDLC-OPT-001` PR #81 was independently reviewed at exact head `d9b5ea0bb7b67f6e41f9328174dd220df7d1767d` and merged as `a8fa47137d640a479d3dbc88f6e8c198d266c7f0` before this lane.
+- Primary checkout `A:\\GitHub\\env-wastewater-webapp` remains stale/dirty/protected and was not cleaned/reset/stashed. This lane uses the isolated clean worktree.
+- Remote ownership reconciliation remains: PR #80 owns GISTDA adapter scope; PR #75 owns Building repair decision scope; neither overlaps this architecture lane.
 - Architecture contract: `docs/ai/architecture/ENV-COORDINATION-GUARD.md`.
 - Work Order: `docs/work-orders/ENV-COORD-001.md`.
 - Lane handoff: `docs/ai/handoffs/ENV-COORD-001-SOL.md`.
 - No frontend/schema/RLS/provider/hook/CI/runtime mutation is authorized or performed in this architecture slice.
-- Blocker before implementation: independent adversarial architecture review. `ENV-COORD-002` must not start until material findings are resolved.
-- One next safe action: run docs-only diff/scope/invariant checks, freeze/push exact SHA, open PR, then hand the exact review packet to the independent high-reasoning reviewer.
+- One next safe action: verify the R1 docs-only remediation against every blocking finding, freeze/push a new exact SHA to PR #82, then request fresh independent adversarial review. Do not activate `ENV-COORD-002`.
 
-## ENV-OPS-001 contract checkpoint - 2026-09-03
+## ENV-OPS-001 contract checkpoint - 2026-09-03## ENV-OPS-001 contract checkpoint - 2026-09-03
 
 - Status: `MERGE_READY`; branch `docs/env-ops-001-contract`, base `origin/main@b39964498f585c1f1b10c01f5477ad6042d498e2`.
 - Archaeology confirms two real first-slice sources only: `core.repair_request` with durable lifecycle `open | in_progress | resolved | cancelled`, and `wastewater.threshold_alert` with read/delivery state but no repair-resolution lifecycle or verified severity.
