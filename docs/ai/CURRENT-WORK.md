@@ -1,6 +1,6 @@
 # CURRENT WORK
 
-Status: DESIGNING
+Status: CLAIMED
 
 Allowed statuses:
 
@@ -25,20 +25,78 @@ Allowed statuses:
 
 > `CURRENT-WORK.md` is the authoritative task definition. Agents must not silently expand task scope.
 
+## COORDINATION-REGISTRY v1
+
+This fenced block is the machine-readable portion of the canonical
+`CURRENT-WORK.md`; it is not a second registry. Candidate-branch copies never
+grant authority. This bootstrap transition becomes authoritative only after
+exact-SHA independent review and merge into `main`.
+
+```json
+{
+  "coordination_registry": {
+    "version": 1,
+    "enforcement_mode": "BOOTSTRAP_CONTROL",
+    "expected_policy_revision": "6360e149f42c419a8d7f878f28fc439e0ef1f6cc",
+    "claims": [
+      {
+        "task_id": "ENV-COORD-002",
+        "claim_id": "ENV-COORD-002-C1",
+        "claim_generation": 1,
+        "status": "CLAIMED",
+        "owner_role": "core_implementation",
+        "agent_model": "GLM-5.3 MAX",
+        "execution_holder_id": "zcode-env-coord-002-g1-primary",
+        "worktree": "A:/GitHub/envww-coord-002",
+        "branch": "feat/env-coord-002",
+        "base_sha": "6360e149f42c419a8d7f878f28fc439e0ef1f6cc",
+        "mutable_scope": [
+          "scripts/env_coordination_guard.py",
+          "scripts/test_env_coordination_guard.py",
+          "docs/work-orders/ENV-COORD-002.md",
+          "docs/ai/handoffs/ENV-COORD-002-GLM.md"
+        ],
+        "forbidden_scope": [
+          "docs/ai/CURRENT-WORK.md",
+          "docs/ai/HANDOFF.md",
+          "docs/ai/architecture/ENV-COORDINATION-GUARD.md",
+          "AGENTS.md",
+          ".github/**",
+          ".claude/**",
+          "frontend/**",
+          "supabase/**",
+          "data/**"
+        ],
+        "work_order_path": "docs/work-orders/ENV-COORD-002.md",
+        "handoff_path": "docs/ai/handoffs/ENV-COORD-002-GLM.md",
+        "review_owner": "GPT-5.6 Sol + fresh independent reviewer",
+        "dependencies": [
+          "ENV-COORD-001 APPROVED and merged as 6360e149f42c419a8d7f878f28fc439e0ef1f6cc",
+          "bootstrap claim transition reviewed and merged before implementation mutation"
+        ],
+        "last_checkpoint_pointer": "docs/ai/handoffs/ENV-COORD-002-GLM.md",
+        "one_next_safe_action": "Obtain independent exact-SHA review of this bootstrap claim transition, merge it, then create the isolated implementation worktree and launch the single GLM-5.3 MAX execution holder."
+      }
+    ]
+  }
+}
+```
+
 ## Active frontier - 2026-09-07
 
-- **`ENV-COORD-001` / REVIEW_REQUESTED (R2 REMEDIATION) / CLAIMED BY GPT-5.6 SOL (COORDINATOR)** — High-risk multi-agent control architecture is now the project-control priority before new North-Star production lanes are distributed. Worktree `A:\\GitHub\\envww-coord-001`, branch `docs/env-coord-001`, base `origin/main@a8fa47137d640a479d3dbc88f6e8c198d266c7f0`. Mutable scope is limited to the coordination architecture Work Order, architecture contract, lane handoff, and bounded central `CURRENT-WORK/HANDOFF` reconciliation. No hook/CI/runtime/frontend/schema mutation is authorized in this slice. Independent adversarial architecture review is required before `ENV-COORD-002`.
-- **`ENV-INT-GISTDA-CORE-001` / REVIEW_REQUESTED / PR #80** — GLM-5.3 MAX implementation remains isolated under `frontend/src/lib/env-int/gistda/**` + its WO/lane handoff. Keep that scope no-touch while coordination architecture proceeds.
-- **`ENV-BUILDING-REPAIR-001` / DECISION_REQUIRED / PR #75** — Building/repair remains no-touch until the C1/C2 product contract is resolved.
-- **`ENV-OPS-001A` / READY BUT DISPATCH-PAUSED** — contract is merged and implementation-ready, but new production dispatch is intentionally paused until the coordination guard architecture is independently reviewed and the implementation rollout gate is defined.
-- **`SDLC-OPT-001` / CLOSED** — PR #81 exact head `d9b5ea0bb7b67f6e41f9328174dd220df7d1767d` was independently reviewed and merged as `a8fa47137d640a479d3dbc88f6e8c198d266c7f0` on 2026-09-07.
+- **`ENV-COORD-001` / CLOSED / PR #82** — Astra independently APPROVED exact architecture SHA `e5f6a419aa226151788763970e8c008f48d4a28d` with no blockers; PR #82 merged with expected-head protection as `6360e149f42c419a8d7f878f28fc439e0ef1f6cc`. Production activation is still blocked because coordination enforcement is not yet installed.
+- **`ENV-COORD-002` / CLAIM PROPOSED / BOOTSTRAP_CONTROL** — deterministic Coordination Guard core + registry parser + tests. Proposed owner GLM-5.3 MAX, claim `ENV-COORD-002-C1`, generation `1`, execution holder `zcode-env-coord-002-g1-primary`, planned branch `feat/env-coord-002`. No implementation mutation is authorized until this claim transition is independently reviewed and merged into authoritative `main`.
+- **`ENV-INT-GISTDA-CORE-001` / REVIEW_REQUESTED / PR #80** — separate GISTDA scope; no overlap with coordination bootstrap.
+- **`ENV-BUILDING-REPAIR-001` / DECISION_REQUIRED / PR #75** — Building/repair remains no-touch.
+- **`ENV-OPS-001A` / READY BUT DISPATCH-PAUSED** — production dispatch remains paused until later coordination enforcement gates permit it.
 
 Current coordination authority:
-- central claim allocation/reassignment/release: GPT-5.6 Sol coordinator for `ENV-COORD-001`;
-- architecture contract: `docs/ai/architecture/ENV-COORDINATION-GUARD.md`;
-- Work Order: `docs/work-orders/ENV-COORD-001.md`;
-- lane checkpoint: `docs/ai/handoffs/ENV-COORD-001-SOL.md`;
-- one next safe action: finish R2 transfer-ordering verification, freeze/push a new exact SHA to PR #82, then obtain fresh independent adversarial review. `ENV-COORD-002` remains blocked.
+- central control-transition proposer/integration owner: GPT-5.6 Sol;
+- approved architecture: `docs/ai/architecture/ENV-COORDINATION-GUARD.md`;
+- active proposed Work Order: `docs/work-orders/ENV-COORD-002.md`;
+- proposed implementation/result lane: `docs/ai/handoffs/ENV-COORD-002-GLM.md`;
+- enforcement mode: `BOOTSTRAP_CONTROL`, not `ENFORCING`;
+- one next safe action: independently review this bootstrap claim transition at exact SHA, merge only if APPROVED, then create `A:\\GitHub\\envww-coord-002` and launch the single GLM-5.3 MAX holder.
 
 ## Prior execution state - 2026-09-02
 
