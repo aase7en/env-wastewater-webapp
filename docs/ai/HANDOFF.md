@@ -1,5 +1,18 @@
 # HANDOFF
 
+## ENV-COORD-002 bootstrap claim checkpoint - 2026-09-07
+
+- Status: `CLAIM_PROPOSED / BOOTSTRAP_CONTROL`; coordinator GPT-5.6 Sol.
+- Parent architecture `ENV-COORD-001` is CLOSED: Astra APPROVED exact SHA `e5f6a419aa226151788763970e8c008f48d4a28d`; PR #82 merged as `6360e149f42c419a8d7f878f28fc439e0ef1f6cc`.
+- Current server reality remains `ENFORCEMENT_NOT_ACTIVE`: branch protection/rulesets have not yet been installed.
+- Proposed implementation claim: `ENV-COORD-002-C1`, generation `1`, GLM-5.3 MAX, holder `zcode-env-coord-002-g1-primary`, planned worktree `A:\\GitHub\\envww-coord-002`, planned branch `feat/env-coord-002`.
+- The canonical machine-readable `COORDINATION-REGISTRY v1` block now lives inside `docs/ai/CURRENT-WORK.md`; no second registry file was created.
+- Proposed mutable implementation scope is exactly `scripts/env_coordination_guard.py`, `scripts/test_env_coordination_guard.py`, `docs/work-orders/ENV-COORD-002.md`, and `docs/ai/handoffs/ENV-COORD-002-GLM.md`. Central SSoT, architecture, workflows/hooks, frontend, Supabase and data are forbidden.
+- Astra's non-blocking implementation refinement is captured in the WO: the execution holder/runtime adapter closes the admission gate and owns publication of quiescence evidence while closure remains in force; coordinator validates but cannot manufacture quiescence.
+- Bootstrap claim branch/worktree: `docs/env-coord-002-claim` / `A:\\GitHub\\envww-coord-002-claim`, based on `origin/main@6360e149f42c419a8d7f878f28fc439e0ef1f6cc`.
+- Implementation mutation is NOT yet authorized. This bootstrap claim transition requires independent exact-SHA review and merge first.
+- One next safe action: freeze/push the docs-only bootstrap claim PR, obtain inexpensive independent GLM-5.3 Flash review, then merge only if APPROVED before launching GLM-5.3 MAX implementation.
+
 ## ENV-COORD-001 architecture checkpoint - 2026-09-07
 
 - Status: `REVIEW_REQUESTED` (R2 remediation); owner/coordinator GPT-5.6 Sol; worktree `A:\\GitHub\\envww-coord-001`; branch `docs/env-coord-001`; base `origin/main@a8fa47137d640a479d3dbc88f6e8c198d266c7f0`.
