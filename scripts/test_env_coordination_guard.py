@@ -21,6 +21,7 @@ import os
 import subprocess
 import sys
 import tempfile
+import threading
 import unittest
 
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
@@ -833,13 +834,14 @@ class TestSharedFileException(unittest.TestCase):
             claims = list(sharing_claims())
         return load_policy(claims, shared_exceptions=list(exceptions))
 
-    def _gistda_ctx(self):
+    def _gistda_ctx(self, **overrides):
         return ok_ctx(
             task_id="ENV-INT-GISTDA-CORE-001",
             claim_id="ENV-INT-GISTDA-CORE-001-C1",
             execution_holder_id="zcode-gistda-g1-primary",
             worktree="A:/GitHub/envww-env-int-gistda-core-001",
             branch="feat/env-int-gistda-core-001",
+            **overrides,
         )
 
     def test_exact_shared_overlap_is_authorized(self):
@@ -848,30 +850,97 @@ class TestSharedFileException(unittest.TestCase):
         self.assertEqual(len(policy.claims), 2)
         self.assertEqual(len(policy.shared_exceptions), 1)
 
-    def test_both_participants_may_mutate_the_shared_path(self):
+    def test_integration_owner_may_mutate_shared_path(self):
+        # continuation-review P1: integration_owner_claim_id is the ONE
+        # temporary writer for the active shared path.
         policy = self._load([full_shared_exception()])
-        d1 = evaluate_mutation(
-            policy, ok_ctx(), changes=[Change("modify", "reports/shared.txt")]
-        )
-        self.assertTrue(d1.safe_to_mutate)
-        d2 = evaluate_mutation(
-            policy,
-            self._gistda_ctx(),
-            changes=[Change("modify", "reports/shared.txt")],
-        )
-        self.assertTrue(d2.safe_to_mutate)
-
-    def test_participant_link_to_shared_path_allowed(self):
-        policy = self._load([full_shared_exception()])
-        # resolved target sits in BOTH mutable scopes; the exception makes
-        # the overlap legal, so re-authorization passes
         d = evaluate_mutation(
             policy,
-            ok_ctx(),
+            self._gistda_ctx(),  # integration_owner_claim_id
+            changes=[Change("modify", "reports/shared.txt")],
+        )
+        self.assertTrue(d.safe_to_mutate)
+
+    def test_non_owner_participant_cannot_mutate_shared_path(self):
+        # reviewer reproducer: NON_OWNER_SHARED_WRITE_SAFE must be False
+        policy = self._load([full_shared_exception()])
+        d = evaluate_mutation(
+            policy,
+            ok_ctx(),  # participant, NOT the integration owner
+            changes=[Change("modify", "reports/shared.txt")],
+        )
+        self.assertFalse(d.safe_to_mutate)
+        self.assertEqual(d.reason, R.SHARED_PATH_OWNER_REQUIRED)
+
+    def test_wrong_generation_owner_context_rejected(self):
+        # the owner's authority is bound to its participating generation —
+        # a context claiming another generation fails closed (here via
+        # preflight before the owner check)
+        policy = self._load([full_shared_exception()])
+        d = evaluate_mutation(
+            policy,
+            self._gistda_ctx(claim_generation=2),
+            changes=[Change("modify", "reports/shared.txt")],
+        )
+        self.assertFalse(d.safe_to_mutate)
+        self.assertEqual(d.reason, R.STALE_CLAIM_GENERATION)
+
+    def test_unrelated_lane_cannot_mutate_shared_path(self):
+        # a lane that is not even a participant never sees the shared
+        # path as inside its own mutable scope
+        claim_a, claim_b = sharing_claims()
+        third = base_claim(
+            task_id="ENV-THIRD",
+            claim_id="ENV-THIRD-C1",
+            execution_holder_id="holder-third",
+            worktree="A:/GitHub/envww-third",
+            branch="feat/third",
+            mutable_scope=["third/**"],
+            forbidden_scope=["scripts/**"],
+        )
+        policy = self._load(
+            [full_shared_exception()], claims=[claim_a, claim_b, third]
+        )
+        d = evaluate_mutation(
+            policy,
+            ok_ctx(
+                task_id="ENV-THIRD",
+                claim_id="ENV-THIRD-C1",
+                execution_holder_id="holder-third",
+                worktree="A:/GitHub/envww-third",
+                branch="feat/third",
+            ),
+            changes=[Change("modify", "reports/shared.txt")],
+        )
+        self.assertFalse(d.safe_to_mutate)
+        self.assertEqual(d.reason, R.OUTSIDE_MUTABLE_SCOPE)
+
+    def test_owner_link_to_shared_path_allowed_non_owner_denied(self):
+        # link re-authorization enforces the same single-writer contract
+        policy = self._load([full_shared_exception()])
+        # resolved target sits in BOTH mutable scopes; owner passes
+        d_owner = evaluate_mutation(
+            policy,
+            self._gistda_ctx(),  # integration owner
             changes=[Change("modify", "reports/shared.txt")],
             links=[LinkRequest("reports/shared.txt", "reports/shared.txt", True)],
         )
-        self.assertTrue(d.safe_to_mutate)
+        self.assertTrue(d_owner.safe_to_mutate)
+        # a non-owner participant resolving into the shared path fails
+        d_peer = evaluate_mutation(
+            policy,
+            ok_ctx(),  # participant, not owner
+            changes=[Change("modify", "scripts/env_coordination_guard.py")],
+            links=[
+                LinkRequest(
+                    "scripts/env_coordination_guard.py",
+                    "reports/shared.txt",
+                    True,
+                )
+            ],
+        )
+        self.assertFalse(d_peer.safe_to_mutate)
+        self.assertEqual(d_peer.reason, R.SHARED_PATH_OWNER_REQUIRED)
 
     def test_second_overlapping_file_without_exception_still_conflicts(self):
         claim_a, claim_b = sharing_claims()
@@ -1565,6 +1634,37 @@ class TestAdmissionGate(unittest.TestCase):
         gate.reconcile_effect("op-1", ADMISSION_COMPLETE)
         self.assertFalse(gate.has_unresolved_effects)
 
+    def test_live_child_blocks_regardless_of_effect_state(self):
+        # continuation-review P1: a child marked child_alive=True is
+        # undrained in EVERY logical effect state.
+        for outcome in (ADMISSION_UNKNOWN, ADMISSION_COMPLETE, ADMISSION_FAILED):
+            with self.subTest(outcome=outcome):
+                gate = AdmissionGate()
+                gate.admit("op-1")
+                gate.record_effect("op-1", outcome, child_alive=True)
+                self.assertTrue(gate.has_live_children)
+                self.assertEqual(gate.unresolved_child_operations, ("op-1",))
+
+    def test_reconcile_to_complete_with_live_child_stays_undrained(self):
+        # coordinator reproducer: reconcile UNKNOWN->EFFECT_COMPLETE while
+        # child_alive=True must NOT clear the undrained-child condition.
+        gate = AdmissionGate()
+        gate.admit("op-1")
+        gate.record_effect("op-1", ADMISSION_UNKNOWN, child_alive=True)
+        gate.reconcile_effect("op-1", ADMISSION_COMPLETE, child_alive=True)
+        self.assertFalse(gate.has_unresolved_effects)  # logical state resolved
+        self.assertTrue(gate.has_live_children)  # child still undrained
+        self.assertEqual(gate.unresolved_child_operations, ("op-1",))
+
+    def test_child_reconciled_dead_only_then_undrained_clears(self):
+        gate = AdmissionGate()
+        gate.admit("op-1")
+        gate.record_effect("op-1", ADMISSION_UNKNOWN, child_alive=True)
+        gate.reconcile_effect("op-1", ADMISSION_COMPLETE, child_alive=True)
+        gate.reconcile_child_dead("op-1")
+        self.assertFalse(gate.has_live_children)
+        self.assertEqual(gate.unresolved_child_operations, ())
+
     def test_effect_unknown_reconciled_child_dead(self):
         gate = AdmissionGate()
         gate.admit("op-1")
@@ -1642,6 +1742,33 @@ class TestTransferBarrier(unittest.TestCase):
         att2 = b.holder_publish("holder-A", "att-1", latest_event_id="e9")
         self.assertIsNotNone(att2)
         self.assertEqual(b.state, "TRANSFER_READY")
+
+    def test_transfer_blocked_by_live_child_after_reconcile(self):
+        # continuation-review reproducer: LIVE_CHILD_AFTER_RECONCILE=True
+        # reaching TRANSFER_READY is forbidden.
+        b = TransferBarrier(claim_id="ENV-COORD-002-C1", claim_generation=1, holder_id="holder-A")
+        b.runtime.admit("op-1")
+        b.runtime.record_effect("op-1", ADMISSION_UNKNOWN, child_alive=True)
+        b.runtime.reconcile_effect("op-1", ADMISSION_COMPLETE, child_alive=True)
+        b.begin_quiesce()
+        att = b.holder_publish("holder-A", "att-1", latest_event_id="e9")
+        self.assertIsNone(att)
+        self.assertEqual(b.transfer_block_reason, R.TRANSFER_BLOCKED_LIVE_CHILDREN)
+        self.assertEqual(b.state, "QUIESCING")
+        # only after the child is reconciled dead may transfer proceed
+        b.runtime.reconcile_child_dead("op-1")
+        att2 = b.holder_publish("holder-A", "att-1", latest_event_id="e9")
+        self.assertIsNotNone(att2)
+        self.assertEqual(b.state, "TRANSFER_READY")
+
+    def test_transfer_blocked_by_live_child_in_terminal_state(self):
+        b = TransferBarrier(claim_id="ENV-COORD-002-C1", claim_generation=1, holder_id="holder-A")
+        b.runtime.admit("op-1")
+        b.runtime.record_effect("op-1", ADMISSION_COMPLETE, child_alive=True)
+        b.begin_quiesce()
+        att = b.holder_publish("holder-A", "att-1", latest_event_id="e9")
+        self.assertIsNone(att)
+        self.assertEqual(b.transfer_block_reason, R.TRANSFER_BLOCKED_LIVE_CHILDREN)
 
     def test_holder_publishes_attestation_when_drained(self):
         b = self._barrier()
@@ -1724,14 +1851,19 @@ class TestTransferBarrier(unittest.TestCase):
 
     def test_activation_with_trusted_policy_authorizes_new_generation(self):
         # §4.2B/§4.4: mutation under g+1 starts only when the authorized
-        # claim transition exists on (trusted) main and revalidates.
+        # claim transition exists on (trusted) main AND the complete
+        # actual-context preflight passes.
         b = self._barrier()
         b.begin_quiesce()
         b.holder_publish("holder-A", "att-1", latest_event_id="e9")
         gen2_policy = load_policy(
             [base_claim(claim_generation=2, execution_holder_id="holder-B")]
         )
-        d = b.complete_transfer(new_holder_id="holder-B", authorized_policy=gen2_policy)
+        d = b.complete_transfer(
+            new_holder_id="holder-B",
+            authorized_policy=gen2_policy,
+            actual_context=ok_ctx(claim_generation=2, execution_holder_id="holder-B"),
+        )
         self.assertTrue(d.safe_to_mutate)
         self.assertIsNone(d.reason)
         self.assertEqual(d.claim_generation, 2)
@@ -1742,13 +1874,95 @@ class TestTransferBarrier(unittest.TestCase):
         rec = b.runtime.admit("op-new")  # activated holder may admit
         self.assertEqual(rec["state"], "IN_FLIGHT")
 
+    def test_activation_requires_actual_context(self):
+        # policy identity alone must never authorize (continuation P1)
+        b = self._barrier()
+        b.begin_quiesce()
+        b.holder_publish("holder-A", "att-1", latest_event_id="e9")
+        gen2_policy = load_policy(
+            [base_claim(claim_generation=2, execution_holder_id="holder-B")]
+        )
+        with self.assertRaises(GuardFailure) as cm:
+            b.complete_transfer(new_holder_id="holder-B", authorized_policy=gen2_policy)
+        self.assertEqual(cm.exception.reason, R.MISSING_ACTUAL_CONTEXT)
+        self.assertEqual(b.state, "AWAITING_AUTHORIZATION")
+
+    def test_activation_with_wrong_actual_branch_not_authorized(self):
+        # reviewer reproducer: policy gen2/holder-B but actual wrong
+        # branch/worktree MUST NOT authorize.
+        b = self._barrier()
+        b.begin_quiesce()
+        b.holder_publish("holder-A", "att-1", latest_event_id="e9")
+        gen2_policy = load_policy(
+            [base_claim(claim_generation=2, execution_holder_id="holder-B")]
+        )
+        with self.assertRaises(GuardFailure) as cm:
+            b.complete_transfer(
+                new_holder_id="holder-B",
+                authorized_policy=gen2_policy,
+                actual_context=ok_ctx(
+                    claim_generation=2,
+                    execution_holder_id="holder-B",
+                    branch="wrong-branch",
+                ),
+            )
+        self.assertEqual(cm.exception.reason, R.BRANCH_MISMATCH)
+        self.assertEqual(b.state, "AWAITING_AUTHORIZATION")
+        with self.assertRaises(GuardFailure) as cm2:
+            b.runtime.admit("op-new")
+        self.assertEqual(cm2.exception.reason, R.ADMISSION_GATE_CLOSED)
+
+    def test_activation_with_wrong_actual_worktree_not_authorized(self):
+        b = self._barrier()
+        b.begin_quiesce()
+        b.holder_publish("holder-A", "att-1", latest_event_id="e9")
+        gen2_policy = load_policy(
+            [base_claim(claim_generation=2, execution_holder_id="holder-B")]
+        )
+        with self.assertRaises(GuardFailure) as cm:
+            b.complete_transfer(
+                new_holder_id="holder-B",
+                authorized_policy=gen2_policy,
+                actual_context=ok_ctx(
+                    claim_generation=2,
+                    execution_holder_id="holder-B",
+                    worktree="A:/WRONG-WORKTREE",
+                ),
+            )
+        self.assertEqual(cm.exception.reason, R.WORKTREE_MISMATCH)
+        self.assertEqual(b.state, "AWAITING_AUTHORIZATION")
+
+    def test_activation_with_base_not_ancestor_not_authorized(self):
+        b = self._barrier()
+        b.begin_quiesce()
+        b.holder_publish("holder-A", "att-1", latest_event_id="e9")
+        gen2_policy = load_policy(
+            [base_claim(claim_generation=2, execution_holder_id="holder-B")]
+        )
+        with self.assertRaises(GuardFailure) as cm:
+            b.complete_transfer(
+                new_holder_id="holder-B",
+                authorized_policy=gen2_policy,
+                actual_context=ok_ctx(
+                    claim_generation=2,
+                    execution_holder_id="holder-B",
+                    base_ancestor_of_head=False,
+                ),
+            )
+        self.assertEqual(cm.exception.reason, R.BASE_NOT_ANCESTOR)
+        self.assertEqual(b.state, "AWAITING_AUTHORIZATION")
+
     def test_activation_rejects_policy_without_new_generation(self):
         b = self._barrier()
         b.begin_quiesce()
         b.holder_publish("holder-A", "att-1", latest_event_id="e9")
         stale_policy = load_policy()  # registry still at generation 1 / holder A
         with self.assertRaises(GuardFailure) as cm:
-            b.complete_transfer(new_holder_id="holder-B", authorized_policy=stale_policy)
+            b.complete_transfer(
+                new_holder_id="holder-B",
+                authorized_policy=stale_policy,
+                actual_context=ok_ctx(claim_generation=2, execution_holder_id="holder-B"),
+            )
         self.assertEqual(cm.exception.reason, R.STALE_CLAIM_GENERATION)
         self.assertEqual(b.state, "AWAITING_AUTHORIZATION")
 
@@ -1760,7 +1974,11 @@ class TestTransferBarrier(unittest.TestCase):
             [base_claim(claim_generation=2, execution_holder_id="holder-C")]
         )
         with self.assertRaises(GuardFailure) as cm:
-            b.complete_transfer(new_holder_id="holder-B", authorized_policy=wrong_holder_policy)
+            b.complete_transfer(
+                new_holder_id="holder-B",
+                authorized_policy=wrong_holder_policy,
+                actual_context=ok_ctx(claim_generation=2, execution_holder_id="holder-B"),
+            )
         self.assertEqual(cm.exception.reason, R.WRONG_EXECUTION_HOLDER)
         self.assertEqual(b.state, "AWAITING_AUTHORIZATION")
 
@@ -1774,11 +1992,15 @@ class TestTransferBarrier(unittest.TestCase):
         gen2_policy = load_policy(
             [base_claim(claim_generation=2, execution_holder_id="holder-B")]
         )
-        activated = b.activate_transferred_claim(gen2_policy)
+        activated = b.activate_transferred_claim(
+            gen2_policy, ok_ctx(claim_generation=2, execution_holder_id="holder-B")
+        )
         self.assertTrue(activated.safe_to_mutate)
         self.assertEqual(b.state, "ACTIVE")
         with self.assertRaises(GuardFailure) as cm:
-            b.activate_transferred_claim(gen2_policy)
+            b.activate_transferred_claim(
+                gen2_policy, ok_ctx(claim_generation=2, execution_holder_id="holder-B")
+            )
         self.assertEqual(cm.exception.reason, R.TRANSFER_NOT_READY)
 
     def test_complete_transfer_requires_transfer_ready(self):
@@ -1805,7 +2027,11 @@ class TestTransferBarrier(unittest.TestCase):
         gen2_policy = load_policy(
             [base_claim(claim_generation=2, execution_holder_id="holder-B")]
         )
-        b.complete_transfer(new_holder_id="holder-B", authorized_policy=gen2_policy)
+        b.complete_transfer(
+            new_holder_id="holder-B",
+            authorized_policy=gen2_policy,
+            actual_context=ok_ctx(claim_generation=2, execution_holder_id="holder-B"),
+        )
         self.assertEqual(b.state, "ACTIVE")
         self.assertEqual(b.claim_generation, 2)
         self.assertEqual(b.execution_holder_id, "holder-B")
@@ -2048,6 +2274,268 @@ class TestCLI(unittest.TestCase):
         finally:
             os.unlink(ok_path)
             os.unlink(bad_path)
+
+
+# ─────────────────────────────────────────────────────────────────────────
+# R2 continuation review — concurrency, uniqueness, lock-holding statuses
+# ─────────────────────────────────────────────────────────────────────────
+class TestConcurrency(unittest.TestCase):
+    """R2-review P1: admission creation and gate closure must be atomic.
+
+    Deterministic threaded regressions using Barrier/Event choreography.
+    The invariant: an admission either linearizes before close and is
+    visible/tracked in the active set, or close linearizes first and the
+    admission fails ADMISSION_GATE_CLOSED. No third ordering exists.
+    (Atomicity is process-local; cross-process serialization is a later
+    adapter responsibility.)
+    """
+
+    def test_admit_vs_close_barrier_race_two_outcomes_only(self):
+        # one admitter + one closer released simultaneously, many rounds
+        for _round in range(200):
+            gate = AdmissionGate()
+            start = threading.Barrier(2)
+            results = {}
+
+            def admitter():
+                start.wait()
+                try:
+                    gate.admit("op-1")
+                    results["admitted"] = True
+                except GuardFailure as failure:
+                    results["admitted"] = False
+                    results["admit_reason"] = failure.reason
+
+            def closer():
+                start.wait()
+                gate.close()
+
+            threads = [threading.Thread(target=admitter), threading.Thread(target=closer)]
+            for t in threads:
+                t.start()
+            for t in threads:
+                t.join()
+            # exactly two legal outcomes
+            if results["admitted"]:
+                self.assertEqual(gate.active_admissions, 1)
+                self.assertEqual(gate.admissions_high_water, 1)
+            else:
+                self.assertEqual(results["admit_reason"], R.ADMISSION_GATE_CLOSED)
+                self.assertEqual(gate.active_admissions, 0)
+                self.assertEqual(gate.admissions_high_water, 0)
+            self.assertEqual(gate.state, "CLOSED")
+
+    def test_many_admitters_vs_close_all_tracked(self):
+        gate = AdmissionGate()
+            # 8 admitters + 1 closer; every success must be tracked
+        admitters = 8
+        start = threading.Barrier(admitters + 1)
+        successes = []
+        failures = []
+        lock = threading.Lock()
+
+        def admitter(index):
+            start.wait()
+            try:
+                gate.admit(f"op-{index}")
+                with lock:
+                    successes.append(index)
+            except GuardFailure as failure:
+                with lock:
+                    failures.append(failure.reason)
+
+        def closer():
+            start.wait()
+            gate.close()
+
+        threads = [threading.Thread(target=admitter, args=(i,)) for i in range(admitters)]
+        threads.append(threading.Thread(target=closer))
+        for t in threads:
+            t.start()
+        for t in threads:
+            t.join()
+        self.assertEqual(gate.state, "CLOSED")
+        self.assertEqual(gate.active_admissions, len(successes))
+        self.assertEqual(gate.admissions_high_water, len(successes))
+        # every failure is precisely ADMISSION_GATE_CLOSED
+        self.assertTrue(all(reason == R.ADMISSION_GATE_CLOSED for reason in failures))
+        # once CLOSED is observed with zero admissions, no later insert
+        # can happen: a post-close admit always fails
+        post = 0
+        try:
+            gate.admit("op-late")
+        except GuardFailure as failure:
+            post = failure.reason
+        self.assertEqual(post, R.ADMISSION_GATE_CLOSED)
+        self.assertEqual(gate.active_admissions, len(successes))
+
+    def test_closed_gate_with_zero_admissions_stays_empty(self):
+        # coordinator reproducer shape: gate CLOSED, active observed 0 —
+        # a straggling admit() must NOT insert afterward
+        gate = AdmissionGate()
+        ready = threading.Event()
+        released = threading.Event()
+
+        def straggler():
+            ready.set()
+            released.wait()
+            try:
+                gate.admit("op-straggler")
+            except GuardFailure:
+                pass
+
+        thread = threading.Thread(target=straggler)
+        thread.start()
+        ready.wait()
+        gate.close()
+        self.assertEqual(gate.state, "CLOSED")
+        self.assertEqual(gate.active_admissions, 0)
+        released.set()
+        thread.join()
+        self.assertEqual(gate.active_admissions, 0)
+        self.assertEqual(gate.admissions_high_water, 0)
+
+
+class TestSharedExceptionUniqueness(unittest.TestCase):
+    """continuation-review P1: no two active exceptions may create two
+    temporary owners for the same shared path + participant set."""
+
+    def _load(self, exceptions):
+        return load_policy(list(sharing_claims()), shared_exceptions=list(exceptions))
+
+    def test_two_owners_same_path_and_participants_rejected(self):
+        # coordinator reproducer: DUP_SHARED_OWNER accepted before repair
+        exc1 = full_shared_exception()  # owner = GISTDA claim
+        exc2 = full_shared_exception(
+            integration_owner_claim_id="ENV-COORD-002-C1",
+            merge_order=["ENV-INT-GISTDA-CORE-001-C1", "ENV-COORD-002-C1"],
+        )
+        with self.assertRaises(GuardFailure) as cm:
+            self._load([exc1, exc2])
+        self.assertEqual(cm.exception.reason, R.INVALID_SHARED_EXCEPTION)
+
+    def test_exact_duplicate_rejected(self):
+        # chosen contract: duplicates are REJECTED, not idempotent —
+        # registry writes must be intentional and singular
+        with self.assertRaises(GuardFailure) as cm:
+            self._load([full_shared_exception(), full_shared_exception()])
+        self.assertEqual(cm.exception.reason, R.INVALID_SHARED_EXCEPTION)
+
+    def test_same_owner_duplicate_also_rejected(self):
+        dup_same_owner = full_shared_exception()
+        with self.assertRaises(GuardFailure) as cm:
+            self._load([full_shared_exception(), dup_same_owner])
+        self.assertEqual(cm.exception.reason, R.INVALID_SHARED_EXCEPTION)
+
+    def test_same_path_different_participant_set_is_distinct(self):
+        # a second exception over the same path with a genuinely different
+        # participant set is a distinct authorization, not a duplicate.
+        # Here the sharing pair is GISTDA + THIRD (COORD-002 holds no
+        # shared path in this registry, so no other pairwise overlap exists).
+        claim_a = base_claim()  # no shared path
+        claim_b = other_lane_claim(
+            mutable_scope=["reports/gistda/**", "reports/shared.txt"]
+        )
+        third = base_claim(
+            task_id="ENV-THIRD",
+            claim_id="ENV-THIRD-C1",
+            execution_holder_id="holder-third",
+            worktree="A:/GitHub/envww-third",
+            branch="feat/third",
+            mutable_scope=["third/**", "reports/shared.txt"],
+            forbidden_scope=["scripts/**"],
+        )
+        distinct = full_shared_exception(
+            participating_claims=[
+                {"claim_id": "ENV-INT-GISTDA-CORE-001-C1", "claim_generation": 1},
+                {"claim_id": "ENV-THIRD-C1", "claim_generation": 1},
+            ],
+            integration_owner_claim_id="ENV-THIRD-C1",
+            merge_order=["ENV-INT-GISTDA-CORE-001-C1", "ENV-THIRD-C1"],
+        )
+        policy = load_policy(
+            [claim_a, claim_b, third],
+            shared_exceptions=[distinct],
+        )
+        self.assertEqual(len(policy.shared_exceptions), 1)
+
+    def test_exception_cannot_cover_broader_path(self):
+        # exact-only shared paths keep an exception from accidentally
+        # authorizing a whole subtree
+        broader = full_shared_exception(shared_paths=["reports/**"])
+        with self.assertRaises(GuardFailure) as cm:
+            self._load([broader])
+        self.assertEqual(cm.exception.reason, R.INVALID_SHARED_EXCEPTION)
+        # and a second exact path beyond the overlap is not covered for
+        # mutation by the first exception (covered scope = listed paths)
+        policy = self._load([full_shared_exception()])
+        d = evaluate_mutation(
+            policy,
+            ok_ctx(),
+            changes=[Change("modify", "reports/other.txt")],
+        )
+        self.assertFalse(d.safe_to_mutate)
+        self.assertEqual(d.reason, R.OUTSIDE_MUTABLE_SCOPE)
+
+
+class TestLockHoldingStatuses(unittest.TestCase):
+    """continuation-review P2: scope locks derive from claim lifecycle.
+
+    LOCK_HOLDING_CLAIM_STATUSES = every §4.1 state except READY (never
+    claimed), MERGED (integrated into main; scope now lives on main), and
+    CLOSED (released). STALE_CLAIM/RECOVERY_HOLD hold locks per §4.5
+    (inactivity/worker loss must not silently free scope).
+    """
+
+    def test_active_vs_active_overlap_rejected(self):
+        overlapping = other_lane_claim(mutable_scope=["scripts/**"])
+        with self.assertRaises(GuardFailure) as cm:
+            load_policy([base_claim(), overlapping])
+        self.assertEqual(cm.exception.reason, R.OWNERSHIP_CONFLICT)
+
+    def test_active_vs_recovery_hold_overlap_rejected(self):
+        held = other_lane_claim(mutable_scope=["scripts/**"], status="RECOVERY_HOLD")
+        with self.assertRaises(GuardFailure) as cm:
+            load_policy([base_claim(), held])
+        self.assertEqual(cm.exception.reason, R.OWNERSHIP_CONFLICT)
+
+    def test_active_vs_stale_claim_overlap_rejected(self):
+        # §4.5: time inactivity may classify STALE_CLAIM but MUST NOT
+        # make the scope available
+        stale = other_lane_claim(mutable_scope=["scripts/**"], status="STALE_CLAIM")
+        with self.assertRaises(GuardFailure) as cm:
+            load_policy([base_claim(), stale])
+        self.assertEqual(cm.exception.reason, R.OWNERSHIP_CONFLICT)
+
+    def test_active_vs_state_drift_overlap_rejected(self):
+        drifted = other_lane_claim(mutable_scope=["scripts/**"], status="STATE_DRIFT")
+        with self.assertRaises(GuardFailure) as cm:
+            load_policy([base_claim(), drifted])
+        self.assertEqual(cm.exception.reason, R.OWNERSHIP_CONFLICT)
+
+    def test_closed_overlap_does_not_false_collide(self):
+        # coordinator reproducer: CLOSED_OVERLAP=REJECTED is wrong — a
+        # released record must not block new ownership
+        closed = other_lane_claim(mutable_scope=["scripts/**"], status="CLOSED")
+        policy = load_policy([base_claim(), closed])
+        self.assertEqual(len(policy.claims), 2)
+
+    def test_merged_overlap_does_not_false_collide(self):
+        merged = other_lane_claim(mutable_scope=["scripts/**"], status="MERGED")
+        policy = load_policy([base_claim(), merged])
+        self.assertEqual(len(policy.claims), 2)
+
+    def test_ready_does_not_hold_lock(self):
+        ready = other_lane_claim(mutable_scope=["scripts/**"], status="READY")
+        policy = load_policy([base_claim(), ready])
+        self.assertEqual(len(policy.claims), 2)
+
+    def test_review_requested_still_holds_lock(self):
+        # mid-flight states stay exclusive — no weakening of protection
+        reviewing = other_lane_claim(mutable_scope=["scripts/**"], status="REVIEW_REQUESTED")
+        with self.assertRaises(GuardFailure) as cm:
+            load_policy([base_claim(), reviewing])
+        self.assertEqual(cm.exception.reason, R.OWNERSHIP_CONFLICT)
 
 
 if __name__ == "__main__":

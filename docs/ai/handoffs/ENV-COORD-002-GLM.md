@@ -231,3 +231,76 @@ Stop at `REVIEW_REQUESTED`. Do not merge.
   new exact head SHA; merge only on APPROVED with expected-head
   protection; then file ENV-COORD-003 (SHADOW CI integration) as a new
   claim.
+
+## Result — R3 remediation (continuation review, six blockers) / 2026-09-08
+
+- **Actual-state preflight (no chat memory):** fetched origin; PR #84 head
+  verified still `c0c7de7ebcfd11791315642e8bdb67b010fc2e1d` before work;
+  `origin/main@7d4e6b52…` unchanged; registry claim
+  `ENV-COORD-002-C1` gen 1 holder `zcode-env-coord-002-g1-primary`
+  matches this context; worktree clean (`.serena/` untracked only);
+  `SAFE_TO_MUTATE = YES` printed before first mutation. Same single
+  execution context; mutable scope unchanged (4 paths).
+- **Start HEAD:** `c0c7de7ebcfd11791315642e8bdb67b010fc2e1d`.
+- **End HEAD:** new single commit on `origin/feat/env-coord-002`
+  (self-SHA in the PR #84 head, not written into its own commit).
+- **Six repairs (continuation-review blockers):**
+  1. Admission/close atomicity: one `threading.RLock` serializes
+     state-check, id-uniqueness, high-water, insertion, and close. No
+     third ordering: admit either linearizes before close and is
+     tracked, or fails `ADMISSION_GATE_CLOSED`. PROCESS-LOCAL only —
+     cross-process serialization is a later adapter responsibility.
+  2. Single temporary integration owner: only
+     `integration_owner_claim_id` at its bound generation may mutate an
+     exception-covered shared path (`SHARED_PATH_OWNER_REQUIRED`,
+     `SHARED_OWNER_GENERATION_MISMATCH`); non-owner participants and
+     link crossings fail closed.
+  3. Full §4.4 activation preflight:
+     `activate_transferred_claim(policy, actual_context)` / complete_
+     transfer(..., actual_context) run the ordinary preflight (task,
+     claim, generation, holder, worktree, branch, base ancestry, policy
+     binding). Policy without actual context → `MISSING_ACTUAL_CONTEXT`;
+     any mismatch → deterministic reason, state stays
+     `AWAITING_AUTHORIZATION`, gate stays CLOSED, no partial activation.
+  4. Live child always undrained: `child_alive=True` blocks transfer in
+     every effect state (`TRANSFER_BLOCKED_LIVE_CHILDREN`);
+     `reconcile_effect` preserves the child flag (explicit
+     `child_alive=False` or `reconcile_child_dead()` required to drain).
+  5. Shared-owner uniqueness: same canonical path + same participating
+     claim/generation set allows at most ONE active exception record;
+     conflicting owners AND exact duplicates are rejected
+     (`INVALID_SHARED_EXCEPTION`) — duplicates are NOT idempotent
+     (chosen contract, tested).
+  6. `LOCK_HOLDING_CLAIM_STATUSES` derived from §4.1/§4.5: all states
+     except READY/MERGED/CLOSED hold scope locks (STALE_CLAIM/
+     RECOVERY_HOLD/STATE_DRIFT hold per §4.5; POSTMERGE_VERIFY holds
+     until CLOSED). Released records no longer false-collide.
+- **RED → GREEN:** RED `Ran 181 tests … FAILED (failures=8, errors=18)`
+  (26 failing = six blockers' regressions + activation-contract updates;
+  155 prior passing); GREEN `Ran 181 tests … OK`; pytest
+  `181 passed, 15 subtests passed`. Concurrency regressions include a
+  200-round Barrier admit-vs-close race and an 8-admitter sweep.
+- **All six reproducers post-repair: PASS** (recorded verbatim in the
+  WO R3 section; one-line forms: straggler → ADMISSION_GATE_CLOSED;
+  NON_OWNER_SAFE=False/SHARED_PATH_OWNER_REQUIRED; wrong-worktree
+  activation → WORKTREE_MISMATCH + AWAITING + closed gate;
+  LIVE_CHILD_AFTER_RECONCILE blocked until reconcile_child_dead;
+  DUP_SHARED_OWNER=INVALID_SHARED_EXCEPTION; CLOSED_OVERLAP=ACCEPTED
+  while active overlap stays OWNERSHIP_CONFLICT).
+- **Full relevant tests:** workflow runtimes OK; runtime check PASS;
+  split_sql all passed; ci_alert_payload 33 passed; `git diff --check`
+  exit 0; both script files compile clean.
+- **Exact changed files:** the 4 authorized claim paths only.
+- **Limitations:** gate atomicity is process-local (CPython GIL makes
+  the threaded race hard to observe without orchestration; the lock is
+  the actual repair, the tests pin the contract); no hooks/CI/server
+  policy (ENV-COORD-003+); `scope-check` remains inspection-only;
+  no central writer yet creates §7.3 records; MERGED counted as released
+  and POSTMERGE_VERIFY as lock-holding is a documented derivation
+  decision (architecture does not spell out MERGED-vs-POSTMERGE_VERIFY
+  lock semantics explicitly — flagged for reviewer confirmation, not a
+  code ambiguity).
+- **Unresolved issues:** none.
+- **Exactly ONE next safe action:** GPT-5.6 Sol re-reviews PR #84 at the
+  new exact head; merge only on APPROVED with expected-head protection;
+  then file ENV-COORD-003 (SHADOW CI integration) as a new claim.

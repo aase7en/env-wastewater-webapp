@@ -35,6 +35,7 @@ import hashlib
 import json
 import subprocess
 import sys
+import threading
 import unicodedata
 from dataclasses import dataclass
 from typing import Any, Iterable, Optional
@@ -71,6 +72,18 @@ CLAIM_STATUSES = MUTABLE_CLAIM_STATUSES + (
     "RECOVERY_HOLD",
     "OWNERSHIP_CONFLICT",
     "STATE_DRIFT",
+)
+
+# Scope locks derive from the §4.1 lifecycle: every state holds its
+# mutable-scope lock EXCEPT READY (never claimed), MERGED (integrated
+# into main — the scope now lives on main), and CLOSED (released).
+# STALE_CLAIM / RECOVERY_HOLD / STATE_DRIFT hold locks per §4.5
+# (inactivity or worker loss must not silently free scope).
+# POSTMERGE_VERIFY still holds: the lane may write verification evidence
+# until CLOSED.
+RELEASED_CLAIM_STATUSES = ("READY", "MERGED", "CLOSED")
+LOCK_HOLDING_CLAIM_STATUSES = tuple(
+    status for status in CLAIM_STATUSES if status not in RELEASED_CLAIM_STATUSES
 )
 
 TERMINAL_GOAL_RESULTS = (
@@ -154,10 +167,14 @@ class R:
     INVALID_OPERATION_OUTCOME = "INVALID_OPERATION_OUTCOME"
     TRANSFER_BLOCKED_ACTIVE_ADMISSIONS = "TRANSFER_BLOCKED_ACTIVE_ADMISSIONS"
     TRANSFER_BLOCKED_UNRESOLVED_EFFECTS = "TRANSFER_BLOCKED_UNRESOLVED_EFFECTS"
+    TRANSFER_BLOCKED_LIVE_CHILDREN = "TRANSFER_BLOCKED_LIVE_CHILDREN"
     QUIESCENCE_PRECONDITIONS_UNMET = "QUIESCENCE_PRECONDITIONS_UNMET"
     COORDINATOR_CANNOT_PUBLISH_QUIESCENCE = "COORDINATOR_CANNOT_PUBLISH_QUIESCENCE"
     TRANSFER_NOT_READY = "TRANSFER_NOT_READY"
     TRANSFER_AWAITING_AUTHORIZED_TRANSITION = "TRANSFER_AWAITING_AUTHORIZED_TRANSITION"
+    MISSING_ACTUAL_CONTEXT = "MISSING_ACTUAL_CONTEXT"
+    SHARED_PATH_OWNER_REQUIRED = "SHARED_PATH_OWNER_REQUIRED"
+    SHARED_OWNER_GENERATION_MISMATCH = "SHARED_OWNER_GENERATION_MISMATCH"
 
     # lifecycle ordering
     EVENT_CONFLICT = "EVENT_CONFLICT"
@@ -409,12 +426,19 @@ def validate_registry(registry: Any) -> dict:
         registry.get("shared_exceptions", []), claims_by_id
     )
 
-    # mutable-scope overlap is permitted ONLY as the exact authorized
-    # shared paths of a §7.3 exception; a subtree/subtree intersection is
-    # broader than any exact authorization and always conflicts
-    claim_ids = list(parsed_scopes)
-    for i, a in enumerate(claim_ids):
-        for b in claim_ids[i + 1 :]:
+    # mutable-scope overlap enforcement applies only to claims that still
+    # HOLD a scope lock (§4.1/§4.5): released records (READY/MERGED/CLOSED)
+    # must not false-collide with new ownership. Overlap is permitted ONLY
+    # as the exact authorized shared paths of a §7.3 exception; a
+    # subtree/subtree intersection is broader than any exact authorization
+    # and always conflicts.
+    lock_holding = [
+        claim_id
+        for claim_id in parsed_scopes
+        if claims_by_id[claim_id]["status"] in LOCK_HOLDING_CLAIM_STATUSES
+    ]
+    for i, a in enumerate(lock_holding):
+        for b in lock_holding[i + 1 :]:
             for expr_a in parsed_scopes[a][0]:
                 for expr_b in parsed_scopes[b][0]:
                     if not scopes_overlap(expr_a, expr_b):
@@ -448,6 +472,7 @@ def _validate_and_index_shared_exceptions(exceptions: Any, claims_by_id: dict) -
     if not isinstance(exceptions, list):
         raise GuardFailure(R.INVALID_SHARED_EXCEPTION, "shared_exceptions must be a list")
     authorized: dict[frozenset, set] = {}
+    seen_owner_scopes: set = set()
     for exc in exceptions:
         if not isinstance(exc, dict):
             raise GuardFailure(R.INVALID_SHARED_EXCEPTION, "exception must be an object")
@@ -515,6 +540,22 @@ def _validate_and_index_shared_exceptions(exceptions: Any, claims_by_id: dict) -
                         R.INVALID_SHARED_EXCEPTION,
                         f"shared path {key!r} not inside {cid} mutable scope",
                     )
+        # deterministic uniqueness: the same shared path + participating
+        # claim/generation set may carry at most ONE active exception
+        # record (one temporary owner). Exact duplicates and conflicting
+        # owners are both rejected — duplicates are NOT idempotent.
+        participant_generations = frozenset(
+            (p["claim_id"], p["claim_generation"]) for p in participants
+        )
+        for key in keys:
+            owner_scope = (key, participant_generations)
+            if owner_scope in seen_owner_scopes:
+                raise GuardFailure(
+                    R.INVALID_SHARED_EXCEPTION,
+                    f"duplicate active exception for shared path {key!r} and the same"
+                    " participant/generation set — at most one temporary owner allowed",
+                )
+            seen_owner_scopes.add(owner_scope)
         for i in range(len(participant_ids)):
             for j in range(i + 1, len(participant_ids)):
                 pair = frozenset((participant_ids[i], participant_ids[j]))
@@ -705,6 +746,14 @@ def evaluate_mutation(
             if not _scope_set_contains(mutable, path):
                 return _deny(policy, claim, R.OUTSIDE_MUTABLE_SCOPE, (f"{change.kind}:{path}",))
 
+    # pass 2.5 — §7.3 single temporary integration owner for shared paths
+    for change in change_list:
+        required = _mutable_required_endpoints(change)
+        for path in required:
+            violation = _shared_path_owner_violation(policy, claim, path)
+            if violation is not None:
+                return _deny(policy, claim, violation, (f"{change.kind}:{path}",))
+
     # pass 3 — symlink/junction re-authorization (§7.2)
     for link in links:
         result = _evaluate_link(policy, claim, mutable, forbidden, link)
@@ -740,6 +789,34 @@ def _mutable_required_endpoints(change: Change) -> list[str]:
     return _evaluated_endpoints(change)
 
 
+def _link_crossing_authorized(
+    policy: TrustedPolicy, claim: dict, resolved: str
+) -> Optional[str]:
+    """Verdict for a link resolving into another lane's protected scope.
+
+    None = authorized crossing (exact §7.3 exception covers the path AND
+    this claim is the integration owner at its bound generation); a reason
+    otherwise — SHARED_PATH_OWNER_REQUIRED for a covered non-owner, or
+    LINK_CROSSES_LANE when no exception covers the crossing at all.
+    """
+    target = case_key(resolved)
+    claim_id = claim["claim_id"]
+    for exc in policy.shared_exceptions:
+        shared_keys = {case_key(p) for p in exc["shared_paths"]}
+        if target not in shared_keys:
+            continue
+        participants = exc["participating_claims"]
+        if not any(p["claim_id"] == claim_id for p in participants):
+            continue
+        if exc["integration_owner_claim_id"] != claim_id:
+            return R.SHARED_PATH_OWNER_REQUIRED
+        owner_binding = next(p for p in participants if p["claim_id"] == claim_id)
+        if owner_binding["claim_generation"] != claim["claim_generation"]:
+            return R.SHARED_OWNER_GENERATION_MISMATCH
+        return None  # temporary owner at the bound generation
+    return R.LINK_CROSSES_LANE  # uncovered crossing stays denied
+
+
 def _evaluate_link(
     policy: TrustedPolicy,
     claim: dict,
@@ -766,30 +843,45 @@ def _evaluate_link(
             continue
         protected = policy.mutable_exprs(other) + policy.forbidden_exprs(other)
         if _scope_set_contains(protected, resolved):
-            if not _shared_exception_covers(
-                policy, claim["claim_id"], claim["claim_generation"], resolved
-            ):
-                return R.LINK_CROSSES_LANE
+            # exception-covered crossing still obeys the single-writer
+            # owner contract (§7.3); only the temporary owner passes
+            verdict = _link_crossing_authorized(policy, claim, resolved)
+            if verdict is not None:
+                return verdict
+            continue  # exact authorized crossing for the temporary owner
     return None
 
 
-def _shared_exception_covers(
-    policy: TrustedPolicy, claim_id: str, claim_generation: int, resolved: str
-) -> bool:
-    """True iff an exception lists this claim (at this exact generation)
-    as participant and the resolved path as an exact shared path."""
-    target = case_key(resolved)
+def _shared_path_owner_violation(
+    policy: TrustedPolicy, claim: dict, path: str
+) -> Optional[str]:
+    """§7.3 single temporary integration owner.
+
+    For a path covered by an active shared-file exception that lists this
+    claim as participant: only the exact `integration_owner_claim_id` at
+    its bound generation may mutate. Non-owner participants fail
+    SHARED_PATH_OWNER_REQUIRED; an owner-generation binding mismatch
+    fails SHARED_OWNER_GENERATION_MISMATCH. Returns None when the path is
+    not exception-covered for this claim (ordinary scope rules apply).
+    """
+    target = case_key(path)
+    claim_id = claim["claim_id"]
     for exc in policy.shared_exceptions:
         shared_keys = {case_key(p) for p in exc["shared_paths"]}
         if target not in shared_keys:
             continue
-        for participant in exc["participating_claims"]:
-            if (
-                participant["claim_id"] == claim_id
-                and participant["claim_generation"] == claim_generation
-            ):
-                return True
-    return False
+        participants = exc["participating_claims"]
+        if not any(p["claim_id"] == claim_id for p in participants):
+            continue  # this claim is not part of this exception
+        if exc["integration_owner_claim_id"] != claim_id:
+            return R.SHARED_PATH_OWNER_REQUIRED
+        owner_binding = next(
+            (p for p in participants if p["claim_id"] == claim_id), None
+        )
+        if owner_binding is None or owner_binding["claim_generation"] != claim["claim_generation"]:
+            return R.SHARED_OWNER_GENERATION_MISMATCH
+        return None  # this claim IS the temporary owner at the bound generation
+    return None
 
 
 # ═══════════════════════════════════════════════════════════════════════
@@ -1057,51 +1149,94 @@ class LifecycleLog:
 class AdmissionGate:
     """Atomic per-context admission gate + active-admission set.
 
-    Closing is one-way in this slice: after begin_quiesce the gate stays
-    closed for the generation (transfers move to a new runtime). An
-    admission created before close stays tracked; one attempted after
-    close fails closed.
+    admit()/close()/record_effect()/reconcile_effect() and every read
+    (active_admissions, high-water, unresolved/undrained views) share one
+    lock, so admission creation and gate closure have a deterministic
+    serialization boundary: an admission either linearizes before close
+    and is visible in the active set, or close linearizes first and the
+    admission fails ADMISSION_GATE_CLOSED — there is no third ordering.
+
+    This atomicity is PROCESS-LOCAL. Cross-process / cross-session
+    serialization is a later adapter responsibility (ENV-COORD-005+);
+    this core slice must never be presented as multi-process enforcement.
+
+    Closing is one-way per generation: after begin_quiesce the gate stays
+    closed until a transfer creates a new runtime.
+
+    Undrained invariants (§4.2B):
+    - unresolved effect  = any admission still EFFECT_UNKNOWN;
+    - undrained child    = any admission record with child_alive=True,
+      regardless of logical effect state. Transfer requires BOTH to be
+      empty.
     """
 
     def __init__(self):
         self.state = "OPEN"
+        self._lock = threading.RLock()
         self._admissions: dict[str, dict] = {}
         self._high_water = 0
 
     def admit(self, operation_id: str) -> dict:
-        if self.state != "OPEN":
-            raise GuardFailure(R.ADMISSION_GATE_CLOSED, str(operation_id))
-        if operation_id in self._admissions:
-            raise GuardFailure(R.DUPLICATE_OPERATION, str(operation_id))
-        self._high_water += 1
-        record = {
-            "operation_id": operation_id,
-            "state": ADMISSION_IN_FLIGHT,
-            "child_alive": False,
-        }
-        self._admissions[operation_id] = record
-        return dict(record)
+        with self._lock:
+            if self.state != "OPEN":
+                raise GuardFailure(R.ADMISSION_GATE_CLOSED, str(operation_id))
+            if operation_id in self._admissions:
+                raise GuardFailure(R.DUPLICATE_OPERATION, str(operation_id))
+            self._high_water += 1
+            record = {
+                "operation_id": operation_id,
+                "state": ADMISSION_IN_FLIGHT,
+                "child_alive": False,
+            }
+            self._admissions[operation_id] = record
+            return dict(record)
+
+    def close(self) -> None:
+        with self._lock:
+            self.state = "CLOSED"
 
     def record_effect(self, operation_id: str, outcome: str, child_alive: bool = False) -> None:
-        record = self._require(operation_id)
-        if outcome not in _TERMINAL_ADMISSIONS:
-            raise GuardFailure(R.INVALID_OPERATION_OUTCOME, str(outcome))
-        if record["state"] in _TERMINAL_ADMISSIONS:
-            if record["state"] == outcome and record["child_alive"] == child_alive:
-                return  # identical terminal re-record is idempotent
-            raise GuardFailure(R.EFFECT_CONFLICT, f"{operation_id}: {record['state']} → {outcome}")
-        record["state"] = outcome
-        record["child_alive"] = child_alive
+        """Record a terminal logical effect.
 
-    def reconcile_effect(self, operation_id: str, outcome: str, child_alive: bool = False) -> None:
-        """Resolve an earlier UNKNOWN effect after external reconciliation."""
-        record = self._require(operation_id)
-        if record["state"] != ADMISSION_UNKNOWN:
-            raise GuardFailure(R.EFFECT_CONFLICT, f"{operation_id} is {record['state']}, not UNKNOWN")
-        if outcome not in (ADMISSION_COMPLETE, ADMISSION_FAILED):
-            raise GuardFailure(R.INVALID_OPERATION_OUTCOME, f"reconcile to {outcome}")
-        record["state"] = outcome
-        record["child_alive"] = child_alive
+        `child_alive=True` keeps the admission undrained even in terminal
+        states — a live child blocks transfer until explicitly reconciled
+        dead.
+        """
+        with self._lock:
+            record = self._require(operation_id)
+            if outcome not in _TERMINAL_ADMISSIONS:
+                raise GuardFailure(R.INVALID_OPERATION_OUTCOME, str(outcome))
+            if record["state"] in _TERMINAL_ADMISSIONS:
+                if record["state"] == outcome and record["child_alive"] == child_alive:
+                    return  # identical terminal re-record is idempotent
+                raise GuardFailure(R.EFFECT_CONFLICT, f"{operation_id}: {record['state']} → {outcome}")
+            record["state"] = outcome
+            record["child_alive"] = child_alive
+
+    def reconcile_effect(
+        self, operation_id: str, outcome: str, child_alive: Optional[bool] = None
+    ) -> None:
+        """Resolve an earlier UNKNOWN effect after external reconciliation.
+
+        `child_alive=None` (default) preserves the recorded child state —
+        reconciling the logical effect never silently clears a live child.
+        Pass `child_alive=False` only when the child is demonstrably dead.
+        """
+        with self._lock:
+            record = self._require(operation_id)
+            if record["state"] != ADMISSION_UNKNOWN:
+                raise GuardFailure(R.EFFECT_CONFLICT, f"{operation_id} is {record['state']}, not UNKNOWN")
+            if outcome not in (ADMISSION_COMPLETE, ADMISSION_FAILED):
+                raise GuardFailure(R.INVALID_OPERATION_OUTCOME, f"reconcile to {outcome}")
+            record["state"] = outcome
+            if child_alive is not None:
+                record["child_alive"] = child_alive
+
+    def reconcile_child_dead(self, operation_id: str) -> None:
+        """Reconcile observed child/process termination (drain step)."""
+        with self._lock:
+            record = self._require(operation_id)
+            record["child_alive"] = False
 
     def _require(self, operation_id: str) -> dict:
         record = self._admissions.get(operation_id)
@@ -1111,29 +1246,34 @@ class AdmissionGate:
 
     @property
     def active_admissions(self) -> int:
-        return sum(1 for r in self._admissions.values() if r["state"] == ADMISSION_IN_FLIGHT)
+        with self._lock:
+            return sum(1 for r in self._admissions.values() if r["state"] == ADMISSION_IN_FLIGHT)
 
     @property
     def has_unresolved_effects(self) -> bool:
         """Every unreconciled EFFECT_UNKNOWN is unresolved — independently
-        of whether a child process is still alive (§4.2B). A live child is
-        an additional undrained condition, not the definition of unknown."""
-        return any(r["state"] == ADMISSION_UNKNOWN for r in self._admissions.values())
+        of whether a child process is still alive (§4.2B)."""
+        with self._lock:
+            return any(r["state"] == ADMISSION_UNKNOWN for r in self._admissions.values())
+
+    @property
+    def has_live_children(self) -> bool:
+        """ANY admission record with child_alive=True is undrained,
+        regardless of logical effect state (§4.2B transfer barrier)."""
+        with self._lock:
+            return any(r["child_alive"] for r in self._admissions.values())
 
     @property
     def unresolved_child_operations(self) -> tuple:
-        return tuple(
-            r["operation_id"]
-            for r in self._admissions.values()
-            if r["state"] == ADMISSION_UNKNOWN and r["child_alive"]
-        )
+        with self._lock:
+            return tuple(
+                r["operation_id"] for r in self._admissions.values() if r["child_alive"]
+            )
 
     @property
     def admissions_high_water(self) -> int:
-        return self._high_water
-
-    def close(self) -> None:
-        self.state = "CLOSED"
+        with self._lock:
+            return self._high_water
 
 
 class HolderRuntime:
@@ -1155,8 +1295,13 @@ class HolderRuntime:
     def record_effect(self, operation_id: str, outcome: str, child_alive: bool = False) -> None:
         self.gate.record_effect(operation_id, outcome, child_alive)
 
-    def reconcile_effect(self, operation_id: str, outcome: str, child_alive: bool = False) -> None:
+    def reconcile_effect(
+        self, operation_id: str, outcome: str, child_alive: Optional[bool] = None
+    ) -> None:
         self.gate.reconcile_effect(operation_id, outcome, child_alive)
+
+    def reconcile_child_dead(self, operation_id: str) -> None:
+        self.gate.reconcile_child_dead(operation_id)
 
     @property
     def active_admissions(self) -> int:
@@ -1165,6 +1310,10 @@ class HolderRuntime:
     @property
     def has_unresolved_effects(self) -> bool:
         return self.gate.has_unresolved_effects
+
+    @property
+    def has_live_children(self) -> bool:
+        return self.gate.has_live_children
 
     @property
     def admissions_high_water(self) -> int:
@@ -1243,6 +1392,9 @@ class TransferBarrier:
         if self.runtime.has_unresolved_effects or unresolved_external_operations:
             self.transfer_block_reason = R.TRANSFER_BLOCKED_UNRESOLVED_EFFECTS
             return None
+        if self.runtime.has_live_children:
+            self.transfer_block_reason = R.TRANSFER_BLOCKED_LIVE_CHILDREN
+            return None
 
         self._attestations[attestation_id] = payload
         self.state = "TRANSFER_READY"
@@ -1261,7 +1413,9 @@ class TransferBarrier:
             "transfer_block_reason": self.transfer_block_reason,
         }
 
-    def complete_transfer(self, new_holder_id: str, authorized_policy=None) -> Decision:
+    def complete_transfer(
+        self, new_holder_id: str, authorized_policy=None, actual_context: Optional[dict] = None
+    ) -> Decision:
         """Execute the worker-side handoff; NEVER self-authorize g+1.
 
         §4.2B ordering is TRANSFER_READY(g) → authorized claim transition →
@@ -1269,8 +1423,10 @@ class TransferBarrier:
         proposed new generation/holder and returns a NON-authorizing
         result (TRANSFER_AWAITING_AUTHORIZED_TRANSITION) with the new
         holder's gate closed. Mutation authority for g+1 exists only after
-        `activate_transferred_claim` revalidates a trusted authoritative
-        policy for the new generation/holder (§4.4).
+        `activate_transferred_claim` runs the COMPLETE §4.4 preflight —
+        trusted policy identity alone never authorizes; an
+        `authorized_policy` without `actual_context` fails closed with
+        MISSING_ACTUAL_CONTEXT.
         """
         if self.state == "QUIESCING" and not self._attestations:
             raise GuardFailure(R.QUIESCENCE_PRECONDITIONS_UNMET, "quiescing without an attestation")
@@ -1291,7 +1447,12 @@ class TransferBarrier:
         self.transfer_block_reason = None
 
         if authorized_policy is not None:
-            return self.activate_transferred_claim(authorized_policy)
+            if actual_context is None:
+                raise GuardFailure(
+                    R.MISSING_ACTUAL_CONTEXT,
+                    "activation requires the actual execution context (§4.4)",
+                )
+            return self.activate_transferred_claim(authorized_policy, actual_context)
         return Decision(
             safe_to_mutate=False,
             reason=R.TRANSFER_AWAITING_AUTHORIZED_TRANSITION,
@@ -1303,39 +1464,24 @@ class TransferBarrier:
             details=("transfer_executed", attestation["attestation_id"]),
         )
 
-    def activate_transferred_claim(self, policy: "TrustedPolicy") -> Decision:
-        """Activate g+1 only against a trusted authoritative-main record.
+    def activate_transferred_claim(self, policy: "TrustedPolicy", actual_context: dict) -> Decision:
+        """Activate g+1 only via the COMPLETE §4.4 preflight.
 
-        The supplied policy must come from latest fetched origin/main and
-        contain this claim at the transferred generation with the new
-        holder in a mutable status. On mismatch the barrier stays in
-        AWAITING_AUTHORIZATION — no authority is granted or invented.
+        The supplied policy must come from latest fetched origin/main.
+        The full ordinary preflight runs over (task, claim, generation,
+        holder, worktree, branch, base ancestry, trusted policy binding):
+        on any mismatch the barrier stays AWAITING_AUTHORIZATION with the
+        gate CLOSED and the deterministic preflight reason is raised — no
+        partial activation, no authority from policy identity alone.
         """
         if self.state != "AWAITING_AUTHORIZATION":
             raise GuardFailure(R.TRANSFER_NOT_READY, f"state is {self.state}")
-        claim = policy.claim_by_id(self.claim_id)
-        if claim is None:
-            raise GuardFailure(R.WRONG_CLAIM, self.claim_id)
-        if claim["claim_generation"] != self.claim_generation:
-            raise GuardFailure(
-                R.STALE_CLAIM_GENERATION,
-                f"policy has generation {claim['claim_generation']}, transfer expects {self.claim_generation}",
-            )
-        if claim["execution_holder_id"] != self.execution_holder_id:
-            raise GuardFailure(R.WRONG_EXECUTION_HOLDER, claim["execution_holder_id"])
-        if claim["status"] not in MUTABLE_CLAIM_STATUSES:
-            raise GuardFailure(R.CLAIM_STATUS_NOT_MUTABLE, claim["status"])
+        decision = preflight(policy, actual_context)
+        if not decision.safe_to_mutate:
+            raise GuardFailure(decision.reason or R.QUIESCENCE_PRECONDITIONS_UNMET, "transferred-activation preflight failed")
         self.state = "ACTIVE"
         self.runtime = HolderRuntime(self.execution_holder_id)  # gate opens
-        return Decision(
-            safe_to_mutate=True,
-            reason=None,
-            policy_revision=policy.policy_revision,
-            registry_hash=policy.registry_hash,
-            claim_id=self.claim_id,
-            claim_generation=self.claim_generation,
-            execution_holder_id=self.execution_holder_id,
-        )
+        return decision
 
 
 # ═══════════════════════════════════════════════════════════════════════

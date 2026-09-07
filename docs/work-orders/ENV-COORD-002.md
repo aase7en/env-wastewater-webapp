@@ -281,6 +281,44 @@ regression-first tests.
 - Other suites re-verified green; `git diff --check` PASS; `status` CLI
   still reads the live registry (`7d4e6b52`, `BOOTSTRAP_CONTROL`).
 
+### Remediation evidence — R3 (continuation review, six blockers) / 2026-09-08
+
+Re-verified from actual state: PR #84 head was still `c0c7de7…` with all
+six continuation-review blockers open; same claim/generation/holder
+preflight re-run (`origin/main@7d4e6b52…` unchanged).
+
+- RED: `python scripts/test_env_coordination_guard.py` →
+  `Ran 181 tests … FAILED (failures=8, errors=18)` — 26 failing (the six
+  blockers' regressions + activation tests updated to the §4.4 context
+  contract), 155 prior tests passing unchanged.
+- GREEN: `Ran 181 tests … OK`; pytest → `181 passed, 15 subtests passed`.
+- Repairs: (1) `AdmissionGate` admit/close/reconcile + all reads behind
+  one `threading.RLock` — admission-vs-close has a deterministic
+  serialization boundary (process-local; adapters own cross-process);
+  (2) §7.3 single temporary integration owner enforced for mutation AND
+  link crossing (`SHARED_PATH_OWNER_REQUIRED` /
+  `SHARED_OWNER_GENERATION_MISMATCH`); (3)
+  `activate_transferred_claim(policy, actual_context)` runs the complete
+  §4.4 preflight (task/claim/generation/holder/worktree/branch/base/
+  policy binding) — policy identity alone raises `MISSING_ACTUAL_CONTEXT`
+  or the preflight reason and never opens the gate; (4) live child
+  (`child_alive=True`) is undrained in every effect state
+  (`TRANSFER_BLOCKED_LIVE_CHILDREN`), `reconcile_effect` preserves the
+  child flag unless explicitly reconciled dead; (5) duplicate/conflicting
+  shared-file exception records for the same path + participant/
+  generation set are rejected (duplicates are NOT idempotent); (6)
+  `LOCK_HOLDING_CLAIM_STATUSES` = all §4.1 states except READY/MERGED/
+  CLOSED — overlap enforcement applies only to lock-holding claims.
+- All six reviewer reproducers re-run post-repair: PASS (straggler admit
+  after close fails closed; non-owner shared write denied; wrong-worktree
+  activation stays AWAITING with closed gate; live child after reconcile
+  blocks until reconciled dead; DUP_SHARED_OWNER →
+  INVALID_SHARED_EXCEPTION; CLOSED overlap accepted while active overlap
+  still conflicts).
+- Deterministic threaded concurrency regressions added (Barrier/Event
+  choreography, 200-round admit-vs-close race, 8-admitter sweep).
+- Adjacent suites green; `git diff --check` PASS.
+
 ## Stop condition
 
 Implementation owner stops at `REVIEW_REQUESTED`; must not self-merge and must
