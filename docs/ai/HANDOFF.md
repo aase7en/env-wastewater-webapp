@@ -1,5 +1,22 @@
 # HANDOFF
 
+## ENV-COORD-001 architecture checkpoint - 2026-09-07
+
+- Status: `REVIEW_REQUESTED` (R2 remediation); owner/coordinator GPT-5.6 Sol; worktree `A:\\GitHub\\envww-coord-001`; branch `docs/env-coord-001`; base `origin/main@a8fa47137d640a479d3dbc88f6e8c198d266c7f0`.
+- R0 exact reviewed SHA `708bac20b03aa2d6c1ef3b4afc2c50a7c6df1c33` received independent adversarial verdict `CHANGES_REQUIRED`; `ENV-COORD-002` is explicitly blocked.
+- Six blocking gaps: trusted coordinator/policy authority, atomic claim transition + generation fencing, trusted server CI/current-main freshness, deterministic scope semantics, durable checkpoint/replay + external-operation uncertainty, and bootstrap/broken-guard repair admission.
+- R1 remediation now defines authoritative-current-main-only policy inputs; candidate Work Orders cannot widen authority; claim ID/generation fencing; expected policy revision/registry hash transitions; `RECOVERY_HOLD`; durable event ordering/publication; operation intent/outcome journal; deterministic exact-path/subtree grammar; trusted CI evidence tuple + current-main revalidation; BOOTSTRAP/SHADOW/ENFORCING/HARDENED stages; and CONTROL_MAINTENANCE / human-only BREAK_GLASS repair.
+- Remote server reality independently rechecked: GitHub API reports `main` is not protected and repository rulesets are empty. Current coordination state is `ENFORCEMENT_NOT_ACTIVE`; existing `scripts`/`notify` checks are not coordination enforcement.
+- Precondition history: `SDLC-OPT-001` PR #81 was independently reviewed at exact head `d9b5ea0bb7b67f6e41f9328174dd220df7d1767d` and merged as `a8fa47137d640a479d3dbc88f6e8c198d266c7f0` before this lane.
+- Primary checkout `A:\\GitHub\\env-wastewater-webapp` remains stale/dirty/protected and was not cleaned/reset/stashed. This lane uses the isolated clean worktree.
+- Remote ownership reconciliation remains: PR #80 owns GISTDA adapter scope; PR #75 owns Building repair decision scope; neither overlaps this architecture lane.
+- Architecture contract: `docs/ai/architecture/ENV-COORDINATION-GUARD.md`.
+- Work Order: `docs/work-orders/ENV-COORD-001.md`.
+- Lane handoff: `docs/ai/handoffs/ENV-COORD-001-SOL.md`.
+- No frontend/schema/RLS/provider/hook/CI/runtime mutation is authorized or performed in this architecture slice.
+- R1 exact SHA `92bf8803f73ca950dd4d73a964ad740caecf236a` received fresh Astra `CHANGES_REQUIRED`: one P1 remained because an already-admitted mutation could theoretically resume after generation transfer. R2 now adds exclusive `execution_holder_id`, mutation admission tracking, `QUIESCING`/drain barrier, `QUIESCENCE_ATTESTATION`, no-hot-transfer fallback, first-goal `GENESIS`, resolved-link re-authorization, and the requested chaos scenarios. The duplicate historical ENV-OPS heading is also repaired.
+- One next safe action: verify the R2 docs-only remediation, freeze/push a new exact SHA to PR #82, then request fresh independent adversarial review. Do not activate `ENV-COORD-002`.
+
 ## ENV-OPS-001 contract checkpoint - 2026-09-03
 
 - Status: `MERGE_READY`; branch `docs/env-ops-001-contract`, base `origin/main@b39964498f585c1f1b10c01f5477ad6042d498e2`.

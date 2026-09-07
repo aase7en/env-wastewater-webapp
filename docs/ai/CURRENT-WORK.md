@@ -1,6 +1,6 @@
 # CURRENT WORK
 
-Status: READY
+Status: DESIGNING
 
 Allowed statuses:
 
@@ -25,7 +25,22 @@ Allowed statuses:
 
 > `CURRENT-WORK.md` is the authoritative task definition. Agents must not silently expand task scope.
 
-## Current execution state - 2026-09-02
+## Active frontier - 2026-09-07
+
+- **`ENV-COORD-001` / REVIEW_REQUESTED (R2 REMEDIATION) / CLAIMED BY GPT-5.6 SOL (COORDINATOR)** — High-risk multi-agent control architecture is now the project-control priority before new North-Star production lanes are distributed. Worktree `A:\\GitHub\\envww-coord-001`, branch `docs/env-coord-001`, base `origin/main@a8fa47137d640a479d3dbc88f6e8c198d266c7f0`. Mutable scope is limited to the coordination architecture Work Order, architecture contract, lane handoff, and bounded central `CURRENT-WORK/HANDOFF` reconciliation. No hook/CI/runtime/frontend/schema mutation is authorized in this slice. Independent adversarial architecture review is required before `ENV-COORD-002`.
+- **`ENV-INT-GISTDA-CORE-001` / REVIEW_REQUESTED / PR #80** — GLM-5.3 MAX implementation remains isolated under `frontend/src/lib/env-int/gistda/**` + its WO/lane handoff. Keep that scope no-touch while coordination architecture proceeds.
+- **`ENV-BUILDING-REPAIR-001` / DECISION_REQUIRED / PR #75** — Building/repair remains no-touch until the C1/C2 product contract is resolved.
+- **`ENV-OPS-001A` / READY BUT DISPATCH-PAUSED** — contract is merged and implementation-ready, but new production dispatch is intentionally paused until the coordination guard architecture is independently reviewed and the implementation rollout gate is defined.
+- **`SDLC-OPT-001` / CLOSED** — PR #81 exact head `d9b5ea0bb7b67f6e41f9328174dd220df7d1767d` was independently reviewed and merged as `a8fa47137d640a479d3dbc88f6e8c198d266c7f0` on 2026-09-07.
+
+Current coordination authority:
+- central claim allocation/reassignment/release: GPT-5.6 Sol coordinator for `ENV-COORD-001`;
+- architecture contract: `docs/ai/architecture/ENV-COORDINATION-GUARD.md`;
+- Work Order: `docs/work-orders/ENV-COORD-001.md`;
+- lane checkpoint: `docs/ai/handoffs/ENV-COORD-001-SOL.md`;
+- one next safe action: finish R2 transfer-ordering verification, freeze/push a new exact SHA to PR #82, then obtain fresh independent adversarial review. `ENV-COORD-002` remains blocked.
+
+## Prior execution state - 2026-09-02
 
 - **CLOSED `UX-FLOW-P001` / PR #77** - R2 exact candidate `c60d3af50b6d5a9317efa3fdbae953233ee61b8a` closed the chlorine-topology review finding by making chlorine dosing a distinct structural `chemical` edge with unavailable quantity. Fresh detached GPT-5.6 Sol Standards + Spec/UX/Data-honesty review returned APPROVED; exact-head GitHub test/E2E succeeded. Expected-head merge produced `eaf7fe4469868400e913d2690aee8bd5cdff06d4`; exact-main test `33669384513`, E2E `33669384543`, and Pages/deploy/smoke `33669384574` all SUCCESS. Deployed root-to-client 390px Flow probe with mocked REST/no real writes rendered exact evidence + chlorine and was stable at document/body/viewport 390/390/390 for 3 repeated runs after font settling; one earlier first-frame 395px transient was reproduced as test-timing/font-settling evidence, not stable Flow overflow. No fabricated environmental quantity, schema/RLS/provider/Building/Carbon/Twin mutation, or real environmental write occurred.
 - **CLOSED `ENV-INT-PROVENANCE-001` / PR #72** - GLM-5.3 MAX R2 head `ffbb740f6a5dd4ebf174150b130db11bc83625bc` closed all five prior review findings: stale is freshness not availability; loading is reachable; unavailable+value is rejected; structural guards fail closed; impossible wall-clock timestamps throw. GPT-5.6 Sol fresh exact-SHA review APPROVED; focused core 47/47 and `tsc -b` passed; exact-head test/E2E succeeded. Expected-head merge produced `b6256616216bc0b657fbcf15ff9a5dabde0f321a`; exact-main test/E2E/Pages succeeded. The next GLM-fit candidate is a bounded GISTDA core adapter/contract slice with no public redistribution/UI and no real-network CI, subject to a fresh ownership gate.
