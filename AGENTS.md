@@ -20,24 +20,29 @@ Before reading the SSoT files for non-trivial work, verify the active worktree i
 
 A stale local checkout must never silently become the project memory just because an agent was activated there.
 
-Before non-trivial product, architecture, UI, Digital Twin, data, or integration work, read in this order:
+Use **progressive context** rather than loading the full governance/history stack for every task.
 
-1. `docs/ai/PROJECT-BRIEF.md`
-2. `docs/ai/PROJECT-OPERATING-MAP.md` — unified runtime/SSoT/graph/roadmap entry point
-3. `docs/ai/CURRENT-WORK.md`
-4. `docs/ai/HANDOFF.md`
-5. `docs/ai/ENV-ENGINEERING-LOOP.md` — binding goal-first engineering/review/merge process
-6. `docs/ai/DEFECT-MEMORY.md` — reusable verified failure patterns; apply relevant prevention rules
-7. `docs/ai/design/ENV-EXPERIENCE-MASTER-PLAN.md`
-8. `docs/ai/design/ENV-PRODUCT-EXPERIENCE-GOAL.md` — user-confirmed dashboard prototype north star + mobile-first operational data-entry + responsive/interactive rules
-9. `docs/agent-handoff/AI_COLLABORATION_PROTOCOL.md` — the multi-agent ownership/review rules; mandatory whenever more than one agent (GLM / GPT / Codex / others) is active on this repo
-10. the relevant domain folder under `docs/ai/` (for example `digital-twin/`, `environmental-intelligence/`, or `tooling/`)
+### Level 1 — always for non-trivial repository work
+
+1. `docs/ai/PROJECT-OPERATING-MAP.md` — routing/index and risk-based path.
+2. `docs/ai/CURRENT-WORK.md` — read the current active/frontier section needed to establish authorization and ownership; do not load closed history by default.
+3. the exact active Work Order/spec/contract for the task, when one exists.
+4. `docs/ai/HANDOFF.md` or a lane handoff only when resuming inherited/partial work or when the active Work Order points to it.
+
+### Level 2+ — load only because the task requires it
+
+- **Product/architecture/roadmap:** `docs/ai/PROJECT-BRIEF.md`, then only the relevant architecture/graph/roadmap/ADR sections.
+- **Implementation/debug/review/release:** the relevant sections of `docs/ai/ENV-ENGINEERING-LOOP.md`; apply only relevant reusable rules from `docs/ai/DEFECT-MEMORY.md`.
+- **Product/UI/visual/Digital Twin:** `docs/ai/design/ENV-EXPERIENCE-MASTER-PLAN.md` and `docs/ai/design/ENV-PRODUCT-EXPERIENCE-GOAL.md`, plus the relevant design/domain contract.
+- **Multi-agent execution:** `docs/agent-handoff/AI_COLLABORATION_PROTOCOL.md` plus the exact lane/ownership contract.
+- **Domain work:** only the relevant folder under `docs/ai/` and relevant A-Wiki ENV knowledge; do not browse unrelated domain history.
+- **Deep history/audit:** old handoffs, closed Work Orders, review evidence, and historical queue text only when current evidence is insufficient or an audit explicitly requires them.
 
 For any wastewater-process, process-flow, Digital Twin wastewater, sludge, chlorination, bypass, or simulation work, also read `docs/ai/digital-twin/11-UTHAI-ACTIVATED-SLUDGE-PROCESS-KNOWLEDGE.md` before designing or editing behavior. It is the durable user-confirmed process-topology reference for Uthai Hospital's Activated Sludge system.
 
-The Experience Master Plan is mandatory for all product/visual work. It explicitly preserves the existing Digital Twin as the spatial/visual core while adding Operations, Analytics, Flows, Hazard Map, Resource Explorer, and System/Data Network as complementary intelligence surfaces.
+The Experience Master Plan remains mandatory for product/visual work, but it is not permission to start unrelated work. `CURRENT-WORK.md` plus the active Work Order/explicit user instruction remains the execution authority.
 
-An active `CURRENT-WORK.md` remains the execution scope. Do not treat the master plan as permission to start unrelated work.
+**Context rule:** read the smallest authoritative slice that proves the next decision/action. Expand context only when a dependency, conflict, risk, or missing fact requires it.
 
 ## Binding rules for every agent
 

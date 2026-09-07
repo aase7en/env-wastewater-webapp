@@ -1,6 +1,6 @@
 # UTH[AI]-ENV — Goal-First Engineering Loop
 
-Last updated: 2026-08-27
+Last updated: 2026-09-05
 Status: BINDING ENGINEERING PROCESS SSoT
 
 ## 1. Core rule
@@ -70,6 +70,55 @@ Use three nested loops, not one giant session:
 1. **Program loop** — goal → roadmap → slices → milestone audit → next goal.
 2. **Work-order loop** — one vertical slice through merge/verification.
 3. **Debug loop** — repro → isolate → test hypotheses → fix → regression.
+
+## 3A. Choose the shortest safe path
+
+The canonical loop above describes all available gates. **Do not mechanically run every gate for every task.** Select process depth from blast radius, reversibility, data/security exposure, and verification needs.
+
+### FAST PATH
+
+Use for low-risk, isolated, reversible work such as typo/copy/docs corrections, small styling/config changes, or an isolated low-blast-radius bug.
+
+`UNDERSTAND → CHANGE → TARGETED TEST/VERIFY → COMPLETE`
+
+- Skip heavy shaping/spec/ticket ceremony when one fresh context can safely finish the task.
+- A Work Order becomes useful when the task crosses agent/session boundaries, needs ownership isolation, or has non-obvious acceptance criteria.
+- Deterministic verification can replace independent human/model review for truly low-risk changes.
+- Run only checks that can detect plausible failures; docs-only changes do not need full frontend E2E.
+
+### STANDARD PATH
+
+Use for ordinary features, bugs, and refactors.
+
+`REQUIREMENT → DESIGN AT STABLE SEAM → IMPLEMENT → TARGETED + RELEVANT FULL TESTS → INDEPENDENT REVIEW WHEN MATERIAL → MERGE`
+
+Prefer a bounded Work Order for multi-context or multi-agent work. Keep the implementation slice coherent and reviewable.
+
+### HIGH-RISK PATH
+
+Use when a change touches auth/RLS, PHI/provider boundaries, schema/data migration, destructive operations, infrastructure/release controls, shared high-blast-radius shell/state, or core business/data semantics.
+
+`IMPACT + ROLLBACK → DESIGN REVIEW → IMPLEMENT → AUTOMATED + ADVERSARIAL/E2E VERIFY → INDEPENDENT REVIEW → REGRESSION/ROLLBACK VERIFY → RELEASE/POST-VERIFY`
+
+High-risk work cannot trade away security, privacy, data integrity, rollback, or realistic verification for speed.
+
+### Escalation rule
+
+Start with the lightest path justified by evidence. Escalate when the task reveals wider blast radius, hidden coupling, security/data risk, ambiguous architecture, or a failure that ordinary tests cannot explain. Do not start at HIGH-RISK merely because the full loop exists.
+
+## 3B. Definition of Ready / Done
+
+STANDARD/HIGH-RISK implementation is **READY** when the problem, expected behavior, bounded scope/non-goals, acceptance criteria, material dependencies/ownership, risk level, and verification seam are sufficiently known. Safely infer low-consequence details and record assumptions rather than interviewing the user for retrievable facts.
+
+A slice is **DONE** only when the gates applicable to its selected path are proven: behavior/contract satisfied, deterministic checks passed, relevant regression/E2E/a11y/security/data-honesty checks passed, required independent review passed, release/deploy state verified where applicable, durable SSoT updated where future work needs it, and no critical blocker remains.
+
+## 3C. WIP and parallel frontier
+
+Prefer **Finish > Start**. Execute P0/P1 critical path before lower-value backlog.
+
+Parallel mutation comes only from independent READY tasks. Each mutable lane needs a bounded owner, branch/worktree, allowed files/surfaces, dependencies, acceptance evidence, and reconciliation plan. Shared SSoT/hotspot files serialize unless explicit temporary ownership is recorded.
+
+Live PR/branch/runtime state must be reconciled with `CURRENT-WORK.md`. A material mismatch is `STATE_DRIFT`; stop only the affected lane, reconcile the frontier, and continue other independent safe work.
 
 ---
 

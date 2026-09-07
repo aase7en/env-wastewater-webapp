@@ -1,6 +1,6 @@
 # UTH[AI]-ENV — Project Operating Map
 
-Last updated: 2026-08-27
+Last updated: 2026-09-05
 Status: PROJECT OPERATING SSoT INDEX
 
 ## Purpose
@@ -8,18 +8,86 @@ Status: PROJECT OPERATING SSoT INDEX
 This is the shortest durable entry point for a new agent or engineer joining `env-wastewater-webapp`.
 It does not duplicate detailed domain documentation. It tells the reader where truth lives, how the project is organized, what is active, and how to resume work without chat history.
 
-## Resume order
+## Resume order — progressive context
 
-1. `AGENTS.md` — binding repository rules and freshness gate.
-2. `docs/ai/PROJECT-BRIEF.md` — stable product/technology intent.
-3. `docs/ai/CURRENT-WORK.md` — authoritative active scope.
-4. `docs/ai/HANDOFF.md` — exact resumable execution state.
-5. `docs/ai/ENV-ENGINEERING-LOOP.md` — goal-first execution/review/release process.
-6. `docs/ai/DEFECT-MEMORY.md` — verified reusable prevention rules.
-7. `docs/ai/architecture/SYSTEM-ARCHITECTURE.md` — current runtime/component architecture.
-8. `docs/ai/graph/PROJECT-GRAPH.md` — dependency, ownership, risk, evidence, and data-lineage graph.
-9. `docs/ai/ROADMAP.md` — unified milestone sequence and critical path.
-10. Product/domain documents relevant to the active work order.
+Do not read the entire project history to solve a bounded task.
+
+### Level 1 — establish authority and the execution frontier
+
+1. `AGENTS.md` — repository rules + freshness gate.
+2. this Operating Map — route the task and choose the process depth.
+3. the active/frontier portion of `docs/ai/CURRENT-WORK.md`.
+4. the exact Work Order/spec/contract for the task.
+5. a relevant `HANDOFF.md` checkpoint only when resuming inherited or partial work.
+
+### Level 2–5 — expand only as required
+
+- **L2 current task:** relevant acceptance criteria, dependency/ownership state, live PR/branch evidence.
+- **L3 architecture/domain:** only the architecture, ADR, graph, roadmap, design, domain, A-Wiki, or defect-memory sections that govern the task.
+- **L4 implementation:** only relevant source/tests/schema/workflows.
+- **L5 deep history:** closed Work Orders, old handoffs, review evidence, and historical reports only for ambiguity, regression archaeology, audit, or conflict resolution.
+
+If live repository/PR state disagrees materially with canonical task status, classify it as **STATE_DRIFT**. Reconcile the active frontier before relying on either side; do not silently treat an old status line or an agent claim as current truth.
+
+## Risk-based delivery selector
+
+The canonical engineering loop is a **superset**, not a checklist that every task must execute.
+
+### FAST PATH — low-risk, isolated, reversible
+
+Typical: typo/copy/docs correction, small styling/config change, isolated low-blast-radius bug.
+
+`UNDERSTAND → CHANGE → TARGETED TEST/VERIFY → COMPLETE`
+
+- no heavyweight spec or deep audit unless the task crosses a session/agent boundary or exposes a hidden contract;
+- automated/deterministic verification may be sufficient;
+- do not run full Playwright solely for a docs-only change.
+
+### STANDARD PATH — normal feature / bug / refactor
+
+`REQUIREMENT → DESIGN AT STABLE SEAM → IMPLEMENT → TARGETED + RELEVANT FULL TESTS → REVIEW → MERGE`
+
+Use a durable Work Order for multi-context/multi-agent work. Independent review is required for material implementation changes.
+
+### HIGH-RISK PATH — high blast radius or hard-to-reverse
+
+Typical: auth/RLS, PHI/provider boundary, schema/data migration, destructive operation, infrastructure/release control, shared app shell, core business/data semantics.
+
+`IMPACT + ROLLBACK → DESIGN REVIEW → IMPLEMENT → AUTOMATED + ADVERSARIAL/E2E VERIFY → INDEPENDENT REVIEW → REGRESSION/ROLLBACK VERIFY → RELEASE/POST-VERIFY`
+
+Never downgrade security/data-integrity verification merely to save time.
+
+## Definition of Ready
+
+For STANDARD/HIGH-RISK implementation, establish at least:
+
+- problem / expected behavior;
+- bounded scope + non-goals;
+- acceptance criteria;
+- material dependencies/ownership;
+- risk level and verification seam.
+
+Safe assumptions may be recorded and used; do not block on retrievable or low-consequence details.
+
+## Definition of Done
+
+Apply only the gates justified by the path/risk:
+
+- requested behavior/contract satisfied;
+- deterministic verification passed;
+- relevant regression/E2E/a11y/security/data-honesty checks passed;
+- independent review passed when required;
+- exact diff/SHA and release state verified where applicable;
+- durable SSoT updated only where future work needs it;
+- no critical blocker; next safe action is explicit if work remains.
+
+Code existing or an agent saying DONE is not sufficient evidence.
+
+## WIP / execution frontier
+
+Finish before starting. Prioritize P0 → P1 → P2 → P3, then choose the highest-value unblocked work.
+
+Parallel mutation is allowed only for independent READY lanes with explicit owner, branch/worktree, file scope, dependencies, and reconciliation plan. Shared SSoT/hotspot files serialize unless temporary ownership is explicit.
 
 ## Current product destination
 
