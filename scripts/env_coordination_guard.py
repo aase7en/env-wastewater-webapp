@@ -1,0 +1,1350 @@
+#!/usr/bin/env python3
+"""ENV-COORD-002 — deterministic Coordination Guard core + registry parser.
+
+Implements the pure decision core of
+docs/ai/architecture/ENV-COORDINATION-GUARD.md (§3–§5, §7) for the
+BOOTSTRAP_CONTROL slice ordered by docs/work-orders/ENV-COORD-002.md:
+
+- parse/validate the canonical COORDINATION-REGISTRY v1 block from trusted
+  origin/main text (§3 Tier B, §7.1);
+- claim fencing: claim id / generation / single execution holder (§4.2,
+  §4.2A) with every decision bound to policy_revision + registry_hash (§3.1);
+- canonical cross-platform paths and the exact-file/subtree scope grammar
+  with forbidden-scope precedence (§7.2);
+- goal lifecycle ordering with GENESIS, stable event ids, monotonic
+  sequences, idempotent replay (§5);
+- admission gate + QUIESCING → QUIESCENCE_ATTESTATION → TRANSFER_READY
+  barrier (§4.2B), where the current execution holder owns quiescence
+  publication and the coordinator can validate but never fabricate it;
+- fail-closed reason codes instead of ambiguous booleans (§7.1).
+
+Bootstrap truth (§11.6): this core never reports ENFORCING. Enforcement
+mode comes only from the trusted registry, and ENFORCING/HARDENED are
+downgraded to ENFORCEMENT_NOT_ACTIVE unless the caller proves server-side
+enforcement (a verification this slice does not perform).
+
+No hooks, no GitHub ruleset changes, no network, no production mutation.
+Git interrogation stays behind run_git() so every decision function here is
+pure and deterministic. Python 3.11+, standard library only.
+"""
+from __future__ import annotations
+
+import argparse
+import copy
+import hashlib
+import json
+import subprocess
+import sys
+import unicodedata
+from dataclasses import dataclass
+from typing import Any, Iterable, Optional
+
+CURRENT_WORK_PATH = "docs/ai/CURRENT-WORK.md"
+
+ADMISSION_IN_FLIGHT = "IN_FLIGHT"
+ADMISSION_COMPLETE = "EFFECT_COMPLETE"
+ADMISSION_FAILED = "EFFECT_FAILED"
+ADMISSION_UNKNOWN = "EFFECT_UNKNOWN"
+_TERMINAL_ADMISSIONS = (ADMISSION_COMPLETE, ADMISSION_FAILED, ADMISSION_UNKNOWN)
+
+REGISTRY_VERSION = 1
+ROLLBACK_MODES = ("BOOTSTRAP_CONTROL", "SHADOW")
+VERIFIED_MODES = ("ENFORCING", "HARDENED")
+ENFORCEMENT_MODES = ROLLBACK_MODES + VERIFIED_MODES
+ENFORCEMENT_NOT_ACTIVE = "ENFORCEMENT_NOT_ACTIVE"
+
+MUTABLE_CLAIM_STATUSES = ("CLAIMED", "ACTIVE")
+CLAIM_STATUSES = MUTABLE_CLAIM_STATUSES + (
+    "READY",
+    "IMPLEMENTING",
+    "REVIEW_REQUESTED",
+    "APPROVED",
+    "CHANGES_REQUIRED",
+    "MERGE_READY",
+    "MERGED",
+    "POSTMERGE_VERIFY",
+    "CLOSED",
+    "BLOCKED",
+    "DECISION_REQUIRED",
+    "HUMAN_ACTION_REQUIRED",
+    "STALE_CLAIM",
+    "RECOVERY_HOLD",
+    "OWNERSHIP_CONFLICT",
+    "STATE_DRIFT",
+)
+
+TERMINAL_GOAL_RESULTS = (
+    "COMPLETED_VERIFIED",
+    "COMPLETED_UNVERIFIED",
+    "PARTIAL",
+    "BLOCKED",
+    "DECISION_REQUIRED",
+    "FAILED",
+    "PAUSED",
+)
+LIFECYCLE_EVENT_TYPES = (
+    "GOAL_START",
+    "CHECKPOINT",
+    "OPERATION_INTENT",
+    "OPERATION_OUTCOME",
+    "GOAL_END",
+)
+OPERATION_OUTCOMES = ("SUCCEEDED", "FAILED", "UNKNOWN")
+GENESIS = "GENESIS"
+
+CHANGES_ADD = ("add", "untracked")
+CHANGES_SRC_ONLY = ("modify", "delete")
+CHANGES_BOTH = ("rename", "move")
+CHANGE_KINDS = CHANGES_ADD + CHANGES_SRC_ONLY + CHANGES_BOTH + ("copy",)
+
+_WILDCARD_CHARS = set("*?[]{}!")
+
+
+class R:
+    """Fail-closed reason codes (§7.1: reasons, not ambiguous booleans)."""
+
+    # registry parsing / validation
+    REGISTRY_NOT_FOUND = "REGISTRY_NOT_FOUND"
+    AMBIGUOUS_REGISTRY = "AMBIGUOUS_REGISTRY"
+    REGISTRY_MALFORMED_JSON = "REGISTRY_MALFORMED_JSON"
+    UNSUPPORTED_REGISTRY_VERSION = "UNSUPPORTED_REGISTRY_VERSION"
+    INVALID_ENFORCEMENT_MODE = "INVALID_ENFORCEMENT_MODE"
+    CLAIMS_EMPTY = "CLAIMS_EMPTY"
+    MISSING_CLAIM_FIELD = "MISSING_CLAIM_FIELD"
+    INVALID_CLAIM_FIELD = "INVALID_CLAIM_FIELD"
+    DUPLICATE_CLAIM = "DUPLICATE_CLAIM"
+    OWNERSHIP_CONFLICT = "OWNERSHIP_CONFLICT"
+    INVALID_SHARED_EXCEPTION = "INVALID_SHARED_EXCEPTION"
+
+    # path / scope grammar
+    INVALID_PATH = "INVALID_PATH"
+    INVALID_SCOPE_EXPRESSION = "INVALID_SCOPE_EXPRESSION"
+    UNKNOWN_CHANGE_KIND = "UNKNOWN_CHANGE_KIND"
+
+    # preflight / fencing
+    UNKNOWN_TASK = "UNKNOWN_TASK"
+    WRONG_CLAIM = "WRONG_CLAIM"
+    STALE_CLAIM_GENERATION = "STALE_CLAIM_GENERATION"
+    WRONG_EXECUTION_HOLDER = "WRONG_EXECUTION_HOLDER"
+    CLAIM_STATUS_NOT_MUTABLE = "CLAIM_STATUS_NOT_MUTABLE"
+    WORKTREE_MISMATCH = "WORKTREE_MISMATCH"
+    BRANCH_MISMATCH = "BRANCH_MISMATCH"
+    BASE_NOT_ANCESTOR = "BASE_NOT_ANCESTOR"
+
+    # mutation scope evaluation
+    FORBIDDEN_PATH = "FORBIDDEN_PATH"
+    OUTSIDE_MUTABLE_SCOPE = "OUTSIDE_MUTABLE_SCOPE"
+    LINK_TARGET_OUTSIDE_ROOT = "LINK_TARGET_OUTSIDE_ROOT"
+    LINK_CROSSES_LANE = "LINK_CROSSES_LANE"
+
+    # authority precedence / control transitions
+    POLICY_CONTRADICTION = "POLICY_CONTRADICTION"
+    STALE_POLICY_REVISION = "STALE_POLICY_REVISION"
+    STALE_REGISTRY_HASH = "STALE_REGISTRY_HASH"
+    INVALID_GENERATION_TRANSITION = "INVALID_GENERATION_TRANSITION"
+
+    # enforcement truth
+    SERVER_ENFORCEMENT_UNVERIFIED = "SERVER_ENFORCEMENT_UNVERIFIED"
+
+    # admissions / transfer
+    ADMISSION_GATE_CLOSED = "ADMISSION_GATE_CLOSED"
+    DUPLICATE_OPERATION = "DUPLICATE_OPERATION"
+    UNKNOWN_OPERATION = "UNKNOWN_OPERATION"
+    EFFECT_CONFLICT = "EFFECT_CONFLICT"
+    INVALID_OPERATION_OUTCOME = "INVALID_OPERATION_OUTCOME"
+    TRANSFER_BLOCKED_ACTIVE_ADMISSIONS = "TRANSFER_BLOCKED_ACTIVE_ADMISSIONS"
+    TRANSFER_BLOCKED_UNRESOLVED_EFFECTS = "TRANSFER_BLOCKED_UNRESOLVED_EFFECTS"
+    QUIESCENCE_PRECONDITIONS_UNMET = "QUIESCENCE_PRECONDITIONS_UNMET"
+    COORDINATOR_CANNOT_PUBLISH_QUIESCENCE = "COORDINATOR_CANNOT_PUBLISH_QUIESCENCE"
+    TRANSFER_NOT_READY = "TRANSFER_NOT_READY"
+
+    # lifecycle ordering
+    EVENT_CONFLICT = "EVENT_CONFLICT"
+    OUT_OF_ORDER_EVENT = "OUT_OF_ORDER_EVENT"
+    UNTERMINATED_PREDECESSOR = "UNTERMINATED_PREDECESSOR"
+    INVALID_GOAL_RESULT = "INVALID_GOAL_RESULT"
+    GOAL_END_NOT_PUBLISHED = "GOAL_END_NOT_PUBLISHED"
+    INVALID_EVENT_TYPE = "INVALID_EVENT_TYPE"
+
+    # CLI plumbing
+    GIT_UNAVAILABLE = "GIT_UNAVAILABLE"
+    IO_ERROR = "IO_ERROR"
+
+
+class GuardFailure(Exception):
+    """Deterministic fail-closed rejection carrying a reason code."""
+
+    def __init__(self, reason: str, detail: str = ""):
+        super().__init__(f"{reason}: {detail}" if detail else reason)
+        self.reason = reason
+        self.detail = detail
+
+
+# ═══════════════════════════════════════════════════════════════════════
+# §7.2 canonical paths + scope grammar
+# ═══════════════════════════════════════════════════════════════════════
+def canonicalize_path(raw: str) -> str:
+    """Repo-root-relative canonical path (§7.2 rules 1–4).
+
+    Separators become '/', text is NFC-normalized, and absolute paths,
+    drive prefixes, NUL, '.', '..' and empty segments are rejected.
+    """
+    if not isinstance(raw, str) or not raw:
+        raise GuardFailure(R.INVALID_PATH, f"not a non-empty string: {raw!r}")
+    if "\x00" in raw:
+        raise GuardFailure(R.INVALID_PATH, "NUL byte in path")
+    unified = raw.replace("\\", "/")
+    if unified.startswith("/"):
+        raise GuardFailure(R.INVALID_PATH, f"absolute path: {raw!r}")
+    if len(unified) >= 2 and unified[1] == ":":
+        raise GuardFailure(R.INVALID_PATH, f"drive prefix: {raw!r}")
+    normalized = unicodedata.normalize("NFC", unified)
+    segments = normalized.split("/")
+    for segment in segments:
+        if segment == "":
+            raise GuardFailure(R.INVALID_PATH, f"empty path segment: {raw!r}")
+        if segment in (".", ".."):
+            raise GuardFailure(R.INVALID_PATH, f"relative segment: {raw!r}")
+    return normalized
+
+
+def case_key(path: str) -> str:
+    """Case-folded canonical key — the only key used for comparisons."""
+    return canonicalize_path(path).casefold()
+
+
+@dataclass(frozen=True)
+class ScopeExpr:
+    kind: str  # 'exact' | 'subtree'
+    raw: str
+    path: str  # canonical file path, or subtree directory prefix
+    key: str  # casefold of path
+
+    def contains(self, path: str) -> bool:
+        target = case_key(path)
+        if self.kind == "exact":
+            return target == self.key
+        return target.startswith(self.key + "/")
+
+
+def parse_scope_expr(expr: str) -> ScopeExpr:
+    """Only exact files and dir/** subtrees are grammar (§7.2)."""
+    if not isinstance(expr, str) or not expr:
+        raise GuardFailure(R.INVALID_SCOPE_EXPRESSION, f"empty expression: {expr!r}")
+    if expr.endswith("/**"):
+        prefix = expr[: -len("/**")]
+        if prefix in ("", "/") or any(ch in _WILDCARD_CHARS for ch in prefix):
+            raise GuardFailure(R.INVALID_SCOPE_EXPRESSION, f"bad subtree: {expr!r}")
+        canonical = canonicalize_path(prefix)
+        if any(ch in _WILDCARD_CHARS for ch in canonical):
+            raise GuardFailure(R.INVALID_SCOPE_EXPRESSION, f"wildcard in subtree: {expr!r}")
+        return ScopeExpr("subtree", expr, canonical, canonical.casefold())
+    if any(ch in _WILDCARD_CHARS for ch in expr):
+        raise GuardFailure(R.INVALID_SCOPE_EXPRESSION, f"wildcard not allowed: {expr!r}")
+    canonical = canonicalize_path(expr)
+    return ScopeExpr("exact", expr, canonical, canonical.casefold())
+
+
+def scope_contains(expr: ScopeExpr, path: str) -> bool:
+    return expr.contains(path)
+
+
+def scopes_overlap(a: ScopeExpr, b: ScopeExpr) -> bool:
+    """Deterministic overlap (§7.2): exact/exact equality, exact/subtree
+    membership, subtree/subtree prefix containment either way."""
+    if a.kind == "exact" and b.kind == "exact":
+        return a.key == b.key
+    if a.kind == "exact" and b.kind == "subtree":
+        return b.contains(a.path)
+    if a.kind == "subtree" and b.kind == "exact":
+        return a.contains(b.path)
+    return a.key == b.key or a.key.startswith(b.key + "/") or b.key.startswith(a.key + "/")
+
+
+def _scope_set_contains(exprs: Iterable[ScopeExpr], path: str) -> bool:
+    return any(expr.contains(path) for expr in exprs)
+
+
+# ═══════════════════════════════════════════════════════════════════════
+# §3 Tier B registry parsing + §3.1 trusted policy binding
+# ═══════════════════════════════════════════════════════════════════════
+REQUIRED_CLAIM_FIELDS = (
+    "task_id",
+    "claim_id",
+    "claim_generation",
+    "status",
+    "owner_role",
+    "execution_holder_id",
+    "worktree",
+    "branch",
+    "base_sha",
+    "mutable_scope",
+    "forbidden_scope",
+    "work_order_path",
+    "handoff_path",
+    "review_owner",
+    "dependencies",
+    "last_checkpoint_pointer",
+    "one_next_safe_action",
+)
+
+REQUIRED_SHARED_EXCEPTION_FIELDS = (
+    "shared_path",
+    "participating_claim_ids",
+    "integration_owner",
+)
+
+
+def extract_registry_block(text: str) -> tuple[str, int]:
+    """Find THE fenced json block that parses to a coordination registry.
+
+    Other json fences in CURRENT-WORK.md are ignored; more than one
+    registry block is ambiguous and fails closed.
+    """
+    candidates: list[tuple[str, int]] = []
+    search_from = 0
+    while True:
+        start = text.find("```json", search_from)
+        if start == -1:
+            break
+        content_start = start + len("```json")
+        end = text.find("```", content_start)
+        if end == -1:
+            break
+        block = text[content_start:end].strip()
+        if "coordination_registry" in block:
+            try:
+                parsed = json.loads(block)
+            except (json.JSONDecodeError, ValueError):
+                raise GuardFailure(R.REGISTRY_MALFORMED_JSON, "registry fence is not valid JSON")
+            if isinstance(parsed, dict) and "coordination_registry" in parsed:
+                candidates.append((block, start))
+        search_from = end + 3
+    if not candidates:
+        raise GuardFailure(R.REGISTRY_NOT_FOUND, "no coordination registry block")
+    if len(candidates) > 1:
+        raise GuardFailure(R.AMBIGUOUS_REGISTRY, f"{len(candidates)} registry blocks")
+    return candidates[0]
+
+
+def registry_hash(block: str) -> str:
+    """SHA-256 of the exact canonical block text (§3.1 registry_hash)."""
+    return hashlib.sha256(block.encode("utf-8")).hexdigest()
+
+
+def _require_str(claim: dict, name: str) -> None:
+    value = claim.get(name)
+    if not isinstance(value, str) or not value:
+        raise GuardFailure(R.INVALID_CLAIM_FIELD, f"{name} must be a non-empty string")
+
+
+def validate_registry(registry: Any) -> dict:
+    """Validate the parsed coordination_registry object; return a deep copy.
+
+    Raises GuardFailure with a specific reason for every malformed,
+    duplicated or ambiguous shape. Duplicate claim ids are duplicates; two
+    claims on one task, or any mutable-scope overlap between active claims,
+    is an ownership conflict.
+    """
+    if not isinstance(registry, dict):
+        raise GuardFailure(R.REGISTRY_MALFORMED_JSON, "registry must be an object")
+    registry = copy.deepcopy(registry)
+
+    version = registry.get("version")
+    if version != REGISTRY_VERSION:
+        raise GuardFailure(R.UNSUPPORTED_REGISTRY_VERSION, f"version {version!r}")
+    mode = registry.get("enforcement_mode")
+    if mode not in ENFORCEMENT_MODES:
+        raise GuardFailure(R.INVALID_ENFORCEMENT_MODE, f"{mode!r}")
+    if not isinstance(registry.get("expected_policy_revision"), str):
+        raise GuardFailure(R.INVALID_CLAIM_FIELD, "expected_policy_revision must be a string")
+
+    raw_claims = registry.get("claims")
+    if not isinstance(raw_claims, list) or not raw_claims:
+        raise GuardFailure(R.CLAIMS_EMPTY, "claims must be a non-empty list")
+
+    seen_claim_ids: set[str] = set()
+    seen_task_ids: set[str] = set()
+    parsed_scopes: dict[str, tuple[list[ScopeExpr], list[ScopeExpr]]] = {}
+    for claim in raw_claims:
+        if not isinstance(claim, dict):
+            raise GuardFailure(R.INVALID_CLAIM_FIELD, "claim must be an object")
+        for required in REQUIRED_CLAIM_FIELDS:
+            if required not in claim:
+                raise GuardFailure(R.MISSING_CLAIM_FIELD, required)
+        _require_str(claim, "task_id")
+        _require_str(claim, "claim_id")
+        _require_str(claim, "owner_role")
+        _require_str(claim, "execution_holder_id")
+        _require_str(claim, "worktree")
+        _require_str(claim, "branch")
+        _require_str(claim, "base_sha")
+        _require_str(claim, "work_order_path")
+        _require_str(claim, "handoff_path")
+        _require_str(claim, "review_owner")
+        _require_str(claim, "last_checkpoint_pointer")
+        _require_str(claim, "one_next_safe_action")
+        generation = claim.get("claim_generation")
+        if isinstance(generation, bool) or not isinstance(generation, int) or generation < 1:
+            raise GuardFailure(R.INVALID_CLAIM_FIELD, f"claim_generation must be int >= 1: {generation!r}")
+        if claim.get("status") not in CLAIM_STATUSES:
+            raise GuardFailure(R.INVALID_CLAIM_FIELD, f"unknown status {claim.get('status')!r}")
+        if claim["claim_id"] in seen_claim_ids:
+            raise GuardFailure(R.DUPLICATE_CLAIM, claim["claim_id"])
+        if claim["task_id"] in seen_task_ids:
+            raise GuardFailure(R.OWNERSHIP_CONFLICT, f"task claimed twice: {claim['task_id']}")
+        seen_claim_ids.add(claim["claim_id"])
+        seen_task_ids.add(claim["task_id"])
+        mutable = _parse_scope_list(claim.get("mutable_scope"), "mutable_scope")
+        forbidden = _parse_scope_list(claim.get("forbidden_scope"), "forbidden_scope")
+        parsed_scopes[claim["claim_id"]] = (mutable, forbidden)
+
+    # two active mutable scopes may never overlap (no false-independent lanes)
+    claim_ids = list(parsed_scopes)
+    for i, a in enumerate(claim_ids):
+        for b in claim_ids[i + 1 :]:
+            for expr_a in parsed_scopes[a][0]:
+                for expr_b in parsed_scopes[b][0]:
+                    if scopes_overlap(expr_a, expr_b):
+                        raise GuardFailure(
+                            R.OWNERSHIP_CONFLICT,
+                            f"{a} mutable {expr_a.raw!r} overlaps {b} mutable {expr_b.raw!r}",
+                        )
+
+    raw_exceptions = registry.get("shared_exceptions", [])
+    if not isinstance(raw_exceptions, list):
+        raise GuardFailure(R.INVALID_SHARED_EXCEPTION, "shared_exceptions must be a list")
+    for exc in raw_exceptions:
+        if not isinstance(exc, dict):
+            raise GuardFailure(R.INVALID_SHARED_EXCEPTION, "exception must be an object")
+        for required in REQUIRED_SHARED_EXCEPTION_FIELDS:
+            if required not in exc:
+                raise GuardFailure(R.INVALID_SHARED_EXCEPTION, f"missing {required}")
+        shared = parse_scope_expr(exc["shared_path"])
+        if shared.kind != "exact":
+            raise GuardFailure(R.INVALID_SHARED_EXCEPTION, "shared path must be exact")
+        participants = exc["participating_claim_ids"]
+        if not isinstance(participants, list) or not participants:
+            raise GuardFailure(R.INVALID_SHARED_EXCEPTION, "participating_claim_ids must be non-empty")
+        for claim_id in participants:
+            if claim_id not in seen_claim_ids:
+                raise GuardFailure(R.INVALID_SHARED_EXCEPTION, f"unknown participant {claim_id}")
+    return registry
+
+
+def _parse_scope_list(value: Any, field: str) -> list[ScopeExpr]:
+    if not isinstance(value, list) or not value:
+        raise GuardFailure(R.INVALID_CLAIM_FIELD, f"{field} must be a non-empty list")
+    return [parse_scope_expr(expr) for expr in value]
+
+
+@dataclass(frozen=True)
+class TrustedPolicy:
+    """Trusted authorization inputs, bound to one origin/main revision."""
+
+    policy_revision: str
+    registry_hash: str
+    enforcement_mode: str
+    expected_policy_revision: str
+    claims: tuple[dict, ...]
+    shared_exceptions: tuple[dict, ...]
+    raw_registry: dict
+    raw_block: str
+
+    def claim_by_task(self, task_id: str) -> Optional[dict]:
+        for claim in self.claims:
+            if claim.get("task_id") == task_id:
+                return claim
+        return None
+
+    def claim_by_id(self, claim_id: str) -> Optional[dict]:
+        for claim in self.claims:
+            if claim.get("claim_id") == claim_id:
+                return claim
+        return None
+
+    def mutable_exprs(self, claim: dict) -> list[ScopeExpr]:
+        return [parse_scope_expr(e) for e in claim["mutable_scope"]]
+
+    def forbidden_exprs(self, claim: dict) -> list[ScopeExpr]:
+        return [parse_scope_expr(e) for e in claim["forbidden_scope"]]
+
+
+def load_trusted_policy(text: str, policy_revision: str) -> TrustedPolicy:
+    """Parse + validate the registry inside trusted origin/main text."""
+    if not isinstance(policy_revision, str) or not policy_revision:
+        raise GuardFailure(R.INVALID_CLAIM_FIELD, "policy_revision must be a non-empty string")
+    block, _ = extract_registry_block(text)
+    parsed = json.loads(block)
+    registry = validate_registry(parsed["coordination_registry"])
+    return TrustedPolicy(
+        policy_revision=policy_revision,
+        registry_hash=registry_hash(block),
+        enforcement_mode=registry["enforcement_mode"],
+        expected_policy_revision=registry["expected_policy_revision"],
+        claims=tuple(registry["claims"]),
+        shared_exceptions=tuple(registry.get("shared_exceptions", [])),
+        raw_registry=registry,
+        raw_block=block,
+    )
+
+
+# ═══════════════════════════════════════════════════════════════════════
+# §4.4 preflight + §7.2 mutation scope evaluation
+# ═══════════════════════════════════════════════════════════════════════
+@dataclass(frozen=True)
+class Decision:
+    safe_to_mutate: bool
+    reason: Optional[str]
+    policy_revision: str
+    registry_hash: str
+    claim_id: str
+    claim_generation: int
+    execution_holder_id: str
+    details: tuple = ()
+
+    def to_dict(self) -> dict:
+        return {
+            "safe_to_mutate": self.safe_to_mutate,
+            "reason": self.reason,
+            "policy_revision": self.policy_revision,
+            "registry_hash": self.registry_hash,
+            "claim_id": self.claim_id,
+            "claim_generation": self.claim_generation,
+            "execution_holder_id": self.execution_holder_id,
+            "details": list(self.details),
+        }
+
+
+@dataclass(frozen=True)
+class Change:
+    kind: str
+    source: str
+    destination: Optional[str] = None
+
+
+@dataclass(frozen=True)
+class LinkRequest:
+    link_path: str
+    resolved_repo_path: Optional[str]  # None => resolves outside worktree root
+    inside_root: bool
+
+
+def _deny(policy: TrustedPolicy, claim: Optional[dict], reason: str, details=()) -> Decision:
+    return Decision(
+        safe_to_mutate=False,
+        reason=reason,
+        policy_revision=policy.policy_revision,
+        registry_hash=policy.registry_hash,
+        claim_id=claim.get("claim_id", "") if claim else "",
+        claim_generation=claim.get("claim_generation", 0) if claim else 0,
+        execution_holder_id=claim.get("execution_holder_id", "") if claim else "",
+        details=tuple(details),
+    )
+
+
+def preflight(policy: TrustedPolicy, ctx: dict) -> Decision:
+    """§4.4 claim activation checks over trusted policy + actual context."""
+    claim = policy.claim_by_task(ctx.get("task_id", ""))
+    if claim is None:
+        return _deny(policy, None, R.UNKNOWN_TASK)
+    if ctx.get("claim_id") != claim["claim_id"]:
+        return _deny(policy, claim, R.WRONG_CLAIM)
+    if claim["status"] not in MUTABLE_CLAIM_STATUSES:
+        return _deny(policy, claim, R.CLAIM_STATUS_NOT_MUTABLE)
+    if ctx.get("claim_generation") != claim["claim_generation"]:
+        return _deny(policy, claim, R.STALE_CLAIM_GENERATION)
+    if ctx.get("execution_holder_id") != claim["execution_holder_id"]:
+        return _deny(policy, claim, R.WRONG_EXECUTION_HOLDER)
+    if _normalize_worktree(ctx.get("worktree", "")) != _normalize_worktree(claim["worktree"]):
+        return _deny(policy, claim, R.WORKTREE_MISMATCH)
+    if ctx.get("branch") != claim["branch"]:
+        return _deny(policy, claim, R.BRANCH_MISMATCH)
+    if not ctx.get("base_ancestor_of_head", False):
+        return _deny(policy, claim, R.BASE_NOT_ANCESTOR)
+    return Decision(
+        safe_to_mutate=True,
+        reason=None,
+        policy_revision=policy.policy_revision,
+        registry_hash=policy.registry_hash,
+        claim_id=claim["claim_id"],
+        claim_generation=claim["claim_generation"],
+        execution_holder_id=claim["execution_holder_id"],
+    )
+
+
+def _normalize_worktree(path: str) -> str:
+    return path.replace("\\", "/").rstrip("/").casefold()
+
+
+def evaluate_mutation(
+    policy: TrustedPolicy,
+    ctx: dict,
+    changes: Iterable[Change],
+    links: Iterable[LinkRequest] = (),
+) -> Decision:
+    """Preflight + deterministic changed-file/link scope evaluation.
+
+    Forbidden scope wins over mutable scope in every ordering. Add checks
+    the destination; delete the source; rename/move both endpoints; copy
+    requires the destination mutable and the source not forbidden.
+    """
+    decision = preflight(policy, ctx)
+    if not decision.safe_to_mutate:
+        return decision
+    claim = policy.claim_by_task(ctx["task_id"])
+    mutable = policy.mutable_exprs(claim)
+    forbidden = policy.forbidden_exprs(claim)
+
+    change_list = list(changes)
+    for change in change_list:
+        if change.kind not in CHANGE_KINDS:
+            raise GuardFailure(R.UNKNOWN_CHANGE_KIND, change.kind)
+
+    # pass 1 — forbidden precedence across every evaluated endpoint
+    for change in change_list:
+        endpoints = _evaluated_endpoints(change)
+        for path in endpoints:
+            if _scope_set_contains(forbidden, path):
+                return _deny(policy, claim, R.FORBIDDEN_PATH, (f"{change.kind}:{path}",))
+
+    # pass 2 — every mutation-requiring endpoint must be inside mutable scope
+    for change in change_list:
+        required = _mutable_required_endpoints(change)
+        for path in required:
+            if not _scope_set_contains(mutable, path):
+                return _deny(policy, claim, R.OUTSIDE_MUTABLE_SCOPE, (f"{change.kind}:{path}",))
+
+    # pass 3 — symlink/junction re-authorization (§7.2)
+    for link in links:
+        result = _evaluate_link(policy, claim, mutable, forbidden, link)
+        if result is not None:
+            return _deny(policy, claim, result, (f"link:{link.link_path}",))
+
+    return Decision(
+        safe_to_mutate=True,
+        reason=None,
+        policy_revision=policy.policy_revision,
+        registry_hash=policy.registry_hash,
+        claim_id=claim["claim_id"],
+        claim_generation=claim["claim_generation"],
+        execution_holder_id=claim["execution_holder_id"],
+        details=tuple(f"{c.kind}:{c.source}" for c in change_list),
+    )
+
+
+def _evaluated_endpoints(change: Change) -> list[str]:
+    if change.kind in CHANGES_ADD:
+        return [change.destination or change.source]
+    if change.kind in CHANGES_SRC_ONLY:
+        return [change.source]
+    if change.kind in CHANGES_BOTH:
+        return [change.source, change.destination or ""]
+    # copy: source read policy + destination mutable policy
+    return [change.source, change.destination or ""]
+
+
+def _mutable_required_endpoints(change: Change) -> list[str]:
+    if change.kind == "copy":
+        return [change.destination or ""]
+    return _evaluated_endpoints(change)
+
+
+def _evaluate_link(
+    policy: TrustedPolicy,
+    claim: dict,
+    mutable: list[ScopeExpr],
+    forbidden: list[ScopeExpr],
+    link: LinkRequest,
+) -> Optional[str]:
+    """§7.2 symlink re-authorization + §7.3 shared-file exception.
+
+    Order: outside-root → own forbidden (always wins) → shared-file
+    exception (exact path + participant waives scope) → own mutable
+    required → every other lane's protected (mutable ∪ forbidden) scope.
+    """
+    if not link.inside_root or link.resolved_repo_path is None:
+        return R.LINK_TARGET_OUTSIDE_ROOT
+    resolved = link.resolved_repo_path
+    if _scope_set_contains(forbidden, resolved):
+        return R.FORBIDDEN_PATH
+    if _shared_exception_covers(policy, claim["claim_id"], resolved):
+        return None
+    if not _scope_set_contains(mutable, resolved):
+        return R.OUTSIDE_MUTABLE_SCOPE
+    for other in policy.claims:
+        if other["claim_id"] == claim["claim_id"]:
+            continue
+        protected = policy.mutable_exprs(other) + policy.forbidden_exprs(other)
+        if _scope_set_contains(protected, resolved):
+            return R.LINK_CROSSES_LANE
+    return None
+
+
+def _shared_exception_covers(policy: TrustedPolicy, claim_id: str, resolved: str) -> bool:
+    target_key = case_key(resolved)
+    for exc in policy.shared_exceptions:
+        try:
+            shared = parse_scope_expr(exc["shared_path"])
+        except GuardFailure:
+            return False
+        if shared.key == target_key and claim_id in exc["participating_claim_ids"]:
+            return True
+    return False
+
+
+# ═══════════════════════════════════════════════════════════════════════
+# §3.2 candidate Work Order precedence
+# ═══════════════════════════════════════════════════════════════════════
+@dataclass(frozen=True)
+class CandidateScopeResult:
+    allowed: bool
+    reason: Optional[str]
+    effective_scope: tuple
+
+
+def evaluate_candidate_work_order(
+    policy: TrustedPolicy, claim_id: str, candidate_scope: Iterable[str]
+) -> CandidateScopeResult:
+    """A worker-editable Work Order may document or narrow — never widen.
+
+    The effective mutable scope is always the trusted claim record; a
+    broader candidate declaration is a policy contradiction, not a grant.
+    """
+    claim = policy.claim_by_id(claim_id)
+    if claim is None:
+        return CandidateScopeResult(False, R.WRONG_CLAIM, ())
+    trusted = policy.mutable_exprs(claim)
+    effective = tuple(claim["mutable_scope"])
+    for expr in candidate_scope:
+        candidate = parse_scope_expr(expr)
+        if candidate.kind == "exact":
+            covered = any(t.contains(candidate.path) for t in trusted)
+        else:
+            # a candidate subtree is covered only by an equal-or-outer
+            # trusted subtree — mere overlap would widen the lane
+            covered = any(
+                t.kind == "subtree" and (candidate.key == t.key or candidate.key.startswith(t.key + "/"))
+                for t in trusted
+            )
+        if not covered:
+            return CandidateScopeResult(False, R.POLICY_CONTRADICTION, effective)
+    return CandidateScopeResult(True, None, effective)
+
+
+# ═══════════════════════════════════════════════════════════════════════
+# §4.3 serialized control transitions
+# ═══════════════════════════════════════════════════════════════════════
+@dataclass(frozen=True)
+class TransitionValidation:
+    valid: bool
+    reason: Optional[str]
+
+
+def evaluate_control_transition(policy: TrustedPolicy, proposal: dict) -> TransitionValidation:
+    """Optimistic-concurrency validation of a control-transition proposal.
+
+    The proposal must carry the expected policy revision/registry hash it
+    was drafted against; a proposal from a stale revision fails closed
+    instead of winning a second integration from the same revision.
+    """
+    if proposal.get("expected_policy_revision") != policy.policy_revision:
+        return TransitionValidation(False, R.STALE_POLICY_REVISION)
+    if proposal.get("expected_registry_hash") != policy.registry_hash:
+        return TransitionValidation(False, R.STALE_REGISTRY_HASH)
+
+    proposed_scope = [
+        parse_scope_expr(expr) for expr in proposal.get("proposed_mutable_scope", [])
+    ]
+    task_id = proposal.get("task_id", "")
+    existing = policy.claim_by_task(task_id)
+    for other in policy.claims:
+        if existing is not None and other["claim_id"] == existing["claim_id"]:
+            continue  # a reassignment may keep its own lane
+        for candidate in proposed_scope:
+            if any(scopes_overlap(candidate, expr) for expr in policy.mutable_exprs(other)):
+                return TransitionValidation(False, R.OWNERSHIP_CONFLICT)
+
+    proposed_generation = proposal.get("proposed_claim_generation")
+    if existing is None:
+        if proposal.get("expected_claim_generation") is not None or proposed_generation != 1:
+            return TransitionValidation(False, R.INVALID_GENERATION_TRANSITION)
+    else:
+        if proposal.get("expected_claim_generation") != existing["claim_generation"]:
+            return TransitionValidation(False, R.STALE_CLAIM_GENERATION)
+        if proposed_generation != existing["claim_generation"] + 1:
+            return TransitionValidation(False, R.INVALID_GENERATION_TRANSITION)
+    return TransitionValidation(True, None)
+
+
+# ═══════════════════════════════════════════════════════════════════════
+# §11.6 enforcement truth
+# ═══════════════════════════════════════════════════════════════════════
+@dataclass(frozen=True)
+class ModeDecision:
+    mode: str
+    reason: Optional[str]
+
+
+def effective_enforcement_mode(registry_mode: str, server_enforcement_verified: bool) -> ModeDecision:
+    """ENFORCING/HARDENED are claims about the server, not about code.
+
+    Without verified server enforcement they downgrade to
+    ENFORCEMENT_NOT_ACTIVE — the guard never reports ENFORCING on its own
+    existence (§11.6, §12).
+    """
+    if registry_mode not in ENFORCEMENT_MODES:
+        raise GuardFailure(R.INVALID_ENFORCEMENT_MODE, f"{registry_mode!r}")
+    if registry_mode in VERIFIED_MODES and not server_enforcement_verified:
+        return ModeDecision(ENFORCEMENT_NOT_ACTIVE, R.SERVER_ENFORCEMENT_UNVERIFIED)
+    return ModeDecision(registry_mode, None)
+
+
+# ═══════════════════════════════════════════════════════════════════════
+# §5 goal lifecycle
+# ═══════════════════════════════════════════════════════════════════════
+@dataclass(frozen=True)
+class LifecycleEvent:
+    task_id: str
+    claim_id: str
+    claim_generation: int
+    goal_id: str
+    event_type: str
+    event_seq: int
+    event_id: str
+    previous_event_id: str
+    terminal_result: Optional[str] = None
+    operation_id: Optional[str] = None
+    operation_outcome: Optional[str] = None
+    payload: Optional[dict] = None
+    published: bool = True
+
+
+class LifecycleLog:
+    """Ordered, idempotent lifecycle replay for one claim generation.
+
+    Validation order per event: type validity → claim/generation binding →
+    duplicate event id (idempotent or conflict) → strictly increasing
+    sequence → exact previous-event link → type-specific semantics. A
+    GOAL_END only terminates when durably published; a CHECKPOINT never
+    replaces an active goal.
+    """
+
+    def __init__(self, claim_id: str, claim_generation: int):
+        self.claim_id = claim_id
+        self.claim_generation = claim_generation
+        self.events: list[LifecycleEvent] = []
+        self._by_id: dict[str, LifecycleEvent] = {}
+        self._active_goal: Optional[str] = None
+        self._terminated_goals: set[str] = set()
+        self._operations: dict[str, dict] = {}
+        self.head_event_id: Optional[str] = None
+
+    # ── state ──
+    @property
+    def active_goal_id(self) -> Optional[str]:
+        return self._active_goal
+
+    @property
+    def has_unresolved_external_operations(self) -> bool:
+        """True while any OPERATION_INTENT lacks an outcome or is UNKNOWN."""
+        return any(op["outcome"] is None or op["outcome"] == "UNKNOWN" for op in self._operations.values())
+
+    # ── replay ──
+    def apply(self, event: LifecycleEvent) -> tuple[str, LifecycleEvent]:
+        if event.event_type not in LIFECYCLE_EVENT_TYPES:
+            raise GuardFailure(R.INVALID_EVENT_TYPE, event.event_type)
+        if event.claim_id != self.claim_id:
+            raise GuardFailure(R.WRONG_CLAIM, f"{event.claim_id} != {self.claim_id}")
+        if event.claim_generation != self.claim_generation:
+            raise GuardFailure(
+                R.STALE_CLAIM_GENERATION,
+                f"event generation {event.claim_generation} != log generation {self.claim_generation}",
+            )
+
+        existing = self._by_id.get(event.event_id)
+        if existing is not None:
+            if existing == event:
+                return "idempotent_noop", existing
+            raise GuardFailure(R.EVENT_CONFLICT, f"{event.event_id} replayed with different payload")
+
+        if self.events and event.event_seq <= self.events[-1].event_seq:
+            raise GuardFailure(
+                R.OUT_OF_ORDER_EVENT,
+                f"seq {event.event_seq} not greater than {self.events[-1].event_seq}",
+            )
+
+        if not self.events:
+            if event.previous_event_id != GENESIS:
+                raise GuardFailure(R.OUT_OF_ORDER_EVENT, f"first event must reference {GENESIS}")
+        elif event.previous_event_id != self.head_event_id:
+            raise GuardFailure(
+                R.OUT_OF_ORDER_EVENT,
+                f"previous {event.previous_event_id!r} is not the durable head {self.head_event_id!r}",
+            )
+
+        if event.event_type == "GOAL_START":
+            if self._active_goal is not None:
+                raise GuardFailure(R.UNTERMINATED_PREDECESSOR, f"goal {self._active_goal} has no GOAL_END")
+            self._active_goal = event.goal_id
+        elif event.event_type == "GOAL_END":
+            if event.terminal_result not in TERMINAL_GOAL_RESULTS:
+                raise GuardFailure(R.INVALID_GOAL_RESULT, f"{event.terminal_result!r}")
+            if not event.published:
+                raise GuardFailure(R.GOAL_END_NOT_PUBLISHED, "Goal-End requires durable publication (§5.2)")
+            if self._active_goal != event.goal_id:
+                raise GuardFailure(R.OUT_OF_ORDER_EVENT, f"no active goal {event.goal_id}")
+            self._active_goal = None
+            self._terminated_goals.add(event.goal_id)
+        elif event.event_type == "CHECKPOINT":
+            if self._active_goal is None:
+                raise GuardFailure(R.OUT_OF_ORDER_EVENT, "checkpoint without an active goal")
+        elif event.event_type == "OPERATION_INTENT":
+            if self._active_goal is None:
+                raise GuardFailure(R.OUT_OF_ORDER_EVENT, "operation intent without an active goal")
+            if event.operation_id in self._operations:
+                raise GuardFailure(R.EVENT_CONFLICT, f"duplicate operation {event.operation_id}")
+            self._operations[event.operation_id] = {"intent": event, "outcome": None}
+        elif event.event_type == "OPERATION_OUTCOME":
+            operation = self._operations.get(event.operation_id)
+            if operation is None:
+                raise GuardFailure(R.UNKNOWN_OPERATION, str(event.operation_id))
+            if event.operation_outcome not in OPERATION_OUTCOMES:
+                raise GuardFailure(R.INVALID_OPERATION_OUTCOME, str(event.operation_outcome))
+            if operation["outcome"] is not None:
+                raise GuardFailure(R.EVENT_CONFLICT, f"operation {event.operation_id} already terminal")
+            operation["outcome"] = event.operation_outcome
+
+        self.events.append(event)
+        self._by_id[event.event_id] = event
+        self.head_event_id = event.event_id
+        return "applied", event
+
+
+# ═══════════════════════════════════════════════════════════════════════
+# §4.2A admission gate
+# ═══════════════════════════════════════════════════════════════════════
+class AdmissionGate:
+    """Atomic per-context admission gate + active-admission set.
+
+    Closing is one-way in this slice: after begin_quiesce the gate stays
+    closed for the generation (transfers move to a new runtime). An
+    admission created before close stays tracked; one attempted after
+    close fails closed.
+    """
+
+    def __init__(self):
+        self.state = "OPEN"
+        self._admissions: dict[str, dict] = {}
+        self._high_water = 0
+
+    def admit(self, operation_id: str) -> dict:
+        if self.state != "OPEN":
+            raise GuardFailure(R.ADMISSION_GATE_CLOSED, str(operation_id))
+        if operation_id in self._admissions:
+            raise GuardFailure(R.DUPLICATE_OPERATION, str(operation_id))
+        self._high_water += 1
+        record = {
+            "operation_id": operation_id,
+            "state": ADMISSION_IN_FLIGHT,
+            "child_alive": False,
+        }
+        self._admissions[operation_id] = record
+        return dict(record)
+
+    def record_effect(self, operation_id: str, outcome: str, child_alive: bool = False) -> None:
+        record = self._require(operation_id)
+        if outcome not in _TERMINAL_ADMISSIONS:
+            raise GuardFailure(R.INVALID_OPERATION_OUTCOME, str(outcome))
+        if record["state"] in _TERMINAL_ADMISSIONS:
+            if record["state"] == outcome and record["child_alive"] == child_alive:
+                return  # identical terminal re-record is idempotent
+            raise GuardFailure(R.EFFECT_CONFLICT, f"{operation_id}: {record['state']} → {outcome}")
+        record["state"] = outcome
+        record["child_alive"] = child_alive
+
+    def reconcile_effect(self, operation_id: str, outcome: str, child_alive: bool = False) -> None:
+        """Resolve an earlier UNKNOWN effect after external reconciliation."""
+        record = self._require(operation_id)
+        if record["state"] != ADMISSION_UNKNOWN:
+            raise GuardFailure(R.EFFECT_CONFLICT, f"{operation_id} is {record['state']}, not UNKNOWN")
+        if outcome not in (ADMISSION_COMPLETE, ADMISSION_FAILED):
+            raise GuardFailure(R.INVALID_OPERATION_OUTCOME, f"reconcile to {outcome}")
+        record["state"] = outcome
+        record["child_alive"] = child_alive
+
+    def _require(self, operation_id: str) -> dict:
+        record = self._admissions.get(operation_id)
+        if record is None:
+            raise GuardFailure(R.UNKNOWN_OPERATION, str(operation_id))
+        return record
+
+    @property
+    def active_admissions(self) -> int:
+        return sum(1 for r in self._admissions.values() if r["state"] == ADMISSION_IN_FLIGHT)
+
+    @property
+    def has_unresolved_effects(self) -> bool:
+        return any(
+            r["state"] == ADMISSION_UNKNOWN and r["child_alive"] for r in self._admissions.values()
+        )
+
+    @property
+    def unresolved_child_operations(self) -> tuple:
+        return tuple(
+            r["operation_id"]
+            for r in self._admissions.values()
+            if r["state"] == ADMISSION_UNKNOWN and r["child_alive"]
+        )
+
+    @property
+    def admissions_high_water(self) -> int:
+        return self._high_water
+
+    def close(self) -> None:
+        self.state = "CLOSED"
+
+
+class HolderRuntime:
+    """The one live execution context for a claim generation (§4.2A).
+
+    The current holder owns its admission gate and — during transfer — the
+    publication of quiescence evidence. This type is the seam a real
+    adapter (ZCode plugin, CI) binds to one process/session.
+    """
+
+    def __init__(self, holder_id: str):
+        self.holder_id = holder_id
+        self.gate = AdmissionGate()
+
+    # mutation admissions go through the holder's own gate
+    def admit(self, operation_id: str) -> dict:
+        return self.gate.admit(operation_id)
+
+    def record_effect(self, operation_id: str, outcome: str, child_alive: bool = False) -> None:
+        self.gate.record_effect(operation_id, outcome, child_alive)
+
+    def reconcile_effect(self, operation_id: str, outcome: str, child_alive: bool = False) -> None:
+        self.gate.reconcile_effect(operation_id, outcome, child_alive)
+
+    @property
+    def active_admissions(self) -> int:
+        return self.gate.active_admissions
+
+    @property
+    def has_unresolved_effects(self) -> bool:
+        return self.gate.has_unresolved_effects
+
+    @property
+    def admissions_high_water(self) -> int:
+        return self.gate.admissions_high_water
+
+
+# ═══════════════════════════════════════════════════════════════════════
+# §4.2B quiesce/drain transfer barrier
+# ═══════════════════════════════════════════════════════════════════════
+class TransferBarrier:
+    """ACTIVE → QUIESCING → TRANSFER_READY → ACTIVE(g+1, new holder).
+
+    Astra refinement encoded: only the current execution holder can publish
+    the QUIESCENCE_ATTESTATION, only while its gate is closed, only with
+    active_admissions == 0 and no unresolved effects/operations. The
+    coordinator validates attestations and interrupts; it can never
+    manufacture them.
+    """
+
+    def __init__(self, claim_id: str, claim_generation: int, holder_id: str):
+        self.claim_id = claim_id
+        self.claim_generation = claim_generation
+        self.execution_holder_id = holder_id
+        self.runtime = HolderRuntime(holder_id)
+        self.state = "ACTIVE"
+        self.transfer_block_reason: Optional[str] = None
+        self._attestations: dict[str, dict] = {}
+
+    # ── holder side ──
+    def begin_quiesce(self) -> None:
+        if self.state == "QUIESCING":
+            return  # idempotent
+        if self.state != "ACTIVE":
+            raise GuardFailure(R.TRANSFER_NOT_READY, f"cannot quiesce from {self.state}")
+        self.runtime.gate.close()
+        self.state = "QUIESCING"
+        self.transfer_block_reason = None
+
+    def holder_publish(
+        self,
+        publisher_id: str,
+        attestation_id: str,
+        latest_event_id: str,
+        unresolved_external_operations: bool = False,
+    ) -> Optional[dict]:
+        """Publish (or idempotently replay) the quiescence attestation.
+
+        Returns the attestation on success, None with transfer_block_reason
+        set on fail-closed rejection; conflicting replays raise.
+        """
+        if publisher_id != self.execution_holder_id:
+            self.transfer_block_reason = R.COORDINATOR_CANNOT_PUBLISH_QUIESCENCE
+            return None
+
+        replay = self._attestations.get(attestation_id)
+        payload = {
+            "attestation_id": attestation_id,
+            "claim_id": self.claim_id,
+            "claim_generation": self.claim_generation,
+            "execution_holder_id": self.execution_holder_id,
+            "latest_lifecycle_event_id": latest_event_id,
+            "admission_high_water": self.runtime.admissions_high_water,
+            "active_admissions": 0,
+        }
+        if replay is not None:
+            if replay == payload:
+                return dict(replay)
+            raise GuardFailure(R.EVENT_CONFLICT, f"attestation {attestation_id} replayed differently")
+
+        if self.runtime.gate.state != "CLOSED" or self.state != "QUIESCING":
+            self.transfer_block_reason = R.QUIESCENCE_PRECONDITIONS_UNMET
+            return None
+        if self.runtime.active_admissions > 0:
+            self.transfer_block_reason = R.TRANSFER_BLOCKED_ACTIVE_ADMISSIONS
+            return None
+        if self.runtime.has_unresolved_effects or unresolved_external_operations:
+            self.transfer_block_reason = R.TRANSFER_BLOCKED_UNRESOLVED_EFFECTS
+            return None
+
+        self._attestations[attestation_id] = payload
+        self.state = "TRANSFER_READY"
+        self.transfer_block_reason = None
+        return dict(payload)
+
+    # ── coordinator side ──
+    def coordinator_interrupt(self) -> dict:
+        """Interruption before transfer changes nothing: generation and
+        holder stay locked until the authorized transition completes."""
+        return {
+            "claim_id": self.claim_id,
+            "claim_generation": self.claim_generation,
+            "execution_holder_id": self.execution_holder_id,
+            "state": self.state,
+            "transfer_block_reason": self.transfer_block_reason,
+        }
+
+    def complete_transfer(self, new_holder_id: str) -> Decision:
+        if self.state == "QUIESCING" and not self._attestations:
+            raise GuardFailure(R.QUIESCENCE_PRECONDITIONS_UNMET, "quiescing without an attestation")
+        if self.state != "TRANSFER_READY":
+            raise GuardFailure(R.TRANSFER_NOT_READY, f"state is {self.state}")
+        attestation = next(
+            (a for a in self._attestations.values() if a["claim_generation"] == self.claim_generation),
+            None,
+        )
+        if attestation is None or attestation["execution_holder_id"] != self.execution_holder_id:
+            raise GuardFailure(R.QUIESCENCE_PRECONDITIONS_UNMET, "no valid attestation for this generation")
+
+        self.claim_generation += 1
+        self.execution_holder_id = new_holder_id
+        self.runtime = HolderRuntime(new_holder_id)
+        self.state = "ACTIVE"
+        self.transfer_block_reason = None
+        return Decision(
+            safe_to_mutate=True,
+            reason=None,
+            policy_revision="",
+            registry_hash="",
+            claim_id=self.claim_id,
+            claim_generation=self.claim_generation,
+            execution_holder_id=self.execution_holder_id,
+            details=(attestation["attestation_id"],),
+        )
+
+
+# ═══════════════════════════════════════════════════════════════════════
+# CLI — status / scope-check / validate-registry / validate-lifecycle
+# ═══════════════════════════════════════════════════════════════════════
+def run_git(args: list[str], cwd: Optional[str] = None) -> str:
+    """The only place this module touches the outside world."""
+    try:
+        proc = subprocess.run(
+            ["git", *args],
+            capture_output=True,
+            text=True,
+            encoding="utf-8",
+            errors="replace",
+            cwd=cwd,
+            check=True,
+        )
+        return proc.stdout.strip()
+    except (OSError, subprocess.CalledProcessError) as exc:
+        raise GuardFailure(R.GIT_UNAVAILABLE, str(exc))
+
+
+def _emit(payload: dict, exit_code: int) -> int:
+    print(json.dumps(payload, sort_keys=True, ensure_ascii=False))
+    return exit_code
+
+
+def _read_current_work(args) -> tuple[str, str]:
+    if args.no_git or args.current_work_file:
+        if not args.current_work_file or not args.policy_revision:
+            raise GuardFailure(R.IO_ERROR, "--no-git/--current-work-file requires --policy-revision")
+        with open(args.current_work_file, encoding="utf-8") as handle:
+            return handle.read(), args.policy_revision
+    revision = run_git(["rev-parse", "origin/main"])
+    text = run_git(["show", f"origin/main:{CURRENT_WORK_PATH}"])
+    return text, revision
+
+
+def _cmd_status(args) -> int:
+    text, revision = _read_current_work(args)
+    policy = load_trusted_policy(text, revision)
+    mode = effective_enforcement_mode(policy.enforcement_mode, server_enforcement_verified=False)
+    return _emit(
+        {
+            "ok": True,
+            "policy_revision": policy.policy_revision,
+            "registry_hash": policy.registry_hash,
+            "enforcement_mode": policy.enforcement_mode,
+            "effective_enforcement_mode": mode.mode,
+            "effective_mode_reason": mode.reason,
+            "expected_policy_revision": policy.expected_policy_revision,
+            "claims": [
+                {
+                    "task_id": c["task_id"],
+                    "claim_id": c["claim_id"],
+                    "claim_generation": c["claim_generation"],
+                    "status": c["status"],
+                    "execution_holder_id": c["execution_holder_id"],
+                    "branch": c["branch"],
+                    "worktree": c["worktree"],
+                }
+                for c in policy.claims
+            ],
+            "shared_exceptions": len(policy.shared_exceptions),
+        },
+        0,
+    )
+
+
+def _cmd_validate_registry(args) -> int:
+    if args.file == "-":
+        text = sys.stdin.read()
+    else:
+        with open(args.file, encoding="utf-8") as handle:
+            text = handle.read()
+    policy = load_trusted_policy(text, args.policy_revision or "unbound")
+    return _emit(
+        {
+            "ok": True,
+            "claims": len(policy.claims),
+            "enforcement_mode": policy.enforcement_mode,
+            "registry_hash": policy.registry_hash,
+        },
+        0,
+    )
+
+
+def _parse_changes(raw_changes) -> list[Change]:
+    changes = []
+    for parts in raw_changes or []:
+        if len(parts) == 2:
+            changes.append(Change(parts[0], parts[1]))
+        elif len(parts) == 3:
+            changes.append(Change(parts[0], parts[1], parts[2]))
+        else:
+            raise GuardFailure(R.UNKNOWN_CHANGE_KIND, " ".join(parts))
+    return changes
+
+
+def _cmd_scope_check(args) -> int:
+    text, revision = _read_current_work(args)
+    policy = load_trusted_policy(text, revision)
+    claim = policy.claim_by_task(args.task)
+    ctx = {
+        "task_id": args.task,
+        "claim_id": args.claim,
+        "claim_generation": args.generation,
+        "execution_holder_id": args.holder,
+        "worktree": args.actual_worktree or (claim["worktree"] if claim else ""),
+        "branch": args.actual_branch or (claim["branch"] if claim else ""),
+        "base_ancestor_of_head": not args.base_not_ancestor,
+    }
+    decision = evaluate_mutation(policy, ctx, _parse_changes(args.change))
+    return _emit(decision.to_dict(), 0 if decision.safe_to_mutate else 2)
+
+
+def _cmd_validate_lifecycle(args) -> int:
+    with open(args.file, encoding="utf-8") as handle:
+        document = json.load(handle)
+    log = LifecycleLog(document["claim_id"], int(document["claim_generation"]))
+    applied = 0
+    idempotent = 0
+    try:
+        for raw in document["events"]:
+            event = LifecycleEvent(**raw)
+            status, _ = log.apply(event)
+            if status == "applied":
+                applied += 1
+            else:
+                idempotent += 1
+    except GuardFailure as failure:
+        return _emit(
+            {"ok": False, "reason": failure.reason, "detail": failure.detail, "event_id": raw.get("event_id")},
+            2,
+        )
+    return _emit({"ok": True, "applied": applied, "idempotent": idempotent}, 0)
+
+
+def main(argv: Optional[list[str]] = None) -> int:
+    if hasattr(sys.stdout, "reconfigure"):
+        sys.stdout.reconfigure(encoding="utf-8")
+    parser = argparse.ArgumentParser(
+        prog="env_coordination_guard",
+        description="Deterministic ENV Coordination Guard core (BOOTSTRAP_CONTROL slice)",
+    )
+    sub = parser.add_subparsers(dest="command", required=True)
+
+    common = argparse.ArgumentParser(add_help=False)
+    common.add_argument("--no-git", action="store_true", help="pure mode: do not shell out to git")
+    common.add_argument("--current-work-file", help="path to a CURRENT-WORK.md text (default: git show origin/main)")
+    common.add_argument("--policy-revision", help="exact origin/main SHA the text came from")
+
+    p_status = sub.add_parser("status", parents=[common], help="trusted registry + claim summary")
+    p_status.set_defaults(func=_cmd_status)
+
+    p_validate = sub.add_parser("validate-registry", parents=[common], help="parse + validate registry JSON")
+    p_validate.add_argument("--file", required=True, help="file path, or - for stdin")
+    p_validate.set_defaults(func=_cmd_validate_registry)
+
+    p_scope = sub.add_parser("scope-check", parents=[common], help="preflight + scope decision for changed paths")
+    p_scope.add_argument("--task", required=True)
+    p_scope.add_argument("--claim", required=True)
+    p_scope.add_argument("--generation", type=int, required=True)
+    p_scope.add_argument("--holder", required=True)
+    p_scope.add_argument("--actual-worktree", help="override trusted worktree comparison")
+    p_scope.add_argument("--actual-branch", help="override trusted branch comparison")
+    p_scope.add_argument("--base-not-ancestor", action="store_true", help="declare base_sha is NOT an ancestor of HEAD")
+    p_scope.add_argument(
+        "--change",
+        action="append",
+        nargs="+",
+        required=True,
+        help="change as: KIND SRC [DST] with KIND in add|untracked|modify|delete|rename|move|copy",
+    )
+    p_scope.set_defaults(func=_cmd_scope_check)
+
+    p_lifecycle = sub.add_parser("validate-lifecycle", help="replay a lifecycle event log")
+    p_lifecycle.add_argument("--file", required=True)
+    p_lifecycle.set_defaults(func=_cmd_validate_lifecycle)
+
+    args = parser.parse_args(argv)
+    try:
+        return args.func(args)
+    except GuardFailure as failure:
+        return _emit({"ok": False, "reason": failure.reason, "detail": failure.detail}, 2)
+    except OSError as exc:
+        return _emit({"ok": False, "reason": R.IO_ERROR, "detail": str(exc)}, 2)
+
+
+if __name__ == "__main__":
+    raise SystemExit(main())

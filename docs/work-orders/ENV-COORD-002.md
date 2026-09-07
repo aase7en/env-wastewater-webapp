@@ -1,6 +1,6 @@
 # ENV-COORD-002 — Coordination Guard core + deterministic tests
 
-Status: CLAIM_PROPOSED
+Status: REVIEW_REQUESTED
 Risk: HIGH (project-control bootstrap)
 Owner / implementation model: GLM-5.3 MAX via ZCode
 Coordinator / integration owner: GPT-5.6 Sol
@@ -213,6 +213,49 @@ Implementation owner records:
 
 Coordinator independently inspects actual diff/SHA/tests and obtains fresh
 independent review before merge.
+
+### Implementation-owner evidence — ENV-COORD-002-C1 / 2026-09-07
+
+Executed by holder `zcode-env-coord-002-g1-primary` (GLM-5.3 MAX / ZCode) in
+worktree `A:\GitHub\envww-coord-002` on branch `feat/env-coord-002`, from
+main `7d4e6b52c616ff15f86e399a085ef16477d38ef8` (bootstrap claim merged;
+claim `base_sha` `6360e149…` verified as ancestor).
+
+- RED (against signature-stub with `NotImplementedError` bodies):
+  `python scripts/test_env_coordination_guard.py` →
+  `Ran 128 tests … FAILED (failures=7, errors=131)` — 0 passing
+  (errors include subTest expansion).
+- GREEN focused: `python scripts/test_env_coordination_guard.py` →
+  `Ran 128 tests … OK` (128/128). Pytest equivalence:
+  `python -m pytest scripts/test_env_coordination_guard.py -q` →
+  `128 passed, 12 subtests passed`.
+- Relevant full Python script tests (CI `scripts` job set + adjacent
+  suites, same worktree): `test_workflow_action_runtimes.py` OK;
+  `check_workflow_action_runtimes.py` PASS (5 workflow files);
+  `test_split_sql.py` all passed; `test_ci_alert_payload.py` 33 passed.
+  `test_oauth4_rls_probe.py` not runnable in this environment
+  (credential-gated Supabase probe, not in the CI scripts job; untouched
+  by this diff).
+- `git diff --check` → PASS (exit 0).
+- Exact changed files: the four mutable paths of this claim; no other
+  tracked path modified; `.serena/` left untracked/unstaged.
+- Exact pushed SHA / PR URL: frozen in the lane handoff result block
+  (self-SHA is not written into its own commit; reviewer verifies the
+  remote ref matches the PR head evidence).
+- Live-registry smoke (git mode, read-only):
+  `python scripts/env_coordination_guard.py status` →
+  policy_revision `7d4e6b52…`, mode `BOOTSTRAP_CONTROL` (effective
+  `BOOTSTRAP_CONTROL`), claims `ENV-COORD-002-C1` gen 1 `CLAIMED`;
+  `scope-check` with `--change modify scripts/env_coordination_guard.py
+  --change modify AGENTS.md` → `SAFE_TO_MUTATE = false`,
+  reason `FORBIDDEN_PATH`, bound to the exact policy tuple.
+
+Limitations / non-blocking follow-up: no hook or CI integration in this
+slice (ENV-COORD-003+); CLI git mode is read-only inspection, not
+enforcement; shared-file-exception transitions are validated
+(`evaluate_control_transition`) but no writer creates them; admission-gate
+close is one-way per generation (recovery creates a new generation via
+transfer). Full list in the lane handoff.
 
 ## Stop condition
 
