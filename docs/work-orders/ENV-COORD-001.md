@@ -1,0 +1,141 @@
+# ENV-COORD-001 — Enforceable multi-agent coordination architecture
+
+Status: REVIEW_REQUESTED
+Risk: HIGH (project-control / multi-agent governance)
+Owner / architecture lead: GPT-5.6 Sol
+Implementation surface: docs-only architecture contract
+Repository: `aase7en/env-wastewater-webapp`
+Worktree: `A:\\GitHub\\envww-coord-001`
+Branch: `docs/env-coord-001`
+Base: `origin/main@a8fa47137d640a479d3dbc88f6e8c198d266c7f0`
+Exact HEAD: PENDING_CHECKPOINT
+Independent architecture reviewer: GPT-6 Astra or strongest available
+high-reasoning reviewer in a fresh context
+Lane handoff: `docs/ai/handoffs/ENV-COORD-001-SOL.md`
+Last updated: 2026-09-07
+
+## Objective
+
+Design the enforceable coordination layer that prevents stale SSoT,
+overlapping claims, uncheckpointed long-running goals, and duplicate mutation
+across GPT / GLM / Codex / GPT Work / workers before new ENV North-Star
+production lanes are distributed.
+
+## User-confirmed requirements
+
+- Do not rely on chat memory.
+- Long sessions may contain multiple tasks and multiple `/goal` runs.
+- Every goal completion must persist progress, evidence, problems, fixed vs
+  unresolved status, blockers, and next action.
+- Reusable failures must be remembered so the same problem is not repeatedly
+  rediscovered.
+- Hook-capable surfaces should enforce the workflow automatically.
+- Hookless ChatGPT sessions must still be safe through repo entry rules and CI.
+- Avoid the stale handoff/current-work failure previously observed in
+  multi-agent projects.
+
+## Preconditions / evidence
+
+- PR #81 `SDLC-OPT-001` was independently reviewed at exact head
+  `d9b5ea0bb7b67f6e41f9328174dd220df7d1767d` and merged as
+  `a8fa47137d640a479d3dbc88f6e8c198d266c7f0` before this branch was created.
+- Primary checkout is stale/dirty/protected; this work uses an isolated clean
+  worktree based on current `origin/main`.
+- Open PR #80 owns GISTDA adapter files only.
+- Open PR #75 owns the Building repair decision Work Order only.
+- No open PR owns the files in this lane.
+
+## Mutable scope
+
+- `docs/ai/architecture/ENV-COORDINATION-GUARD.md`
+- `docs/work-orders/ENV-COORD-001.md`
+- `docs/ai/handoffs/ENV-COORD-001-SOL.md`
+- bounded active-frontier reconciliation in `docs/ai/CURRENT-WORK.md`
+- bounded coordinator checkpoint in `docs/ai/HANDOFF.md`
+
+## Forbidden scope
+
+- `frontend/**`
+- `supabase/**`
+- production schema/RLS/data/provider code
+- `.claude/**`, ZCode/Codex hook implementation
+- `.github/workflows/**`
+- guard scripts/runtime implementation
+- PR #80 GISTDA scope
+- PR #75 Building scope
+- ENV-OPS-001A production implementation
+- destructive cleanup of the dirty primary checkout
+
+## Architecture decisions to settle
+
+1. authority hierarchy and no-shadow-SSoT rule;
+2. coordinator-only central claim allocation;
+3. worker-owned lane-local goal checkpoints;
+4. task / claim / goal state machines;
+5. `STALE_CLAIM` semantics with no automatic release;
+6. GoalStart / Checkpoint / GoalEnd requirements;
+7. defect-memory promotion rules;
+8. one platform-independent guard core;
+9. hook adapter boundaries for ZCode/Codex/Chat/Work;
+10. required CI backstop for hookless/bypassing clients;
+11. recovery after crash, stale state, head drift, and scope collision;
+12. rollout and chaos-test plan.
+
+## Acceptance
+
+- Architecture has no second live task registry.
+- A new zero-chat-history worker can determine where live state belongs.
+- Central claim writes and lane-local goal writes cannot contend by default.
+- A new goal cannot silently replace an uncheckpointed prior goal.
+- A stale claim does not become free solely because time elapsed.
+- Hook-capable agents can be denied before out-of-scope mutation.
+- Hookless agents are still blocked by CI before integration.
+- Exact-SHA review invalidates on head drift.
+- Material defects require executable prevention before global defect memory.
+- The plan names deterministic chaos scenarios for multi-agent collisions.
+- No production/runtime/hook/CI mutation occurs in this architecture-only WO.
+
+## Verification
+
+- inspect exact diff and changed-file list;
+- `git diff --check`;
+- confirm only mutable docs paths changed;
+- search architecture for all required lifecycle/invariant terms;
+- reconcile open PR ownership immediately before freeze;
+- push exact SHA and inspect remote diff;
+- independent adversarial architecture review bound to exact SHA.
+
+No frontend build/E2E is required for this docs-only architecture slice.
+
+## Stop rule
+
+Architecture author stops at `REVIEW_REQUESTED`. Do not activate
+`ENV-COORD-002` until independent review findings are resolved and this
+contract is explicitly `APPROVED_FOR_IMPLEMENTATION`.
+
+## Verification checkpoint — 2026-09-07
+
+- Clean isolated base: `a8fa47137d640a479d3dbc88f6e8c198d266c7f0`.
+- `git diff --check`: PASS.
+- Intended task-owned paths: architecture contract, Work Order, lane handoff,
+  bounded `CURRENT-WORK.md`, bounded `HANDOFF.md`.
+- `.serena/` was generated by tool activation, is not task-owned, and MUST
+  remain uncommitted.
+- Required architecture markers verified: coordinator-only claims,
+  GoalStart/GoalEnd, `STALE_CLAIM`, `SAFE_TO_MUTATE`, CI enforcement,
+  hookless-agent backstop, chaos scenarios.
+- Open PR ownership rechecked before drafting: #80 GISTDA and #75 Building do
+  not overlap this scope.
+- No frontend/schema/RLS/provider/hook/CI/runtime files changed.
+
+## Stop / review state
+
+Implementation author stops at `REVIEW_REQUESTED`. The exact pushed SHA is
+recorded in PR/review evidence after push; do not create a self-referential
+SHA-only commit.
+
+## One next safe action
+
+Freeze/push this docs-only candidate, inspect the actual remote PR diff, then
+obtain independent adversarial architecture review before any
+`ENV-COORD-002` implementation.
