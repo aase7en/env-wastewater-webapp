@@ -763,17 +763,10 @@ class TestSymlinkPolicy(unittest.TestCase):
         self.assertEqual(d.reason, R.LINK_CROSSES_LANE)
 
     def test_shared_file_exception_exact_path_participants_only(self):
-        # §7.3: bounded shared-file exception = exact path + participating
-        # claims inside the trusted central record. It waives the resolved
-        # target's scope for participants; a non-participant still fails
-        # closed (its own forbidden scope wins, so the exception must not
-        # have whitelisted the path for them).
-        shared = {
-            "shared_path": "docs/work-orders/ENV-COORD-002.md",
-            "participating_claim_ids": ["ENV-COORD-002-C1"],
-            "integration_owner": "ENV-COORD-002-C1",
-        }
-        policy = load_policy([base_claim(), other_lane_claim()], shared_exceptions=[shared])
+        # §13.36 negative kept here: a target inside another lane's
+        # protected scope with NO exception covering it stays denied.
+        # The full §7.3 contract is covered by TestSharedFileException.
+        policy = load_policy([base_claim(), other_lane_claim()])
         d = evaluate_mutation(
             policy,
             ok_ctx(),
@@ -786,31 +779,244 @@ class TestSymlinkPolicy(unittest.TestCase):
                 )
             ],
         )
-        self.assertTrue(d.safe_to_mutate)
-        # non-participant lane resolving the same shared path: the
-        # exception lists only ENV-COORD-002-C1, and that lane's own
-        # forbidden scope (docs/**) still wins — no allowance leaked.
-        gistda_ctx = ok_ctx(
+        # target is in our own mutable scope but inside the other lane's
+        # protected (forbidden) scope and no exception covers it
+        self.assertFalse(d.safe_to_mutate)
+        self.assertEqual(d.reason, R.LINK_CROSSES_LANE)
+
+
+def sharing_claims():
+    """Two lanes whose mutable scopes overlap on exactly reports/shared.txt."""
+    claim_a = base_claim(
+        mutable_scope=[
+            "scripts/env_coordination_guard.py",
+            "scripts/test_env_coordination_guard.py",
+            "docs/work-orders/ENV-COORD-002.md",
+            "docs/ai/handoffs/ENV-COORD-002-GLM.md",
+            "reports/shared.txt",
+        ]
+    )
+    claim_b = other_lane_claim(
+        mutable_scope=["reports/gistda/**", "reports/shared.txt"],
+    )
+    return claim_a, claim_b
+
+
+def full_shared_exception(**overrides):
+    """A complete paragraph-7.3 record: exact paths, participants bound to
+    generations, single temporary integration owner, dependency/merge
+    order, release condition."""
+    exc = {
+        "shared_paths": ["reports/shared.txt"],
+        "participating_claims": [
+            {"claim_id": "ENV-COORD-002-C1", "claim_generation": 1},
+            {"claim_id": "ENV-INT-GISTDA-CORE-001-C1", "claim_generation": 1},
+        ],
+        "integration_owner_claim_id": "ENV-INT-GISTDA-CORE-001-C1",
+        "merge_order": ["ENV-COORD-002-C1", "ENV-INT-GISTDA-CORE-001-C1"],
+        "release_condition": "owner merges shared change; exception removed by next control transition",
+    }
+    exc.update(overrides)
+    return exc
+
+
+class TestSharedFileException(unittest.TestCase):
+    """PR #84 P1-3: the shared-file exception contract.
+
+    Exact paths only; participants bound to claim generations; single
+    temporary integration owner; dependency/merge order; release
+    condition; and only the exact authorized overlap is legalized.
+    """
+
+    def _load(self, exceptions, claims=None):
+        if claims is None:
+            claims = list(sharing_claims())
+        return load_policy(claims, shared_exceptions=list(exceptions))
+
+    def _gistda_ctx(self):
+        return ok_ctx(
             task_id="ENV-INT-GISTDA-CORE-001",
             claim_id="ENV-INT-GISTDA-CORE-001-C1",
             execution_holder_id="zcode-gistda-g1-primary",
             worktree="A:/GitHub/envww-env-int-gistda-core-001",
             branch="feat/env-int-gistda-core-001",
         )
+
+    def test_exact_shared_overlap_is_authorized(self):
+        # reviewer reproducer: this raised OWNERSHIP_CONFLICT before repair
+        policy = self._load([full_shared_exception()])
+        self.assertEqual(len(policy.claims), 2)
+        self.assertEqual(len(policy.shared_exceptions), 1)
+
+    def test_both_participants_may_mutate_the_shared_path(self):
+        policy = self._load([full_shared_exception()])
+        d1 = evaluate_mutation(
+            policy, ok_ctx(), changes=[Change("modify", "reports/shared.txt")]
+        )
+        self.assertTrue(d1.safe_to_mutate)
         d2 = evaluate_mutation(
             policy,
-            gistda_ctx,
-            changes=[Change("add", "reports/gistda/other.ts")],
-            links=[
-                LinkRequest(
-                    "reports/gistda/other.ts",
-                    "docs/work-orders/ENV-COORD-002.md",
-                    True,
-                )
-            ],
+            self._gistda_ctx(),
+            changes=[Change("modify", "reports/shared.txt")],
         )
-        self.assertFalse(d2.safe_to_mutate)
-        self.assertEqual(d2.reason, R.FORBIDDEN_PATH)
+        self.assertTrue(d2.safe_to_mutate)
+
+    def test_participant_link_to_shared_path_allowed(self):
+        policy = self._load([full_shared_exception()])
+        # resolved target sits in BOTH mutable scopes; the exception makes
+        # the overlap legal, so re-authorization passes
+        d = evaluate_mutation(
+            policy,
+            ok_ctx(),
+            changes=[Change("modify", "reports/shared.txt")],
+            links=[LinkRequest("reports/shared.txt", "reports/shared.txt", True)],
+        )
+        self.assertTrue(d.safe_to_mutate)
+
+    def test_second_overlapping_file_without_exception_still_conflicts(self):
+        claim_a, claim_b = sharing_claims()
+        claim_a = base_claim(
+            mutable_scope=list(claim_a["mutable_scope"]) + ["reports/secret2.txt"]
+        )
+        claim_b = other_lane_claim(
+            mutable_scope=["reports/gistda/**", "reports/shared.txt", "reports/secret2.txt"]
+        )
+        with self.assertRaises(GuardFailure) as cm:
+            self._load([full_shared_exception()], claims=[claim_a, claim_b])
+        self.assertEqual(cm.exception.reason, R.OWNERSHIP_CONFLICT)
+
+    def test_subtree_overlap_is_broader_than_exact_and_conflicts(self):
+        # a subtree/subtree intersection can never be an exact authorized
+        # shared path, so it stays an ownership conflict
+        claim_a = base_claim(
+            mutable_scope=["scripts/env_coordination_guard.py", "reports/**"]
+        )
+        claim_b = other_lane_claim(mutable_scope=["reports/**"])
+        with self.assertRaises(GuardFailure) as cm:
+            self._load([full_shared_exception()], claims=[claim_a, claim_b])
+        self.assertEqual(cm.exception.reason, R.OWNERSHIP_CONFLICT)
+
+    def test_overlapping_claims_without_any_exception_conflict(self):
+        with self.assertRaises(GuardFailure) as cm:
+            self._load([])
+        self.assertEqual(cm.exception.reason, R.OWNERSHIP_CONFLICT)
+
+    def test_non_participant_lane_still_denied_via_link(self):
+        # exception authorizes only its participants; a third lane probing
+        # another lane's file is denied — the target is outside its own
+        # mutable scope, so the exception cannot widen it into authority
+        claim_a, claim_b = sharing_claims()
+        third = base_claim(
+            task_id="ENV-THIRD",
+            claim_id="ENV-THIRD-C1",
+            execution_holder_id="holder-third",
+            worktree="A:/GitHub/envww-third",
+            branch="feat/third",
+            mutable_scope=["third/**"],
+            forbidden_scope=["scripts/**"],
+        )
+        policy = self._load(
+            [full_shared_exception()], claims=[claim_a, claim_b, third]
+        )
+        d = evaluate_mutation(
+            policy,
+            ok_ctx(
+                task_id="ENV-THIRD",
+                claim_id="ENV-THIRD-C1",
+                execution_holder_id="holder-third",
+                worktree="A:/GitHub/envww-third",
+                branch="feat/third",
+            ),
+            changes=[Change("add", "third/x.ts")],
+            links=[LinkRequest("third/x.ts", "reports/gistda/core.ts", True)],
+        )
+        self.assertFalse(d.safe_to_mutate)
+        self.assertEqual(d.reason, R.OUTSIDE_MUTABLE_SCOPE)
+
+    def test_missing_release_condition_rejected(self):
+        exc = full_shared_exception()
+        del exc["release_condition"]
+        with self.assertRaises(GuardFailure) as cm:
+            self._load([exc])
+        self.assertEqual(cm.exception.reason, R.INVALID_SHARED_EXCEPTION)
+
+    def test_missing_merge_order_rejected(self):
+        exc = full_shared_exception()
+        del exc["merge_order"]
+        with self.assertRaises(GuardFailure) as cm:
+            self._load([exc])
+        self.assertEqual(cm.exception.reason, R.INVALID_SHARED_EXCEPTION)
+
+    def test_merge_order_must_be_exact_permutation_of_participants(self):
+        bad = full_shared_exception(merge_order=["ENV-COORD-002-C1"])
+        with self.assertRaises(GuardFailure) as cm:
+            self._load([bad])
+        self.assertEqual(cm.exception.reason, R.INVALID_SHARED_EXCEPTION)
+        bad2 = full_shared_exception(
+            merge_order=["ENV-COORD-002-C1", "ENV-COORD-002-C1"]
+        )
+        with self.assertRaises(GuardFailure) as cm:
+            self._load([bad2])
+        self.assertEqual(cm.exception.reason, R.INVALID_SHARED_EXCEPTION)
+
+    def test_integration_owner_must_participate(self):
+        bad = full_shared_exception(integration_owner_claim_id="ENV-COORD-999-C1")
+        with self.assertRaises(GuardFailure) as cm:
+            self._load([bad])
+        self.assertEqual(cm.exception.reason, R.INVALID_SHARED_EXCEPTION)
+
+    def test_participant_generation_binding(self):
+        # participants are bound to exact claim generations - a stale
+        # generation listing is invalid
+        bad = full_shared_exception(
+            participating_claims=[
+                {"claim_id": "ENV-COORD-002-C1", "claim_generation": 2},
+                {"claim_id": "ENV-INT-GISTDA-CORE-001-C1", "claim_generation": 1},
+            ]
+        )
+        with self.assertRaises(GuardFailure) as cm:
+            self._load([bad])
+        self.assertEqual(cm.exception.reason, R.INVALID_SHARED_EXCEPTION)
+
+    def test_shared_path_must_be_inside_every_participant_mutable_scope(self):
+        bad = full_shared_exception(
+            shared_paths=["reports/shared.txt", "scripts/env_coordination_guard.py"]
+        )
+        # scripts/env_coordination_guard.py is in claim A's scope but not
+        # in the GISTDA claim's scope
+        with self.assertRaises(GuardFailure) as cm:
+            self._load([bad])
+        self.assertEqual(cm.exception.reason, R.INVALID_SHARED_EXCEPTION)
+
+    def test_single_participant_rejected(self):
+        bad = full_shared_exception(
+            participating_claims=[
+                {"claim_id": "ENV-COORD-002-C1", "claim_generation": 1}
+            ],
+            integration_owner_claim_id="ENV-COORD-002-C1",
+            merge_order=["ENV-COORD-002-C1"],
+        )
+        with self.assertRaises(GuardFailure) as cm:
+            self._load([bad])
+        self.assertEqual(cm.exception.reason, R.INVALID_SHARED_EXCEPTION)
+
+    def test_subtree_shared_path_rejected(self):
+        bad = full_shared_exception(shared_paths=["reports/**"])
+        with self.assertRaises(GuardFailure) as cm:
+            self._load([bad])
+        self.assertEqual(cm.exception.reason, R.INVALID_SHARED_EXCEPTION)
+
+    def test_unknown_participant_rejected(self):
+        bad = full_shared_exception(
+            participating_claims=[
+                {"claim_id": "ENV-COORD-002-C1", "claim_generation": 1},
+                {"claim_id": "GHOST-C1", "claim_generation": 1},
+            ],
+            merge_order=["ENV-COORD-002-C1", "GHOST-C1"],
+        )
+        with self.assertRaises(GuardFailure) as cm:
+            self._load([bad])
+        self.assertEqual(cm.exception.reason, R.INVALID_SHARED_EXCEPTION)
 
 
 class TestDisjointLanes(unittest.TestCase):
@@ -940,6 +1146,64 @@ class TestControlTransition(unittest.TestCase):
         )
         self.assertFalse(result.valid)
         self.assertEqual(result.reason, R.INVALID_GENERATION_TRANSITION)
+
+    def test_exception_authorized_exact_overlap_transition_valid(self):
+        # PR #84 P1-3: a proposal whose scope overlaps an existing claim is
+        # legal only when an authorized shared exception covers the exact
+        # overlap for this proposal's claim id + generation.
+        proposal = self._proposal(
+            proposed_claim_id="ENV-OPS-001B-C1",
+            proposed_mutable_scope=["frontend/src/ops/**", "reports/shared.txt"],
+            authorized_shared_exceptions=[
+                {
+                    "shared_paths": ["reports/shared.txt"],
+                    "participating_claims": [
+                        {"claim_id": "ENV-OPS-001B-C1", "claim_generation": 1},
+                        {"claim_id": "ENV-COORD-002-C1", "claim_generation": 1},
+                    ],
+                    "integration_owner_claim_id": "ENV-OPS-001B-C1",
+                    "merge_order": ["ENV-COORD-002-C1", "ENV-OPS-001B-C1"],
+                    "release_condition": "owner merges shared change",
+                }
+            ],
+        )
+        # existing ENV-COORD-002 claim must actually contain the shared path
+        # for the exception to be well-formed; give it the overlap via scope
+        claim_with_share = base_claim(
+            mutable_scope=list(base_claim()["mutable_scope"]) + ["reports/shared.txt"]
+        )
+        policy = load_policy([claim_with_share, other_lane_claim()])
+        proposal["expected_registry_hash"] = policy.registry_hash
+        result = evaluate_control_transition(policy, proposal)
+        self.assertTrue(result.valid)
+
+    def test_exception_cannot_authorize_broader_transition_overlap(self):
+        # broader overlap than the exact shared path stays a conflict
+        proposal = self._proposal(
+            proposed_claim_id="ENV-OPS-001B-C1",
+            proposed_mutable_scope=["frontend/src/ops/**", "reports/shared.txt", "reports/other.txt"],
+            authorized_shared_exceptions=[
+                {
+                    "shared_paths": ["reports/shared.txt"],
+                    "participating_claims": [
+                        {"claim_id": "ENV-OPS-001B-C1", "claim_generation": 1},
+                        {"claim_id": "ENV-COORD-002-C1", "claim_generation": 1},
+                    ],
+                    "integration_owner_claim_id": "ENV-OPS-001B-C1",
+                    "merge_order": ["ENV-COORD-002-C1", "ENV-OPS-001B-C1"],
+                    "release_condition": "owner merges shared change",
+                }
+            ],
+        )
+        claim_with_share = base_claim(
+            mutable_scope=list(base_claim()["mutable_scope"])
+            + ["reports/shared.txt", "reports/other.txt"]
+        )
+        policy = load_policy([claim_with_share, other_lane_claim()])
+        proposal["expected_registry_hash"] = policy.registry_hash
+        result = evaluate_control_transition(policy, proposal)
+        self.assertFalse(result.valid)
+        self.assertEqual(result.reason, R.OWNERSHIP_CONFLICT)
 
 
 # ─────────────────────────────────────────────────────────────────────────
@@ -1289,6 +1553,18 @@ class TestAdmissionGate(unittest.TestCase):
         self.assertTrue(gate.has_unresolved_effects)  # child still mutating
         self.assertEqual(gate.unresolved_child_operations, ("op-1",))
 
+    def test_effect_unknown_without_live_child_is_still_unresolved(self):
+        # PR #84 P1-1: every unreconciled EFFECT_UNKNOWN blocks — a live
+        # child is an additional undrained condition, not the definition
+        # of unresolved unknown.
+        gate = AdmissionGate()
+        gate.admit("op-1")
+        gate.record_effect("op-1", ADMISSION_UNKNOWN, child_alive=False)
+        self.assertTrue(gate.has_unresolved_effects)
+        self.assertEqual(gate.unresolved_child_operations, ())  # no live child
+        gate.reconcile_effect("op-1", ADMISSION_COMPLETE)
+        self.assertFalse(gate.has_unresolved_effects)
+
     def test_effect_unknown_reconciled_child_dead(self):
         gate = AdmissionGate()
         gate.admit("op-1")
@@ -1350,6 +1626,23 @@ class TestTransferBarrier(unittest.TestCase):
         self.assertIsNone(att)
         self.assertEqual(b.transfer_block_reason, R.TRANSFER_BLOCKED_UNRESOLVED_EFFECTS)
 
+    def test_transfer_blocked_while_unknown_without_live_child(self):
+        # PR #84 P1-1 reproducer: UNKNOWN_NO_CHILD_ATTESTATION must not
+        # reach TRANSFER_READY.
+        b = TransferBarrier(claim_id="ENV-COORD-002-C1", claim_generation=1, holder_id="holder-A")
+        b.runtime.admit("op-1")
+        b.runtime.record_effect("op-1", ADMISSION_UNKNOWN, child_alive=False)
+        b.begin_quiesce()
+        att = b.holder_publish("holder-A", "att-1", latest_event_id="e9")
+        self.assertIsNone(att)
+        self.assertEqual(b.transfer_block_reason, R.TRANSFER_BLOCKED_UNRESOLVED_EFFECTS)
+        self.assertEqual(b.state, "QUIESCING")
+        # reconciliation clears the block and publication then succeeds
+        b.runtime.reconcile_effect("op-1", ADMISSION_COMPLETE)
+        att2 = b.holder_publish("holder-A", "att-1", latest_event_id="e9")
+        self.assertIsNotNone(att2)
+        self.assertEqual(b.state, "TRANSFER_READY")
+
     def test_holder_publishes_attestation_when_drained(self):
         b = self._barrier()
         b.begin_quiesce()
@@ -1407,8 +1700,86 @@ class TestTransferBarrier(unittest.TestCase):
         self.assertEqual(snap["state"], "TRANSFER_READY")
         # scope stays locked to holder A until an authorized transition
         d = b.complete_transfer(new_holder_id="holder-B")
+        # PR #84 P1-2: TRANSFER_READY is not authority — the barrier must
+        # not self-activate generation 2 as mutable.
+        self.assertFalse(d.safe_to_mutate)
+        self.assertEqual(d.reason, R.TRANSFER_AWAITING_AUTHORIZED_TRANSITION)
+        self.assertEqual(d.claim_generation, 2)  # proposed handoff bookkeeping
+        self.assertEqual(b.state, "AWAITING_AUTHORIZATION")
+
+    def test_complete_transfer_without_policy_never_grants_authority(self):
+        # PR #84 P1-2 reproducer: LOCAL_TRANSFER_SAFE=True with empty
+        # policy tuple must be impossible.
+        b = self._barrier()
+        b.begin_quiesce()
+        b.holder_publish("holder-A", "att-1", latest_event_id="e9")
+        d = b.complete_transfer(new_holder_id="holder-B")
+        self.assertFalse(d.safe_to_mutate)
+        self.assertEqual(d.reason, R.TRANSFER_AWAITING_AUTHORIZED_TRANSITION)
+        # until authoritative activation, the new holder's gate stays closed
+        self.assertEqual(b.state, "AWAITING_AUTHORIZATION")
+        with self.assertRaises(GuardFailure) as cm:
+            b.runtime.admit("op-new")
+        self.assertEqual(cm.exception.reason, R.ADMISSION_GATE_CLOSED)
+
+    def test_activation_with_trusted_policy_authorizes_new_generation(self):
+        # §4.2B/§4.4: mutation under g+1 starts only when the authorized
+        # claim transition exists on (trusted) main and revalidates.
+        b = self._barrier()
+        b.begin_quiesce()
+        b.holder_publish("holder-A", "att-1", latest_event_id="e9")
+        gen2_policy = load_policy(
+            [base_claim(claim_generation=2, execution_holder_id="holder-B")]
+        )
+        d = b.complete_transfer(new_holder_id="holder-B", authorized_policy=gen2_policy)
         self.assertTrue(d.safe_to_mutate)
+        self.assertIsNone(d.reason)
         self.assertEqual(d.claim_generation, 2)
+        self.assertEqual(d.execution_holder_id, "holder-B")
+        self.assertEqual(d.policy_revision, POLICY_REV)  # real tuple, not empty
+        self.assertEqual(d.registry_hash, gen2_policy.registry_hash)
+        self.assertEqual(b.state, "ACTIVE")
+        rec = b.runtime.admit("op-new")  # activated holder may admit
+        self.assertEqual(rec["state"], "IN_FLIGHT")
+
+    def test_activation_rejects_policy_without_new_generation(self):
+        b = self._barrier()
+        b.begin_quiesce()
+        b.holder_publish("holder-A", "att-1", latest_event_id="e9")
+        stale_policy = load_policy()  # registry still at generation 1 / holder A
+        with self.assertRaises(GuardFailure) as cm:
+            b.complete_transfer(new_holder_id="holder-B", authorized_policy=stale_policy)
+        self.assertEqual(cm.exception.reason, R.STALE_CLAIM_GENERATION)
+        self.assertEqual(b.state, "AWAITING_AUTHORIZATION")
+
+    def test_activation_rejects_wrong_holder_in_policy(self):
+        b = self._barrier()
+        b.begin_quiesce()
+        b.holder_publish("holder-A", "att-1", latest_event_id="e9")
+        wrong_holder_policy = load_policy(
+            [base_claim(claim_generation=2, execution_holder_id="holder-C")]
+        )
+        with self.assertRaises(GuardFailure) as cm:
+            b.complete_transfer(new_holder_id="holder-B", authorized_policy=wrong_holder_policy)
+        self.assertEqual(cm.exception.reason, R.WRONG_EXECUTION_HOLDER)
+        self.assertEqual(b.state, "AWAITING_AUTHORIZATION")
+
+    def test_activate_transferred_claim_retries_after_failed_activation(self):
+        b = self._barrier()
+        b.begin_quiesce()
+        b.holder_publish("holder-A", "att-1", latest_event_id="e9")
+        d = b.complete_transfer(new_holder_id="holder-B")  # no policy yet
+        self.assertFalse(d.safe_to_mutate)
+        # coordinator refreshes policy after the authorized transition lands
+        gen2_policy = load_policy(
+            [base_claim(claim_generation=2, execution_holder_id="holder-B")]
+        )
+        activated = b.activate_transferred_claim(gen2_policy)
+        self.assertTrue(activated.safe_to_mutate)
+        self.assertEqual(b.state, "ACTIVE")
+        with self.assertRaises(GuardFailure) as cm:
+            b.activate_transferred_claim(gen2_policy)
+        self.assertEqual(cm.exception.reason, R.TRANSFER_NOT_READY)
 
     def test_complete_transfer_requires_transfer_ready(self):
         b = self._barrier()  # still ACTIVE
@@ -1427,11 +1798,14 @@ class TestTransferBarrier(unittest.TestCase):
     def test_second_holder_cannot_reuse_generation_after_transfer(self):
         # After transfer the generation is 2; the OLD holder's g1 context is
         # fenced by preflight (STALE_CLAIM_GENERATION) — covered elsewhere —
-        # and the barrier itself refuses a second transfer from g1 state.
+        # and the barrier itself refuses a second transfer from this state.
         b = self._barrier()
         b.begin_quiesce()
         b.holder_publish("holder-A", "att-1", latest_event_id="e9")
-        b.complete_transfer(new_holder_id="holder-B")
+        gen2_policy = load_policy(
+            [base_claim(claim_generation=2, execution_holder_id="holder-B")]
+        )
+        b.complete_transfer(new_holder_id="holder-B", authorized_policy=gen2_policy)
         self.assertEqual(b.state, "ACTIVE")
         self.assertEqual(b.claim_generation, 2)
         self.assertEqual(b.execution_holder_id, "holder-B")

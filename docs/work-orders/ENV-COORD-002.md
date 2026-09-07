@@ -257,6 +257,30 @@ enforcement; shared-file-exception transitions are validated
 close is one-way per generation (recovery creates a new generation via
 transfer). Full list in the lane handoff.
 
+### Remediation evidence — R2 (PR #84 CHANGES_REQUIRED) / 2026-09-08
+
+GPT-5.6 Sol review at `6e257905113a4b379ee05e77c7ceda67a9d19ada` required
+three P1 repairs; all executed on the same claim/generation/holder with
+regression-first tests.
+
+- RED: `python scripts/test_env_coordination_guard.py` →
+  `Ran 153 tests … FAILED (failures=15, errors=8)` — 23 failing (all new
+  remediation regressions + the 2 tests updated to the corrected
+  transfer contract), 130 prior tests passing unchanged.
+- GREEN: `Ran 153 tests … OK`; pytest → `153 passed, 12 subtests passed`.
+- Reviewer reproducers re-run after repair, all fail closed:
+  P1-1 `UNKNOWN(child_alive=False)` → attestation `None`, state
+  `QUIESCING`, `TRANSFER_BLOCKED_UNRESOLVED_EFFECTS`;
+  P1-2 `complete_transfer` → `safe_to_mutate=False`,
+  `TRANSFER_AWAITING_AUTHORIZED_TRANSITION` (no local authority for g+1;
+  `activate_transferred_claim(trusted_policy)` is the only authority
+  path, bound to real `policy_revision`/`registry_hash`);
+  P1-3 exact shared-path overlap with a full §7.3 record validates and
+  both participants may mutate it; broader/uncovered overlap still
+  `OWNERSHIP_CONFLICT`.
+- Other suites re-verified green; `git diff --check` PASS; `status` CLI
+  still reads the live registry (`7d4e6b52`, `BOOTSTRAP_CONTROL`).
+
 ## Stop condition
 
 Implementation owner stops at `REVIEW_REQUESTED`; must not self-merge and must

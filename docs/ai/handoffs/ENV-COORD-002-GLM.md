@@ -166,3 +166,68 @@ Stop at `REVIEW_REQUESTED`. Do not merge.
   independent exact-SHA review of the PR head, and merges only on
   APPROVED with expected-head protection — then files ENV-COORD-003
   (CI integration in SHADOW mode) as a new claim.
+
+## Result — R2 remediation (PR #84 CHANGES_REQUIRED) / 2026-09-08
+
+- **Same claim/context:** `ENV-COORD-002-C1`, generation `1`, holder
+  `zcode-env-coord-002-g1-primary`, worktree `A:\GitHub\envww-coord-002`,
+  branch `feat/env-coord-002`. No second execution context; mutable scope
+  unchanged (the same 4 paths). Preflight re-run before remediation
+  mutation: `origin/main@7d4e6b52…` unchanged, registry intact,
+  `SAFE_TO_MUTATE = YES` maintained.
+- **Repairs (all three P1 findings):**
+  1. `AdmissionGate.has_unresolved_effects` now flags EVERY unreconciled
+     `EFFECT_UNKNOWN` regardless of `child_alive`; live child remains an
+     additional undrained condition (`unresolved_child_operations`).
+  2. `TransferBarrier.complete_transfer` no longer self-authorizes g+1:
+     it executes the worker-side handoff into `AWAITING_AUTHORIZATION`
+     (new holder's gate closed) and returns a non-authorizing
+     `TRANSFER_AWAITING_AUTHORIZED_TRANSITION` decision. Only
+     `activate_transferred_claim(trusted_policy)` — revalidating the
+     claim id at the exact new generation + new holder + mutable status
+     against a fetched authoritative policy — returns
+     `SAFE_TO_MUTATE = YES` bound to real `policy_revision`/
+     `registry_hash` (§4.2B/§4.4).
+  3. Full §7.3 shared-file exception contract: `shared_paths` (exact
+     only, inside every participant's mutable scope),
+     `participating_claims` bound to exact claim generations (≥ 2, no
+     duplicates), single participating `integration_owner_claim_id`,
+     `merge_order` exact permutation of participants,
+     `release_condition` required. Registry overlap legalization permits
+     ONLY the exact authorized shared paths (subtree∩subtree always
+     conflicts); `evaluate_control_transition` accepts the same records
+     with the proposal's claim id/generation as a virtual participant.
+- **RED → GREEN:** RED `Ran 153 tests … FAILED (failures=15, errors=8)`
+  (23 failing = new regressions + 2 tests updated to the corrected
+  transfer contract; 130 prior tests passing); GREEN
+  `Ran 153 tests … OK`; pytest `153 passed, 12 subtests passed`.
+- **Reviewer reproducers re-run post-repair — all fail closed:**
+  `UNKNOWN_NO_CHILD_ATTESTATION` now `None/QUIESCING/
+  TRANSFER_BLOCKED_UNRESOLVED_EFFECTS`; `LOCAL_TRANSFER_SAFE` now
+  `safe_to_mutate=False` + `TRANSFER_AWAITING_AUTHORIZED_TRANSITION`;
+  shared-exception registry with exact overlap now validates and both
+  participants may mutate the shared path, while broader overlap stays
+  `OWNERSHIP_CONFLICT`.
+- **Full relevant tests:** workflow runtimes OK; runtime check PASS;
+  split_sql all passed; ci_alert_payload 33 passed; `git diff --check`
+  exit 0; `status` CLI reads live registry
+  (`7d4e6b52` / `BOOTSTRAP_CONTROL` / `ENV-COORD-002-C1`).
+- **Changed files:** the same 4 authorized claim paths only; `.serena/`
+  never staged.
+- **Exact pushed SHA:** the new single commit on
+  `origin/feat/env-coord-002` (recorded in the PR #84 head; not written
+  into its own commit).
+- **Problems found → fixed:** one of the new P1-3 tests initially
+  expected `LINK_CROSSES_LANE` for a non-participant probing another
+  lane's file; under registry invariants that path correctly fails as
+  `OUTSIDE_MUTABLE_SCOPE` (target cannot be in the probe's own scope), so
+  the expectation was corrected — the exception still leaks nothing.
+  Unresolved: none.
+- **Limitations (unchanged + new):** CLI `scope-check` stays explicitly
+  inspection-only (caller-supplied actual state), per the review's
+  non-blocking note; no hooks/CI/server policy (ENV-COORD-003+); no
+  writer yet creates §7.3 records centrally.
+- **Exactly ONE next safe action:** GPT-5.6 Sol re-reviews PR #84 at the
+  new exact head SHA; merge only on APPROVED with expected-head
+  protection; then file ENV-COORD-003 (SHADOW CI integration) as a new
+  claim.

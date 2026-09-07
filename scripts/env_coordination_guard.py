@@ -157,6 +157,7 @@ class R:
     QUIESCENCE_PRECONDITIONS_UNMET = "QUIESCENCE_PRECONDITIONS_UNMET"
     COORDINATOR_CANNOT_PUBLISH_QUIESCENCE = "COORDINATOR_CANNOT_PUBLISH_QUIESCENCE"
     TRANSFER_NOT_READY = "TRANSFER_NOT_READY"
+    TRANSFER_AWAITING_AUTHORIZED_TRANSITION = "TRANSFER_AWAITING_AUTHORIZED_TRANSITION"
 
     # lifecycle ordering
     EVENT_CONFLICT = "EVENT_CONFLICT"
@@ -289,9 +290,11 @@ REQUIRED_CLAIM_FIELDS = (
 )
 
 REQUIRED_SHARED_EXCEPTION_FIELDS = (
-    "shared_path",
-    "participating_claim_ids",
-    "integration_owner",
+    "shared_paths",
+    "participating_claims",
+    "integration_owner_claim_id",
+    "merge_order",
+    "release_condition",
 )
 
 
@@ -399,37 +402,124 @@ def validate_registry(registry: Any) -> dict:
         forbidden = _parse_scope_list(claim.get("forbidden_scope"), "forbidden_scope")
         parsed_scopes[claim["claim_id"]] = (mutable, forbidden)
 
-    # two active mutable scopes may never overlap (no false-independent lanes)
+    # shared-file exceptions are validated against the parsed claims and
+    # yield the only authorized mutable-scope overlap (§7.3)
+    claims_by_id = {claim["claim_id"]: claim for claim in registry["claims"]}
+    authorized = _validate_and_index_shared_exceptions(
+        registry.get("shared_exceptions", []), claims_by_id
+    )
+
+    # mutable-scope overlap is permitted ONLY as the exact authorized
+    # shared paths of a §7.3 exception; a subtree/subtree intersection is
+    # broader than any exact authorization and always conflicts
     claim_ids = list(parsed_scopes)
     for i, a in enumerate(claim_ids):
         for b in claim_ids[i + 1 :]:
             for expr_a in parsed_scopes[a][0]:
                 for expr_b in parsed_scopes[b][0]:
-                    if scopes_overlap(expr_a, expr_b):
+                    if not scopes_overlap(expr_a, expr_b):
+                        continue
+                    if expr_a.kind == "subtree" and expr_b.kind == "subtree":
                         raise GuardFailure(
                             R.OWNERSHIP_CONFLICT,
-                            f"{a} mutable {expr_a.raw!r} overlaps {b} mutable {expr_b.raw!r}",
+                            f"{a} subtree {expr_a.raw!r} overlaps {b} subtree {expr_b.raw!r}"
+                            " beyond any exact shared path",
                         )
+                    exact = expr_a if expr_a.kind == "exact" else expr_b
+                    if exact.key not in authorized.get(frozenset((a, b)), set()):
+                        raise GuardFailure(
+                            R.OWNERSHIP_CONFLICT,
+                            f"{a} mutable {expr_a.raw!r} overlaps {b} mutable {expr_b.raw!r}"
+                            " without an authorized shared exception",
+                        )
+    return registry
 
-    raw_exceptions = registry.get("shared_exceptions", [])
-    if not isinstance(raw_exceptions, list):
+
+def _validate_and_index_shared_exceptions(exceptions: Any, claims_by_id: dict) -> dict:
+    """Validate full §7.3 records and index the exact authorized overlap.
+
+    Each exception requires: exact shared path(s) inside every
+    participant's mutable scope; participating claims bound to their exact
+    current generations (>= 2, no duplicates); a single temporary
+    integration owner that participates; a merge order that is an exact
+    permutation of the participants; and a non-empty release condition.
+    Returns {frozenset({claim_a, claim_b}): {casefold path keys}}.
+    """
+    if not isinstance(exceptions, list):
         raise GuardFailure(R.INVALID_SHARED_EXCEPTION, "shared_exceptions must be a list")
-    for exc in raw_exceptions:
+    authorized: dict[frozenset, set] = {}
+    for exc in exceptions:
         if not isinstance(exc, dict):
             raise GuardFailure(R.INVALID_SHARED_EXCEPTION, "exception must be an object")
         for required in REQUIRED_SHARED_EXCEPTION_FIELDS:
             if required not in exc:
                 raise GuardFailure(R.INVALID_SHARED_EXCEPTION, f"missing {required}")
-        shared = parse_scope_expr(exc["shared_path"])
-        if shared.kind != "exact":
-            raise GuardFailure(R.INVALID_SHARED_EXCEPTION, "shared path must be exact")
-        participants = exc["participating_claim_ids"]
-        if not isinstance(participants, list) or not participants:
-            raise GuardFailure(R.INVALID_SHARED_EXCEPTION, "participating_claim_ids must be non-empty")
-        for claim_id in participants:
-            if claim_id not in seen_claim_ids:
-                raise GuardFailure(R.INVALID_SHARED_EXCEPTION, f"unknown participant {claim_id}")
-    return registry
+        raw_paths = exc["shared_paths"]
+        if not isinstance(raw_paths, list) or not raw_paths:
+            raise GuardFailure(R.INVALID_SHARED_EXCEPTION, "shared_paths must be a non-empty list")
+        keys: set[str] = set()
+        for raw in raw_paths:
+            expr = parse_scope_expr(raw)
+            if expr.kind != "exact":
+                raise GuardFailure(R.INVALID_SHARED_EXCEPTION, f"shared path must be exact: {raw!r}")
+            keys.add(expr.key)
+        participants = exc["participating_claims"]
+        if not isinstance(participants, list) or len(participants) < 2:
+            raise GuardFailure(R.INVALID_SHARED_EXCEPTION, "at least two participating claims required")
+        participant_ids: list[str] = []
+        for participant in participants:
+            if not isinstance(participant, dict):
+                raise GuardFailure(R.INVALID_SHARED_EXCEPTION, "participant must be an object")
+            cid = participant.get("claim_id")
+            generation = participant.get("claim_generation")
+            claim = claims_by_id.get(cid)
+            if claim is None:
+                raise GuardFailure(R.INVALID_SHARED_EXCEPTION, f"unknown participant {cid!r}")
+            if (
+                isinstance(generation, bool)
+                or not isinstance(generation, int)
+                or generation != claim["claim_generation"]
+            ):
+                raise GuardFailure(
+                    R.INVALID_SHARED_EXCEPTION,
+                    f"participant {cid!r} generation {generation!r} != registry {claim['claim_generation']}",
+                )
+            participant_ids.append(cid)
+        if len(set(participant_ids)) != len(participant_ids):
+            raise GuardFailure(R.INVALID_SHARED_EXCEPTION, "duplicate participant")
+        owner = exc["integration_owner_claim_id"]
+        if owner not in participant_ids:
+            raise GuardFailure(
+                R.INVALID_SHARED_EXCEPTION, f"integration owner {owner!r} does not participate"
+            )
+        order = exc["merge_order"]
+        if (
+            not isinstance(order, list)
+            or len(order) != len(set(order))
+            or sorted(order) != sorted(set(participant_ids))
+        ):
+            raise GuardFailure(
+                R.INVALID_SHARED_EXCEPTION,
+                "merge_order must be an exact permutation of the participants",
+            )
+        if not isinstance(exc["release_condition"], str) or not exc["release_condition"]:
+            raise GuardFailure(R.INVALID_SHARED_EXCEPTION, "release_condition must be a non-empty string")
+        for cid in participant_ids:
+            mutable = _parse_scope_list(claims_by_id[cid]["mutable_scope"], "mutable_scope")
+            for key in keys:
+                if not any(
+                    expr.key == key or (expr.kind == "subtree" and key.startswith(expr.key + "/"))
+                    for expr in mutable
+                ):
+                    raise GuardFailure(
+                        R.INVALID_SHARED_EXCEPTION,
+                        f"shared path {key!r} not inside {cid} mutable scope",
+                    )
+        for i in range(len(participant_ids)):
+            for j in range(i + 1, len(participant_ids)):
+                pair = frozenset((participant_ids[i], participant_ids[j]))
+                authorized.setdefault(pair, set()).update(keys)
+    return authorized
 
 
 def _parse_scope_list(value: Any, field: str) -> list[ScopeExpr]:
@@ -659,17 +749,16 @@ def _evaluate_link(
 ) -> Optional[str]:
     """§7.2 symlink re-authorization + §7.3 shared-file exception.
 
-    Order: outside-root → own forbidden (always wins) → shared-file
-    exception (exact path + participant waives scope) → own mutable
-    required → every other lane's protected (mutable ∪ forbidden) scope.
+    Order: outside-root → own forbidden (always wins) → own mutable
+    required → every other lane's protected (mutable ∪ forbidden) scope,
+    waived only for the exact shared paths of an exception that binds
+    this claim id AND generation as a participant.
     """
     if not link.inside_root or link.resolved_repo_path is None:
         return R.LINK_TARGET_OUTSIDE_ROOT
     resolved = link.resolved_repo_path
     if _scope_set_contains(forbidden, resolved):
         return R.FORBIDDEN_PATH
-    if _shared_exception_covers(policy, claim["claim_id"], resolved):
-        return None
     if not _scope_set_contains(mutable, resolved):
         return R.OUTSIDE_MUTABLE_SCOPE
     for other in policy.claims:
@@ -677,19 +766,29 @@ def _evaluate_link(
             continue
         protected = policy.mutable_exprs(other) + policy.forbidden_exprs(other)
         if _scope_set_contains(protected, resolved):
-            return R.LINK_CROSSES_LANE
+            if not _shared_exception_covers(
+                policy, claim["claim_id"], claim["claim_generation"], resolved
+            ):
+                return R.LINK_CROSSES_LANE
     return None
 
 
-def _shared_exception_covers(policy: TrustedPolicy, claim_id: str, resolved: str) -> bool:
-    target_key = case_key(resolved)
+def _shared_exception_covers(
+    policy: TrustedPolicy, claim_id: str, claim_generation: int, resolved: str
+) -> bool:
+    """True iff an exception lists this claim (at this exact generation)
+    as participant and the resolved path as an exact shared path."""
+    target = case_key(resolved)
     for exc in policy.shared_exceptions:
-        try:
-            shared = parse_scope_expr(exc["shared_path"])
-        except GuardFailure:
-            return False
-        if shared.key == target_key and claim_id in exc["participating_claim_ids"]:
-            return True
+        shared_keys = {case_key(p) for p in exc["shared_paths"]}
+        if target not in shared_keys:
+            continue
+        for participant in exc["participating_claims"]:
+            if (
+                participant["claim_id"] == claim_id
+                and participant["claim_generation"] == claim_generation
+            ):
+                return True
     return False
 
 
@@ -758,12 +857,43 @@ def evaluate_control_transition(policy: TrustedPolicy, proposal: dict) -> Transi
     ]
     task_id = proposal.get("task_id", "")
     existing = policy.claim_by_task(task_id)
+    proposed_claim_id = proposal.get("proposed_claim_id")
+
+    # a proposal may legalize scope overlap ONLY through §7.3 records that
+    # bind its claim id + generation and an existing claim's exact path
+    authorized_pairs: dict = {}
+    if proposal.get("authorized_shared_exceptions") is not None:
+        if not proposed_claim_id:
+            raise GuardFailure(
+                R.INVALID_SHARED_EXCEPTION, "authorized_shared_exceptions requires proposed_claim_id"
+            )
+        virtual_claims = {c["claim_id"]: dict(c) for c in policy.claims}
+        virtual_claims[proposed_claim_id] = {
+            "claim_id": proposed_claim_id,
+            "claim_generation": proposal.get("proposed_claim_generation", 1),
+            "mutable_scope": list(proposal.get("proposed_mutable_scope", [])),
+        }
+        authorized_pairs = _validate_and_index_shared_exceptions(
+            proposal.get("authorized_shared_exceptions", []), virtual_claims
+        )
+
     for other in policy.claims:
         if existing is not None and other["claim_id"] == existing["claim_id"]:
             continue  # a reassignment may keep its own lane
         for candidate in proposed_scope:
-            if any(scopes_overlap(candidate, expr) for expr in policy.mutable_exprs(other)):
-                return TransitionValidation(False, R.OWNERSHIP_CONFLICT)
+            for other_expr in policy.mutable_exprs(other):
+                if not scopes_overlap(candidate, other_expr):
+                    continue
+                if candidate.kind == "subtree" and other_expr.kind == "subtree":
+                    return TransitionValidation(False, R.OWNERSHIP_CONFLICT)
+                exact = candidate if candidate.kind == "exact" else other_expr
+                pair = (
+                    frozenset((proposed_claim_id, other["claim_id"]))
+                    if proposed_claim_id
+                    else None
+                )
+                if pair is None or exact.key not in authorized_pairs.get(pair, set()):
+                    return TransitionValidation(False, R.OWNERSHIP_CONFLICT)
 
     proposed_generation = proposal.get("proposed_claim_generation")
     if existing is None:
@@ -985,9 +1115,10 @@ class AdmissionGate:
 
     @property
     def has_unresolved_effects(self) -> bool:
-        return any(
-            r["state"] == ADMISSION_UNKNOWN and r["child_alive"] for r in self._admissions.values()
-        )
+        """Every unreconciled EFFECT_UNKNOWN is unresolved — independently
+        of whether a child process is still alive (§4.2B). A live child is
+        an additional undrained condition, not the definition of unknown."""
+        return any(r["state"] == ADMISSION_UNKNOWN for r in self._admissions.values())
 
     @property
     def unresolved_child_operations(self) -> tuple:
@@ -1130,7 +1261,17 @@ class TransferBarrier:
             "transfer_block_reason": self.transfer_block_reason,
         }
 
-    def complete_transfer(self, new_holder_id: str) -> Decision:
+    def complete_transfer(self, new_holder_id: str, authorized_policy=None) -> Decision:
+        """Execute the worker-side handoff; NEVER self-authorize g+1.
+
+        §4.2B ordering is TRANSFER_READY(g) → authorized claim transition →
+        ACTIVE(g+1). This method only proves the handoff: it records the
+        proposed new generation/holder and returns a NON-authorizing
+        result (TRANSFER_AWAITING_AUTHORIZED_TRANSITION) with the new
+        holder's gate closed. Mutation authority for g+1 exists only after
+        `activate_transferred_claim` revalidates a trusted authoritative
+        policy for the new generation/holder (§4.4).
+        """
         if self.state == "QUIESCING" and not self._attestations:
             raise GuardFailure(R.QUIESCENCE_PRECONDITIONS_UNMET, "quiescing without an attestation")
         if self.state != "TRANSFER_READY":
@@ -1145,17 +1286,55 @@ class TransferBarrier:
         self.claim_generation += 1
         self.execution_holder_id = new_holder_id
         self.runtime = HolderRuntime(new_holder_id)
-        self.state = "ACTIVE"
+        self.runtime.gate.close()  # no mutation until authoritative activation
+        self.state = "AWAITING_AUTHORIZATION"
         self.transfer_block_reason = None
+
+        if authorized_policy is not None:
+            return self.activate_transferred_claim(authorized_policy)
         return Decision(
-            safe_to_mutate=True,
-            reason=None,
+            safe_to_mutate=False,
+            reason=R.TRANSFER_AWAITING_AUTHORIZED_TRANSITION,
             policy_revision="",
             registry_hash="",
             claim_id=self.claim_id,
             claim_generation=self.claim_generation,
             execution_holder_id=self.execution_holder_id,
-            details=(attestation["attestation_id"],),
+            details=("transfer_executed", attestation["attestation_id"]),
+        )
+
+    def activate_transferred_claim(self, policy: "TrustedPolicy") -> Decision:
+        """Activate g+1 only against a trusted authoritative-main record.
+
+        The supplied policy must come from latest fetched origin/main and
+        contain this claim at the transferred generation with the new
+        holder in a mutable status. On mismatch the barrier stays in
+        AWAITING_AUTHORIZATION — no authority is granted or invented.
+        """
+        if self.state != "AWAITING_AUTHORIZATION":
+            raise GuardFailure(R.TRANSFER_NOT_READY, f"state is {self.state}")
+        claim = policy.claim_by_id(self.claim_id)
+        if claim is None:
+            raise GuardFailure(R.WRONG_CLAIM, self.claim_id)
+        if claim["claim_generation"] != self.claim_generation:
+            raise GuardFailure(
+                R.STALE_CLAIM_GENERATION,
+                f"policy has generation {claim['claim_generation']}, transfer expects {self.claim_generation}",
+            )
+        if claim["execution_holder_id"] != self.execution_holder_id:
+            raise GuardFailure(R.WRONG_EXECUTION_HOLDER, claim["execution_holder_id"])
+        if claim["status"] not in MUTABLE_CLAIM_STATUSES:
+            raise GuardFailure(R.CLAIM_STATUS_NOT_MUTABLE, claim["status"])
+        self.state = "ACTIVE"
+        self.runtime = HolderRuntime(self.execution_holder_id)  # gate opens
+        return Decision(
+            safe_to_mutate=True,
+            reason=None,
+            policy_revision=policy.policy_revision,
+            registry_hash=policy.registry_hash,
+            claim_id=self.claim_id,
+            claim_generation=self.claim_generation,
+            execution_holder_id=self.execution_holder_id,
         )
 
 
