@@ -75,13 +75,14 @@ CLAIM_STATUSES = MUTABLE_CLAIM_STATUSES + (
 )
 
 # Scope locks derive from the §4.1 lifecycle: every state holds its
-# mutable-scope lock EXCEPT READY (never claimed), MERGED (integrated
-# into main — the scope now lives on main), and CLOSED (released).
+# mutable-scope lock EXCEPT READY (never claimed) and CLOSED (the explicit
+# terminal release per §4.5 — release happens only through the authorized
+# quiesce/drain + release transition). MERGED and POSTMERGE_VERIFY still
+# HOLD their scope: merging the implementation PR is not the release
+# transition, and the lane may write verification evidence until CLOSED.
 # STALE_CLAIM / RECOVERY_HOLD / STATE_DRIFT hold locks per §4.5
 # (inactivity or worker loss must not silently free scope).
-# POSTMERGE_VERIFY still holds: the lane may write verification evidence
-# until CLOSED.
-RELEASED_CLAIM_STATUSES = ("READY", "MERGED", "CLOSED")
+RELEASED_CLAIM_STATUSES = ("READY", "CLOSED")
 LOCK_HOLDING_CLAIM_STATUSES = tuple(
     status for status in CLAIM_STATUSES if status not in RELEASED_CLAIM_STATUSES
 )
@@ -100,6 +101,7 @@ LIFECYCLE_EVENT_TYPES = (
     "CHECKPOINT",
     "OPERATION_INTENT",
     "OPERATION_OUTCOME",
+    "OPERATION_RECONCILED",
     "GOAL_END",
 )
 OPERATION_OUTCOMES = ("SUCCEEDED", "FAILED", "UNKNOWN")
@@ -427,9 +429,10 @@ def validate_registry(registry: Any) -> dict:
     )
 
     # mutable-scope overlap enforcement applies only to claims that still
-    # HOLD a scope lock (§4.1/§4.5): released records (READY/MERGED/CLOSED)
-    # must not false-collide with new ownership. Overlap is permitted ONLY
-    # as the exact authorized shared paths of a §7.3 exception; a
+    # HOLD a scope lock (§4.1/§4.5): released records (READY/CLOSED) must
+    # not false-collide with new ownership, while MERGED/POSTMERGE_VERIFY
+    # still hold until the authorized CLOSED release. Overlap is permitted
+    # ONLY as the exact authorized shared paths of a §7.3 exception; a
     # subtree/subtree intersection is broader than any exact authorization
     # and always conflicts.
     lock_holding = [
@@ -467,12 +470,19 @@ def _validate_and_index_shared_exceptions(exceptions: Any, claims_by_id: dict) -
     current generations (>= 2, no duplicates); a single temporary
     integration owner that participates; a merge order that is an exact
     permutation of the participants; and a non-empty release condition.
+
+    Global invariant (§7.3/§13): at most ONE active exception record per
+    canonical shared path — regardless of participant sets. Three
+    participants on one path belong in ONE record with ONE owner and ONE
+    merge order; pairwise records over the same path would mint multiple
+    temporary owners and make authorization list-order dependent.
+    Duplicates are rejected, not treated as idempotent.
     Returns {frozenset({claim_a, claim_b}): {casefold path keys}}.
     """
     if not isinstance(exceptions, list):
         raise GuardFailure(R.INVALID_SHARED_EXCEPTION, "shared_exceptions must be a list")
     authorized: dict[frozenset, set] = {}
-    seen_owner_scopes: set = set()
+    claimed_paths: set[str] = set()
     for exc in exceptions:
         if not isinstance(exc, dict):
             raise GuardFailure(R.INVALID_SHARED_EXCEPTION, "exception must be an object")
@@ -540,22 +550,21 @@ def _validate_and_index_shared_exceptions(exceptions: Any, claims_by_id: dict) -
                         R.INVALID_SHARED_EXCEPTION,
                         f"shared path {key!r} not inside {cid} mutable scope",
                     )
-        # deterministic uniqueness: the same shared path + participating
-        # claim/generation set may carry at most ONE active exception
-        # record (one temporary owner). Exact duplicates and conflicting
-        # owners are both rejected — duplicates are NOT idempotent.
-        participant_generations = frozenset(
-            (p["claim_id"], p["claim_generation"]) for p in participants
-        )
+        # deterministic global uniqueness: one canonical shared path may be
+        # covered by at most ONE active exception record across the whole
+        # registry — mixed participant sets must not mint extra temporary
+        # owners (triangle/pairwise coverage is rejected; add participants
+        # to the single record instead). Duplicates are NOT idempotent.
         for key in keys:
-            owner_scope = (key, participant_generations)
-            if owner_scope in seen_owner_scopes:
+            if key in claimed_paths:
                 raise GuardFailure(
                     R.INVALID_SHARED_EXCEPTION,
-                    f"duplicate active exception for shared path {key!r} and the same"
-                    " participant/generation set — at most one temporary owner allowed",
+                    f"shared path {key!r} is already covered by another active"
+                    " exception record — at most one record (one temporary"
+                    " integration owner) per canonical shared path; put all"
+                    " participants in that single record",
                 )
-            seen_owner_scopes.add(owner_scope)
+            claimed_paths.add(key)
         for i in range(len(participant_ids)):
             for j in range(i + 1, len(participant_ids)):
                 pair = frozenset((participant_ids[i], participant_ids[j]))
@@ -972,6 +981,8 @@ def evaluate_control_transition(policy: TrustedPolicy, proposal: dict) -> Transi
     for other in policy.claims:
         if existing is not None and other["claim_id"] == existing["claim_id"]:
             continue  # a reassignment may keep its own lane
+        if other["status"] not in LOCK_HOLDING_CLAIM_STATUSES:
+            continue  # released records (READY/CLOSED) hold no scope lock (§4.1/§4.5)
         for candidate in proposed_scope:
             for other_expr in policy.mutable_exprs(other):
                 if not scopes_overlap(candidate, other_expr):
@@ -1050,6 +1061,13 @@ class LifecycleLog:
     sequence → exact previous-event link → type-specific semantics. A
     GOAL_END only terminates when durably published; a CHECKPOINT never
     replaces an active goal.
+
+    §5.5 external-operation reconciliation: an UNKNOWN execution outcome
+    blocks retries until external state is reconciled. Reconciliation is a
+    distinct durable OPERATION_RECONCILED event carrying an explicit
+    terminal observation — the original UNKNOWN execution outcome is never
+    rewritten (audit history is retained); only the reconciliation record
+    clears the unresolved state.
     """
 
     def __init__(self, claim_id: str, claim_generation: int):
@@ -1069,8 +1087,27 @@ class LifecycleLog:
 
     @property
     def has_unresolved_external_operations(self) -> bool:
-        """True while any OPERATION_INTENT lacks an outcome or is UNKNOWN."""
-        return any(op["outcome"] is None or op["outcome"] == "UNKNOWN" for op in self._operations.values())
+        """True while any OPERATION_INTENT lacks an outcome, or its UNKNOWN
+        execution outcome has no durable reconciliation record yet."""
+        return any(
+            op["outcome"] is None
+            or (op["outcome"] == "UNKNOWN" and op.get("reconciled_outcome") is None)
+            for op in self._operations.values()
+        )
+
+    def operation_record(self, operation_id: str) -> dict:
+        """Audit view of one external operation: the original execution
+        outcome (UNKNOWN stays UNKNOWN after reconciliation) plus the
+        reconciliation record that cleared it, if any."""
+        record = self._operations.get(operation_id)
+        if record is None:
+            raise GuardFailure(R.UNKNOWN_OPERATION, str(operation_id))
+        return {
+            "operation_id": operation_id,
+            "outcome": record["outcome"],
+            "reconciled_outcome": record.get("reconciled_outcome"),
+            "reconciled_event_id": record.get("reconciled_event_id"),
+        }
 
     # ── replay ──
     def apply(self, event: LifecycleEvent) -> tuple[str, LifecycleEvent]:
@@ -1136,6 +1173,32 @@ class LifecycleLog:
             if operation["outcome"] is not None:
                 raise GuardFailure(R.EVENT_CONFLICT, f"operation {event.operation_id} already terminal")
             operation["outcome"] = event.operation_outcome
+        elif event.event_type == "OPERATION_RECONCILED":
+            # §5.5 durable reconciliation: the explicit terminal external
+            # observation clears the unresolved UNKNOWN without rewriting
+            # the original execution outcome (audit retained above).
+            operation = self._operations.get(event.operation_id)
+            if operation is None:
+                raise GuardFailure(R.UNKNOWN_OPERATION, str(event.operation_id))
+            if event.operation_outcome not in ("SUCCEEDED", "FAILED"):
+                raise GuardFailure(
+                    R.INVALID_OPERATION_OUTCOME,
+                    f"reconciled observation must be terminal: {event.operation_outcome!r}",
+                )
+            if operation["outcome"] != "UNKNOWN":
+                raise GuardFailure(
+                    R.EFFECT_CONFLICT,
+                    f"operation {event.operation_id} outcome is"
+                    f" {operation['outcome']!r}, only UNKNOWN can be reconciled",
+                )
+            if operation.get("reconciled_outcome") is not None:
+                raise GuardFailure(
+                    R.EFFECT_CONFLICT,
+                    f"operation {event.operation_id} is already reconciled"
+                    f" ({operation['reconciled_outcome']!r})",
+                )
+            operation["reconciled_outcome"] = event.operation_outcome
+            operation["reconciled_event_id"] = event.event_id
 
         self.events.append(event)
         self._by_id[event.event_id] = event
@@ -1331,6 +1394,14 @@ class TransferBarrier:
     active_admissions == 0 and no unresolved effects/operations. The
     coordinator validates attestations and interrupts; it can never
     manufacture them.
+
+    Every state/generation/holder/attestation transition (begin_quiesce,
+    holder_publish, complete_transfer, activation) and the status read are
+    serialized behind one barrier-level lock: a single g attestation can
+    yield at most ONE proposed g+1 handoff — a concurrent second transfer
+    fails TRANSFER_NOT_READY against the established transition instead of
+    advancing again. This atomicity is PROCESS-LOCAL; cross-process
+    serialization stays an adapter/server responsibility.
     """
 
     def __init__(self, claim_id: str, claim_generation: int, holder_id: str):
@@ -1341,16 +1412,18 @@ class TransferBarrier:
         self.state = "ACTIVE"
         self.transfer_block_reason: Optional[str] = None
         self._attestations: dict[str, dict] = {}
+        self._lock = threading.RLock()
 
     # ── holder side ──
     def begin_quiesce(self) -> None:
-        if self.state == "QUIESCING":
-            return  # idempotent
-        if self.state != "ACTIVE":
-            raise GuardFailure(R.TRANSFER_NOT_READY, f"cannot quiesce from {self.state}")
-        self.runtime.gate.close()
-        self.state = "QUIESCING"
-        self.transfer_block_reason = None
+        with self._lock:
+            if self.state == "QUIESCING":
+                return  # idempotent
+            if self.state != "ACTIVE":
+                raise GuardFailure(R.TRANSFER_NOT_READY, f"cannot quiesce from {self.state}")
+            self.runtime.gate.close()
+            self.state = "QUIESCING"
+            self.transfer_block_reason = None
 
     def holder_publish(
         self,
@@ -1364,54 +1437,58 @@ class TransferBarrier:
         Returns the attestation on success, None with transfer_block_reason
         set on fail-closed rejection; conflicting replays raise.
         """
-        if publisher_id != self.execution_holder_id:
-            self.transfer_block_reason = R.COORDINATOR_CANNOT_PUBLISH_QUIESCENCE
-            return None
+        with self._lock:
+            if publisher_id != self.execution_holder_id:
+                self.transfer_block_reason = R.COORDINATOR_CANNOT_PUBLISH_QUIESCENCE
+                return None
 
-        replay = self._attestations.get(attestation_id)
-        payload = {
-            "attestation_id": attestation_id,
-            "claim_id": self.claim_id,
-            "claim_generation": self.claim_generation,
-            "execution_holder_id": self.execution_holder_id,
-            "latest_lifecycle_event_id": latest_event_id,
-            "admission_high_water": self.runtime.admissions_high_water,
-            "active_admissions": 0,
-        }
-        if replay is not None:
-            if replay == payload:
-                return dict(replay)
-            raise GuardFailure(R.EVENT_CONFLICT, f"attestation {attestation_id} replayed differently")
+            replay = self._attestations.get(attestation_id)
+            payload = {
+                "attestation_id": attestation_id,
+                "claim_id": self.claim_id,
+                "claim_generation": self.claim_generation,
+                "execution_holder_id": self.execution_holder_id,
+                "latest_lifecycle_event_id": latest_event_id,
+                "admission_high_water": self.runtime.admissions_high_water,
+                "active_admissions": 0,
+            }
+            if replay is not None:
+                if replay == payload:
+                    return dict(replay)
+                raise GuardFailure(
+                    R.EVENT_CONFLICT, f"attestation {attestation_id} replayed differently"
+                )
 
-        if self.runtime.gate.state != "CLOSED" or self.state != "QUIESCING":
-            self.transfer_block_reason = R.QUIESCENCE_PRECONDITIONS_UNMET
-            return None
-        if self.runtime.active_admissions > 0:
-            self.transfer_block_reason = R.TRANSFER_BLOCKED_ACTIVE_ADMISSIONS
-            return None
-        if self.runtime.has_unresolved_effects or unresolved_external_operations:
-            self.transfer_block_reason = R.TRANSFER_BLOCKED_UNRESOLVED_EFFECTS
-            return None
-        if self.runtime.has_live_children:
-            self.transfer_block_reason = R.TRANSFER_BLOCKED_LIVE_CHILDREN
-            return None
+            if self.runtime.gate.state != "CLOSED" or self.state != "QUIESCING":
+                self.transfer_block_reason = R.QUIESCENCE_PRECONDITIONS_UNMET
+                return None
+            if self.runtime.active_admissions > 0:
+                self.transfer_block_reason = R.TRANSFER_BLOCKED_ACTIVE_ADMISSIONS
+                return None
+            if self.runtime.has_unresolved_effects or unresolved_external_operations:
+                self.transfer_block_reason = R.TRANSFER_BLOCKED_UNRESOLVED_EFFECTS
+                return None
+            if self.runtime.has_live_children:
+                self.transfer_block_reason = R.TRANSFER_BLOCKED_LIVE_CHILDREN
+                return None
 
-        self._attestations[attestation_id] = payload
-        self.state = "TRANSFER_READY"
-        self.transfer_block_reason = None
-        return dict(payload)
+            self._attestations[attestation_id] = payload
+            self.state = "TRANSFER_READY"
+            self.transfer_block_reason = None
+            return dict(payload)
 
     # ── coordinator side ──
     def coordinator_interrupt(self) -> dict:
         """Interruption before transfer changes nothing: generation and
         holder stay locked until the authorized transition completes."""
-        return {
-            "claim_id": self.claim_id,
-            "claim_generation": self.claim_generation,
-            "execution_holder_id": self.execution_holder_id,
-            "state": self.state,
-            "transfer_block_reason": self.transfer_block_reason,
-        }
+        with self._lock:
+            return {
+                "claim_id": self.claim_id,
+                "claim_generation": self.claim_generation,
+                "execution_holder_id": self.execution_holder_id,
+                "state": self.state,
+                "transfer_block_reason": self.transfer_block_reason,
+            }
 
     def complete_transfer(
         self, new_holder_id: str, authorized_policy=None, actual_context: Optional[dict] = None
@@ -1428,41 +1505,44 @@ class TransferBarrier:
         `authorized_policy` without `actual_context` fails closed with
         MISSING_ACTUAL_CONTEXT.
         """
-        if self.state == "QUIESCING" and not self._attestations:
-            raise GuardFailure(R.QUIESCENCE_PRECONDITIONS_UNMET, "quiescing without an attestation")
-        if self.state != "TRANSFER_READY":
-            raise GuardFailure(R.TRANSFER_NOT_READY, f"state is {self.state}")
-        attestation = next(
-            (a for a in self._attestations.values() if a["claim_generation"] == self.claim_generation),
-            None,
-        )
-        if attestation is None or attestation["execution_holder_id"] != self.execution_holder_id:
-            raise GuardFailure(R.QUIESCENCE_PRECONDITIONS_UNMET, "no valid attestation for this generation")
-
-        self.claim_generation += 1
-        self.execution_holder_id = new_holder_id
-        self.runtime = HolderRuntime(new_holder_id)
-        self.runtime.gate.close()  # no mutation until authoritative activation
-        self.state = "AWAITING_AUTHORIZATION"
-        self.transfer_block_reason = None
-
-        if authorized_policy is not None:
-            if actual_context is None:
+        with self._lock:
+            if self.state == "QUIESCING" and not self._attestations:
+                raise GuardFailure(R.QUIESCENCE_PRECONDITIONS_UNMET, "quiescing without an attestation")
+            if self.state != "TRANSFER_READY":
+                raise GuardFailure(R.TRANSFER_NOT_READY, f"state is {self.state}")
+            attestation = next(
+                (a for a in self._attestations.values() if a["claim_generation"] == self.claim_generation),
+                None,
+            )
+            if attestation is None or attestation["execution_holder_id"] != self.execution_holder_id:
                 raise GuardFailure(
-                    R.MISSING_ACTUAL_CONTEXT,
-                    "activation requires the actual execution context (§4.4)",
+                    R.QUIESCENCE_PRECONDITIONS_UNMET, "no valid attestation for this generation"
                 )
-            return self.activate_transferred_claim(authorized_policy, actual_context)
-        return Decision(
-            safe_to_mutate=False,
-            reason=R.TRANSFER_AWAITING_AUTHORIZED_TRANSITION,
-            policy_revision="",
-            registry_hash="",
-            claim_id=self.claim_id,
-            claim_generation=self.claim_generation,
-            execution_holder_id=self.execution_holder_id,
-            details=("transfer_executed", attestation["attestation_id"]),
-        )
+
+            self.claim_generation += 1
+            self.execution_holder_id = new_holder_id
+            self.runtime = HolderRuntime(new_holder_id)
+            self.runtime.gate.close()  # no mutation until authoritative activation
+            self.state = "AWAITING_AUTHORIZATION"
+            self.transfer_block_reason = None
+
+            if authorized_policy is not None:
+                if actual_context is None:
+                    raise GuardFailure(
+                        R.MISSING_ACTUAL_CONTEXT,
+                        "activation requires the actual execution context (§4.4)",
+                    )
+                return self.activate_transferred_claim(authorized_policy, actual_context)
+            return Decision(
+                safe_to_mutate=False,
+                reason=R.TRANSFER_AWAITING_AUTHORIZED_TRANSITION,
+                policy_revision="",
+                registry_hash="",
+                claim_id=self.claim_id,
+                claim_generation=self.claim_generation,
+                execution_holder_id=self.execution_holder_id,
+                details=("transfer_executed", attestation["attestation_id"]),
+            )
 
     def activate_transferred_claim(self, policy: "TrustedPolicy", actual_context: dict) -> Decision:
         """Activate g+1 only via the COMPLETE §4.4 preflight.
@@ -1474,14 +1554,18 @@ class TransferBarrier:
         gate CLOSED and the deterministic preflight reason is raised — no
         partial activation, no authority from policy identity alone.
         """
-        if self.state != "AWAITING_AUTHORIZATION":
-            raise GuardFailure(R.TRANSFER_NOT_READY, f"state is {self.state}")
-        decision = preflight(policy, actual_context)
-        if not decision.safe_to_mutate:
-            raise GuardFailure(decision.reason or R.QUIESCENCE_PRECONDITIONS_UNMET, "transferred-activation preflight failed")
-        self.state = "ACTIVE"
-        self.runtime = HolderRuntime(self.execution_holder_id)  # gate opens
-        return decision
+        with self._lock:
+            if self.state != "AWAITING_AUTHORIZATION":
+                raise GuardFailure(R.TRANSFER_NOT_READY, f"state is {self.state}")
+            decision = preflight(policy, actual_context)
+            if not decision.safe_to_mutate:
+                raise GuardFailure(
+                    decision.reason or R.QUIESCENCE_PRECONDITIONS_UNMET,
+                    "transferred-activation preflight failed",
+                )
+            self.state = "ACTIVE"
+            self.runtime = HolderRuntime(self.execution_holder_id)  # gate opens
+            return decision
 
 
 # ═══════════════════════════════════════════════════════════════════════
@@ -1515,8 +1599,11 @@ def _read_current_work(args) -> tuple[str, str]:
             raise GuardFailure(R.IO_ERROR, "--no-git/--current-work-file requires --policy-revision")
         with open(args.current_work_file, encoding="utf-8") as handle:
             return handle.read(), args.policy_revision
+    # freeze the revision ONCE, then read the document from that exact
+    # object (§3.1 exact policy binding): a second mutable-ref read could
+    # tear the pair if origin/main advances between the two Git calls.
     revision = run_git(["rev-parse", "origin/main"])
-    text = run_git(["show", f"origin/main:{CURRENT_WORK_PATH}"])
+    text = run_git(["show", f"{revision}:{CURRENT_WORK_PATH}"])
     return text, revision
 
 

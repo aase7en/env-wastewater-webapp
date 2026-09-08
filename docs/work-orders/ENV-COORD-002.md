@@ -15,7 +15,7 @@ Claim generation: `1`
 Execution holder ID: `zcode-env-coord-002-g1-primary`
 Enforcement mode: `BOOTSTRAP_CONTROL`
 Lane handoff/result destination: `docs/ai/handoffs/ENV-COORD-002-GLM.md`
-Last updated: 2026-09-07
+Last updated: 2026-09-08
 
 ## Parent architecture
 
@@ -318,6 +318,60 @@ preflight re-run (`origin/main@7d4e6b52…` unchanged).
 - Deterministic threaded concurrency regressions added (Barrier/Event
   choreography, 200-round admit-vs-close race, 8-admitter sweep).
 - Adjacent suites green; `git diff --check` PASS.
+
+### Remediation evidence — R4 (GPT-5.6 Sol R3 review, five P1) / 2026-09-08
+
+Exact-SHA review of the R3 head `7a6eb457230ce07748c0fa82abeb9f9725fdd702`
+(CHANGES_REQUIRED) confirmed the six prior blockers fixed and found five
+additional contract gaps; all repaired on the same claim/generation/holder
+with regression-first tests.
+
+- RED: `python scripts/test_env_coordination_guard.py` →
+  `Ran 202 tests … FAILED (failures=12, errors=5)` — 17 failing (the five
+  blockers' regressions), 185 prior tests passing unchanged.
+- GREEN: `Ran 202 tests … OK` (stable across repeated runs); pytest →
+  `202 passed, 15 subtests passed`.
+- Repairs:
+  1. `_read_current_work()` freezes `origin/main` once and reads the
+     document from that exact object (`git show <sha>:…`); the second Git
+     read never touches the mutable ref (§3.1 exact policy binding).
+  2. New ordered/idempotent `OPERATION_RECONCILED` lifecycle event binds
+     operation_id + claim generation, accepts only an explicit terminal
+     observation (`SUCCEEDED`/`FAILED`), durably clears
+     `has_unresolved_external_operations`, and retains the original
+     UNKNOWN execution outcome for audit (`operation_record()`); a later
+     `OPERATION_OUTCOME` stays `EVENT_CONFLICT`.
+  3. One barrier-level `RLock` serializes `begin_quiesce`,
+     `holder_publish`, `coordinator_interrupt`, `complete_transfer`, and
+     activation: one g attestation yields at most ONE g+1 handoff; the
+     concurrent second transfer fails `TRANSFER_NOT_READY` instead of
+     advancing to g3. Process-local, as with the admission gate.
+  4. §7.3 global invariant: at most ONE active exception record per
+     canonical shared path across ALL participant sets — triangle/pairwise
+     coverage of one path is `INVALID_SHARED_EXCEPTION`; three
+     participants belong in one record with one owner and one merge order.
+  5. `RELEASED_CLAIM_STATUSES = (READY, CLOSED)`: MERGED and
+     POSTMERGE_VERIFY hold their scope lock until the authorized CLOSED
+     release, and `evaluate_control_transition` now skips released
+     records exactly like `validate_registry` (no implicit MERGED
+     release). This supersedes the R3 MERGED-releases derivation that was
+     flagged for reviewer confirmation.
+- All five reviewer reproducers re-run post-repair, all fail closed:
+  `M1_PAIR` second git call is `show <frozen-sha>:docs/ai/CURRENT-WORK.md`
+  with the text bound to revision N; `M2` unresolved True → False with
+  original outcome UNKNOWN retained and `reconciled=SUCCEEDED`;
+  concurrent double transfer always exactly one success at generation 2
+  with the loser `TRANSFER_NOT_READY` (never generation 3);
+  `TRIANGLE_MULTI_OWNER` → `INVALID_SHARED_EXCEPTION`;
+  `MERGED_OVERLAP` → `OWNERSHIP_CONFLICT`.
+- Concurrency regressions added: decoy-widened attestation-scan double
+  transfer race (40 rounds), publish-vs-transfer serialization (25
+  rounds), 4-way mixed §4.4 activation race (exactly one activation, no
+  partial activation).
+- Adjacent suites green (workflow runtimes OK; runtime check PASS 5
+  files; split_sql all passed; ci_alert_payload 33 passed);
+  `git diff --check` PASS; live `status` CLI smoke reads the real
+  registry through the frozen-SHA read (`7d4e6b52`, `BOOTSTRAP_CONTROL`).
 
 ## Stop condition
 

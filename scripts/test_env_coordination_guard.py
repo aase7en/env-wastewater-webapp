@@ -23,14 +23,18 @@ import sys
 import tempfile
 import threading
 import unittest
+from types import SimpleNamespace
 
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
+
+import env_coordination_guard as guard_module  # noqa: E402
 
 from env_coordination_guard import (  # noqa: E402
     ADMISSION_COMPLETE,
     ADMISSION_FAILED,
     ADMISSION_UNKNOWN,
     AdmissionGate,
+    CURRENT_WORK_PATH,
     Change,
     Decision,
     GuardFailure,
@@ -1274,6 +1278,37 @@ class TestControlTransition(unittest.TestCase):
         self.assertFalse(result.valid)
         self.assertEqual(result.reason, R.OWNERSHIP_CONFLICT)
 
+    def test_transition_overlap_with_closed_claim_accepted(self):
+        # R4-review P1: CLOSED is the explicit terminal release (§4.5) — a
+        # new proposal may take over the freed scope without collision.
+        closed = other_lane_claim(mutable_scope=["frontend/src/ops/**"], status="CLOSED")
+        policy = load_policy([base_claim(), closed])
+        result = evaluate_control_transition(
+            policy, self._proposal(expected_registry_hash=policy.registry_hash)
+        )
+        self.assertTrue(result.valid)
+
+    def test_transition_overlap_with_ready_claim_accepted(self):
+        # READY never held a scope lock — an unclaimed record must not
+        # block a new proposal.
+        ready = other_lane_claim(mutable_scope=["frontend/src/ops/**"], status="READY")
+        policy = load_policy([base_claim(), ready])
+        result = evaluate_control_transition(
+            policy, self._proposal(expected_registry_hash=policy.registry_hash)
+        )
+        self.assertTrue(result.valid)
+
+    def test_transition_overlap_with_merged_claim_rejected(self):
+        # R4-review P1: MERGED still holds its scope through POSTMERGE_VERIFY
+        # until CLOSED — no implicit release via the implementation merge.
+        merged = other_lane_claim(mutable_scope=["frontend/src/ops/**"], status="MERGED")
+        policy = load_policy([base_claim(), merged])
+        result = evaluate_control_transition(
+            policy, self._proposal(expected_registry_hash=policy.registry_hash)
+        )
+        self.assertFalse(result.valid)
+        self.assertEqual(result.reason, R.OWNERSHIP_CONFLICT)
+
 
 # ─────────────────────────────────────────────────────────────────────────
 # §5 goal lifecycle
@@ -1303,6 +1338,50 @@ def goal_end(seq=2, event_id="e2", prev="e1", goal="g1", result="COMPLETED_VERIF
         previous_event_id=prev,
         terminal_result=result,
         published=published,
+    )
+
+
+def op_intent(seq=2, event_id="o1", prev="e1", op="op-1", goal="g1"):
+    return LifecycleEvent(
+        task_id="ENV-COORD-002",
+        claim_id="ENV-COORD-002-C1",
+        claim_generation=1,
+        goal_id=goal,
+        event_type="OPERATION_INTENT",
+        event_seq=seq,
+        event_id=event_id,
+        previous_event_id=prev,
+        operation_id=op,
+    )
+
+
+def op_outcome(seq=3, event_id="o2", prev="o1", outcome="UNKNOWN", op="op-1", goal="g1", generation=1):
+    return LifecycleEvent(
+        task_id="ENV-COORD-002",
+        claim_id="ENV-COORD-002-C1",
+        claim_generation=generation,
+        goal_id=goal,
+        event_type="OPERATION_OUTCOME",
+        event_seq=seq,
+        event_id=event_id,
+        previous_event_id=prev,
+        operation_id=op,
+        operation_outcome=outcome,
+    )
+
+
+def op_reconciled(seq=4, event_id="o3", prev="o2", outcome="SUCCEEDED", op="op-1", goal="g1", generation=1):
+    return LifecycleEvent(
+        task_id="ENV-COORD-002",
+        claim_id="ENV-COORD-002-C1",
+        claim_generation=generation,
+        goal_id=goal,
+        event_type="OPERATION_RECONCILED",
+        event_seq=seq,
+        event_id=event_id,
+        previous_event_id=prev,
+        operation_id=op,
+        operation_outcome=outcome,
     )
 
 
@@ -1552,6 +1631,112 @@ class TestGoalLifecycle(unittest.TestCase):
             )
         )
         self.assertFalse(log.has_unresolved_external_operations)
+
+
+class TestOperationReconciliation(unittest.TestCase):
+    """R4-review P1: §5.5 requires UNKNOWN to block retries UNTIL external
+    state is reconciled. Reconciliation is an explicit, durable, ordered,
+    identity-idempotent transition (OPERATION_RECONCILED) that binds
+    operation_id + generation, clears unresolved state only on an explicit
+    reconciled terminal observation, and never rewrites the original
+    UNKNOWN execution outcome (audit history is retained)."""
+
+    def _log_with_unknown(self):
+        log = LifecycleLog("ENV-COORD-002-C1", 1)
+        log.apply(goal_start())
+        log.apply(op_intent())
+        log.apply(op_outcome())
+        self.assertTrue(log.has_unresolved_external_operations)
+        return log
+
+    def test_reconciliation_clears_unresolved_and_keeps_audit(self):
+        # reviewer reproducer M2: UNRESOLVED_BEFORE=True, reconciliation,
+        # UNRESOLVED_AFTER must be False — with the original UNKNOWN
+        # execution outcome still on record.
+        log = self._log_with_unknown()
+        status, _ = log.apply(op_reconciled())
+        self.assertEqual(status, "applied")
+        self.assertFalse(log.has_unresolved_external_operations)
+        record = log.operation_record("op-1")
+        self.assertEqual(record["outcome"], "UNKNOWN")  # audit retained
+        self.assertEqual(record["reconciled_outcome"], "SUCCEEDED")
+        self.assertEqual(record["reconciled_event_id"], "o3")
+
+    def test_reconciliation_to_failed_also_clears(self):
+        log = self._log_with_unknown()
+        log.apply(op_reconciled(outcome="FAILED"))
+        self.assertFalse(log.has_unresolved_external_operations)
+        self.assertEqual(log.operation_record("op-1")["reconciled_outcome"], "FAILED")
+
+    def test_reconciliation_unknown_operation_rejected(self):
+        log = self._log_with_unknown()
+        with self.assertRaises(GuardFailure) as cm:
+            log.apply(op_reconciled(op="nope"))
+        self.assertEqual(cm.exception.reason, R.UNKNOWN_OPERATION)
+        self.assertTrue(log.has_unresolved_external_operations)
+
+    def test_reconciliation_without_unknown_outcome_rejected(self):
+        # only an observed UNKNOWN outcome may be reconciled — an operation
+        # with no outcome yet has nothing durable to reconcile against
+        log = LifecycleLog("ENV-COORD-002-C1", 1)
+        log.apply(goal_start())
+        log.apply(op_intent())
+        with self.assertRaises(GuardFailure) as cm:
+            log.apply(op_reconciled(seq=3, event_id="o2", prev="o1"))
+        self.assertEqual(cm.exception.reason, R.EFFECT_CONFLICT)
+        self.assertTrue(log.has_unresolved_external_operations)
+
+    def test_reconciliation_to_unknown_rejected(self):
+        # a reconciliation must carry an explicit TERMINAL observation
+        log = self._log_with_unknown()
+        with self.assertRaises(GuardFailure) as cm:
+            log.apply(op_reconciled(outcome="UNKNOWN"))
+        self.assertEqual(cm.exception.reason, R.INVALID_OPERATION_OUTCOME)
+        self.assertTrue(log.has_unresolved_external_operations)
+
+    def test_conflicting_second_reconciliation_rejected(self):
+        log = self._log_with_unknown()
+        log.apply(op_reconciled())
+        with self.assertRaises(GuardFailure) as cm:
+            log.apply(op_reconciled(seq=5, event_id="o4", prev="o3", outcome="FAILED"))
+        self.assertEqual(cm.exception.reason, R.EFFECT_CONFLICT)
+        self.assertFalse(log.has_unresolved_external_operations)
+        self.assertEqual(log.operation_record("op-1")["reconciled_outcome"], "SUCCEEDED")
+
+    def test_identical_reconciliation_replay_is_idempotent(self):
+        # lost/replayed reconciliation evidence: same event identity replays
+        # as an idempotent noop and stays resolved
+        log = self._log_with_unknown()
+        log.apply(op_reconciled())
+        status, event = log.apply(op_reconciled())
+        self.assertEqual(status, "idempotent_noop")
+        self.assertEqual(event.event_id, "o3")
+        self.assertFalse(log.has_unresolved_external_operations)
+
+    def test_outcome_after_reconciliation_still_conflict(self):
+        # the original UNKNOWN execution outcome is durable — a later
+        # OPERATION_OUTCOME can never rewrite the reconciled history
+        log = self._log_with_unknown()
+        log.apply(op_reconciled())
+        with self.assertRaises(GuardFailure) as cm:
+            log.apply(op_outcome(seq=5, event_id="o4", prev="o3", outcome="SUCCEEDED"))
+        self.assertEqual(cm.exception.reason, R.EVENT_CONFLICT)
+
+    def test_reconciliation_out_of_order_rejected(self):
+        # reconciliation is an ordered lifecycle event like any other
+        log = self._log_with_unknown()
+        with self.assertRaises(GuardFailure) as cm:
+            log.apply(op_reconciled(seq=2, event_id="o0", prev="o2"))
+        self.assertEqual(cm.exception.reason, R.OUT_OF_ORDER_EVENT)
+        self.assertTrue(log.has_unresolved_external_operations)
+
+    def test_reconciliation_wrong_generation_rejected(self):
+        # reconciliation is bound to the claim generation that observed UNKNOWN
+        log = self._log_with_unknown()
+        with self.assertRaises(GuardFailure) as cm:
+            log.apply(op_reconciled(generation=2))
+        self.assertEqual(cm.exception.reason, R.STALE_CLAIM_GENERATION)
+        self.assertTrue(log.has_unresolved_external_operations)
 
 
 # ─────────────────────────────────────────────────────────────────────────
@@ -2276,6 +2461,58 @@ class TestCLI(unittest.TestCase):
             os.unlink(bad_path)
 
 
+class TestFrozenRevisionRead(unittest.TestCase):
+    """R4-review P1: the trusted text/revision pair cannot tear when
+    origin/main advances between Git reads (§3.1 exact policy binding).
+
+    _read_current_work must resolve origin/main ONCE and then read the
+    document from that exact frozen object; a second mutable-ref read can
+    bind text from revision N+1 to policy_revision=N.
+    """
+
+    def test_second_git_read_uses_frozen_sha_not_mutable_ref(self):
+        # reviewer seam reproducer M1_PAIR: rev-parse resolves OLDREV, then
+        # the ref moves — reading `origin/main:<path>` again would return
+        # the MOVED registry while binding policy_revision=OLDREV.
+        old_rev = "1" * 40
+        old_text = make_registry_text([base_claim()])
+        moved_text = make_registry_text([base_claim(), other_lane_claim()])
+        calls = []
+
+        def fake_run_git(args, cwd=None):
+            calls.append(tuple(args))
+            if args == ["rev-parse", "origin/main"]:
+                return old_rev
+            if args == ["show", f"origin/main:{CURRENT_WORK_PATH}"]:
+                return moved_text  # the mutable ref advanced past old_rev
+            if args == ["show", f"{old_rev}:{CURRENT_WORK_PATH}"]:
+                return old_text
+            raise AssertionError(f"unexpected git invocation: {args}")
+
+        original = guard_module.run_git
+        guard_module.run_git = fake_run_git
+        try:
+            namespace = SimpleNamespace(
+                no_git=False, current_work_file=None, policy_revision=None
+            )
+            text, revision = guard_module._read_current_work(namespace)
+        finally:
+            guard_module.run_git = original
+
+        self.assertEqual(revision, old_rev)
+        self.assertEqual(calls[0], ("rev-parse", "origin/main"))
+        # the document read MUST target the frozen SHA, never the ref again
+        self.assertEqual(
+            calls[1],
+            ("show", f"{old_rev}:{CURRENT_WORK_PATH}"),
+            f"git calls were {calls}",
+        )
+        # and the bound text is exactly the frozen revision's registry
+        policy = load_trusted_policy(text, revision)
+        self.assertEqual(policy.policy_revision, old_rev)
+        self.assertEqual(len(policy.claims), 1)
+
+
 # ─────────────────────────────────────────────────────────────────────────
 # R2 continuation review — concurrency, uniqueness, lock-holding statuses
 # ─────────────────────────────────────────────────────────────────────────
@@ -2395,6 +2632,227 @@ class TestConcurrency(unittest.TestCase):
         self.assertEqual(gate.active_admissions, 0)
         self.assertEqual(gate.admissions_high_water, 0)
 
+    # ── R4-review P1: TransferBarrier transitions are process-atomic ──
+
+    @staticmethod
+    def _ready_barrier(decoys=1500):
+        """A TRANSFER_READY g1 barrier whose attestation scan is widened
+        with decoy records: every decoy comparison is Python bytecode, so
+        the state-check→generation-increment window is reliably
+        interleaved under the GIL even at tiny switch intervals."""
+        barrier = TransferBarrier(
+            claim_id="ENV-COORD-002-C1", claim_generation=1, holder_id="holder-A"
+        )
+        barrier.begin_quiesce()
+        for i in range(decoys):
+            barrier._attestations[f"decoy-{i}"] = {
+                "attestation_id": f"decoy-{i}",
+                "claim_generation": 10_000 + i,  # never matches gen 1
+                "execution_holder_id": "holder-A",
+            }
+        attested = barrier.holder_publish("holder-A", "att-1", latest_event_id="e9")
+        assert attested is not None
+        return barrier
+
+    def test_concurrent_double_transfer_advances_exactly_one_generation(self):
+        # reviewer reproducer: two complete_transfer() calls pass the same
+        # TRANSFER_READY/g1 attestation and both increment — one g1
+        # attestation yields g2 AND g3. Atomic transitions must make the
+        # concurrent second transfer fail TRANSFER_NOT_READY instead.
+        old_interval = sys.getswitchinterval()
+        sys.setswitchinterval(1e-6)
+        try:
+            for _round in range(40):
+                barrier = self._ready_barrier()
+                start = threading.Barrier(2)
+                results = []
+                failures = []
+                lock = threading.Lock()
+
+                def transfer(new_holder):
+                    start.wait()
+                    try:
+                        decision = barrier.complete_transfer(new_holder)
+                        with lock:
+                            results.append((new_holder, decision.claim_generation))
+                    except GuardFailure as failure:
+                        with lock:
+                            failures.append((new_holder, failure.reason))
+
+                threads = [
+                    threading.Thread(target=transfer, args=(holder,))
+                    for holder in ("holder-B", "holder-C")
+                ]
+                for thread in threads:
+                    thread.start()
+                for thread in threads:
+                    thread.join(timeout=30)
+                    self.assertFalse(thread.is_alive(), "transfer thread hung")
+
+                self.assertEqual(
+                    len(results),
+                    1,
+                    f"round {_round}: results={results} failures={failures}",
+                )
+                self.assertEqual(results[0][1], 2)
+                self.assertEqual(barrier.claim_generation, 2)
+                self.assertEqual(barrier.state, "AWAITING_AUTHORIZATION")
+                loser = "holder-C" if results[0][0] == "holder-B" else "holder-B"
+                self.assertIn((loser, R.TRANSFER_NOT_READY), failures)
+        finally:
+            sys.setswitchinterval(old_interval)
+
+    def test_concurrent_publish_and_transfer_serialize(self):
+        # publication racing transfer on one barrier must land on a valid
+        # serialization: transfer consumes a published attestation (gen+1)
+        # or fails TRANSFER_NOT_READY while publication stands. No torn
+        # state (e.g. AWAITING without a consumed g1 attestation).
+        old_interval = sys.getswitchinterval()
+        sys.setswitchinterval(1e-6)
+        try:
+            for _round in range(25):
+                barrier = self._ready_barrier(decoys=800)
+                start = threading.Barrier(2)
+                outcomes = []
+                lock = threading.Lock()
+
+                def publisher():
+                    start.wait()
+                    attestation = barrier.holder_publish(
+                        "holder-A", "att-1", latest_event_id="e9"
+                    )
+                    with lock:
+                        outcomes.append(("published", attestation is not None))
+
+                def transferer():
+                    start.wait()
+                    try:
+                        decision = barrier.complete_transfer("holder-B")
+                        with lock:
+                            outcomes.append(("transferred", decision.claim_generation))
+                    except GuardFailure as failure:
+                        with lock:
+                            outcomes.append(("transfer-failed", failure.reason))
+
+                threads = [
+                    threading.Thread(target=publisher),
+                    threading.Thread(target=transferer),
+                ]
+                for thread in threads:
+                    thread.start()
+                for thread in threads:
+                    thread.join(timeout=30)
+                    self.assertFalse(thread.is_alive(), "publish/transfer thread hung")
+
+                # both serializations are valid: replay-publish observed
+                # the attestation (True), or the transfer consumed it first
+                # and the OLD holder's replay then fails closed
+                # non-holder. The durable invariants hold either way.
+                publish_results = [o[1] for o in outcomes if o[0] == "published"]
+                self.assertEqual(len(publish_results), 1)
+                self.assertIn(publish_results[0], (True, False))
+                self.assertIn("att-1", barrier._attestations)  # evidence durable
+                transfers = [o for o in outcomes if o[0] == "transferred"]
+                self.assertEqual(len(transfers), 1)
+                self.assertEqual(transfers[0][1], 2)
+                self.assertEqual(barrier.claim_generation, 2)
+                self.assertEqual(barrier.state, "AWAITING_AUTHORIZATION")
+        finally:
+            sys.setswitchinterval(old_interval)
+
+    def test_concurrent_activation_mixed_contexts_single_activation(self):
+        # concurrent activations of an AWAITING barrier: the one correct
+        # §4.4 context may activate exactly once; every mismatched context
+        # fails deterministically and never partially activates.
+        barrier = TransferBarrier(
+            claim_id="ENV-COORD-002-C1", claim_generation=1, holder_id="holder-A"
+        )
+        barrier.begin_quiesce()
+        self.assertIsNotNone(
+            barrier.holder_publish("holder-A", "att-1", latest_event_id="e9")
+        )
+        barrier.complete_transfer("holder-B")
+        self.assertEqual(barrier.state, "AWAITING_AUTHORIZATION")
+
+        g2_policy = load_policy(
+            [base_claim(claim_generation=2, execution_holder_id="holder-B")]
+        )
+        start = threading.Barrier(4)
+        outcomes = []
+        lock = threading.Lock()
+
+        def activator(name, context):
+            start.wait()
+            try:
+                barrier.activate_transferred_claim(g2_policy, context)
+                with lock:
+                    outcomes.append((name, "activated"))
+            except GuardFailure as failure:
+                with lock:
+                    outcomes.append((name, failure.reason))
+
+        contexts = [
+            (
+                "wrong-worktree",
+                ok_ctx(
+                    claim_generation=2,
+                    execution_holder_id="holder-B",
+                    worktree="A:/GitHub/envww-wrong",
+                ),
+                R.WORKTREE_MISMATCH,
+            ),
+            (
+                "wrong-holder",
+                ok_ctx(claim_generation=2, execution_holder_id="holder-rogue"),
+                R.WRONG_EXECUTION_HOLDER,
+            ),
+            (
+                "wrong-generation",
+                ok_ctx(claim_generation=1, execution_holder_id="holder-B"),
+                R.STALE_CLAIM_GENERATION,
+            ),
+            (
+                "correct",
+                ok_ctx(claim_generation=2, execution_holder_id="holder-B"),
+                None,
+            ),
+        ]
+        threads = [
+            threading.Thread(target=activator, args=pair[:2]) for pair in contexts
+        ]
+        for thread in threads:
+            thread.start()
+        for thread in threads:
+            thread.join(timeout=30)
+            self.assertFalse(thread.is_alive(), "activation thread hung")
+
+        activated = [o for o in outcomes if o[1] == "activated"]
+        self.assertEqual(
+            activated, [("correct", "activated")], f"outcomes were {outcomes}"
+        )
+        # each mismatched context fails with its deterministic preflight
+        # reason, or TRANSFER_NOT_READY if the correct activation already
+        # consumed the AWAITING state — never a partial activation
+        by_name = dict(outcomes)
+        expected = {name: reason for name, _, reason in contexts}
+        for name, reason in expected.items():
+            if reason is None:
+                continue
+            self.assertIn(
+                by_name[name],
+                (reason, R.TRANSFER_NOT_READY),
+                f"{name}: {by_name[name]!r}",
+            )
+        self.assertEqual(barrier.state, "ACTIVE")
+        self.assertEqual(barrier.claim_generation, 2)
+        self.assertEqual(barrier.runtime.gate.state, "OPEN")
+        # after activation the barrier is terminal for transfer: no second
+        # transfer can consume the spent g1 attestation
+        with self.assertRaises(GuardFailure) as cm:
+            barrier.complete_transfer("holder-C")
+        self.assertEqual(cm.exception.reason, R.TRANSFER_NOT_READY)
+        self.assertEqual(barrier.claim_generation, 2)
+
 
 class TestSharedExceptionUniqueness(unittest.TestCase):
     """continuation-review P1: no two active exceptions may create two
@@ -2427,16 +2885,103 @@ class TestSharedExceptionUniqueness(unittest.TestCase):
             self._load([full_shared_exception(), dup_same_owner])
         self.assertEqual(cm.exception.reason, R.INVALID_SHARED_EXCEPTION)
 
-    def test_same_path_different_participant_set_is_distinct(self):
-        # a second exception over the same path with a genuinely different
-        # participant set is a distinct authorization, not a duplicate.
-        # Here the sharing pair is GISTDA + THIRD (COORD-002 holds no
-        # shared path in this registry, so no other pairwise overlap exists).
-        claim_a = base_claim()  # no shared path
-        claim_b = other_lane_claim(
-            mutable_scope=["reports/gistda/**", "reports/shared.txt"]
+    def test_same_path_different_participant_set_rejected(self):
+        # R4-review P1: a second exception over the same canonical path
+        # with a DIFFERENT participant set must not mint a second temporary
+        # owner. One path → one record → one owner; additional participants
+        # belong in that single record.
+        claim_a, claim_b = sharing_claims()
+        third = self._third_claim()
+        second_set = full_shared_exception(
+            participating_claims=[
+                {"claim_id": "ENV-INT-GISTDA-CORE-001-C1", "claim_generation": 1},
+                {"claim_id": "ENV-THIRD-C1", "claim_generation": 1},
+            ],
+            integration_owner_claim_id="ENV-THIRD-C1",
+            merge_order=["ENV-INT-GISTDA-CORE-001-C1", "ENV-THIRD-C1"],
         )
-        third = base_claim(
+        with self.assertRaises(GuardFailure) as cm:
+            load_policy(
+                [claim_a, claim_b, third],
+                shared_exceptions=[full_shared_exception(), second_set],
+            )
+        self.assertEqual(cm.exception.reason, R.INVALID_SHARED_EXCEPTION)
+
+    def test_triangle_pairwise_records_same_path_rejected(self):
+        # reviewer reproducer TRIANGLE_MULTI_OWNER: three pairwise records
+        # cover one canonical shared path with three different owners while
+        # satisfying every pairwise overlap — globally forbidden.
+        claim_a, claim_b = sharing_claims()
+        third = self._third_claim()
+        exc_ab = full_shared_exception()  # owner GISTDA over COORD-002+GISTDA
+        exc_ac = full_shared_exception(
+            participating_claims=[
+                {"claim_id": "ENV-COORD-002-C1", "claim_generation": 1},
+                {"claim_id": "ENV-THIRD-C1", "claim_generation": 1},
+            ],
+            integration_owner_claim_id="ENV-THIRD-C1",
+            merge_order=["ENV-COORD-002-C1", "ENV-THIRD-C1"],
+        )
+        exc_bc = full_shared_exception(
+            participating_claims=[
+                {"claim_id": "ENV-INT-GISTDA-CORE-001-C1", "claim_generation": 1},
+                {"claim_id": "ENV-THIRD-C1", "claim_generation": 1},
+            ],
+            integration_owner_claim_id="ENV-INT-GISTDA-CORE-001-C1",
+            merge_order=["ENV-THIRD-C1", "ENV-INT-GISTDA-CORE-001-C1"],
+        )
+        with self.assertRaises(GuardFailure) as cm:
+            load_policy(
+                [claim_a, claim_b, third],
+                shared_exceptions=[exc_ab, exc_ac, exc_bc],
+            )
+        self.assertEqual(cm.exception.reason, R.INVALID_SHARED_EXCEPTION)
+
+    def test_three_participants_single_record_accepted(self):
+        # the legal shape for three participants on one path: ONE record,
+        # ONE temporary owner, ONE merge order covering all three.
+        claim_a, claim_b = sharing_claims()
+        third = self._third_claim()
+        triangle = full_shared_exception(
+            participating_claims=[
+                {"claim_id": "ENV-COORD-002-C1", "claim_generation": 1},
+                {"claim_id": "ENV-INT-GISTDA-CORE-001-C1", "claim_generation": 1},
+                {"claim_id": "ENV-THIRD-C1", "claim_generation": 1},
+            ],
+            integration_owner_claim_id="ENV-INT-GISTDA-CORE-001-C1",
+            merge_order=[
+                "ENV-COORD-002-C1",
+                "ENV-THIRD-C1",
+                "ENV-INT-GISTDA-CORE-001-C1",
+            ],
+        )
+        policy = load_policy(
+            [claim_a, claim_b, third], shared_exceptions=[triangle]
+        )
+        self.assertEqual(len(policy.shared_exceptions), 1)
+
+    def test_distinct_paths_distinct_records_accepted(self):
+        # positive control: per-path uniqueness constrains one canonical
+        # path, not the whole registry — two disjoint shared paths may
+        # carry two records even between the same participants.
+        claim_a = base_claim(
+            mutable_scope=[*base_claim()["mutable_scope"], "reports/shared.txt", "docs/joint.md"]
+        )
+        claim_b = other_lane_claim(
+            mutable_scope=["reports/gistda/**", "reports/shared.txt", "docs/joint.md"]
+        )
+        policy = load_policy(
+            [claim_a, claim_b],
+            shared_exceptions=[
+                full_shared_exception(),
+                full_shared_exception(shared_paths=["docs/joint.md"]),
+            ],
+        )
+        self.assertEqual(len(policy.shared_exceptions), 2)
+
+    @staticmethod
+    def _third_claim():
+        return base_claim(
             task_id="ENV-THIRD",
             claim_id="ENV-THIRD-C1",
             execution_holder_id="holder-third",
@@ -2445,19 +2990,6 @@ class TestSharedExceptionUniqueness(unittest.TestCase):
             mutable_scope=["third/**", "reports/shared.txt"],
             forbidden_scope=["scripts/**"],
         )
-        distinct = full_shared_exception(
-            participating_claims=[
-                {"claim_id": "ENV-INT-GISTDA-CORE-001-C1", "claim_generation": 1},
-                {"claim_id": "ENV-THIRD-C1", "claim_generation": 1},
-            ],
-            integration_owner_claim_id="ENV-THIRD-C1",
-            merge_order=["ENV-INT-GISTDA-CORE-001-C1", "ENV-THIRD-C1"],
-        )
-        policy = load_policy(
-            [claim_a, claim_b, third],
-            shared_exceptions=[distinct],
-        )
-        self.assertEqual(len(policy.shared_exceptions), 1)
 
     def test_exception_cannot_cover_broader_path(self):
         # exact-only shared paths keep an exception from accidentally
@@ -2479,11 +3011,13 @@ class TestSharedExceptionUniqueness(unittest.TestCase):
 
 
 class TestLockHoldingStatuses(unittest.TestCase):
-    """continuation-review P2: scope locks derive from claim lifecycle.
+    """R4-review P1: scope locks derive from the claim lifecycle.
 
     LOCK_HOLDING_CLAIM_STATUSES = every §4.1 state except READY (never
-    claimed), MERGED (integrated into main; scope now lives on main), and
-    CLOSED (released). STALE_CLAIM/RECOVERY_HOLD hold locks per §4.5
+    claimed) and CLOSED (the explicit terminal release per §4.5). MERGED
+    and POSTMERGE_VERIFY still HOLD: merging the implementation PR is not
+    the authorized release transition — the lane may write verification
+    evidence until CLOSED. STALE_CLAIM/RECOVERY_HOLD hold per §4.5
     (inactivity/worker loss must not silently free scope).
     """
 
@@ -2520,10 +3054,21 @@ class TestLockHoldingStatuses(unittest.TestCase):
         policy = load_policy([base_claim(), closed])
         self.assertEqual(len(policy.claims), 2)
 
-    def test_merged_overlap_does_not_false_collide(self):
+    def test_merged_overlap_still_locks(self):
+        # reviewer reproducer MERGED_OVERLAP=ACCEPTED is wrong: MERGED is
+        # not the release transition — the claim holds its scope through
+        # POSTMERGE_VERIFY until CLOSED (§4.5 authorized release).
         merged = other_lane_claim(mutable_scope=["scripts/**"], status="MERGED")
-        policy = load_policy([base_claim(), merged])
-        self.assertEqual(len(policy.claims), 2)
+        with self.assertRaises(GuardFailure) as cm:
+            load_policy([base_claim(), merged])
+        self.assertEqual(cm.exception.reason, R.OWNERSHIP_CONFLICT)
+
+    def test_postmerge_verify_overlap_still_locks(self):
+        # the lane may write verification evidence until CLOSED
+        verifying = other_lane_claim(mutable_scope=["scripts/**"], status="POSTMERGE_VERIFY")
+        with self.assertRaises(GuardFailure) as cm:
+            load_policy([base_claim(), verifying])
+        self.assertEqual(cm.exception.reason, R.OWNERSHIP_CONFLICT)
 
     def test_ready_does_not_hold_lock(self):
         ready = other_lane_claim(mutable_scope=["scripts/**"], status="READY")

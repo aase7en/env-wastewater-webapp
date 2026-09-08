@@ -13,7 +13,7 @@ Planned worktree: `A:\\GitHub\\envww-coord-002`
 Planned branch: `feat/env-coord-002`
 Claim policy base: `origin/main@6360e149f42c419a8d7f878f28fc439e0ef1f6cc`
 Work Order: `docs/work-orders/ENV-COORD-002.md`
-Last updated: 2026-09-07
+Last updated: 2026-09-08
 
 ## Before any mutation
 
@@ -301,6 +301,78 @@ Stop at `REVIEW_REQUESTED`. Do not merge.
   lock semantics explicitly — flagged for reviewer confirmation, not a
   code ambiguity).
 - **Unresolved issues:** none.
+- **Exactly ONE next safe action:** GPT-5.6 Sol re-reviews PR #84 at the
+  new exact head; merge only on APPROVED with expected-head protection;
+  then file ENV-COORD-003 (SHADOW CI integration) as a new claim.
+
+## Result — R4 remediation (GPT-5.6 Sol R3 review, five P1) / 2026-09-08
+
+- **Actual-state preflight (no chat memory):** fetched origin; PR #84 head
+  verified still `7a6eb457230ce07748c0fa82abeb9f9725fdd702` before work;
+  `origin/main@7d4e6b52…` unchanged; registry claim `ENV-COORD-002-C1`
+  gen 1 holder `zcode-env-coord-002-g1-primary` matches this context;
+  worktree clean (`.serena/` untracked only); `SAFE_TO_MUTATE = YES`
+  maintained. Same single execution context; mutable scope unchanged
+  (the same 4 paths).
+- **Start HEAD:** `7a6eb457230ce07748c0fa82abeb9f9725fdd702`.
+- **End HEAD:** new single commit on `origin/feat/env-coord-002`
+  (self-SHA is the PR #84 head; not written into its own commit).
+- **Five repairs (R3-review P1 blockers):**
+  1. Frozen revision read: `_read_current_work()` resolves `origin/main`
+     once, then `git show <sha>:docs/ai/CURRENT-WORK.md` — the text/
+     revision pair cannot tear when the ref advances between reads.
+  2. Durable §5.5 reconciliation: new `OPERATION_RECONCILED` lifecycle
+     event (ordered, idempotent by event identity, bound to operation_id
+     + generation, terminal observation only) clears unresolved state
+     while `operation_record()` keeps the original UNKNOWN outcome for
+     audit; OPERATION_OUTCOME after it stays `EVENT_CONFLICT`.
+  3. Process-atomic TransferBarrier: one barrier-level `RLock` over all
+     transitions + the status read; one g1 attestation can yield at most
+     one proposed g2 (concurrent second transfer fails
+     `TRANSFER_NOT_READY`, never g3). Process-local by design;
+     cross-process stays adapter/server responsibility.
+  4. §7.3 global single-owner invariant: at most ONE active exception
+     record per canonical shared path regardless of participant sets
+     (triangle/pairwise → `INVALID_SHARED_EXCEPTION`; one record, one
+     owner, one merge order for three participants).
+  5. Lock semantics: `RELEASED_CLAIM_STATUSES = (READY, CLOSED)`; MERGED
+     and POSTMERGE_VERIFY hold until the authorized CLOSED release, and
+     `evaluate_control_transition` filters released records like
+     `validate_registry` already did. Supersedes the R3
+     MERGED-releases derivation flagged for reviewer confirmation.
+- **RED → GREEN:** RED `Ran 202 tests … FAILED (failures=12, errors=5)`
+  (17 failing = the five blockers' regressions; 185 prior passing);
+  GREEN `Ran 202 tests … OK` (stable across repeated runs); pytest
+  `202 passed, 15 subtests passed`.
+- **All five reviewer reproducers post-repair: PASS** (M1_PAIR frozen-SHA
+  second call bound to revision N; M2 unresolved True→False with UNKNOWN
+  retained; double transfer exactly one success at gen 2; TRIANGLE →
+  INVALID_SHARED_EXCEPTION; MERGED_OVERLAP → OWNERSHIP_CONFLICT).
+- **Problems found → fixed:** (a) the publish-vs-transfer regression
+  initially asserted the replay publish always succeeds; under the
+  barrier lock the transfer-first serialization correctly fails the OLD
+  holder's replay closed (`COORDINATOR_CANNOT_PUBLISH_QUIESCENCE`) — the
+  test now pins the durable invariants (attestation recorded, exactly
+  one transfer, generation advanced exactly once) and accepts both valid
+  serializations; (b) the mixed §4.4 activation test was made
+  order-robust (a losing context fails its preflight reason OR
+  `TRANSFER_NOT_READY` once the correct activation consumed AWAITING).
+  Unresolved: none.
+- **Full verification (all green):** unittest 202 OK; pytest
+  202 passed + 15 subtests; `test_workflow_action_runtimes.py` OK;
+  `check_workflow_action_runtimes.py` PASS (5 files);
+  `test_split_sql.py` all passed; `test_ci_alert_payload.py` 33 passed;
+  `git diff --check` exit 0; both scripts compile clean; live `status`
+  smoke against the real registry through the frozen-SHA read
+  (`7d4e6b52` / `BOOTSTRAP_CONTROL` / `ENV-COORD-002-C1`).
+- **Exact changed files:** the 4 authorized claim paths only; `.serena/`
+  never staged.
+- **Limitations (unchanged + superseded):** no hooks/CI/server policy in
+  this slice (ENV-COORD-003+); `scope-check` remains inspection-only; no
+  central writer yet creates §7.3 records; barrier atomicity is
+  process-local. R3's MERGED-releases derivation is superseded by the
+  review's explicit MERGED/POSTMERGE_VERIFY-hold, READY/CLOSED-release
+  contract.
 - **Exactly ONE next safe action:** GPT-5.6 Sol re-reviews PR #84 at the
   new exact head; merge only on APPROVED with expected-head protection;
   then file ENV-COORD-003 (SHADOW CI integration) as a new claim.
