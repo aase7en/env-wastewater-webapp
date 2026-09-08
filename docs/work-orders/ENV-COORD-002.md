@@ -597,6 +597,51 @@ same claim/generation/holder with regression-first tests.
   reads the real registry (`7d4e6b52`, `BOOTSTRAP_CONTROL`,
   `ENV-COORD-002-C1` CLAIMED).
 
+### Remediation evidence — R9 (Sol R8 exact-SHA review, goal identity) / 2026-09-08
+
+Sol reviewed R8 head `0fa7de691ddb9b4c0f79ae1c49bb455e9d15b463`: the
+four Astra R7 blockers independently verified CLOSED; one new blocking
+P2 — active-goal-scoped lifecycle events did not verify
+`event.goal_id == active goal`. Repaired on the same
+claim/generation/holder with regression-first tests.
+
+- RED: `python scripts/test_env_coordination_guard.py` →
+  `Ran 247 tests … FAILED (failures=4)` — the four mismatch regressions
+  (CHECKPOINT / OPERATION_INTENT / OPERATION_OUTCOME /
+  OPERATION_RECONCILED with a wrong goal_id all applied); 243 prior
+  tests passing unchanged.
+- GREEN: `Ran 247 tests … OK` (stable across repeated runs); pytest →
+  `247 passed, 33 subtests passed`.
+- Repair: `LifecycleLog.apply` requires, for every active-goal-scoped
+  event (CHECKPOINT, OPERATION_INTENT, OPERATION_OUTCOME,
+  OPERATION_RECONCILED), that `event.goal_id` equals the CURRENT active
+  goal, failing closed `OUT_OF_ORDER_EVENT` BEFORE any mutation
+  (operation registration/outcome/reconciliation records, head, events,
+  active-goal state all untouched on rejection). GOAL_END already
+  enforced identity; no new reason code needed.
+- R8 recovery model preserved and pinned: an old UNKNOWN operation
+  (intent under g1) is reconciled by an event identifying the CURRENT
+  recovery goal g2 — the reconciliation event's goal_id is NOT required
+  to equal the original intent's goal; the full chain Goal1 PARTIAL →
+  Goal2 recovery START → RECONCILED(g2) → Goal2 END → Goal3 START
+  still applies with the UNKNOWN audit retained.
+- Reviewer reproducer re-run post-repair: `INTENT(g999)` and
+  `OUTCOME(g999)` under active g1 → `OUT_OF_ORDER_EVENT` with head/events
+  unchanged; `RECONCILED(g999)` under recovery g2 → `OUT_OF_ORDER_EVENT`
+  with head e3 and unresolved state unchanged; the matching-identity
+  recovery chain closes cleanly (unresolved cleared, UNKNOWN audit
+  retained, head advanced legally).
+- Focused high-risk classes re-run including the new R9 class: 164 OK
+  (goal identity, lifecycle, reconciliation, unpublished events,
+  transfer barrier, admission gate, concurrency, shared-file
+  ownership/uniqueness, path canonicalization, symlink, lock statuses,
+  compatibility statuses).
+- Adjacent suites green (workflow runtimes OK; runtime check PASS 5
+  files; split_sql all passed; ci_alert_payload 33 passed); both scripts
+  compile clean; `git diff --check` PASS; live `status` CLI smoke still
+  reads the real registry (`7d4e6b52`, `BOOTSTRAP_CONTROL`,
+  `ENV-COORD-002-C1` CLAIMED).
+
 ## Stop condition
 
 Implementation owner stops at `REVIEW_REQUESTED`; must not self-merge and must

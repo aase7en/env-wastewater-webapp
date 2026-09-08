@@ -651,3 +651,60 @@ Stop at `REVIEW_REQUESTED`. Do not merge.
   invoked from this lane); merge only on APPROVED with expected-head
   protection; then file ENV-COORD-003 (SHADOW CI integration) as a new
   claim.
+
+## Result — R9 remediation (Sol R8 review, goal identity) / 2026-09-08
+
+- **Actual-state preflight (no chat memory):** fetched origin; PR #84
+  head verified still `0fa7de691ddb9b4c0f79ae1c49bb455e9d15b463` before
+  work (R8 head; Sol R8 review CHANGES_REQUIRED — four Astra R7
+  blockers verified CLOSED, one new P2 goal-identity finding, comment
+  5585930429); `origin/main@7d4e6b52…` unchanged; registry claim
+  `ENV-COORD-002-C1` gen 1 holder `zcode-env-coord-002-g1-primary`
+  matches this context; worktree clean (`.serena/` untracked only);
+  `SAFE_TO_MUTATE = YES`. Same single execution context; mutable scope
+  unchanged (4 paths).
+- **Start HEAD:** `0fa7de691ddb9b4c0f79ae1c49bb455e9d15b463`.
+- **End HEAD:** new single commit on `origin/feat/env-coord-002`
+  (self-SHA is the PR #84 head; not written into its own commit).
+- **Repair:** every active-goal-scoped lifecycle event (CHECKPOINT,
+  OPERATION_INTENT, OPERATION_OUTCOME, OPERATION_RECONCILED) must carry
+  the CURRENT active goal's identity — `event.goal_id ==
+  self._active_goal` — failing closed `OUT_OF_ORDER_EVENT` BEFORE any
+  mutation (no partial registration/outcome/reconciliation/head
+  change). GOAL_END already enforced identity; no new reason code.
+- **R8 recovery model preserved:** reconciliation of an OLD UNKNOWN
+  under a NEW recovery goal remains valid, and the reconciliation event
+  identifies that CURRENT recovery goal (not the original intent's
+  goal) — pinned as a positive control plus the full Goal1 PARTIAL →
+  Goal2 START → RECONCILED(g2) → Goal2 END → Goal3 START chain.
+- **RED → GREEN:** RED `Ran 247 tests … FAILED (failures=4)` (the four
+  mismatch regressions; 243 prior passing — all R1–R8 regressions
+  unchanged, including closed-before-publication runtime, Win32 alias
+  rejection, uncertainty invalidation, recovery-goal lifecycle,
+  transfer tuple binding, concurrency/admission gate, stale-generation
+  fencing, shared ownership, publication/replay, compatibility
+  statuses, READY_FOR_IMPLEMENTATION locking); GREEN `Ran 247 tests …
+  OK` stable; pytest `247 passed, 33 subtests passed`.
+- **Reproducer post-repair:** INTENT(g999)/OUTCOME(g999) under active
+  g1 → OUT_OF_ORDER_EVENT, head/events unchanged; RECONCILED(g999)
+  under recovery g2 → OUT_OF_ORDER_EVENT, head e3 + unresolved
+  unchanged; matching-identity recovery chain closes cleanly (UNKNOWN
+  audit retained).
+- **Full verification (all green):** focused high-risk classes 164 OK
+  (incl. the new R9 goal-identity class); full unittest 247 OK; pytest
+  247 passed + 33 subtests; workflow runtimes OK; runtime check PASS
+  (5 files); split_sql all passed; ci_alert_payload 33 passed;
+  py_compile clean; `git diff --check` exit 0; live `status` smoke
+  reads the real registry (`7d4e6b52` / `BOOTSTRAP_CONTROL` / CLAIMED).
+- **Exact changed files:** the 4 authorized claim paths only; `.serena/`
+  never staged.
+- **Limitations:** unchanged from R8 (smallest Win32 alias scope; no
+  hooks/CI/server policy, ENV-COORD-003+; scope-check inspection-only;
+  no central §7.3 writer; process-local atomicity).
+- **Unresolved issues:** none.
+- **Exactly ONE next safe action:** GPT-5.6 Sol performs a fresh
+  exact-SHA review of PR #84 at the R9 candidate head; after Sol
+  reaches a stable candidate, Astra is rerun on that new exact SHA (not
+  invoked from this lane); merge only on APPROVED with expected-head
+  protection; then file ENV-COORD-003 (SHADOW CI integration) as a new
+  claim.

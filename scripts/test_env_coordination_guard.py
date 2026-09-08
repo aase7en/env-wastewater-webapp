@@ -1657,6 +1657,109 @@ class TestGoalLifecycle(unittest.TestCase):
         status_g3, _ = log.apply(goal_start(seq=8, event_id="e5", prev="e4", goal="g3"))
         self.assertEqual(status_g3, "applied")
 
+
+class TestGoalIdentityMismatch(unittest.TestCase):
+    """R9-review P2: every active-goal-scoped lifecycle event must carry
+    the CURRENT active goal's identity (§5: one active goal per lane
+    execution context; every event carries goal_id).
+
+    A mismatched goal_id fails closed OUT_OF_ORDER_EVENT before any
+    mutation. The R8 recovery model is preserved: an old UNKNOWN may be
+    reconciled under a NEW recovery goal, and the reconciliation event
+    identifies that currently active recovery goal (not the original
+    intent's goal).
+    """
+
+    def _active_g1(self):
+        log = LifecycleLog("ENV-COORD-002-C1", 1)
+        log.apply(goal_start())  # e1 / g1
+        log.apply(op_intent())   # o1 / op-1 under g1
+        return log
+
+    def _recovery_g2(self):
+        log = LifecycleLog("ENV-COORD-002-C1", 1)
+        log.apply(goal_start())                                    # e1 / g1
+        log.apply(op_intent())                                     # o1
+        log.apply(op_outcome())                                    # o2 UNKNOWN
+        log.apply(goal_end(seq=4, event_id="e2", prev="o2", result="PARTIAL"))
+        log.apply(goal_start(seq=5, event_id="e3", prev="e2", goal="g2"))
+        return log
+
+    @staticmethod
+    def _checkpoint(seq, event_id, prev, goal):
+        return LifecycleEvent(
+            task_id="ENV-COORD-002",
+            claim_id="ENV-COORD-002-C1",
+            claim_generation=1,
+            goal_id=goal,
+            event_type="CHECKPOINT",
+            event_seq=seq,
+            event_id=event_id,
+            previous_event_id=prev,
+        )
+
+    def test_checkpoint_with_wrong_goal_rejected(self):
+        log = self._active_g1()
+        with self.assertRaises(GuardFailure) as cm:
+            log.apply(self._checkpoint(3, "c1", "o1", goal="g999"))
+        self.assertEqual(cm.exception.reason, R.OUT_OF_ORDER_EVENT)
+        self.assertEqual(log.head_event_id, "o1")  # nothing mutated
+        self.assertEqual(len(log.events), 2)
+
+    def test_operation_intent_with_wrong_goal_rejected(self):
+        log = self._active_g1()
+        with self.assertRaises(GuardFailure) as cm:
+            log.apply(op_intent(seq=3, event_id="o2b", prev="o1", op="op-2", goal="g999"))
+        self.assertEqual(cm.exception.reason, R.OUT_OF_ORDER_EVENT)
+        self.assertEqual(log.head_event_id, "o1")
+        # the mismatched operation was never registered
+        with self.assertRaises(GuardFailure) as unknown_op:
+            log.operation_record("op-2")
+        self.assertEqual(unknown_op.exception.reason, R.UNKNOWN_OPERATION)
+
+    def test_operation_outcome_with_wrong_goal_rejected(self):
+        log = self._active_g1()
+        with self.assertRaises(GuardFailure) as cm:
+            log.apply(op_outcome(seq=3, event_id="o2", prev="o1", outcome="SUCCEEDED", goal="g999"))
+        self.assertEqual(cm.exception.reason, R.OUT_OF_ORDER_EVENT)
+        self.assertEqual(log.head_event_id, "o1")
+        # the original operation record is untouched
+        self.assertIsNone(log.operation_record("op-1")["outcome"])
+
+    def test_reconciliation_with_wrong_goal_rejected_under_recovery_goal(self):
+        log = self._recovery_g2()
+        self.assertTrue(log.has_unresolved_external_operations)
+        with self.assertRaises(GuardFailure) as cm:
+            log.apply(op_reconciled(seq=6, event_id="o3", prev="e3", goal="g999"))
+        self.assertEqual(cm.exception.reason, R.OUT_OF_ORDER_EVENT)
+        self.assertEqual(log.head_event_id, "e3")  # recovery head unchanged
+        # unresolved state and audit untouched
+        self.assertTrue(log.has_unresolved_external_operations)
+        record = log.operation_record("op-1")
+        self.assertEqual(record["outcome"], "UNKNOWN")
+        self.assertIsNone(record["reconciled_outcome"])
+
+    def test_matching_goal_ids_still_apply(self):
+        # positive controls: matching identity applies for every scoped type
+        log = self._active_g1()
+        status_ck, _ = log.apply(self._checkpoint(3, "c1", "o1", goal="g1"))
+        self.assertEqual(status_ck, "applied")
+        status_out, _ = log.apply(
+            op_outcome(seq=4, event_id="o2", prev="c1", outcome="SUCCEEDED", goal="g1")
+        )
+        self.assertEqual(status_out, "applied")
+
+    def test_recovery_reconciliation_identifies_current_recovery_goal(self):
+        # R8 recovery model preserved: the OLD operation (intent under g1)
+        # is reconciled by an event identifying the CURRENT recovery goal
+        log = self._recovery_g2()
+        status, _ = log.apply(op_reconciled(seq=6, event_id="o3", prev="e3", goal="g2"))
+        self.assertEqual(status, "applied")
+        self.assertFalse(log.has_unresolved_external_operations)
+        record = log.operation_record("op-1")
+        self.assertEqual(record["outcome"], "UNKNOWN")  # audit retained
+        self.assertEqual(record["reconciled_outcome"], "SUCCEEDED")
+
     def test_checkpoint_cannot_replace_active_goal(self):
         # §5.1: a normal checkpoint is not a goal terminator.
         log = LifecycleLog("ENV-COORD-002-C1", 1)

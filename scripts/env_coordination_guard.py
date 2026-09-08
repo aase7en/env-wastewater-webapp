@@ -1116,6 +1116,10 @@ class LifecycleLog:
     (R8): they never advance the durable head past a terminal GOAL_END, so
     recovery from an UNKNOWN after a terminal PARTIAL/BLOCKED result opens
     a legal recovery GoalStart first and reconciles under that goal.
+    Every active-goal-scoped event (CHECKPOINT/INTENT/OUTCOME/RECONCILED)
+    must carry the CURRENT active goal's identity (R9): a mismatched
+    goal_id fails closed before any mutation — the recovery event names
+    the active recovery goal, not the original intent's goal.
 
     §5.5 external-operation reconciliation: an UNKNOWN execution outcome
     blocks retries until external state is reconciled. Reconciliation is a
@@ -1239,9 +1243,21 @@ class LifecycleLog:
         elif event.event_type == "CHECKPOINT":
             if self._active_goal is None:
                 raise GuardFailure(R.OUT_OF_ORDER_EVENT, "checkpoint without an active goal")
+            if event.goal_id != self._active_goal:
+                raise GuardFailure(
+                    R.OUT_OF_ORDER_EVENT,
+                    f"checkpoint identifies goal {event.goal_id!r} but the"
+                    f" active goal is {self._active_goal!r}",
+                )
         elif event.event_type == "OPERATION_INTENT":
             if self._active_goal is None:
                 raise GuardFailure(R.OUT_OF_ORDER_EVENT, "operation intent without an active goal")
+            if event.goal_id != self._active_goal:
+                raise GuardFailure(
+                    R.OUT_OF_ORDER_EVENT,
+                    f"operation intent identifies goal {event.goal_id!r} but"
+                    f" the active goal is {self._active_goal!r}",
+                )
             if event.operation_id in self._operations:
                 raise GuardFailure(R.EVENT_CONFLICT, f"duplicate operation {event.operation_id}")
             self._operations[event.operation_id] = {"intent": event, "outcome": None}
@@ -1253,6 +1269,12 @@ class LifecycleLog:
             if self._active_goal is None:
                 raise GuardFailure(
                     R.OUT_OF_ORDER_EVENT, "operation outcome without an active goal"
+                )
+            if event.goal_id != self._active_goal:
+                raise GuardFailure(
+                    R.OUT_OF_ORDER_EVENT,
+                    f"operation outcome identifies goal {event.goal_id!r}"
+                    f" but the active goal is {self._active_goal!r}",
                 )
             operation = self._operations.get(event.operation_id)
             if operation is None:
@@ -1274,6 +1296,12 @@ class LifecycleLog:
                 raise GuardFailure(
                     R.OUT_OF_ORDER_EVENT,
                     "reconciliation requires an active (recovery) goal",
+                )
+            if event.goal_id != self._active_goal:
+                raise GuardFailure(
+                    R.OUT_OF_ORDER_EVENT,
+                    f"reconciliation identifies goal {event.goal_id!r} but"
+                    f" the active (recovery) goal is {self._active_goal!r}",
                 )
             operation = self._operations.get(event.operation_id)
             if operation is None:
