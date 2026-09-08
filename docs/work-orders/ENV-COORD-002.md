@@ -642,6 +642,131 @@ claim/generation/holder with regression-first tests.
   reads the real registry (`7d4e6b52`, `BOOTSTRAP_CONTROL`,
   `ENV-COORD-002-C1` CLAIMED).
 
+### R10 — Overnight exhaustive hardening campaign / 2026-09-09
+
+Campaign: ENV-COORD-002 R10 Overnight Exhaustive Hardening.
+Start exact SHA: `7ea9e11508a8a7606d681bdde414770515774c54` (verified =
+local HEAD = origin/feat/env-coord-002 = PR #84 head before work).
+Base: `origin/main@7d4e6b52c616ff15f86e399a085ef16477d38ef8` (ancestor
+verified). Claim `ENV-COORD-002-C1` gen 1 holder
+`zcode-env-coord-002-g1-primary`; live registry re-read through the
+guard CLI (`7d4e6b52` / registry_hash `2d1b901b…` / BOOTSTRAP_CONTROL /
+CLAIMED). `SAFE_TO_MUTATE = YES`; no other writer; `.serena/` untouched.
+
+**Phases completed:** state re-pin; authoritative-source re-read (AGENTS,
+Operating Map, origin/main CURRENT-WORK registry + allowed-status list,
+this WO, full architecture §1–15, engineering loop §24–27, protocol
+§18–23, DEFECT-MEMORY index, A-Wiki pointer — no coordination-specific
+A-Wiki content; repo authority governs); R9 baseline reproduced (4
+mismatch negatives fail closed with byte-identical state snapshots,
+positive controls + R8 recovery chain green); invariant matrix built
+internally; adversarial probes across registry parsing, trust/TOCTOU,
+status matrix, paths, scope grammar, mutation endpoints, symlinks,
+shared-owner exceptions, lifecycle/operations/publication, admission
+gate, transfer barrier, attestation identity, concurrency stress,
+exception atomicity, reason codes, enforcement truth, CLI, type
+boundaries, encapsulation, determinism, cross-subsystem consistency,
+historical-defect coverage, test quality.
+
+**New defects found and repaired (all RED → minimal repair → GREEN):**
+
+1. **Registry `version` bool masquerade (P3).** `"version": true`
+   accepted: Python `True == 1` defeats `version != REGISTRY_VERSION`.
+   Violated schema-integer intent; inconsistent with the existing
+   `claim_generation` bool rejection. Repair: strict non-bool int check
+   → `UNSUPPORTED_REGISTRY_VERSION`. Regression:
+   `TestRegistryParsing.test_registry_version_must_be_real_integer`
+   (True/False/1.0/"1"/None all rejected).
+2. **Lifecycle schema-int masquerades/crashes (P2).** `event_seq="3"`
+   crashed `TypeError` in the monotonic comparison (no GuardFailure);
+   `event_seq=2.5` accepted; `claim_generation=True` accepted as
+   generation 1. Violated §5 monotonic-integer semantics and §7.1
+   fail-closed reasons. Repair: type fencing at the top of
+   `LifecycleLog.apply` (`STALE_CLAIM_GENERATION` / `OUT_OF_ORDER_EVENT`)
+   before any mutation. Regressions: `TestLifecycleTypeBoundaries`
+   (crash-not-reason, float/bool rejection, snapshot-unchanged sweep).
+3. **Unhashable shared-exception participant id (P2).**
+   `participating_claims` entry with a list `claim_id` crashed
+   `TypeError: unhashable type` on the registry lookup. Repair: strict
+   non-empty-str check → `INVALID_SHARED_EXCEPTION` (the participant
+   generation field already rejected bools — pinned as a regression).
+4. **CLI malformed lifecycle document traceback (P2).**
+   `validate-lifecycle` on invalid JSON / missing fields / bad
+   generation exited rc=1 with a raw traceback instead of the §7.1
+   reason contract. Repair: CLI boundary maps
+   `TypeError/ValueError/KeyError` to `IO_ERROR` + exit 2. Regression:
+   `TestCLI.test_validate_lifecycle_malformed_document_fails_closed`
+   (4 malformed shapes).
+5. **Preflight `claim_generation` bool masquerade (P2,
+   authorization path).** `claim_generation=True` in the execution
+   context passed preflight as generation 1 via the equality fence —
+   found by the new metamorphic property sweep. Violated §4.2 exact-
+   generation fencing. Repair: strict non-bool int check in `preflight`
+   → `STALE_CLAIM_GENERATION`. Protected by
+   `TestMetamorphicProperties.test_wrong_generation_or_holder_never_
+   increases_authorization`.
+6. **Control-transition generation bool masquerade (P2).**
+   `expected_claim_generation=True` satisfied the §4.3 serialization
+   fence as generation 1. Repair: exact-int fencing for expected AND
+   proposed generations. Regression:
+   `TestControlTransition.test_transition_generation_bool_masquerade_
+   rejected` (5 malformed combinations).
+
+**Audited clean (no defect; evidence recorded):** missing/duplicate/
+malformed/decoy registry blocks; unsupported version; duplicate claim
+ids/tasks; empty IDs; unknown status; forbidden-inside-mutable
+(evaluation-level precedence); frozen single `origin/main` read (only
+one real Git read exists); decision tuple binding across
+preflight/activation; full accepted-status matrix consistent across
+registry overlap / transition admission / link crossing (all three
+derive from `LOCK_HOLDING_CLAIM_STATUSES`; MUTABLE consumed only by the
+shared preflight); scope grammar (segment-boundary matching, wildcard
+rejections, case aliases); mutation endpoints (rename/copy/mixed-batch
+worst-element fail-closed); symlink matrix (lock/release parity);
+§7.3 exceptions (9 adversarial shapes incl. triangle/owner/generation/
+merge-order/release); lifecycle transition matrix incl. atomicity
+snapshots; operation journal sequences; publication/replay idempotency;
+admission gate edge sweep; transfer barrier states; attestation
+identity matrix (stale attestation cannot drive g2; old-holder and
+new-holder replay behavior); concurrency stress across 4 switch
+intervals; decision determinism (identical digests over repeats);
+encapsulation (observed: `TrustedPolicy.claims` dicts are observational
+but technically mutable in memory — documented limitation, no repair;
+trust boundary is at policy construction from hash-bound text); reason
+codes; enforcement truth (BOOTSTRAP_CONTROL preserved, no ENFORCING
+path reachable without server verification); CLI exit codes. Historical
+defect coverage re-verified: 25 sampled regressions from R1–R9 all
+present (one per material defect).
+
+**Durable additions:** `TestLifecycleTypeBoundaries` (5 tests),
+`TestGoalIdentityMismatch` already from R9, `TestMetamorphicProperties`
+(9 bounded deterministic property tests: canonicalization idempotence,
+NFC stability, case-alias equivalence, forbidden-scope monotonicity,
+generation/holder fencing monotonicity, closed-gate admission
+monotonicity, uncertainty monotonicity, replay idempotency/conflict,
+goal-identity monotonicity), participant/CLI/registry masquerade
+regressions.
+
+**Final verification (exact counts):** standalone suite 4 consecutive
+runs OK; pytest **266 passed + 81 subtests**; focused high-risk classes
+OK; concurrency stress PASS at switch intervals 1e-6/1e-5/1e-4/0.02;
+workflow runtimes OK; runtime checker PASS (5 files); split_sql all
+passed; ci_alert_payload 33 passed; py_compile clean; `git diff --check`
+PASS; changed paths = exactly the two script files + this WO + the lane
+handoff; no secrets/raw data touched; `.serena/` untracked/untouched.
+
+**Known limitations (unchanged + new):** policy object interiors are
+technically mutable in memory (trust boundary is construction from
+hash-bound text; adapters must treat `TrustedPolicy` as read-only);
+Win32 alias rejection covers the authoritative smallest defect
+(trailing dot/space); process-local atomicity; scope-check
+inspection-only; no hooks/CI/server policy (ENV-COORD-003+); no central
+§7.3 writer.
+
+**Unresolved P1/P2:** none. **DECISION_REQUIRED items:** none.
+**Readiness:** all campaign phases completed green; candidate is ready
+for independent GPT-5.6 Sol exact-SHA review.
+
 ## Stop condition
 
 Implementation owner stops at `REVIEW_REQUESTED`; must not self-merge and must

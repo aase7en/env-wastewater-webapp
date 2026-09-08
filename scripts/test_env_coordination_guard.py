@@ -16,6 +16,7 @@ or via pytest. Both must stay equivalent.
 """
 from __future__ import annotations
 
+import dataclasses
 import json
 import os
 import subprocess
@@ -375,6 +376,31 @@ class TestScopeGrammar(unittest.TestCase):
 # ─────────────────────────────────────────────────────────────────────────
 class TestRegistryParsing(unittest.TestCase):
     """WO RED bullet: malformed/duplicate registry must fail closed."""
+
+    def test_registry_version_must_be_real_integer(self):
+        # R10-review: Python True == 1, so a bool masquerading as the
+        # schema-integer version slipped the equality check. The version
+        # field is an integer (consistent with claim_generation fencing):
+        # bool / float / str spellings must fail UNSUPPORTED_REGISTRY_VERSION.
+        registry = {
+            "coordination_registry": {
+                "version": 1,
+                "enforcement_mode": "BOOTSTRAP_CONTROL",
+                "expected_policy_revision": POLICY_REV,
+                "claims": [base_claim()],
+                "shared_exceptions": [],
+            }
+        }
+
+        def text_with(version):
+            registry["coordination_registry"]["version"] = version
+            return "```json\n" + json.dumps(registry) + "\n```"
+
+        for bad in (True, False, 1.0, "1", None):
+            with self.subTest(version=bad):
+                with self.assertRaises(GuardFailure) as cm:
+                    load_trusted_policy(text_with(bad), POLICY_REV)
+                self.assertEqual(cm.exception.reason, R.UNSUPPORTED_REGISTRY_VERSION)
 
     def test_parses_authoritative_registry_and_binds_hash(self):
         text = make_registry_text([base_claim()])
@@ -1474,6 +1500,22 @@ class TestControlTransition(unittest.TestCase):
         self.assertFalse(result.valid)
         self.assertEqual(result.reason, R.OWNERSHIP_CONFLICT)
 
+    def test_transition_generation_bool_masquerade_rejected(self):
+        # R10 hardening: True == 1 numerically, but a bool expected/proposed
+        # claim generation must not satisfy the §4.3 serialization fence.
+        for expected, proposed in ((True, 2), (1, True), (True, True), ("1", 2), (1.0, 2)):
+            with self.subTest(expected=expected, proposed=proposed):
+                policy = load_policy([base_claim(), other_lane_claim()])
+                result = evaluate_control_transition(
+                    policy,
+                    self._proposal(
+                        expected_claim_generation=expected,
+                        proposed_claim_generation=proposed,
+                        task_id="ENV-COORD-002",
+                    ),
+                )
+                self.assertFalse(result.valid)
+
 
 # ─────────────────────────────────────────────────────────────────────────
 # §5 goal lifecycle
@@ -1759,6 +1801,86 @@ class TestGoalIdentityMismatch(unittest.TestCase):
         record = log.operation_record("op-1")
         self.assertEqual(record["outcome"], "UNKNOWN")  # audit retained
         self.assertEqual(record["reconciled_outcome"], "SUCCEEDED")
+
+
+class TestLifecycleTypeBoundaries(unittest.TestCase):
+    """R10 hardening: schema-int fields reject bool/float/str masquerades
+    and every malformed event fails closed with a GuardFailure reason —
+    never an uncaught TypeError (§7.1 reasons, not crashes).
+
+    Python bool is an int subclass: True == 1, so equality checks alone
+    let True masquerade as claim_generation 1; a str seq crashes the
+    monotonic '<=' comparison instead of failing closed.
+    """
+
+    def _base_log(self):
+        log = LifecycleLog("ENV-COORD-002-C1", 1)
+        log.apply(goal_start())
+        return log
+
+    def test_string_event_seq_fails_closed_not_crash(self):
+        log = self._base_log()
+        with self.assertRaises(GuardFailure) as cm:
+            log.apply(op_intent(seq="3", event_id="o9", prev="e1"))
+        self.assertEqual(cm.exception.reason, R.OUT_OF_ORDER_EVENT)
+        self.assertEqual(log.head_event_id, "e1")  # unchanged
+
+    def test_float_event_seq_rejected(self):
+        log = self._base_log()
+        with self.assertRaises(GuardFailure) as cm:
+            log.apply(op_intent(seq=2.5, event_id="o9", prev="e1"))
+        self.assertEqual(cm.exception.reason, R.OUT_OF_ORDER_EVENT)
+        self.assertEqual(log.head_event_id, "e1")
+
+    def test_bool_event_seq_rejected(self):
+        log = self._base_log()
+        with self.assertRaises(GuardFailure) as cm:
+            log.apply(op_intent(seq=True, event_id="o9", prev="e1"))
+        self.assertEqual(cm.exception.reason, R.OUT_OF_ORDER_EVENT)
+        self.assertEqual(log.head_event_id, "e1")
+
+    def test_bool_claim_generation_masquerade_rejected(self):
+        # True == 1 numerically; the generation fence must still reject
+        # the masquerade (consistent with registry claim_generation)
+        log = LifecycleLog("ENV-COORD-002-C1", 1)
+        log.apply(goal_start())
+        event = dataclasses.replace(op_intent(), claim_generation=True)
+        with self.assertRaises(GuardFailure) as cm:
+            log.apply(event)
+        self.assertEqual(cm.exception.reason, R.STALE_CLAIM_GENERATION)
+        self.assertEqual(log.head_event_id, "e1")
+
+    def test_event_type_rejections_leave_state_unchanged(self):
+        # representative atomicity sweep: every rejection below leaves the
+        # whole authoritative snapshot identical
+        def snapshot(log):
+            return (
+                list(log.events),
+                dict(log._by_id),
+                log.head_event_id,
+                log._active_goal,
+                set(log._terminated_goals),
+                log._last_goal_end_id,
+                {k: dict(v) for k, v in log._operations.items()},
+            )
+
+        log = self._base_log()
+        log.apply(op_intent())
+        before = snapshot(log)
+        bad_events = [
+            op_intent(seq=3, event_id="oX", prev="o1", goal="g999"),   # wrong goal
+            op_intent(seq="9", event_id="oY", prev="o1"),              # bad seq type
+            op_intent(seq=1, event_id="oZ", prev="o1"),                # seq not increasing
+            LifecycleEvent(
+                task_id="ENV-COORD-002", claim_id="OTHER", claim_generation=1,
+                goal_id="g1", event_type="CHECKPOINT", event_seq=3,
+                event_id="oW", previous_event_id="o1",
+            ),                                                          # wrong claim
+        ]
+        for bad in bad_events:
+            with self.assertRaises(GuardFailure):
+                log.apply(bad)
+        self.assertEqual(snapshot(log), before)
 
     def test_checkpoint_cannot_replace_active_goal(self):
         # §5.1: a normal checkpoint is not a goal terminator.
@@ -3060,6 +3182,34 @@ class TestCLI(unittest.TestCase):
         finally:
             os.unlink(path)
 
+    def test_validate_lifecycle_malformed_document_fails_closed(self):
+        # R10 hardening: malformed JSON / wrong document shapes must exit
+        # 2 with a reason payload, never an uncaught traceback (rc=1)
+        cases = [
+            "{not json",                                  # invalid JSON
+            json.dumps({"claim_id": "X"}),                # missing keys
+            json.dumps({"claim_id": "ENV-COORD-002-C1",
+                        "claim_generation": "abc", "events": []}),  # bad generation
+            json.dumps({"claim_id": "ENV-COORD-002-C1",
+                        "claim_generation": 1,
+                        "events": [{"event_type": "GOAL_START"}]}),  # event missing fields
+        ]
+        for payload in cases:
+            with self.subTest(payload=payload[:30]):
+                with tempfile.NamedTemporaryFile(
+                    "w", suffix=".json", delete=False, encoding="utf-8"
+                ) as f:
+                    f.write(payload)
+                    path = f.name
+                try:
+                    proc = self.run_cli("validate-lifecycle", "--file", path)
+                    self.assertEqual(proc.returncode, 2, proc.stderr)
+                    result = json.loads(proc.stdout)
+                    self.assertFalse(result["ok"])
+                    self.assertIn("reason", result)
+                finally:
+                    os.unlink(path)
+
     def test_validate_lifecycle_happy_and_reject(self):
         events = [
             {
@@ -3616,6 +3766,34 @@ class TestSharedExceptionUniqueness(unittest.TestCase):
         )
         self.assertEqual(len(policy.shared_exceptions), 2)
 
+    def test_non_string_participant_claim_id_fails_closed(self):
+        # R10 hardening: an unhashable claim_id must fail closed with a
+        # reason, not crash with "unhashable type" on the registry lookup
+        claim_a, claim_b = sharing_claims()
+        bad = full_shared_exception(
+            participating_claims=[
+                {"claim_id": ["ENV-COORD-002-C1"], "claim_generation": 1},
+                {"claim_id": "ENV-INT-GISTDA-CORE-001-C1", "claim_generation": 1},
+            ]
+        )
+        with self.assertRaises(GuardFailure) as cm:
+            load_policy([claim_a, claim_b], shared_exceptions=[bad])
+        self.assertEqual(cm.exception.reason, R.INVALID_SHARED_EXCEPTION)
+
+    def test_non_string_participant_claim_generation_type_rejected(self):
+        # generation binding stays an exact int comparison; True == 1
+        # must not bind a participant to generation 1
+        claim_a, claim_b = sharing_claims()
+        bad = full_shared_exception(
+            participating_claims=[
+                {"claim_id": "ENV-COORD-002-C1", "claim_generation": True},
+                {"claim_id": "ENV-INT-GISTDA-CORE-001-C1", "claim_generation": 1},
+            ]
+        )
+        with self.assertRaises(GuardFailure) as cm:
+            load_policy([claim_a, claim_b], shared_exceptions=[bad])
+        self.assertEqual(cm.exception.reason, R.INVALID_SHARED_EXCEPTION)
+
     @staticmethod
     def _third_claim():
         return base_claim(
@@ -3918,6 +4096,152 @@ class TestCompatibilityClaimStates(unittest.TestCase):
         self.assertTrue(decision.safe_to_mutate)
         self.assertEqual(barrier.state, "ACTIVE")
         self.assertEqual(barrier.runtime.gate.state, "OPEN")
+
+
+class TestMetamorphicProperties(unittest.TestCase):
+    """R10 hardening: bounded deterministic metamorphic properties.
+
+    Each property states that a safety-irrelevant or safety-worsening
+    input change can never increase authorization. Enumeration is fixed
+    (no randomness) so failures are exactly reproducible.
+    """
+
+    PATHS = [
+        "scripts/env_coordination_guard.py",
+        "scripts\\env_coordination_guard.py",
+        "docs/work-orders/ENV-COORD-002.md",
+        "AGENTS.md",
+        "docs/ai/handoffs/ENV-COORD-002-GLM.md",
+        "scripts/test_env_coordination_guard.py",
+    ]
+
+    def test_canonicalization_idempotent_over_path_set(self):
+        for raw in self.PATHS:
+            with self.subTest(raw=raw):
+                once = canonicalize_path(raw)
+                twice = canonicalize_path(once)
+                self.assertEqual(once, twice)
+
+    def test_nfc_normalization_stable(self):
+        for raw in ("docs/cafe\u0301.md", "scripts\ufe32x.py", "a\u212bngstrom.md"):
+            with self.subTest(raw=raw):
+                once = canonicalize_path(raw)
+                self.assertEqual(once, canonicalize_path(once))
+
+    def test_case_key_aliases_equal_but_distinct_paths_stay_distinct(self):
+        pairs = [
+            ("Scripts/X.PY", "scripts/x.py"),
+            ("DOCS/A.md", "docs/a.md"),
+            ("Reports/Gistda/X.txt", "reports/gistda/x.txt"),
+        ]
+        for a, b in pairs:
+            with self.subTest(pair=(a, b)):
+                self.assertEqual(case_key(a), case_key(b))
+        self.assertNotEqual(case_key("docs/ab.md"), case_key("docs/abc.md"))
+
+    def test_adding_forbidden_scope_never_increases_authorization(self):
+        changes = [Change(kind, path) for kind, path in
+                   [("modify", "scripts/env_coordination_guard.py"),
+                    ("add", "docs/work-orders/ENV-COORD-002.md"),
+                    ("delete", "docs/ai/handoffs/ENV-COORD-002-GLM.md")]]
+        without = load_policy([base_claim()])
+        with_forbidden = load_policy([base_claim(forbidden_scope=[
+            "docs/ai/CURRENT-WORK.md", "AGENTS.md", "frontend/**", "supabase/**"])])
+        for change in changes:
+            d0 = evaluate_mutation(without, ok_ctx(), changes=[change])
+            d1 = evaluate_mutation(with_forbidden, ok_ctx(), changes=[change])
+            with self.subTest(change=f"{change.kind}:{change.source}"):
+                if not d0.safe_to_mutate:
+                    self.assertFalse(d1.safe_to_mutate)
+
+    def test_wrong_generation_or_holder_never_increases_authorization(self):
+        policy = load_policy([base_claim()])
+        change = [Change("modify", "scripts/env_coordination_guard.py")]
+        baseline = evaluate_mutation(policy, ok_ctx(), changes=change)
+        self.assertTrue(baseline.safe_to_mutate)
+        for ctx in (
+            ok_ctx(claim_generation=2),
+            ok_ctx(claim_generation=True),  # bool masquerade of generation
+            ok_ctx(execution_holder_id="holder-rogue"),
+            ok_ctx(worktree="A:/GitHub/envww-rogue"),
+            ok_ctx(branch="feat/rogue"),
+        ):
+            with self.subTest(ctx=str(ctx)):
+                d = evaluate_mutation(policy, ctx, changes=change)
+                self.assertFalse(d.safe_to_mutate)
+
+    def test_closed_gate_can_never_create_admission(self):
+        for op_id in ("op-a", "op-b", "op-1", "op-2", "probe"):
+            gate = AdmissionGate()
+            gate.close()
+            with self.subTest(op_id=op_id):
+                with self.assertRaises(GuardFailure) as cm:
+                    gate.admit(op_id)
+                self.assertEqual(cm.exception.reason, R.ADMISSION_GATE_CLOSED)
+                self.assertEqual(gate.active_admissions, 0)
+
+    def test_uncertainty_can_never_increase_transfer_readiness(self):
+        for att_id, event_id in (("att-a", "e1"), ("att-b", "e2"), ("att-1", "e9")):
+            barrier = TransferBarrier(
+                claim_id="ENV-COORD-002-C1", claim_generation=1, holder_id="holder-A"
+            )
+            barrier.begin_quiesce()
+            with self.subTest(attestation=att_id):
+                result = barrier.holder_publish(
+                    "holder-A", att_id, latest_event_id=event_id,
+                    unresolved_external_operations=True,
+                )
+                self.assertIsNone(result)
+                self.assertEqual(barrier.state, "QUIESCING")
+                with self.assertRaises(GuardFailure):
+                    barrier.complete_transfer(new_holder_id="holder-B")
+                self.assertEqual(barrier.claim_generation, 1)
+
+    def test_identical_replay_never_changes_state_and_conflict_never_succeeds(self):
+        def snapshot(log):
+            return (len(log.events), log.head_event_id, log._active_goal,
+                    {k: dict(v) for k, v in log._operations.items()})
+
+        log = LifecycleLog("ENV-COORD-002-C1", 1)
+        log.apply(goal_start())
+        log.apply(op_intent())
+        log.apply(op_outcome(outcome="SUCCEEDED"))
+        frozen = snapshot(log)
+        # identical replay: idempotent, state unchanged
+        status, _ = log.apply(op_outcome(outcome="SUCCEEDED"))
+        self.assertEqual(status, "idempotent_noop")
+        self.assertEqual(snapshot(log), frozen)
+        # every payload variation of the same id: conflict, state unchanged
+        for variant in (
+            op_outcome(outcome="FAILED"),
+            op_outcome(outcome="UNKNOWN"),
+            op_outcome(goal="g999"),
+            op_outcome(prev="GENESIS"),
+        ):
+            with self.subTest(variant=variant.operation_outcome):
+                with self.assertRaises(GuardFailure) as cm:
+                    log.apply(variant)
+                self.assertEqual(cm.exception.reason, R.EVENT_CONFLICT)
+                self.assertEqual(snapshot(log), frozen)
+
+    def test_wrong_goal_id_never_increases_acceptance(self):
+        scoped = [
+            ("checkpoint", lambda goal, seq, prev: LifecycleEvent(
+                task_id="ENV-COORD-002", claim_id="ENV-COORD-002-C1",
+                claim_generation=1, goal_id=goal, event_type="CHECKPOINT",
+                event_seq=seq, event_id=f"c-{seq}", previous_event_id=prev)),
+            ("intent", lambda goal, seq, prev: op_intent(seq=seq, event_id=f"i-{seq}",
+                                                         prev=prev, goal=goal)),
+        ]
+        for name, make in scoped:
+            log = LifecycleLog("ENV-COORD-002-C1", 1)
+            log.apply(goal_start())
+            log.apply(op_intent())
+            with self.subTest(event=name):
+                with self.assertRaises(GuardFailure) as cm:
+                    log.apply(make("g999", 3, "o1"))
+                self.assertEqual(cm.exception.reason, R.OUT_OF_ORDER_EVENT)
+            self.assertEqual(len(log.events), 2)
 
 
 if __name__ == "__main__":

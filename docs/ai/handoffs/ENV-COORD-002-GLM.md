@@ -708,3 +708,84 @@ Stop at `REVIEW_REQUESTED`. Do not merge.
   invoked from this lane); merge only on APPROVED with expected-head
   protection; then file ENV-COORD-003 (SHADOW CI integration) as a new
   claim.
+
+## Result — R10 overnight exhaustive hardening campaign / 2026-09-09
+
+- **Preflight:** start SHA `7ea9e11508a8a7606d681bdde414770515774c54`
+  verified as local HEAD = origin/feat/env-coord-002 = PR #84 head;
+  `origin/main@7d4e6b52…` ancestor-verified; live registry re-read via
+  the guard CLI (`7d4e6b52` / `2d1b901b…` / BOOTSTRAP_CONTROL /
+  `ENV-COORD-002-C1` g1 CLAIMED / this holder/worktree/branch);
+  worktree clean (`.serena/` untracked only); `SAFE_TO_MUTATE = YES`.
+  Same single execution context; mutable scope the same 4 paths.
+- **Sources re-read (not chat memory):** AGENTS.md, Operating Map,
+  origin/main CURRENT-WORK registry + allowed-status list, Work Order,
+  full architecture §1–15, engineering loop §24–27, protocol §18–23,
+  DEFECT-MEMORY index, A-Wiki project pointer (no coordination-specific
+  content; repo authority governs), actual code/tests/remote state.
+- **R9 baseline:** reproduced before hardening — 4 goal-identity
+  negatives fail closed with identical pre/post state snapshots;
+  positive controls and the R8 recovery chain green.
+- **Campaign phases completed:** invariant matrix (internal); adversarial
+  probes over registry parsing, trust/TOCTOU, status matrix, paths,
+  scope grammar, mutation endpoints, symlinks, shared-owner exceptions,
+  lifecycle, operation journal, publication/replay, admission gate,
+  transfer barrier, attestation identity, concurrency stress, exception
+  atomicity, reason codes, enforcement truth, CLI, type boundaries,
+  encapsulation, determinism, cross-subsystem consistency, historical
+  coverage, test quality.
+- **Six new defects found → repaired (RED → minimal repair → GREEN):**
+  1. registry `version: true` bool masquerade (P3) → strict int check;
+  2. lifecycle schema-int failures: `event_seq` str crash (TypeError
+     instead of GuardFailure), float seq accepted, `claim_generation`
+     bool accepted as gen 1 (P2) → type fencing at the top of
+     `LifecycleLog.apply` before any mutation;
+  3. unhashable shared-exception participant `claim_id` crash (P2) →
+     strict non-empty-str check → `INVALID_SHARED_EXCEPTION`;
+  4. CLI `validate-lifecycle` malformed documents exited rc=1 with a
+     traceback (P2) → boundary maps TypeError/ValueError/KeyError to
+     `IO_ERROR` exit 2;
+  5. preflight `claim_generation=True` passed the authorization-path
+     generation fence as gen 1 (P2 — found by the new property sweep) →
+     strict non-bool int check → `STALE_CLAIM_GENERATION`;
+  6. control-transition `expected_claim_generation=True` satisfied the
+     §4.3 serialization fence (P2) → exact-int fencing for expected and
+     proposed generations.
+- **Audited clean (evidence in WO R10 section):** registry block
+  ambiguities, frozen single Git read, tuple bindings, status matrix
+  consistency across all three lock consumers, scope grammar, mutation
+  endpoints, symlink parity, §7.3 adversarials, lifecycle atomicity
+  snapshots, publication/replay, admission/transfer/attestation edges,
+  reason codes, enforcement truth, determinism.
+- **Durable additions:** `TestLifecycleTypeBoundaries`,
+  `TestMetamorphicProperties` (9 bounded deterministic property tests),
+  masquerade/participant/CLI regressions. Historical coverage
+  re-verified: 25 sampled R1–R9 defect regressions all present.
+- **Exact final verification:** standalone suite 4 consecutive OK runs;
+  pytest **266 passed + 81 subtests**; concurrency stress PASS at 4
+  switch intervals; decision determinism identical digests; workflow
+  runtimes OK; runtime checker PASS (5 files); split_sql all passed;
+  ci_alert_payload 33 passed; py_compile clean; `git diff --check`
+  exit 0; changed paths = exactly the two script files + this handoff +
+  the Work Order; no secrets/raw data touched; `.serena/` untouched.
+- **Exact start HEAD:** `7ea9e11508a8a7606d681bdde414770515774c54`.
+- **Exact final HEAD:** the R10 freeze commit on
+  `origin/feat/env-coord-002` (= PR #84 head after push; remote ref is
+  the authoritative record per protocol §18, not self-written).
+- **Known limitations:** `TrustedPolicy.claims` dict interiors are
+  technically mutable in memory (trust boundary is policy construction
+  from hash-bound text; adapters must treat the policy as read-only);
+  Win32 alias rejection covers the authoritative smallest defect
+  (trailing dot/space); process-local atomicity; scope-check
+  inspection-only; no hooks/CI/server policy (ENV-COORD-003+); no
+  central §7.3 writer.
+- **Unresolved P1/P2 issues:** none. **DECISION_REQUIRED items:** none.
+- **Readiness:** all campaign phases completed green; every repair is
+  tightening-only; candidate is ready for independent review.
+- **Exactly ONE next safe action:** GPT-5.6 Sol performs a fresh
+  independent exact-SHA review of the FINAL R10 candidate (PR #84
+  head after this push). Only if Sol independently reaches APPROVED on
+  that exact unchanged SHA should GPT-6 Astra perform the final
+  adversarial exact-SHA review. Merge remains prohibited until both
+  review gates are satisfied; then file ENV-COORD-003 (SHADOW CI
+  integration) as a new claim.

@@ -416,7 +416,9 @@ def validate_registry(registry: Any) -> dict:
     registry = copy.deepcopy(registry)
 
     version = registry.get("version")
-    if version != REGISTRY_VERSION:
+    # exact integer only: Python True == 1, so a bool masquerading as the
+    # schema-integer version must not slip through an equality check.
+    if isinstance(version, bool) or not isinstance(version, int) or version != REGISTRY_VERSION:
         raise GuardFailure(R.UNSUPPORTED_REGISTRY_VERSION, f"version {version!r}")
     mode = registry.get("enforcement_mode")
     if mode not in ENFORCEMENT_MODES:
@@ -549,6 +551,10 @@ def _validate_and_index_shared_exceptions(exceptions: Any, claims_by_id: dict) -
             if not isinstance(participant, dict):
                 raise GuardFailure(R.INVALID_SHARED_EXCEPTION, "participant must be an object")
             cid = participant.get("claim_id")
+            if not isinstance(cid, str) or not cid:
+                # non-string (e.g. an unhashable list) must fail closed —
+                # a dict lookup would crash with TypeError instead
+                raise GuardFailure(R.INVALID_SHARED_EXCEPTION, f"participant claim_id {cid!r}")
             generation = participant.get("claim_generation")
             claim = claims_by_id.get(cid)
             if claim is None:
@@ -735,7 +741,13 @@ def preflight(policy: TrustedPolicy, ctx: dict) -> Decision:
         return _deny(policy, claim, R.WRONG_CLAIM)
     if claim["status"] not in MUTABLE_CLAIM_STATUSES:
         return _deny(policy, claim, R.CLAIM_STATUS_NOT_MUTABLE)
-    if ctx.get("claim_generation") != claim["claim_generation"]:
+    ctx_generation = ctx.get("claim_generation")
+    # exact int only (R10): Python True == 1, so a bool ctx generation
+    # must not masquerade as the trusted generation through the equality
+    # fence — the same masquerade class the registry parser rejects.
+    if isinstance(ctx_generation, bool) or not isinstance(ctx_generation, int):
+        return _deny(policy, claim, R.STALE_CLAIM_GENERATION)
+    if ctx_generation != claim["claim_generation"]:
         return _deny(policy, claim, R.STALE_CLAIM_GENERATION)
     if ctx.get("execution_holder_id") != claim["execution_holder_id"]:
         return _deny(policy, claim, R.WRONG_EXECUTION_HOLDER)
@@ -1047,13 +1059,21 @@ def evaluate_control_transition(policy: TrustedPolicy, proposal: dict) -> Transi
                     return TransitionValidation(False, R.OWNERSHIP_CONFLICT)
 
     proposed_generation = proposal.get("proposed_claim_generation")
+    # exact-int fencing for both generation fields (R10): a bool True
+    # equals 1 numerically and must not satisfy the §4.3 serialization
+    # fence by masquerading as the expected/current generation.
+    expected_generation = proposal.get("expected_claim_generation")
+
+    def _is_int(value: Any) -> bool:
+        return isinstance(value, int) and not isinstance(value, bool)
+
     if existing is None:
-        if proposal.get("expected_claim_generation") is not None or proposed_generation != 1:
+        if expected_generation is not None or not _is_int(proposed_generation) or proposed_generation != 1:
             return TransitionValidation(False, R.INVALID_GENERATION_TRANSITION)
     else:
-        if proposal.get("expected_claim_generation") != existing["claim_generation"]:
+        if not _is_int(expected_generation) or expected_generation != existing["claim_generation"]:
             return TransitionValidation(False, R.STALE_CLAIM_GENERATION)
-        if proposed_generation != existing["claim_generation"] + 1:
+        if not _is_int(proposed_generation) or proposed_generation != existing["claim_generation"] + 1:
             return TransitionValidation(False, R.INVALID_GENERATION_TRANSITION)
     return TransitionValidation(True, None)
 
@@ -1173,6 +1193,14 @@ class LifecycleLog:
     def apply(self, event: LifecycleEvent) -> tuple[str, LifecycleEvent]:
         if event.event_type not in LIFECYCLE_EVENT_TYPES:
             raise GuardFailure(R.INVALID_EVENT_TYPE, event.event_type)
+        # schema-int fencing before any comparison/mutation (R10): Python
+        # bool is an int subclass and True == 1, so equality alone would
+        # let True masquerade as generation 1; a str/float seq would crash
+        # the monotonic comparison instead of failing closed.
+        if isinstance(event.claim_generation, bool) or not isinstance(event.claim_generation, int):
+            raise GuardFailure(R.STALE_CLAIM_GENERATION, f"claim_generation {event.claim_generation!r}")
+        if isinstance(event.event_seq, bool) or not isinstance(event.event_seq, int):
+            raise GuardFailure(R.OUT_OF_ORDER_EVENT, f"event_seq {event.event_seq!r}")
         if event.claim_id != self.claim_id:
             raise GuardFailure(R.WRONG_CLAIM, f"{event.claim_id} != {self.claim_id}")
         if event.claim_generation != self.claim_generation:
@@ -1940,6 +1968,11 @@ def main(argv: Optional[list[str]] = None) -> int:
         return args.func(args)
     except GuardFailure as failure:
         return _emit({"ok": False, "reason": failure.reason, "detail": failure.detail}, 2)
+    except (TypeError, ValueError, KeyError) as exc:
+        # malformed file inputs (bad JSON, missing/ill-typed document
+        # fields, unexpected event shapes) fail closed with a reason
+        # payload and exit 2 — never an uncaught traceback (R10).
+        return _emit({"ok": False, "reason": R.IO_ERROR, "detail": str(exc)}, 2)
     except OSError as exc:
         return _emit({"ok": False, "reason": R.IO_ERROR, "detail": str(exc)}, 2)
 
