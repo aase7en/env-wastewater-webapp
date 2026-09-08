@@ -3397,5 +3397,148 @@ class TestLockHoldingStatuses(unittest.TestCase):
         self.assertEqual(cm.exception.reason, R.OWNERSHIP_CONFLICT)
 
 
+class TestCompatibilityClaimStates(unittest.TestCase):
+    """R6-review P1: guard vocabulary/authorization must follow the repo's
+    canonical task lifecycle.
+
+    Authority: architecture §4.1 "existing repository compatibility states
+    remain valid until migrated"; protocol §18 preferred lifecycle
+    READY -> CLAIMED -> IMPLEMENTING -> VERIFYING -> REVIEW_REQUESTED with
+    READY_FOR_IMPLEMENTATION / RE-REVIEW_REQUESTED as valid compatibility
+    labels; the authoritative CURRENT-WORK allowed-statuses list (adds
+    IDLE, DESIGNING). A registry following that contract must stay
+    readable, and canonical working phases must not self-fence.
+    """
+
+    ALLOWED = (
+        "IDLE", "DESIGNING", "READY_FOR_IMPLEMENTATION", "READY",
+        "CLAIMED", "IMPLEMENTING", "VERIFYING", "REVIEW_REQUESTED",
+        "CHANGES_REQUIRED", "RE-REVIEW_REQUESTED", "APPROVED",
+        "MERGE_READY", "MERGED", "POSTMERGE_VERIFY", "CLOSED",
+        "BLOCKED", "DECISION_REQUIRED", "HUMAN_ACTION_REQUIRED",
+    )
+
+    def test_full_allowed_status_vocabulary_parses(self):
+        # reviewer reproducer: VERIFYING / RE-REVIEW_REQUESTED /
+        # READY_FOR_IMPLEMENTATION (and the rest of the allowed list)
+        # must not make the registry unreadable with INVALID_CLAIM_FIELD
+        claims = [
+            base_claim(
+                task_id=f"ENV-COMPAT-{i}",
+                claim_id=f"ENV-COMPAT-{i}-C1",
+                execution_holder_id=f"holder-compat-{i}",
+                worktree=f"A:/GitHub/envww-compat-{i}",
+                branch=f"feat/compat-{i}",
+                status=status,
+                mutable_scope=[f"lanes/compat-{i}/**"],
+            )
+            for i, status in enumerate(self.ALLOWED)
+        ]
+        policy = load_policy(claims)
+        self.assertEqual(len(policy.claims), len(self.ALLOWED))
+
+    def test_implementing_preflight_is_mutable(self):
+        # reviewer reproducer: canonical IMPLEMENTING must not self-fence
+        # the implementation phase
+        policy = load_policy([base_claim(status="IMPLEMENTING")])
+        d = preflight(policy, ok_ctx())
+        self.assertTrue(d.safe_to_mutate)
+        self.assertIsNone(d.reason)
+
+    def test_verifying_preflight_is_mutable(self):
+        # §18: VERIFYING is the holder-side verification phase before the
+        # REVIEW_REQUESTED gate; the loop's verify step writes evidence
+        # inside the claim scope (second half of the §4.1 ACTIVE phase)
+        policy = load_policy([base_claim(status="VERIFYING")])
+        d = preflight(policy, ok_ctx())
+        self.assertTrue(d.safe_to_mutate)
+        self.assertIsNone(d.reason)
+
+    def test_review_gate_states_are_not_mutable(self):
+        # REVIEW_REQUESTED and its §18 re-entry RE-REVIEW_REQUESTED are
+        # the independent-review fence: implementation owner must not act
+        for status in ("REVIEW_REQUESTED", "RE-REVIEW_REQUESTED", "CHANGES_REQUIRED"):
+            with self.subTest(status=status):
+                policy = load_policy([base_claim(status=status)])
+                d = preflight(policy, ok_ctx())
+                self.assertFalse(d.safe_to_mutate)
+                self.assertEqual(d.reason, R.CLAIM_STATUS_NOT_MUTABLE)
+
+    def test_pre_implementation_and_inactive_states_are_not_mutable(self):
+        # READY_FOR_IMPLEMENTATION (pre-implementation slot), IDLE, and
+        # DESIGNING carry no derivable mutation grant — fail-closed
+        for status in ("READY_FOR_IMPLEMENTATION", "IDLE", "DESIGNING"):
+            with self.subTest(status=status):
+                policy = load_policy([base_claim(status=status)])
+                d = preflight(policy, ok_ctx())
+                self.assertFalse(d.safe_to_mutate)
+                self.assertEqual(d.reason, R.CLAIM_STATUS_NOT_MUTABLE)
+
+    def test_implementing_and_verifying_hold_scope_lock(self):
+        for status in ("IMPLEMENTING", "VERIFYING"):
+            with self.subTest(status=status):
+                working = other_lane_claim(mutable_scope=["scripts/**"], status=status)
+                with self.assertRaises(GuardFailure) as cm:
+                    load_policy([base_claim(), working])
+                self.assertEqual(cm.exception.reason, R.OWNERSHIP_CONFLICT)
+
+    def test_re_review_requested_holds_scope_lock(self):
+        re_review = other_lane_claim(mutable_scope=["scripts/**"], status="RE-REVIEW_REQUESTED")
+        with self.assertRaises(GuardFailure) as cm:
+            load_policy([base_claim(), re_review])
+        self.assertEqual(cm.exception.reason, R.OWNERSHIP_CONFLICT)
+
+    def test_idle_and_designing_hold_scope_lock(self):
+        # conservative fail-closed derivation: §4.5 — inactivity (IDLE) or
+        # a non-canonical phase (DESIGNING) must not silently free scope
+        for status in ("IDLE", "DESIGNING"):
+            with self.subTest(status=status):
+                held = other_lane_claim(mutable_scope=["scripts/**"], status=status)
+                with self.assertRaises(GuardFailure) as cm:
+                    load_policy([base_claim(), held])
+                self.assertEqual(cm.exception.reason, R.OWNERSHIP_CONFLICT)
+
+    def test_ready_for_implementation_released_like_ready(self):
+        # engineering-loop §25 position (SPECIFIED ->
+        # READY_FOR_IMPLEMENTATION -> IMPLEMENTING): pre-implementation,
+        # READY-class — no scope lock, no false collision
+        ready_for_impl = other_lane_claim(
+            mutable_scope=["scripts/**"], status="READY_FOR_IMPLEMENTATION"
+        )
+        policy = load_policy([base_claim(), ready_for_impl])
+        self.assertEqual(len(policy.claims), 2)
+
+    def test_implementing_end_to_end_mutation_allowed(self):
+        policy = load_policy([base_claim(status="IMPLEMENTING")])
+        d = evaluate_mutation(
+            policy,
+            ok_ctx(),
+            changes=[Change("modify", "scripts/env_coordination_guard.py")],
+        )
+        self.assertTrue(d.safe_to_mutate)
+
+    def test_transfer_activation_on_implementing_generation(self):
+        # a generation transferred into its IMPLEMENTING phase must
+        # activate through the ordinary §4.4 preflight without self-fencing
+        barrier = TransferBarrier(
+            claim_id="ENV-COORD-002-C1", claim_generation=1, holder_id="holder-A"
+        )
+        barrier.begin_quiesce()
+        self.assertIsNotNone(
+            barrier.holder_publish("holder-A", "att-1", latest_event_id="e9")
+        )
+        barrier.complete_transfer(new_holder_id="holder-B")
+        implementing_policy = load_policy(
+            [base_claim(claim_generation=2, execution_holder_id="holder-B", status="IMPLEMENTING")]
+        )
+        decision = barrier.activate_transferred_claim(
+            implementing_policy,
+            ok_ctx(claim_generation=2, execution_holder_id="holder-B"),
+        )
+        self.assertTrue(decision.safe_to_mutate)
+        self.assertEqual(barrier.state, "ACTIVE")
+        self.assertEqual(barrier.runtime.gate.state, "OPEN")
+
+
 if __name__ == "__main__":
     unittest.main(verbosity=2)

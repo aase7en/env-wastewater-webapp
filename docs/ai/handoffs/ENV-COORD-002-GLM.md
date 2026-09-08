@@ -449,3 +449,66 @@ Stop at `REVIEW_REQUESTED`. Do not merge.
   final adversarial review bound to that same SHA per the triage
   disposition); merge only on APPROVED with expected-head protection;
   then file ENV-COORD-003 (SHADOW CI integration) as a new claim.
+
+## Result — R6 remediation (Sol R5 review, lifecycle compatibility) / 2026-09-08
+
+- **Actual-state preflight (no chat memory):** fetched origin; PR #84
+  head verified still `8f1d9ca49c054959a93643c55e4ba88576ffcb95` before
+  work (R5 head; Sol R5 review CHANGES_REQUIRED, comment 5581469821);
+  `origin/main@7d4e6b52…` unchanged; registry claim `ENV-COORD-002-C1`
+  gen 1 holder `zcode-env-coord-002-g1-primary` matches this context;
+  worktree clean (`.serena/` untracked only); `SAFE_TO_MUTATE = YES`.
+  Same single execution context; mutable scope unchanged (4 paths).
+- **Start HEAD:** `8f1d9ca49c054959a93643c55e4ba88576ffcb95`.
+- **End HEAD:** new single commit on `origin/feat/env-coord-002`
+  (self-SHA is the PR #84 head; not written into its own commit).
+- **Authority-first design (no invented semantics):** read architecture
+  §4.1 compatibility clause, protocol §18 in full (preferred lifecycle +
+  READY_FOR_IMPLEMENTATION/RE-REVIEW_REQUESTED compatibility labels),
+  engineering-loop §25 progression, and the authoritative CURRENT-WORK
+  allowed-statuses list (adds IDLE, DESIGNING); usage pinned from
+  07-ROADMAP (DESIGNING) and HANDOFF (RE-REVIEW_REQUESTED).
+- **Repair:** vocabulary accepts the full compatibility contract
+  (VERIFYING, READY_FOR_IMPLEMENTATION, RE-REVIEW_REQUESTED, IDLE,
+  DESIGNING added); `MUTABLE_CLAIM_STATUSES` =
+  (CLAIMED, ACTIVE, IMPLEMENTING, VERIFYING) so canonical IMPLEMENTING
+  and the holder-side VERIFYING phase do not self-fence (§18 splits
+  §4.1's ACTIVE phase; both write evidence before the review gate);
+  lock semantics: READY_FOR_IMPLEMENTATION released like READY (§25
+  pre-implementation slot), RE-REVIEW_REQUESTED fenced like
+  REVIEW_REQUESTED, IDLE/DESIGNING conservatively fail-closed (no
+  mutation grant derivable; §4.5 scope held).
+- **RED → GREEN:** RED `Ran 230 tests … FAILED (failures=6, errors=8)`
+  (14 failing items across the 11 new R6 regression methods; 219 prior
+  tests passing — all current-five and historical regressions
+  preserved); GREEN `Ran 230 tests … OK` stable; pytest
+  `230 passed, 25 subtests passed`.
+- **Reproducers post-repair:** VERIFYING / RE-REVIEW_REQUESTED /
+  READY_FOR_IMPLEMENTATION parse OK; IMPLEMENTING and VERIFYING
+  preflight `SAFE_TO_MUTATE = true`; READY_FOR_IMPLEMENTATION and
+  RE-REVIEW_REQUESTED fail `CLAIM_STATUS_NOT_MUTABLE`; full 18-status
+  allowed vocabulary parses in one registry; transferred IMPLEMENTING
+  generation activates through the ordinary §4.4 preflight.
+- **Full verification (all green):** unittest 230 OK; pytest 230 passed
+  + 25 subtests; workflow runtimes OK; runtime check PASS (5 files);
+  split_sql all passed; ci_alert_payload 33 passed; `git diff --check`
+  exit 0; both scripts compile clean; live `status` smoke reads the
+  real registry (`7d4e6b52` / `BOOTSTRAP_CONTROL` / CLAIMED).
+- **Exact changed files:** the 4 authorized claim paths only; `.serena/`
+  never staged.
+- **Recorded for reviewer confirmation (conservative defaults, no
+  invented grants):** IDLE/DESIGNING carry no mutation grant;
+  READY_FOR_IMPLEMENTATION is released like READY. No material
+  DECISION_REQUIRED ambiguity remained after reading §18/§25/§4.1 and
+  the CURRENT-WORK allowed list.
+- **Limitations:** unchanged from R5 (no hooks/CI/server policy,
+  ENV-COORD-003+; scope-check inspection-only; no central §7.3 writer;
+  process-local atomicity). The guard validates single-word statuses
+  only — any future migration to structured status records is a new
+  claim.
+- **Unresolved issues:** none.
+- **Exactly ONE next safe action:** GPT-5.6 Sol performs a fresh
+  exact-SHA review of PR #84 at the new head; Astra final review is
+  re-run only after the candidate stabilizes, bound to that same SHA;
+  merge only on APPROVED with expected-head protection; then file
+  ENV-COORD-003 (SHADOW CI integration) as a new claim.

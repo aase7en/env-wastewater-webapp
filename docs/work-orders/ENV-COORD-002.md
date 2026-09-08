@@ -423,6 +423,66 @@ repaired on the same claim/generation/holder with regression-first tests.
   files; split_sql all passed; ci_alert_payload 33 passed); both scripts
   compile clean; `git diff --check` PASS.
 
+### Remediation evidence — R6 (Sol R5 exact-SHA review, lifecycle compatibility) / 2026-09-08
+
+Sol reviewed R5 head `8f1d9ca49c054959a93643c55e4ba88576ffcb95`
+(CHANGES_REQUIRED, Standards/Spec audit): the guard's status vocabulary
+was incompatible with the repo's canonical task lifecycle. All repaired
+on the same claim/generation/holder with regression-first tests.
+
+- Authority read before designing (no invented semantics): architecture
+  §4.1 ("existing repository compatibility states remain valid until
+  migrated"), protocol §18 (preferred lifecycle + READY_FOR_IMPLEMENTATION
+  / RE-REVIEW_REQUESTED compatibility labels, read in full), ENV-
+  ENGINEERING-LOOP §25 progression, and the authoritative CURRENT-WORK
+  allowed-statuses list at `origin/main@7d4e6b52` (which additionally
+  carries IDLE and DESIGNING); DESIGNING usage pinned from
+  `docs/ai/digital-twin/07-ROADMAP.md` and RE-REVIEW_REQUESTED usage
+  from `docs/ai/HANDOFF.md` (implementation owner must not act).
+- RED: `python scripts/test_env_coordination_guard.py` →
+  `Ran 230 tests … FAILED (failures=6, errors=8)` — 14 failing items
+  across 11 new R6 regression methods (the 219 prior tests passing
+  unchanged, preserving every current-five + historical regression).
+- GREEN: `Ran 230 tests … OK` (stable across repeated runs); pytest →
+  `230 passed, 25 subtests passed`.
+- Repair (vocabulary + deterministic semantics, derivations recorded in
+  code comments):
+  1. `CLAIM_STATUSES` now accepts the full repo compatibility contract:
+     adds `VERIFYING`, `READY_FOR_IMPLEMENTATION`,
+     `RE-REVIEW_REQUESTED`, `IDLE`, `DESIGNING`. A registry following
+     the still-valid lifecycle stays readable.
+  2. `MUTABLE_CLAIM_STATUSES = (CLAIMED, ACTIVE, IMPLEMENTING,
+     VERIFYING)`: §18 splits §4.1's ACTIVE working phase into
+     IMPLEMENTING → VERIFYING before the REVIEW_REQUESTED gate —
+     canonical IMPLEMENTING no longer self-fences implementation, and
+     VERIFYING (holder-side verification writing evidence) is equally
+     mutable. Transferred generations in IMPLEMENTING activate through
+     the ordinary §4.4 preflight (regression included).
+  3. Lock/release: `READY_FOR_IMPLEMENTATION` is released like READY
+     (engineering-loop §25 pre-implementation slot);
+     `RE-REVIEW_REQUESTED` fences exactly like REVIEW_REQUESTED (not
+     mutable, lock held); `IDLE`/`DESIGNING` are accepted vocabulary
+     with conservative fail-closed semantics — no mutation grant is
+     derivable from current repo authority, and §4.5 keeps their scope
+     held (inactivity must not silently free scope).
+- Reviewer reproducers re-run post-repair: `VERIFYING`,
+  `RE-REVIEW_REQUESTED`, `READY_FOR_IMPLEMENTATION` all parse OK;
+  `IMPLEMENTING` preflight `SAFE_TO_MUTATE = true`; `VERIFYING`
+  preflight true; `READY_FOR_IMPLEMENTATION`/`RE-REVIEW_REQUESTED`
+  preflight false `CLAIM_STATUS_NOT_MUTABLE`. Full allowed-status
+  vocabulary parses in one registry (18 statuses).
+- Recorded for reviewer confirmation (not blockers; conservative
+  fail-closed defaults): IDLE/DESIGNING mutation semantics (none
+  granted), READY_FOR_IMPLEMENTATION released-like-READY derivation.
+  No DECISION_REQUIRED ambiguity was material enough to block the
+  repair: every named state had derivable semantics and the two extra
+  vocabulary states received fail-closed treatment.
+- Adjacent suites green (workflow runtimes OK; runtime check PASS 5
+  files; split_sql all passed; ci_alert_payload 33 passed); both scripts
+  compile clean; `git diff --check` PASS; live `status` CLI smoke still
+  reads the real registry (`7d4e6b52`, `BOOTSTRAP_CONTROL`,
+  `ENV-COORD-002-C1` CLAIMED).
+
 ## Stop condition
 
 Implementation owner stops at `REVIEW_REQUESTED`; must not self-merge and must

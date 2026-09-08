@@ -54,13 +54,25 @@ VERIFIED_MODES = ("ENFORCING", "HARDENED")
 ENFORCEMENT_MODES = ROLLBACK_MODES + VERIFIED_MODES
 ENFORCEMENT_NOT_ACTIVE = "ENFORCEMENT_NOT_ACTIVE"
 
-MUTABLE_CLAIM_STATUSES = ("CLAIMED", "ACTIVE")
+# Claim-state vocabulary = architecture §4.1 states ∪ protocol §18
+# preferred lifecycle + compatibility labels ∪ the authoritative
+# CURRENT-WORK allowed-statuses list (which adds IDLE, DESIGNING).
+# §4.1: "Existing repository compatibility states remain valid until
+# migrated" — a registry following the repository's still-valid lifecycle
+# must stay readable; the guard must not silently drop allowed states.
+#
+# Mutation semantics (MUTABLE_CLAIM_STATUSES): §18 splits §4.1's ACTIVE
+# working phase into IMPLEMENTING -> VERIFYING before the REVIEW_REQUESTED
+# gate; the holder still writes implementation and verification evidence
+# in both, so neither phase may self-fence (R6 review P1).
+MUTABLE_CLAIM_STATUSES = ("CLAIMED", "ACTIVE", "IMPLEMENTING", "VERIFYING")
 CLAIM_STATUSES = MUTABLE_CLAIM_STATUSES + (
     "READY",
-    "IMPLEMENTING",
+    "READY_FOR_IMPLEMENTATION",
     "REVIEW_REQUESTED",
-    "APPROVED",
+    "RE-REVIEW_REQUESTED",
     "CHANGES_REQUIRED",
+    "APPROVED",
     "MERGE_READY",
     "MERGED",
     "POSTMERGE_VERIFY",
@@ -68,6 +80,8 @@ CLAIM_STATUSES = MUTABLE_CLAIM_STATUSES + (
     "BLOCKED",
     "DECISION_REQUIRED",
     "HUMAN_ACTION_REQUIRED",
+    "IDLE",
+    "DESIGNING",
     "STALE_CLAIM",
     "RECOVERY_HOLD",
     "OWNERSHIP_CONFLICT",
@@ -82,7 +96,21 @@ CLAIM_STATUSES = MUTABLE_CLAIM_STATUSES + (
 # transition, and the lane may write verification evidence until CLOSED.
 # STALE_CLAIM / RECOVERY_HOLD / STATE_DRIFT hold locks per §4.5
 # (inactivity or worker loss must not silently free scope).
-RELEASED_CLAIM_STATUSES = ("READY", "CLOSED")
+#
+# Compatibility-state derivations (R6; recorded for reviewer
+# confirmation, none invented as a grant):
+# - READY_FOR_IMPLEMENTATION — engineering-loop §25 position
+#   (SPECIFIED -> READY_FOR_IMPLEMENTATION -> IMPLEMENTING): the
+#   pre-implementation READY-class slot; released like READY (parallel
+#   independent lanes allowed; not yet implementing).
+# - RE-REVIEW_REQUESTED — §18 review gate re-entered after
+#   CHANGES_REQUIRED -> IMPLEMENTING: same fence as REVIEW_REQUESTED
+#   (not mutable, lock held).
+# - IDLE / DESIGNING — accepted vocabulary only; conservatively
+#   fail-closed: no mutation grant is derivable from current repo
+#   authority, and §4.5 keeps the scope held (inactivity or a
+#   non-canonical phase must not silently free scope).
+RELEASED_CLAIM_STATUSES = ("READY", "READY_FOR_IMPLEMENTATION", "CLOSED")
 LOCK_HOLDING_CLAIM_STATUSES = tuple(
     status for status in CLAIM_STATUSES if status not in RELEASED_CLAIM_STATUSES
 )
