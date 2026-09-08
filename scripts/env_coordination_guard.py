@@ -97,12 +97,14 @@ CLAIM_STATUSES = MUTABLE_CLAIM_STATUSES + (
 # STALE_CLAIM / RECOVERY_HOLD / STATE_DRIFT hold locks per §4.5
 # (inactivity or worker loss must not silently free scope).
 #
-# Compatibility-state derivations (R6; recorded for reviewer
-# confirmation, none invented as a grant):
-# - READY_FOR_IMPLEMENTATION — engineering-loop §25 position
-#   (SPECIFIED -> READY_FOR_IMPLEMENTATION -> IMPLEMENTING): the
-#   pre-implementation READY-class slot; released like READY (parallel
-#   independent lanes allowed; not yet implementing).
+# Compatibility-state derivations (R6; corrected R7; recorded for
+# reviewer confirmation, none invented as a grant):
+# - READY_FOR_IMPLEMENTATION — an ALLOCATED lane, not a released record:
+#   WO-STAB-006/009 record "ACTIVE — READY_FOR_IMPLEMENTATION" with an
+#   assigned owner and owned files, and WO-UX-AN-P001 permits parallel
+#   work only because owned files do not overlap (R7 review). It HOLDS
+#   its scope (overlap conflict) while remaining non-mutable until the
+#   lane transitions to IMPLEMENTING.
 # - RE-REVIEW_REQUESTED — §18 review gate re-entered after
 #   CHANGES_REQUIRED -> IMPLEMENTING: same fence as REVIEW_REQUESTED
 #   (not mutable, lock held).
@@ -110,7 +112,7 @@ CLAIM_STATUSES = MUTABLE_CLAIM_STATUSES + (
 #   fail-closed: no mutation grant is derivable from current repo
 #   authority, and §4.5 keeps the scope held (inactivity or a
 #   non-canonical phase must not silently free scope).
-RELEASED_CLAIM_STATUSES = ("READY", "READY_FOR_IMPLEMENTATION", "CLOSED")
+RELEASED_CLAIM_STATUSES = ("READY", "CLOSED")
 LOCK_HOLDING_CLAIM_STATUSES = tuple(
     status for status in CLAIM_STATUSES if status not in RELEASED_CLAIM_STATUSES
 )

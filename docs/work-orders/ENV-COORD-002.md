@@ -483,6 +483,53 @@ on the same claim/generation/holder with regression-first tests.
   reads the real registry (`7d4e6b52`, `BOOTSTRAP_CONTROL`,
   `ENV-COORD-002-C1` CLAIMED).
 
+### Remediation evidence — R7 (Sol R6 exact-SHA review, READY_FOR_IMPLEMENTATION release defect) / 2026-09-08
+
+Sol reviewed R6 head `038f51e2fd6d1175295450a25e3bb9553bfb0f63`
+(CHANGES_REQUIRED, comment 5583791336): R6's "READY_FOR_IMPLEMENTATION
+released like READY" derivation was not supported by repo compatibility
+usage and permitted overlapping ownership. Repaired on the same
+claim/generation/holder with regression-first tests.
+
+- Authority re-verified by the implementation owner (not taken from the
+  comment alone): `docs/work-orders/WO-STAB-006-PROPOSAL.md` and
+  `WO-STAB-009-PROPOSAL.md` record "Status: ACTIVE —
+  READY_FOR_IMPLEMENTATION" with assigned GLM owners and owned files;
+  `docs/work-orders/WO-UX-AN-P001-GLM.md` records
+  `Status: READY_FOR_IMPLEMENTATION`, `Owner: GLM 5.3`, owned files, and
+  allows parallel work only because owned files do not overlap — i.e.
+  the state allocates/owns its scope; release semantics were wrong.
+- RED: `python scripts/test_env_coordination_guard.py` →
+  `Ran 232 tests … FAILED (failures=3)` — exactly the three R7
+  regressions (registry overlap, control-transition admission, link
+  parity); 229 prior tests passing unchanged (all R1–R6 regressions +
+  the ordinary-READY released controls).
+- GREEN: `Ran 232 tests … OK` (stable across repeated runs); pytest →
+  `232 passed, 25 subtests passed`.
+- Repair (smallest): `RELEASED_CLAIM_STATUSES = (READY, CLOSED)`;
+  `READY_FOR_IMPLEMENTATION` stays parse-valid and non-mutable but now
+  LOCK-HOLDING — registry overlap, control-transition admission, and
+  link/scope protection all derive from `LOCK_HOLDING_CLAIM_STATUSES`
+  and enforce consistently. R6 code comment corrected with the WO
+  evidence; no DECISION_REQUIRED ambiguity (the cited usage is
+  unambiguous).
+- Reviewer reproducers re-run post-repair:
+  `READY_FOR_IMPLEMENTATION_OVERLAP=REJECTED reason=OWNERSHIP_CONFLICT`;
+  `READY_OVERLAP=ACCEPTED`; `RE-REVIEW_REQUESTED_OVERLAP` and
+  `IMPLEMENTING_OVERLAP` still REJECTED;
+  `READY_FOR_IMPLEMENTATION_NEW_OVERLAP valid=False
+  reason=OWNERSHIP_CONFLICT`; `READY_NEW_OVERLAP valid=True reason=None`;
+  `RE-REVIEW_REQUESTED_NEW_OVERLAP` / `IMPLEMENTING_NEW_OVERLAP` still
+  rejected.
+- READY released-controls preserved in-suite: `test_ready_does_not_hold_lock`,
+  `test_transition_overlap_with_ready_claim_accepted`,
+  `test_ready_claim_does_not_block_link_crossing`.
+- Adjacent suites green (workflow runtimes OK; runtime check PASS 5
+  files; split_sql all passed; ci_alert_payload 33 passed); both scripts
+  compile clean; `git diff --check` PASS; live `status` CLI smoke still
+  reads the real registry (`7d4e6b52`, `BOOTSTRAP_CONTROL`,
+  `ENV-COORD-002-C1` CLAIMED).
+
 ## Stop condition
 
 Implementation owner stops at `REVIEW_REQUESTED`; must not self-merge and must

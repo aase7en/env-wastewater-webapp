@@ -512,3 +512,59 @@ Stop at `REVIEW_REQUESTED`. Do not merge.
   re-run only after the candidate stabilizes, bound to that same SHA;
   merge only on APPROVED with expected-head protection; then file
   ENV-COORD-003 (SHADOW CI integration) as a new claim.
+
+## Result — R7 remediation (Sol R6 review, READY_FOR_IMPLEMENTATION release defect) / 2026-09-08
+
+- **Actual-state preflight (no chat memory):** fetched origin; PR #84
+  head verified still `038f51e2fd6d1175295450a25e3bb9553bfb0f63` before
+  work (R6 head; Sol R6 review CHANGES_REQUIRED, comment 5583791336);
+  `origin/main@7d4e6b52…` unchanged; registry claim `ENV-COORD-002-C1`
+  gen 1 holder `zcode-env-coord-002-g1-primary` matches this context;
+  worktree clean (`.serena/` untracked only); `SAFE_TO_MUTATE = YES`.
+  Same single execution context; mutable scope unchanged (4 paths).
+- **Start HEAD:** `038f51e2fd6d1175295450a25e3bb9553bfb0f63`.
+- **End HEAD:** new single commit on `origin/feat/env-coord-002`
+  (self-SHA is the PR #84 head; not written into its own commit).
+- **Authority re-verified first-hand:** WO-STAB-006-PROPOSAL /
+  WO-STAB-009-PROPOSAL ("Status: ACTIVE — READY_FOR_IMPLEMENTATION",
+  assigned GLM owner, owned files) and WO-UX-AN-P001-GLM
+  (READY_FOR_IMPLEMENTATION + Owner + owned files; parallel with
+  DT-VIS-P001 only because owned production files do not overlap).
+  Conclusion: the state allocates/owns its scope; R6's released-like-
+  READY derivation was wrong. No material ambiguity → no
+  DECISION_REQUIRED.
+- **Repair (smallest):** `RELEASED_CLAIM_STATUSES = (READY, CLOSED)`;
+  READY_FOR_IMPLEMENTATION remains parse-valid and non-mutable but is
+  LOCK-HOLDING, so registry overlap validation, control-transition
+  admission, and link/scope protection (all derived from
+  `LOCK_HOLDING_CLAIM_STATUSES`) enforce consistently. R6 derivation
+  comment corrected in code.
+- **RED → GREEN:** RED `Ran 232 tests … FAILED (failures=3)` (exactly
+  the three R7 regressions: registry overlap OWNERSHIP_CONFLICT,
+  overlapping transition rejected, link crossing LINK_CROSSES_LANE;
+  229 prior passing — all R1–R6 regressions and the READY released
+  controls preserved); GREEN `Ran 232 tests … OK` stable; pytest
+  `232 passed, 25 subtests passed`.
+- **Reproducers post-repair:** READY_FOR_IMPLEMENTATION_OVERLAP
+  REJECTED/OWNERSHIP_CONFLICT; READY_OVERLAP ACCEPTED;
+  RE-REVIEW_REQUESTED/IMPLEMENTING overlaps still rejected;
+  READY_FOR_IMPLEMENTATION_NEW_OVERLAP valid=False/OWNERSHIP_CONFLICT;
+  READY_NEW_OVERLAP valid=True/None; RE-REVIEW_REQUESTED/IMPLEMENTING
+  new-overlap still rejected.
+- **Full verification (all green):** unittest 232 OK; pytest 232 passed
+  + 25 subtests; workflow runtimes OK; runtime check PASS (5 files);
+  split_sql all passed; ci_alert_payload 33 passed; `git diff --check`
+  exit 0; both scripts compile clean; live `status` smoke reads the
+  real registry (`7d4e6b52` / `BOOTSTRAP_CONTROL` / CLAIMED).
+- **Exact changed files:** the 4 authorized claim paths only; `.serena/`
+  never staged.
+- **Limitations:** unchanged from R6 (no hooks/CI/server policy,
+  ENV-COORD-003+; scope-check inspection-only; no central §7.3 writer;
+  process-local atomicity; single-word statuses only).
+- **Unresolved issues:** none.
+- **Exactly ONE next safe action:** GPT-5.6 Sol performs a fresh
+  exact-SHA review of PR #84 at the new candidate head (Astra final
+  review remains deferred until Sol has a stable candidate; do not
+  invoke Astra from the implementation lane); merge only on APPROVED
+  with expected-head protection; then file ENV-COORD-003 (SHADOW CI
+  integration) as a new claim.

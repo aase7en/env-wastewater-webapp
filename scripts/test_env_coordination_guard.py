@@ -3398,8 +3398,8 @@ class TestLockHoldingStatuses(unittest.TestCase):
 
 
 class TestCompatibilityClaimStates(unittest.TestCase):
-    """R6-review P1: guard vocabulary/authorization must follow the repo's
-    canonical task lifecycle.
+    """R6/R7 reviews: guard vocabulary/authorization must follow the
+    repo's canonical task lifecycle.
 
     Authority: architecture §4.1 "existing repository compatibility states
     remain valid until migrated"; protocol §18 preferred lifecycle
@@ -3408,6 +3408,13 @@ class TestCompatibilityClaimStates(unittest.TestCase):
     labels; the authoritative CURRENT-WORK allowed-statuses list (adds
     IDLE, DESIGNING). A registry following that contract must stay
     readable, and canonical working phases must not self-fence.
+
+    R7: READY_FOR_IMPLEMENTATION is an ALLOCATED lane, not a released
+    record — WO-STAB-006/009 record "ACTIVE — READY_FOR_IMPLEMENTATION"
+    with an assigned owner and owned files, and WO-UX-AN-P001 allows
+    parallel work only because owned files do not overlap. It therefore
+    HOLDS its scope (overlap conflict) while staying non-mutable; only
+    ordinary READY stays released.
     """
 
     ALLOWED = (
@@ -3498,15 +3505,65 @@ class TestCompatibilityClaimStates(unittest.TestCase):
                     load_policy([base_claim(), held])
                 self.assertEqual(cm.exception.reason, R.OWNERSHIP_CONFLICT)
 
-    def test_ready_for_implementation_released_like_ready(self):
-        # engineering-loop §25 position (SPECIFIED ->
-        # READY_FOR_IMPLEMENTATION -> IMPLEMENTING): pre-implementation,
-        # READY-class — no scope lock, no false collision
-        ready_for_impl = other_lane_claim(
+    def test_ready_for_implementation_holds_scope_lock(self):
+        # R7-review P1 reproducer READY_FOR_IMPLEMENTATION_OVERLAP: an
+        # allocated lane (owner + owned files per WO-STAB-006/009 and
+        # WO-UX-AN-P001) must conflict with an overlapping claim — only
+        # ordinary READY stays released (see test_ready_does_not_hold_lock,
+        # test_transition_overlap_with_ready_claim_accepted,
+        # test_ready_claim_does_not_block_link_crossing).
+        allocated = other_lane_claim(
             mutable_scope=["scripts/**"], status="READY_FOR_IMPLEMENTATION"
         )
-        policy = load_policy([base_claim(), ready_for_impl])
-        self.assertEqual(len(policy.claims), 2)
+        with self.assertRaises(GuardFailure) as cm:
+            load_policy([base_claim(), allocated])
+        self.assertEqual(cm.exception.reason, R.OWNERSHIP_CONFLICT)
+
+    def test_ready_for_implementation_blocks_overlapping_transition(self):
+        # R7-review P1 reproducer READY_FOR_IMPLEMENTATION_NEW_OVERLAP: a
+        # new control-transition proposal may not take scope an allocated
+        # READY_FOR_IMPLEMENTATION lane already owns.
+        holder = other_lane_claim(
+            mutable_scope=["frontend/src/ops/**"], status="READY_FOR_IMPLEMENTATION"
+        )
+        policy = load_policy([base_claim(), holder])
+        proposal = {
+            "expected_policy_revision": POLICY_REV,
+            "expected_registry_hash": policy.registry_hash,
+            "task_id": "ENV-OPS-001B",
+            "expected_claim_generation": None,
+            "proposed_claim_generation": 1,
+            "proposed_mutable_scope": ["frontend/src/ops/**"],
+        }
+        result = evaluate_control_transition(policy, proposal)
+        self.assertFalse(result.valid)
+        self.assertEqual(result.reason, R.OWNERSHIP_CONFLICT)
+
+    def test_ready_for_implementation_link_parity(self):
+        # link/scope protection derives from LOCK_HOLDING_CLAIM_STATUSES
+        # like registry/transition logic — a link crossing into an
+        # allocated READY_FOR_IMPLEMENTATION lane's protected scope stays
+        # denied.
+        holder = other_lane_claim(
+            mutable_scope=["reports/gistda/**"],
+            forbidden_scope=["docs/work-orders/**"],
+            status="READY_FOR_IMPLEMENTATION",
+        )
+        policy = load_policy([base_claim(), holder])
+        d = evaluate_mutation(
+            policy,
+            ok_ctx(),
+            changes=[Change("add", "scripts/env_coordination_guard.py")],
+            links=[
+                LinkRequest(
+                    "scripts/env_coordination_guard.py",
+                    "docs/work-orders/ENV-COORD-002.md",
+                    True,
+                )
+            ],
+        )
+        self.assertFalse(d.safe_to_mutate)
+        self.assertEqual(d.reason, R.LINK_CROSSES_LANE)
 
     def test_implementing_end_to_end_mutation_allowed(self):
         policy = load_policy([base_claim(status="IMPLEMENTING")])
