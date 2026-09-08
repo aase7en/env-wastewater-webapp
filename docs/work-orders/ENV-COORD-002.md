@@ -530,6 +530,73 @@ claim/generation/holder with regression-first tests.
   reads the real registry (`7d4e6b52`, `BOOTSTRAP_CONTROL`,
   `ENV-COORD-002-C1` CLAIMED).
 
+### Remediation evidence — R8 (Sol triage of Astra final review, four blockers) / 2026-09-08
+
+Astra final review of R7 head `f217e42ae6d22e10f7dded84ee49211f8013ffb1`
+found four blocking defects; Sol independently reproduced all four
+(comment 5583791336 → triage comment 5584602143). All repaired on the
+same claim/generation/holder with regression-first tests.
+
+- RED: `python scripts/test_env_coordination_guard.py` →
+  `Ran 241 tests … FAILED (failures=14)` — all four blockers'
+  regressions failing (boundary probe admitted IN_FLIGHT; both path
+  aliases evaluated safe; fresh + conflicting uncertainty left
+  TRANSFER_READY standing; post-terminal outcome and reconciliation
+  applied and stranded the head); 227 prior tests passing unchanged.
+- GREEN: `Ran 241 tests … OK` (stable across repeated runs); pytest →
+  `241 passed, 33 subtests passed`.
+- Repairs:
+  1. `complete_transfer` constructs the g+1 `HolderRuntime` privately,
+     closes its gate while still private, and only then assigns
+     `self.runtime` — the new runtime is never externally observable
+     OPEN; the orchestrated boundary probe (intercepting the exact
+     publication/close point) now observes `ADMISSION_GATE_CLOSED`, the
+     published AWAITING runtime is already CLOSED, failed activation
+     keeps it CLOSED, and exact-tuple activation opens it normally.
+  2. `canonicalize_path` rejects segments with a trailing `.` or
+     trailing ASCII space with `INVALID_PATH` (never trims) — Win32
+     aliases of a forbidden file can no longer bypass exact scope
+     evaluation; interior dots/non-trailing spaces stay valid; case/
+     separator/NFC/traversal tests unchanged.
+  3. `holder_publish` invalidates an established `TRANSFER_READY` on
+     contrary current safety evidence from the CURRENT holder BEFORE
+     identity/replay/conflict handling (fresh attestation id returns
+     blocked with state demoted; conflicting payload still raises
+     `EVENT_CONFLICT` but only after demotion); `complete_transfer`
+     then fails `TRANSFER_NOT_READY`; restoration only via a supported
+     replay; non-holder reports still change nothing.
+  4. `OPERATION_OUTCOME` and `OPERATION_RECONCILED` require an ACTIVE
+     goal — post-terminal operation events are rejected
+     `OUT_OF_ORDER_EVENT` before advancing the durable head, so the
+     terminal GOAL_END stays the head; the documented legal recovery
+     chain (Goal1 START → INTENT → UNKNOWN → Goal1 END(PARTIAL) →
+     Goal2 START from the terminal GOAL_END → RECONCILED under the
+     active recovery goal → Goal2 END(COMPLETED_VERIFIED) → Goal3
+     START legally continues) passes with the original UNKNOWN audit
+     retained.
+- All four Astra/Sol reproducers re-run post-repair: R8-1 boundary
+  `REJECTED/ADMISSION_GATE_CLOSED`, post-state AWAITING_AUTHORIZATION
+  with gate CLOSED; R8-2 exact path FORBIDDEN_PATH while both aliases
+  REJECTED INVALID_PATH; R8-3 cases A/B demote to QUIESCING with
+  `complete_transfer` blocked at generation 1; R8-4 post-terminal
+  reconciliation rejected with head staying on the GOAL_END and the
+  full recovery chain closing cleanly.
+- R5 semantic correction authorized by the Astra finding: the two
+  R5 stranded-head tests pinned rejection of a GOAL_START after a
+  post-terminal operation event; with post-terminal operation events
+  now rejected earlier, those tests were updated to the corrected
+  contract (the terminal GOAL_END stays head; the next goal starts
+  from it). All other R1–R7 regressions pass unchanged.
+- Prior high-risk suites re-run focused (path canonicalization, goal
+  lifecycle, reconciliation, unpublished events, transfer barrier,
+  admission gate, concurrency, shared-file ownership/uniqueness, lock
+  statuses, compatibility statuses, symlink policy): 158 tests OK.
+- Adjacent suites green (workflow runtimes OK; runtime check PASS 5
+  files; split_sql all passed; ci_alert_payload 33 passed); both scripts
+  compile clean; `git diff --check` PASS; live `status` CLI smoke still
+  reads the real registry (`7d4e6b52`, `BOOTSTRAP_CONTROL`,
+  `ENV-COORD-002-C1` CLAIMED).
+
 ## Stop condition
 
 Implementation owner stops at `REVIEW_REQUESTED`; must not self-merge and must

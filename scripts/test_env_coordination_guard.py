@@ -250,6 +250,72 @@ class TestPathCanonicalization(unittest.TestCase):
         self.assertEqual(case_key("Scripts/ENV_GUARD.MD"), case_key("scripts/env_guard.md"))
         self.assertNotEqual(case_key("a/b"), case_key("a/c"))
 
+    def test_reject_trailing_dot_and_trailing_space_segments(self):
+        # R8-review P1: on Win32, "file.", "file " and "file" name the
+        # SAME file — ambiguous aliases must fail closed, never be
+        # trimmed into another accepted path.
+        for raw in (
+            "docs/ai/CURRENT-WORK.md.",   # protected filename + "."
+            "docs/ai/CURRENT-WORK.md ",   # protected filename + " "
+            "docs./CURRENT-WORK.md",      # directory segment ending "."
+            "docs /CURRENT-WORK.md",      # directory segment ending " "
+            "docs/ai./CURRENT-WORK.md",
+            "docs/ai /CURRENT-WORK.md",
+        ):
+            with self.subTest(raw=raw):
+                with self.assertRaises(GuardFailure) as cm:
+                    canonicalize_path(raw)
+                self.assertEqual(cm.exception.reason, R.INVALID_PATH)
+
+    def test_interior_dots_and_non_trailing_spaces_remain_valid(self):
+        # smallest-defect rule: only TRAILING dot/space aliases reject;
+        # ordinary interior dots/spaces are distinct, valid names
+        self.assertEqual(
+            canonicalize_path("docs/ai/CURRENT-WORK.backup.md"),
+            "docs/ai/CURRENT-WORK.backup.md",
+        )
+        self.assertEqual(
+            canonicalize_path("my notes/file name.txt"),
+            "my notes/file name.txt",
+        )
+
+    def test_forbidden_alias_cannot_bypass_exact_scope(self):
+        # R8-review P1 reproducer: mutable docs/** with the exact
+        # forbidden file inside it — the trailing-dot / trailing-space
+        # spellings of the forbidden file must NOT evaluate as a safe,
+        # distinct mutable path (they name the same file on Win32).
+        claim = base_claim(
+            mutable_scope=["docs/**"],
+            forbidden_scope=["docs/ai/CURRENT-WORK.md"],
+        )
+        policy = load_policy([claim])
+        # the exact canonical spelling is forbidden, as always
+        d = evaluate_mutation(
+            policy,
+            ok_ctx(),
+            changes=[Change("modify", "docs/ai/CURRENT-WORK.md")],
+        )
+        self.assertFalse(d.safe_to_mutate)
+        self.assertEqual(d.reason, R.FORBIDDEN_PATH)
+        # the Win32 aliases of the same file fail closed instead of
+        # entering scope evaluation as distinct paths
+        for alias in ("docs/ai/CURRENT-WORK.md.", "docs/ai/CURRENT-WORK.md "):
+            with self.subTest(alias=alias):
+                with self.assertRaises(GuardFailure) as cm:
+                    evaluate_mutation(
+                        policy,
+                        ok_ctx(),
+                        changes=[Change("modify", alias)],
+                    )
+                self.assertEqual(cm.exception.reason, R.INVALID_PATH)
+        # an ordinary mutable file still evaluates normally
+        ok = evaluate_mutation(
+            policy,
+            ok_ctx(),
+            changes=[Change("modify", "docs/work-orders/ENV-COORD-002.md")],
+        )
+        self.assertTrue(ok.safe_to_mutate)
+
 
 class TestScopeGrammar(unittest.TestCase):
     """§7.2 allowed scope expressions and deterministic overlap."""
@@ -1529,36 +1595,67 @@ class TestGoalLifecycle(unittest.TestCase):
         self.assertEqual(status, "applied")
         self.assertEqual(log.active_goal_id, "g2")
 
-    def test_goal_start_after_post_terminal_operation_event_rejected(self):
-        # R5-review P2 reproducer A10_NEW_GOAL_AFTER_NONTERMINAL_HEAD:
-        # GOAL_END -> OPERATION_OUTCOME -> new GOAL_START referencing the
-        # outcome head must NOT apply — after the first goal, every new
-        # GOAL_START must directly reference the previous durable terminal
-        # GOAL_END event itself.
+    def test_post_terminal_operation_outcome_rejected_before_head_advance(self):
+        # R8-review P2 (supersedes the R5 stranded-head pin): a
+        # post-terminal OPERATION_OUTCOME must not apply at all —
+        # accepting it advanced the durable head past the terminal
+        # GOAL_END and stranded the generation (no legal next GOAL_START).
         log = LifecycleLog("ENV-COORD-002-C1", 1)
         log.apply(goal_start())
         log.apply(op_intent())
-        log.apply(goal_end(seq=3, event_id="e2", prev="o1"))
-        log.apply(op_outcome(seq=4, event_id="o2", prev="e2", outcome="SUCCEEDED"))
-        self.assertEqual(log.head_event_id, "o2")
+        log.apply(goal_end(seq=3, event_id="e2", prev="o1", result="PARTIAL"))
         with self.assertRaises(GuardFailure) as cm:
-            log.apply(goal_start(seq=5, event_id="e3", prev="o2", goal="g2"))
+            log.apply(op_outcome(seq=4, event_id="o2", prev="e2", outcome="SUCCEEDED"))
         self.assertEqual(cm.exception.reason, R.OUT_OF_ORDER_EVENT)
+        self.assertEqual(log.head_event_id, "e2")  # terminal stays the head
         self.assertIsNone(log.active_goal_id)
-        self.assertEqual(log.head_event_id, "o2")  # nothing mutated
+        # the terminal GOAL_END remains a valid predecessor for the next goal
+        status, _ = log.apply(goal_start(seq=5, event_id="e3", prev="e2", goal="g2"))
+        self.assertEqual(status, "applied")
 
-    def test_goal_start_referencing_stale_goal_end_after_head_moved_rejected(self):
-        # referencing the OLD goal end while the head moved past it fails
-        # the ordinary previous-event link (there is no valid ordering in
-        # which the new goal starts after a post-terminal event)
+    def test_post_terminal_reconciliation_rejected_before_head_advance(self):
+        # R8-review P2 reproducer: GOAL_END(PARTIAL) then
+        # OPERATION_RECONCILED currently applies and strands the head
         log = LifecycleLog("ENV-COORD-002-C1", 1)
         log.apply(goal_start())
         log.apply(op_intent())
-        log.apply(goal_end(seq=3, event_id="e2", prev="o1"))
-        log.apply(op_outcome(seq=4, event_id="o2", prev="e2", outcome="SUCCEEDED"))
+        log.apply(op_outcome())  # UNKNOWN
+        log.apply(goal_end(seq=4, event_id="e2", prev="o2", result="PARTIAL"))
         with self.assertRaises(GuardFailure) as cm:
-            log.apply(goal_start(seq=5, event_id="e3", prev="e2", goal="g2"))
+            log.apply(op_reconciled(seq=5, event_id="o3", prev="e2"))
         self.assertEqual(cm.exception.reason, R.OUT_OF_ORDER_EVENT)
+        self.assertEqual(log.head_event_id, "e2")
+        # UNKNOWN stays unresolved until a legal recovery goal reconciles it
+        self.assertTrue(log.has_unresolved_external_operations)
+
+    def test_recovery_chain_unknown_partial_then_recovery_goal(self):
+        # R8-review P2 required positive proof: recovery from UNKNOWN
+        # after a terminal PARTIAL opens a legal recovery GoalStart from
+        # the terminal GOAL_END, journals reconciliation under that
+        # active goal, preserves the UNKNOWN audit, and closes cleanly.
+        log = LifecycleLog("ENV-COORD-002-C1", 1)
+        log.apply(goal_start())                                  # e1 / g1
+        log.apply(op_intent())                                   # o1
+        log.apply(op_outcome())                                  # o2 UNKNOWN
+        log.apply(goal_end(seq=4, event_id="e2", prev="o2", result="PARTIAL"))
+        status_start, _ = log.apply(goal_start(seq=5, event_id="e3", prev="e2", goal="g2"))
+        self.assertEqual(status_start, "applied")
+        self.assertEqual(log.active_goal_id, "g2")
+        status_rec, _ = log.apply(op_reconciled(seq=6, event_id="o3", prev="e3", goal="g2"))
+        self.assertEqual(status_rec, "applied")
+        self.assertFalse(log.has_unresolved_external_operations)
+        record = log.operation_record("op-1")
+        self.assertEqual(record["outcome"], "UNKNOWN")  # audit retained
+        self.assertEqual(record["reconciled_outcome"], "SUCCEEDED")
+        status_end, _ = log.apply(
+            goal_end(seq=7, event_id="e4", prev="o3", goal="g2", result="COMPLETED_VERIFIED")
+        )
+        self.assertEqual(status_end, "applied")
+        self.assertIsNone(log.active_goal_id)
+        self.assertEqual(log.head_event_id, "e4")
+        # and the chain continues: a third goal may legally follow
+        status_g3, _ = log.apply(goal_start(seq=8, event_id="e5", prev="e4", goal="g3"))
+        self.assertEqual(status_g3, "applied")
 
     def test_checkpoint_cannot_replace_active_goal(self):
         # §5.1: a normal checkpoint is not a goal terminator.
@@ -2274,6 +2371,129 @@ class TestTransferBarrier(unittest.TestCase):
         self.assertFalse(d.safe_to_mutate)
         self.assertEqual(d.reason, R.TRANSFER_AWAITING_AUTHORIZED_TRANSITION)
         self.assertEqual(b.claim_generation, 2)
+
+    def test_new_runtime_never_observable_open_at_publication_boundary(self):
+        # R8-review P1: complete_transfer must close the new holder's
+        # gate BEFORE the runtime becomes observable through self.runtime.
+        # The probe fires at the exact publication/close boundary and
+        # attempts an admission through the externally observable runtime.
+        barrier = TransferBarrier(
+            claim_id="ENV-COORD-002-C1", claim_generation=1, holder_id="holder-A"
+        )
+        barrier.begin_quiesce()
+        barrier.holder_publish("holder-A", "att-1", latest_event_id="e9")
+
+        probe = {"armed": False, "admission": None, "reason": None}
+        real_close = AdmissionGate.close
+
+        def probing_close(gate):
+            if probe["armed"]:
+                probe["armed"] = False
+                try:
+                    record = barrier.runtime.admit("op-too-early")
+                    probe["admission"] = record["state"]
+                except GuardFailure as failure:
+                    probe["reason"] = failure.reason
+            real_close(gate)
+
+        AdmissionGate.close = probing_close
+        try:
+            probe["armed"] = True  # next close() is complete_transfer's
+            decision = barrier.complete_transfer(new_holder_id="holder-B")
+        finally:
+            AdmissionGate.close = real_close
+
+        self.assertFalse(decision.safe_to_mutate)
+        self.assertEqual(decision.reason, R.TRANSFER_AWAITING_AUTHORIZED_TRANSITION)
+        # NO admission may enter at the publication boundary
+        # (pre-repair the observable runtime was OPEN and admitted IN_FLIGHT)
+        self.assertIsNone(probe["admission"])
+        self.assertEqual(probe["reason"], R.ADMISSION_GATE_CLOSED)
+        # the published g+1 runtime is already CLOSED and stays CLOSED
+        self.assertEqual(barrier.state, "AWAITING_AUTHORIZATION")
+        self.assertEqual(barrier.claim_generation, 2)
+        self.assertEqual(barrier.runtime.gate.state, "CLOSED")
+        with self.assertRaises(GuardFailure) as cm:
+            barrier.runtime.admit("op-after")
+        self.assertEqual(cm.exception.reason, R.ADMISSION_GATE_CLOSED)
+
+    def test_fresh_uncertain_attestation_invalidates_readiness(self):
+        # R8-review P1 case A: att-1/e1 valid -> TRANSFER_READY -> a
+        # FRESH att-2/e2 reporting unresolved=True must invalidate
+        # readiness, not merely return blocked leaving TRANSFER_READY.
+        b = self._barrier()
+        b.begin_quiesce()
+        att1 = b.holder_publish("holder-A", "att-1", latest_event_id="e1")
+        self.assertIsNotNone(att1)
+        self.assertEqual(b.state, "TRANSFER_READY")
+        att2 = b.holder_publish(
+            "holder-A", "att-2", latest_event_id="e2", unresolved_external_operations=True
+        )
+        self.assertIsNone(att2)
+        self.assertEqual(b.state, "QUIESCING")
+        with self.assertRaises(GuardFailure) as cm:
+            b.complete_transfer(new_holder_id="holder-B")
+        self.assertEqual(cm.exception.reason, R.TRANSFER_NOT_READY)
+        self.assertEqual(b.claim_generation, 1)  # stale proof consumed nothing
+
+    def test_conflicting_replay_with_uncertainty_demotes_before_conflict(self):
+        # R8-review P1 case B: same id, changed payload, unresolved=True —
+        # EVENT_CONFLICT is still raised, but only AFTER readiness is
+        # invalidated; the stale proof can no longer drive a transfer.
+        b = self._barrier()
+        b.begin_quiesce()
+        b.holder_publish("holder-A", "att-1", latest_event_id="e1")
+        self.assertEqual(b.state, "TRANSFER_READY")
+        with self.assertRaises(GuardFailure) as cm:
+            b.holder_publish(
+                "holder-A",
+                "att-1",
+                latest_event_id="e2",
+                unresolved_external_operations=True,
+            )
+        self.assertEqual(cm.exception.reason, R.EVENT_CONFLICT)
+        self.assertEqual(b.state, "QUIESCING")  # demoted before the raise
+        with self.assertRaises(GuardFailure) as transfer:
+            b.complete_transfer(new_holder_id="holder-B")
+        self.assertEqual(transfer.exception.reason, R.TRANSFER_NOT_READY)
+        self.assertEqual(b.claim_generation, 1)
+
+    def test_invalidated_readiness_restorable_through_supported_replay(self):
+        # R8-review P1 case D: after contrary evidence invalidates
+        # readiness, only supported evidence re-establishes it (the
+        # holder replays the attestation once the facts stand again)
+        b = self._barrier()
+        b.begin_quiesce()
+        b.holder_publish("holder-A", "att-1", latest_event_id="e1")
+        blocked = b.holder_publish(
+            "holder-A", "att-2", latest_event_id="e2", unresolved_external_operations=True
+        )
+        self.assertIsNone(blocked)
+        self.assertEqual(b.state, "QUIESCING")
+        restored = b.holder_publish("holder-A", "att-1", latest_event_id="e1")
+        self.assertIsNotNone(restored)
+        self.assertEqual(b.state, "TRANSFER_READY")
+        d = b.complete_transfer(new_holder_id="holder-B")
+        self.assertEqual(d.reason, R.TRANSFER_AWAITING_AUTHORIZED_TRANSITION)
+        self.assertEqual(b.claim_generation, 2)
+
+    def test_non_holder_uncertainty_report_cannot_invalidate_readiness(self):
+        # identity rules preserved: only the CURRENT holder's contrary
+        # evidence invalidates readiness; a non-holder report changes
+        # nothing (the coordinator cannot manufacture invalidation either)
+        b = self._barrier()
+        b.begin_quiesce()
+        b.holder_publish("holder-A", "att-1", latest_event_id="e1")
+        self.assertEqual(b.state, "TRANSFER_READY")
+        rogue = b.holder_publish(
+            "holder-ROGUE",
+            "att-1",
+            latest_event_id="e1",
+            unresolved_external_operations=True,
+        )
+        self.assertIsNone(rogue)
+        self.assertEqual(b.transfer_block_reason, R.COORDINATOR_CANNOT_PUBLISH_QUIESCENCE)
+        self.assertEqual(b.state, "TRANSFER_READY")  # no invalidation
 
     def test_coordinator_interrupt_before_transfer_keeps_generation(self):
         # WO RED bullet: coordinator interruption before transfer leaves

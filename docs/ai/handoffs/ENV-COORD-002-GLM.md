@@ -568,3 +568,86 @@ Stop at `REVIEW_REQUESTED`. Do not merge.
   invoke Astra from the implementation lane); merge only on APPROVED
   with expected-head protection; then file ENV-COORD-003 (SHADOW CI
   integration) as a new claim.
+
+## Result — R8 remediation (Sol triage of Astra final review, four blockers) / 2026-09-08
+
+- **Actual-state preflight (no chat memory):** fetched origin; PR #84
+  head verified still `f217e42ae6d22e10f7dded84ee49211f8013ffb1` before
+  work (R7 head; Astra final review found four blockers, Sol triage
+  reproduced all four — comment 5584602143);
+  `origin/main@7d4e6b52…` unchanged; registry claim `ENV-COORD-002-C1`
+  gen 1 holder `zcode-env-coord-002-g1-primary` matches this context;
+  worktree clean (`.serena/` untracked only); `SAFE_TO_MUTATE = YES`.
+  Same single execution context; mutable scope unchanged (4 paths).
+- **Start HEAD:** `f217e42ae6d22e10f7dded84ee49211f8013ffb1`.
+- **End HEAD:** new single commit on `origin/feat/env-coord-002`
+  (self-SHA is the PR #84 head; not written into its own commit).
+- **Four repairs:**
+  1. g+1 runtime published already CLOSED — `complete_transfer`
+     builds the new `HolderRuntime` privately, closes its gate, then
+     assigns `self.runtime`; the orchestrated boundary probe (fires at
+     the exact publication/close point and admits through the
+     observable runtime) now sees `ADMISSION_GATE_CLOSED` instead of
+     `IN_FLIGHT`.
+  2. Win32 alias rejection — `canonicalize_path` fails closed
+     (`INVALID_PATH`, never trims) on any segment with trailing `.` or
+     trailing ASCII space; forbidden-file aliases can no longer bypass
+     exact scope evaluation; interior dots/non-trailing spaces remain
+     valid.
+  3. Safety-first readiness invalidation — the CURRENT holder
+     reporting `unresolved_external_operations=True` demotes an
+     established `TRANSFER_READY` BEFORE fresh/replay/conflict identity
+     handling (fresh id: returns blocked with state demoted;
+     conflicting payload: `EVENT_CONFLICT` still raised, but only after
+     demotion); `complete_transfer` then fails `TRANSFER_NOT_READY` at
+     generation 1; restoration only through a supported replay;
+     non-holder reports change nothing.
+  4. Post-terminal operation events rejected — `OPERATION_OUTCOME` and
+     `OPERATION_RECONCILED` require an ACTIVE goal
+     (`OUT_OF_ORDER_EVENT`), so they never advance the durable head
+     past a terminal GOAL_END; the generation is never stranded. The
+     complete legal recovery chain is pinned end-to-end: Goal1
+    START → INTENT → UNKNOWN → Goal1 END(PARTIAL) → Goal2 START
+    (previous = the terminal GOAL_END) → RECONCILED under the active
+    recovery goal → Goal2 END(COMPLETED_VERIFIED) → Goal3 START
+    legally continues; the original UNKNOWN outcome stays on audit.
+- **RED → GREEN:** RED `Ran 241 tests … FAILED (failures=14)` (all four
+  blockers' regressions; 227 prior passing); GREEN `Ran 241 tests … OK`
+  stable across repeat runs; pytest `241 passed, 33 subtests passed`.
+- **Reproducers post-repair:** R8-1 boundary REJECTED/
+  ADMISSION_GATE_CLOSED with post-state AWAITING_AUTHORIZATION/gate
+  CLOSED; R8-2 exact spelling FORBIDDEN_PATH, both aliases REJECTED
+  INVALID_PATH; R8-3 cases A and B demote to QUIESCING and block
+  `complete_transfer` at generation 1; R8-4 post-terminal
+  reconciliation rejected with head staying on the GOAL_END, recovery
+  chain closes cleanly with UNKNOWN audit retained.
+- **Authorized R5 semantic correction (Astra finding):** the two R5
+  stranded-head pins were updated to the corrected contract — the
+  post-terminal OPERATION event is now itself rejected, the terminal
+  GOAL_END stays head, and the next goal starts legally from it. Every
+  other R1–R7 regression passes unchanged.
+- **Full verification (all green):** focused high-risk classes 158 OK
+  (path canonicalization, lifecycle, reconciliation, unpublished
+  events, transfer barrier, admission gate, concurrency, shared-file
+  ownership/uniqueness, lock statuses, compatibility statuses, symlink
+  policy); full unittest 241 OK; pytest 241 passed + 33 subtests;
+  workflow runtimes OK; runtime check PASS (5 files); split_sql all
+  passed; ci_alert_payload 33 passed; py_compile clean;
+  `git diff --check` exit 0; live `status` smoke reads the real
+  registry (`7d4e6b52` / `BOOTSTRAP_CONTROL` / CLAIMED).
+- **Exact changed files:** the 4 authorized claim paths only; `.serena/`
+  never staged.
+- **Limitations:** alias rejection covers the authoritative smallest
+  defect (trailing dot/space) only — no broader Win32 filesystem
+  emulation; reconciliation-under-recovery-goal semantics derived from
+  §5.5 reconcile-before-retry (the recovery goal owns the retry) and
+  recorded here for reviewer confirmation; all prior limitations
+  unchanged (no hooks/CI/server policy, ENV-COORD-003+; scope-check
+  inspection-only; no central §7.3 writer; process-local atomicity).
+- **Unresolved issues:** none.
+- **Exactly ONE next safe action:** GPT-5.6 Sol performs a fresh
+  exact-SHA review of PR #84 at the R8 candidate head; Astra is rerun
+  only on the new exact SHA after Sol reaches a stable candidate (not
+  invoked from this lane); merge only on APPROVED with expected-head
+  protection; then file ENV-COORD-003 (SHADOW CI integration) as a new
+  claim.

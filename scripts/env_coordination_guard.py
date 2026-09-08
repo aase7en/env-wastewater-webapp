@@ -239,7 +239,12 @@ def canonicalize_path(raw: str) -> str:
     """Repo-root-relative canonical path (§7.2 rules 1–4).
 
     Separators become '/', text is NFC-normalized, and absolute paths,
-    drive prefixes, NUL, '.', '..' and empty segments are rejected.
+    drive prefixes, NUL, '.', '..', empty segments, and Win32-equivalent
+    ambiguous segments (trailing '.' or trailing ASCII space) are
+    rejected — on Windows "file.", "file " and "file" name the same
+    file, so such aliases must never enter scope evaluation as distinct
+    paths (R8). They fail closed; they are never trimmed into another
+    accepted path.
     """
     if not isinstance(raw, str) or not raw:
         raise GuardFailure(R.INVALID_PATH, f"not a non-empty string: {raw!r}")
@@ -257,6 +262,12 @@ def canonicalize_path(raw: str) -> str:
             raise GuardFailure(R.INVALID_PATH, f"empty path segment: {raw!r}")
         if segment in (".", ".."):
             raise GuardFailure(R.INVALID_PATH, f"relative segment: {raw!r}")
+        if segment.endswith(".") or segment.endswith(" "):
+            raise GuardFailure(
+                R.INVALID_PATH,
+                f"ambiguous Win32 alias segment {segment!r}: trailing"
+                " dot/space names the same file as the trimmed spelling",
+            )
     return normalized
 
 
@@ -1101,7 +1112,10 @@ class LifecycleLog:
     cleanly; a GOAL_END only terminates when durably published. After the
     first goal, every new GOAL_START must directly reference the previous
     durable terminal GOAL_END event; a CHECKPOINT never replaces an active
-    goal.
+    goal. Operation outcome/reconciliation events require an ACTIVE goal
+    (R8): they never advance the durable head past a terminal GOAL_END, so
+    recovery from an UNKNOWN after a terminal PARTIAL/BLOCKED result opens
+    a legal recovery GoalStart first and reconciles under that goal.
 
     §5.5 external-operation reconciliation: an UNKNOWN execution outcome
     blocks retries until external state is reconciled. Reconciliation is a
@@ -1232,6 +1246,14 @@ class LifecycleLog:
                 raise GuardFailure(R.EVENT_CONFLICT, f"duplicate operation {event.operation_id}")
             self._operations[event.operation_id] = {"intent": event, "outcome": None}
         elif event.event_type == "OPERATION_OUTCOME":
+            # R8: operation events never advance the durable head outside
+            # an active goal — a post-terminal outcome would strand the
+            # generation (the terminal GOAL_END must stay the head so a
+            # future goal can legally reference it).
+            if self._active_goal is None:
+                raise GuardFailure(
+                    R.OUT_OF_ORDER_EVENT, "operation outcome without an active goal"
+                )
             operation = self._operations.get(event.operation_id)
             if operation is None:
                 raise GuardFailure(R.UNKNOWN_OPERATION, str(event.operation_id))
@@ -1244,6 +1266,15 @@ class LifecycleLog:
             # §5.5 durable reconciliation: the explicit terminal external
             # observation clears the unresolved UNKNOWN without rewriting
             # the original execution outcome (audit retained above).
+            # R8: reconciliation is journaled under an ACTIVE goal — after
+            # a terminal PARTIAL/BLOCKED result, recovery first opens a
+            # legal recovery GoalStart from the terminal GOAL_END, then
+            # reconciles the UNKNOWN under that recovery goal.
+            if self._active_goal is None:
+                raise GuardFailure(
+                    R.OUT_OF_ORDER_EVENT,
+                    "reconciliation requires an active (recovery) goal",
+                )
             operation = self._operations.get(event.operation_id)
             if operation is None:
                 raise GuardFailure(R.UNKNOWN_OPERATION, str(event.operation_id))
@@ -1530,11 +1561,25 @@ class TransferBarrier:
         to QUIESCING) and blocks transfer instead of returning cached
         success. A later replay with the facts supporting it again
         re-establishes TRANSFER_READY.
+
+        R8: for the CURRENT holder, contrary current safety evidence
+        invalidates an established TRANSFER_READY BEFORE any
+        identity/replay/conflict handling — a fresh attestation id or a
+        conflicting payload must not leave an unsafe READY state standing.
+        Non-holder publishers still change nothing (identity rules first).
         """
         with self._lock:
             if publisher_id != self.execution_holder_id:
                 self.transfer_block_reason = R.COORDINATOR_CANNOT_PUBLISH_QUIESCENCE
                 return None
+
+            # contrary safety evidence from the current holder demotes an
+            # established readiness immediately, whatever attestation
+            # identity the report arrives with (fresh, replayed, or
+            # conflicting) — the stale proof must not survive to transfer.
+            if unresolved_external_operations and self.state == "TRANSFER_READY":
+                self.state = "QUIESCING"
+                self.transfer_block_reason = R.TRANSFER_BLOCKED_UNRESOLVED_EFFECTS
 
             replay = self._attestations.get(attestation_id)
             payload = {
@@ -1613,8 +1658,13 @@ class TransferBarrier:
 
             self.claim_generation += 1
             self.execution_holder_id = new_holder_id
-            self.runtime = HolderRuntime(new_holder_id)
-            self.runtime.gate.close()  # no mutation until authoritative activation
+            # construct the g+1 runtime privately and close its gate
+            # BEFORE publishing it: the new runtime must never be
+            # externally observable OPEN — g+1 cannot admit any operation
+            # before the authorized transition + complete preflight (R8).
+            new_runtime = HolderRuntime(new_holder_id)
+            new_runtime.gate.close()
+            self.runtime = new_runtime
             self.state = "AWAITING_AUTHORIZATION"
             self.transfer_block_reason = None
 
