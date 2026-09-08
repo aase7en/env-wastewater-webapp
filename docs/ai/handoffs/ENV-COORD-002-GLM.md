@@ -376,3 +376,76 @@ Stop at `REVIEW_REQUESTED`. Do not merge.
 - **Exactly ONE next safe action:** GPT-5.6 Sol re-reviews PR #84 at the
   new exact head; merge only on APPROVED with expected-head protection;
   then file ENV-COORD-003 (SHADOW CI integration) as a new claim.
+
+## Result — R5 remediation (Sol triage of Astra review, five blockers) / 2026-09-08
+
+- **Actual-state preflight (no chat memory):** fetched origin; PR #84
+  head verified still `b3748d265fb83961dd6c00e593a64b64ce0a9448` before
+  work (R4 head, Sol APPROVED_PENDING_INDEPENDENT_FINAL + triage of the
+  Astra review bound to the older `7a6eb45` SHA);
+  `origin/main@7d4e6b52…` unchanged; registry claim `ENV-COORD-002-C1`
+  gen 1 holder `zcode-env-coord-002-g1-primary` matches this context;
+  worktree clean (`.serena/` untracked only); `SAFE_TO_MUTATE = YES`.
+  Same single execution context; mutable scope unchanged (4 paths).
+- **Start HEAD:** `b3748d265fb83961dd6c00e593a64b64ce0a9448`.
+- **End HEAD:** new single commit on `origin/feat/env-coord-002`
+  (self-SHA is the PR #84 head; not written into its own commit).
+- **Five repairs (R5 blockers):**
+  1. Transfer tuple binding — `activate_transferred_claim` requires, in
+     addition to a succeeding §4.4 preflight, an exact
+     decision-vs-barrier tuple match (claim id / generation / holder)
+     before any state change or gate open; mismatch raises the new
+     `TRANSFER_TUPLE_MISMATCH` and the barrier stays
+     AWAITING_AUTHORIZATION with the gate CLOSED.
+  2. Publication gate — `published=False` events are rejected
+     (`EVENT_NOT_PUBLISHED`; GOAL_END keeps `GOAL_END_NOT_PUBLISHED`)
+     after duplicate-id handling and before any mutation, so
+     authoritative state/head never move on unpublished evidence; a
+     later published retry of the same semantic event applies cleanly
+     (regressions cover GOAL_START, CHECKPOINT, OPERATION_INTENT,
+     OPERATION_OUTCOME, OPERATION_RECONCILED, GOAL_END).
+  3. Attestation replay re-validation — one shared
+     `_publication_block_reason` gates fresh publication AND replay;
+     replay with newly reported `unresolved_external_operations=True`
+     demotes TRANSFER_READY → QUIESCING and blocks transfer; a later
+     supported replay re-establishes TRANSFER_READY (full recovery
+     tested through to a generation-2 handoff).
+  4. Link/lock parity — `_evaluate_link` ignores released
+     (READY/CLOSED) other claims, consistent with registry and
+     control-transition logic; RECOVERY_HOLD / STALE_CLAIM / STATE_DRIFT
+     lanes still block crossings of their protected scope.
+  5. Strict goal predecessor — after the first goal, every new GOAL_START
+     must directly reference the previous durable terminal GOAL_END
+     event; a post-terminal OPERATION event as predecessor is
+     `OUT_OF_ORDER_EVENT`. There is deliberately NO valid ordering in
+     which a goal starts after a post-terminal event (referencing the
+     old GOAL_END fails the ordinary head link).
+- **RED → GREEN:** RED `Ran 219 tests … FAILED (failures=11, errors=1)`
+  (12 failing = the five blockers' regressions; 207 prior passing);
+  GREEN `Ran 219 tests … OK` (stable across repeated runs); pytest
+  `219 passed, 15 subtests passed`.
+- **All five reproducers post-repair: PASS** (A1 wrong-tuple activation
+  fails TRANSFER_TUPLE_MISMATCH, stays AWAITING/CLOSED; A3 unpublished
+  outcome EVENT_NOT_PUBLISHED, head unchanged, unresolved retained; A4
+  publish-success → replay-with-uncertainty blocked, QUIESCING, transfer
+  TRANSFER_NOT_READY; A8 CLOSED link allowed while RECOVERY_HOLD blocks;
+  A10 non-terminal head rejected, normal GOAL_END predecessor accepted).
+- **Full verification (all green):** unittest 219 OK; pytest 219 passed
+  + 15 subtests; `test_workflow_action_runtimes.py` OK;
+  `check_workflow_action_runtimes.py` PASS (5 files);
+  `test_split_sql.py` all passed; `test_ci_alert_payload.py` 33 passed;
+  `git diff --check` exit 0; both scripts compile clean.
+- **Exact changed files:** the 4 authorized claim paths only; `.serena/`
+  never staged.
+- **Limitations:** unchanged from R4 (no hooks/CI/server policy,
+  ENV-COORD-003+; scope-check inspection-only; no central §7.3 writer;
+  process-local atomicity). Replay re-validation covers facts known to
+  the barrier (caller-reported external uncertainty + runtime state);
+  facts neither the runtime nor the caller reports cannot be discovered
+  by this core.
+- **Unresolved issues:** none.
+- **Exactly ONE next safe action:** GPT-5.6 Sol performs a fresh
+  exact-SHA review of PR #84 at the new head (and re-runs the Astra
+  final adversarial review bound to that same SHA per the triage
+  disposition); merge only on APPROVED with expected-head protection;
+  then file ENV-COORD-003 (SHADOW CI integration) as a new claim.

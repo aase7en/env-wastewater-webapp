@@ -789,6 +789,105 @@ class TestSymlinkPolicy(unittest.TestCase):
         self.assertFalse(d.safe_to_mutate)
         self.assertEqual(d.reason, R.LINK_CROSSES_LANE)
 
+    def _overlap_lane(self, status):
+        # a lane whose PROTECTED (forbidden) scope covers our target
+        # docs/work-orders/ENV-COORD-002.md; mutable scope stays disjoint
+        return other_lane_claim(
+            mutable_scope=["reports/gistda/**"],
+            forbidden_scope=["docs/work-orders/**"],
+            status=status,
+        )
+
+    def test_closed_claim_no_longer_blocks_link_crossing(self):
+        # R5-review P2 reproducer A8_CLOSED_LINK: a link target inside the
+        # ACTIVE claim's own mutable scope must not be blocked by an
+        # overlapping CLOSED claim — link protection, like registry and
+        # control-transition overlap logic, applies only to lock-holding
+        # claims.
+        policy = load_policy([base_claim(), self._overlap_lane("CLOSED")])
+        d = evaluate_mutation(
+            policy,
+            ok_ctx(),
+            changes=[Change("add", "scripts/env_coordination_guard.py")],
+            links=[
+                LinkRequest(
+                    "scripts/env_coordination_guard.py",
+                    "docs/work-orders/ENV-COORD-002.md",
+                    True,
+                )
+            ],
+        )
+        self.assertTrue(d.safe_to_mutate, d.reason)
+
+    def test_ready_claim_does_not_block_link_crossing(self):
+        # READY never held a scope lock
+        policy = load_policy([base_claim(), self._overlap_lane("READY")])
+        d = evaluate_mutation(
+            policy,
+            ok_ctx(),
+            changes=[Change("add", "scripts/env_coordination_guard.py")],
+            links=[
+                LinkRequest(
+                    "scripts/env_coordination_guard.py",
+                    "docs/work-orders/ENV-COORD-002.md",
+                    True,
+                )
+            ],
+        )
+        self.assertTrue(d.safe_to_mutate, d.reason)
+
+    def test_recovery_hold_claim_still_blocks_link_crossing(self):
+        policy = load_policy([base_claim(), self._overlap_lane("RECOVERY_HOLD")])
+        d = evaluate_mutation(
+            policy,
+            ok_ctx(),
+            changes=[Change("add", "scripts/env_coordination_guard.py")],
+            links=[
+                LinkRequest(
+                    "scripts/env_coordination_guard.py",
+                    "docs/work-orders/ENV-COORD-002.md",
+                    True,
+                )
+            ],
+        )
+        self.assertFalse(d.safe_to_mutate)
+        self.assertEqual(d.reason, R.LINK_CROSSES_LANE)
+
+    def test_stale_claim_still_blocks_link_crossing(self):
+        # §4.5: inactivity classification must not free the scope
+        policy = load_policy([base_claim(), self._overlap_lane("STALE_CLAIM")])
+        d = evaluate_mutation(
+            policy,
+            ok_ctx(),
+            changes=[Change("add", "scripts/env_coordination_guard.py")],
+            links=[
+                LinkRequest(
+                    "scripts/env_coordination_guard.py",
+                    "docs/work-orders/ENV-COORD-002.md",
+                    True,
+                )
+            ],
+        )
+        self.assertFalse(d.safe_to_mutate)
+        self.assertEqual(d.reason, R.LINK_CROSSES_LANE)
+
+    def test_state_drift_claim_still_blocks_link_crossing(self):
+        policy = load_policy([base_claim(), self._overlap_lane("STATE_DRIFT")])
+        d = evaluate_mutation(
+            policy,
+            ok_ctx(),
+            changes=[Change("add", "scripts/env_coordination_guard.py")],
+            links=[
+                LinkRequest(
+                    "scripts/env_coordination_guard.py",
+                    "docs/work-orders/ENV-COORD-002.md",
+                    True,
+                )
+            ],
+        )
+        self.assertFalse(d.safe_to_mutate)
+        self.assertEqual(d.reason, R.LINK_CROSSES_LANE)
+
 
 def sharing_claims():
     """Two lanes whose mutable scopes overlap on exactly reports/shared.txt."""
@@ -1313,7 +1412,7 @@ class TestControlTransition(unittest.TestCase):
 # ─────────────────────────────────────────────────────────────────────────
 # §5 goal lifecycle
 # ─────────────────────────────────────────────────────────────────────────
-def goal_start(seq=1, event_id="e1", prev="GENESIS", goal="g1"):
+def goal_start(seq=1, event_id="e1", prev="GENESIS", goal="g1", published=True):
     return LifecycleEvent(
         task_id="ENV-COORD-002",
         claim_id="ENV-COORD-002-C1",
@@ -1323,6 +1422,7 @@ def goal_start(seq=1, event_id="e1", prev="GENESIS", goal="g1"):
         event_seq=seq,
         event_id=event_id,
         previous_event_id=prev,
+        published=published,
     )
 
 
@@ -1341,7 +1441,7 @@ def goal_end(seq=2, event_id="e2", prev="e1", goal="g1", result="COMPLETED_VERIF
     )
 
 
-def op_intent(seq=2, event_id="o1", prev="e1", op="op-1", goal="g1"):
+def op_intent(seq=2, event_id="o1", prev="e1", op="op-1", goal="g1", published=True):
     return LifecycleEvent(
         task_id="ENV-COORD-002",
         claim_id="ENV-COORD-002-C1",
@@ -1352,10 +1452,11 @@ def op_intent(seq=2, event_id="o1", prev="e1", op="op-1", goal="g1"):
         event_id=event_id,
         previous_event_id=prev,
         operation_id=op,
+        published=published,
     )
 
 
-def op_outcome(seq=3, event_id="o2", prev="o1", outcome="UNKNOWN", op="op-1", goal="g1", generation=1):
+def op_outcome(seq=3, event_id="o2", prev="o1", outcome="UNKNOWN", op="op-1", goal="g1", generation=1, published=True):
     return LifecycleEvent(
         task_id="ENV-COORD-002",
         claim_id="ENV-COORD-002-C1",
@@ -1367,10 +1468,11 @@ def op_outcome(seq=3, event_id="o2", prev="o1", outcome="UNKNOWN", op="op-1", go
         previous_event_id=prev,
         operation_id=op,
         operation_outcome=outcome,
+        published=published,
     )
 
 
-def op_reconciled(seq=4, event_id="o3", prev="o2", outcome="SUCCEEDED", op="op-1", goal="g1", generation=1):
+def op_reconciled(seq=4, event_id="o3", prev="o2", outcome="SUCCEEDED", op="op-1", goal="g1", generation=1, published=True):
     return LifecycleEvent(
         task_id="ENV-COORD-002",
         claim_id="ENV-COORD-002-C1",
@@ -1382,6 +1484,7 @@ def op_reconciled(seq=4, event_id="o3", prev="o2", outcome="SUCCEEDED", op="op-1
         previous_event_id=prev,
         operation_id=op,
         operation_outcome=outcome,
+        published=published,
     )
 
 
@@ -1425,6 +1528,37 @@ class TestGoalLifecycle(unittest.TestCase):
         status, _ = log.apply(goal_start(seq=3, event_id="e3", prev="e2", goal="g2"))
         self.assertEqual(status, "applied")
         self.assertEqual(log.active_goal_id, "g2")
+
+    def test_goal_start_after_post_terminal_operation_event_rejected(self):
+        # R5-review P2 reproducer A10_NEW_GOAL_AFTER_NONTERMINAL_HEAD:
+        # GOAL_END -> OPERATION_OUTCOME -> new GOAL_START referencing the
+        # outcome head must NOT apply — after the first goal, every new
+        # GOAL_START must directly reference the previous durable terminal
+        # GOAL_END event itself.
+        log = LifecycleLog("ENV-COORD-002-C1", 1)
+        log.apply(goal_start())
+        log.apply(op_intent())
+        log.apply(goal_end(seq=3, event_id="e2", prev="o1"))
+        log.apply(op_outcome(seq=4, event_id="o2", prev="e2", outcome="SUCCEEDED"))
+        self.assertEqual(log.head_event_id, "o2")
+        with self.assertRaises(GuardFailure) as cm:
+            log.apply(goal_start(seq=5, event_id="e3", prev="o2", goal="g2"))
+        self.assertEqual(cm.exception.reason, R.OUT_OF_ORDER_EVENT)
+        self.assertIsNone(log.active_goal_id)
+        self.assertEqual(log.head_event_id, "o2")  # nothing mutated
+
+    def test_goal_start_referencing_stale_goal_end_after_head_moved_rejected(self):
+        # referencing the OLD goal end while the head moved past it fails
+        # the ordinary previous-event link (there is no valid ordering in
+        # which the new goal starts after a post-terminal event)
+        log = LifecycleLog("ENV-COORD-002-C1", 1)
+        log.apply(goal_start())
+        log.apply(op_intent())
+        log.apply(goal_end(seq=3, event_id="e2", prev="o1"))
+        log.apply(op_outcome(seq=4, event_id="o2", prev="e2", outcome="SUCCEEDED"))
+        with self.assertRaises(GuardFailure) as cm:
+            log.apply(goal_start(seq=5, event_id="e3", prev="e2", goal="g2"))
+        self.assertEqual(cm.exception.reason, R.OUT_OF_ORDER_EVENT)
 
     def test_checkpoint_cannot_replace_active_goal(self):
         # §5.1: a normal checkpoint is not a goal terminator.
@@ -1739,6 +1873,117 @@ class TestOperationReconciliation(unittest.TestCase):
         self.assertTrue(log.has_unresolved_external_operations)
 
 
+class TestUnpublishedLifecycleEvents(unittest.TestCase):
+    """R5-review P1: unpublished events must never mutate authoritative
+    LifecycleLog state/head (§5.2 durable publication).
+
+    An event with published=False is rejected BEFORE any state change, so
+    a later published retry of the same semantic event applies cleanly.
+    GOAL_END keeps its specialized GOAL_END_NOT_PUBLISHED reason.
+    """
+
+    def test_unpublished_goal_start_rejected_then_published_retry_applies(self):
+        log = LifecycleLog("ENV-COORD-002-C1", 1)
+        with self.assertRaises(GuardFailure) as cm:
+            log.apply(goal_start(published=False))
+        self.assertEqual(cm.exception.reason, R.EVENT_NOT_PUBLISHED)
+        self.assertIsNone(log.head_event_id)
+        self.assertEqual(log.events, [])
+        status, _ = log.apply(goal_start())  # same semantic event, published
+        self.assertEqual(status, "applied")
+        self.assertEqual(log.active_goal_id, "g1")
+
+    def test_unpublished_checkpoint_rejected_then_published_retry_applies(self):
+        log = LifecycleLog("ENV-COORD-002-C1", 1)
+        log.apply(goal_start())
+        ck = lambda published: LifecycleEvent(  # noqa: E731
+            task_id="ENV-COORD-002",
+            claim_id="ENV-COORD-002-C1",
+            claim_generation=1,
+            goal_id="g1",
+            event_type="CHECKPOINT",
+            event_seq=2,
+            event_id="c1",
+            previous_event_id="e1",
+            published=published,
+        )
+        with self.assertRaises(GuardFailure) as cm:
+            log.apply(ck(published=False))
+        self.assertEqual(cm.exception.reason, R.EVENT_NOT_PUBLISHED)
+        self.assertEqual(log.head_event_id, "e1")
+        status, _ = log.apply(ck(published=True))
+        self.assertEqual(status, "applied")
+        self.assertEqual(log.head_event_id, "c1")
+
+    def test_unpublished_operation_intent_rejected_then_retry_applies(self):
+        log = LifecycleLog("ENV-COORD-002-C1", 1)
+        log.apply(goal_start())
+        with self.assertRaises(GuardFailure) as cm:
+            log.apply(op_intent(published=False))
+        self.assertEqual(cm.exception.reason, R.EVENT_NOT_PUBLISHED)
+        self.assertEqual(log.head_event_id, "e1")
+        with self.assertRaises(GuardFailure) as unknown_op:
+            log.operation_record("op-1")
+        self.assertEqual(unknown_op.exception.reason, R.UNKNOWN_OPERATION)
+        status, _ = log.apply(op_intent())  # published retry applies cleanly
+        self.assertEqual(status, "applied")
+        self.assertIsNotNone(log.operation_record("op-1"))
+
+    def test_unpublished_operation_outcome_rejected_then_retry_applies(self):
+        # reviewer reproducer A3_UNPUBLISHED_OUTCOME: an unpublished
+        # SUCCEEDED outcome must NOT clear the unresolved state
+        log = LifecycleLog("ENV-COORD-002-C1", 1)
+        log.apply(goal_start())
+        log.apply(op_intent())
+        with self.assertRaises(GuardFailure) as cm:
+            log.apply(op_outcome(outcome="SUCCEEDED", published=False))
+        self.assertEqual(cm.exception.reason, R.EVENT_NOT_PUBLISHED)
+        self.assertEqual(log.head_event_id, "o1")
+        self.assertTrue(log.has_unresolved_external_operations)  # unchanged
+        status, _ = log.apply(op_outcome(outcome="SUCCEEDED"))
+        self.assertEqual(status, "applied")
+        self.assertFalse(log.has_unresolved_external_operations)
+
+    def test_unpublished_reconciliation_rejected_then_retry_applies(self):
+        log = LifecycleLog("ENV-COORD-002-C1", 1)
+        log.apply(goal_start())
+        log.apply(op_intent())
+        log.apply(op_outcome())  # UNKNOWN
+        with self.assertRaises(GuardFailure) as cm:
+            log.apply(op_reconciled(published=False))
+        self.assertEqual(cm.exception.reason, R.EVENT_NOT_PUBLISHED)
+        self.assertEqual(log.head_event_id, "o2")
+        self.assertTrue(log.has_unresolved_external_operations)  # still blocked
+        status, _ = log.apply(op_reconciled())
+        self.assertEqual(status, "applied")
+        self.assertFalse(log.has_unresolved_external_operations)
+
+    def test_unpublished_goal_end_keeps_specialized_reason(self):
+        # §5.2/§5.6 WO bullet: GOAL_END published=False keeps its pinned
+        # GOAL_END_NOT_PUBLISHED reason and never terminates the goal
+        log = LifecycleLog("ENV-COORD-002-C1", 1)
+        log.apply(goal_start())
+        with self.assertRaises(GuardFailure) as cm:
+            log.apply(goal_end(published=False))
+        self.assertEqual(cm.exception.reason, R.GOAL_END_NOT_PUBLISHED)
+        self.assertEqual(log.active_goal_id, "g1")
+        status, _ = log.apply(goal_end())
+        self.assertEqual(status, "applied")
+        self.assertIsNone(log.active_goal_id)
+
+    def test_unpublished_event_replay_idempotency_untouched(self):
+        # published events keep identity-idempotent replay; an unpublished
+        # clone of an applied event is a payload conflict, never a mutation
+        log = LifecycleLog("ENV-COORD-002-C1", 1)
+        log.apply(goal_start())
+        status, _ = log.apply(goal_start())
+        self.assertEqual(status, "idempotent_noop")
+        with self.assertRaises(GuardFailure) as cm:
+            log.apply(goal_start(published=False))
+        self.assertIn(cm.exception.reason, (R.EVENT_CONFLICT, R.EVENT_NOT_PUBLISHED))
+        self.assertEqual(len(log.events), 1)
+
+
 # ─────────────────────────────────────────────────────────────────────────
 # §4.2A admission gate
 # ─────────────────────────────────────────────────────────────────────────
@@ -2000,6 +2245,36 @@ class TestTransferBarrier(unittest.TestCase):
             b.holder_publish("holder-A", "att-1", latest_event_id="e8")
         self.assertEqual(cm.exception.reason, R.EVENT_CONFLICT)
 
+    def test_replay_with_new_uncertainty_invalidates_readiness(self):
+        # R5-review P1 reproducer A4_REPLAY: a cached attestation is
+        # idempotent ONLY while current safety facts still support it.
+        # publish(False) succeeds; replay(True) must invalidate readiness
+        # and block transfer instead of returning cached success.
+        b = self._barrier()
+        b.begin_quiesce()
+        att = b.holder_publish("holder-A", "att-1", latest_event_id="e9")
+        self.assertIsNotNone(att)
+        self.assertEqual(b.state, "TRANSFER_READY")
+        replay = b.holder_publish(
+            "holder-A", "att-1", latest_event_id="e9", unresolved_external_operations=True
+        )
+        self.assertIsNone(replay)
+        self.assertEqual(b.transfer_block_reason, R.TRANSFER_BLOCKED_UNRESOLVED_EFFECTS)
+        self.assertEqual(b.state, "QUIESCING")  # readiness invalidated
+        # transfer is blocked while uncertainty stands
+        with self.assertRaises(GuardFailure) as cm:
+            b.complete_transfer(new_holder_id="holder-B")
+        self.assertEqual(cm.exception.reason, R.TRANSFER_NOT_READY)
+        # later replay with uncertainty resolved re-establishes readiness
+        recovered = b.holder_publish("holder-A", "att-1", latest_event_id="e9")
+        self.assertIsNotNone(recovered)
+        self.assertEqual(b.state, "TRANSFER_READY")
+        self.assertIsNone(b.transfer_block_reason)
+        d = b.complete_transfer(new_holder_id="holder-B")
+        self.assertFalse(d.safe_to_mutate)
+        self.assertEqual(d.reason, R.TRANSFER_AWAITING_AUTHORIZED_TRANSITION)
+        self.assertEqual(b.claim_generation, 2)
+
     def test_coordinator_interrupt_before_transfer_keeps_generation(self):
         # WO RED bullet: coordinator interruption before transfer leaves
         # generation unchanged.
@@ -2166,6 +2441,45 @@ class TestTransferBarrier(unittest.TestCase):
             )
         self.assertEqual(cm.exception.reason, R.WRONG_EXECUTION_HOLDER)
         self.assertEqual(b.state, "AWAITING_AUTHORIZATION")
+
+    def test_activation_wrong_tuple_g1_policy_on_pending_g2_barrier(self):
+        # R5-review P1 reproducer A1_WRONG_TUPLE: a pending g2/B barrier
+        # must NOT activate on a valid g1/A preflight — the authorization
+        # decision tuple must equal the pending barrier tuple before any
+        # state change or gate open.
+        b = self._barrier()
+        b.begin_quiesce()
+        b.holder_publish("holder-A", "att-1", latest_event_id="e9")
+        b.complete_transfer(new_holder_id="holder-B")  # pending g2/B
+        g1_policy = load_policy()  # registry still g1/A — preflight-valid
+        with self.assertRaises(GuardFailure) as cm:
+            b.activate_transferred_claim(g1_policy, ok_ctx())  # g1/A context
+        self.assertEqual(cm.exception.reason, R.TRANSFER_TUPLE_MISMATCH)
+        self.assertEqual(b.state, "AWAITING_AUTHORIZATION")
+        self.assertEqual(b.claim_generation, 2)
+        self.assertEqual(b.execution_holder_id, "holder-B")
+        with self.assertRaises(GuardFailure) as gate:
+            b.runtime.admit("op-new")
+        self.assertEqual(gate.exception.reason, R.ADMISSION_GATE_CLOSED)
+
+    def test_activation_wrong_holder_consistent_tuple_on_pending_barrier(self):
+        # a self-consistent g2/C policy+context (preflight passes) on a
+        # pending g2/B barrier still fails the barrier tuple binding
+        b = self._barrier()
+        b.begin_quiesce()
+        b.holder_publish("holder-A", "att-1", latest_event_id="e9")
+        b.complete_transfer(new_holder_id="holder-B")  # pending g2/B
+        g2c_policy = load_policy(
+            [base_claim(claim_generation=2, execution_holder_id="holder-C")]
+        )
+        with self.assertRaises(GuardFailure) as cm:
+            b.activate_transferred_claim(
+                g2c_policy,
+                ok_ctx(claim_generation=2, execution_holder_id="holder-C"),
+            )
+        self.assertEqual(cm.exception.reason, R.TRANSFER_TUPLE_MISMATCH)
+        self.assertEqual(b.state, "AWAITING_AUTHORIZATION")
+        self.assertEqual(b.execution_holder_id, "holder-B")
 
     def test_activate_transferred_claim_retries_after_failed_activation(self):
         b = self._barrier()

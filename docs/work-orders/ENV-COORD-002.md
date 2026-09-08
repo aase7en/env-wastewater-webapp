@@ -373,6 +373,56 @@ with regression-first tests.
   `git diff --check` PASS; live `status` CLI smoke reads the real
   registry through the frozen-SHA read (`7d4e6b52`, `BOOTSTRAP_CONTROL`).
 
+### Remediation evidence — R5 (Sol triage of Astra review, five blockers) / 2026-09-08
+
+Sol reviewed R4 head `b3748d265fb83961dd6c00e593a64b64ce0a9448`
+(APPROVED_PENDING_INDEPENDENT_FINAL), then triaged the Astra adversarial
+review against that exact head: five findings still reproducible; all
+repaired on the same claim/generation/holder with regression-first tests.
+
+- RED: `python scripts/test_env_coordination_guard.py` →
+  `Ran 219 tests … FAILED (failures=11, errors=1)` — 12 failing (the
+  five blockers' regressions), 207 prior tests passing unchanged.
+- GREEN: `Ran 219 tests … OK` (stable across repeated runs); pytest →
+  `219 passed, 15 subtests passed`.
+- Repairs:
+  1. Transfer tuple binding: after a SUCCEEDING §4.4 preflight,
+     `activate_transferred_claim` additionally requires
+     decision.claim_id/generation/holder == the pending barrier tuple
+     before any state change or gate open (new reason
+     `TRANSFER_TUPLE_MISMATCH`); a valid g1/A decision can never
+     activate a pending g2/B runtime.
+  2. Publication gate: any `published=False` event is rejected
+     (`EVENT_NOT_PUBLISHED`; GOAL_END keeps its pinned
+     `GOAL_END_NOT_PUBLISHED`) BEFORE any state mutation, so
+     authoritative state/head never move on unpublished evidence and a
+     later published retry of the same semantic event applies cleanly
+     (tested for all six event types).
+  3. Attestation replay re-validation: fresh publication and replay share
+     one current-safety-fact gate (`_publication_block_reason`); a replay
+     reporting newly discovered `unresolved_external_operations=True`
+     demotes TRANSFER_READY → QUIESCING, blocks transfer, and a later
+     supported replay re-establishes readiness.
+  4. Link/lock parity: `_evaluate_link` skips released (READY/CLOSED)
+     claims exactly like registry and control-transition overlap logic;
+     RECOVERY_HOLD/STALE_CLAIM/STATE_DRIFT still protect their scope.
+  5. Strict goal predecessor: after the first goal, every new GOAL_START
+     must directly reference the previous durable terminal GOAL_END event
+     (`_last_goal_end_id`); a post-terminal OPERATION event as
+     predecessor is rejected with `OUT_OF_ORDER_EVENT`.
+- All five reproducers re-run post-repair, all fail closed:
+  `A1_WRONG_TUPLE_SAFE=False TRANSFER_TUPLE_MISMATCH AWAITING_AUTHORIZATION
+  CLOSED`; `A3_UNPUBLISHED_OUTCOME=EVENT_NOT_PUBLISHED` with head
+  unchanged and unresolved retained; `A4_REPLAY` publish
+  success/replay-blocked with `QUIESCING` +
+  `TRANSFER_BLOCKED_UNRESOLVED_EFFECTS` and transfer blocked;
+  `A8_CLOSED_LINK=True None` while RECOVERY_HOLD still
+  `LINK_CROSSES_LANE`; `A10_NEW_GOAL_AFTER_NONTERMINAL_HEAD=
+  OUT_OF_ORDER_EVENT` with the normal GOAL_END predecessor accepted.
+- Adjacent suites green (workflow runtimes OK; runtime check PASS 5
+  files; split_sql all passed; ci_alert_payload 33 passed); both scripts
+  compile clean; `git diff --check` PASS.
+
 ## Stop condition
 
 Implementation owner stops at `REVIEW_REQUESTED`; must not self-merge and must

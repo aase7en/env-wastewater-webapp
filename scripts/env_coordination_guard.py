@@ -174,12 +174,14 @@ class R:
     COORDINATOR_CANNOT_PUBLISH_QUIESCENCE = "COORDINATOR_CANNOT_PUBLISH_QUIESCENCE"
     TRANSFER_NOT_READY = "TRANSFER_NOT_READY"
     TRANSFER_AWAITING_AUTHORIZED_TRANSITION = "TRANSFER_AWAITING_AUTHORIZED_TRANSITION"
+    TRANSFER_TUPLE_MISMATCH = "TRANSFER_TUPLE_MISMATCH"
     MISSING_ACTUAL_CONTEXT = "MISSING_ACTUAL_CONTEXT"
     SHARED_PATH_OWNER_REQUIRED = "SHARED_PATH_OWNER_REQUIRED"
     SHARED_OWNER_GENERATION_MISMATCH = "SHARED_OWNER_GENERATION_MISMATCH"
 
     # lifecycle ordering
     EVENT_CONFLICT = "EVENT_CONFLICT"
+    EVENT_NOT_PUBLISHED = "EVENT_NOT_PUBLISHED"
     OUT_OF_ORDER_EVENT = "OUT_OF_ORDER_EVENT"
     UNTERMINATED_PREDECESSOR = "UNTERMINATED_PREDECESSOR"
     INVALID_GOAL_RESULT = "INVALID_GOAL_RESULT"
@@ -836,9 +838,12 @@ def _evaluate_link(
     """§7.2 symlink re-authorization + §7.3 shared-file exception.
 
     Order: outside-root → own forbidden (always wins) → own mutable
-    required → every other lane's protected (mutable ∪ forbidden) scope,
-    waived only for the exact shared paths of an exception that binds
-    this claim id AND generation as a participant.
+    required → every other LOCK-HOLDING lane's protected (mutable ∪
+    forbidden) scope, waived only for the exact shared paths of an
+    exception that binds this claim id AND generation as a participant.
+    Released records (READY/CLOSED) hold no scope lock and do not block
+    crossings — consistent with registry and control-transition overlap
+    semantics (§4.1/§4.5).
     """
     if not link.inside_root or link.resolved_repo_path is None:
         return R.LINK_TARGET_OUTSIDE_ROOT
@@ -850,6 +855,8 @@ def _evaluate_link(
     for other in policy.claims:
         if other["claim_id"] == claim["claim_id"]:
             continue
+        if other["status"] not in LOCK_HOLDING_CLAIM_STATUSES:
+            continue  # released records hold no scope lock (§4.1/§4.5)
         protected = policy.mutable_exprs(other) + policy.forbidden_exprs(other)
         if _scope_set_contains(protected, resolved):
             # exception-covered crossing still obeys the single-writer
@@ -1057,10 +1064,14 @@ class LifecycleLog:
     """Ordered, idempotent lifecycle replay for one claim generation.
 
     Validation order per event: type validity → claim/generation binding →
-    duplicate event id (idempotent or conflict) → strictly increasing
-    sequence → exact previous-event link → type-specific semantics. A
-    GOAL_END only terminates when durably published; a CHECKPOINT never
-    replaces an active goal.
+    duplicate event id (idempotent or conflict) → publication gate →
+    strictly increasing sequence → exact previous-event link →
+    type-specific semantics. An unpublished event (published=False) is
+    rejected before any state mutation, so a later published retry applies
+    cleanly; a GOAL_END only terminates when durably published. After the
+    first goal, every new GOAL_START must directly reference the previous
+    durable terminal GOAL_END event; a CHECKPOINT never replaces an active
+    goal.
 
     §5.5 external-operation reconciliation: an UNKNOWN execution outcome
     blocks retries until external state is reconciled. Reconciliation is a
@@ -1077,6 +1088,7 @@ class LifecycleLog:
         self._by_id: dict[str, LifecycleEvent] = {}
         self._active_goal: Optional[str] = None
         self._terminated_goals: set[str] = set()
+        self._last_goal_end_id: Optional[str] = None
         self._operations: dict[str, dict] = {}
         self.head_event_id: Optional[str] = None
 
@@ -1127,6 +1139,20 @@ class LifecycleLog:
                 return "idempotent_noop", existing
             raise GuardFailure(R.EVENT_CONFLICT, f"{event.event_id} replayed with different payload")
 
+        # §5.2 durable publication: an unpublished event must never mutate
+        # authoritative state or advance the durable head. Rejected before
+        # any mutation, so a later published retry of the same semantic
+        # event applies cleanly. GOAL_END keeps its specialized pinned
+        # reason (WO bullet).
+        if not event.published:
+            raise GuardFailure(
+                R.GOAL_END_NOT_PUBLISHED
+                if event.event_type == "GOAL_END"
+                else R.EVENT_NOT_PUBLISHED,
+                f"{event.event_type} requires durable publication before"
+                " entering authoritative state",
+            )
+
         if self.events and event.event_seq <= self.events[-1].event_seq:
             raise GuardFailure(
                 R.OUT_OF_ORDER_EVENT,
@@ -1145,16 +1171,27 @@ class LifecycleLog:
         if event.event_type == "GOAL_START":
             if self._active_goal is not None:
                 raise GuardFailure(R.UNTERMINATED_PREDECESSOR, f"goal {self._active_goal} has no GOAL_END")
+            if self._terminated_goals:
+                # §5.1 strict predecessor: after the first goal, every new
+                # GOAL_START must directly reference the previous durable
+                # terminal GOAL_END event itself — not any later head event
+                # that merely followed an inactive goal.
+                if event.previous_event_id != self._last_goal_end_id:
+                    raise GuardFailure(
+                        R.OUT_OF_ORDER_EVENT,
+                        f"GOAL_START must reference the previous terminal"
+                        f" GOAL_END event {self._last_goal_end_id!r},"
+                        f" not {event.previous_event_id!r}",
+                    )
             self._active_goal = event.goal_id
         elif event.event_type == "GOAL_END":
             if event.terminal_result not in TERMINAL_GOAL_RESULTS:
                 raise GuardFailure(R.INVALID_GOAL_RESULT, f"{event.terminal_result!r}")
-            if not event.published:
-                raise GuardFailure(R.GOAL_END_NOT_PUBLISHED, "Goal-End requires durable publication (§5.2)")
             if self._active_goal != event.goal_id:
                 raise GuardFailure(R.OUT_OF_ORDER_EVENT, f"no active goal {event.goal_id}")
             self._active_goal = None
             self._terminated_goals.add(event.goal_id)
+            self._last_goal_end_id = event.event_id
         elif event.event_type == "CHECKPOINT":
             if self._active_goal is None:
                 raise GuardFailure(R.OUT_OF_ORDER_EVENT, "checkpoint without an active goal")
@@ -1425,6 +1462,26 @@ class TransferBarrier:
             self.state = "QUIESCING"
             self.transfer_block_reason = None
 
+    def _publication_block_reason(
+        self, replay: bool, unresolved_external_operations: bool
+    ) -> Optional[str]:
+        """Current safety facts gating BOTH fresh publication and replay.
+
+        A fresh publish requires QUIESCING; a replay of an attestation the
+        holder already published may also re-establish readiness from
+        QUIESCING after an invalidated replay (see holder_publish).
+        """
+        allowed_states = ("QUIESCING", "TRANSFER_READY") if replay else ("QUIESCING",)
+        if self.runtime.gate.state != "CLOSED" or self.state not in allowed_states:
+            return R.QUIESCENCE_PRECONDITIONS_UNMET
+        if self.runtime.active_admissions > 0:
+            return R.TRANSFER_BLOCKED_ACTIVE_ADMISSIONS
+        if self.runtime.has_unresolved_effects or unresolved_external_operations:
+            return R.TRANSFER_BLOCKED_UNRESOLVED_EFFECTS
+        if self.runtime.has_live_children:
+            return R.TRANSFER_BLOCKED_LIVE_CHILDREN
+        return None
+
     def holder_publish(
         self,
         publisher_id: str,
@@ -1436,6 +1493,13 @@ class TransferBarrier:
 
         Returns the attestation on success, None with transfer_block_reason
         set on fail-closed rejection; conflicting replays raise.
+
+        A cached attestation is idempotent ONLY while current safety facts
+        still support it (§4.2B): a replay reporting newly discovered
+        external uncertainty invalidates readiness (TRANSFER_READY demotes
+        to QUIESCING) and blocks transfer instead of returning cached
+        success. A later replay with the facts supporting it again
+        re-establishes TRANSFER_READY.
         """
         with self._lock:
             if publisher_id != self.execution_holder_id:
@@ -1452,25 +1516,23 @@ class TransferBarrier:
                 "admission_high_water": self.runtime.admissions_high_water,
                 "active_admissions": 0,
             }
-            if replay is not None:
-                if replay == payload:
-                    return dict(replay)
+            if replay is not None and replay != payload:
                 raise GuardFailure(
                     R.EVENT_CONFLICT, f"attestation {attestation_id} replayed differently"
                 )
 
-            if self.runtime.gate.state != "CLOSED" or self.state != "QUIESCING":
-                self.transfer_block_reason = R.QUIESCENCE_PRECONDITIONS_UNMET
+            block = self._publication_block_reason(replay is not None, unresolved_external_operations)
+            if block is not None:
+                if replay is not None and self.state == "TRANSFER_READY":
+                    self.state = "QUIESCING"  # invalidate cached readiness
+                self.transfer_block_reason = block
                 return None
-            if self.runtime.active_admissions > 0:
-                self.transfer_block_reason = R.TRANSFER_BLOCKED_ACTIVE_ADMISSIONS
-                return None
-            if self.runtime.has_unresolved_effects or unresolved_external_operations:
-                self.transfer_block_reason = R.TRANSFER_BLOCKED_UNRESOLVED_EFFECTS
-                return None
-            if self.runtime.has_live_children:
-                self.transfer_block_reason = R.TRANSFER_BLOCKED_LIVE_CHILDREN
-                return None
+
+            if replay is not None:
+                if self.state == "QUIESCING":
+                    self.state = "TRANSFER_READY"  # facts support it again
+                self.transfer_block_reason = None
+                return dict(replay)
 
             self._attestations[attestation_id] = payload
             self.state = "TRANSFER_READY"
@@ -1553,6 +1615,11 @@ class TransferBarrier:
         on any mismatch the barrier stays AWAITING_AUTHORIZATION with the
         gate CLOSED and the deterministic preflight reason is raised — no
         partial activation, no authority from policy identity alone.
+
+        Even a SUCCEEDING preflight only authorizes its own tuple: the
+        decision's claim id / generation / holder must exactly equal the
+        pending barrier tuple before any state change or gate open (a
+        valid g1/A decision must never activate a pending g2/B runtime).
         """
         with self._lock:
             if self.state != "AWAITING_AUTHORIZATION":
@@ -1562,6 +1629,17 @@ class TransferBarrier:
                 raise GuardFailure(
                     decision.reason or R.QUIESCENCE_PRECONDITIONS_UNMET,
                     "transferred-activation preflight failed",
+                )
+            if (
+                decision.claim_id != self.claim_id
+                or decision.claim_generation != self.claim_generation
+                or decision.execution_holder_id != self.execution_holder_id
+            ):
+                raise GuardFailure(
+                    R.TRANSFER_TUPLE_MISMATCH,
+                    f"activation decision {decision.claim_id}/g{decision.claim_generation}"
+                    f"/{decision.execution_holder_id} != pending barrier"
+                    f" {self.claim_id}/g{self.claim_generation}/{self.execution_holder_id}",
                 )
             self.state = "ACTIVE"
             self.runtime = HolderRuntime(self.execution_holder_id)  # gate opens
