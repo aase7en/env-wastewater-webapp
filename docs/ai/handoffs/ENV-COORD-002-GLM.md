@@ -789,3 +789,47 @@ Stop at `REVIEW_REQUESTED`. Do not merge.
   adversarial exact-SHA review. Merge remains prohibited until both
   review gates are satisfied; then file ENV-COORD-003 (SHADOW CI
   integration) as a new claim.
+
+## Result — R11 remediation (Sol R10 review, five blocker groups) / 2026-09-09
+
+- **Preflight:** start `11c910bf15fa7a94c446a919d269df4a24f3b253`
+  verified = local = origin branch = PR #84 head; base
+  `origin/main@7d4e6b52…` unchanged; registry C1/g1/holder matches via
+  the guard CLI; worktree clean (`.serena/` untracked only);
+  `SAFE_TO_MUTATE = YES`. Same four-path mutable scope.
+- **Five repairs (regression-first; RED 283 tests/65 failing → GREEN
+  283 OK ×3; pytest 283 passed + 217 subtests):**
+  1. TrustedPolicy recursive immutability: `_freeze` (MappingProxyType/
+     tuple) on the validated registry; `_thaw` + proxy acceptance keep
+     validation re-entrant; tuple-tolerant collection checks. All
+     post-construction mutation of authorization data now impossible;
+     authorization + hash byte-stable across attempts.
+  2. `base_ancestor_of_head` authorizes only exact `True`.
+  3. `server_enforcement_verified` exact `True` required for
+     ENFORCING/HARDENED; all masquerades → ENFORCEMENT_NOT_ACTIVE.
+  4. `published` exact `True` required to apply; non-bool masquerades
+     fail closed pre-mutation on all six event classes.
+  5. Lifecycle schema boundary: log generation exact positive non-bool
+     int (constructor), CLI `int()` coercion removed, event identity
+     fields non-empty strings, goal_id can never be None/empty (no
+     invisible active goal), one log binds one task identity
+     (`WRONG_CLAIM` on mismatch; justified by the registry's 1:1
+     claim↔task mapping — no DECISION_REQUIRED needed).
+- **Reviewer reproducers:** all closed (A mutation blocked/hash stable;
+  B "false"/"0"/1 denied; C masquerades → ENFORCEMENT_NOT_ACTIVE;
+  D GOAL_END("false") rejected, goal stays active; E GOAL_START(None)/
+  task_id=123 rejected).
+- **Full battery:** adjacent suites green; py_compile clean;
+  `git diff --check` PASS; changed paths = exactly the four authorized
+  files; live smoke `7d4e6b52`/BOOTSTRAP_CONTROL/CLAIMED.
+- **Test-design notes:** three initial RED-test bugs (stale prev refs,
+  wrong expected event counts, duplicate-id masking the publication
+  gate) were fixed in the tests; one collateral was a REAL core gap —
+  `validate_registry` could not re-validate its own frozen output —
+  fixed via `_thaw` + MappingProxyType acceptance.
+- **Limitations:** immutable policy records are observability-complete
+  via mapping proxies (reads only); no new reason codes; all prior
+  limitations unchanged.
+- **Exactly ONE next safe action:** continue the campaign — Prompt 2/10
+  (trusted-policy immutability + evidence-binding deep audit) in this
+  same lane.

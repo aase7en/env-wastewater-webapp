@@ -767,6 +767,64 @@ inspection-only; no hooks/CI/server policy (ENV-COORD-003+); no central
 **Readiness:** all campaign phases completed green; candidate is ready
 for independent GPT-5.6 Sol exact-SHA review.
 
+### Remediation evidence — R11 (Sol R10 exact-SHA review, five blocker groups) / 2026-09-09
+
+Sol reviewed R10 head `11c910bf15fa7a94c446a919d269df4a24f3b253`
+(CHANGES_REQUIRED, comment 5593185043). Start state re-pinned identical;
+same claim/generation/holder; four-path scope.
+
+- RED: `python scripts/test_env_coordination_guard.py` →
+  `Ran 283 tests … FAILED (failures=65)` — all five blocker groups'
+  regressions; 243 prior tests passing (R1–R10 preserved).
+- GREEN: `Ran 283 tests … OK` (stable ×3); pytest →
+  `283 passed, 217 subtests passed`.
+- **A — TrustedPolicy recursive immutability (P1):** new `_freeze`
+  (dict→MappingProxyType, list→tuple recursively) applied to the
+  validated registry snapshot returned by `validate_registry`;
+  `_thaw` + MappingProxyType acceptance keep `validate_registry`
+  re-entrant; collection checks tuple-tolerant. Post-construction
+  mutation of claims/scope lists/status/holder/generation/task/branch/
+  worktree/raw_registry/shared-exception owner/participants/merge_order/
+  release_condition is now IMPOSSIBLE (TypeError), and authorization is
+  byte-identical before/after attempts under a constant registry_hash
+  (Sol's frontend reproducer closed: mutation blocked, still
+  FORBIDDEN_PATH, hash stable).
+- **B — base ancestry exact bool (P1):** preflight authorizes only
+  `base_ancestor_of_head is True`; "false"/"0"/1/1.0/"true"/[]/{}/None
+  all fail `BASE_NOT_ANCESTOR`. Transferred-claim activation inherits
+  the behavior (regression pins wrong-value activation stays
+  AWAITING_AUTHORIZATION with gate CLOSED; exact-True activates).
+- **C — enforcement verification exact bool (P1):**
+  `effective_enforcement_mode` accepts only exact `True` as verified
+  server enforcement; ENFORCING/HARDENED with any truthy masquerade
+  report `ENFORCEMENT_NOT_ACTIVE` (full 4-mode boundary matrix pinned).
+- **D — lifecycle publication exact bool (P1):** `published` must be
+  exact `True` to apply; False unpublished; every non-bool masquerade
+  ("false"/"true"/1/0/None/"1"/2.0/[]/{}) fails closed before mutation
+  across all six event classes (EVENT_NOT_PUBLISHED; GOAL_END keeps
+  GOAL_END_NOT_PUBLISHED). The "false"-terminated-goal reproducer is
+  closed (active goal unchanged).
+- **E — lifecycle schema boundary (P1):** log `claim_generation` exact
+  positive non-bool int in the constructor (`STALE_CLAIM_GENERATION`);
+  CLI `int(...)` coercion removed (true/1.0/"1"/0/-1/None all rc=2, no
+  silent normalization); identity fields `event_id`/`previous_event_id`/
+  `goal_id` exact non-empty strings (`OUT_OF_ORDER_EVENT`) — the
+  GOAL_START(goal_id=None) → invisible-active-goal → second-start chain
+  is impossible; `task_id` exact non-empty string and one log binds one
+  task identity (first applied event binds; mismatch → `WRONG_CLAIM`),
+  derived from the registry's 1:1 claim↔task mapping — the narrow
+  constructor-vs-inference ambiguity required no DECISION_REQUIRED
+  because consistent binding alone satisfies the reviewer's minimum.
+- Reviewer reproducers re-run post-repair: A mutation blocked + hash
+  stable + FORBIDDEN_PATH; B False/True/"false"/"0"/1 exact; C
+  ENFORCING evidence False/"false"/"0"/1 → ENFORCEMENT_NOT_ACTIVE,
+  True → ENFORCING; D GOAL_END("false") rejected with goal still
+  active; E GOAL_START(None) and task_id=123 rejected.
+- Adjacent suites green (workflow runtimes OK; checker PASS 5 files;
+  split_sql all passed; ci_alert 33 passed); py_compile clean;
+  `git diff --check` PASS; live `status` smoke reads the real registry
+  (`7d4e6b52`, BOOTSTRAP_CONTROL, CLAIMED).
+
 ## Stop condition
 
 Implementation owner stops at `REVIEW_REQUESTED`; must not self-merge and must

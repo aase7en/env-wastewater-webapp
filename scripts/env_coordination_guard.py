@@ -38,6 +38,7 @@ import sys
 import threading
 import unicodedata
 from dataclasses import dataclass
+from types import MappingProxyType
 from typing import Any, Iterable, Optional
 
 CURRENT_WORK_PATH = "docs/ai/CURRENT-WORK.md"
@@ -397,6 +398,30 @@ def registry_hash(block: str) -> str:
     return hashlib.sha256(block.encode("utf-8")).hexdigest()
 
 
+def _freeze(value: Any) -> Any:
+    """Recursively convert parsed registry JSON to immutable equivalents.
+
+    dicts become read-only mappings and lists become tuples, so a
+    hash-bound TrustedPolicy cannot have its authorization data (claims,
+    scopes, statuses, holders, shared exceptions, raw registry) mutated
+    after construction while retaining the original registry_hash (R11).
+    """
+    if isinstance(value, dict):
+        return MappingProxyType({k: _freeze(v) for k, v in value.items()})
+    if isinstance(value, list):
+        return tuple(_freeze(v) for v in value)
+    return value
+
+
+def _thaw(value: Any) -> Any:
+    """Inverse of _freeze: plain mutable dict/list tree (re-entry helper)."""
+    if isinstance(value, MappingProxyType):
+        return {k: _thaw(v) for k, v in value.items()}
+    if isinstance(value, tuple):
+        return [_thaw(v) for v in value]
+    return value
+
+
 def _require_str(claim: dict, name: str) -> None:
     value = claim.get(name)
     if not isinstance(value, str) or not value:
@@ -404,16 +429,19 @@ def _require_str(claim: dict, name: str) -> None:
 
 
 def validate_registry(registry: Any) -> dict:
-    """Validate the parsed coordination_registry object; return a deep copy.
+    """Validate the parsed coordination_registry object; return an
+    immutable snapshot (recursively frozen deep copy).
 
     Raises GuardFailure with a specific reason for every malformed,
     duplicated or ambiguous shape. Duplicate claim ids are duplicates; two
     claims on one task, or any mutable-scope overlap between active claims,
-    is an ownership conflict.
+    is an ownership conflict. The returned mapping/list structure is
+    recursively read-only: authorization data bound to a registry_hash
+    cannot drift after validation (R11).
     """
-    if not isinstance(registry, dict):
+    if not isinstance(registry, (dict, MappingProxyType)):
         raise GuardFailure(R.REGISTRY_MALFORMED_JSON, "registry must be an object")
-    registry = copy.deepcopy(registry)
+    registry = copy.deepcopy(_thaw(registry))
 
     version = registry.get("version")
     # exact integer only: Python True == 1, so a bool masquerading as the
@@ -427,7 +455,7 @@ def validate_registry(registry: Any) -> dict:
         raise GuardFailure(R.INVALID_CLAIM_FIELD, "expected_policy_revision must be a string")
 
     raw_claims = registry.get("claims")
-    if not isinstance(raw_claims, list) or not raw_claims:
+    if not isinstance(raw_claims, (list, tuple)) or not raw_claims:
         raise GuardFailure(R.CLAIMS_EMPTY, "claims must be a non-empty list")
 
     seen_claim_ids: set[str] = set()
@@ -504,7 +532,7 @@ def validate_registry(registry: Any) -> dict:
                             f"{a} mutable {expr_a.raw!r} overlaps {b} mutable {expr_b.raw!r}"
                             " without an authorized shared exception",
                         )
-    return registry
+    return _freeze(registry)
 
 
 def _validate_and_index_shared_exceptions(exceptions: Any, claims_by_id: dict) -> dict:
@@ -524,7 +552,7 @@ def _validate_and_index_shared_exceptions(exceptions: Any, claims_by_id: dict) -
     Duplicates are rejected, not treated as idempotent.
     Returns {frozenset({claim_a, claim_b}): {casefold path keys}}.
     """
-    if not isinstance(exceptions, list):
+    if not isinstance(exceptions, (list, tuple)):
         raise GuardFailure(R.INVALID_SHARED_EXCEPTION, "shared_exceptions must be a list")
     authorized: dict[frozenset, set] = {}
     claimed_paths: set[str] = set()
@@ -535,7 +563,7 @@ def _validate_and_index_shared_exceptions(exceptions: Any, claims_by_id: dict) -
             if required not in exc:
                 raise GuardFailure(R.INVALID_SHARED_EXCEPTION, f"missing {required}")
         raw_paths = exc["shared_paths"]
-        if not isinstance(raw_paths, list) or not raw_paths:
+        if not isinstance(raw_paths, (list, tuple)) or not raw_paths:
             raise GuardFailure(R.INVALID_SHARED_EXCEPTION, "shared_paths must be a non-empty list")
         keys: set[str] = set()
         for raw in raw_paths:
@@ -544,7 +572,7 @@ def _validate_and_index_shared_exceptions(exceptions: Any, claims_by_id: dict) -
                 raise GuardFailure(R.INVALID_SHARED_EXCEPTION, f"shared path must be exact: {raw!r}")
             keys.add(expr.key)
         participants = exc["participating_claims"]
-        if not isinstance(participants, list) or len(participants) < 2:
+        if not isinstance(participants, (list, tuple)) or len(participants) < 2:
             raise GuardFailure(R.INVALID_SHARED_EXCEPTION, "at least two participating claims required")
         participant_ids: list[str] = []
         for participant in participants:
@@ -578,7 +606,7 @@ def _validate_and_index_shared_exceptions(exceptions: Any, claims_by_id: dict) -
             )
         order = exc["merge_order"]
         if (
-            not isinstance(order, list)
+            not isinstance(order, (list, tuple))
             or len(order) != len(set(order))
             or sorted(order) != sorted(set(participant_ids))
         ):
@@ -622,7 +650,7 @@ def _validate_and_index_shared_exceptions(exceptions: Any, claims_by_id: dict) -
 
 
 def _parse_scope_list(value: Any, field: str) -> list[ScopeExpr]:
-    if not isinstance(value, list) or not value:
+    if not isinstance(value, (list, tuple)) or not value:
         raise GuardFailure(R.INVALID_CLAIM_FIELD, f"{field} must be a non-empty list")
     return [parse_scope_expr(expr) for expr in value]
 
@@ -755,7 +783,9 @@ def preflight(policy: TrustedPolicy, ctx: dict) -> Decision:
         return _deny(policy, claim, R.WORKTREE_MISMATCH)
     if ctx.get("branch") != claim["branch"]:
         return _deny(policy, claim, R.BRANCH_MISMATCH)
-    if not ctx.get("base_ancestor_of_head", False):
+    # ancestry is a verified boolean fact: only exact True authorizes
+    # (R11) — truthy non-bool values ("false", "0", 1, 1.0) fail closed
+    if ctx.get("base_ancestor_of_head") is not True:
         return _deny(policy, claim, R.BASE_NOT_ANCESTOR)
     return Decision(
         safe_to_mutate=True,
@@ -1096,7 +1126,10 @@ def effective_enforcement_mode(registry_mode: str, server_enforcement_verified: 
     """
     if registry_mode not in ENFORCEMENT_MODES:
         raise GuardFailure(R.INVALID_ENFORCEMENT_MODE, f"{registry_mode!r}")
-    if registry_mode in VERIFIED_MODES and not server_enforcement_verified:
+    # only exact boolean True counts as verified server enforcement
+    # (R11): truthy masquerades ("false", "0", 1) must never report
+    # ENFORCING/HARDENED (§11.6).
+    if registry_mode in VERIFIED_MODES and server_enforcement_verified is not True:
         return ModeDecision(ENFORCEMENT_NOT_ACTIVE, R.SERVER_ENFORCEMENT_UNVERIFIED)
     return ModeDecision(registry_mode, None)
 
@@ -1150,6 +1183,16 @@ class LifecycleLog:
     """
 
     def __init__(self, claim_id: str, claim_generation: int):
+        # the log's generation is an exact positive non-bool integer
+        # (R11): no silent coercion, no bool masquerade of generation 1
+        if (
+            isinstance(claim_generation, bool)
+            or not isinstance(claim_generation, int)
+            or claim_generation < 1
+        ):
+            raise GuardFailure(
+                R.STALE_CLAIM_GENERATION, f"log claim_generation {claim_generation!r}"
+            )
         self.claim_id = claim_id
         self.claim_generation = claim_generation
         self.events: list[LifecycleEvent] = []
@@ -1159,6 +1202,7 @@ class LifecycleLog:
         self._last_goal_end_id: Optional[str] = None
         self._operations: dict[str, dict] = {}
         self.head_event_id: Optional[str] = None
+        self._bound_task_id: Optional[str] = None
 
     # ── state ──
     @property
@@ -1201,6 +1245,27 @@ class LifecycleLog:
             raise GuardFailure(R.STALE_CLAIM_GENERATION, f"claim_generation {event.claim_generation!r}")
         if isinstance(event.event_seq, bool) or not isinstance(event.event_seq, int):
             raise GuardFailure(R.OUT_OF_ORDER_EVENT, f"event_seq {event.event_seq!r}")
+        # identity schema (R11): every lifecycle event carries exact
+        # non-empty string identity; a malformed identity can never be
+        # legally sequenced and must not create invisible state (e.g. a
+        # GOAL_START with goal_id=None would set an invisible active goal)
+        for field_name in ("event_id", "previous_event_id", "goal_id"):
+            value = getattr(event, field_name)
+            if not isinstance(value, str) or not value:
+                raise GuardFailure(
+                    R.OUT_OF_ORDER_EVENT,
+                    f"{field_name} must be a non-empty string: {value!r}",
+                )
+        if not isinstance(event.task_id, str) or not event.task_id:
+            raise GuardFailure(
+                R.WRONG_CLAIM, f"task_id must be a non-empty string: {event.task_id!r}"
+            )
+        # one log = one task (claim_id <-> task is 1:1 in the registry);
+        # the first applied event binds the log's task identity and every
+        # subsequent event must carry the same one
+        bound_task = self._bound_task_id if self._bound_task_id is not None else event.task_id
+        if event.task_id != bound_task:
+            raise GuardFailure(R.WRONG_CLAIM, f"task_id {event.task_id!r} != bound {bound_task!r}")
         if event.claim_id != self.claim_id:
             raise GuardFailure(R.WRONG_CLAIM, f"{event.claim_id} != {self.claim_id}")
         if event.claim_generation != self.claim_generation:
@@ -1216,17 +1281,18 @@ class LifecycleLog:
             raise GuardFailure(R.EVENT_CONFLICT, f"{event.event_id} replayed with different payload")
 
         # §5.2 durable publication: an unpublished event must never mutate
-        # authoritative state or advance the durable head. Rejected before
-        # any mutation, so a later published retry of the same semantic
-        # event applies cleanly. GOAL_END keeps its specialized pinned
-        # reason (WO bullet).
-        if not event.published:
+        # authoritative state or advance the durable head. `published` is
+        # an exact boolean (R11): only True permits application; False is
+        # unpublished and any non-bool masquerade fails closed before any
+        # mutation, so a later published retry of the same semantic event
+        # applies cleanly. GOAL_END keeps its specialized pinned reason.
+        if not isinstance(event.published, bool) or not event.published:
             raise GuardFailure(
                 R.GOAL_END_NOT_PUBLISHED
                 if event.event_type == "GOAL_END"
                 else R.EVENT_NOT_PUBLISHED,
-                f"{event.event_type} requires durable publication before"
-                " entering authoritative state",
+                f"{event.event_type} requires durable publication (exact"
+                f" boolean true); got {event.published!r}",
             )
 
         if self.events and event.event_seq <= self.events[-1].event_seq:
@@ -1357,6 +1423,8 @@ class LifecycleLog:
         self.events.append(event)
         self._by_id[event.event_id] = event
         self.head_event_id = event.event_id
+        if self._bound_task_id is None:
+            self._bound_task_id = event.task_id
         return "applied", event
 
 
@@ -1902,7 +1970,8 @@ def _cmd_scope_check(args) -> int:
 def _cmd_validate_lifecycle(args) -> int:
     with open(args.file, encoding="utf-8") as handle:
         document = json.load(handle)
-    log = LifecycleLog(document["claim_id"], int(document["claim_generation"]))
+    # no silent coercion (R11): the core validates the exact value
+    log = LifecycleLog(document["claim_id"], document["claim_generation"])
     applied = 0
     idempotent = 0
     try:

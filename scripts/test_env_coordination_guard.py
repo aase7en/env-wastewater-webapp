@@ -36,6 +36,7 @@ from env_coordination_guard import (  # noqa: E402
     ADMISSION_UNKNOWN,
     AdmissionGate,
     CURRENT_WORK_PATH,
+    ENFORCEMENT_NOT_ACTIVE,
     Change,
     Decision,
     GuardFailure,
@@ -4242,6 +4243,399 @@ class TestMetamorphicProperties(unittest.TestCase):
                     log.apply(make("g999", 3, "o1"))
                 self.assertEqual(cm.exception.reason, R.OUT_OF_ORDER_EVENT)
             self.assertEqual(len(log.events), 2)
+
+
+class TestTrustedPolicyImmutability(unittest.TestCase):
+    """R11-review P1: the hash-bound trusted policy must be immutable.
+
+    `policy_revision + registry_hash + validated registry content` binds
+    the exact authorization data. A caller must not be able to mutate
+    claims/scopes/exceptions after construction while retaining the
+    original hash. Mutation attempts must be impossible (immutable
+    structures), and authorization must be identical before/after any
+    attempted mutation.
+    """
+
+    def _forbidden_frontend_policy(self):
+        claim = base_claim(
+            mutable_scope=["docs/**"],
+            forbidden_scope=["frontend/**"],
+        )
+        exception = full_shared_exception(
+            shared_paths=["docs/joint.md"],
+            participating_claims=[
+                {"claim_id": "ENV-COORD-002-C1", "claim_generation": 1},
+                {
+                    "claim_id": "ENV-INT-GISTDA-CORE-001-C1",
+                    "claim_generation": 1,
+                },
+            ],
+        )
+        claim_for_b = other_lane_claim(mutable_scope=["reports/gistda/**", "docs/joint.md"])
+        policy = load_policy(
+            [claim, claim_for_b], shared_exceptions=[exception]
+        )
+        return policy
+
+    def _decisions(self, policy):
+        d1 = evaluate_mutation(
+            policy, ok_ctx(), changes=[Change("modify", "frontend/src/app.tsx")]
+        )
+        d2 = evaluate_mutation(
+            policy, ok_ctx(), changes=[Change("modify", "docs/work-orders/ENV-COORD-002.md")]
+        )
+        return (d1.safe_to_mutate, d1.reason, d2.safe_to_mutate, policy.registry_hash)
+
+    def test_direct_scope_mutation_cannot_increase_authorization(self):
+        # reviewer reproducer: mutating claims[0] scopes in memory must
+        # not flip FORBIDDEN_PATH to safe while the hash stays constant
+        policy = self._forbidden_frontend_policy()
+        before = self._decisions(policy)
+        self.assertEqual(before[0], False)
+        self.assertEqual(before[1], R.FORBIDDEN_PATH)
+        with self.assertRaises((TypeError, AttributeError)):
+            policy.claims[0]["mutable_scope"] = ["frontend/**"]
+        with self.assertRaises((TypeError, AttributeError)):
+            policy.claims[0]["forbidden_scope"] = []
+        self.assertEqual(self._decisions(policy), before)
+
+    def test_nested_scope_list_mutation_impossible(self):
+        policy = self._forbidden_frontend_policy()
+        with self.assertRaises((TypeError, AttributeError)):
+            policy.claims[0]["forbidden_scope"].append("docs/**")
+        with self.assertRaises((TypeError, AttributeError)):
+            policy.claims[0]["mutable_scope"].append("frontend/**")
+        self.assertEqual(self._decisions(policy)[0], False)
+
+    def test_status_holder_generation_mutation_impossible(self):
+        policy = self._forbidden_frontend_policy()
+        for field, value in (
+            ("status", "CLOSED"),
+            ("execution_holder_id", "attacker"),
+            ("claim_generation", 99),
+            ("task_id", "ENV-EVIL"),
+            ("branch", "feat/evil"),
+            ("worktree", "A:/evil"),
+        ):
+            with self.subTest(field=field):
+                with self.assertRaises((TypeError, AttributeError)):
+                    policy.claims[0][field] = value
+        # preflight still binds to the original holder/generation
+        self.assertTrue(preflight(policy, ok_ctx()).safe_to_mutate)
+        self.assertFalse(
+            preflight(policy, ok_ctx(execution_holder_id="attacker")).safe_to_mutate
+        )
+
+    def test_raw_registry_and_shared_exception_mutation_impossible(self):
+        policy = self._forbidden_frontend_policy()
+        with self.assertRaises((TypeError, AttributeError)):
+            policy.raw_registry["claims"][0]["mutable_scope"] = ["frontend/**"]
+        with self.assertRaises((TypeError, AttributeError)):
+            policy.raw_registry["enforcement_mode"] = "ENFORCING"
+        exc = policy.shared_exceptions[0]
+        for field, value in (
+            ("integration_owner_claim_id", "ENV-COORD-002-C1"),
+            ("merge_order", ["ENV-COORD-002-C1"]),
+            ("release_condition", "never"),
+        ):
+            with self.subTest(field=field):
+                with self.assertRaises((TypeError, AttributeError)):
+                    exc[field] = value
+        with self.assertRaises((TypeError, AttributeError)):
+            exc["participating_claims"][0]["claim_id"] = "ENV-EVIL"
+        with self.assertRaises((TypeError, AttributeError)):
+            exc["shared_paths"].append("frontend/**")
+
+    def test_claim_lookup_returns_read_only_record(self):
+        policy = self._forbidden_frontend_policy()
+        claim = policy.claim_by_task("ENV-COORD-002")
+        with self.assertRaises((TypeError, AttributeError)):
+            claim["status"] = "CLAIMED"
+        by_id = policy.claim_by_id("ENV-COORD-002-C1")
+        with self.assertRaises((TypeError, AttributeError)):
+            by_id["mutable_scope"] = ["frontend/**"]
+        self.assertEqual(self._decisions(policy)[0], False)
+
+
+class TestBooleanEvidenceFencing(unittest.TestCase):
+    """R11-review P1 x2: boolean evidence fields authorize only exact
+    True — truthy non-bool values ("false", "0", 1, 1.0, "true", [], {})
+    must fail closed, never grant ancestry or enforcement.
+    """
+
+    def test_base_ancestry_requires_exact_true(self):
+        policy = load_policy([base_claim(forbidden_scope=["frontend/**"])])
+        self.assertTrue(preflight(policy, ok_ctx(base_ancestor_of_head=True)).safe_to_mutate)
+        for bad in (False, None, 0, 1, -1, 1.0, 0.0, "true", "false", "0", "1", [], {}, ()):
+            with self.subTest(value=bad):
+                d = preflight(policy, ok_ctx(base_ancestor_of_head=bad))
+                self.assertFalse(d.safe_to_mutate)
+                self.assertEqual(d.reason, R.BASE_NOT_ANCESTOR)
+
+    def test_transferred_activation_inherits_exact_bool_ancestry(self):
+        barrier = TransferBarrier(
+            claim_id="ENV-COORD-002-C1", claim_generation=1, holder_id="holder-A"
+        )
+        barrier.begin_quiesce()
+        barrier.holder_publish("holder-A", "att-1", latest_event_id="e9")
+        barrier.complete_transfer(new_holder_id="holder-B")
+        g2_policy = load_policy(
+            [base_claim(claim_generation=2, execution_holder_id="holder-B")]
+        )
+        ctx = ok_ctx(claim_generation=2, execution_holder_id="holder-B")
+        with self.assertRaises(GuardFailure) as cm:
+            barrier.activate_transferred_claim(g2_policy, {**ctx, "base_ancestor_of_head": "true"})
+        self.assertEqual(cm.exception.reason, R.BASE_NOT_ANCESTOR)
+        self.assertEqual(barrier.state, "AWAITING_AUTHORIZATION")
+        self.assertEqual(barrier.runtime.gate.state, "CLOSED")
+        activated = barrier.activate_transferred_claim(
+            g2_policy, {**ctx, "base_ancestor_of_head": True}
+        )
+        self.assertTrue(activated.safe_to_mutate)
+        self.assertEqual(barrier.runtime.gate.state, "OPEN")
+
+    def test_enforcement_verification_requires_exact_true(self):
+        for mode in ("ENFORCING", "HARDENED"):
+            for evidence in (False, None, 0, 1, -1, 1.0, "true", "false", "0", "1", [], {}, ()):
+                with self.subTest(mode=mode, evidence=evidence):
+                    mode_decision = effective_enforcement_mode(mode, evidence)
+                    self.assertEqual(mode_decision.mode, ENFORCEMENT_NOT_ACTIVE)
+                    self.assertEqual(mode_decision.reason, R.SERVER_ENFORCEMENT_UNVERIFIED)
+            ok = effective_enforcement_mode(mode, True)
+            self.assertEqual(ok.mode, mode)
+            self.assertIsNone(ok.reason)
+
+    def test_unverified_modes_unaffected_by_evidence_type(self):
+        for mode in ("BOOTSTRAP_CONTROL", "SHADOW"):
+            for evidence in (False, "false", 0, 1, None, "anything"):
+                with self.subTest(mode=mode, evidence=evidence):
+                    mode_decision = effective_enforcement_mode(mode, evidence)
+                    self.assertEqual(mode_decision.mode, mode)
+                    self.assertIsNone(mode_decision.reason)
+
+
+class TestPublicationFlagFencing(unittest.TestCase):
+    """R11-review P1: `published` must be an exact bool. Only True
+    permits authoritative application; False means unpublished; any
+    non-bool fails closed before state mutation (GOAL_END keeps its
+    pinned reason)."""
+
+    def _cases(self):
+        # (label, factory(published) -> event, goal under which it applies)
+        def start(p):
+            return goal_start(published=p)
+
+        def checkpoint(p):
+            return LifecycleEvent(
+                task_id="ENV-COORD-002", claim_id="ENV-COORD-002-C1",
+                claim_generation=1, goal_id="g1", event_type="CHECKPOINT",
+                event_seq=2, event_id="c1", previous_event_id="e1",
+                published=p,
+            )
+
+        def intent(p):
+            return op_intent(published=p)
+
+        def outcome(p):
+            return op_outcome(outcome="SUCCEEDED", published=p)
+
+        def reconciled(p):
+            return op_reconciled(published=p)
+
+        def end(p):
+            return goal_end(published=p)
+
+        return [
+            ("GOAL_START", start, goal_start),
+            ("CHECKPOINT", checkpoint, goal_start),
+            ("OPERATION_INTENT", intent, goal_start),
+            ("OPERATION_OUTCOME", outcome, lambda: None),
+            ("OPERATION_RECONCILED", reconciled, lambda: None),
+            ("GOAL_END", end, goal_start),
+        ]
+
+    def _log_ready_for(self, event_type):
+        log = LifecycleLog("ENV-COORD-002-C1", 1)
+        log.apply(goal_start())           # e1 / g1 active
+        log.apply(op_intent())            # o1 / op-1
+        log.apply(op_outcome())           # o2 UNKNOWN
+        if event_type == "OPERATION_RECONCILED":
+            log.apply(goal_end(seq=4, event_id="e2", prev="o2", result="PARTIAL"))
+            log.apply(goal_start(seq=5, event_id="e3", prev="e2", goal="g2"))
+        return log
+
+    def test_non_bool_published_rejected_for_every_event_type(self):
+        for label, factory, _setup in self._cases():
+            for bad in ("false", "true", 1, 0, None, "1", 2.0, [], {}):
+                log = self._log_ready_for(label)
+                seq = len(log.events) + 1
+                prev = log.head_event_id
+                event = factory(bad)
+                # fresh identity so the duplicate-id check never masks the
+                # publication gate
+                event = dataclasses.replace(
+                    event,
+                    event_id=f"pub-{label}",
+                    event_seq=seq,
+                    previous_event_id=prev,
+                )
+                with self.subTest(event=label, published=bad):
+                    with self.assertRaises(GuardFailure) as cm:
+                        log.apply(event)
+                    expected = R.GOAL_END_NOT_PUBLISHED if label == "GOAL_END" else R.EVENT_NOT_PUBLISHED
+                    self.assertEqual(cm.exception.reason, expected)
+                # authoritative state unchanged
+                self.assertEqual(len(log.events), 5 if label == "OPERATION_RECONCILED" else 3)
+
+    def test_published_true_still_applies_everywhere(self):
+        # positive control per event type on a log state where that
+        # semantic event is genuinely applicable, with unique ids
+        log_start = LifecycleLog("ENV-COORD-002-C1", 1)
+        self.assertEqual(log_start.apply(goal_start(published=True))[0], "applied")
+
+        log_ck = LifecycleLog("ENV-COORD-002-C1", 1)
+        log_ck.apply(goal_start())
+        ck = LifecycleEvent(
+            task_id="ENV-COORD-002", claim_id="ENV-COORD-002-C1",
+            claim_generation=1, goal_id="g1", event_type="CHECKPOINT",
+            event_seq=2, event_id="c1", previous_event_id="e1", published=True,
+        )
+        self.assertEqual(log_ck.apply(ck)[0], "applied")
+
+        log_in = LifecycleLog("ENV-COORD-002-C1", 1)
+        log_in.apply(goal_start())
+        self.assertEqual(log_in.apply(op_intent(published=True))[0], "applied")
+
+        log_out = LifecycleLog("ENV-COORD-002-C1", 1)
+        log_out.apply(goal_start())
+        log_out.apply(op_intent())
+        self.assertEqual(
+            log_out.apply(op_outcome(outcome="SUCCEEDED", published=True))[0], "applied"
+        )
+
+        log_rec = self._log_ready_for("OPERATION_RECONCILED")
+        self.assertEqual(
+            log_rec.apply(op_reconciled(seq=6, event_id="o3", prev="e3", goal="g2", published=True))[0],
+            "applied",
+        )
+
+        log_end = LifecycleLog("ENV-COORD-002-C1", 1)
+        log_end.apply(goal_start())
+        self.assertEqual(log_end.apply(goal_end(published=True))[0], "applied")
+
+
+class TestLifecycleSchemaBoundary(unittest.TestCase):
+    """R11-review P1: lifecycle identity/schema boundary.
+
+    One LifecycleLog represents one task/claim generation; identity
+    fields are exact non-empty strings; the log's claim_generation is an
+    exact positive non-bool integer; malformed events fail closed before
+    any mutation (no invisible active goals, no None head, no CLI
+    coercion).
+    """
+
+    def test_log_generation_rejects_malformed_values(self):
+        for bad in (True, False, 1.0, "1", 0, -1, None):
+            with self.subTest(generation=bad):
+                with self.assertRaises(GuardFailure) as cm:
+                    LifecycleLog("ENV-COORD-002-C1", bad)
+                self.assertEqual(cm.exception.reason, R.STALE_CLAIM_GENERATION)
+
+    def test_cli_no_longer_coerces_generation(self):
+        for bad in (True, 1.0, "1", 0, -1, None):
+            with self.subTest(generation=bad):
+                document = {
+                    "claim_id": "ENV-COORD-002-C1",
+                    "claim_generation": bad,
+                    "events": [],
+                }
+                with tempfile.NamedTemporaryFile(
+                    "w", suffix=".json", delete=False, encoding="utf-8"
+                ) as f:
+                    json.dump(document, f)
+                    path = f.name
+                try:
+                    proc = self_run_cli_validate(path)
+                    self.assertEqual(proc.returncode, 2, proc.stderr)
+                    self.assertEqual(
+                        json.loads(proc.stdout)["reason"], R.STALE_CLAIM_GENERATION
+                    )
+                finally:
+                    os.unlink(path)
+
+    def test_goal_start_none_goal_id_rejected_no_invisible_goal(self):
+        log = LifecycleLog("ENV-COORD-002-C1", 1)
+        with self.assertRaises(GuardFailure) as cm:
+            log.apply(dataclasses.replace(goal_start(), goal_id=None))
+        self.assertEqual(cm.exception.reason, R.OUT_OF_ORDER_EVENT)
+        self.assertIsNone(log.head_event_id)
+        self.assertIsNone(log.active_goal_id)
+        # the previously-reproduced "invisible goal then second start"
+        # chain is impossible: nothing was applied, and the log still
+        # starts cleanly with a well-formed GENESIS goal
+        self.assertEqual(log.events, [])
+        status, _ = log.apply(goal_start())
+        self.assertEqual(status, "applied")
+        self.assertEqual(log.active_goal_id, "g1")
+
+    def test_goal_start_empty_goal_id_rejected(self):
+        log = LifecycleLog("ENV-COORD-002-C1", 1)
+        with self.assertRaises(GuardFailure) as cm:
+            log.apply(dataclasses.replace(goal_start(), goal_id=""))
+        self.assertEqual(cm.exception.reason, R.OUT_OF_ORDER_EVENT)
+        self.assertEqual(log.events, [])
+
+    def test_identity_fields_must_be_non_empty_strings(self):
+        cases = [
+            ("event_id=None", dataclasses.replace(goal_start(), event_id=None)),
+            ("event_id=''", dataclasses.replace(goal_start(), event_id="")),
+            ("previous=None", dataclasses.replace(goal_start(), previous_event_id=None)),
+            ("previous=''", dataclasses.replace(goal_start(), previous_event_id="")),
+            ("task_id=None", dataclasses.replace(goal_start(), task_id=None)),
+            ("task_id=123", dataclasses.replace(goal_start(), task_id=123)),
+            ("task_id=''", dataclasses.replace(goal_start(), task_id="")),
+            ("claim_id=None", dataclasses.replace(goal_start(), claim_id=None)),
+        ]
+        for label, event in cases:
+            log = LifecycleLog("ENV-COORD-002-C1", 1)
+            with self.subTest(case=label):
+                with self.assertRaises(GuardFailure):
+                    log.apply(event)
+                self.assertEqual(log.events, [])
+                self.assertIsNone(log.head_event_id)
+
+    def test_task_identity_consistently_bound_to_the_log(self):
+        # smallest authoritative model: claim_id <-> task is 1:1 in the
+        # registry, so one log binds one task and every event must carry
+        # that same task identity.
+        log = LifecycleLog("ENV-COORD-002-C1", 1)
+        log.apply(goal_start())  # binds ENV-COORD-002
+        with self.assertRaises(GuardFailure) as cm:
+            log.apply(dataclasses.replace(op_intent(), task_id="TASK-B"))
+        self.assertEqual(cm.exception.reason, R.WRONG_CLAIM)
+        self.assertEqual(log.head_event_id, "e1")
+        with self.assertRaises(GuardFailure) as cm2:
+            log.apply(
+                LifecycleEvent(
+                    task_id="TASK-B", claim_id="ENV-COORD-002-C1",
+                    claim_generation=1, goal_id="g1", event_type="CHECKPOINT",
+                    event_seq=2, event_id="c1", previous_event_id="o1",
+                )
+            )
+        self.assertEqual(cm2.exception.reason, R.WRONG_CLAIM)
+        # matching task identity continues to apply (head is still e1)
+        log.apply(op_intent(seq=2, event_id="o1", prev="e1"))
+        status, _ = log.apply(op_outcome(seq=3, event_id="o2", prev="o1", outcome="SUCCEEDED"))
+        self.assertEqual(status, "applied")
+
+
+def self_run_cli_validate(path):
+    return subprocess.run(
+        [sys.executable, GUARD, "validate-lifecycle", "--file", path],
+        capture_output=True,
+        text=True,
+        env={**os.environ, "PYTHONIOENCODING": "utf-8"},
+    )
 
 
 if __name__ == "__main__":
