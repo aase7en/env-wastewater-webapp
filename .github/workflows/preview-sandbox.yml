@@ -31,7 +31,7 @@ jobs:
         env:
           PREVIEW_SHA: ${{ github.event.pull_request.head.sha || github.sha }}
           PREVIEW_BRANCH: ${{ github.head_ref || github.ref_name }}
-      - uses: actions/upload-artifact@v4
+      - uses: actions/upload-artifact@v7
         with:
           name: env-sandbox-${{ github.event.pull_request.head.sha || github.sha }}
           path: dist
