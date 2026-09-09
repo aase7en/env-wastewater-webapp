@@ -825,6 +825,91 @@ same claim/generation/holder; four-path scope.
   `git diff --check` PASS; live `status` smoke reads the real registry
   (`7d4e6b52`, BOOTSTRAP_CONTROL, CLAIMED).
 
+### FINAL LONG-RUN HARDENING CAMPAIGN (Prompts 1–10) / 2026-09-09
+
+Campaign: ENV-COORD-002 R11+ long-run hardening (10-prompt campaign).
+Start SHA (before Prompt 1): `11c910bf15fa7a94c446a919d269df4a24f3b253`.
+Checkpoint SHAs: Prompt 1 (R11 five blockers) → `3ac65d6235430b1e8c5
+59 84c1791fd197a75c85c`; Prompts 2–9 fixes + Prompt 10 packet → the
+final freeze commit (the remote PR #84 head after this push). Base:
+`origin/main@7d4e6b52c616ff15f86e399a085ef16477d38ef8`. Claim
+`ENV-COORD-002-C1` gen 1 holder `zcode-env-coord-002-g1-primary`.
+
+**Prompt 1 — R11 blockers (all closed, see R11 section above):**
+TrustedPolicy deep immutability; base-ancestry exact-bool; enforcement
+verification exact-bool; lifecycle publication exact-bool; lifecycle
+schema boundary (log generation, identity fields, task binding, CLI
+de-coercion).
+
+**Prompt 2 — policy/evidence-binding deep audit (audited clean; pinned):**
+all 13 obtainable mutation surfaces blocked; `claims`/`raw_registry`
+intentionally alias ONE immutable mapping (aliasing cannot create
+authorization/evidence drift under full immutability); deepcopy of
+policy interiors is isolated; Decisions frozen and hash-stable;
+policy_revision type boundaries (None/""/123/[]/{}) →
+INVALID_CLAIM_FIELD; frozen revision/text pair consistent. Durable
+regressions: `TestPolicyEvidenceBinding` (5 tests).
+
+**Prompt 3 — lifecycle schema/state-machine (one repair):**
+`OPERATION_INTENT` with None/empty/non-str `operation_id` was accepted —
+unidentifiable operations could be journaled (§5.5 stable identity).
+Repair: exact non-empty-string operation_id (`OUT_OF_ORDER_EVENT`)
+before registration. Also pinned: sequence gaps are legal monotonic
+progress (dup/lower still rejected); post-terminal
+CHECKPOINT/INTENT/OUTCOME/RECONCILED/second-GOAL-END all rejected with
+snapshot-verified atomicity. New tests in `TestLifecycleSchemaBoundary`.
+
+**Prompt 4 — boolean/coercion sweep (audited clean; no repair):**
+zero remaining `int()` coercion sites; every exact-bool field from
+R10/R11 holds; `unresolved_external_operations` and `child_alive`
+masquerades are directionally fail-closed — the dangerous direction
+("false" string clearing uncertainty or unblocking a child) cannot
+occur; truthy masquerades conservatively block. Evidence tables in the
+lane handoff.
+
+**Prompt 5 — exception atomicity/stale handles (audited clean):**
+representative rejection classes leave authoritative state unchanged
+(snapshot-verified in suite); the one authorized fail-side mutation
+(current-holder contrary quiescence demoting stale TRANSFER_READY
+before EVENT_CONFLICT) is explicitly tested. Stale-handle audit: after
+transfer+activation the old `HolderRuntime` remains CLOSED (admission
+rejected); a caller may poke the stale object's gate attribute but the
+stale runtime is detached from the barrier — no authorization path
+consumes it (documented limitation, not a bypass).
+
+**Prompt 6 — paths/scope/symlink/shared-owner (audited clean):**
+shared-owner single-writer, non-owner denial, and owner link-crossing
+into the exact shared path verified correct under the R11 frozen-policy
+structures; no Windows semantics broadened.
+
+**Prompt 7 — concurrency/transfer/quiescence (audited clean):**
+deterministic races (double transfer, admit-vs-close ×200, 8-admitter
+sweep, publication boundary probe, mixed activation race) all green;
+concurrency class stress ×3 plus R10's four switch-interval sweep.
+
+**Prompt 8 — aliasing/encapsulation (one repair, P2):**
+`LifecycleEvent` is frozen but its `payload` dict was shared with the
+caller — post-apply mutation through that reference rewrote durable
+evidence and permanently changed replay/conflict semantics (deterministic
+reproducer: stored payload became "MUTATED-AFTER-APPLY"; the ORIGINAL
+semantic payload then conflicted). Repair: `LifecycleLog.apply` stores a
+`copy.deepcopy` of the event after every validation and before any
+mutation — durable records are detached from caller references;
+operation-record intents are detached too. Regressions:
+`TestDurableEventIsolation` (3 tests). `operation_record()` returns a
+fresh dict (verified); attestation storage is not caller-accessible;
+`Decision`/`TransitionValidation`/`ScopeExpr`/`ModeDecision` frozen-safe.
+
+**Prompt 9 — defect history + test quality (audited clean):** every
+material R1–R11 defect maps to at least one executable regression
+(mapping recorded in the lane handoff); classes run individually and in
+suite with identical results (no order/isolation dependence); repeated
+runs stable.
+
+**Prompt 10 — final freeze:** this packet; final verification battery
+recorded in the lane handoff R11+ section; final SHA = the remote PR
+#84 head after this push.
+
 ## Stop condition
 
 Implementation owner stops at `REVIEW_REQUESTED`; must not self-merge and must

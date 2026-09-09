@@ -16,6 +16,7 @@ or via pytest. Both must stay equivalent.
 """
 from __future__ import annotations
 
+import copy
 import dataclasses
 import json
 import os
@@ -4604,6 +4605,65 @@ class TestLifecycleSchemaBoundary(unittest.TestCase):
                 self.assertEqual(log.events, [])
                 self.assertIsNone(log.head_event_id)
 
+    def test_operation_intent_requires_non_empty_string_operation_id(self):
+        # §5.5: operations have stable identity — a None/empty operation_id
+        # must not register an unidentifiable operation
+        for bad in (None, "", 7, ["op"]):
+            log = LifecycleLog("ENV-COORD-002-C1", 1)
+            log.apply(goal_start())
+            with self.subTest(operation_id=bad):
+                with self.assertRaises(GuardFailure) as cm:
+                    log.apply(dataclasses.replace(op_intent(), operation_id=bad))
+                self.assertEqual(cm.exception.reason, R.OUT_OF_ORDER_EVENT)
+                self.assertEqual(len(log.events), 1)
+                self.assertEqual(log._operations, {})
+
+    def test_event_sequence_gaps_are_legal_monotonic_progress(self):
+        # §5.3 requires strictly increasing sequences; gaps are legal and
+        # must not be rejected
+        log = LifecycleLog("ENV-COORD-002-C1", 1)
+        log.apply(goal_start())
+        status, _ = log.apply(op_intent(seq=5, event_id="o1", prev="e1"))
+        self.assertEqual(status, "applied")
+        with self.assertRaises(GuardFailure) as cm:
+            log.apply(op_intent(seq=5, event_id="o2", prev="o1"))
+        self.assertEqual(cm.exception.reason, R.OUT_OF_ORDER_EVENT)
+        with self.assertRaises(GuardFailure) as cm2:
+            log.apply(op_intent(seq=4, event_id="o3", prev="o1"))
+        self.assertEqual(cm2.exception.reason, R.OUT_OF_ORDER_EVENT)
+
+    def test_post_terminal_events_rejected_atomically(self):
+        # snapshot sweep: after a terminal GOAL_END, scoped events are
+        # rejected before any authoritative mutation
+        def snapshot(log):
+            return (len(log.events), dict(log._by_id), log.head_event_id,
+                    log._active_goal, set(log._terminated_goals),
+                    log._last_goal_end_id,
+                    {k: dict(v) for k, v in log._operations.items()})
+
+        log = LifecycleLog("ENV-COORD-002-C1", 1)
+        log.apply(goal_start())
+        log.apply(op_intent())
+        log.apply(op_outcome())
+        log.apply(goal_end(seq=4, event_id="e2", prev="o2", result="PARTIAL"))
+        before = snapshot(log)
+        post_terminal = [
+            LifecycleEvent(
+                task_id="ENV-COORD-002", claim_id="ENV-COORD-002-C1",
+                claim_generation=1, goal_id="g1", event_type="CHECKPOINT",
+                event_seq=5, event_id="c9", previous_event_id="e2",
+            ),
+            op_intent(seq=5, event_id="o9", prev="e2"),
+            op_outcome(seq=5, event_id="o8", prev="e2", outcome="SUCCEEDED"),
+            op_reconciled(seq=5, event_id="o7", prev="e2"),
+            goal_end(seq=5, event_id="e9", prev="e2"),
+        ]
+        for event in post_terminal:
+            with self.subTest(event=event.event_type):
+                with self.assertRaises(GuardFailure):
+                    log.apply(event)
+                self.assertEqual(snapshot(log), before)
+
     def test_task_identity_consistently_bound_to_the_log(self):
         # smallest authoritative model: claim_id <-> task is 1:1 in the
         # registry, so one log binds one task and every event must carry
@@ -4627,6 +4687,123 @@ class TestLifecycleSchemaBoundary(unittest.TestCase):
         log.apply(op_intent(seq=2, event_id="o1", prev="e1"))
         status, _ = log.apply(op_outcome(seq=3, event_id="o2", prev="o1", outcome="SUCCEEDED"))
         self.assertEqual(status, "applied")
+
+
+class TestPolicyEvidenceBinding(unittest.TestCase):
+    """R11 Prompt-2 campaign: the trusted authorization snapshot is
+    logically stable for its lifetime — every obtainable reference is
+    immutable, aliasing cannot create authorization/evidence drift, and
+    decisions stay frozen and hash-bound.
+    """
+
+    def _policy_with_exception(self):
+        claim_a, claim_b = sharing_claims()
+        return load_policy([claim_a, claim_b], shared_exceptions=[full_shared_exception()])
+
+    def test_every_obtainable_reference_is_immutable(self):
+        policy = self._policy_with_exception()
+        surfaces = [
+            ("claims[0]", lambda: policy.claims[0].__setitem__("status", "CLOSED")),
+            ("claims[0] scope", lambda: policy.claims[0]["mutable_scope"].append("x")),
+            ("by_task", lambda: policy.claim_by_task("ENV-COORD-002").__setitem__("status", "CLOSED")),
+            ("by_id holder", lambda: policy.claim_by_id("ENV-COORD-002-C1").__setitem__(
+                "execution_holder_id", "evil")),
+            ("by_id generation", lambda: policy.claim_by_id("ENV-COORD-002-C1").__setitem__(
+                "claim_generation", 99)),
+            ("raw claims", lambda: policy.raw_registry["claims"][0].__setitem__("status", "CLOSED")),
+            ("exc owner", lambda: policy.shared_exceptions[0].__setitem__(
+                "integration_owner_claim_id", "ENV-COORD-002-C1")),
+            ("exc participants", lambda: policy.shared_exceptions[0]["participating_claims"][
+                0].__setitem__("claim_generation", 7)),
+            ("frozen attr", lambda: setattr(policy, "registry_hash", "evil")),
+        ]
+        for label, attack in surfaces:
+            with self.subTest(surface=label):
+                with self.assertRaises((TypeError, AttributeError)):
+                    attack()
+
+    def test_aliased_authorization_and_raw_evidence_cannot_drift(self):
+        # claims and raw_registry intentionally alias the SAME immutable
+        # mapping: with full immutability, aliasing cannot create a
+        # semantic contradiction between authorization data and evidence.
+        policy = self._policy_with_exception()
+        self.assertIs(policy.claims[0], policy.raw_registry["claims"][0])
+        d = preflight(policy, ok_ctx())
+        self.assertTrue(d.safe_to_mutate)
+        self.assertEqual(d.registry_hash, policy.registry_hash)
+
+    def test_deepcopy_isolation(self):
+        policy = self._policy_with_exception()
+        cloned = copy.deepcopy(dict(policy.claims[0]))
+        cloned["status"] = "CLOSED"
+        cloned["mutable_scope"] = ["frontend/**"]
+        self.assertEqual(
+            policy.claim_by_id("ENV-COORD-002-C1")["status"], "CLAIMED"
+        )
+        d = evaluate_mutation(
+            policy, ok_ctx(), changes=[Change("modify", "frontend/src/app.tsx")]
+        )
+        self.assertFalse(d.safe_to_mutate)
+
+    def test_decisions_are_frozen_hash_bound_evidence(self):
+        policy = self._policy_with_exception()
+        d = preflight(policy, ok_ctx())
+        with self.assertRaises((TypeError, AttributeError)):
+            d.safe_to_mutate = False
+        again = preflight(policy, ok_ctx())
+        self.assertEqual((d.safe_to_mutate, d.registry_hash),
+                         (again.safe_to_mutate, again.registry_hash))
+
+    def test_policy_revision_type_boundaries(self):
+        for bad in (None, "", 123, [], {}, 1.0, True):
+            with self.subTest(revision=bad):
+                with self.assertRaises(GuardFailure) as cm:
+                    load_trusted_policy(make_registry_text([base_claim()]), bad)
+                self.assertEqual(cm.exception.reason, R.INVALID_CLAIM_FIELD)
+
+
+class TestDurableEventIsolation(unittest.TestCase):
+    """R11 Prompt-8: durable lifecycle events must be detached from
+    caller-owned mutable references. A frozen dataclass holding a mutable
+    payload dict is not durable evidence — post-apply mutation through
+    the caller's reference must not alter the stored record or its
+    replay/conflict semantics.
+    """
+
+    def test_stored_payload_detached_from_caller_reference(self):
+        log = LifecycleLog("ENV-COORD-002-C1", 1)
+        event = dataclasses.replace(goal_start(), payload={"objective": "original"})
+        log.apply(event)
+        event.payload["objective"] = "MUTATED-AFTER-APPLY"
+        self.assertEqual(log.events[0].payload["objective"], "original")
+        self.assertEqual(log._by_id["e1"].payload["objective"], "original")
+
+    def test_replay_semantics_follow_original_semantic_payload(self):
+        log = LifecycleLog("ENV-COORD-002-C1", 1)
+        event = dataclasses.replace(goal_start(), payload={"objective": "original"})
+        log.apply(event)
+        event.payload["objective"] = "MUTATED-AFTER-APPLY"
+        # the ORIGINAL semantic payload still replays idempotently
+        original_retry = dataclasses.replace(
+            goal_start(), payload={"objective": "original"}
+        )
+        status, _ = log.apply(original_retry)
+        self.assertEqual(status, "idempotent_noop")
+        # a genuinely different payload still conflicts
+        with self.assertRaises(GuardFailure) as cm:
+            log.apply(dataclasses.replace(goal_start(), payload={"objective": "other"}))
+        self.assertEqual(cm.exception.reason, R.EVENT_CONFLICT)
+
+    def test_operation_record_intent_detached_too(self):
+        log = LifecycleLog("ENV-COORD-002-C1", 1)
+        log.apply(goal_start())
+        event = dataclasses.replace(op_intent(), payload={"target": "db"})
+        log.apply(event)
+        event.payload["target"] = "MUTATED"
+        log.apply(op_outcome(outcome="SUCCEEDED"))
+        record = log.operation_record("op-1")
+        self.assertEqual(log.events[1].payload["target"], "db")
+        self.assertFalse(log.has_unresolved_external_operations)
 
 
 def self_run_cli_validate(path):

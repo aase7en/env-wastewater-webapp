@@ -833,3 +833,59 @@ Stop at `REVIEW_REQUESTED`. Do not merge.
 - **Exactly ONE next safe action:** continue the campaign — Prompt 2/10
   (trusted-policy immutability + evidence-binding deep audit) in this
   same lane.
+
+## Result — FINAL LONG-RUN HARDENING CAMPAIGN (Prompts 1–10) / 2026-09-09
+
+- **Start SHA (before Prompt 1):**
+  `11c910bf15fa7a94c446a919d269df4a24f3b253`.
+- **Checkpoint SHAs:** Prompt 1 (R11 blockers A–E) →
+  `3ac65d6235430b1e8c55984c1791fd197a75c85c` (pushed, CI green);
+  Prompts 2–9 fixes + Prompt 10 packet → the final freeze commit (=
+  remote PR #84 head after the final push).
+- **Base:** `origin/main@7d4e6b52c616ff15f86e399a085ef16477d38ef8`.
+  **PR:** #84 (OPEN, unmerged). **Claim:** `ENV-COORD-002-C1`,
+  generation 1, holder `zcode-env-coord-002-g1-primary`, four-path
+  scope only, `.serena/` untouched throughout.
+- **Defects found + fixed in this campaign (all RED → minimal repair →
+  GREEN):**
+  | # | Severity | Defect | Repair | Regression |
+  |---|----------|--------|--------|------------|
+  | R11-A | P1 | TrustedPolicy post-construction mutation increased authorization under unchanged hash | recursive `_freeze` (MappingProxyType/tuple) + `_thaw` re-entry + tuple-tolerant checks | TestTrustedPolicyImmutability (5) |
+  | R11-B | P1 | `base_ancestor_of_head` truthiness granted mutation on "false"/"0"/1 | exact-`True` fence in preflight | TestBooleanEvidenceFencing |
+  | R11-C | P1 | enforcement verification truthiness reported ENFORCING on masquerades | exact-`True` fence | TestBooleanEvidenceFencing |
+  | R11-D | P1 | `published="false"/1` terminated goals as durably published | exact-bool publication gate, all 6 event classes | TestPublicationFlagFencing |
+  | R11-E | P1 | lifecycle identity schema holes (goal_id=None invisible goal, event_id empty, task unbound, CLI int() coercion) | schema boundary in `apply` + constructor + CLI de-coercion + one-log-one-task binding | TestLifecycleSchemaBoundary |
+  | P3 | P2 | OPERATION_INTENT accepted None/empty/non-str operation_id | exact non-empty-string operation_id | TestLifecycleSchemaBoundary |
+  | P8 | P2 | durable lifecycle events editable via caller-held payload dict (rewrote evidence + replay semantics) | deepcopy-on-store after validation, before mutation | TestDurableEventIsolation |
+  | R10-recap | — | six earlier repairs (version bool, lifecycle types, unhashable participant, CLI traceback, preflight/control-transition generation masquerades) | present + passing | R10 classes |
+- **Audited clean (no repair; evidence above):** Prompt 2 policy/
+  evidence binding (13 surfaces, aliasing-safe, decisions frozen,
+  revision boundaries); Prompt 3 lifecycle transition matrix (seq gaps
+  legal, post-terminal atomicity, replay matrix); Prompt 4 boolean/
+  coercion sweep (directional fail-closed for uncertainty/child flags,
+  zero int() coercions left); Prompt 5 atomicity + stale handles (old
+  runtime inert after transfer); Prompt 6 shared-owner/link parity
+  under frozen policy; Prompt 7 deterministic races + stress.
+- **Final verification (exact counts):** standalone suite **294 tests
+  OK** ×3 consecutive; pytest **294 passed + 242 subtests**; concurrency
+  stress ×3 OK + R10 switch-interval sweep; classes individually OK
+  (isolation); adjacent suites: workflow runtimes OK, checker PASS
+  (5 files), split_sql all passed, ci_alert_payload 33 passed;
+  py_compile clean; `git diff --check` PASS; changed paths = exactly
+  the four authorized files; live `status` smoke reads the real
+  registry (`7d4e6b52` / BOOTSTRAP_CONTROL / CLAIMED).
+- **Known limitations:** stale detached runtime objects can be mutated
+  by in-process callers but no authorization path consumes them;
+  `TrustedPolicy` interiors immutable via mapping proxies (observability
+  read-only); Win32 alias rejection covers trailing dot/space only;
+  process-local atomicity; scope-check inspection-only; hooks/CI/server
+  policy belong to ENV-COORD-003+; no central §7.3 writer yet.
+- **Unresolved P1/P2:** none. **DECISION_REQUIRED:** none (the narrow
+  task-binding question was resolved by the reviewer's own minimum
+  requirement — consistent one-task binding per log, justified by the
+  registry's 1:1 claim↔task mapping).
+- **Exactly ONE next safe action:** GPT-5.6 Sol performs a fresh
+  independent exact-SHA review of the FINAL_CAMPAIGN_SHA (PR #84 head
+  after this push). Only after Sol independently reaches APPROVED on
+  that exact unchanged SHA should GPT-6 Astra perform the final
+  adversarial exact-SHA review. DO NOT MERGE before both gates.

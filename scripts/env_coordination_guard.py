@@ -1310,6 +1310,14 @@ class LifecycleLog:
                 f"previous {event.previous_event_id!r} is not the durable head {self.head_event_id!r}",
             )
 
+        # detach the durable record from caller-owned mutable references
+        # (R11 Prompt-8): a frozen dataclass still exposes a mutable
+        # payload dict — store a deep copy so post-apply caller mutation
+        # cannot rewrite durable evidence or its replay semantics. The
+        # copy happens after every validation and before any state
+        # mutation: rejected events never mutate state.
+        event = copy.deepcopy(event)
+
         if event.event_type == "GOAL_START":
             if self._active_goal is not None:
                 raise GuardFailure(R.UNTERMINATED_PREDECESSOR, f"goal {self._active_goal} has no GOAL_END")
@@ -1351,6 +1359,13 @@ class LifecycleLog:
                     R.OUT_OF_ORDER_EVENT,
                     f"operation intent identifies goal {event.goal_id!r} but"
                     f" the active goal is {self._active_goal!r}",
+                )
+            if not isinstance(event.operation_id, str) or not event.operation_id:
+                # §5.5 stable operation identity: None/empty/non-str must
+                # not register an unidentifiable operation (R11 Prompt-3)
+                raise GuardFailure(
+                    R.OUT_OF_ORDER_EVENT,
+                    f"operation_id must be a non-empty string: {event.operation_id!r}",
                 )
             if event.operation_id in self._operations:
                 raise GuardFailure(R.EVENT_CONFLICT, f"duplicate operation {event.operation_id}")
