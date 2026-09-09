@@ -6,6 +6,7 @@ const sha=process.env.PREVIEW_SHA || execFileSync('git',['rev-parse','HEAD'],{en
 const branch=process.env.PREVIEW_BRANCH || execFileSync('git',['branch','--show-current'],{encoding:'utf8'}).trim();
 export default defineConfig({
   base: process.env.PREVIEW_BASE || '/',
+  build: { outDir: '../dist', emptyOutDir: true },
   plugins:[{
     name:'isolated-env-preview',enforce:'pre',
     resolveId(source,importer) {
