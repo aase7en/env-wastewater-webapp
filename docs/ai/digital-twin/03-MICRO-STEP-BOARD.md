@@ -1,6 +1,6 @@
 # Digital Twin Micro-Step Board
 
-Last updated: 2026-08-23
+Last updated: 2026-09-10
 
 > Product/visual direction: read `docs/ai/design/ENV-EXPERIENCE-MASTER-PLAN.md` before executing this board. The Digital Twin remains the spatial/visual core of UTH[AI]-ENV; Operations, Analytics, Flows, Hazard Map, Resource Explorer, and System/Data Network are complementary intelligence surfaces, not replacements for this workstream.
 
@@ -88,13 +88,30 @@ Use `WAITING_FOR_INPUT` when a task specifically requires user-provided referenc
 - Constraint: water must not resemble a clear ornamental pond; animation reflects only validated aggregate state or explicit scenario data
 - Stop: no per-equipment telemetry or process formulas
 
-### DT-VIS-P003 — Operational panel hierarchy and responsive polish
+### DT-VIS-P003 — Spatial Status Callouts + Evidence Panel + responsive operational hierarchy
 
-- Status: BACKLOG
+- Status: BACKLOG — design target refined by explicit user approval on 2026-09-10; not activated
 - Owner: Codex
-- Dependency: DT-VIS-P001 approved
-- Scope: visual hierarchy of the existing DOM panel only
-- Constraint: preserve Aura, Thai labels, source/provenance text, keyboard focus, Escape close, and 44px touch targets
+- Dependency: DT-VIS-P001 approved; coordinate with completed Command Center contract before touching shared page/shell files
+- Scope:
+  - evolve the existing DOM operational panel hierarchy around the Digital Twin rather than replace the Twin with a card dashboard
+  - allow concise anchored status callouts around the spatial object when each callout has a validated asset/domain/source identifier
+  - callout selection may focus/highlight the mapped asset and open an accessible DOM evidence panel
+  - evidence/detail hierarchy should prefer current situation → action/attention → source/freshness/provenance → trend/history
+  - desktop may use anchored callouts; tablet should support split spatial/detail composition; mobile must recompose to an ordered list, drawer, bottom sheet, or drill-down
+  - progressive reveal/loading may support comprehension, but must not look like a realtime scan unless the underlying source is actually LIVE
+- Constraint:
+  - preserve Aura, Thai labels, source/provenance text, keyboard focus, Escape close, and 44px touch targets
+  - preserve explicit `LIVE` / `LATEST` / `HISTORICAL` / `SIMULATED` / `STALE` / `UNAVAILABLE` semantics; status color is secondary only
+  - no connector line or status relationship without a stable mapped identifier
+  - critical information must remain available outside Canvas and under WebGL failure/reduced motion
+  - no new telemetry inference, no per-equipment state from aggregate data, and no second competing dashboard architecture
+- Acceptance:
+  - spatial context materially improves “where is the issue?” rather than acting as decoration
+  - all callouts have truthful semantic labels and accessible non-Canvas equivalents
+  - selected state has a clear evidence/detail destination
+  - desktop/tablet/mobile compositions are intentionally different where needed and mobile has no floating-label crowding
+  - unknown/stale/unavailable and explicit simulation states remain understandable without relying on color or animation
 
 ### DT-QA-P001 — Visual/resilience acceptance pass
 
