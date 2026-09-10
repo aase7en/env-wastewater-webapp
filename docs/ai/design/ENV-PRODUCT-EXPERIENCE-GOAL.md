@@ -1,6 +1,6 @@
 # UTH[AI]-ENV — Product Experience Goal
 
-Last updated: 2026-08-27
+Last updated: 2026-09-10
 Status: USER-CONFIRMED DESIGN NORTH STAR
 
 ## 1. Purpose
@@ -33,6 +33,26 @@ Production behavior must continue to follow source reality:
 - simulation is not observed reality;
 - external-source provenance/freshness must remain visible where decision-relevant;
 - the existing Digital Twin remains the spatial/visual core rather than being replaced by a conventional 2D dashboard.
+
+### 2.1 Accepted spatial command pattern — 2026-09-10
+
+The user supplied a desktop health-check UI reference and approved carrying its strongest interaction ideas into ENV. The reference is **not** a request to copy another product. It confirms the following ENV-specific pattern:
+
+- keep the Digital Twin / map / plant model as the central orientation object when spatial context matters;
+- surround it with concise, anchored status callouts that point only to validated assets/domains/sources;
+- let callout selection focus the relevant asset and reveal an accessible evidence/detail panel;
+- organize the page as **current situation → action/attention → evidence/source/trend/history**;
+- allow staged loading/reveal for comprehension, but never present it as a realtime “health scan” unless the source really is live telemetry;
+- preserve explicit semantic labels for `LIVE`, `LATEST`, `HISTORICAL`, `SIMULATED`, `STALE`, and `UNAVAILABLE`; status color is never the only meaning carrier.
+
+Responsive interpretation:
+
+- **Desktop:** spatial object may dominate the canvas with anchored callouts and coordinated evidence/detail regions.
+- **Tablet:** prefer a split spatial + selected-detail composition.
+- **Mobile:** replace floating callout density with an ordered status list, drawer, bottom sheet, or drill-down while keeping a compact Twin/map preview where useful.
+- **WebGL unavailable / reduced motion:** preserve all decision-relevant status, source, action, and evidence in the DOM without requiring animation or Canvas interaction.
+
+This pattern should primarily refine the future Digital Twin operational-panel lane and its integration with Command Center, Operations, and Analytics rather than create a separate parallel dashboard system.
 
 ## 3. Two-mode responsive product rule
 

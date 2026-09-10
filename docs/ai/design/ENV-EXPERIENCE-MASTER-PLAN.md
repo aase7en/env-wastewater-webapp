@@ -1,6 +1,6 @@
 # UTH[AI]-ENV — Experience & Visual Intelligence Master Plan
 
-Last updated: 2026-08-27
+Last updated: 2026-09-10
 Status: DESIGN SOURCE OF TRUTH
 
 ## 1. Purpose
@@ -74,6 +74,40 @@ Keep and continue:
 The 3D view should become the recognizable visual signature of the project, but critical operational information must remain accessible outside Canvas.
 
 Authoritative detail: `docs/ai/digital-twin/03-MICRO-STEP-BOARD.md`.
+
+#### 4.1.1 Spatial Command / Diagnostic Map Pattern — user-approved 2026-09-10
+
+A user-supplied desktop health-check reference established an additional interaction pattern for the ENV design language. Use the pattern as **composition and interaction inspiration only**; do not copy another product's proprietary assets, illustrations, branding, or pixel layout.
+
+The pattern is:
+
+```text
+CURRENT SITUATION / COMMAND CONTEXT
+          ↓
+central spatial/system object
+          ↕
+anchored status callouts
+          ↓
+evidence / source / trend / action detail
+```
+
+Apply these rules when a Digital Twin or spatial system view is the appropriate surface:
+
+1. **Central spatial object** — the Digital Twin / plant / map is the dominant orientation surface rather than a decorative thumbnail. It must help the user understand where a condition belongs.
+2. **Anchored status callouts** — status labels may sit around the spatial object and point to a real asset/domain only when the relationship is backed by a stable asset/domain/source identifier. Never draw a connector merely because two labels appear related.
+3. **Progressive diagnostic reveal** — loading or staged reveal may show domains/sources arriving progressively, but must not imply a realtime scan, active sensor check, or LIVE telemetry unless the underlying contract actually supports that meaning.
+4. **Situation → detail hierarchy** — first answer “what needs attention / what is the current situation?”, then expose evidence, source, freshness, trend/history, and available action through progressive disclosure rather than filling the first screen with every chart.
+5. **Semantic status system** — availability, freshness, provenance, and operational status remain distinct dimensions. Color is a secondary cue only; explicit text such as `LATEST`, `LIVE`, `HISTORICAL`, `SIMULATED`, `STALE`, or `UNAVAILABLE` remains visible where decision-relevant.
+
+Interaction target:
+
+- selecting a callout may focus/highlight the mapped Twin asset and open an accessible DOM evidence panel;
+- the evidence panel may link onward to Analytics, Operations, Process, History, or provenance detail using stable identifiers;
+- critical information must remain available without WebGL;
+- mobile must recompose floating callouts into an ordered list, drawer, bottom sheet, or drill-down rather than crowding labels around a small Canvas;
+- reduced-motion mode must preserve the same information without scan/reveal animation.
+
+This pattern strengthens the existing rule that the Digital Twin is the spatial/visual core while Operations, Analytics, and evidence surfaces remain actionable complements.
 
 ### 4.2 Operations — Action Control
 
