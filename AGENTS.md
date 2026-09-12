@@ -53,7 +53,7 @@ across the collaboration protocol and design docs (audit record:
 `docs/agent-handoff/AI_COLLABORATION_PROTOCOL.md` overlap, the protocol has
 the detailed wording; this section is the always-read summary.
 
-- **Goal-first engineering loop.** Significant work follows `docs/ai/ENV-ENGINEERING-LOOP.md`: define the goal first, fetch source reality, grill only unresolved decisions, specify/slice/assign ownership, establish RED or baseline evidence, implement narrowly, test like the real user, update SSoT + defect memory, review the exact diff/SHA independently, wait for applicable CI, re-audit, merge by the authorized reviewer, fetch main, verify deployment when applicable, then close. Repository SSoT is authoritative; chat/model memory is not.
+- **Risk-adaptive engineering loop.** `docs/ai/ENV-ENGINEERING-LOOP.md` is a superset, not a checklist. Choose FAST / STANDARD / HIGH-RISK from blast radius and reversibility. Use focused feedback while editing; freeze one coherent candidate before external review; for material STANDARD/HIGH-RISK work run independent review and applicable CI in parallel when independent, batch confirmed findings into one bounded repair pass, then re-review only changed boundaries unless blast radius expands. Repository SSoT is authoritative; chat/model memory is not.
 - **No unauthorized work.** Only the active work order in
   `docs/ai/CURRENT-WORK.md` (or an explicit user instruction) authorizes
   changes. No silent scope expansion; no starting deferred lanes.

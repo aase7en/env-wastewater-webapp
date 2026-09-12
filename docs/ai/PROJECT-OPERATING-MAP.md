@@ -181,9 +181,13 @@ The detailed precedence and escalation rules remain in `docs/agent-handoff/AI_CO
 
 ## Development rule
 
-Every significant slice follows:
+Use the **shortest safe path** selected above. The full engineering loop is a menu of gates, not mandatory ceremony.
 
-`GOAL → fresh SSoT/source reality → Grill With Docs → spec → bounded WO + ownership → baseline/RED → implement/debug → focused tests + system/E2E → responsive/accessibility/data-honesty/security review → SSoT/defect memory → independent exact-diff review → exact-SHA CI → re-audit → authorized merge → fetch/deploy verification → close`
+- FAST: recover minimum authority → gate if mutating → coherent change → targeted verify → diff/self-review → complete.
+- STANDARD: recover → contract/scope → coherent batch → targeted + related verify → freeze candidate SHA → independent review **and** applicable CI in parallel → deduplicate findings → one bounded repair batch → focused re-review → exact-head accept → merge → checkpoint.
+- HIGH-RISK: authority/failure model → strict mutation gate → implement → adversarial/fault/race/E2E as required → freeze SHA → strongest independent review **and** hosted CI in parallel → repair/re-review → expected-SHA merge → post-main/live verification → durable closeout.
+
+Do not ask for a manual “continue” while a safe next action exists. Do not run broad suites after every edit, repeat identical reviews, poll CI indefinitely, or update global SSoT after every micro-step.
 
 ## Current critical path
 

@@ -73,38 +73,37 @@ Use three nested loops, not one giant session:
 
 ## 3A. Choose the shortest safe path
 
-The canonical loop above describes all available gates. **Do not mechanically run every gate for every task.** Select process depth from blast radius, reversibility, data/security exposure, and verification needs.
+The canonical loop above lists possible gates. **Do not mechanically run every gate.** Select depth from blast radius, reversibility, data/security exposure, ownership and verification needs.
 
-### FAST PATH
+### FAST PATH — low risk
 
-Use for low-risk, isolated, reversible work such as typo/copy/docs corrections, small styling/config changes, or an isolated low-blast-radius bug.
+Typical: docs/copy, isolated styling/config, reversible low-blast-radius repair.
 
-`UNDERSTAND → CHANGE → TARGETED TEST/VERIFY → COMPLETE`
+`RECOVER MINIMUM STATE → MUTATION GATE IF NEEDED → COHERENT CHANGE → TARGETED VERIFY → DIFF/SELF-REVIEW → COMPLETE`
 
-- Skip heavy shaping/spec/ticket ceremony when one fresh context can safely finish the task.
-- A Work Order becomes useful when the task crosses agent/session boundaries, needs ownership isolation, or has non-obvious acceptance criteria.
-- Deterministic verification can replace independent human/model review for truly low-risk changes.
-- Run only checks that can detect plausible failures; docs-only changes do not need full frontend E2E.
+- Skip spec/ticket/review ceremony when one fresh context can finish safely.
+- Run only checks capable of detecting plausible failures; docs-only work does not need frontend E2E.
+- Create/update durable state only when future work needs it.
 
-### STANDARD PATH
+### STANDARD PATH — normal feature/bug/refactor
 
-Use for ordinary features, bugs, and refactors.
+`RECOVER → CONTRACT/SCOPE → BATCH IMPLEMENTATION → TARGETED + RELATED VERIFY → FREEZE CANDIDATE SHA → [INDEPENDENT REVIEW || APPLICABLE CI] → DEDUPLICATE FINDINGS → ONE BOUNDED REPAIR BATCH → FOCUSED RE-REVIEW → EXACT-HEAD ACCEPT → MERGE → CHECKPOINT`
 
-`REQUIREMENT → DESIGN AT STABLE SEAM → IMPLEMENT → TARGETED + RELEVANT FULL TESTS → INDEPENDENT REVIEW WHEN MATERIAL → MERGE`
-
-Prefer a bounded Work Order for multi-context or multi-agent work. Keep the implementation slice coherent and reviewable.
+- Prefer one coherent reviewable batch over many ceremony-only PRs.
+- Once the candidate is frozen, launch independent review and CI concurrently when neither depends on the other.
+- If repair changes only a bounded area, re-review that area and its affected boundaries; expand only when blast radius expands.
 
 ### HIGH-RISK PATH
 
-Use when a change touches auth/RLS, PHI/provider boundaries, schema/data migration, destructive operations, infrastructure/release controls, shared high-blast-radius shell/state, or core business/data semantics.
+Use for auth/RLS, PHI/provider boundaries, schema/data migration, destructive operations, infrastructure/release control, shared high-blast-radius state, concurrency/durable-state, or core business/data semantics.
 
-`IMPACT + ROLLBACK → DESIGN REVIEW → IMPLEMENT → AUTOMATED + ADVERSARIAL/E2E VERIFY → INDEPENDENT REVIEW → REGRESSION/ROLLBACK VERIFY → RELEASE/POST-VERIFY`
+`AUTHORITY + FAILURE MODEL → STRICT MUTATION GATE → IMPLEMENT → ADVERSARIAL/FAULT/RACE/E2E VERIFY AS REQUIRED → FREEZE SHA → [STRONGEST INDEPENDENT REVIEW || HOSTED CI] → REPAIR/RE-REVIEW → EXPECTED-SHA MERGE → POST-MAIN/LIVE VERIFY → DURABLE CLOSEOUT`
 
-High-risk work cannot trade away security, privacy, data integrity, rollback, or realistic verification for speed.
+Never downgrade security, privacy, secrets, concurrency, durable-state, migration/release, rollback or data-integrity gates for speed.
 
 ### Escalation rule
 
-Start with the lightest path justified by evidence. Escalate when the task reveals wider blast radius, hidden coupling, security/data risk, ambiguous architecture, or a failure that ordinary tests cannot explain. Do not start at HIGH-RISK merely because the full loop exists.
+Start with the lightest path justified by evidence. Escalate when new blast radius, hidden coupling, ownership conflict, security/data risk, ambiguous architecture or unexplained failure appears. Do not start at HIGH-RISK merely because the superset loop exists.
 
 ## 3B. Definition of Ready / Done
 
@@ -119,6 +118,23 @@ Prefer **Finish > Start**. Execute P0/P1 critical path before lower-value backlo
 Parallel mutation comes only from independent READY tasks. Each mutable lane needs a bounded owner, branch/worktree, allowed files/surfaces, dependencies, acceptance evidence, and reconciliation plan. Shared SSoT/hotspot files serialize unless explicit temporary ownership is recorded.
 
 Live PR/branch/runtime state must be reconciled with `CURRENT-WORK.md`. A material mismatch is `STATE_DRIFT`; stop only the affected lane, reconcile the frontier, and continue other independent safe work.
+
+## 3D. Anti-loop / latency rules
+
+- Read the smallest authoritative slice that proves the next action; do not reread large docs unless routing, drift or ambiguity requires it.
+- Do not ask the user to type “continue” between safe steps.
+- Use focused checks while editing; run broad suites near a coherent candidate, not after each small edit.
+- Freeze one candidate before external review. Do not review a moving target.
+- Run independent review and applicable CI concurrently when independent; fan-in once.
+- Deduplicate reviewer/CI findings and repair confirmed issues in one bounded batch where safe.
+- Re-review changed boundaries, not the entire unchanged diff, unless blast radius expands.
+- The same material failure twice with no new evidence enters **ROOT-CAUSE MODE**: reproduce/minimise/instrument; do not blind-retry.
+- A tool/transport/infra failure blocks only work that depends on that tool; classify it separately from code failure.
+- Do not poll CI indefinitely. Check at meaningful state changes or once after a bounded wait; continue independent work meanwhile.
+- Do not maximize worker count. Parallelize only independent READY lanes with non-overlapping owned mutable scope and an explicit fan-in owner.
+- Update global continuity/SSoT only at meaningful boundaries; lane-local evidence may update more often.
+- Once all required gates pass and policy/current authorization permits merge, merge; do not leave a PR open for ceremony alone.
+- Stop only for a real blocker, authority/ownership ambiguity, consequential decision/approval, unsafe state or no safe next action.
 
 ---
 
@@ -390,16 +406,17 @@ Next owner:
 
 Update as applicable:
 
-- lane handoff;
-- coordinator `docs/ai/HANDOFF.md`;
-- `docs/ai/CURRENT-WORK.md`;
-- `docs/ai/DEFECT-MEMORY.md` when the root cause is reusable.
+- lane handoff for resumable execution evidence;
+- coordinator `docs/ai/HANDOFF.md` and `docs/ai/CURRENT-WORK.md` only at meaningful control/frontier boundaries, not every micro-step;
+- `docs/ai/DEFECT-MEMORY.md` only when the root cause is material and reusable.
+
+Before external review, freeze one coherent candidate SHA/diff. If a code-changing repair moves that SHA, only the changed boundaries and newly affected blast radius require fresh review; unchanged accepted areas need not be mechanically re-reviewed.
 
 Defect memory records **failure class → root cause → detection → prevention → regression evidence**, not every minor bug.
 
 ## 18. Independent review
 
-Implementation self-review is not merge approval. Prefer fresh reviewer context/agent.
+Implementation self-review is not merge approval. Prefer fresh reviewer context/agent. After candidate freeze, start independent review and applicable CI concurrently when they are independent. One lead/integrator owns fan-in: deduplicate overlapping findings, classify blockers, and issue one bounded repair batch rather than serial reviewer-by-reviewer repair loops.
 
 Review separate axes:
 
@@ -411,7 +428,7 @@ Review separate axes:
 
 Verdict: `APPROVED` or `CHANGES_REQUIRED` with evidence.
 
-Any code-changing push after review requires review of the new exact SHA/diff.
+Any code-changing push after review requires review of the new exact SHA/diff **for the changed boundary and any expanded blast radius**. A docs/metadata-only repair does not automatically invalidate unrelated accepted implementation evidence; record the rationale.
 
 ## 19. PR gate
 
@@ -428,7 +445,9 @@ Then push, open/update PR, inspect **remote diff**, and record exact PR head SHA
 
 ## 20. CI/CD exact-SHA gate
 
-- Wait for all **applicable** checks on latest PR head.
+- Start all **applicable** checks on the frozen/latest PR head; run them in parallel with independent review when possible.
+- Do not poll CI indefinitely. Re-check on a meaningful state change/bounded interval and use the time for independent safe work.
+- A CI/tool/transport failure is not a code failure; classify and retry only with new evidence or after the external condition changes.
 - Green checks on an older SHA do not approve a newer push.
 - If main/base changes materially, re-evaluate diff and relevant gates.
 - Docs-only PRs may not trigger frontend E2E because `.github/workflows/e2e.yml` is path-filtered; an untriggered job is not a Playwright pass.
@@ -447,7 +466,9 @@ On the exact latest PR head:
 5. verify no unresolved blocker/review finding;
 6. re-check risky PHI/security/schema/data-honesty boundaries if touched;
 7. verify SSoT status;
-8. merge only by authorized reviewer/merge owner.
+8. merge by the authorized reviewer/merge owner as soon as the required gates pass; do not wait for a ceremony-only confirmation when current user authorization and repository policy already permit merge.
+
+If a bounded repair occurred after review, re-review only the changed boundary plus any newly affected blast radius, then repeat this exact-head gate.
 
 For security/high-risk WOs, independently reproduce the critical RED proof where practical.
 
@@ -505,6 +526,8 @@ Audit branch may fix docs/governance gaps. A production defect found by audit ge
 # F. STOP RULES
 
 ## 24. Stop/escalate when
+
+Stop only the affected lane. Continue independent safe work when a tool, CI job, reviewer or external dependency is blocked. Escalate when:
 
 - goal/spec contradicts verified source reality;
 - user decision is genuinely required;
