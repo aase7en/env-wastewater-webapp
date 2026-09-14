@@ -964,7 +964,12 @@ slice.
 - **Status:** `REVIEW_REQUESTED`; `ENV-COORD-003` remains blocked until this
   exact candidate receives fresh review and the required high-risk independent
   final gate.
-- **ONE next safe action:** integrate the single non-overlapping current-main
-  design-doc commit, freeze/push one exact SHA, then perform a fresh exact-SHA
-  Sol review; only an unchanged Sol-approved SHA proceeds to the independent
-  high-risk final review before merge.
+- **Merged-base freeze:** integrated `origin/main@a92bfec2ffd705bec2a899995026d913412d1f52`
+  with no conflict. Full post-integration battery remained green: standalone
+  **303/303**, pytest **303 + 298 subtests**, workflow runtime **14/14**, runtime
+  checker 5 files PASS, split_sql PASS, CI-alert **33/33**, py_compile and
+  diff-check PASS. PR-relative scope remains exactly the four claim-owned paths.
+- **ONE next safe action:** push this merged-base candidate, bind all remote/CI
+  evidence to the resulting exact PR head, then perform a fresh exact-SHA Sol
+  coordinator review; only an unchanged Sol-approved SHA proceeds to the
+  independent high-risk final review before merge.

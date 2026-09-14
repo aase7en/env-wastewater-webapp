@@ -926,6 +926,13 @@ Stop at `REVIEW_REQUESTED`. Do not merge.
   authorized paths was mutated by R12.
 - Status: `REVIEW_REQUESTED`; do not merge and do not start ENV-COORD-003 until
   fresh exact-SHA review + independent high-risk final review pass.
-- **Exactly ONE next safe action:** integrate current `origin/main`, rerun the
-  complete deterministic battery, commit/push the four-path candidate, then
-  perform fresh exact-SHA review.
+- **Merged-base freeze:** integrated `origin/main@a92bfec2ffd705bec2a899995026d913412d1f52`
+  cleanly. Full post-integration battery: standalone **303/303 PASS**; pytest
+  **303 passed + 298 subtests**; workflow runtimes **14/14**; runtime checker
+  PASS (5 files); split_sql PASS; CI-alert **33/33**; py_compile and
+  `git diff --check origin/main...HEAD` PASS. PR-relative scope remains exactly
+  the four authorized paths.
+- **Exactly ONE next safe action:** push the merged-base candidate, bind remote
+  diff/CI/review to its exact PR head, and perform fresh Sol coordinator review;
+  only an unchanged Sol-approved SHA may proceed to the independent high-risk
+  final review.
