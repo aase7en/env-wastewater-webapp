@@ -1,6 +1,6 @@
 # UTH[AI]-ENV — Unified Roadmap
 
-Last updated: 2026-08-28
+Last updated: 2026-09-10
 Status: PROJECT ROADMAP SSoT
 
 ## Goal
@@ -177,6 +177,18 @@ Contract archaeology is complete. `ENV-OPS-001A` is the first implementable vert
 Continue existing approved Digital Twin direction without replacing it with a 2D dashboard.
 
 Dependencies/guardrails remain in `docs/ai/digital-twin/03-MICRO-STEP-BOARD.md` and process-knowledge SSoT.
+
+**P003 design target — user-confirmed 2026-09-10:** evolve the existing operational panel hierarchy into a **Spatial Status Callouts + Evidence Panel** pattern:
+
+- keep the Digital Twin / plant spatial object as the dominant orientation surface when spatial context is useful;
+- anchor concise status callouts only to validated asset/domain/source identifiers;
+- selecting a callout may focus the mapped asset and reveal accessible evidence, source, freshness, trend/history, and next-action detail;
+- staged diagnostic reveal may improve comprehension but must never imply realtime scanning or LIVE telemetry without an actual live source;
+- keep `LIVE`, `LATEST`, `HISTORICAL`, `SIMULATED`, `STALE`, and `UNAVAILABLE` explicit; color remains a secondary cue;
+- desktop may use anchored spatial composition, tablet should support split spatial/detail views, and mobile must recompose callouts into ordered lists/drawers/bottom sheets rather than crowding the Canvas;
+- all decision-relevant content must remain available through DOM/Process/Data fallback when WebGL or motion is unavailable.
+
+P003 should connect the completed Command Center with future Operations and Analytics surfaces; it must not create a second competing dashboard architecture.
 
 Twin work may run parallel to independent non-overlapping slices only after ownership graph review.
 

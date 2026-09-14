@@ -1,6 +1,6 @@
 # UTH[AI]-ENV — Next Design Execution Plan
 
-Last updated: 2026-08-23
+Last updated: 2026-09-10
 Status: APPROVED / P001 COMPLETE
 
 ## Current checkpoint
@@ -106,12 +106,30 @@ Every next lane must also follow `docs/ai/ENV-ENGINEERING-LOOP.md`: GOAL first �
 
 This update does not activate a production lane.
 
+## User-confirmed spatial command update — 2026-09-10
+
+The user approved incorporating the strongest interaction ideas from a supplied desktop health-check reference into the ENV design roadmap. This adds a design requirement, not a production activation.
+
+The accepted design pattern is:
+
+- central Digital Twin / spatial system object as the orientation surface;
+- truthful anchored status callouts tied to validated asset/domain/source identifiers;
+- progressive diagnostic reveal that never implies LIVE/realtime behavior without actual telemetry;
+- situation-first hierarchy followed by action, evidence, provenance, freshness, and trend/history;
+- explicit semantic states with color as a secondary cue;
+- desktop anchored-callout composition, tablet split view, and mobile list/drawer/bottom-sheet recomposition;
+- accessible DOM evidence and WebGL/reduced-motion fallback for every decision-relevant status.
+
+Primary future landing zone: **`DT-VIS-P003`**, expanded from generic panel polish into **Spatial Status Callouts + Evidence Panel + responsive operational hierarchy**. It should integrate with the already-delivered Command Center and future Operations/Analytics surfaces rather than create a second dashboard architecture.
+
+No production file, shared shell, Twin renderer, data contract, route, or current active lane is activated by this update.
+
 ## Next lanes after review
 
 Do not start automatically. A new bounded work order / explicit approval is required before activating any candidate:
 
 1. `DT-VIS-P002` — Aeration water/system-level motion language;
-2. `DT-VIS-P003` — operational panel hierarchy/responsive polish;
+2. `DT-VIS-P003` — Spatial Status Callouts + Evidence Panel + operational hierarchy/responsive polish;
 3. `UX-FLOW-P001` — wastewater Sankey vertical slice design + truthful quantity inventory;
 4. `ENV-INT-P001` — GISTDA endpoint/source inventory and normalized external-data contract;
 5. Operations board only after incident/action data contracts are inventoried.
