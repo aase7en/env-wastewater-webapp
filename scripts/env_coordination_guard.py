@@ -233,6 +233,20 @@ class GuardFailure(Exception):
         self.detail = detail
 
 
+def _require_stable_id(value, field_name: str) -> str:
+    """Return an exact non-empty string identity or fail closed.
+
+    Stable coordination identities are evidence, not convenience inputs: no
+    truthiness/coercion and no unhashable values may reach state containers.
+    """
+    if not isinstance(value, str) or not value:
+        raise GuardFailure(
+            R.INVALID_CLAIM_FIELD,
+            f"{field_name} must be a non-empty string: {value!r}",
+        )
+    return value
+
+
 # ═══════════════════════════════════════════════════════════════════════
 # §7.2 canonical paths + scope grammar
 # ═══════════════════════════════════════════════════════════════════════
@@ -1195,7 +1209,7 @@ class LifecycleLog:
             )
         self.claim_id = claim_id
         self.claim_generation = claim_generation
-        self.events: list[LifecycleEvent] = []
+        self._events: list[LifecycleEvent] = []
         self._by_id: dict[str, LifecycleEvent] = {}
         self._active_goal: Optional[str] = None
         self._terminated_goals: set[str] = set()
@@ -1208,6 +1222,15 @@ class LifecycleLog:
     @property
     def active_goal_id(self) -> Optional[str]:
         return self._active_goal
+
+    @property
+    def events(self) -> list[LifecycleEvent]:
+        """Detached observation of durable event history.
+
+        Callers may inspect or even mutate the returned list/payloads without
+        changing authoritative replay/audit state.
+        """
+        return copy.deepcopy(self._events)
 
     @property
     def has_unresolved_external_operations(self) -> bool:
@@ -1277,7 +1300,7 @@ class LifecycleLog:
         existing = self._by_id.get(event.event_id)
         if existing is not None:
             if existing == event:
-                return "idempotent_noop", existing
+                return "idempotent_noop", copy.deepcopy(existing)
             raise GuardFailure(R.EVENT_CONFLICT, f"{event.event_id} replayed with different payload")
 
         # §5.2 durable publication: an unpublished event must never mutate
@@ -1295,13 +1318,13 @@ class LifecycleLog:
                 f" boolean true); got {event.published!r}",
             )
 
-        if self.events and event.event_seq <= self.events[-1].event_seq:
+        if self._events and event.event_seq <= self._events[-1].event_seq:
             raise GuardFailure(
                 R.OUT_OF_ORDER_EVENT,
-                f"seq {event.event_seq} not greater than {self.events[-1].event_seq}",
+                f"seq {event.event_seq} not greater than {self._events[-1].event_seq}",
             )
 
-        if not self.events:
+        if not self._events:
             if event.previous_event_id != GENESIS:
                 raise GuardFailure(R.OUT_OF_ORDER_EVENT, f"first event must reference {GENESIS}")
         elif event.previous_event_id != self.head_event_id:
@@ -1435,12 +1458,12 @@ class LifecycleLog:
             operation["reconciled_outcome"] = event.operation_outcome
             operation["reconciled_event_id"] = event.event_id
 
-        self.events.append(event)
+        self._events.append(event)
         self._by_id[event.event_id] = event
         self.head_event_id = event.event_id
         if self._bound_task_id is None:
             self._bound_task_id = event.task_id
-        return "applied", event
+        return "applied", copy.deepcopy(event)
 
 
 # ═══════════════════════════════════════════════════════════════════════
@@ -1477,6 +1500,7 @@ class AdmissionGate:
         self._high_water = 0
 
     def admit(self, operation_id: str) -> dict:
+        operation_id = _require_stable_id(operation_id, "operation_id")
         with self._lock:
             if self.state != "OPEN":
                 raise GuardFailure(R.ADMISSION_GATE_CLOSED, str(operation_id))
@@ -1504,6 +1528,11 @@ class AdmissionGate:
         """
         with self._lock:
             record = self._require(operation_id)
+            if not isinstance(child_alive, bool):
+                raise GuardFailure(
+                    R.INVALID_CLAIM_FIELD,
+                    f"child_alive must be an exact bool: {child_alive!r}",
+                )
             if outcome not in _TERMINAL_ADMISSIONS:
                 raise GuardFailure(R.INVALID_OPERATION_OUTCOME, str(outcome))
             if record["state"] in _TERMINAL_ADMISSIONS:
@@ -1524,6 +1553,11 @@ class AdmissionGate:
         """
         with self._lock:
             record = self._require(operation_id)
+            if child_alive is not None and not isinstance(child_alive, bool):
+                raise GuardFailure(
+                    R.INVALID_CLAIM_FIELD,
+                    f"child_alive must be None or an exact bool: {child_alive!r}",
+                )
             if record["state"] != ADMISSION_UNKNOWN:
                 raise GuardFailure(R.EFFECT_CONFLICT, f"{operation_id} is {record['state']}, not UNKNOWN")
             if outcome not in (ADMISSION_COMPLETE, ADMISSION_FAILED):
@@ -1539,6 +1573,7 @@ class AdmissionGate:
             record["child_alive"] = False
 
     def _require(self, operation_id: str) -> dict:
+        operation_id = _require_stable_id(operation_id, "operation_id")
         record = self._admissions.get(operation_id)
         if record is None:
             raise GuardFailure(R.UNKNOWN_OPERATION, str(operation_id))
@@ -1561,13 +1596,13 @@ class AdmissionGate:
         """ANY admission record with child_alive=True is undrained,
         regardless of logical effect state (§4.2B transfer barrier)."""
         with self._lock:
-            return any(r["child_alive"] for r in self._admissions.values())
+            return any(r["child_alive"] is True for r in self._admissions.values())
 
     @property
     def unresolved_child_operations(self) -> tuple:
         with self._lock:
             return tuple(
-                r["operation_id"] for r in self._admissions.values() if r["child_alive"]
+                r["operation_id"] for r in self._admissions.values() if r["child_alive"] is True
             )
 
     @property
@@ -1585,7 +1620,7 @@ class HolderRuntime:
     """
 
     def __init__(self, holder_id: str):
-        self.holder_id = holder_id
+        self.holder_id = _require_stable_id(holder_id, "holder_id")
         self.gate = AdmissionGate()
 
     # mutation admissions go through the holder's own gate
@@ -1642,10 +1677,19 @@ class TransferBarrier:
     """
 
     def __init__(self, claim_id: str, claim_generation: int, holder_id: str):
-        self.claim_id = claim_id
+        self.claim_id = _require_stable_id(claim_id, "claim_id")
+        if (
+            isinstance(claim_generation, bool)
+            or not isinstance(claim_generation, int)
+            or claim_generation < 1
+        ):
+            raise GuardFailure(
+                R.STALE_CLAIM_GENERATION,
+                f"claim_generation must be a positive exact int: {claim_generation!r}",
+            )
         self.claim_generation = claim_generation
-        self.execution_holder_id = holder_id
-        self.runtime = HolderRuntime(holder_id)
+        self.execution_holder_id = _require_stable_id(holder_id, "holder_id")
+        self.runtime = HolderRuntime(self.execution_holder_id)
         self.state = "ACTIVE"
         self.transfer_block_reason: Optional[str] = None
         self._attestations: dict[str, dict] = {}
@@ -1708,6 +1752,15 @@ class TransferBarrier:
         Non-holder publishers still change nothing (identity rules first).
         """
         with self._lock:
+            publisher_id = _require_stable_id(publisher_id, "publisher_id")
+            attestation_id = _require_stable_id(attestation_id, "attestation_id")
+            latest_event_id = _require_stable_id(latest_event_id, "latest_event_id")
+            if not isinstance(unresolved_external_operations, bool):
+                raise GuardFailure(
+                    R.INVALID_CLAIM_FIELD,
+                    "unresolved_external_operations must be an exact bool: "
+                    f"{unresolved_external_operations!r}",
+                )
             if publisher_id != self.execution_holder_id:
                 self.transfer_block_reason = R.COORDINATOR_CANNOT_PUBLISH_QUIESCENCE
                 return None
@@ -1781,6 +1834,7 @@ class TransferBarrier:
         `authorized_policy` without `actual_context` fails closed with
         MISSING_ACTUAL_CONTEXT.
         """
+        new_holder_id = _require_stable_id(new_holder_id, "new_holder_id")
         with self._lock:
             if self.state == "QUIESCING" and not self._attestations:
                 raise GuardFailure(R.QUIESCENCE_PRECONDITIONS_UNMET, "quiescing without an attestation")

@@ -4806,6 +4806,169 @@ class TestDurableEventIsolation(unittest.TestCase):
         self.assertFalse(log.has_unresolved_external_operations)
 
 
+
+class TestR12FinalCampaignHardening(unittest.TestCase):
+    """R12 closes the final Sol campaign blockers at e212689.
+
+    These regressions pin durable lifecycle isolation plus exact-type and
+    stable-identity fencing for admission/quiescence transfer evidence.
+    """
+
+    @staticmethod
+    def _ready_barrier():
+        barrier = TransferBarrier("ENV-COORD-002-C1", 1, "holder-A")
+        barrier.begin_quiesce()
+        att = barrier.holder_publish(
+            "holder-A", "att-1", "event-9", unresolved_external_operations=False
+        )
+        if att is None:
+            raise AssertionError(barrier.transfer_block_reason)
+        return barrier
+
+    def test_apply_return_cannot_mutate_durable_history_or_replay_identity(self):
+        log = LifecycleLog("ENV-COORD-002-C1", 1)
+        original = dataclasses.replace(
+            goal_start(), payload={"objective": "original", "nested": {"x": [1]}}
+        )
+        status, returned = log.apply(original)
+        self.assertEqual(status, "applied")
+        returned.payload["objective"] = "MUTATED-VIA-RETURN"
+        returned.payload["nested"]["x"].append(9)
+        self.assertEqual(
+            log.events[0].payload,
+            {"objective": "original", "nested": {"x": [1]}},
+        )
+        replay_status, _ = log.apply(original)
+        self.assertEqual(replay_status, "idempotent_noop")
+
+    def test_public_event_history_cannot_mutate_authoritative_list_or_nested_payload(self):
+        log = LifecycleLog("ENV-COORD-002-C1", 1)
+        log.apply(
+            dataclasses.replace(
+                goal_start(), payload={"objective": "original", "nested": {"x": [1]}}
+            )
+        )
+        observed = log.events
+        observed[0].payload["nested"]["x"].append(9)
+        try:
+            observed.clear()
+        except (AttributeError, TypeError):
+            pass
+        self.assertEqual(len(log.events), 1)
+        self.assertEqual(log.events[0].payload["nested"]["x"], [1])
+
+    def test_record_effect_child_alive_requires_exact_bool_without_state_mutation(self):
+        for bad in (None, 0, 1, "", "false", [], {}):
+            with self.subTest(child_alive=bad):
+                gate = AdmissionGate()
+                gate.admit("op-1")
+                with self.assertRaises(GuardFailure) as cm:
+                    gate.record_effect("op-1", ADMISSION_UNKNOWN, child_alive=bad)
+                self.assertEqual(cm.exception.reason, R.INVALID_CLAIM_FIELD)
+                self.assertEqual(gate.active_admissions, 1)
+                self.assertFalse(gate.has_live_children)
+                self.assertFalse(gate.has_unresolved_effects)
+
+    def test_reconcile_effect_malformed_child_alive_cannot_clear_known_live_child(self):
+        for bad in (0, 1, "", "false", [], {}):
+            with self.subTest(child_alive=bad):
+                gate = AdmissionGate()
+                gate.admit("op-1")
+                gate.record_effect("op-1", ADMISSION_UNKNOWN, child_alive=True)
+                with self.assertRaises(GuardFailure) as cm:
+                    gate.reconcile_effect("op-1", ADMISSION_COMPLETE, child_alive=bad)
+                self.assertEqual(cm.exception.reason, R.INVALID_CLAIM_FIELD)
+                self.assertTrue(gate.has_live_children)
+                self.assertTrue(gate.has_unresolved_effects)
+        gate = AdmissionGate()
+        gate.admit("op-1")
+        gate.record_effect("op-1", ADMISSION_UNKNOWN, child_alive=True)
+        gate.reconcile_effect("op-1", ADMISSION_COMPLETE, child_alive=None)
+        self.assertTrue(gate.has_live_children)
+        gate.reconcile_child_dead("op-1")
+        self.assertFalse(gate.has_live_children)
+
+    def test_holder_publish_requires_exact_boolean_external_uncertainty_evidence(self):
+        for bad in (None, 0, 1, "", "false", [], {}):
+            with self.subTest(unresolved_external_operations=bad):
+                barrier = TransferBarrier("ENV-COORD-002-C1", 1, "holder-A")
+                barrier.begin_quiesce()
+                with self.assertRaises(GuardFailure) as cm:
+                    barrier.holder_publish(
+                        "holder-A", "att-1", "event-9",
+                        unresolved_external_operations=bad,
+                    )
+                self.assertEqual(cm.exception.reason, R.INVALID_CLAIM_FIELD)
+                self.assertEqual(barrier.state, "QUIESCING")
+                self.assertEqual(barrier._attestations, {})
+
+        ready = self._ready_barrier()
+        with self.assertRaises(GuardFailure):
+            ready.holder_publish(
+                "holder-A", "att-1", "event-9", unresolved_external_operations=0
+            )
+        self.assertEqual(ready.state, "TRANSFER_READY")
+        self.assertEqual(len(ready._attestations), 1)
+
+    def test_transfer_barrier_constructor_fences_generation_and_stable_identity(self):
+        for bad_generation in (True, 1.0, "1", 0, -1, None):
+            with self.subTest(generation=bad_generation):
+                with self.assertRaises(GuardFailure) as cm:
+                    TransferBarrier("ENV-COORD-002-C1", bad_generation, "holder-A")
+                self.assertEqual(cm.exception.reason, R.STALE_CLAIM_GENERATION)
+        for field, values in (
+            ("claim_id", (None, "", 7, [], {})),
+            ("holder_id", (None, "", 7, [], {})),
+        ):
+            for bad in values:
+                with self.subTest(field=field, value=bad):
+                    args = ["ENV-COORD-002-C1", 1, "holder-A"]
+                    args[0 if field == "claim_id" else 2] = bad
+                    with self.assertRaises(GuardFailure) as cm:
+                        TransferBarrier(*args)
+                    self.assertEqual(cm.exception.reason, R.INVALID_CLAIM_FIELD)
+
+    def test_complete_transfer_rejects_malformed_new_holder_before_mutation(self):
+        for bad in (None, "", 7, [], {}):
+            with self.subTest(new_holder_id=bad):
+                barrier = self._ready_barrier()
+                with self.assertRaises(GuardFailure) as cm:
+                    barrier.complete_transfer(bad)
+                self.assertEqual(cm.exception.reason, R.INVALID_CLAIM_FIELD)
+                self.assertEqual(barrier.claim_generation, 1)
+                self.assertEqual(barrier.execution_holder_id, "holder-A")
+                self.assertEqual(barrier.state, "TRANSFER_READY")
+
+    def test_admission_operation_id_requires_nonempty_string_and_never_crashes(self):
+        for bad in (None, "", 7, [], {}):
+            with self.subTest(operation_id=bad):
+                gate = AdmissionGate()
+                with self.assertRaises(GuardFailure) as cm:
+                    gate.admit(bad)
+                self.assertEqual(cm.exception.reason, R.INVALID_CLAIM_FIELD)
+                self.assertEqual(gate.active_admissions, 0)
+                self.assertEqual(gate.admissions_high_water, 0)
+
+    def test_quiescence_stable_ids_require_nonempty_strings_before_publication(self):
+        for field, values in (
+            ("attestation_id", (None, "", 7, [], {})),
+            ("latest_event_id", (None, "", 7, [], {})),
+        ):
+            for bad in values:
+                with self.subTest(field=field, value=bad):
+                    barrier = TransferBarrier("ENV-COORD-002-C1", 1, "holder-A")
+                    barrier.begin_quiesce()
+                    attestation_id = bad if field == "attestation_id" else "att-1"
+                    latest_event_id = bad if field == "latest_event_id" else "event-9"
+                    with self.assertRaises(GuardFailure) as cm:
+                        barrier.holder_publish(
+                            "holder-A", attestation_id, latest_event_id,
+                            unresolved_external_operations=False,
+                        )
+                    self.assertEqual(cm.exception.reason, R.INVALID_CLAIM_FIELD)
+                    self.assertEqual(barrier.state, "QUIESCING")
+                    self.assertEqual(barrier._attestations, {})
+
 def self_run_cli_validate(path):
     return subprocess.run(
         [sys.executable, GUARD, "validate-lifecycle", "--file", path],

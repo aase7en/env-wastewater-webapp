@@ -15,7 +15,7 @@ Claim generation: `1`
 Execution holder ID: `zcode-env-coord-002-g1-primary`
 Enforcement mode: `BOOTSTRAP_CONTROL`
 Lane handoff/result destination: `docs/ai/handoffs/ENV-COORD-002-GLM.md`
-Last updated: 2026-09-08
+Last updated: 2026-09-14
 
 ## Parent architecture
 
@@ -922,3 +922,49 @@ isolated `feat/env-coord-002` worktree from that exact main, launch one
 GLM-5.3 MAX ZCode context with holder ID
 `zcode-env-coord-002-g1-primary`, run RED tests first, then implement only this
 slice.
+
+
+## Result ? R12 final campaign remediation / 2026-09-14
+
+- **Trigger:** GPT-5.6 Sol exact-SHA review of PR #84 head
+  `e212689f5f27c0a88b7da5060b7c8df3f0970a1e` returned
+  `CHANGES_REQUIRED` for five remaining safety-contract groups: durable event
+  observation aliasing, `child_alive` exact evidence, quiescence external-
+  uncertainty exact evidence, TransferBarrier generation/stable identities,
+  and admission/quiescence stable IDs.
+- **Actual-state gate:** remote branch/local HEAD matched `e212689...`; worktree
+  tracked tree was clean with protected untracked `.serena/` only; actual PR
+  scope remained exactly the four claim-owned paths. `origin/main` advanced by
+  one non-overlapping design-doc commit (`a92bfec...`), which is integrated
+  before the final review candidate is frozen.
+- **Execution note:** this bounded R12 repair was executed by GPT-5.6 Sol via
+  Remote Desktop Commander under the user's explicit 2026-09-14 instruction
+  permitting Sol to complete bounded work. No second parallel implementation
+  context was launched and no mutable scope was expanded. The durable claim/
+  generation remains `ENV-COORD-002-C1` / g1; this note records actual
+  execution rather than pretending the historical GLM model label changed.
+- **RED:** nine new regression methods produced **303 tests / 55 failures + 4
+  errors** on the prior implementation. Failures reproduced the five review
+  groups, including unhashable stable IDs raising raw `TypeError`.
+- **Repairs:** authoritative lifecycle event history is private and all public
+  observations/`apply()` returns are detached deep copies; admission operation
+  IDs are exact non-empty strings; `child_alive` is exact bool (or `None` only
+  for reconciliation preserve-state); quiescence
+  `unresolved_external_operations` is exact bool; TransferBarrier requires a
+  positive exact-int generation plus exact non-empty claim/holder identities;
+  `new_holder_id`, attestation ID and latest lifecycle event ID fail closed
+  before any state mutation/publication.
+- **GREEN:** standalone guard suite **303/303 PASS**; pytest **303 passed + 298
+  subtests**; workflow action runtime suite **14/14 PASS**; workflow runtime
+  checker PASS (**5 workflow files**); split_sql PASS; CI-alert payload
+  **33/33 PASS**; `py_compile` PASS; `git diff --check` PASS.
+- **Scope/security:** no hook/workflow/server/frontend/schema/Supabase/data
+  mutation; no secrets/raw operational data read or persisted; `.serena/`
+  remains untracked and untouched.
+- **Status:** `REVIEW_REQUESTED`; `ENV-COORD-003` remains blocked until this
+  exact candidate receives fresh review and the required high-risk independent
+  final gate.
+- **ONE next safe action:** integrate the single non-overlapping current-main
+  design-doc commit, freeze/push one exact SHA, then perform a fresh exact-SHA
+  Sol review; only an unchanged Sol-approved SHA proceeds to the independent
+  high-risk final review before merge.

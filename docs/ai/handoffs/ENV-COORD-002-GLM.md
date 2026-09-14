@@ -13,7 +13,7 @@ Planned worktree: `A:\\GitHub\\envww-coord-002`
 Planned branch: `feat/env-coord-002`
 Claim policy base: `origin/main@6360e149f42c419a8d7f878f28fc439e0ef1f6cc`
 Work Order: `docs/work-orders/ENV-COORD-002.md`
-Last updated: 2026-09-08
+Last updated: 2026-09-14
 
 ## Before any mutation
 
@@ -889,3 +889,43 @@ Stop at `REVIEW_REQUESTED`. Do not merge.
   after this push). Only after Sol independently reaches APPROVED on
   that exact unchanged SHA should GPT-6 Astra perform the final
   adversarial exact-SHA review. DO NOT MERGE before both gates.
+
+
+## Result ? R12 final campaign remediation / 2026-09-14
+
+- Prior candidate: `e212689f5f27c0a88b7da5060b7c8df3f0970a1e` ? Sol
+  `CHANGES_REQUIRED` (five remaining evidence/identity hardening groups).
+- Actual execution: GPT-5.6 Sol via Remote Desktop Commander under explicit
+  user authorization for bounded completion; no second parallel writer/context
+  and no scope expansion. Historical claim identity remains
+  `ENV-COORD-002-C1` / generation 1; actual executor is recorded here to avoid
+  a false provenance claim.
+- RED: **303 total tests; 55 failures + 4 errors** after adding nine R12
+  regression methods against the old implementation.
+- GREEN: standalone **303/303 PASS**; pytest **303 passed + 298 subtests**;
+  workflow runtimes **14/14 PASS**; runtime checker PASS (5 files); split_sql
+  PASS; CI-alert **33/33 PASS**; `py_compile` and `git diff --check` PASS.
+- Closed invariants:
+  1. `LifecycleLog` keeps authoritative events private; `events` and `apply()`
+     expose detached deep copies, so returned/history views cannot rewrite
+     nested payloads or replay identity.
+  2. Admission `operation_id` is exact non-empty string; malformed/unhashable
+     IDs fail with `INVALID_CLAIM_FIELD` before container access.
+  3. `record_effect.child_alive` requires exact bool;
+     `reconcile_effect.child_alive` accepts only `None` or exact bool, so
+     malformed falsy evidence cannot clear a known-live child.
+  4. `holder_publish.unresolved_external_operations` requires exact bool before
+     any replay/publication/readiness mutation.
+  5. TransferBarrier fences positive exact-int generation and exact non-empty
+     claim/holder/new-holder IDs; attestation/latest-event identities are exact
+     non-empty strings before publication.
+- Current `origin/main` is `a92bfec2ffd705bec2a899995026d913412d1f52`,
+  one commit ahead of the prior base and touching only five design-roadmap
+  files; integrate it before freezing the next review SHA.
+- `.serena/` remains protected untracked state; no other file outside the four
+  authorized paths was mutated by R12.
+- Status: `REVIEW_REQUESTED`; do not merge and do not start ENV-COORD-003 until
+  fresh exact-SHA review + independent high-risk final review pass.
+- **Exactly ONE next safe action:** integrate current `origin/main`, rerun the
+  complete deterministic battery, commit/push the four-path candidate, then
+  perform fresh exact-SHA review.
