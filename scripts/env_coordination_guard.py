@@ -1246,6 +1246,7 @@ class LifecycleLog:
         """Audit view of one external operation: the original execution
         outcome (UNKNOWN stays UNKNOWN after reconciliation) plus the
         reconciliation record that cleared it, if any."""
+        operation_id = _require_stable_id(operation_id, "operation_id")
         record = self._operations.get(operation_id)
         if record is None:
             raise GuardFailure(R.UNKNOWN_OPERATION, str(operation_id))
@@ -1408,6 +1409,11 @@ class LifecycleLog:
                     f"operation outcome identifies goal {event.goal_id!r}"
                     f" but the active goal is {self._active_goal!r}",
                 )
+            if not isinstance(event.operation_id, str) or not event.operation_id:
+                raise GuardFailure(
+                    R.OUT_OF_ORDER_EVENT,
+                    f"operation_id must be a non-empty string: {event.operation_id!r}",
+                )
             operation = self._operations.get(event.operation_id)
             if operation is None:
                 raise GuardFailure(R.UNKNOWN_OPERATION, str(event.operation_id))
@@ -1434,6 +1440,11 @@ class LifecycleLog:
                     R.OUT_OF_ORDER_EVENT,
                     f"reconciliation identifies goal {event.goal_id!r} but"
                     f" the active (recovery) goal is {self._active_goal!r}",
+                )
+            if not isinstance(event.operation_id, str) or not event.operation_id:
+                raise GuardFailure(
+                    R.OUT_OF_ORDER_EVENT,
+                    f"operation_id must be a non-empty string: {event.operation_id!r}",
                 )
             operation = self._operations.get(event.operation_id)
             if operation is None:

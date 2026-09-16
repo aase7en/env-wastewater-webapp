@@ -973,3 +973,27 @@ slice.
   evidence to the resulting exact PR head, then perform a fresh exact-SHA Sol
   coordinator review; only an unchanged Sol-approved SHA proceeds to the
   independent high-risk final review before merge.
+
+## Result — R13 malformed operation_id fencing / 2026-09-16
+
+- **Trigger:** completion of the R12 stable-identity hardening — the
+  OPERATION_OUTCOME / OPERATION_RECONCILED apply paths and the
+  `operation_record` audit seam still consulted the operation container before
+  validating `operation_id`, so a malformed or unhashable id could raise a raw
+  `TypeError` instead of failing closed.
+- **Repairs:** `operation_record` fences ids via `_require_stable_id` before
+  dict access; the OUTCOME and RECONCILED apply paths require a
+  non-empty-string `operation_id` before consulting the operation container.
+  Reason semantics: lifecycle apply rejects with `OUT_OF_ORDER_EVENT`; the
+  audit seam rejects with `INVALID_CLAIM_FIELD`. A well-formed unknown string
+  id still raises `UNKNOWN_OPERATION` (malformed ≠ unknown). Three regression
+  tests pin retry atomicity on every seam: rejected events consume no sequence
+  and leave no partial state.
+- **Baseline evidence (independently rechecked by Sol before commit):**
+  standalone guard suite **306/306 PASS**; pytest **306 passed + 313
+  subtests**; `py_compile` PASS; `git diff --check` PASS.
+- **Scope:** R13 touched only the two scripts; PR scope remains exactly the
+  four claim-owned paths. `.kilo/` and `.serena/` remain protected untracked
+  state, untouched.
+- **Status:** `REVIEW_REQUESTED`; do not merge PR #84 and do not activate
+  ENV-COORD-003.

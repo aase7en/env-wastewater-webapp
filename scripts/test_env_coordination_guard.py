@@ -2133,6 +2133,26 @@ class TestOperationReconciliation(unittest.TestCase):
         self.assertEqual(cm.exception.reason, R.UNKNOWN_OPERATION)
         self.assertTrue(log.has_unresolved_external_operations)
 
+    def test_operation_record_requires_non_empty_string_operation_id_and_never_crashes(self):
+        # R13: malformed or unhashable ids must fail closed at the audit
+        # seam (INVALID_CLAIM_FIELD) instead of raising a raw TypeError
+        log = LifecycleLog("ENV-COORD-002-C1", 1)
+        log.apply(goal_start())
+        log.apply(op_intent())
+        for bad in (None, "", 7, ["op"], {"op": 1}):
+            with self.subTest(operation_id=bad):
+                with self.assertRaises(GuardFailure) as cm:
+                    log.operation_record(bad)
+                self.assertEqual(cm.exception.reason, R.INVALID_CLAIM_FIELD)
+                self.assertEqual(len(log.events), 2)
+                self.assertEqual(log.head_event_id, "o1")
+                self.assertEqual(set(log._operations), {"op-1"})
+        # preserve-semantics pin: a well-formed unknown string id stays
+        # UNKNOWN_OPERATION — malformed ≠ unknown
+        with self.assertRaises(GuardFailure) as cm:
+            log.operation_record("op-2")
+        self.assertEqual(cm.exception.reason, R.UNKNOWN_OPERATION)
+
     def test_reconciliation_without_unknown_outcome_rejected(self):
         # only an observed UNKNOWN outcome may be reconciled — an operation
         # with no outcome yet has nothing durable to reconcile against
@@ -4617,6 +4637,52 @@ class TestLifecycleSchemaBoundary(unittest.TestCase):
                 self.assertEqual(cm.exception.reason, R.OUT_OF_ORDER_EVENT)
                 self.assertEqual(len(log.events), 1)
                 self.assertEqual(log._operations, {})
+
+    def test_operation_outcome_requires_non_empty_string_operation_id(self):
+        # §5.5 stable operation identity at the outcome seam (R13): a
+        # malformed or unhashable id must fail closed before the operation
+        # container is consulted — malformed ≠ unknown
+        log = LifecycleLog("ENV-COORD-002-C1", 1)
+        log.apply(goal_start())
+        log.apply(op_intent())
+        for bad in (None, "", 7, ["op"], {"op": 1}):
+            with self.subTest(operation_id=bad):
+                with self.assertRaises(GuardFailure) as cm:
+                    log.apply(dataclasses.replace(op_outcome(), operation_id=bad))
+                self.assertEqual(cm.exception.reason, R.OUT_OF_ORDER_EVENT)
+                self.assertEqual(len(log.events), 2)
+                self.assertEqual(log.head_event_id, "o1")
+                self.assertIsNone(log._operations["op-1"]["outcome"])
+                self.assertTrue(log.has_unresolved_external_operations)
+        # retry-atomicity: rejected events consumed no sequence and left no
+        # partial state — the same seq/event ids still apply cleanly
+        status, _ = log.apply(op_outcome())
+        self.assertEqual(status, "applied")
+        self.assertEqual(log._operations["op-1"]["outcome"], "UNKNOWN")
+
+    def test_operation_reconciled_requires_non_empty_string_operation_id(self):
+        # §5.5 stable operation identity at the reconciliation seam (R13):
+        # malformed or unhashable ids must fail closed, not corrupt state
+        log = LifecycleLog("ENV-COORD-002-C1", 1)
+        log.apply(goal_start())
+        log.apply(op_intent())
+        log.apply(op_outcome())
+        for bad in (None, "", 7, ["op"], {"op": 1}):
+            with self.subTest(operation_id=bad):
+                with self.assertRaises(GuardFailure) as cm:
+                    log.apply(dataclasses.replace(op_reconciled(), operation_id=bad))
+                self.assertEqual(cm.exception.reason, R.OUT_OF_ORDER_EVENT)
+                self.assertEqual(len(log.events), 3)
+                self.assertEqual(log.head_event_id, "o2")
+                record = log.operation_record("op-1")
+                self.assertEqual(record["outcome"], "UNKNOWN")
+                self.assertIsNone(record["reconciled_outcome"])
+                self.assertTrue(log.has_unresolved_external_operations)
+        # retry-atomicity: the rejected reconciliations consumed no sequence
+        status, _ = log.apply(op_reconciled())
+        self.assertEqual(status, "applied")
+        self.assertFalse(log.has_unresolved_external_operations)
+        self.assertEqual(log.operation_record("op-1")["reconciled_outcome"], "SUCCEEDED")
 
     def test_event_sequence_gaps_are_legal_monotonic_progress(self):
         # §5.3 requires strictly increasing sequences; gaps are legal and

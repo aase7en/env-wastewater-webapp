@@ -936,3 +936,26 @@ Stop at `REVIEW_REQUESTED`. Do not merge.
   diff/CI/review to its exact PR head, and perform fresh Sol coordinator review;
   only an unchanged Sol-approved SHA may proceed to the independent high-risk
   final review.
+
+## Result — R13 malformed operation_id fencing / 2026-09-16
+
+- Inherited attributable dirty diff at HEAD `6df27e4bd7696e66dc4dcaca5c06ecf258515874`:
+  `scripts/env_coordination_guard.py` +11 / `scripts/test_env_coordination_guard.py`
+  +66 — verified, not rewritten.
+- Repairs: malformed/unhashable `operation_id` is now fenced **before** dict
+  access at all three remaining seams — `operation_record` (audit seam,
+  `INVALID_CLAIM_FIELD` via `_require_stable_id`) and the OPERATION_OUTCOME /
+  OPERATION_RECONCILED apply paths (`OUT_OF_ORDER_EVENT`). Well-formed unknown
+  string ids keep `UNKNOWN_OPERATION` semantics (malformed ≠ unknown).
+  Atomicity/retry regressions pinned: rejected events consume no sequence and
+  leave no partial state; the same event still applies cleanly after rejection.
+- Baseline (Sol independent recheck pre-commit, re-verified locally before
+  commit): standalone **306/306 PASS**; pytest **306 passed + 313 subtests**;
+  `py_compile` PASS; `git diff --check` PASS.
+- Scope: only the two scripts changed by R13; the four authorized paths remain
+  the whole PR scope. `.kilo/` and `.serena/` are protected untracked state.
+- Status: `REVIEW_REQUESTED`; do not merge PR #84; do not activate
+  ENV-COORD-003.
+- **Exactly ONE next safe action:** fresh exact-SHA Sol acceptance review of
+  the post-integration head, then an independent non-authoring high-risk
+  review; only after both pass on an unchanged SHA may merge proceed.
