@@ -997,3 +997,12 @@ slice.
   state, untouched.
 - **Status:** `REVIEW_REQUESTED`; do not merge PR #84 and do not activate
   ENV-COORD-003.
+- **Merged-base freeze:** integrated `origin/main@bf26cb523c375f44d3bdd0ee9a6d0d66f1eb81bb`
+  cleanly (GISTDA-only movement: `ENV-INT-GISTDA-CORE-001`, five files with no
+  overlap with PR scope). Full post-integration battery: standalone **306/306
+  PASS**; pytest **306 passed + 313 subtests**; `py_compile` PASS; `git diff
+  --check` and `git diff --check origin/main...HEAD` PASS; PR-relative scope
+  remains exactly the four claim-owned paths.
+- **ONE next safe action:** fresh exact-SHA Sol acceptance review of this
+  pushed head plus an independent non-authoring high-risk review; only after
+  both pass on an unchanged SHA may merge proceed.

@@ -956,6 +956,12 @@ Stop at `REVIEW_REQUESTED`. Do not merge.
   the whole PR scope. `.kilo/` and `.serena/` are protected untracked state.
 - Status: `REVIEW_REQUESTED`; do not merge PR #84; do not activate
   ENV-COORD-003.
+- **Merged-base freeze:** integrated `origin/main@bf26cb523c375f44d3bdd0ee9a6d0d66f1eb81bb`
+  cleanly; movement was GISTDA-only (`ENV-INT-GISTDA-CORE-001`, five files,
+  zero PR-scope overlap). Post-integration battery: standalone **306/306 PASS**;
+  pytest **306 passed + 313 subtests**; `py_compile` PASS; `git diff --check`
+  and `git diff --check origin/main...HEAD` PASS; scope vs `origin/main` is
+  exactly the four authorized paths.
 - **Exactly ONE next safe action:** fresh exact-SHA Sol acceptance review of
-  the post-integration head, then an independent non-authoring high-risk
-  review; only after both pass on an unchanged SHA may merge proceed.
+  the pushed head, then an independent non-authoring high-risk review; only
+  after both pass on an unchanged SHA may merge proceed.
