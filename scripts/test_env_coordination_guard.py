@@ -5288,6 +5288,270 @@ class TestR14StructuralBoundaryFencing(unittest.TestCase):
         self.assertIsNone(decision.reason)
 
 
+class TestR15MandatoryTransitionInvariants(unittest.TestCase):
+    """R15: a §4.3 transition may never validate against mandatory
+    identity/scope/global-shared-path invariants it contradicts.
+
+    Review of the R14 head found four P1 fail-open seams in
+    evaluate_control_transition: malformed/absent task_id silently
+    validating as a "new disjoint task" (P1-1); empty proposed_mutable_scope
+    validating for new claims and reassignments while validate_registry
+    requires a non-empty scope (P1-2); proposed_claim_id escaping §4.2
+    immutability — a new task duplicating ANY existing claim id (including
+    CLOSED records) or an existing task being silently renamed to a
+    different claim id (P1-3); and a proposal §7.3 exception re-covering a
+    canonical shared path already covered by an authoritative
+    policy.shared_exceptions record, minting a second temporary owner for
+    one path (P1-4). Also pins the deliberate P2: an empty
+    authorized_shared_exceptions container is equivalent to absent (no
+    proposed_claim_id required); non-empty exceptions still require one.
+    """
+
+    SHARED = "reports/shared-note.md"
+
+    @classmethod
+    def setUpClass(cls):
+        cls.policy = load_policy([base_claim(), other_lane_claim()])
+
+    def _proposal(self, **over):
+        p = {
+            "expected_policy_revision": POLICY_REV,
+            "expected_registry_hash": self.policy.registry_hash,
+            "task_id": "ENV-OPS-001B",
+            "expected_claim_generation": None,
+            "proposed_claim_generation": 1,
+            "proposed_mutable_scope": ["frontend/src/ops/**"],
+        }
+        p.update(over)
+        return p
+
+    def _reassignment(self, **over):
+        p = self._proposal(
+            task_id="ENV-COORD-002",
+            expected_claim_generation=1,
+            proposed_claim_generation=2,
+            proposed_mutable_scope=["scripts/new-lane/**"],
+        )
+        p.update(over)
+        return p
+
+    def _policy_with_authoritative_exception(self):
+        claim_a = base_claim(
+            mutable_scope=list(base_claim()["mutable_scope"]) + [self.SHARED]
+        )
+        claim_b = other_lane_claim(
+            task_id="OTHER",
+            claim_id="OTHER-C1",
+            mutable_scope=["docs/other/**", self.SHARED],
+        )
+        exception = {
+            "shared_paths": [self.SHARED],
+            "participating_claims": [
+                {"claim_id": "ENV-COORD-002-C1", "claim_generation": 1},
+                {"claim_id": "OTHER-C1", "claim_generation": 1},
+            ],
+            "integration_owner_claim_id": "ENV-COORD-002-C1",
+            "merge_order": ["OTHER-C1", "ENV-COORD-002-C1"],
+            "release_condition": "owner merges the shared change",
+        }
+        return load_policy([claim_a, claim_b], shared_exceptions=[exception])
+
+    # ── baseline: well-formed proposals keep validating ────────────────
+
+    def test_well_formed_new_and_reassignment_proposals_still_validate(self):
+        result = evaluate_control_transition(self.policy, self._proposal())
+        self.assertTrue(result.valid)
+        self.assertIsNone(result.reason)
+        result = evaluate_control_transition(self.policy, self._reassignment())
+        self.assertTrue(result.valid)
+        self.assertIsNone(result.reason)
+
+    # ── P1-1: task_id is a mandatory identity, fenced before lookup ────
+
+    def test_malformed_or_absent_task_id_never_validates_as_new_task(self):
+        for bad in (None, 7, True, 1.5, [], {}, "", False, 0, (), b"ENV-OPS-001B"):
+            with self.subTest(task_id=bad):
+                with self.assertRaises(GuardFailure) as cm:
+                    evaluate_control_transition(self.policy, self._proposal(task_id=bad))
+                self.assertEqual(cm.exception.reason, R.INVALID_CLAIM_FIELD)
+        with self.subTest(task_id="ABSENT"):
+            proposal = self._proposal()
+            del proposal["task_id"]
+            with self.assertRaises(GuardFailure) as cm:
+                evaluate_control_transition(self.policy, proposal)
+            self.assertEqual(cm.exception.reason, R.INVALID_CLAIM_FIELD)
+
+    # ── P1-2: registry-grade non-empty scope for proposals ─────────────
+
+    def test_empty_proposed_scope_rejected_for_new_and_reassignment(self):
+        for empty in ([], ()):
+            with self.subTest(scope=empty, kind="new"):
+                with self.assertRaises(GuardFailure) as cm:
+                    evaluate_control_transition(
+                        self.policy, self._proposal(proposed_mutable_scope=empty)
+                    )
+                self.assertEqual(cm.exception.reason, R.INVALID_CLAIM_FIELD)
+            with self.subTest(scope=empty, kind="reassignment"):
+                with self.assertRaises(GuardFailure) as cm:
+                    evaluate_control_transition(
+                        self.policy, self._reassignment(proposed_mutable_scope=empty)
+                    )
+                self.assertEqual(cm.exception.reason, R.INVALID_CLAIM_FIELD)
+
+    def test_non_empty_tuple_scope_still_validates(self):
+        # pin: non-empty tuple/list containers remain valid scope carriers
+        result = evaluate_control_transition(
+            self.policy, self._proposal(proposed_mutable_scope=("frontend/src/ops/**",))
+        )
+        self.assertTrue(result.valid)
+        self.assertIsNone(result.reason)
+
+    # ── P1-3: claim_id immutability (§4.2) ──────────────────────────────
+
+    def test_new_task_proposed_claim_id_may_not_duplicate_active_claim_id(self):
+        for dup in ("ENV-COORD-002-C1", "ENV-INT-GISTDA-CORE-001-C1"):
+            with self.subTest(claim_id=dup):
+                result = evaluate_control_transition(
+                    self.policy, self._proposal(proposed_claim_id=dup)
+                )
+                self.assertFalse(result.valid)
+                self.assertEqual(result.reason, R.DUPLICATE_CLAIM)
+
+    def test_new_task_proposed_claim_id_may_not_duplicate_closed_claim_id(self):
+        closed = other_lane_claim(
+            claim_id="CLOSED-LANE-C1", mutable_scope=["docs/closed/**"], status="CLOSED"
+        )
+        policy = load_policy([base_claim(), closed])
+        result = evaluate_control_transition(
+            policy,
+            self._proposal(
+                expected_registry_hash=policy.registry_hash,
+                proposed_claim_id="CLOSED-LANE-C1",
+            ),
+        )
+        self.assertFalse(result.valid)
+        self.assertEqual(result.reason, R.DUPLICATE_CLAIM)
+
+    def test_reassignment_may_not_change_immutable_claim_id(self):
+        # §4.2: reassignment increments claim_generation and KEEPS the
+        # claim id; a different id — fresh or borrowed — fails closed.
+        for bad in ("ENV-COORD-002-C2", "ENV-INT-GISTDA-CORE-001-C1"):
+            with self.subTest(proposed_claim_id=bad):
+                result = evaluate_control_transition(
+                    self.policy, self._reassignment(proposed_claim_id=bad)
+                )
+                self.assertFalse(result.valid)
+                self.assertEqual(result.reason, R.WRONG_CLAIM)
+
+    def test_claim_id_positive_controls_preserved(self):
+        # new task + fresh unique id, reassignment + same id, and
+        # reassignment without a separately-supplied id all stay valid
+        result = evaluate_control_transition(
+            self.policy, self._proposal(proposed_claim_id="ENV-OPS-001B-C1")
+        )
+        self.assertTrue(result.valid)
+        self.assertIsNone(result.reason)
+        result = evaluate_control_transition(
+            self.policy, self._reassignment(proposed_claim_id="ENV-COORD-002-C1")
+        )
+        self.assertTrue(result.valid)
+        self.assertIsNone(result.reason)
+
+    # ── P1-4: §7.3 global single shared-file record ─────────────────────
+
+    def test_proposal_exception_cannot_recover_authoritative_shared_path(self):
+        policy = self._policy_with_authoritative_exception()
+        for path in (self.SHARED, "Reports/Shared-Note.MD", "reports\\shared-note.md"):
+            with self.subTest(shared_path=path):
+                with self.assertRaises(GuardFailure) as cm:
+                    evaluate_control_transition(
+                        policy,
+                        self._proposal(
+                            expected_registry_hash=policy.registry_hash,
+                            proposed_claim_id="ENV-OPS-001B-C1",
+                            proposed_mutable_scope=["frontend/src/ops/**", self.SHARED],
+                            authorized_shared_exceptions=[
+                                {
+                                    "shared_paths": [path],
+                                    "participating_claims": [
+                                        {"claim_id": "ENV-OPS-001B-C1", "claim_generation": 1},
+                                        {"claim_id": "ENV-COORD-002-C1", "claim_generation": 1},
+                                        {"claim_id": "OTHER-C1", "claim_generation": 1},
+                                    ],
+                                    "integration_owner_claim_id": "ENV-OPS-001B-C1",
+                                    "merge_order": [
+                                        "OTHER-C1",
+                                        "ENV-COORD-002-C1",
+                                        "ENV-OPS-001B-C1",
+                                    ],
+                                    "release_condition": "owner merges the shared change",
+                                }
+                            ],
+                        ),
+                    )
+                self.assertEqual(cm.exception.reason, R.INVALID_SHARED_EXCEPTION)
+
+    def test_proposal_exception_on_uncovered_path_still_validates(self):
+        # control: a proposal exception over a path NOT authoritatively
+        # covered keeps authorizing the exact overlap (R2/R3 semantics)
+        policy = self._policy_with_authoritative_exception()
+        fresh = "scripts/env_coordination_guard.py"
+        result = evaluate_control_transition(
+            policy,
+            self._proposal(
+                expected_registry_hash=policy.registry_hash,
+                proposed_claim_id="ENV-OPS-001B-C1",
+                proposed_mutable_scope=["frontend/src/ops/**", fresh],
+                authorized_shared_exceptions=[
+                    {
+                        "shared_paths": [fresh],
+                        "participating_claims": [
+                            {"claim_id": "ENV-OPS-001B-C1", "claim_generation": 1},
+                            {"claim_id": "ENV-COORD-002-C1", "claim_generation": 1},
+                        ],
+                        "integration_owner_claim_id": "ENV-OPS-001B-C1",
+                        "merge_order": ["ENV-COORD-002-C1", "ENV-OPS-001B-C1"],
+                        "release_condition": "owner merges the shared change",
+                    }
+                ],
+            ),
+        )
+        self.assertTrue(result.valid)
+        self.assertIsNone(result.reason)
+
+    # ── P2 pin: empty authorized_shared_exceptions ≡ absent ─────────────
+
+    def test_empty_authorized_exceptions_equivalent_to_absent(self):
+        # deliberate behavior: []/() proposes NO exception — it must not
+        # require proposed_claim_id and must not reject the proposal
+        for empty in ([], ()):
+            with self.subTest(authorized_shared_exceptions=empty):
+                result = evaluate_control_transition(
+                    self.policy, self._proposal(authorized_shared_exceptions=empty)
+                )
+                self.assertTrue(result.valid)
+                self.assertIsNone(result.reason)
+
+    def test_nonempty_authorized_exceptions_still_require_claim_id(self):
+        with self.assertRaises(GuardFailure) as cm:
+            evaluate_control_transition(
+                self.policy,
+                self._proposal(authorized_shared_exceptions=[{}]),
+            )
+        self.assertEqual(cm.exception.reason, R.INVALID_SHARED_EXCEPTION)
+
+    # ── audit: the proposal container itself is a trust boundary ───────
+
+    def test_malformed_proposal_container_fails_closed_never_raw(self):
+        # R14-audit member: a non-mapping proposal crashed attribute
+        # access (raw AttributeError) instead of a typed reason
+        for bad in ("proposal", 5, None, True, ["p"], b"p"):
+            with self.subTest(proposal=bad):
+                with self.assertRaises(GuardFailure) as cm:
+                    evaluate_control_transition(self.policy, bad)
+                self.assertEqual(cm.exception.reason, R.INVALID_CLAIM_FIELD)
+
+
 def self_run_cli_validate(path):
     return subprocess.run(
         [sys.executable, GUARD, "validate-lifecycle", "--file", path],

@@ -549,7 +549,9 @@ def validate_registry(registry: Any) -> dict:
     return _freeze(registry)
 
 
-def _validate_and_index_shared_exceptions(exceptions: Any, claims_by_id: dict) -> dict:
+def _validate_and_index_shared_exceptions(
+    exceptions: Any, claims_by_id: dict, pre_claimed_paths: Optional[Iterable[str]] = None
+) -> dict:
     """Validate full §7.3 records and index the exact authorized overlap.
 
     Each exception requires: exact shared path(s) inside every
@@ -564,12 +566,16 @@ def _validate_and_index_shared_exceptions(exceptions: Any, claims_by_id: dict) -
     merge order; pairwise records over the same path would mint multiple
     temporary owners and make authorization list-order dependent.
     Duplicates are rejected, not treated as idempotent.
+    `pre_claimed_paths` seeds the canonical-path uniqueness set with paths
+    already covered by authoritative records (R15: a proposal exception
+    may not re-cover a path policy.shared_exceptions already covers —
+    there is no replace semantics to invent).
     Returns {frozenset({claim_a, claim_b}): {casefold path keys}}.
     """
     if not isinstance(exceptions, (list, tuple)):
         raise GuardFailure(R.INVALID_SHARED_EXCEPTION, "shared_exceptions must be a list")
     authorized: dict[frozenset, set] = {}
-    claimed_paths: set[str] = set()
+    claimed_paths: set[str] = set(pre_claimed_paths or ())
     for exc in exceptions:
         if not isinstance(exc, dict):
             raise GuardFailure(R.INVALID_SHARED_EXCEPTION, "exception must be an object")
@@ -1068,7 +1074,27 @@ def evaluate_control_transition(policy: TrustedPolicy, proposal: dict) -> Transi
     The proposal must carry the expected policy revision/registry hash it
     was drafted against; a proposal from a stale revision fails closed
     instead of winning a second integration from the same revision.
+
+    R15 mandatory invariants (§4.2/§4.3/§7.3): a proposal may never
+    validate when it contradicts a mandatory identity/scope/global-shared-
+    path invariant — malformed/absent task_id (P1-1), empty
+    proposed_mutable_scope where the registry requires non-empty (P1-2), a
+    proposed_claim_id that duplicates any existing claim id on a new task
+    or renames an existing task's immutable claim id (P1-3), or a §7.3
+    exception re-covering a canonical shared path an authoritative record
+    already covers (P1-4). Schema-level malformations raise typed
+    GuardFailures (validate_registry style); well-typed semantic
+    contradictions return TransitionValidation(False, reason) so no shape
+    ever yields valid=True.
     """
+    # R15 audit fence: the proposal itself is a JSON-like object at a
+    # public trust boundary — a non-mapping must fail closed with a typed
+    # reason instead of crashing attribute access (R14 seam class).
+    if not isinstance(proposal, dict):
+        raise GuardFailure(
+            R.INVALID_CLAIM_FIELD,
+            f"proposal must be an object: {proposal!r}",
+        )
     if proposal.get("expected_policy_revision") != policy.policy_revision:
         return TransitionValidation(False, R.STALE_POLICY_REVISION)
     if proposal.get("expected_registry_hash") != policy.registry_hash:
@@ -1084,8 +1110,26 @@ def evaluate_control_transition(policy: TrustedPolicy, proposal: dict) -> Transi
             R.INVALID_CLAIM_FIELD,
             f"proposed_mutable_scope must be a list of scope expressions: {raw_scope!r}",
         )
+    # R15 P1-2: validate_registry requires a non-empty mutable scope for
+    # every claim (_parse_scope_list); an empty list/tuple — or an omitted
+    # scope, which reads as empty — would validate a transition that can
+    # only produce a registry-invalid claim.
+    if not raw_scope:
+        raise GuardFailure(
+            R.INVALID_CLAIM_FIELD,
+            "proposed_mutable_scope must be a non-empty list",
+        )
     proposed_scope = [parse_scope_expr(expr) for expr in raw_scope]
-    task_id = proposal.get("task_id", "")
+    # R15 P1-1: task_id is a mandatory §4.3 identity — malformed, absent
+    # or empty values must fail closed BEFORE the claim lookup instead of
+    # silently validating as a "new" disjoint task (validate_registry
+    # applies the same non-empty-string contract to claim task_id).
+    task_id = proposal.get("task_id")
+    if not isinstance(task_id, str) or not task_id:
+        raise GuardFailure(
+            R.INVALID_CLAIM_FIELD,
+            f"task_id must be a non-empty string: {task_id!r}",
+        )
     existing = policy.claim_by_task(task_id)
     proposed_claim_id = proposal.get("proposed_claim_id")
     # R14: a proposed claim identity is a stable id (R12/R13 class) — only
@@ -1099,10 +1143,31 @@ def evaluate_control_transition(policy: TrustedPolicy, proposal: dict) -> Transi
             f"proposed_claim_id must be a non-empty string: {proposed_claim_id!r}",
         )
 
+    # R15 P1-3: claim_id is immutable (§4.2). A genuinely new task may not
+    # mint a claim id any existing record already owns — including
+    # released/CLOSED records, whose ids stay bound forever (DUPLICATE_CLAIM,
+    # the registry's own reason for duplicate claim ids). A reassignment of
+    # an existing task keeps its claim id and increments the generation; a
+    # different id — fresh or borrowed — contradicts the authoritative
+    # task↔claim binding (WRONG_CLAIM, preflight's reason for a presented
+    # claim id that is not the task's claim).
+    if existing is None:
+        if proposed_claim_id is not None and policy.claim_by_id(proposed_claim_id) is not None:
+            return TransitionValidation(False, R.DUPLICATE_CLAIM)
+    elif proposed_claim_id is not None and proposed_claim_id != existing["claim_id"]:
+        return TransitionValidation(False, R.WRONG_CLAIM)
+
     # a proposal may legalize scope overlap ONLY through §7.3 records that
-    # bind its claim id + generation and an existing claim's exact path
+    # bind its claim id + generation and an existing claim's exact path.
+    # R15 P2 pin: an empty authorized_shared_exceptions container (like
+    # None) proposes NO exception — it must not require proposed_claim_id.
+    raw_exceptions = proposal.get("authorized_shared_exceptions")
+    if raw_exceptions is not None and not isinstance(raw_exceptions, (list, tuple)):
+        raise GuardFailure(
+            R.INVALID_SHARED_EXCEPTION, "authorized_shared_exceptions must be a list"
+        )
     authorized_pairs: dict = {}
-    if proposal.get("authorized_shared_exceptions") is not None:
+    if raw_exceptions:
         if not proposed_claim_id:
             raise GuardFailure(
                 R.INVALID_SHARED_EXCEPTION, "authorized_shared_exceptions requires proposed_claim_id"
@@ -1113,8 +1178,20 @@ def evaluate_control_transition(policy: TrustedPolicy, proposal: dict) -> Transi
             "claim_generation": proposal.get("proposed_claim_generation", 1),
             "mutable_scope": list(raw_scope),
         }
+        # R15 P1-4: §7.3's one-record-per-canonical-path invariant is
+        # global — a proposal exception naming a path already covered by
+        # authoritative policy.shared_exceptions would mint a second
+        # temporary owner for that path. There is no replace semantics in
+        # the architecture; the path set is seeded into the uniqueness
+        # check so re-coverage fails closed (a future explicit
+        # replacement contract would have to reopen this).
+        authoritative_paths = {
+            parse_scope_expr(raw).key
+            for exc in policy.shared_exceptions
+            for raw in exc["shared_paths"]
+        }
         authorized_pairs = _validate_and_index_shared_exceptions(
-            proposal.get("authorized_shared_exceptions", []), virtual_claims
+            raw_exceptions, virtual_claims, pre_claimed_paths=authoritative_paths
         )
 
     for other in policy.claims:

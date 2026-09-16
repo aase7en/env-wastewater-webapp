@@ -1075,3 +1075,104 @@ slice.
 - **ONE next safe action:** fresh exact-SHA Sol acceptance review of the
   pushed R14 head, then the independent non-authoring high-risk final
   review; only after both pass on an unchanged SHA may merge proceed.
+
+## Result — R15 mandatory transition-invariant closure / 2026-09-17
+
+- **Trigger + verdict supersession:** the independent review verdict of
+  `APPROVED` on the R14 head `7fa38cc2…` is **superseded/invalidated**:
+  it missed Sol's deterministic `task_id` blocker (P1-1 below). R15 closes
+  that blocker's whole contract class — `evaluate_control_transition`
+  must never return `valid=True` for a transition contradicting mandatory
+  identity/scope/global-shared-path invariants of architecture
+  §§4.2, 4.3, 7.3 and `validate_registry`.
+- **Start state (re-verified before mutation):** HEAD
+  `7fa38cc2c9bc539600e13f7407575e5b6924838d` = `origin/feat/env-coord-002`
+  = PR #84 head; `origin/main@bf26cb523c375f44d3bdd0ee9a6d0d66f1eb81bb`
+  (ancestor-verified, integrated by R13's merge); tracked tree clean;
+  `.kilo/` + `.serena/` protected untracked. Live registry via guard CLI:
+  policy_revision `bf26cb5…`, registry_hash `2d1b901b…`,
+  `BOOTSTRAP_CONTROL`, claim `ENV-COORD-002-C1` gen 1 `CLAIMED` with
+  matching holder/worktree/branch — C1/g1 authority intact.
+- **RED (against unchanged code, recorded truthfully):** new
+  `TestR15MandatoryTransitionInvariants` (13 methods) → standalone
+  **331 tests / 24 failures + 8 errors** (32 failing items = 12 malformed/
+  absent `task_id` shapes, 4 empty-scope shapes, 3 claim-id duplication,
+  2 reassignment rename, 3 shared-path re-coverage, 2 empty-exceptions
+  errors, 6 raw-`AttributeError` proposal-container shapes; the 318 prior
+  tests + the 7 new positive controls passing); pytest **32 failed /
+  330 passed + 387 subtests**.
+- **Repairs (minimal; existing reason semantics; no authority widening):**
+  1. **P1-1** `task_id` requires an exact non-empty string BEFORE the
+     claim lookup (`GuardFailure(INVALID_CLAIM_FIELD)`, mirroring
+     `validate_registry`'s `_require_str` contract) — malformed, absent or
+     empty values can no longer validate as a "new disjoint task".
+  2. **P1-2** `proposed_mutable_scope` `[]`/`()` (and omitted, which
+     reads as empty) rejected with `GuardFailure(INVALID_CLAIM_FIELD,
+     "…must be a non-empty list")` for new claims AND reassignments —
+     registry-grade non-empty scope; non-empty tuple/list carriers stay
+     valid.
+  3. **P1-3** claim_id immutability (§4.2): new task + supplied
+     `proposed_claim_id` duplicating ANY existing claim id — including
+     released/CLOSED records — returns `DUPLICATE_CLAIM` (registry's own
+     duplicate-id reason); existing-task reassignment with a different id
+     (fresh or borrowed) returns `WRONG_CLAIM` (preflight's task↔claim
+     binding reason); `None` (not separately supplied) and exact-equal id
+     remain valid; a fresh unique id on a genuinely new task remains
+     valid. Both checks run before shared-exception processing, so a
+     duplicate id can never masquerade as a virtual participant and
+     overwrite a real claim record.
+  4. **P1-4** §7.3 global single shared-file record: canonical paths
+     covered by authoritative `policy.shared_exceptions` seed the
+     uniqueness set (`pre_claimed_paths`) of the proposal-exception
+     validator, so re-covering an authoritative path fails closed
+     `INVALID_SHARED_EXCEPTION` (same reason/message class as the
+     registry's one-record-per-path invariant). No replace semantics
+     invented — a future explicit replacement contract would have to
+     reopen this deliberately.
+  5. **P2 pin (deliberate):** empty `authorized_shared_exceptions`
+     container (`[]`/`()`) is equivalent to absent — it must NOT require
+     `proposed_claim_id` and does not reject the proposal; non-empty
+     exceptions still require `proposed_claim_id`.
+- **§4.3 same-class audit (per instruction):** `expected_policy_revision`
+  and `expected_registry_hash` — equality-fenced against trusted strings,
+  every malformed value yields typed `STALE_POLICY_REVISION`/
+  `STALE_REGISTRY_HASH` (fail-closed; no repair).
+  `expected/proposed_claim_generation` — R10 exact-int fences hold (no
+  repair). Scope elements — R1 `INVALID_SCOPE_EXPRESSION` (no repair).
+  Exception-record interiors — fenced by
+  `_validate_and_index_shared_exceptions` R3/R10/R14 (no repair).
+  **One same-class raw-exception member repaired:** a non-mapping
+  `proposal` container crashed with raw `AttributeError` on `.get` — now
+  `GuardFailure(INVALID_CLAIM_FIELD)` at the seam top. **Audited clean,
+  documented caller-contract oddity (not repaired):** a bool
+  `proposed_claim_generation=True` feeding the virtual-claim generation
+  cannot produce `valid=True` because the final exact-int generation
+  fence rejects it after exception indexing (fail-closed ordering).
+- **Bounded matrix (focused R15 run):** **13 passed + 31 subtests** —
+  every P1 closed (12 task_id shapes; []/() × new/reassignment; duplicate
+  active + CLOSED ids; fresh + borrowed rename; 3 canonical/case-alias/
+  separator-alias shared-path re-coverages; 6 container shapes) and every
+  positive control preserved (well-formed new/reassignment, non-empty
+  tuple scope, fresh unique id, same-id reassignment, exception on an
+  uncovered path, empty-exceptions ≡ absent).
+- **GREEN battery:** standalone **331/331 PASS** (stable across
+  consecutive runs); pytest **331 passed + 418 subtests**; focused
+  transition/R13/R14/R15 selection **36 passed + 110 subtests**; workflow
+  runtimes **14/14 PASS**; runtime checker PASS (**5 workflow files**);
+  `test_split_sql.py` all passed; CI-alert **33/33 PASS**; `py_compile`
+  both scripts PASS; `git diff --check` PASS; live `status` CLI smoke
+  reads the real registry (`bf26cb5`, `BOOTSTRAP_CONTROL`,
+  `ENV-COORD-002-C1` gen 1 `CLAIMED`).
+- **Base freeze:** `origin/main` re-fetched before freeze and unchanged
+  at `bf26cb523c375f44d3bdd0ee9a6d0d66f1eb81bb`; already an ancestor of
+  HEAD (R13 merge `ba3d305`) — nothing to integrate, no conflict.
+- **Scope:** code changes confined to the two scripts; this WO + the lane
+  handoff carry evidence only. PR-relative scope vs `origin/main` remains
+  exactly the four claim-owned paths. `.kilo/` and `.serena/` remain
+  protected untracked state, untouched.
+- **Status:** `REVIEW_REQUESTED`; do not merge PR #84; ENV-COORD-003
+  stays blocked pending fresh review.
+- **ONE next safe action:** fresh Sol exact-SHA review of the pushed R15
+  head by a reviewer bound to this exact SHA, then an independent
+  non-authoring high-risk final review; only after both pass on an
+  unchanged SHA may merge proceed.

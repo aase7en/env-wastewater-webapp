@@ -1023,3 +1023,62 @@ Stop at `REVIEW_REQUESTED`. Do not merge.
   of the pushed R14 head; only after Sol approval on the unchanged SHA
   plus the independent non-authoring high-risk final review may merge
   proceed.
+
+## Result — R15 mandatory transition-invariant closure / 2026-09-17
+
+- **Verdict supersession:** the independent `APPROVED` verdict on the R14
+  head `7fa38cc2…` is **superseded/invalidated** — it missed Sol's
+  deterministic `task_id` blocker. R15 closes that blocker's contract
+  class: `evaluate_control_transition` must never return `valid=True` for
+  a transition contradicting mandatory identity/scope/global-shared-path
+  invariants (§§4.2, 4.3, 7.3; `validate_registry`).
+- **Start state (re-verified):** HEAD `7fa38cc2c9bc539600e13f7407575e5b6924838d`
+  = `origin/feat/env-coord-002` = PR #84 head; `origin/main@bf26cb5…`
+  ancestor-verified; tracked tree clean (`.kilo/` + `.serena/` protected
+  untracked); live registry via CLI `bf26cb5` / `2d1b901b…` /
+  `BOOTSTRAP_CONTROL` / `ENV-COORD-002-C1` g1 `CLAIMED` — same
+  claim/generation/holder, four-path scope.
+- **RED (truthful, against unchanged code):** `TestR15MandatoryTransitionInvariants`
+  (13 methods) → standalone **331 tests / 24 failures + 8 errors** (32
+  failing items across the four P1s + the audit container seam; 318 prior
+  tests + 7 new positive controls green); pytest **32 failed / 330 passed
+  + 387 subtests**.
+- **Repairs:** P1-1 exact non-empty-str `task_id` fenced before claim
+  lookup (`INVALID_CLAIM_FIELD`); P1-2 empty/omitted
+  `proposed_mutable_scope` rejected for new claims AND reassignments
+  (`INVALID_CLAIM_FIELD`, registry-grade non-empty); P1-3 claim_id
+  immutability — new task duplicating ANY existing id (incl. CLOSED) →
+  `DUPLICATE_CLAIM`, reassignment with a different id → `WRONG_CLAIM`,
+  None/equal-id/fresh-unique-id controls preserved, checks precede
+  exception processing (no virtual-claim overwrite); P1-4 authoritative
+  `policy.shared_exceptions` paths seed the proposal-exception uniqueness
+  set → re-coverage fails `INVALID_SHARED_EXCEPTION`, no replace
+  semantics invented; P2 pin — `authorized_shared_exceptions=[]`/`()`
+  ≡ absent (no `proposed_claim_id` required), non-empty still requires
+  one. Audit repair: non-mapping proposal container → typed
+  `INVALID_CLAIM_FIELD` instead of raw `AttributeError`.
+- **§4.3 audit clean (no repair, fail-closed already):**
+  revision/hash equality fences, R10 exact-int generation fences, R1
+  scope-element grammar, exception-record interior fences, and the bool
+  `proposed_claim_generation` virtual-claim feed (final generation fence
+  rejects it after indexing — cannot yield valid=True).
+- **GREEN battery:** standalone **331/331 PASS** (stable re-runs); pytest
+  **331 passed + 418 subtests**; focused transition/R13/R14/R15
+  **36 passed + 110 subtests**; R15 matrix focused **13 passed + 31
+  subtests**; workflow runtimes **14/14**; runtime checker PASS (5
+  files); `test_split_sql.py` all passed; CI-alert **33/33**;
+  `py_compile` PASS; `git diff --check` PASS; live `status` smoke reads
+  the real registry (`bf26cb5`, `BOOTSTRAP_CONTROL`, `CLAIMED`).
+- **Base freeze:** `origin/main` re-fetched before freeze, unchanged at
+  `bf26cb523c375f44d3bdd0ee9a6d0d66f1eb81bb`, already integrated
+  (ancestor of HEAD) — nothing to integrate, no conflict.
+- **Scope:** code in the two scripts only; evidence in this handoff +
+  the WO; PR-relative scope remains exactly the four claim-owned paths;
+  no hooks/CI/server/frontend/schema/Supabase/data touched; no secrets or
+  raw operational data read/persisted.
+- **Status:** `REVIEW_REQUESTED`; do not merge PR #84; ENV-COORD-003
+  stays blocked.
+- **Exactly ONE next safe action:** fresh Sol exact-SHA review of the
+  pushed R15 head (reviewer bound to the exact pushed SHA), then the
+  independent non-authoring high-risk final review; only after both pass
+  on an unchanged SHA may merge proceed.
