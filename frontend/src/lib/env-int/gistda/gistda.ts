@@ -180,7 +180,9 @@ export function parseGistdaPm25History(
   const observations: EnvIntObservation[] = [];
   for (let i = 0; i < history.length; i++) {
     const point = history[i];
-    if (!Array.isArray(point) || point.length < 2) {
+    // Exact pair arity per packet §3.2: Array<[pm25, dt]> — a 3+-element
+    // point is column drift, never silently truncated to the first two.
+    if (!Array.isArray(point) || point.length !== 2) {
       return { kind: "schema_mismatch", reason: `graphHistory24hrs[${i}] must be a [pm25, dt] pair` };
     }
     const value = contractNumber(point[0]);

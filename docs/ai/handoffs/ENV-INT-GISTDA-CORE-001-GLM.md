@@ -70,7 +70,27 @@ Data-Honesty review of the PR head (IMPLEMENTATION_SHA + PR recorded at
 push; this handoff is committed inside the candidate). GLM does not
 self-approve; GLM does not merge.
 
+## Review-blocker repair — 2026-09-16
+
+- PR #80 review blocker on `ddb1ac0`: history tuple arity was checked
+  `length < 2` instead of exact `=== 2`, so a 3-element `graphHistory24hrs`
+  point parsed OK instead of failing closed (contract: exact `[pm25, dt]`
+  pair, packet §3.2).
+- RED first: new regression test failed at `ddb1ac0` exactly as reported
+  (`expected 'ok' to be 'schema_mismatch'`); then the one-line minimal fix
+  (`!== 2`). Object-field tolerance policy untouched; suite now 26 focused
+  tests (25 + this regression).
+- Gates: focused 26/26; full Vitest 353/353 (dummy env); `tsc -b` PASS;
+  oxlint 0 errors / 33-warning exact baseline parity (stash-proven);
+  build PASS; `git diff --check` PASS; secret scan clean; scope audit =
+  2 lane code files + WO + this handoff.
+- Environment note: worktree `node_modules/@types/three` was corrupted by an
+  external process 2026-09-16 (pre-session); `tsc -b` TS7016 was proven
+  pre-existing at unmodified `ddb1ac0`, then repaired by overlay from the
+  intact pnpm store copy — no repo files touched.
+- origin/main at freeze `a92bfec` (docs-only since base; no overlap).
+
 ## One next safe action
 
 "GPT-5.6 Sol performs a fresh detached exact-SHA independent Standards +
-Spec/Data-Honesty review."
+Spec/Data-Honesty review of the repaired PR #80 head."

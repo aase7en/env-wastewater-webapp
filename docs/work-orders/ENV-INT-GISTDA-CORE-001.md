@@ -1,6 +1,6 @@
 # ENV-INT-GISTDA-CORE-001 — deterministic GISTDA PM2.5 adapter/parser core
 
-Status: REVIEW_REQUESTED (implementation complete; awaiting independent GPT-5.6 Sol exact-SHA review)
+Status: REVIEW_REQUESTED (review-blocker repaired 2026-09-16 on top of ddb1ac0; awaiting re-review of the new exact SHA)
 Owner / implementer: GLM-5.3 MAX (Core Engineering)
 Independent reviewer / merge owner: GPT-5.6 Sol
 Repository: `aase7en/env-wastewater-webapp`
@@ -8,7 +8,7 @@ Worktree: `A:\GitHub\envww-env-int-gistda-core-001`
 Branch: `feat/env-int-gistda-core-001`
 Base: `origin/main@685037e5c6c94bc11bf307ac2b739eaeec3eebd2` (verified 2026-09-03)
 Task handoff: `docs/ai/handoffs/ENV-INT-GISTDA-CORE-001-GLM.md`
-Last updated: 2026-09-03
+Last updated: 2026-09-16
 
 Activation authority: `docs/ai/CURRENT-WORK.md` next-safe-action line —
 "GLM-5.3 MAX may claim only the bounded ENV-INT-GISTDA-CORE-001
@@ -170,3 +170,40 @@ semantics would need guessing beyond the packet.
   no environmental writes of any kind.
 - **Browser/E2E not run:** pure Core slice with no browser-visible behavior
   (per WO verification plan; no fake E2E created).
+
+## Review-blocker repair evidence — 2026-09-16 (PR #80 review)
+
+- **Blocker (confirmed on exact head `ddb1ac07c6c9b604731f47fe755395897283176f`):**
+  the history contract pins `graphHistory24hrs: Array<[pm25:number, dt:string]>`
+  as an EXACT pair (packet §3.2), but the parser check `point.length < 2`
+  accepted 3+-element tuples, silently truncating extra elements — schema
+  drift that must fail closed.
+- **RED first:** added a dedicated regression test (`R9 regression (PR #80
+  review)`) proving a 3-element point `[17.099281, "2026-09-01T13:00:00.000Z",
+  "extra"]` must return `schema_mismatch`. At `ddb1ac0` it failed exactly as
+  the blocker states: `expected 'ok' to be 'schema_mismatch'` (25/26 passing;
+  only the regression red).
+- **Minimal fix:** `gistda.ts` history-point guard `< 2` → `!== 2` (matches
+  the already-exact `graphMetadata` length check). Extra unknown OBJECT fields
+  stay tolerated (policy unchanged, existing fuzz test still green); only
+  tuple arity is exact.
+- **GREEN gates:** focused gistda **26/26 PASS**; full Vitest **353/353 PASS**
+  (non-secret dummy Supabase env; without env the 2 pre-existing env-gated
+  files fail collection — unrelated to this lane); `tsc -b` PASS; oxlint
+  **0 errors, 33 warnings = exact baseline parity** (stash-proven identical
+  33/0 at `ddb1ac0`; the 2026-09-03 note recorded 12 — absolute baseline drift
+  is environmental, this diff adds zero); production build PASS; `git diff
+  --check` PASS; secret-pattern scan clean; changed files = `gistda.ts` +
+  `gistda.test.ts` + this WO + handoff only (scope audit clean).
+- **Environment repair (documented, no repo files touched):** this worktree's
+  `node_modules/@types/three` lost files 2026-09-16 ~12:16 local (before this
+  session; external process — dir timestamp evidence), making `tsc -b` fail
+  TS7016 at UNMODIFIED `ddb1ac0` (stash-proven pre-existing). Restored
+  non-destructively by overlay from the intact pnpm store copy
+  `@types+three@0.186.0` — the same 2026-09-03 install the lane verified.
+  `tsc -b` PASS after restore. node_modules is gitignored/regenerable; no
+  tracked file was modified by the repair.
+- **Current-main compatibility at freeze:** origin/main re-fetched →
+  `a92bfec2ffd705bec2a899995026d913412d1f52` (docs-only movement since
+  merge base `685037e`; zero overlap with lane scope; nothing to merge).
+  PR #80 OPEN at `ddb1ac0` before this push; implementer does not merge.

@@ -192,6 +192,15 @@ describe("GISTDA failure boundaries (R8–R12)", () => {
     expect(parseGistdaPm25History(metaSwapped, RECEIVED_AT).kind).toBe("schema_mismatch");
   });
 
+  it("R9 regression (PR #80 review): history tuple arity is exact — a 3-element point is schema_mismatch", () => {
+    // Contract: graphHistory24hrs: Array<[pm25:number, dt:string]> exact pair
+    // (packet §3.2). An extra trailing element is column drift; the parser
+    // must fail closed, never silently truncate to the first two elements.
+    const tuple3 = clone(HISTORY_OK) as unknown as { data: { graphHistory24hrs: unknown[] } };
+    tuple3.data.graphHistory24hrs[1] = [17.099281, "2026-09-01T13:00:00.000Z", "extra"];
+    expect(parseGistdaPm25History(tuple3, RECEIVED_AT).kind).toBe("schema_mismatch");
+  });
+
   it("R10: wrong primitive type (numeric string / boolean) → schema_mismatch, never coerced", () => {
     for (const bad of ["18.4", true, {}, []]) {
       const p = clone(PRED3_OK);
