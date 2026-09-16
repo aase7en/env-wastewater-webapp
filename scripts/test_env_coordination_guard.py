@@ -5035,6 +5035,259 @@ class TestR12FinalCampaignHardening(unittest.TestCase):
                     self.assertEqual(barrier.state, "QUIESCING")
                     self.assertEqual(barrier._attestations, {})
 
+class TestR14StructuralBoundaryFencing(unittest.TestCase):
+    """R14: JSON-like malformed inputs at public trust boundaries fail closed.
+
+    Independent review found raw TypeError/AttributeError escapes at three
+    seams: shared-exception merge_order elements, control-transition
+    proposed_mutable_scope container, and preflight worktree. This class
+    fences the structural type class across those boundaries —
+    integration_owner_claim_id, merge_order elements, proposed scope
+    elements/container, proposed claim identity, and the preflight
+    task/claim/holder/worktree/branch/generation/ancestry fields — so every
+    JSON-like malformed value produces a typed GuardFailure/Decision and
+    never a raw exception (§7.1 fail-closed reasons).
+    """
+
+    CLAIM_A = "ENV-COORD-002-C1"
+    CLAIM_B = "OTHER-C1"
+    SHARED_PATH = "reports/shared-note.md"
+
+    @classmethod
+    def setUpClass(cls):
+        cls.policy = cls._registry_with_exception(cls._exception())
+
+    @classmethod
+    def _exception(cls, **over):
+        record = {
+            "shared_paths": [cls.SHARED_PATH],
+            "participating_claims": [
+                {"claim_id": cls.CLAIM_A, "claim_generation": 1},
+                {"claim_id": cls.CLAIM_B, "claim_generation": 1},
+            ],
+            "integration_owner_claim_id": cls.CLAIM_A,
+            "merge_order": [cls.CLAIM_B, cls.CLAIM_A],
+            "release_condition": "owner merges the shared change",
+        }
+        record.update(over)
+        return record
+
+    @classmethod
+    def _registry_with_exception(cls, exception):
+        claim_a = base_claim(
+            mutable_scope=list(base_claim()["mutable_scope"]) + [cls.SHARED_PATH]
+        )
+        claim_b = other_lane_claim(
+            task_id="OTHER",
+            claim_id=cls.CLAIM_B,
+            mutable_scope=["docs/other/**", cls.SHARED_PATH],
+        )
+        return load_policy([claim_a, claim_b], shared_exceptions=[exception])
+
+    def _proposal(self, **over):
+        p = {
+            "expected_policy_revision": POLICY_REV,
+            "expected_registry_hash": self.policy.registry_hash,
+            "task_id": "ENV-OPS-001B",
+            "expected_claim_generation": None,
+            "proposed_claim_generation": 1,
+            "proposed_mutable_scope": ["frontend/src/ops/**"],
+        }
+        p.update(over)
+        return p
+
+    def _ctx(self, **over):
+        c = {
+            "task_id": "ENV-COORD-002",
+            "claim_id": "ENV-COORD-002-C1",
+            "claim_generation": 1,
+            "execution_holder_id": "zcode-env-coord-002-g1-primary",
+            "worktree": "A:/GitHub/envww-coord-002",
+            "branch": "feat/env-coord-002",
+            "base_ancestor_of_head": True,
+        }
+        c.update(over)
+        return c
+
+    # ── well-formed baseline: authorization must not narrow ────────────
+
+    def test_well_formed_exception_and_proposals_still_validate(self):
+        # a full §7.3 record in either merge order still authorizes the
+        # exact shared overlap (preserves R2/R3/R11 semantics)
+        policy = self._registry_with_exception(self._exception())
+        self.assertIn(self.SHARED_PATH, policy.raw_registry["claims"][0]["mutable_scope"])
+        policy_reversed = self._registry_with_exception(
+            self._exception(merge_order=[self.CLAIM_A, self.CLAIM_B])
+        )
+        self.assertEqual(policy_reversed.registry_hash, policy_reversed.registry_hash)
+        result = evaluate_control_transition(self.policy, self._proposal())
+        self.assertTrue(result.valid)
+        self.assertIsNone(result.reason)
+
+    # ── seam 1: shared-exception structural fields ─────────────────────
+
+    def test_merge_order_malformed_elements_fail_closed_never_raw(self):
+        for bad in (
+            {"claim": 1},          # unhashable dict → set() TypeError
+            ["nested"],            # unhashable list → set() TypeError
+            7,                     # mixed unorderable → sorted() TypeError
+            None,                  # mixed unorderable → sorted() TypeError
+            True,                  # bool masquerade + unorderable
+            1.0,                   # float masquerade + unorderable
+        ):
+            with self.subTest(merge_order_entry=bad):
+                with self.assertRaises(GuardFailure) as cm:
+                    self._registry_with_exception(
+                        self._exception(merge_order=[self.CLAIM_A, bad])
+                    )
+                self.assertEqual(cm.exception.reason, R.INVALID_SHARED_EXCEPTION)
+
+    def test_merge_order_string_entries_still_use_permutation_semantics(self):
+        # pin: str entries that are legal types but wrong VALUES keep the
+        # exact-permutation reason (malformed-type ≠ wrong-permutation)
+        for bad in ([self.CLAIM_A, ""], [self.CLAIM_A, "NOT-A-PARTICIPANT"], []):
+            with self.subTest(merge_order=bad):
+                with self.assertRaises(GuardFailure) as cm:
+                    self._registry_with_exception(self._exception(merge_order=bad))
+                self.assertEqual(cm.exception.reason, R.INVALID_SHARED_EXCEPTION)
+
+    def test_merge_order_malformed_container_fails_closed(self):
+        for bad in ("ENV-COORD-002-C1", 5, None, {"a": 1}):
+            with self.subTest(merge_order=bad):
+                with self.assertRaises(GuardFailure) as cm:
+                    self._registry_with_exception(self._exception(merge_order=bad))
+                self.assertEqual(cm.exception.reason, R.INVALID_SHARED_EXCEPTION)
+
+    def test_integration_owner_malformed_values_fail_closed_never_raw(self):
+        # audit pin: every JSON-like owner value already fails closed via
+        # the participation check — no repair needed, never a raw exception
+        for bad in ({"a": 1}, ["x"], 7, None, True, "", "UNKNOWN-C9"):
+            with self.subTest(integration_owner_claim_id=bad):
+                with self.assertRaises(GuardFailure) as cm:
+                    self._registry_with_exception(
+                        self._exception(integration_owner_claim_id=bad)
+                    )
+                self.assertEqual(cm.exception.reason, R.INVALID_SHARED_EXCEPTION)
+
+    # ── seam 2: control-transition proposal structure ──────────────────
+
+    def test_transition_proposed_scope_malformed_container_fails_closed(self):
+        for bad in (None, 5, 1.5, True, False, "frontend/src/ops/**", {"a": "b"}):
+            with self.subTest(proposed_mutable_scope=bad):
+                with self.assertRaises(GuardFailure) as cm:
+                    evaluate_control_transition(
+                        self.policy, self._proposal(proposed_mutable_scope=bad)
+                    )
+                self.assertEqual(cm.exception.reason, R.INVALID_CLAIM_FIELD)
+
+    def test_transition_proposed_scope_malformed_elements_fail_closed(self):
+        # audit pin: malformed ELEMENTS were already fenced by the scope
+        # grammar (R1); the container fence must not weaken them
+        for bad in ({"a": 1}, ["x"], 7, None, 1.5):
+            with self.subTest(element=bad):
+                with self.assertRaises(GuardFailure) as cm:
+                    evaluate_control_transition(
+                        self.policy, self._proposal(proposed_mutable_scope=[bad])
+                    )
+                self.assertEqual(cm.exception.reason, R.INVALID_SCOPE_EXPRESSION)
+
+    def test_transition_proposed_claim_id_malformed_fails_closed_never_raw(self):
+        for bad in (["NEW-C1"], {"id": 1}, 7, ""):
+            with self.subTest(proposed_claim_id=bad, shared_exceptions=True):
+                with self.assertRaises(GuardFailure) as cm:
+                    evaluate_control_transition(
+                        self.policy,
+                        self._proposal(
+                            proposed_claim_id=bad,
+                            proposed_mutable_scope=["frontend/src/ops/**"],
+                            authorized_shared_exceptions=[
+                                self._exception(
+                                    participating_claims=[
+                                        {"claim_id": "ENV-OPS-001B-C1", "claim_generation": 1},
+                                        {"claim_id": self.CLAIM_A, "claim_generation": 1},
+                                    ],
+                                    integration_owner_claim_id="ENV-OPS-001B-C1",
+                                    merge_order=["ENV-OPS-001B-C1", self.CLAIM_A],
+                                )
+                            ],
+                        ),
+                    )
+                self.assertEqual(cm.exception.reason, R.INVALID_CLAIM_FIELD)
+            with self.subTest(proposed_claim_id=bad, shared_exceptions=False):
+                # without exceptions, an overlapping scope would otherwise
+                # reach the frozenset/dict containers with a malformed id
+                with self.assertRaises(GuardFailure) as cm:
+                    evaluate_control_transition(
+                        self.policy,
+                        self._proposal(
+                            proposed_claim_id=bad,
+                            proposed_mutable_scope=["scripts/env_coordination_guard.py"],
+                        ),
+                    )
+                self.assertEqual(cm.exception.reason, R.INVALID_CLAIM_FIELD)
+
+    def test_transition_authorized_exceptions_container_malformed_fails_closed(self):
+        # audit pin: the exceptions container itself is already fenced
+        # (None stays the documented absent value and must NOT raise)
+        for bad in (5, "x", {"a": 1}):
+            with self.subTest(authorized_shared_exceptions=bad):
+                with self.assertRaises(GuardFailure) as cm:
+                    evaluate_control_transition(
+                        self.policy,
+                        self._proposal(
+                            proposed_claim_id="ENV-OPS-001B-C1",
+                            authorized_shared_exceptions=bad,
+                        ),
+                    )
+                self.assertEqual(cm.exception.reason, R.INVALID_SHARED_EXCEPTION)
+        result = evaluate_control_transition(
+            self.policy,
+            self._proposal(
+                proposed_claim_id="ENV-OPS-001B-C1",
+                authorized_shared_exceptions=None,
+            ),
+        )
+        self.assertTrue(result.valid)
+
+    # ── seam 3: preflight actual-context fields ────────────────────────
+
+    def test_preflight_worktree_malformed_type_denies_worktree_mismatch(self):
+        for bad in (None, 3, ["A:/x"], {"w": 1}, False):
+            with self.subTest(worktree=bad):
+                decision = preflight(self.policy, self._ctx(worktree=bad))
+                self.assertFalse(decision.safe_to_mutate)
+                self.assertEqual(decision.reason, R.WORKTREE_MISMATCH)
+        # pin: a well-typed but wrong worktree keeps the same reason
+        decision = preflight(self.policy, self._ctx(worktree="A:/GitHub/other"))
+        self.assertFalse(decision.safe_to_mutate)
+        self.assertEqual(decision.reason, R.WORKTREE_MISMATCH)
+
+    def test_preflight_malformed_json_field_values_never_crash(self):
+        # audit pin: equality-fenced fields already fail closed with their
+        # existing reasons for every JSON-like malformed value
+        expectations = (
+            ("task_id", ({"t": 1}, ["x"], 7, None), R.UNKNOWN_TASK),
+            ("claim_id", ({"c": 1}, ["x"], 7, None), R.WRONG_CLAIM),
+            ("execution_holder_id", ({"h": 1}, ["x"], 7, None), R.WRONG_EXECUTION_HOLDER),
+            ("branch", ({"b": 1}, ["x"], 7, None), R.BRANCH_MISMATCH),
+            ("claim_generation", (True, "1", 1.0, None, [1]), R.STALE_CLAIM_GENERATION),
+            ("base_ancestor_of_head", ("true", 1, [], {}, None), R.BASE_NOT_ANCESTOR),
+        )
+        for field, values, reason in expectations:
+            for bad in values:
+                with self.subTest(field=field, value=bad):
+                    decision = preflight(self.policy, self._ctx(**{field: bad}))
+                    self.assertFalse(decision.safe_to_mutate)
+                    self.assertEqual(decision.reason, reason)
+
+    def test_preflight_valid_context_still_authorizes(self):
+        # authorization-preservation pin: the exact matching context still
+        # passes after the R14 fences (no narrowing)
+        decision = preflight(self.policy, self._ctx())
+        self.assertTrue(decision.safe_to_mutate)
+        self.assertIsNone(decision.reason)
+
+
 def self_run_cli_validate(path):
     return subprocess.run(
         [sys.executable, GUARD, "validate-lifecycle", "--file", path],

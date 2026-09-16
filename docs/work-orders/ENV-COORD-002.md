@@ -15,7 +15,7 @@ Claim generation: `1`
 Execution holder ID: `zcode-env-coord-002-g1-primary`
 Enforcement mode: `BOOTSTRAP_CONTROL`
 Lane handoff/result destination: `docs/ai/handoffs/ENV-COORD-002-GLM.md`
-Last updated: 2026-09-14
+Last updated: 2026-09-16
 
 ## Parent architecture
 
@@ -1006,3 +1006,72 @@ slice.
 - **ONE next safe action:** fresh exact-SHA Sol acceptance review of this
   pushed head plus an independent non-authoring high-risk review; only after
   both pass on an unchanged SHA may merge proceed.
+
+## Result — R14 structural boundary fencing / 2026-09-16
+
+- **Trigger:** independent review of the R13 head `e3af986d…` found three
+  raw-exception escapes at public trust boundaries: shared-exception
+  `merge_order` malformed elements (raw `TypeError` from `set()`/`sorted()`),
+  control-transition `proposed_mutable_scope` malformed container (raw
+  `TypeError` from iteration; a `str`/`dict` container silently char/key
+  iterated), and preflight `worktree` malformed type (raw `AttributeError`
+  in `_normalize_worktree`). The structural-type audit of the same class
+  found two more members: an unhashable `proposed_claim_id` crashed the
+  virtual-claim dict / pair frozenset, and scalar/empty proposed claim ids
+  silently degraded to other reasons instead of an identity rejection.
+- **RED:** new `TestR14StructuralBoundaryFencing` (12 methods) recorded
+  standalone **318 tests / 6 failures + 20 errors** (26 failing items = the
+  20 raw-crash shapes + 6 wrong-typed-outcome shapes, all in the new class;
+  306 prior tests passing unchanged, R13 included); pytest **26 failed /
+  318 passed + 361 subtests**.
+- **Repairs (minimal, existing reason semantics only; no new reason codes,
+  no authorization widening; R13 preserved):**
+  1. `merge_order` elements must be exact non-empty strings before any
+     `set()`/`sorted()` call → `INVALID_SHARED_EXCEPTION`; string entries
+     keep exact-permutation semantics (malformed-type ≠ wrong-permutation).
+  2. `evaluate_control_transition` requires `proposed_mutable_scope` to be
+     a list/tuple → `INVALID_CLAIM_FIELD` (elements keep the R1
+     `INVALID_SCOPE_EXPRESSION` grammar fence); `proposed_claim_id` is a
+     stable identity (R12/R13 class) — only `None` (absent) or an exact
+     non-empty string may reach the dict/frozenset containers →
+     `INVALID_CLAIM_FIELD`. Fail-closed-only behavioral note: scalar/empty
+     proposed claim ids previously produced `INVALID_SHARED_EXCEPTION` or
+     `OWNERSHIP_CONFLICT` on some shapes; they now reject uniformly at the
+     identity fence before any container access.
+  3. preflight `worktree` must be an exact string; JSON-null / number /
+     container values deny with the existing `WORKTREE_MISMATCH` Decision
+     (the trusted claim side was already `_require_str`-validated by
+     `validate_registry`; missing key keeps its existing mismatch denial).
+- **Audited clean (typed outcomes pinned as regressions, no repair):**
+  `integration_owner_claim_id` (every JSON-like value already fails the
+  participation check with `INVALID_SHARED_EXCEPTION`), the
+  `authorized_shared_exceptions` container (list fence + documented
+  `None`-absent semantics), the preflight equality fields
+  (task/claim/holder/branch/generation/ancestry — typed Decisions with
+  their existing reasons for every JSON-like value), and malformed scope
+  elements (`INVALID_SCOPE_EXPRESSION`).
+- **Bounded adversarial sweep:** 31-probe matrix over the three seams plus
+  the audited fields → **0 raw `TypeError`/`AttributeError`**; every
+  JSON-like malformed input yields a typed `GuardFailure` or a typed
+  `Decision` (`WORKTREE_MISMATCH` denials).
+- **GREEN:** standalone **318/318 PASS** (stable across consecutive runs);
+  pytest **318 passed + 387 subtests**; focused high-risk classes (shared
+  exception, exception uniqueness, control transition, preflight fencing,
+  lifecycle type boundaries, operation reconciliation incl. R13, R14) →
+  **93 passed + 96 subtests**; workflow runtimes OK; runtime checker PASS
+  (5 workflow files); split_sql PASS; CI-alert **33/33 PASS**; `py_compile`
+  PASS; `git diff --check` PASS.
+- **Base freeze:** `origin/main` re-fetched before freeze and unchanged at
+  `bf26cb523c375f44d3bdd0ee9a6d0d66f1eb81bb` (already integrated by R13's
+  merge `ba3d305`; verified as an ancestor of HEAD). Live `status` smoke
+  reads the real registry through the frozen-SHA read (`bf26cb5`,
+  `BOOTSTRAP_CONTROL`, `ENV-COORD-002-C1` gen 1 `CLAIMED`).
+- **Scope:** code changes are confined to the two scripts; this WO + the
+  lane handoff carry evidence only. PR-relative scope vs `origin/main`
+  remains exactly the four claim-owned paths. `.kilo/` and `.serena/`
+  remain protected untracked state, untouched.
+- **Status:** `REVIEW_REQUESTED`; do not merge PR #84; do not activate
+  ENV-COORD-003.
+- **ONE next safe action:** fresh exact-SHA Sol acceptance review of the
+  pushed R14 head, then the independent non-authoring high-risk final
+  review; only after both pass on an unchanged SHA may merge proceed.

@@ -619,11 +619,21 @@ def _validate_and_index_shared_exceptions(exceptions: Any, claims_by_id: dict) -
                 R.INVALID_SHARED_EXCEPTION, f"integration owner {owner!r} does not participate"
             )
         order = exc["merge_order"]
-        if (
-            not isinstance(order, (list, tuple))
-            or len(order) != len(set(order))
-            or sorted(order) != sorted(set(participant_ids))
-        ):
+        if not isinstance(order, (list, tuple)):
+            raise GuardFailure(
+                R.INVALID_SHARED_EXCEPTION,
+                "merge_order must be an exact permutation of the participants",
+            )
+        for element in order:
+            # R14: merge-order entries are stable claim identities — an
+            # unhashable (dict/list) or non-string element must fail closed
+            # with a typed reason instead of crashing set()/sorted() with a
+            # raw TypeError.
+            if not isinstance(element, str) or not element:
+                raise GuardFailure(
+                    R.INVALID_SHARED_EXCEPTION, f"merge order entry {element!r}"
+                )
+        if len(order) != len(set(order)) or sorted(order) != sorted(set(participant_ids)):
             raise GuardFailure(
                 R.INVALID_SHARED_EXCEPTION,
                 "merge_order must be an exact permutation of the participants",
@@ -793,7 +803,14 @@ def preflight(policy: TrustedPolicy, ctx: dict) -> Decision:
         return _deny(policy, claim, R.STALE_CLAIM_GENERATION)
     if ctx.get("execution_holder_id") != claim["execution_holder_id"]:
         return _deny(policy, claim, R.WRONG_EXECUTION_HOLDER)
-    if _normalize_worktree(ctx.get("worktree", "")) != _normalize_worktree(claim["worktree"]):
+    ctx_worktree = ctx.get("worktree", "")
+    # R14: normalize only exact strings — a JSON-null/number/container
+    # worktree is a typed WORKTREE_MISMATCH denial, never a raw
+    # AttributeError inside _normalize_worktree (the trusted claim side is
+    # already _require_str-validated by validate_registry).
+    if not isinstance(ctx_worktree, str) or _normalize_worktree(
+        ctx_worktree
+    ) != _normalize_worktree(claim["worktree"]):
         return _deny(policy, claim, R.WORKTREE_MISMATCH)
     if ctx.get("branch") != claim["branch"]:
         return _deny(policy, claim, R.BRANCH_MISMATCH)
@@ -1057,12 +1074,30 @@ def evaluate_control_transition(policy: TrustedPolicy, proposal: dict) -> Transi
     if proposal.get("expected_registry_hash") != policy.registry_hash:
         return TransitionValidation(False, R.STALE_REGISTRY_HASH)
 
-    proposed_scope = [
-        parse_scope_expr(expr) for expr in proposal.get("proposed_mutable_scope", [])
-    ]
+    raw_scope = proposal.get("proposed_mutable_scope", [])
+    # R14: the proposed scope container must be a list/tuple of scope
+    # expressions — a scalar/string/mapping container must fail closed with
+    # a typed reason instead of a raw TypeError from iteration (a str
+    # container would otherwise silently iterate into per-character scopes).
+    if not isinstance(raw_scope, (list, tuple)):
+        raise GuardFailure(
+            R.INVALID_CLAIM_FIELD,
+            f"proposed_mutable_scope must be a list of scope expressions: {raw_scope!r}",
+        )
+    proposed_scope = [parse_scope_expr(expr) for expr in raw_scope]
     task_id = proposal.get("task_id", "")
     existing = policy.claim_by_task(task_id)
     proposed_claim_id = proposal.get("proposed_claim_id")
+    # R14: a proposed claim identity is a stable id (R12/R13 class) — only
+    # None (absent) or an exact non-empty string may reach the dict/frozenset
+    # containers below; unhashable or scalar ids fail closed, never crash.
+    if proposed_claim_id is not None and (
+        not isinstance(proposed_claim_id, str) or not proposed_claim_id
+    ):
+        raise GuardFailure(
+            R.INVALID_CLAIM_FIELD,
+            f"proposed_claim_id must be a non-empty string: {proposed_claim_id!r}",
+        )
 
     # a proposal may legalize scope overlap ONLY through §7.3 records that
     # bind its claim id + generation and an existing claim's exact path
@@ -1076,7 +1111,7 @@ def evaluate_control_transition(policy: TrustedPolicy, proposal: dict) -> Transi
         virtual_claims[proposed_claim_id] = {
             "claim_id": proposed_claim_id,
             "claim_generation": proposal.get("proposed_claim_generation", 1),
-            "mutable_scope": list(proposal.get("proposed_mutable_scope", [])),
+            "mutable_scope": list(raw_scope),
         }
         authorized_pairs = _validate_and_index_shared_exceptions(
             proposal.get("authorized_shared_exceptions", []), virtual_claims

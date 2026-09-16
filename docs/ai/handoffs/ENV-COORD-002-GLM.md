@@ -13,7 +13,7 @@ Planned worktree: `A:\\GitHub\\envww-coord-002`
 Planned branch: `feat/env-coord-002`
 Claim policy base: `origin/main@6360e149f42c419a8d7f878f28fc439e0ef1f6cc`
 Work Order: `docs/work-orders/ENV-COORD-002.md`
-Last updated: 2026-09-14
+Last updated: 2026-09-16
 
 ## Before any mutation
 
@@ -965,3 +965,61 @@ Stop at `REVIEW_REQUESTED`. Do not merge.
 - **Exactly ONE next safe action:** fresh exact-SHA Sol acceptance review of
   the pushed head, then an independent non-authoring high-risk review; only
   after both pass on an unchanged SHA may merge proceed.
+
+## Result — R14 structural boundary fencing / 2026-09-16
+
+- **Start state (re-verified before mutation):** head
+  `e3af986d03b5138ee18870f39f0d5a6a5d1438e9` (= `origin/feat/env-coord-002`,
+  R13 freeze); tracked tree clean; `.kilo/` + `.serena/` protected
+  untracked. Live registry re-read through the guard CLI: policy_revision
+  `bf26cb523c375f44d3bdd0ee9a6d0d66f1eb81bb`, registry_hash `2d1b901b…`,
+  `BOOTSTRAP_CONTROL`, claim `ENV-COORD-002-C1` gen 1 `CLAIMED`, holder/
+  worktree/branch matching — claim gate intact for this generation.
+- **Findings (independent review + same-class structural audit):** raw
+  `TypeError` from malformed `merge_order` elements (`set()`/`sorted()` on
+  unhashable/unorderable entries); raw `TypeError` from a malformed
+  `proposed_mutable_scope` container (iteration of scalars; `str`/`dict`
+  silently char/key-iterated); raw `AttributeError` from a malformed
+  preflight `worktree` (`_normalize_worktree` on non-str); unhashable
+  `proposed_claim_id` crashing the virtual-claim dict / pair frozenset;
+  scalar/empty proposed claim ids silently degrading to non-identity
+  reasons.
+- **RED:** `TestR14StructuralBoundaryFencing` (12 methods) against the
+  prior implementation → standalone **318 tests, 6 failures + 20 errors**
+  (26 failing items = 20 raw-crash + 6 wrong-typed-outcome shapes; the 306
+  prior tests green, R13 included); pytest **26 failed / 318 passed + 361
+  subtests**.
+- **GREEN:** standalone **318/318 PASS** (stable across consecutive runs);
+  pytest **318 passed + 387 subtests**; focused high-risk classes **93
+  passed + 96 subtests** (shared exception, uniqueness, control transition,
+  preflight fencing, lifecycle type boundaries, operation reconciliation
+  incl. R13, R14); workflow runtimes OK; runtime checker PASS (5 files);
+  split_sql PASS; CI-alert **33/33**; `py_compile` PASS; `git diff --check`
+  PASS.
+- **Bounded adversarial sweep:** 31 probes (merge_order elements/container,
+  `integration_owner_claim_id` values, scope container/elements,
+  `proposed_claim_id` with and without shared exceptions, exceptions
+  container, all seven preflight context fields) → **0 raw exceptions**;
+  every JSON-like malformed input yields a typed `GuardFailure` or typed
+  `Decision`.
+- **Repairs (existing reason semantics; R13 unchanged):** merge_order
+  element fence (`INVALID_SHARED_EXCEPTION`); proposed-scope container
+  fence + proposed-claim-id stable-identity fence (`INVALID_CLAIM_FIELD`;
+  elements keep `INVALID_SCOPE_EXPRESSION`); preflight worktree exact-str
+  fence (`WORKTREE_MISMATCH` Decision). Fail-closed-only note: scalar/empty
+  proposed claim ids now reject uniformly at the identity fence instead of
+  `INVALID_SHARED_EXCEPTION`/`OWNERSHIP_CONFLICT` on some shapes.
+- **Audited clean + pinned as regressions:** `integration_owner_claim_id`
+  (all JSON-like values → participation-check rejection), exceptions
+  container (`None` = documented absent), preflight equality fields,
+  scope elements.
+- **Merged-base freeze:** `origin/main` re-fetched before freeze and
+  unchanged at `bf26cb523c375f44d3bdd0ee9a6d0d66f1eb81bb` — already
+  integrated by R13's merge `ba3d305` (ancestor of HEAD verified); nothing
+  to integrate. Scope vs `origin/main` = exactly the four authorized paths.
+- **Status:** `REVIEW_REQUESTED`; do not merge PR #84; ENV-COORD-003 stays
+  blocked pending fresh review.
+- **Exactly ONE next safe action:** fresh exact-SHA Sol acceptance review
+  of the pushed R14 head; only after Sol approval on the unchanged SHA
+  plus the independent non-authoring high-risk final review may merge
+  proceed.
