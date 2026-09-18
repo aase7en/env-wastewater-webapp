@@ -1082,3 +1082,15 @@ Stop at `REVIEW_REQUESTED`. Do not merge.
   pushed R15 head (reviewer bound to the exact pushed SHA), then the
   independent non-authoring high-risk final review; only after both pass
   on an unchanged SHA may merge proceed.
+
+## Result — R16 duplicate-JSON authority fencing / 2026-09-18
+
+- **Trigger:** fresh GPT-5.6 Sol exact-SHA review of PR #84 head `fcb85e393705e0325a53ef53ba7aaa4ec898c05c` found a P1 fail-closed defect: ordinary `json.loads()` collapsed duplicate JSON object member names before registry semantic validation. Durable review finding: PR #84 comment `issuecomment-5731513884`.
+- **Deterministic reproducer:** one claim object containing both `"status": "CLOSED"` and `"status": "CLAIMED"` was accepted by `load_trusted_policy`; the parsed authority became `CLAIMED`.
+- **Execution:** bounded repair authored by GPT-5.6 Sol through Remote Desktop Commander under the user's explicit 2026-09-18 instruction to use RDC as fallback while Worker 1–5 are unavailable. Claim scope/generation are unchanged; no overlapping writer was launched.
+- **RED:** new `TestR16DuplicateJsonMembers` produced 5 failing subcases across wrapper-level `coordination_registry`, registry `enforcement_mode`, and claim `status` / `claim_generation` / `execution_holder_id` duplicate members.
+- **Repair:** one duplicate-detecting JSON object-pairs hook now rejects repeated member names at every object level with typed `REGISTRY_MALFORMED_JSON`; both trusted-registry parse sites use the same helper, so ambiguity is rejected before information is lost. Exact raw-block hash semantics are preserved.
+- **GREEN:** standalone **334/334 PASS**; pytest **334 passed + 421 subtests**; adjacent workflow/split-SQL/CI-alert **47/47 PASS**; workflow runtime checker **5 files PASS**; `py_compile` PASS; `git diff --check` PASS; direct duplicate-status reproducer now fails closed with `REGISTRY_MALFORMED_JSON`.
+- **Scope:** production/test changes only in the two scripts; this Work Order + lane handoff carry evidence. No `CURRENT-WORK.md`, architecture, workflow, frontend, Supabase, schema, data, secret, or raw operational-data mutation.
+- **Status:** `RE-REVIEW_REQUESTED`; do not merge PR #84 and do not activate ENV-COORD-003.
+- **ONE next safe action:** freeze/push the R16 exact SHA, bind CI and focused Sol rereview to that SHA, then obtain the required independent non-authoring high-risk final review before merge.

@@ -375,6 +375,35 @@ REQUIRED_SHARED_EXCEPTION_FIELDS = (
 )
 
 
+
+def _reject_duplicate_json_members(pairs):
+    """Build one JSON object while rejecting duplicate member names.
+
+    The coordination registry is an authorization document. Ordinary
+    json.loads() silently keeps the last duplicate member, destroying
+    ambiguity evidence before semantic validation. Reject duplicates at
+    every object level instead.
+    """
+    result = {}
+    for key, value in pairs:
+        if key in result:
+            raise GuardFailure(
+                R.REGISTRY_MALFORMED_JSON,
+                f"duplicate JSON object member: {key!r}",
+            )
+        result[key] = value
+    return result
+
+
+def _parse_registry_json(block: str) -> dict:
+    try:
+        return json.loads(block, object_pairs_hook=_reject_duplicate_json_members)
+    except GuardFailure:
+        raise
+    except (json.JSONDecodeError, ValueError) as exc:
+        raise GuardFailure(R.REGISTRY_MALFORMED_JSON, str(exc)) from exc
+
+
 def extract_registry_block(text: str) -> tuple[str, int]:
     """Find THE fenced json block that parses to a coordination registry.
 
@@ -393,10 +422,7 @@ def extract_registry_block(text: str) -> tuple[str, int]:
             break
         block = text[content_start:end].strip()
         if "coordination_registry" in block:
-            try:
-                parsed = json.loads(block)
-            except (json.JSONDecodeError, ValueError):
-                raise GuardFailure(R.REGISTRY_MALFORMED_JSON, "registry fence is not valid JSON")
+            parsed = _parse_registry_json(block)
             if isinstance(parsed, dict) and "coordination_registry" in parsed:
                 candidates.append((block, start))
         search_from = end + 3
@@ -722,7 +748,7 @@ def load_trusted_policy(text: str, policy_revision: str) -> TrustedPolicy:
     if not isinstance(policy_revision, str) or not policy_revision:
         raise GuardFailure(R.INVALID_CLAIM_FIELD, "policy_revision must be a non-empty string")
     block, _ = extract_registry_block(text)
-    parsed = json.loads(block)
+    parsed = _parse_registry_json(block)
     registry = validate_registry(parsed["coordination_registry"])
     return TrustedPolicy(
         policy_revision=policy_revision,

@@ -514,6 +514,51 @@ class TestRegistryParsing(unittest.TestCase):
 # ─────────────────────────────────────────────────────────────────────────
 # §3.1/§3.2/§4.2/§4.4 preflight, fencing, holder identity
 # ─────────────────────────────────────────────────────────────────────────
+
+class TestR16DuplicateJsonMembers(unittest.TestCase):
+    """R16: trusted registry JSON must reject duplicate object members before semantic validation."""
+
+    def _assert_rejected(self, text):
+        with self.assertRaises(GuardFailure) as cm:
+            load_trusted_policy(text, POLICY_REV)
+        self.assertEqual(cm.exception.reason, R.REGISTRY_MALFORMED_JSON)
+
+    def test_duplicate_wrapper_registry_member_rejected(self):
+        text = make_registry_text([base_claim()])
+        needle = '"coordination_registry": {'
+        self.assertIn(needle, text)
+        ambiguous = text.replace(
+            needle,
+            '"coordination_registry": {},\n  "coordination_registry": {',
+            1,
+        )
+        self._assert_rejected(ambiguous)
+
+    def test_duplicate_registry_authority_member_rejected(self):
+        text = make_registry_text([base_claim()])
+        needle = '"enforcement_mode": "BOOTSTRAP_CONTROL"'
+        self.assertIn(needle, text)
+        ambiguous = text.replace(
+            needle,
+            '"enforcement_mode": "HARDENED",\n    "enforcement_mode": "BOOTSTRAP_CONTROL"',
+            1,
+        )
+        self._assert_rejected(ambiguous)
+
+    def test_duplicate_claim_authority_members_rejected(self):
+        cases = (
+            ('"status": "CLAIMED"', '"status": "CLOSED",\n        "status": "CLAIMED"'),
+            ('"claim_generation": 1', '"claim_generation": 2,\n        "claim_generation": 1'),
+            ('"execution_holder_id": "zcode-env-coord-002-g1-primary"',
+             '"execution_holder_id": "other-holder",\n        "execution_holder_id": "zcode-env-coord-002-g1-primary"'),
+        )
+        for needle, replacement in cases:
+            with self.subTest(member=needle):
+                text = make_registry_text([base_claim()])
+                self.assertIn(needle, text)
+                self._assert_rejected(text.replace(needle, replacement, 1))
+
+
 class TestPreflightFencing(unittest.TestCase):
     """§4.4 claim activation checks; §4.2 generation/holder fencing."""
 
