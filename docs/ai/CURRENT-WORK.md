@@ -37,13 +37,13 @@ exact-SHA independent review and merge into `main`.
   "coordination_registry": {
     "version": 1,
     "enforcement_mode": "BOOTSTRAP_CONTROL",
-    "expected_policy_revision": "6360e149f42c419a8d7f878f28fc439e0ef1f6cc",
+    "expected_policy_revision": "94c1a8f9dda5424c0403c69d26e17d6d9e8e38ed",
     "claims": [
       {
         "task_id": "ENV-COORD-002",
         "claim_id": "ENV-COORD-002-C1",
         "claim_generation": 1,
-        "status": "CLAIMED",
+        "status": "CLOSED",
         "owner_role": "core_implementation",
         "agent_model": "GLM-5.3 MAX",
         "execution_holder_id": "zcode-env-coord-002-g1-primary",
@@ -75,17 +75,63 @@ exact-SHA independent review and merge into `main`.
           "bootstrap claim transition reviewed and merged before implementation mutation"
         ],
         "last_checkpoint_pointer": "docs/ai/handoffs/ENV-COORD-002-GLM.md",
-        "one_next_safe_action": "Obtain independent exact-SHA review of this bootstrap claim transition, merge it, then create the isolated implementation worktree and launch the single GLM-5.3 MAX execution holder."
+        "one_next_safe_action": "Closed after PR #84 expected-head merge 94c1a8f9dda5424c0403c69d26e17d6d9e8e38ed and merged-head verification; no further mutation is authorized under generation 1."
+      },
+      {
+        "task_id": "ENV-COORD-003",
+        "claim_id": "ENV-COORD-003-C1",
+        "claim_generation": 1,
+        "status": "CLAIMED",
+        "owner_role": "core_implementation",
+        "agent_model": "GLM-5.3 MAX",
+        "execution_holder_id": "kilo-glm-env-coord-003-g1-primary",
+        "worktree": "A:/GitHub/envww-coord-003",
+        "branch": "feat/env-coord-003-shadow",
+        "base_sha": "94c1a8f9dda5424c0403c69d26e17d6d9e8e38ed",
+        "mutable_scope": [
+          ".github/workflows/coordination-shadow.yml",
+          "scripts/env_coordination_ci.py",
+          "scripts/test_env_coordination_ci.py",
+          "docs/work-orders/ENV-COORD-003.md",
+          "docs/ai/handoffs/ENV-COORD-003-GLM.md"
+        ],
+        "forbidden_scope": [
+          "docs/ai/CURRENT-WORK.md",
+          "docs/ai/HANDOFF.md",
+          "docs/ai/architecture/ENV-COORDINATION-GUARD.md",
+          "AGENTS.md",
+          "scripts/env_coordination_guard.py",
+          "scripts/test_env_coordination_guard.py",
+          ".github/workflows/deploy-frontend.yml",
+          ".github/workflows/e2e.yml",
+          ".github/workflows/supabase-keepalive.yml",
+          ".github/workflows/test.yml",
+          ".github/workflows/_example_hermes_l4_auto_pr.yml",
+          ".claude/**",
+          "frontend/**",
+          "supabase/**",
+          "data/**"
+        ],
+        "work_order_path": "docs/work-orders/ENV-COORD-003.md",
+        "handoff_path": "docs/ai/handoffs/ENV-COORD-003-GLM.md",
+        "review_owner": "GPT-5.6 Sol + fresh independent reviewer",
+        "dependencies": [
+          "ENV-COORD-002 CLOSED after PR #84 merged as 94c1a8f9dda5424c0403c69d26e17d6d9e8e38ed and merged-head guard/runtime verification passed",
+          "Core semantics are stable; production dispatch remains paused; GitHub server policy remains out of scope until ENV-COORD-004 human authorization"
+        ],
+        "last_checkpoint_pointer": "docs/ai/handoffs/ENV-COORD-003-GLM.md",
+        "one_next_safe_action": "After this claim transition is independently reviewed and merged into main, create A:/GitHub/envww-coord-003 from then-current main, prove SAFE_TO_MUTATE = YES, then launch the single GLM-5.3 MAX holder."
       }
     ]
   }
 }
 ```
 
-## Active frontier - 2026-09-07
+## Active frontier - 2026-09-20
 
-- **`ENV-COORD-001` / CLOSED / PR #82** — Astra independently APPROVED exact architecture SHA `e5f6a419aa226151788763970e8c008f48d4a28d` with no blockers; PR #82 merged with expected-head protection as `6360e149f42c419a8d7f878f28fc439e0ef1f6cc`. Production activation is still blocked because coordination enforcement is not yet installed.
-- **`ENV-COORD-002` / CLAIM PROPOSED / BOOTSTRAP_CONTROL** — deterministic Coordination Guard core + registry parser + tests. Proposed owner GLM-5.3 MAX, claim `ENV-COORD-002-C1`, generation `1`, execution holder `zcode-env-coord-002-g1-primary`, planned branch `feat/env-coord-002`. No implementation mutation is authorized until this claim transition is independently reviewed and merged into authoritative `main`.
+- **`ENV-COORD-001` / CLOSED / PR #82** — approved architecture merged as `6360e149f42c419a8d7f878f28fc439e0ef1f6cc`; production activation remains paused.
+- **`ENV-COORD-002` / CLOSED / PR #84** — final R17 head `297133f452b5af73be90ef08b63275cf4ca28873` received fresh non-authoring independent APPROVED review; expected-head merge produced `94c1a8f9dda5424c0403c69d26e17d6d9e8e38ed`. Merged-head guard **344/344 PASS**, workflow runtime **14/14 PASS**, checker PASS. Release reconciliation on 2026-09-20 found no matching live holder process or Kilo session; tracked worktree state is clean, local HEAD = remote branch head, and that head is an ancestor of merged main. Protected untracked `.kilo/` and `.serena/` remain untouched. Core semantics are stable for the next bootstrap slice.
+- **`ENV-COORD-003` / CLAIM PROPOSED / BOOTSTRAP_CONTROL** — trusted coordination CI in SHADOW operation + §9.3 evidence tuple. Proposed owner GLM-5.3 MAX, claim `ENV-COORD-003-C1`, generation `1`, holder `kilo-glm-env-coord-003-g1-primary`, branch `feat/env-coord-003-shadow`, worktree `A:/GitHub/envww-coord-003`. Implementation mutation is blocked until this transition receives exact-SHA independent review and merges into authoritative `main`.
 - **`ENV-INT-GISTDA-CORE-001` / REVIEW_REQUESTED / PR #80** — separate GISTDA scope; no overlap with coordination bootstrap.
 - **`ENV-BUILDING-REPAIR-001` / DECISION_REQUIRED / PR #75** — Building/repair remains no-touch.
 - **`ENV-OPS-001A` / READY BUT DISPATCH-PAUSED** — production dispatch remains paused until later coordination enforcement gates permit it.
@@ -93,10 +139,10 @@ exact-SHA independent review and merge into `main`.
 Current coordination authority:
 - central control-transition proposer/integration owner: GPT-5.6 Sol;
 - approved architecture: `docs/ai/architecture/ENV-COORDINATION-GUARD.md`;
-- active proposed Work Order: `docs/work-orders/ENV-COORD-002.md`;
-- proposed implementation/result lane: `docs/ai/handoffs/ENV-COORD-002-GLM.md`;
-- enforcement mode: `BOOTSTRAP_CONTROL`, not `ENFORCING`;
-- one next safe action: independently review this bootstrap claim transition at exact SHA, merge only if APPROVED, then create `A:\\GitHub\\envww-coord-002` and launch the single GLM-5.3 MAX holder.
+- active proposed Work Order: `docs/work-orders/ENV-COORD-003.md`;
+- proposed implementation/result lane: `docs/ai/handoffs/ENV-COORD-003-GLM.md`;
+- enforcement mode: `BOOTSTRAP_CONTROL`, not `SHADOW` or `ENFORCING`;
+- one next safe action: independently review this ENV-COORD-003 claim transition at exact SHA, merge only if APPROVED, then create/bind `A:\\GitHub\\envww-coord-003`, prove `SAFE_TO_MUTATE = YES`, and launch the single GLM-5.3 MAX holder.
 
 ## Prior execution state - 2026-09-02
 
