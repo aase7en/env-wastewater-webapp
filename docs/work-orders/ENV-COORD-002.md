@@ -1,6 +1,6 @@
 # ENV-COORD-002 — Coordination Guard core + deterministic tests
 
-Status: REVIEW_REQUESTED
+Status: RE-REVIEW_REQUESTED
 Risk: HIGH (project-control bootstrap)
 Owner / implementation model: GLM-5.3 MAX via ZCode
 Coordinator / integration owner: GPT-5.6 Sol
@@ -15,7 +15,7 @@ Claim generation: `1`
 Execution holder ID: `zcode-env-coord-002-g1-primary`
 Enforcement mode: `BOOTSTRAP_CONTROL`
 Lane handoff/result destination: `docs/ai/handoffs/ENV-COORD-002-GLM.md`
-Last updated: 2026-09-16
+Last updated: 2026-09-20
 
 ## Parent architecture
 
@@ -1188,3 +1188,18 @@ slice.
 - **Scope:** production/test changes only in the two scripts; this Work Order + lane handoff carry evidence. No `CURRENT-WORK.md`, architecture, workflow, frontend, Supabase, schema, data, secret, or raw operational-data mutation.
 - **Status:** `RE-REVIEW_REQUESTED`; do not merge PR #84 and do not activate ENV-COORD-003.
 - **ONE next safe action:** freeze/push the R16 exact SHA, bind CI and focused Sol rereview to that SHA, then obtain the required independent non-authoring high-risk final review before merge.
+
+## Result — R17 claim dependencies schema + nonfinite JSON fencing / 2026-09-20
+
+- **Trigger:** deterministic review of the R16 head `a7577c22948e4c345d7a91221caf8d02137c029b` found two fail-closed blockers: (1) required claim field `dependencies` had no schema validation — `None`, `7`, `True`, `1.5`, plain strings, objects, and NaN were all accepted although this WO requires validation of required schema/claim fields; (2) the shared trusted JSON parser accepted the non-standard constants `NaN`/`Infinity`/`-Infinity` because Python `json.loads` is permissive, conflicting with the canonical-JSON malformed-registry fail-closed contract.
+- **Deterministic reproducers (exact parent, pre-repair):** all 14 malformed `dependencies` shapes (null/int/bool/float/string/object carriers, plus null/number/bool/float/empty-string/nested-container elements including NaN) were ACCEPTED by `load_trusted_policy`; textual `NaN`/`Infinity`/`-Infinity` parsed through to float values inside the frozen policy (e.g. `dependencies = (nan,)`).
+- **RED:** new `TestR17ClaimDependenciesSchema` + `TestR17NonfiniteJsonConstants` (10 methods) → focused pytest **30 failed / 8 passed** (28 failing subtests + 2 failing methods across the two blocker matrices and the CLI boundary; the 8 passing = positive controls and pins: empty list, well-formed list, tuple re-entry, duplicate+nonfinite interplay, exact raw-block hash); standalone focused `Ran 10 tests … failures=30`. The 334 prior tests were untouched.
+- **Repairs (minimal; existing reason semantics only; no new reason codes):**
+  1. `validate_registry` fences `dependencies` as a JSON array/list (internal tuple carrier compatible, mirroring the `_parse_scope_list` fence) of zero or more exact non-empty strings; empty list means no dependencies; scalar/object/null carriers and malformed/non-string/empty elements reject `INVALID_CLAIM_FIELD`. No dependency-resolution semantics were implemented.
+  2. `_parse_registry_json` — the one shared parse helper used by BOTH trusted parse sites (`extract_registry_block` candidate scanning and `load_trusted_policy`) — now passes `parse_constant`, rejecting `NaN`/`Infinity`/`-Infinity` ANYWHERE in the document at the parse boundary with `REGISTRY_MALFORMED_JSON`, before semantic validation. R16 duplicate-member detection and exact raw-block `registry_hash` semantics are preserved (both pinned by tests).
+- **GREEN:** standalone **344/344 PASS**; pytest **344 passed + 450 subtests passed**; focused parser/schema/adversarial selection (RegistryParsing + R16 + R17 + TypeBoundaries + PolicyEvidenceBinding + CLI) **61 passed + 64 subtests**; workflow runtimes **14/14 PASS**; runtime checker PASS (**5 workflow files**); `test_split_sql.py` all passed; CI-alert **33/33 PASS**; `py_compile` PASS; `git diff --check` PASS; live `status` smoke reads the real registry (`bf26cb5`, registry_hash `2d1b901b…`, `BOOTSTRAP_CONTROL`, `ENV-COORD-002-C1` g1 `CLAIMED`).
+- **Bounded adversarial sweep (beyond the suite):** 3 duplicate-member shapes (wrapper/claim/dependencies-member) + 16 nonfinite positions (3 constants × dependencies element / status / policy revision / nested claims container) + combined duplicate+NaN + 2 number-overflow probes + 13 programmatic carriers (incl. `set`/`frozenset`/`bytes`) + 9 element shapes (incl. programmatic nan/inf) → **0 raw exceptions, 0 acceptance leaks**; every rejection is a typed `GuardFailure`. Recorded residual: a float-overflow NUMBER literal (`1e999` — value-inf but not the constant token) parses to `inf` and is rejected by the downstream field fences (`INVALID_CLAIM_FIELD`) rather than at the parse boundary — fail-closed either way; no field accepts arbitrary floats.
+- **Base freeze:** `origin/main` re-fetched before freeze, unchanged at `bf26cb523c375f44d3bdd0ee9a6d0d66f1eb81bb` (ancestor of HEAD verified) — nothing to integrate, no conflict.
+- **Scope:** code changes confined to the two scripts; this WO + the lane handoff carry evidence only. `.kilo/` and `.serena/` remain protected untracked state, untouched. No hooks/CI/server/frontend/Supabase/data mutation; no secrets or raw operational data read/persisted.
+- **Status:** `RE-REVIEW_REQUESTED`; do not merge PR #84; ENV-COORD-003 stays blocked.
+- **ONE next safe action:** bind fresh Sol rereview plus the independent non-authoring high-risk final review to the pushed R17 exact SHA; only after both pass on an unchanged SHA may merge proceed.

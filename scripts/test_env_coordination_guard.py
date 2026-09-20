@@ -559,6 +559,144 @@ class TestR16DuplicateJsonMembers(unittest.TestCase):
                 self._assert_rejected(text.replace(needle, replacement, 1))
 
 
+class TestR17ClaimDependenciesSchema(unittest.TestCase):
+    """R17: required claim field `dependencies` is a JSON array of zero or
+    more non-empty strings (empty list = no dependencies). Scalars,
+    objects, null and malformed elements fail closed with the existing
+    schema reason INVALID_CLAIM_FIELD (§3 Tier B required-claim-field
+    validation). No dependency-resolution semantics are implied."""
+
+    def _assert_rejected(self, dependencies):
+        with self.assertRaises(GuardFailure) as cm:
+            load_policy([base_claim(dependencies=dependencies)])
+        self.assertEqual(cm.exception.reason, R.INVALID_CLAIM_FIELD)
+
+    def test_scalar_object_and_null_carriers_rejected(self):
+        for bad in (None, 7, True, False, 1.5, "ENV-COORD-001", {"ENV-COORD-001": True}):
+            with self.subTest(bad=bad):
+                self._assert_rejected(bad)
+
+    def test_malformed_elements_rejected(self):
+        # NaN is absent here on purpose: json.dumps serializes float('nan')
+        # as the literal NaN, so via JSON text it is rejected at the parse
+        # boundary (REGISTRY_MALFORMED_JSON — see TestR17NonfiniteJsonConstants)
+        # and can never reach semantic validation.
+        for bad in (
+            [None], [7], [True], [1.5], [""], ["ok", ""],
+            [["x"]], [{"d": 1}],
+        ):
+            with self.subTest(bad=bad):
+                self._assert_rejected(bad)
+
+    def test_empty_list_means_no_dependencies(self):
+        policy = load_policy([base_claim(dependencies=[])])
+        self.assertEqual(policy.claims[0]["dependencies"], ())
+
+    def test_well_formed_dependencies_accepted_and_frozen_as_tuple(self):
+        deps = ["ENV-COORD-001 merged as 6360e149", "ENV-COORD-003 not started"]
+        policy = load_policy([base_claim(dependencies=deps)])
+        self.assertEqual(policy.claims[0]["dependencies"], tuple(deps))
+
+    def test_tuple_carrier_compatible_for_internal_reentry(self):
+        # validate_registry is re-entrant on internal (frozen/programmatic)
+        # tuple carriers, mirroring the _parse_scope_list list/tuple fence.
+        block, _ = extract_registry_block(make_registry_text([base_claim()]))
+        registry = json.loads(block)["coordination_registry"]
+        registry["claims"][0]["dependencies"] = ("ENV-COORD-001 APPROVED and merged",)
+        frozen = validate_registry(registry)
+        self.assertEqual(frozen["claims"][0]["dependencies"], ("ENV-COORD-001 APPROVED and merged",))
+
+    def test_tuple_carrier_with_malformed_element_rejected(self):
+        block, _ = extract_registry_block(make_registry_text([base_claim()]))
+        registry = json.loads(block)["coordination_registry"]
+        for bad_element in (7, float("nan")):
+            with self.subTest(bad_element=bad_element):
+                registry["claims"][0]["dependencies"] = (
+                    "ENV-COORD-001 APPROVED and merged",
+                    bad_element,
+                )
+                with self.assertRaises(GuardFailure) as cm:
+                    validate_registry(registry)
+                self.assertEqual(cm.exception.reason, R.INVALID_CLAIM_FIELD)
+
+
+class TestR17NonfiniteJsonConstants(unittest.TestCase):
+    """R17: NaN/Infinity/-Infinity are non-standard JSON constants. The
+    shared trusted parse helper (R16 duplicate-member hook) must reject
+    them ANYWHERE in the registry document at the parse boundary with
+    REGISTRY_MALFORMED_JSON, before semantic validation, while preserving
+    duplicate-member detection and exact raw-block registry_hash."""
+
+    CONSTANTS = ("NaN", "Infinity", "-Infinity")
+
+    def _assert_rejected(self, text):
+        with self.assertRaises(GuardFailure) as cm:
+            load_trusted_policy(text, POLICY_REV)
+        self.assertEqual(cm.exception.reason, R.REGISTRY_MALFORMED_JSON)
+
+    def test_nonfinite_constants_rejected_anywhere(self):
+        positions = (
+            ("dependencies element", '"ENV-COORD-001 APPROVED and merged"'),
+            ("expected_policy_revision", f'"{POLICY_REV}"'),
+            ("claim status value", '"CLAIMED"'),
+            ("nested shared_exceptions", '"shared_exceptions": []'),
+        )
+        for constant in self.CONSTANTS:
+            for label, needle in positions:
+                with self.subTest(constant=constant, at=label):
+                    text = make_registry_text([base_claim()])
+                    self.assertIn(needle, text)
+                    if label == "nested shared_exceptions":
+                        replacement = f'"shared_exceptions": [{{"release_condition": {constant}}}]'
+                    else:
+                        replacement = constant
+                    self._assert_rejected(text.replace(needle, replacement, 1))
+
+    def test_nonfinite_registry_via_cli_fails_closed(self):
+        text = make_registry_text([base_claim()])
+        needle = '"ENV-COORD-001 APPROVED and merged"'
+        self.assertIn(needle, text)
+        poisoned = text.replace(needle, "NaN", 1)
+        with tempfile.NamedTemporaryFile("w", suffix=".md", delete=False, encoding="utf-8") as f:
+            f.write(poisoned)
+            path = f.name
+        try:
+            proc = subprocess.run(
+                [sys.executable, GUARD, "validate-registry", "--file", path],
+                capture_output=True,
+                text=True,
+                env={**os.environ, "PYTHONIOENCODING": "utf-8"},
+            )
+            self.assertEqual(proc.returncode, 2, proc.stdout + proc.stderr)
+            payload = json.loads(proc.stdout)
+            self.assertFalse(payload["ok"])
+            self.assertEqual(payload["reason"], R.REGISTRY_MALFORMED_JSON)
+        finally:
+            os.unlink(path)
+
+    def test_duplicate_members_and_nonfinite_both_fail_closed(self):
+        # R16 detection is preserved: a document with BOTH a duplicate
+        # member and a nonfinite constant still fails closed with the same
+        # parse-boundary reason (no precedence gap between the two hooks).
+        text = make_registry_text([base_claim()])
+        text = text.replace(
+            '"ENV-COORD-001 APPROVED and merged"', "NaN", 1
+        ).replace(
+            '"status": "CLAIMED"',
+            '"status": "CLOSED",\n        "status": "CLAIMED"',
+            1,
+        )
+        self._assert_rejected(text)
+
+    def test_valid_document_registry_hash_still_exact_raw_block(self):
+        # Exact raw-block hash semantics are preserved: the parse hooks
+        # reject ambiguity without altering which text is hashed.
+        text = make_registry_text([base_claim(dependencies=["A", "B"])])
+        policy = load_trusted_policy(text, POLICY_REV)
+        block, _ = extract_registry_block(text)
+        self.assertEqual(policy.registry_hash, registry_hash(block))
+
+
 class TestPreflightFencing(unittest.TestCase):
     """§4.4 claim activation checks; §4.2 generation/holder fencing."""
 

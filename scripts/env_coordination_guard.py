@@ -395,9 +395,27 @@ def _reject_duplicate_json_members(pairs):
     return result
 
 
+def _reject_nonfinite_json_constant(name):
+    """Reject NaN/Infinity/-Infinity at the parse boundary.
+
+    These constants are not canonical JSON (RFC 8259 §6 numbers); Python's
+    json module accepts them as float sentinels by default. An
+    authorization document must fail closed REGISTRY_MALFORMED_JSON
+    before semantic validation can observe a nonfinite value (R17).
+    """
+    raise GuardFailure(
+        R.REGISTRY_MALFORMED_JSON,
+        f"non-standard JSON constant: {name}",
+    )
+
+
 def _parse_registry_json(block: str) -> dict:
     try:
-        return json.loads(block, object_pairs_hook=_reject_duplicate_json_members)
+        return json.loads(
+            block,
+            object_pairs_hook=_reject_duplicate_json_members,
+            parse_constant=_reject_nonfinite_json_constant,
+        )
     except GuardFailure:
         raise
     except (json.JSONDecodeError, ValueError) as exc:
@@ -524,6 +542,21 @@ def validate_registry(registry: Any) -> dict:
             raise GuardFailure(R.INVALID_CLAIM_FIELD, f"claim_generation must be int >= 1: {generation!r}")
         if claim.get("status") not in CLAIM_STATUSES:
             raise GuardFailure(R.INVALID_CLAIM_FIELD, f"unknown status {claim.get('status')!r}")
+        # §3 Tier B: dependencies is a required schema field — a JSON array
+        # of zero or more non-empty strings (empty list = no dependencies).
+        # Only the container/element shape is validated; no
+        # dependency-resolution semantics exist in this slice (R17).
+        dependencies = claim.get("dependencies")
+        if not isinstance(dependencies, (list, tuple)):
+            raise GuardFailure(
+                R.INVALID_CLAIM_FIELD, "dependencies must be a list of non-empty strings"
+            )
+        for dependency in dependencies:
+            if not isinstance(dependency, str) or not dependency:
+                raise GuardFailure(
+                    R.INVALID_CLAIM_FIELD,
+                    f"dependencies entry must be a non-empty string: {dependency!r}",
+                )
         if claim["claim_id"] in seen_claim_ids:
             raise GuardFailure(R.DUPLICATE_CLAIM, claim["claim_id"])
         if claim["task_id"] in seen_task_ids:

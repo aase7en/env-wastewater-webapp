@@ -1,7 +1,7 @@
 # ENV-COORD-002 — GLM-5.3 MAX implementation packet / lane handoff
 
 Lifecycle: EXECUTED
-Status: REVIEW_REQUESTED
+Status: RE-REVIEW_REQUESTED
 Task: `ENV-COORD-002`
 Claim ID: `ENV-COORD-002-C1`
 Claim generation: `1`
@@ -13,7 +13,7 @@ Planned worktree: `A:\\GitHub\\envww-coord-002`
 Planned branch: `feat/env-coord-002`
 Claim policy base: `origin/main@6360e149f42c419a8d7f878f28fc439e0ef1f6cc`
 Work Order: `docs/work-orders/ENV-COORD-002.md`
-Last updated: 2026-09-16
+Last updated: 2026-09-20
 
 ## Before any mutation
 
@@ -1094,3 +1094,19 @@ Stop at `REVIEW_REQUESTED`. Do not merge.
 - **Scope:** production/test changes only in the two scripts; this Work Order + lane handoff carry evidence. No `CURRENT-WORK.md`, architecture, workflow, frontend, Supabase, schema, data, secret, or raw operational-data mutation.
 - **Status:** `RE-REVIEW_REQUESTED`; do not merge PR #84 and do not activate ENV-COORD-003.
 - **ONE next safe action:** freeze/push the R16 exact SHA, bind CI and focused Sol rereview to that SHA, then obtain the required independent non-authoring high-risk final review before merge.
+
+## Result — R17 claim dependencies schema + nonfinite JSON fencing / 2026-09-20
+
+- **Trigger:** two deterministic fail-closed blockers on the exact parent `a7577c22948e4c345d7a91221caf8d02137c029b` (R16 head = `origin/feat/env-coord-002`): required claim field `dependencies` had no schema validation (null/int/bool/float/string/object/NaN all accepted), and the shared trusted JSON parser accepted the non-standard constants `NaN`/`Infinity`/`-Infinity` (Python `json.loads` permissiveness) against the canonical-JSON + malformed-registry fail-closed contract.
+- **Start state (re-verified before mutation):** HEAD `a7577c2…` = `origin/feat/env-coord-002`; `origin/main@bf26cb523c375f44d3bdd0ee9a6d0d66f1eb81bb` ancestor-verified; tracked tree clean (`.kilo/` + `.serena/` protected untracked); live registry via guard CLI: policy_revision `bf26cb5…`, registry_hash `2d1b901b…`, `BOOTSTRAP_CONTROL`, `ENV-COORD-002-C1` g1 `CLAIMED` — same claim/generation/holder, four-path scope.
+- **Deterministic reproducers (pre-repair, exact parent):** all 14 malformed `dependencies` shapes ACCEPTED by `load_trusted_policy`; textual `NaN`/`Infinity`/`-Infinity` parsed through to floats in the frozen policy.
+- **RED (truthful):** `TestR17ClaimDependenciesSchema` + `TestR17NonfiniteJsonConstants` (10 methods) → focused pytest **30 failed / 8 passed**; standalone focused `Ran 10 tests … failures=30`; the 334 prior tests untouched.
+- **Repair (minimal, existing reason semantics):** dependencies = JSON array/list (internal tuple carrier compatible) of zero or more exact non-empty strings; empty list = no dependencies; scalar/object/null carriers and malformed/non-string/empty elements → `INVALID_CLAIM_FIELD`; no dependency-resolution semantics invented. `parse_constant` hook in the one shared `_parse_registry_json` (both trusted parse sites) rejects `NaN`/`Infinity`/`-Infinity` anywhere at the parse boundary → `REGISTRY_MALFORMED_JSON`, before semantic validation; R16 duplicate-member detection and exact raw-block `registry_hash` preserved (pinned).
+- **GREEN battery:** standalone **344/344 PASS**; pytest **344 passed + 450 subtests**; focused parser/schema/adversarial **61 passed + 64 subtests**; workflow runtimes **14/14 PASS**; runtime checker PASS (**5 workflow files**); `test_split_sql.py` all passed; CI-alert **33/33 PASS**; `py_compile` PASS; `git diff --check` PASS; live `status` smoke unchanged-green (`bf26cb5` / `2d1b901b…` / `BOOTSTRAP_CONTROL` / C1 g1 `CLAIMED`).
+- **Bounded adversarial sweep:** duplicates ×3 + nonfinite constants ×16 positions + combined duplicate+NaN + `1e999` overflow ×2 + programmatic carriers ×13 (incl. `set`/`frozenset`/`bytes`) + element shapes ×9 (incl. programmatic nan/inf) → **0 raw exceptions, 0 acceptance leaks**, every rejection typed. Residual recorded: `1e999` (value-inf NUMBER literal, not the constant token) parses to `inf` and is rejected by downstream field fences (`INVALID_CLAIM_FIELD`) rather than at the parse boundary — fail-closed either way.
+- **Dirty state at stop:** only untracked `.kilo/` and `.serena/` (never staged, never committed); no tracked file left modified after commit.
+- **Exact changed files (4 = full mutable scope, nothing else):** `scripts/env_coordination_guard.py`, `scripts/test_env_coordination_guard.py`, `docs/work-orders/ENV-COORD-002.md`, this file.
+- **Scope:** no `CURRENT-WORK.md`, architecture, workflow, frontend, Supabase, schema, data, secret, or raw operational-data mutation; `.kilo/`/`.serena/` untouched.
+- **Limitations:** parse-boundary rejection covers the non-standard CONSTANT tokens (NaN/Infinity/-Infinity); float-overflow number literals are caught by semantic field fences instead (see residual above); dependency-resolution semantics remain intentionally unimplemented (out of slice).
+- **Status:** `RE-REVIEW_REQUESTED`; do not merge PR #84; ENV-COORD-003 stays blocked.
+- **Exactly ONE next safe action:** bind fresh Sol rereview plus the independent non-authoring high-risk final review to the pushed R17 exact SHA; only after both pass on an unchanged SHA may merge proceed.
