@@ -2,7 +2,7 @@
 
 ## Assignment
 
-- Status: `REVIEW_REQUESTED / BOOTSTRAP_CONTROL` in this candidate; trusted
+- Status: `CHANGES_REQUIRED / BOOTSTRAP_CONTROL` in this candidate; trusted
   `origin/main` remains `CLAIMED` until the implementation PR merges.
 - Task: `ENV-AUTONOMY-001`
 - Claim: `ENV-AUTONOMY-001-C1`, generation `1`
@@ -18,10 +18,14 @@
 
 The separate generation-1 bootstrap claim is authoritative on `origin/main`
 after PR #90 merged as `0ea079d69c3186272f1ae6be82cbbeb22ed99266`. The
-registered runtime/hooks/skills candidate is complete and back at
-`REVIEW_REQUESTED` after self-found fixes and full local revalidation. No C1
-file was changed, and no claim release, reassignment, quiescence, or transfer
-evidence was created. The runtime and local hooks must continue to report
+registered runtime/hooks/skills candidate is `CHANGES_REQUIRED` after
+independent exact-head review of `f7ea87d942cfcc5118d0fde63037cd4de89a7bc4`.
+Review found three P1 defects: mutating Git options pass the read-only shell
+classifier; unresolved `UNKNOWN` hook observations do not block checkpoint or
+parked recovery; and Kilo receipt transitions are neither persisted nor bound
+to trusted claim and handoff evidence. No C1 file was changed, and no claim
+release, reassignment, quiescence, or transfer evidence was created. The
+runtime and local hooks must continue to report
 `BOOTSTRAP_CONTROL`, `ENFORCEMENT_NOT_ACTIVE`, and `AUTONOMY_NOT_READY` until
 their independent server and live-acceptance gates pass.
 
@@ -122,6 +126,25 @@ their independent server and live-acceptance gates pass.
       "published": true,
       "task_id": "ENV-AUTONOMY-001",
       "terminal_result": null
+    },
+    {
+      "claim_generation": 1,
+      "claim_id": "ENV-AUTONOMY-001-C1",
+      "event_id": "env-autonomy-001-checkpoint-d642ea33",
+      "event_seq": 6,
+      "event_type": "CHECKPOINT",
+      "goal_id": "01a0d917-7b29-7970-8bb7-3c6df13e4bd3",
+      "operation_id": null,
+      "operation_outcome": null,
+      "payload": {
+        "lane_status": "CHANGES_REQUIRED",
+        "recorded_at_utc": "2026-09-25T21:39:33Z",
+        "source_head_sha": "f7ea87d942cfcc5118d0fde63037cd4de89a7bc4"
+      },
+      "previous_event_id": "env-autonomy-001-checkpoint-0004",
+      "published": false,
+      "task_id": "ENV-AUTONOMY-001",
+      "terminal_result": null
     }
   ],
   "goal_id": "01a0d917-7b29-7970-8bb7-3c6df13e4bd3",
@@ -183,6 +206,13 @@ their independent server and live-acceptance gates pass.
   `ENFORCEMENT_NOT_ACTIVE`. The current candidate fixes all three, adds
   regression coverage, and is back at `REVIEW_REQUESTED` after full local
   validation and publication of the prior checkpoint.
+- Independent exact-head review at `f7ea87d942cfcc5118d0fde63037cd4de89a7bc4`
+  returned `CHANGES_REQUIRED` with three P1 findings: Git shell mutation-option
+  bypasses; checkpoint and parked recovery ignoring recorded hook observations
+  whose effect state is `UNKNOWN`; and a Kilo receipt helper that accepts
+  caller-asserted ingestion/archive evidence without validating or persisting
+  it against the trusted claim and published handoff. The exact-head hosted
+  `scripts` and `notify` checks succeeded, but do not cover these findings.
 - A comparison against `origin/main` confirms the C1 claim record is unchanged
   (canonical JSON SHA-256
   `68943625ae4123f838ebc7fde4ff9bf02bb279716caa28e0600dbd0ca5a97077`);
@@ -200,5 +230,7 @@ its exact path/SHA.
 
 ## One next safe action
 
-Finish exact-head CI and fresh independent exact-SHA review for PR #91; only
-the independent reviewer may merge after approval and exact-base recheck.
+Repair the three P1 findings from the exact-head review, revalidate and publish
+a new `CHANGES_REQUIRED` checkpoint, then request fresh exact-SHA review for
+PR #91. Only the independent reviewer may merge after approval and exact-base
+recheck.

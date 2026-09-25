@@ -2,8 +2,9 @@
 
 ## Assignment
 
-- Status: `REVIEW_REQUESTED / BOOTSTRAP_CONTROL` in PR #91; trusted
-  `origin/main` remains `CLAIMED` until this implementation PR merges.
+- Status: `CHANGES_REQUIRED / BOOTSTRAP_CONTROL` in PR #91 after exact-head
+  review at `f7ea87d942cfcc5118d0fde63037cd4de89a7bc4`; trusted `origin/main`
+  remains `CLAIMED` until this implementation PR merges.
 - Owner role: ENV project supervisor
 - Supervisor route: GPT-6 Luna MAX (routing metadata only)
 - Reviewer: independent GPT-6 Sol reviewer; implementation author must not merge
@@ -257,7 +258,4 @@ decision.
 
 ## One next safe action
 
-Complete fresh independent exact-SHA review and hosted CI for PR #91; only the
-independent reviewer may merge after approval and exact-base recheck. Keep
-`ENFORCEMENT_NOT_ACTIVE` and `AUTONOMY_NOT_READY` until actual hook activation,
-server controls, and all applicable live proofs are verified.
+Repair the three P1 findings at exact head `f7ea87d942cfcc5118d0fde63037cd4de89a7bc4`: restrict Git shell classification to exact read-only forms; block checkpoint and parked recovery while any recorded hook effect is `UNKNOWN`; and persist Kilo receipt transitions only after validating trusted claim identity, actual handoff events, and the published checkpoint. Add regression coverage, rerun local gates, publish the `CHANGES_REQUIRED` checkpoint, and request fresh exact-SHA review. Keep `ENFORCEMENT_NOT_ACTIVE` and `AUTONOMY_NOT_READY` until actual hook activation, server controls, and all applicable live proofs are verified.
