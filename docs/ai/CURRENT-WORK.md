@@ -30,7 +30,7 @@ Allowed statuses:
 
 This fenced block is the machine-readable portion of the canonical
 `CURRENT-WORK.md`; it is not a second registry. Candidate-branch copies never
-grant authority. This bootstrap transition becomes authoritative only after
+grant authority. A control transition becomes authoritative only after
 exact-SHA independent review and merge into `main`.
 
 ```json
@@ -38,8 +38,8 @@ exact-SHA independent review and merge into `main`.
   "coordination_registry": {
     "version": 1,
     "enforcement_mode": "BOOTSTRAP_CONTROL",
-    "expected_policy_revision": "94c1a8f9dda5424c0403c69d26e17d6d9e8e38ed",
-    "expected_registry_hash": "2d1b901b013fbc149c2d95db619dae8ec038ba3e0d2fde49e0b2c93c6b425d0a",
+    "expected_policy_revision": "839ff34185dff675a7bfd4adf6350d6b2c1e4eaa",
+    "expected_registry_hash": "894aa6d6238c7f2624dfea5d55f1cf0148868a96aa052a1e9b7d294abefda060",
     "claims": [
       {
         "task_id": "ENV-COORD-002",
@@ -78,6 +78,55 @@ exact-SHA independent review and merge into `main`.
         ],
         "last_checkpoint_pointer": "docs/ai/handoffs/ENV-COORD-002-GLM.md",
         "one_next_safe_action": "Keep generation 1 and the current scope locked; collect holder-bound lifecycle checkpoint, admission high-water, zero-active-admissions and external-outcome evidence before any release, reassignment, generation change or mutation authorization."
+      },
+      {
+        "task_id": "ENV-AUTONOMY-001",
+        "claim_id": "ENV-AUTONOMY-001-C1",
+        "claim_generation": 1,
+        "status": "CLAIMED",
+        "owner_role": "env_project_supervisor",
+        "agent_model": "GPT-6 Luna MAX",
+        "execution_holder_id": "exec-holder-env-autonomy-001-g1-10b79866-9012-4701-9cf9-33ce6d00df5f",
+        "worktree": "A:/GitHub/_worktrees/env-autonomy-bootstrap-20260926",
+        "branch": "codex/env-autonomy-bootstrap-20260926",
+        "base_sha": "839ff34185dff675a7bfd4adf6350d6b2c1e4eaa",
+        "mutable_scope": [
+          "docs/ai/CURRENT-WORK.md",
+          "docs/ai/HANDOFF.md",
+          "docs/ai/handoffs/ENV-AUTONOMY-001.md",
+          "docs/work-orders/ENV-AUTONOMY-001.md",
+          ".agents/skills/env-faster/**",
+          ".agents/skills/env-nightshift/**",
+          ".agents/skills/env-fleet-router/**",
+          ".agents/skills/env-kilo-lifecycle/**",
+          ".codex/hooks.json",
+          ".codex/hooks/env_lifecycle.py",
+          "scripts/env_autonomy_runtime.py",
+          "scripts/test_env_autonomy_runtime.py"
+        ],
+        "forbidden_scope": [
+          "scripts/env_coordination_guard.py",
+          "scripts/test_env_coordination_guard.py",
+          "docs/work-orders/ENV-COORD-002.md",
+          "docs/ai/handoffs/ENV-COORD-002-GLM.md",
+          "docs/ai/architecture/ENV-COORDINATION-GUARD.md",
+          "AGENTS.md",
+          ".github/**",
+          "frontend/**",
+          "supabase/**",
+          "data/**",
+          ".env"
+        ],
+        "work_order_path": "docs/work-orders/ENV-AUTONOMY-001.md",
+        "handoff_path": "docs/ai/handoffs/ENV-AUTONOMY-001.md",
+        "review_owner": "Independent GPT-6 Sol reviewer; expected-head merge only after APPROVED",
+        "dependencies": [
+          "ENV-COORD-002-C1 recovery-hold transition merged as 839ff34185dff675a7bfd4adf6350d6b2c1e4eaa; its generation-1 scope remains locked",
+          "ENV-COORD-001 and ENV-COORD-002 accepted coordination architecture/core on origin/main",
+          "Project owner mission: install an ENV-local autonomy layer before resuming canonical Roadmap work"
+        ],
+        "last_checkpoint_pointer": "docs/ai/handoffs/ENV-AUTONOMY-001.md",
+        "one_next_safe_action": "Obtain an independent exact-SHA review of this claim transition; merge only by expected head after exact-base and CI recheck. Do not implement until the transition is on authoritative main."
       }
     ]
   }
@@ -87,19 +136,22 @@ exact-SHA independent review and merge into `main`.
 ## Active frontier - 2026-09-26
 
 - **`ENV-COORD-001` / CLOSED / PR #82** — Astra independently APPROVED exact architecture SHA `e5f6a419aa226151788763970e8c008f48d4a28d` with no blockers; PR #82 merged with expected-head protection as `6360e149f42c419a8d7f878f28fc439e0ef1f6cc`. Production activation is still blocked because coordination enforcement is not yet installed.
-- **ENV-COORD-002 / RECOVERY_HOLD / BOOTSTRAP_CONTROL** — Coordination Guard core and deterministic tests are merged through PR #84. Claim ENV-COORD-002-C1, generation 1, holder zcode-env-coord-002-g1-primary, and its original four-file scope remain locked. Runtime/session effects observed to date are reconciled, but no typed holder binding, lifecycle checkpoint, admission high-water, or active-admission count exists; do not release, reassign, or start mutation.
+- **ENV-COORD-002 / RECOVERY_HOLD / BOOTSTRAP_CONTROL** — PR #89 merged as `839ff34185dff675a7bfd4adf6350d6b2c1e4eaa`. Claim ENV-COORD-002-C1, generation 1, holder zcode-env-coord-002-g1-primary, and its original four-file scope remain locked. Runtime/session effects observed to date are reconciled, but no typed holder binding, lifecycle checkpoint, admission high-water, or active-admission count exists; do not release, reassign, or start mutation in that scope.
+- **ENV-AUTONOMY-001 / CLAIMED (proposed transition)** — This branch proposes a disjoint generation-1 claim for the project-local autonomy bootstrap. Its authority begins only if the exact-SHA reviewed claim transition is merged into main. The work order excludes C1's four locked paths and production/frontend/schema/data changes.
 - **CLOSED ENV-INT-GISTDA-CORE-001 / PR #80** — merged as bf26cb523c375f44d3bdd0ee9a6d0d66f1eb81bb on 2026-09-16; exact-head scripts, smoke, and notify checks succeeded.
 - **`ENV-BUILDING-REPAIR-001` / DECISION_REQUIRED / PR #75** — Building/repair remains no-touch.
 - **`ENV-OPS-001A` / READY BUT DISPATCH-PAUSED** — production dispatch remains paused until later coordination enforcement gates permit it.
-- **Open proposals, not active claims:** PR #87 remains OPEN at c8a8437f2f4471f2ea08d8836ed20b8f17ac4c0b with green scripts/notify checks and a CHANGES_REQUIRED author comment; its candidate registry is not authoritative. PR #88 remains OPEN at 2727abc9c8c50bb84dbf09e2a0b0383cbe5e2e16 with green scripts/notify checks and no GitHub review decision; its recovery Work Order is proposal evidence only.
+- **Open draft PR #85 / ENV-PREVIEW-001** — synthetic browser-local preview proposal at head `d7c48cf3ee4e2056586ef63fd9cc3cb74a2e71e1`, based on older main `7d4e6b52c616ff15f86e399a085ef16477d38ef8`. The PR description says REVIEW_REQUESTED, but the current registry has no active ENV-PREVIEW claim; preserve as a proposal and do not merge until ownership/base are reconciled.
+- **Open proposals, not active claims:** PR #87 remains OPEN at c8a8437f2f4471f2ea08d8836ed20b8f17ac4c0b against the prior base `94c1a8f9...`; its scripts/notify checks are green and its author comment `#5834942914` says CHANGES_REQUIRED. PR #88 remains OPEN at 2727abc9c8c50bb84dbf09e2a0b0383cbe5e2e16 against the prior base `94c1a8f9...`; its scripts/notify checks are green, but GitHub has no formal review decision. Neither candidate registry is authoritative.
 
 Current coordination authority:
 - central control-transition proposer/integration owner: ENV Coordinator protocol role; model-name labels are routing preferences, not authentication (§3.3). Current mission supervisor: GPT-6 Luna MAX under the owner's current instruction; the transition still requires exact-SHA independent review and human authorization.
 - approved architecture: `docs/ai/architecture/ENV-COORDINATION-GUARD.md`;
-- active proposed Work Order: `docs/work-orders/ENV-COORD-002.md`;
-- proposed implementation/result lane: `docs/ai/handoffs/ENV-COORD-002-GLM.md`;
+- active hold Work Order: `docs/work-orders/ENV-COORD-002-C1-RECOVERY-HOLD.md`;
+- locked C1 implementation contract/result lane: `docs/work-orders/ENV-COORD-002.md` and `docs/ai/handoffs/ENV-COORD-002-GLM.md`;
+- proposed separate autonomy Work Order: `docs/work-orders/ENV-AUTONOMY-001.md`;
 - enforcement mode: `BOOTSTRAP_CONTROL`, not `ENFORCING`;
-- one next safe action: keep C1 in RECOVERY_HOLD until the missing holder-bound lifecycle/admission/outcome facts are machine-proven; after this transition is accepted, open the separately scoped ENV autonomy-bootstrap claim/worktree requested by the project owner.
+- one next safe action: keep C1 in RECOVERY_HOLD until the missing holder-bound lifecycle/admission/outcome facts are machine-proven; review the separate ENV-AUTONOMY-001 claim proposal on this branch, and do not let it write within C1 scope.
 
 ## Prior execution state - 2026-09-02
 
