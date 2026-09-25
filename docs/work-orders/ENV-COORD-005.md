@@ -91,7 +91,11 @@ serialization belongs to a later adapter. The current CLI validates supplied
 state but has no durable event writer.
 
 Cross-repository evidence is pinned to A-Wiki-Conductor
-`origin/main@97f935735f51bd0efe3146decc260966f56c796a`. That source contains
+`origin/main@b1b833c00ad30f25f2f181c25dd99b77e752f9aa`. Since the previous pin,
+main merged PR #536, a documentation-only addition of WO-P1-535; the relevant
+source files below are unchanged. An exact identifier scan found no matches
+for the C1 claim, registered holder, Kilo session, worktree, branch, or
+recovered HEAD. This source contains
 `SQLiteExecutionStore` (`src/a_conductor/execution_store.py`),
 `SQLiteWorkerLeaseStore` (`src/a_conductor/worker_lease.py`), and provider
 admission persistence (`src/a_conductor/provider_config_store.py`). These are
