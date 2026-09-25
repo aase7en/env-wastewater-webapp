@@ -2,7 +2,7 @@
 
 ## Assignment
 
-- Status: `REVIEW_REQUESTED / BOOTSTRAP_CONTROL` in PR #91; trusted
+- Status: `CHANGES_REQUIRED / BOOTSTRAP_CONTROL` in PR #91; trusted
   `origin/main` remains `CLAIMED` until this implementation PR merges.
 - Owner role: ENV project supervisor
 - Supervisor route: GPT-6 Luna MAX (routing metadata only)
@@ -62,7 +62,7 @@ mutable scope may be changed by this work.
   task-bound provider admission. GPT-6 Sol is reserved for independent
   cross-cutting exact-SHA review. Model names are routing preferences, not
   identity or authorization evidence.
-- Current local verification: focused autonomy runtime **16/16 PASS**,
+- Current local verification after repair: focused autonomy runtime **20/20 PASS**,
   Coordination Guard regressions **344/344 PASS**, workflow-action
   regressions **14/14 PASS**, workflow semantic checker PASS, `split_sql`
   regressions PASS, Python compilation PASS, and `git diff --check` exits 0
@@ -257,8 +257,9 @@ decision.
 
 ## One next safe action
 
-Finish exact-head CI and fresh independent exact-SHA review for PR #91; only
-the independent reviewer may merge after approval and exact-base recheck.
-The implementation author does not merge. Keep
+Verify publication of the repaired `CHANGES_REQUIRED` checkpoint, transition
+PR #91 to `REVIEW_REQUESTED` with a fresh checkpoint, then request independent
+exact-SHA review and wait for hosted CI. Only the independent reviewer may
+merge after approval and exact-base recheck. Keep
 `ENFORCEMENT_NOT_ACTIVE` and `AUTONOMY_NOT_READY` until actual hook activation,
 server controls, and all applicable live proofs are verified.

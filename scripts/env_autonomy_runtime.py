@@ -79,7 +79,9 @@ def _exact_int(value: Any, field: str, minimum: int = 0) -> int:
     return value
 
 
-def _run_git(args: list[str], cwd: Path, *, check: bool = True) -> str:
+def _run_git(
+    args: list[str], cwd: Path, *, check: bool = True, preserve_output: bool = False
+) -> str:
     """Run Git without ever echoing remote URLs or credential-bearing errors."""
     try:
         proc = subprocess.run(
@@ -94,7 +96,7 @@ def _run_git(args: list[str], cwd: Path, *, check: bool = True) -> str:
         if "merge-base" in args:
             reason = "BASE_NOT_ANCESTOR"
         raise AutonomyFailure(reason, f"git {args[0]} exited {proc.returncode}")
-    return proc.stdout.strip()
+    return proc.stdout if preserve_output else proc.stdout.strip()
 
 
 def _repo_slug(remote: str) -> Optional[str]:
@@ -443,7 +445,14 @@ def canonical_candidate_state(roadmap_text: str, current_work_text: str, work_or
     """Conservatively detect a Roadmap item currently marked SAFE and READY."""
     task_id = _nonempty(task_id, "task_id")
     headline = re.search(rf"^###\s+{re.escape(task_id)}(?:\s|$).*?$", roadmap_text, re.M)
-    frontier = next((line for line in current_work_text.splitlines() if task_id in line), "")
+    frontier_line = re.compile(
+        rf"^\s*-\s+\*\*`?{re.escape(task_id)}`?\s*(?:/|[-—:])",
+        re.I,
+    )
+    frontier = next(
+        (line for line in current_work_text.splitlines() if frontier_line.search(line)),
+        "",
+    )
     wo_heading = re.search(rf"^#\s+{re.escape(task_id)}\b.*$", work_order_text, re.M)
     wo_status = re.search(r"^Status:\s*([^\r\n]+)", work_order_text, re.M)
     if not headline or not frontier or not wo_heading or not wo_status:
@@ -682,7 +691,9 @@ def verify_published_event(root: Path, policy: guard.TrustedPolicy, claim: dict)
     head_tree = _run_git(["rev-parse", f"{local_head}^{{tree}}"], root)
     if handoff_tree != head_tree:
         return {"ok": False, "publication_state": "PENDING_PUBLICATION", "reason": "HANDOFF_NOT_AT_HEAD"}
-    remote_handoff = _run_git(["show", f"{remote_head}:{claim['handoff_path']}"], root)
+    remote_handoff = _run_git(
+        ["show", f"{remote_head}:{claim['handoff_path']}"], root, preserve_output=True
+    )
     local_handoff = (root / claim["handoff_path"]).read_text(encoding="utf-8")
     if remote_handoff != local_handoff:
         return {"ok": False, "publication_state": "PENDING_PUBLICATION", "reason": "HANDOFF_REMOTE_MISMATCH"}
@@ -1262,8 +1273,25 @@ def _cmd_status(args) -> int:
     }, 0)
 
 
-def _refill_inputs(root: Path, policy: guard.TrustedPolicy, current_work: str) -> tuple[list[dict], dict]:
+def _server_allows_production_dispatch(
+    registry_mode: str, server_enforcement_verified: bool
+) -> bool:
+    """Production work stays paused without exact server-side enforcement proof."""
+    effective = guard.effective_enforcement_mode(registry_mode, server_enforcement_verified)
+    return server_enforcement_verified is True and effective.mode in guard.VERIFIED_MODES
+
+
+def _refill_inputs(
+    root: Path,
+    policy: guard.TrustedPolicy,
+    current_work: str,
+    *,
+    server_enforcement_verified: bool = False,
+) -> tuple[list[dict], dict]:
     revision = policy.policy_revision
+    production_dispatch_authorized = _server_allows_production_dispatch(
+        policy.enforcement_mode, server_enforcement_verified
+    )
     roadmap = _run_git(["show", f"{revision}:{ROADMAP}"], root)
     checkpoints = {}
     for claim in policy.claims:
@@ -1289,7 +1317,7 @@ def _refill_inputs(root: Path, policy: guard.TrustedPolicy, current_work: str) -
             "safe_ready": True,
             "source_refs": [ROADMAP, CURRENT_WORK, claim["work_order_path"]],
             "dependencies_satisfied": dependencies_satisfied(root, policy, claim, current_work),
-            "production_dispatch_authorized": True,
+            "production_dispatch_authorized": production_dispatch_authorized,
             "scope": list(claim["mutable_scope"]),
             "lane_kind": "MUTATION",
             "priority_rank": state.get("priority_rank", 99),

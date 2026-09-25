@@ -5,6 +5,7 @@ from __future__ import annotations
 import argparse
 import datetime as dt
 import json
+import subprocess
 import sys
 import tempfile
 import unittest
@@ -302,8 +303,138 @@ class BindingAndSelectionTests(unittest.TestCase):
         self.assertFalse(result["safe_ready"])
         self.assertEqual(result["reason"], "CANONICAL_FRONTIER_NOT_READY")
 
+    def test_canonical_frontier_skips_registry_json_and_reads_human_ready_line(self):
+        roadmap = "### ENV-OPS-001A - Operations board\nP2 — SAFE / READY candidate\n"
+        current_work = '''
+```json
+{"coordination_registry":{"claims":[{"task_id":"ENV-OPS-001A","status":"READY"}]}}
+```
+- **ENV-OPS-001A / READY** - bounded operations board work.
+'''
+        work_order = "# ENV-OPS-001A - Operations board\nStatus: READY\n"
+        state = runtime.canonical_candidate_state(
+            roadmap, current_work, work_order, "ENV-OPS-001A"
+        )
+        self.assertTrue(state["safe_ready"])
+        self.assertIsNone(state["reason"])
+
+    def test_refill_inputs_keep_dispatch_paused_without_verified_server_mode(self):
+        ready = claim("ENV-OPS-001A", "ENV-OPS-001A-C1", "READY", ["frontend/src/pages/Operations/**"])
+        trusted = policy(ready)
+        roadmap = "### ENV-OPS-001A - Operations board\nP2 — SAFE / READY candidate\n"
+        current_work = (
+            '{"claims":[{"task_id":"ENV-OPS-001A","status":"READY"}]}\n'
+            "- **ENV-OPS-001A / READY** - bounded operations board work.\n"
+        )
+        work_order = "# ENV-OPS-001A - Operations board\nStatus: READY\n"
+
+        def fake_git(args, _root, **_kwargs):
+            ref = args[-1]
+            if ref.endswith(runtime.ROADMAP):
+                return roadmap
+            if ref.endswith(ready["work_order_path"]):
+                return work_order
+            raise AssertionError(f"unexpected Git read: {ref}")
+
+        with patch.object(runtime, "_run_git", side_effect=fake_git):
+            with patch.object(runtime, "dependencies_satisfied", return_value=True):
+                candidates, _ = runtime._refill_inputs(Path.cwd(), trusted, current_work)
+        self.assertEqual(len(candidates), 1)
+        self.assertFalse(candidates[0]["production_dispatch_authorized"])
+        decision = runtime.safe_refill_decision(trusted, candidates, {})
+        self.assertFalse(decision["auto_refill_required"])
+        self.assertEqual(decision["safe_ready"], 0)
+
+    def test_production_dispatch_requires_verified_enforcement(self):
+        self.assertFalse(runtime._server_allows_production_dispatch("BOOTSTRAP_CONTROL", False))
+        self.assertFalse(runtime._server_allows_production_dispatch("ENFORCING", False))
+        self.assertFalse(runtime._server_allows_production_dispatch("ENFORCING", 1))
+        self.assertFalse(runtime._server_allows_production_dispatch("SHADOW", True))
+        self.assertTrue(runtime._server_allows_production_dispatch("ENFORCING", True))
+        self.assertTrue(runtime._server_allows_production_dispatch("HARDENED", True))
+
 
 class ReviewAndLifecycleTests(unittest.TestCase):
+    def test_published_checkpoint_verifies_handoff_with_final_newline(self):
+        with tempfile.TemporaryDirectory(prefix="env-autonomy-git-") as temp_dir:
+            root = Path(temp_dir) / "work"
+            remote = Path(temp_dir) / "origin.git"
+            branch = "test/autonomy-checkpoint"
+
+            def git(*args: str) -> str:
+                result = subprocess.run(
+                    ["git", *args], cwd=root, check=True, capture_output=True,
+                    text=True, encoding="utf-8",
+                )
+                return result.stdout.strip()
+
+            subprocess.run(
+                ["git", "init", "--bare", str(remote)], check=True,
+                capture_output=True, text=True,
+            )
+            root.mkdir()
+            subprocess.run(
+                ["git", "init", str(root)], check=True, capture_output=True, text=True
+            )
+            git("branch", "-M", branch)
+            git("config", "user.name", "ENV autonomy test")
+            git("config", "user.email", "env-autonomy-test@example.invalid")
+            (root / "README.md").write_text("synthetic checkpoint fixture\n", encoding="utf-8")
+            git("add", "README.md")
+            git("commit", "-m", "fixture base")
+            git("remote", "add", "origin", str(remote))
+            git("push", "--set-upstream", "origin", branch)
+            parent_sha = git("rev-parse", "HEAD")
+
+            test_claim = claim("fixture-task", "fixture-claim", "CLAIMED", ["docs/**"])
+            test_claim["branch"] = branch
+            handoff_path = "docs/ai/handoffs/fixture-task.md"
+            test_claim["handoff_path"] = handoff_path
+            events = [
+                {
+                    "task_id": "fixture-task", "claim_id": "fixture-claim",
+                    "claim_generation": 1, "goal_id": "goal-1",
+                    "event_type": "GOAL_START", "event_seq": 1,
+                    "event_id": "start-1", "previous_event_id": "GENESIS",
+                    "terminal_result": None, "operation_id": None,
+                    "operation_outcome": None, "payload": None, "published": True,
+                },
+                {
+                    "task_id": "fixture-task", "claim_id": "fixture-claim",
+                    "claim_generation": 1, "goal_id": "goal-1",
+                    "event_type": "CHECKPOINT", "event_seq": 2,
+                    "event_id": "checkpoint-1", "previous_event_id": "start-1",
+                    "terminal_result": None, "operation_id": None,
+                    "operation_outcome": None,
+                    "payload": {
+                        "lane_status": "ACTIVE", "recorded_at_utc": "2026-09-26T00:00:00Z",
+                        "source_head_sha": parent_sha,
+                    },
+                    "published": True,
+                },
+            ]
+            lifecycle = {
+                "version": 1, "task_id": "fixture-task", "claim_id": "fixture-claim",
+                "claim_generation": 1, "goal_id": "goal-1", "events": events,
+                "codex_hook_observations": [],
+            }
+            handoff = (
+                "# Synthetic handoff\n\n" + runtime.LIFECYCLE_START + "\n```json\n"
+                + json.dumps(lifecycle, indent=2) + "\n```\n"
+                + runtime.LIFECYCLE_END + "\n"
+            )
+            path = root / handoff_path
+            path.parent.mkdir(parents=True)
+            path.write_text(handoff, encoding="utf-8")
+            git("add", handoff_path)
+            git("commit", "-m", "fixture published checkpoint")
+            git("push", "origin", branch)
+
+            result = runtime.verify_published_checkpoint(root, policy(test_claim), test_claim)
+            self.assertTrue(result["ok"], result)
+            self.assertEqual(result["checkpoint_state"], "PUBLISHED")
+            self.assertEqual(result["latest_event_id"], "checkpoint-1")
+
     def test_published_checkpoint_must_describe_its_handoff_commit_parent(self):
         parent = "a" * 40
         self.assertTrue(runtime.checkpoint_source_matches_parent({"source_head_sha": parent}, parent))

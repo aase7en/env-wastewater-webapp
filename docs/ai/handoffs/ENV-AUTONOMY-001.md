@@ -2,7 +2,7 @@
 
 ## Assignment
 
-- Status: `REVIEW_REQUESTED / BOOTSTRAP_CONTROL` in this candidate; trusted
+- Status: `CHANGES_REQUIRED / BOOTSTRAP_CONTROL` in this candidate; trusted
   `origin/main` remains `CLAIMED` until the implementation PR merges.
 - Task: `ENV-AUTONOMY-001`
 - Claim: `ENV-AUTONOMY-001-C1`, generation `1`
@@ -83,6 +83,25 @@ their independent server and live-acceptance gates pass.
       "published": true,
       "task_id": "ENV-AUTONOMY-001",
       "terminal_result": null
+    },
+    {
+      "claim_generation": 1,
+      "claim_id": "ENV-AUTONOMY-001-C1",
+      "event_id": "env-autonomy-001-checkpoint-0003",
+      "event_seq": 4,
+      "event_type": "CHECKPOINT",
+      "goal_id": "01a0d917-7b29-7970-8bb7-3c6df13e4bd3",
+      "operation_id": null,
+      "operation_outcome": null,
+      "payload": {
+        "lane_status": "CHANGES_REQUIRED",
+        "recorded_at_utc": "2026-09-25T21:24:02Z",
+        "source_head_sha": "9312e5eb432dd7d43f3c6bad308cb0e5aad02a49"
+      },
+      "previous_event_id": "env-autonomy-001-checkpoint-0002",
+      "published": true,
+      "task_id": "ENV-AUTONOMY-001",
+      "terminal_result": null
     }
   ],
   "goal_id": "01a0d917-7b29-7970-8bb7-3c6df13e4bd3",
@@ -130,10 +149,18 @@ their independent server and live-acceptance gates pass.
 - `python scripts/env_autonomy_runtime.py kilo-preflight --root .` reports
   proxy quota and upstream model status `UNKNOWN`; it performed no external
   call. Route metadata leaves dispatch disabled. JEV remains `UNAVAILABLE`.
-- The focused synthetic runtime tests pass locally after the refill command
-  bug fix; exact hosted CI and independent review remain pending.
-- PR #91 is at `REVIEW_REQUESTED`; its current exact head is the review target.
-  Hosted scripts CI and fresh independent exact-SHA review are pending.
+- Focused autonomy runtime tests pass **20/20**; Coordination Guard passes
+  **344/344**; workflow-action tests pass **14/14**; semantic workflow check,
+  `split_sql`, Python compilation, and `git diff --check` pass. The checkpoint
+  in this candidate still needs remote publication verification; exact hosted
+  CI and fresh independent review remain pending.
+- Self-review of PR #91 found three defects before independent review: the
+  remote/local handoff string comparison drops Git's final newline; the
+  canonical READY parser matches the registry JSON before the human frontier;
+  and refill marks production dispatch authorized despite
+  `ENFORCEMENT_NOT_ACTIVE`. The current candidate fixes all three and adds
+  regression coverage. The lane remains `CHANGES_REQUIRED` until the full
+  local gate set and fresh exact-SHA review pass.
 - A comparison against `origin/main` confirms the C1 claim record is unchanged
   (canonical JSON SHA-256
   `68943625ae4123f838ebc7fde4ff9bf02bb279716caa28e0600dbd0ca5a97077`);
