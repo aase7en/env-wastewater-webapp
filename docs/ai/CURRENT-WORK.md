@@ -83,7 +83,7 @@ exact-SHA independent review and merge into `main`.
         "task_id": "ENV-AUTONOMY-001",
         "claim_id": "ENV-AUTONOMY-001-C1",
         "claim_generation": 1,
-        "status": "CHANGES_REQUIRED",
+        "status": "REVIEW_REQUESTED",
         "owner_role": "env_project_supervisor",
         "agent_model": "GPT-6 Luna MAX",
         "execution_holder_id": "exec-holder-env-autonomy-001-g1-10b79866-9012-4701-9cf9-33ce6d00df5f",
@@ -126,7 +126,7 @@ exact-SHA independent review and merge into `main`.
           "Project owner mission: install an ENV-local autonomy layer before resuming canonical Roadmap work"
         ],
         "last_checkpoint_pointer": "docs/ai/handoffs/ENV-AUTONOMY-001.md",
-        "one_next_safe_action": "Verify publication of the repaired CHANGES_REQUIRED checkpoint, transition PR #91 to REVIEW_REQUESTED with a new checkpoint, then request fresh independent exact-SHA review. Keep server enforcement and autonomy readiness disabled."
+        "one_next_safe_action": "Complete fresh independent exact-SHA review and hosted CI for PR #91; only the independent reviewer may merge after approval and exact-base recheck. Keep server enforcement and autonomy readiness disabled pending hook activation and live proofs."
       }
     ]
   }
@@ -137,7 +137,7 @@ exact-SHA independent review and merge into `main`.
 
 - **`ENV-COORD-001` / CLOSED / PR #82** — Astra independently APPROVED exact architecture SHA `e5f6a419aa226151788763970e8c008f48d4a28d` with no blockers; PR #82 merged with expected-head protection as `6360e149f42c419a8d7f878f28fc439e0ef1f6cc`. Production activation is still blocked because coordination enforcement is not yet installed.
 - **ENV-COORD-002 / RECOVERY_HOLD / BOOTSTRAP_CONTROL** — PR #89 merged as `839ff34185dff675a7bfd4adf6350d6b2c1e4eaa`. Claim ENV-COORD-002-C1, generation 1, holder zcode-env-coord-002-g1-primary, and its original four-file scope remain locked. Runtime/session effects observed to date are reconciled, but no typed holder binding, lifecycle checkpoint, admission high-water, or active-admission count exists; do not release, reassign, or start mutation in that scope.
-- **ENV-AUTONOMY-001 / CHANGES_REQUIRED / BOOTSTRAP_CONTROL** — PR #90's reviewed claim transition is merged as `0ea079d69c3186272f1ae6be82cbbeb22ed99266`; the generation-1 claim is authoritative. Self-review of PR #91 found a false handoff publication mismatch caused by trimmed Git output, a canonical frontier parser that selected registry JSON instead of the human frontier, and a production-dispatch flag that ignored the inactive server-enforcement gate. The candidate fixes and regression coverage pass all applicable local suites; publication verification, fresh exact-SHA review, and hosted CI remain pending. C1's four files and production/frontend/schema/data paths remain untouched. Local hooks do not change server enforcement state.
+- **ENV-AUTONOMY-001 / REVIEW_REQUESTED / BOOTSTRAP_CONTROL** — PR #90's reviewed claim transition is merged as `0ea079d69c3186272f1ae6be82cbbeb22ed99266`; the generation-1 claim is authoritative. PR #91 fixes the false handoff publication mismatch, canonical frontier parsing, and BOOTSTRAP_CONTROL dispatch gate found during self-review. All applicable local suites pass; the latest published checkpoint was verified at `ccf498bd8439edfdd63740d8db64f1220fdb92f6`. Fresh exact-SHA review and hosted CI remain pending. C1's four files and production/frontend/schema/data paths remain untouched. Local hooks do not change server enforcement state.
 - **CLOSED ENV-INT-GISTDA-CORE-001 / PR #80** — merged as bf26cb523c375f44d3bdd0ee9a6d0d66f1eb81bb on 2026-09-16; exact-head scripts, smoke, and notify checks succeeded.
 - **`ENV-BUILDING-REPAIR-001` / DECISION_REQUIRED / PR #75** — Building/repair remains no-touch.
 - **`ENV-OPS-001A` / READY BUT DISPATCH-PAUSED** — production dispatch remains paused until later coordination enforcement gates permit it.

@@ -2,7 +2,7 @@
 
 ## Assignment
 
-- Status: `CHANGES_REQUIRED / BOOTSTRAP_CONTROL` in PR #91; trusted
+- Status: `REVIEW_REQUESTED / BOOTSTRAP_CONTROL` in PR #91; trusted
   `origin/main` remains `CLAIMED` until this implementation PR merges.
 - Owner role: ENV project supervisor
 - Supervisor route: GPT-6 Luna MAX (routing metadata only)
@@ -257,9 +257,7 @@ decision.
 
 ## One next safe action
 
-Verify publication of the repaired `CHANGES_REQUIRED` checkpoint, transition
-PR #91 to `REVIEW_REQUESTED` with a fresh checkpoint, then request independent
-exact-SHA review and wait for hosted CI. Only the independent reviewer may
-merge after approval and exact-base recheck. Keep
+Complete fresh independent exact-SHA review and hosted CI for PR #91; only the
+independent reviewer may merge after approval and exact-base recheck. Keep
 `ENFORCEMENT_NOT_ACTIVE` and `AUTONOMY_NOT_READY` until actual hook activation,
 server controls, and all applicable live proofs are verified.

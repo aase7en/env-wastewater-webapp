@@ -2,7 +2,7 @@
 
 ## Assignment
 
-- Status: `CHANGES_REQUIRED / BOOTSTRAP_CONTROL` in this candidate; trusted
+- Status: `REVIEW_REQUESTED / BOOTSTRAP_CONTROL` in this candidate; trusted
   `origin/main` remains `CLAIMED` until the implementation PR merges.
 - Task: `ENV-AUTONOMY-001`
 - Claim: `ENV-AUTONOMY-001-C1`, generation `1`
@@ -17,10 +17,11 @@
 ## Checkpoint
 
 The separate generation-1 bootstrap claim is authoritative on `origin/main`
-after PR #90 merged as `0ea079d69c3186272f1ae6be82cbbeb22ed99266`. Focused
-runtime implementation is underway within its registered scope. No C1 file was
-changed, and no claim release, reassignment, quiescence, or transfer evidence
-was created. The runtime and local hooks must continue to report
+after PR #90 merged as `0ea079d69c3186272f1ae6be82cbbeb22ed99266`. The
+registered runtime/hooks/skills candidate is complete and back at
+`REVIEW_REQUESTED` after self-found fixes and full local revalidation. No C1
+file was changed, and no claim release, reassignment, quiescence, or transfer
+evidence was created. The runtime and local hooks must continue to report
 `BOOTSTRAP_CONTROL`, `ENFORCEMENT_NOT_ACTIVE`, and `AUTONOMY_NOT_READY` until
 their independent server and live-acceptance gates pass.
 
@@ -102,6 +103,25 @@ their independent server and live-acceptance gates pass.
       "published": true,
       "task_id": "ENV-AUTONOMY-001",
       "terminal_result": null
+    },
+    {
+      "claim_generation": 1,
+      "claim_id": "ENV-AUTONOMY-001-C1",
+      "event_id": "env-autonomy-001-checkpoint-0004",
+      "event_seq": 5,
+      "event_type": "CHECKPOINT",
+      "goal_id": "01a0d917-7b29-7970-8bb7-3c6df13e4bd3",
+      "operation_id": null,
+      "operation_outcome": null,
+      "payload": {
+        "lane_status": "REVIEW_REQUESTED",
+        "recorded_at_utc": "2026-09-25T21:25:01Z",
+        "source_head_sha": "ccf498bd8439edfdd63740d8db64f1220fdb92f6"
+      },
+      "previous_event_id": "env-autonomy-001-checkpoint-0003",
+      "published": true,
+      "task_id": "ENV-AUTONOMY-001",
+      "terminal_result": null
     }
   ],
   "goal_id": "01a0d917-7b29-7970-8bb7-3c6df13e4bd3",
@@ -151,16 +171,18 @@ their independent server and live-acceptance gates pass.
   call. Route metadata leaves dispatch disabled. JEV remains `UNAVAILABLE`.
 - Focused autonomy runtime tests pass **20/20**; Coordination Guard passes
   **344/344**; workflow-action tests pass **14/14**; semantic workflow check,
-  `split_sql`, Python compilation, and `git diff --check` pass. The checkpoint
-  in this candidate still needs remote publication verification; exact hosted
-  CI and fresh independent review remain pending.
+  `split_sql`, Python compilation, and `git diff --check` pass. The prior
+  `CHANGES_REQUIRED` checkpoint at
+  `ccf498bd8439edfdd63740d8db64f1220fdb92f6` was verified published with no
+  unresolved effects. Exact hosted CI and fresh independent review remain
+  pending for this review-request candidate.
 - Self-review of PR #91 found three defects before independent review: the
   remote/local handoff string comparison drops Git's final newline; the
   canonical READY parser matches the registry JSON before the human frontier;
   and refill marks production dispatch authorized despite
-  `ENFORCEMENT_NOT_ACTIVE`. The current candidate fixes all three and adds
-  regression coverage. The lane remains `CHANGES_REQUIRED` until the full
-  local gate set and fresh exact-SHA review pass.
+  `ENFORCEMENT_NOT_ACTIVE`. The current candidate fixes all three, adds
+  regression coverage, and is back at `REVIEW_REQUESTED` after full local
+  validation and publication of the prior checkpoint.
 - A comparison against `origin/main` confirms the C1 claim record is unchanged
   (canonical JSON SHA-256
   `68943625ae4123f838ebc7fde4ff9bf02bb279716caa28e0600dbd0ca5a97077`);
@@ -178,6 +200,5 @@ its exact path/SHA.
 
 ## One next safe action
 
-Finish the registered runtime/hooks/skills and focused CI change, verify the
-exact diff against this claim and C1's unchanged record, then request fresh
-exact-SHA independent review.
+Finish exact-head CI and fresh independent exact-SHA review for PR #91; only
+the independent reviewer may merge after approval and exact-base recheck.
