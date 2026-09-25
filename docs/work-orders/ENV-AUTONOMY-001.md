@@ -89,6 +89,9 @@ The claim owns only these paths:
 - `docs/ai/handoffs/ENV-AUTONOMY-001.md` — this lane's sole live execution
   checkpoint and receipt surface.
 - `docs/work-orders/ENV-AUTONOMY-001.md` — this bounded contract and evidence.
+- `.github/workflows/test.yml` — only to add the focused deterministic
+  autonomy runtime suite to the existing scripts CI job; do not add secrets,
+  permissions, coordination enforcement, deployment, or network steps.
 - `.agents/skills/env-faster/**`
 - `.agents/skills/env-nightshift/**`
 - `.agents/skills/env-fleet-router/**`
@@ -109,8 +112,10 @@ dependency, parallel Roadmap, or provider/model authority.
   `scripts/test_env_coordination_guard.py`,
   `docs/work-orders/ENV-COORD-002.md`, and
   `docs/ai/handoffs/ENV-COORD-002-GLM.md`.
-- Existing coordination architecture, `AGENTS.md`, GitHub workflow/server
-  policy, production `frontend/**`, `supabase/**`, `data/**`, and `.env`.
+- Existing coordination architecture, `AGENTS.md`, all GitHub server/branch
+  policy and coordination workflow changes, production `frontend/**`,
+  `supabase/**`, `data/**`, and `.env`. The exact test workflow exception
+  above cannot alter secrets, permissions, deployment, or coordination gates.
 - A-Wiki content; it is read-only context and has a separate ownership
   boundary.
 - Real hospital records, PHI, credentials, production database writes,
@@ -202,8 +207,9 @@ turns from failed executions.
 Run focused deterministic tests for the selector, exact identity/scope
 binding, WIP/refill behavior, lifecycle ordering/idempotency, unknown effects,
 stale policy/generation, and reviewer independence. Use synthetic state only.
-Run the relevant repository script checks and exact-head hosted CI. Do not
-read `.env` values or `data/raw/`.
+Wire that test module into the existing `.github/workflows/test.yml` scripts
+job, then run the relevant repository script checks and exact-head hosted CI.
+Do not read `.env` values or `data/raw/`.
 
 Before claiming `ENV AUTONOMY READY`, capture these five proofs in this Work
 Order and lane handoff:
