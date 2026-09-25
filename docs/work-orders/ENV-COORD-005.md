@@ -7,7 +7,7 @@ Current control-transition owner: GPT-5.6 Sol per the authoritative COORD-002 wo
 GPT-6 Sol role: optional high-risk architecture/adjudication review when routed
 Read-only advisory: JEV
 Repository: `aase7en/env-wastewater-webapp`
-Last updated: 2026-09-25
+Last updated: 2026-09-26
 
 ## Trigger and current recovery disposition
 
@@ -39,12 +39,16 @@ events were emitted by that session. Those fields are `NOT_EMITTED`, not
 zero-valued facts. No unresolved external effect was found in the recorded
 session actions, but that does not repair the missing lifecycle proof.
 
-Recovery classification: `RECOVERY_REQUIRED` (choice C). The evidence does not
-support `ACTIVE`; runtime and Git effects are reconciled; no unknown external
-effect was identified; formal ENV quiescence remains unproved. This is a
-missing-adapter / durable-observation gap, not a request for human recollection.
-Keep the generation and scope lock. Do not issue a release or reassignment
-receipt for this historical run from the Kilo tool-call count.
+Work-order recovery classification: `RECOVERY_REQUIRED` (choice C), an advisory
+work-item disposition only. The evidence does not support `ACTIVE`; runtime and
+observed Git effects are reconciled; no unknown external effect was identified;
+formal ENV quiescence remains unproved. Under the parent architecture, the
+corresponding claim-control posture is `RECOVERY_HOLD`. The authoritative
+registry has not made that transition: it still records generation 1 as
+`CLAIMED`, and the claim and scope remain locked. This is a missing-adapter /
+durable-observation gap, not a request for human recollection. Do not issue a
+release or reassignment receipt for this historical run from the Kilo tool-call
+count.
 
 Recovery observation (2026-09-25; proposal evidence, not a canonical receipt):
 
@@ -60,7 +64,8 @@ Recovery observation (2026-09-25; proposal evidence, not a canonical receipt):
 | Active admissions | `UNKNOWN` to the ENV authority; Kilo reports all 58 recorded calls completed and session stopped |
 | External outcomes | No unresolved effect identified in the recorded Kilo actions; no ENV operation-outcome ledger was emitted |
 | Side-effect classification | `KNOWN_EFFECT_RECONCILED` for observed Git changes: branch commit is merged through PR #84 at main `94c1a8f9dda5424c0403c69d26e17d6d9e8e38ed`; untracked `.kilo/` and `.serena/` entries predate the session and remain untouched |
-| Recovery decision | `RECOVERY_REQUIRED`; preserve generation 1 and its scope lock |
+| Work-order disposition | `RECOVERY_REQUIRED` (advisory only); recommend preserving generation 1 under `RECOVERY_HOLD` semantics |
+| Authoritative registry state | `CLAIMED`, generation 1; unchanged pending a separately authorized control transition |
 | Receipt status | Observation only; not a `QUIESCENCE_ATTESTATION` and not a claim-release receipt |
 
 ## Parent architecture and observed gap
@@ -70,15 +75,36 @@ The architecture roadmap already names this slice as the ZCode plugin/hook
 adapter. The merged COORD-002 core keeps `AdmissionGate` and lifecycle state
 in process memory; its own documentation says cross-process/session
 serialization belongs to a later adapter. The current CLI validates supplied
-state but has no durable event writer. The local A-Conductor store inspected
-for this recovery has provider admissions but no matching execution, worker
-lease, or lifecycle record for the R17 session. Do not create a second database,
-sidecar queue, or competing claim store to cover that gap.
+state but has no durable event writer.
 
-Before implementation, the control owner must identify and pin the single
-canonical durable execution authority that can atomically bind an admission
-and its result to the ENV claim tuple. If the existing A-Conductor/runtime
-authority cannot provide that contract, return to `DECISION_REQUIRED` for a
+Cross-repository evidence is pinned to A-Wiki-Conductor
+`origin/main@97f935735f51bd0efe3146decc260966f56c796a`. That source contains
+`SQLiteExecutionStore` (`src/a_conductor/execution_store.py`),
+`SQLiteWorkerLeaseStore` (`src/a_conductor/worker_lease.py`), and provider
+admission persistence (`src/a_conductor/provider_config_store.py`). These are
+existing stores to evaluate for `REUSE -> WRAP -> EXTEND`; their presence
+does not establish that they can provide ENV claim lifecycle or quiescence.
+`DurableExecutionReceipt` carries `claim_generation` and an opaque
+`binding_digest`, but does not itself type the ENV claim ID, registered holder,
+admission high-water, or lifecycle checkpoint. The worker lease store owns
+worker capacity leases, not the ENV claim lifecycle. The matching
+`docs/agent-collab/EXECUTION_LIVENESS_PROTOCOL.md` remains marked
+`PROPOSED BINDING GOVERNANCE CONTRACT`, `RUNTIME IMPLEMENTATION PENDING`, and
+`R2_REREVIEW_REQUIRED` at this pin.
+
+As of 2026-09-26, a read-only inspection of the configured local A-Conductor
+database found no matching R17 session, holder, worktree, branch, or
+recovered-HEAD identity and no matching execution, worker-lease, or lifecycle
+record. R17 was run through Kilo directly; it was not dispatched through a
+matching typed A-Conductor execution record. Do not infer that source-level
+store availability proves that this hook surface was covered. Do not create a
+second database, sidecar queue, or competing claim store to cover the gap.
+
+Before implementation, the control owner and A-Conductor owner must identify
+and pin whether these existing stores can atomically bind a mutation
+admission and its terminal result to the complete ENV claim tuple, including
+the registered holder and per-tool lifecycle evidence. If an existing store
+cannot provide that contract, return to `DECISION_REQUIRED` for a
 cross-repository authority decision. A local JSON/SQLite ledger is not an
 acceptable fallback.
 
@@ -178,13 +204,29 @@ environmental writes.
   test fixtures/results, and canonical execution-authority records. No real
   environmental writes are used.
 
-## Model-fit rationale — 2026-09-25
+## Model-fit rationale — 2026-09-26
 
-GLM-5.3 MAX is the candidate implementer for the bounded adapter/state-machine
-and test work after the authority and hook contracts are verified. GLM-5.3
-Flash can collect hook/API fixtures and run focused independent checks. JEV is
-read-only advisory for race and recovery edge cases. The current designated
-control owner remains GPT-5.6 Sol; GPT-6 Sol may provide high-risk
+Selection date: 2026-09-26. Task category: Track Z correctness and data-contract
+work for a cross-session admission/lifecycle adapter, with deterministic race,
+crash, and recovery fixtures; no visual work is in scope. The role basis is
+`docs/agent-handoff/AI_COLLABORATION_PROTOCOL.md` §§21 and 25: GPT leads
+decomposition and review, GLM owns core correctness/security/data-contract
+work, and workers handle bounded repository execution.
+
+Task-specific primary evidence is the earlier COORD-002 R17 implementation:
+the Kilo session metadata names `cointh-glm/glm-5.3/max` for the same bounded
+Python state-machine and registry work; its exact head
+`297133f452b5af73be90ef08b63275cf4ca28873` was merged through PR #84, and
+GitHub test run `35510103597` passed for that exact head. The recorded 58 Kilo
+tool calls completed and the session stopped. This supports GLM-5.3 MAX as a
+candidate for the bounded adapter implementation after authority and hook
+contracts are verified. It does not prove that the route is currently ready,
+that this adapter is authorized, or that COORD-002 has lifecycle/quiescence
+proof.
+
+GLM-5.3 Flash is a candidate for fixture collection and focused independent
+checks. JEV is read-only advisory for race and recovery edge cases. The current
+designated control owner remains GPT-5.6 Sol; GPT-6 Sol may provide high-risk
 architecture/adjudication review when routed. GPT-6 Luna MAX supervises
 decomposition and evidence collection. These are routing preferences, not
 proof that a route or quota is currently available. Verify each route before
@@ -193,8 +235,10 @@ unreviewed writer.
 
 ## Current next safe action
 
-Keep `ENV-COORD-002-C1` locked and the recovery result classified
-`RECOVERY_REQUIRED`. Obtain the designated control owner's exact-SHA decision
-on how to record this recovery hold, then establish the canonical execution
-authority contract with the A-Conductor owner. Do not activate this adapter
-claim until both decisions are durable.
+Keep `ENV-COORD-002-C1` locked; the authoritative registry remains `CLAIMED`,
+generation 1. Treat `RECOVERY_REQUIRED` as this Work Order's advisory
+classification and preserve the claim under `RECOVERY_HOLD` semantics. Obtain
+the designated control owner's exact-SHA decision on recording the recovery
+hold through the separately authorized control path, then establish the
+canonical execution-authority contract with the A-Conductor owner. Do not
+activate this adapter claim until both decisions are durable.
