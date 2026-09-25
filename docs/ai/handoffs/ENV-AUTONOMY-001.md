@@ -2,7 +2,7 @@
 
 ## Assignment
 
-- Status: `IMPLEMENTING / BOOTSTRAP_CONTROL` in this candidate; trusted
+- Status: `REVIEW_REQUESTED / BOOTSTRAP_CONTROL` in this candidate; trusted
   `origin/main` remains `CLAIMED` until the implementation PR merges.
 - Task: `ENV-AUTONOMY-001`
 - Claim: `ENV-AUTONOMY-001-C1`, generation `1`
@@ -64,6 +64,25 @@ their independent server and live-acceptance gates pass.
       "published": true,
       "task_id": "ENV-AUTONOMY-001",
       "terminal_result": null
+    },
+    {
+      "claim_generation": 1,
+      "claim_id": "ENV-AUTONOMY-001-C1",
+      "event_id": "env-autonomy-001-checkpoint-0002",
+      "event_seq": 3,
+      "event_type": "CHECKPOINT",
+      "goal_id": "01a0d917-7b29-7970-8bb7-3c6df13e4bd3",
+      "operation_id": null,
+      "operation_outcome": null,
+      "payload": {
+        "lane_status": "REVIEW_REQUESTED",
+        "recorded_at_utc": "2026-09-25T21:09:38Z",
+        "source_head_sha": "3698a874edbd5b41b97bf95568caac01fcb29ed6"
+      },
+      "previous_event_id": "env-autonomy-001-checkpoint-0001",
+      "published": true,
+      "task_id": "ENV-AUTONOMY-001",
+      "terminal_result": null
     }
   ],
   "goal_id": "01a0d917-7b29-7970-8bb7-3c6df13e4bd3",
@@ -113,6 +132,8 @@ their independent server and live-acceptance gates pass.
   call. Route metadata leaves dispatch disabled. JEV remains `UNAVAILABLE`.
 - The focused synthetic runtime tests pass locally after the refill command
   bug fix; exact hosted CI and independent review remain pending.
+- PR #91 is at `REVIEW_REQUESTED`; its current exact head is the review target.
+  Hosted scripts CI and fresh independent exact-SHA review are pending.
 - A comparison against `origin/main` confirms the C1 claim record is unchanged
   (canonical JSON SHA-256
   `68943625ae4123f838ebc7fde4ff9bf02bb279716caa28e0600dbd0ca5a97077`);

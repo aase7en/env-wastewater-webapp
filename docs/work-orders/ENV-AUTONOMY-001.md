@@ -2,7 +2,8 @@
 
 ## Assignment
 
-- Status: `IMPLEMENTING / BOOTSTRAP_CONTROL`
+- Status: `REVIEW_REQUESTED / BOOTSTRAP_CONTROL` in PR #91; trusted
+  `origin/main` remains `CLAIMED` until this implementation PR merges.
 - Owner role: ENV project supervisor
 - Supervisor route: GPT-6 Luna MAX (routing metadata only)
 - Reviewer: independent GPT-6 Sol reviewer; implementation author must not merge
@@ -256,8 +257,8 @@ decision.
 
 ## One next safe action
 
-Finish the registered runtime, skills, hooks, and focused CI change; run the
-exact local and hosted gates; then stop at `REVIEW_REQUESTED` for fresh
-independent exact-SHA review. The implementation author does not merge. Keep
+Finish exact-head CI and fresh independent exact-SHA review for PR #91; only
+the independent reviewer may merge after approval and exact-base recheck.
+The implementation author does not merge. Keep
 `ENFORCEMENT_NOT_ACTIVE` and `AUTONOMY_NOT_READY` until actual hook activation,
 server controls, and all applicable live proofs are verified.
