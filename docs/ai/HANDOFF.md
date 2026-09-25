@@ -1,5 +1,13 @@
 # HANDOFF
 
+## Recovery hold and autonomy bootstrap checkpoint - 2026-09-26
+
+- PR #89 merged with expected head as `839ff34185dff675a7bfd4adf6350d6b2c1e4eaa`. Trusted Coordination Guard status confirms `ENV-COORD-002-C1` remains generation 1 / holder `zcode-env-coord-002-g1-primary` / `RECOVERY_HOLD`; lifecycle, active-admission, outcome, and quiescence evidence are still missing. Preserve its four-file scope lock.
+- `ENV-AUTONOMY-001` is a separate proposed claim on branch `codex/env-autonomy-bootstrap-20260926`, worktree `A:\GitHub\_worktrees\env-autonomy-bootstrap-20260926`, based on the merged hold SHA. Its candidate is not authority until exact-SHA review and expected-head merge.
+- The original supervisor worktree `A:\GitHub\_worktrees\env-wastewater-webapp-codex-supervisor` remains detached at `94c1a8f9dda5424c0403c69d26e17d6d9e8e38ed` with untracked `.serena/`. It was not reset, cleaned, moved, or deleted; do not use it as current SSoT. Work continues in a clean isolated worktree from `839ff34185dff675a7bfd4adf6350d6b2c1e4eaa`.
+- GitHub main still has no repository rulesets. Local Codex hooks, if installed, remain early guardrails; do not report `ENFORCING` or authorize production lanes before the separate ENV-COORD-003/004 gates pass.
+- One next safe action: complete independent review of the exact ENV-AUTONOMY-001 claim proposal and verify its expected-head merge; then implement only within its registered disjoint scope.
+
 ## ENV-COORD-002 bootstrap claim checkpoint - 2026-09-07
 
 - Status: `CLAIM_PROPOSED / BOOTSTRAP_CONTROL`; coordinator GPT-5.6 Sol.
