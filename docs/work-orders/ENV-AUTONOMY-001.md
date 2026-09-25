@@ -2,14 +2,15 @@
 
 ## Assignment
 
-- Status: `CLAIM_PROPOSED / BOOTSTRAP_CONTROL`
+- Status: `IMPLEMENTING / BOOTSTRAP_CONTROL`
 - Owner role: ENV project supervisor
 - Supervisor route: GPT-6 Luna MAX (routing metadata only)
 - Reviewer: independent GPT-6 Sol reviewer; implementation author must not merge
 - Repository: `aase7en/env-wastewater-webapp`
 - Worktree: `A:\GitHub\_worktrees\env-autonomy-bootstrap-20260926`
 - Branch: `codex/env-autonomy-bootstrap-20260926`
-- Base: `origin/main@839ff34185dff675a7bfd4adf6350d6b2c1e4eaa`
+- Claim base: `839ff34185dff675a7bfd4adf6350d6b2c1e4eaa`
+- Current implementation base: `origin/main@0ea079d69c3186272f1ae6be82cbbeb22ed99266`
 - Execution holder: `exec-holder-env-autonomy-001-g1-10b79866-9012-4701-9cf9-33ce6d00df5f`
 - Last updated: 2026-09-26
 
@@ -29,9 +30,11 @@ mutable scope may be changed by this work.
 
 ## Current evidence and model fit — 2026-09-26
 
-- Trusted base is `839ff34185dff675a7bfd4adf6350d6b2c1e4eaa`; the registry
-  parsed successfully after PR #89, with C1 in `RECOVERY_HOLD` and enforcement
-  still `BOOTSTRAP_CONTROL`.
+- The claim transition in PR #90 was independently reviewed and merged as
+  `0ea079d69c3186272f1ae6be82cbbeb22ed99266`; current trusted registry hash is
+  `2e8da438901c452cdc709942603733153aba7bd4b88c5bbda201cb02f059ed24`.
+  The autonomy claim is `CLAIMED`, generation 1. C1 remains in
+  `RECOVERY_HOLD`; enforcement is still `BOOTSTRAP_CONTROL`.
 - The local supervisor worktree at
   `A:\GitHub\_worktrees\env-wastewater-webapp-codex-supervisor` remains
   detached at its earlier base and has untracked `.serena/`. It is preserved
@@ -58,14 +61,32 @@ mutable scope may be changed by this work.
   task-bound provider admission. GPT-6 Sol is reserved for independent
   cross-cutting exact-SHA review. Model names are routing preferences, not
   identity or authorization evidence.
+- Current local verification: focused autonomy runtime **16/16 PASS**,
+  Coordination Guard regressions **344/344 PASS**, workflow-action
+  regressions **14/14 PASS**, workflow semantic checker PASS, `split_sql`
+  regressions PASS, Python compilation PASS, and `git diff --check` exits 0
+  (with CRLF-normalization warnings only). The actual
+  runtime status passes this claim's identity preflight; refill finds 0
+  canonical SAFE_READY tasks, and Kilo admission remains `UNKNOWN` for both
+  proxy quota and upstream readiness. No provider request was made.
+- The installed Kilo 7.7.2 CLI help exposes `profile`, `models`, and
+  `roll-call`; the official CLI reference describes `roll-call` as a model
+  connectivity/latency test that sends prompts. Kilo's published balance is
+  account credit state, while successful inference is a separate upstream
+  request. No documented non-billable `cointh-glm` quota + upstream readiness
+  probe was identified, so no `roll-call` or model call was made. References:
+  [Kilo CLI reference](https://kilo.ai/docs/code-with-ai/platforms/cli-reference),
+  [Kilo Gateway usage and billing](https://kilo.ai/docs/gateway/usage-and-billing).
 
-## Claim transition
+## Claim transition — merged and verified
 
-The candidate adds `ENV-AUTONOMY-001-C1`, generation 1, with the exact
-worktree, branch, base, holder, and scope recorded in the canonical registry
-inside `docs/ai/CURRENT-WORK.md`.
+PR #90 added `ENV-AUTONOMY-001-C1`, generation 1, with the exact worktree,
+branch, base, holder, and scope recorded in the canonical registry inside
+`docs/ai/CURRENT-WORK.md`. It received independent exact-SHA approval and
+merged as `0ea079d69c3186272f1ae6be82cbbeb22ed99266`; the accepted Guard
+registry is authoritative and implementation is active within that scope.
 
-Optimistic-concurrency fences for this proposal:
+Optimistic-concurrency fences at proposal time:
 
 - expected policy revision: `839ff34185dff675a7bfd4adf6350d6b2c1e4eaa`
 - expected registry hash: `894aa6d6238c7f2624dfea5d55f1cf0148868a96aa052a1e9b7d294abefda060`
@@ -73,10 +94,9 @@ Optimistic-concurrency fences for this proposal:
 - proposed claim generation: `1`
 - proposed status: `CLAIMED`
 
-The candidate registry is not authority. Exact-SHA independent review, current
-base and remote-diff checks, green exact-head CI, explicit owner
-authorization already present in this task, and expected-head merge are
-required before implementation mutation.
+The merged claim authorizes implementation only within the exact mutable
+scope below. It does not authorize server-side enforcement or production lane
+dispatch.
 
 ## Mutable scope
 
@@ -236,7 +256,8 @@ decision.
 
 ## One next safe action
 
-Review this docs-only exact-SHA claim transition, refresh the base/registry
-fences and CI, then let the independent reviewer merge only with
-`--match-head-commit`. No skills, hooks, scripts, or runtime mutation before
-that merge is verified on main.
+Finish the registered runtime, skills, hooks, and focused CI change; run the
+exact local and hosted gates; then stop at `REVIEW_REQUESTED` for fresh
+independent exact-SHA review. The implementation author does not merge. Keep
+`ENFORCEMENT_NOT_ACTIVE` and `AUTONOMY_NOT_READY` until actual hook activation,
+server controls, and all applicable live proofs are verified.

@@ -3,10 +3,11 @@
 ## Recovery hold and autonomy bootstrap checkpoint - 2026-09-26
 
 - PR #89 merged with expected head as `839ff34185dff675a7bfd4adf6350d6b2c1e4eaa`. Trusted Coordination Guard status confirms `ENV-COORD-002-C1` remains generation 1 / holder `zcode-env-coord-002-g1-primary` / `RECOVERY_HOLD`; lifecycle, active-admission, outcome, and quiescence evidence are still missing. Preserve its four-file scope lock.
-- `ENV-AUTONOMY-001` is a separate proposed claim on branch `codex/env-autonomy-bootstrap-20260926`, worktree `A:\GitHub\_worktrees\env-autonomy-bootstrap-20260926`, based on the merged hold SHA. Its candidate is not authority until exact-SHA review and expected-head merge.
-- The original supervisor worktree `A:\GitHub\_worktrees\env-wastewater-webapp-codex-supervisor` remains detached at `94c1a8f9dda5424c0403c69d26e17d6d9e8e38ed` with untracked `.serena/`. It was not reset, cleaned, moved, or deleted; do not use it as current SSoT. Work continues in a clean isolated worktree from `839ff34185dff675a7bfd4adf6350d6b2c1e4eaa`.
+- `ENV-AUTONOMY-001` is an active disjoint generation-1 claim, independently reviewed and merged by PR #90 as `0ea079d69c3186272f1ae6be82cbbeb22ed99266`. Runtime/hooks/skills implementation is underway on `codex/env-autonomy-bootstrap-20260926` in `A:\GitHub\_worktrees\env-autonomy-bootstrap-20260926`; it remains `BOOTSTRAP_CONTROL`, and its runtime reports `AUTONOMY_NOT_READY`.
+- The original supervisor worktree `A:\GitHub\_worktrees\env-wastewater-webapp-codex-supervisor` remains detached at `94c1a8f9dda5424c0403c69d26e17d6d9e8e38ed` with untracked `.serena/`. It was not reset, cleaned, moved, or deleted; do not use it as current SSoT. This task uses a separate isolated worktree at current `origin/main@0ea079d69c3186272f1ae6be82cbbeb22ed99266`, descended from the claim base `839ff34185dff675a7bfd4adf6350d6b2c1e4eaa`.
 - GitHub main still has no repository rulesets. Local Codex hooks, if installed, remain early guardrails; do not report `ENFORCING` or authorize production lanes before the separate ENV-COORD-003/004 gates pass.
-- One next safe action: complete independent review of the exact ENV-AUTONOMY-001 claim proposal and verify its expected-head merge; then implement only within its registered disjoint scope.
+- Current bootstrap evidence: task identity preflight passes; refill reports one active mutable lane, two free slots, and no canonical SAFE_READY lane. The non-billable Kilo preflight reports proxy quota and upstream status `UNKNOWN`; it made no external call. JEV has no supported route and remains `UNAVAILABLE`. C1's `RECOVERY_HOLD` claim and four-file lock remain unchanged.
+- One next safe action: complete and locally verify the bounded autonomy runtime/hooks/skills and focused CI change, then request independent review of the exact candidate SHA. Do not change C1 or report server enforcement/readiness from local hooks.
 
 ## ENV-COORD-002 bootstrap claim checkpoint - 2026-09-07
 

@@ -2,31 +2,84 @@
 
 ## Assignment
 
-- Status: `CLAIM_PROPOSED / BOOTSTRAP_CONTROL`
+- Status: `IMPLEMENTING / BOOTSTRAP_CONTROL` in this candidate; trusted
+  `origin/main` remains `CLAIMED` until the implementation PR merges.
 - Task: `ENV-AUTONOMY-001`
 - Claim: `ENV-AUTONOMY-001-C1`, generation `1`
 - Execution holder: `exec-holder-env-autonomy-001-g1-10b79866-9012-4701-9cf9-33ce6d00df5f`
 - Repository: `aase7en/env-wastewater-webapp`
 - Worktree: `A:\GitHub\_worktrees\env-autonomy-bootstrap-20260926`
 - Branch: `codex/env-autonomy-bootstrap-20260926`
-- Base/start HEAD: `839ff34185dff675a7bfd4adf6350d6b2c1e4eaa`
+- Claim base: `839ff34185dff675a7bfd4adf6350d6b2c1e4eaa`
+- Current `origin/main` and implementation start HEAD: `0ea079d69c3186272f1ae6be82cbbeb22ed99266`
 - Last updated: 2026-09-26
 
 ## Checkpoint
 
-This is a proposed, disjoint bootstrap claim. It is not authoritative until
-the exact-SHA reviewed control transition merges into `main`. No implementation
-files have been changed. C1 remains locked at generation 1 in
-`RECOVERY_HOLD`; no quiescence or transfer evidence was created.
+The separate generation-1 bootstrap claim is authoritative on `origin/main`
+after PR #90 merged as `0ea079d69c3186272f1ae6be82cbbeb22ed99266`. Focused
+runtime implementation is underway within its registered scope. No C1 file was
+changed, and no claim release, reassignment, quiescence, or transfer evidence
+was created. The runtime and local hooks must continue to report
+`BOOTSTRAP_CONTROL`, `ENFORCEMENT_NOT_ACTIVE`, and `AUTONOMY_NOT_READY` until
+their independent server and live-acceptance gates pass.
+
+<!-- ENV-AUTONOMY-LIFECYCLE:START -->
+```json
+{
+  "claim_generation": 1,
+  "claim_id": "ENV-AUTONOMY-001-C1",
+  "codex_hook_observations": [],
+  "events": [
+    {
+      "claim_generation": 1,
+      "claim_id": "ENV-AUTONOMY-001-C1",
+      "event_id": "env-autonomy-001-goal-start-0001",
+      "event_seq": 1,
+      "event_type": "GOAL_START",
+      "goal_id": "01a0d917-7b29-7970-8bb7-3c6df13e4bd3",
+      "operation_id": null,
+      "operation_outcome": null,
+      "payload": null,
+      "previous_event_id": "GENESIS",
+      "published": true,
+      "task_id": "ENV-AUTONOMY-001",
+      "terminal_result": null
+    },
+    {
+      "claim_generation": 1,
+      "claim_id": "ENV-AUTONOMY-001-C1",
+      "event_id": "env-autonomy-001-checkpoint-0001",
+      "event_seq": 2,
+      "event_type": "CHECKPOINT",
+      "goal_id": "01a0d917-7b29-7970-8bb7-3c6df13e4bd3",
+      "operation_id": null,
+      "operation_outcome": null,
+      "payload": {
+        "lane_status": "ACTIVE",
+        "recorded_at_utc": "2026-09-25T20:43:05Z",
+        "source_head_sha": "0ea079d69c3186272f1ae6be82cbbeb22ed99266"
+      },
+      "previous_event_id": "env-autonomy-001-goal-start-0001",
+      "published": true,
+      "task_id": "ENV-AUTONOMY-001",
+      "terminal_result": null
+    }
+  ],
+  "goal_id": "01a0d917-7b29-7970-8bb7-3c6df13e4bd3",
+  "version": 1
+}
+```
+<!-- ENV-AUTONOMY-LIFECYCLE:END -->
 
 ## Reconciled facts
 
 - PR #89 merged as `839ff34185dff675a7bfd4adf6350d6b2c1e4eaa`; trusted guard
   status shows C1 in `RECOVERY_HOLD`, same holder/generation/scope, and
   `BOOTSTRAP_CONTROL`.
-- The candidate's expected control fences are policy revision
-  `839ff34185dff675a7bfd4adf6350d6b2c1e4eaa` and registry hash
-  `894aa6d6238c7f2624dfea5d55f1cf0148868a96aa052a1e9b7d294abefda060`.
+- PR #90 merged the disjoint ENV-AUTONOMY-001 claim as
+  `0ea079d69c3186272f1ae6be82cbbeb22ed99266`; the active registry hash is
+  `2e8da438901c452cdc709942603733153aba7bd4b88c5bbda201cb02f059ed24`.
 - PR #87 and PR #88 remain open on the previous base `94c1a8f9...`; neither is
   an active authoritative claim. PR #87 has an author CHANGES_REQUIRED
   comment; PR #88 has no GitHub review decision.
@@ -43,6 +96,27 @@ files have been changed. C1 remains locked at generation 1 in
 - Kilo CLI 7.7.2 is installed. The older sanitized GLM session export is not
   current provider admission evidence. No JEV executable or tool route was
   found in the current inventory.
+- No external provider call has been made by this bootstrap lane. Kilo's
+  general balance is not proof of the `cointh-glm` proxy quota or upstream
+  readiness.
+
+## Current implementation evidence
+
+- `python scripts/env_autonomy_runtime.py status --root .` passes identity
+  preflight for this exact task/claim/generation/holder and reports
+  `BOOTSTRAP_CONTROL` + `AUTONOMY_NOT_READY`.
+- `python scripts/env_autonomy_runtime.py refill --root .` reports one active
+  mutable lane, two free slots, zero canonical SAFE_READY candidates, and
+  `AUTO_REFILL_REQUIRED=false` / `NO_CANONICAL_SAFE_READY_LANE`.
+- `python scripts/env_autonomy_runtime.py kilo-preflight --root .` reports
+  proxy quota and upstream model status `UNKNOWN`; it performed no external
+  call. Route metadata leaves dispatch disabled. JEV remains `UNAVAILABLE`.
+- The focused synthetic runtime tests pass locally after the refill command
+  bug fix; exact hosted CI and independent review remain pending.
+- A comparison against `origin/main` confirms the C1 claim record is unchanged
+  (canonical JSON SHA-256
+  `68943625ae4123f838ebc7fde4ff9bf02bb279716caa28e0600dbd0ca5a97077`);
+  `git diff` for its four locked files is empty.
 
 ## Local-worktree caveat
 
@@ -56,6 +130,6 @@ its exact path/SHA.
 
 ## One next safe action
 
-Obtain independent exact-SHA review of the claim proposal, re-pin current main
-and candidate immediately before expected-head merge, then verify the merged
-claim and unchanged C1 lock. Do not implement before that result.
+Finish the registered runtime/hooks/skills and focused CI change, verify the
+exact diff against this claim and C1's unchanged record, then request fresh
+exact-SHA independent review.

@@ -1,0 +1,117 @@
+{
+  "description": "ENV-local recovery, claim preflight and durable-checkpoint guardrails. These hooks are not server enforcement.",
+  "hooks": {
+    "SessionStart": [
+      {
+        "matcher": "startup|resume|clear|compact",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "python3 \"$(git rev-parse --show-toplevel)/.codex/hooks/env_lifecycle.py\" --event SessionStart",
+            "commandWindows": "py -3 -c \"import pathlib,subprocess,sys,runpy; r=pathlib.Path(subprocess.check_output(['git','rev-parse','--show-toplevel'],text=True).strip()); p=r/'.codex'/'hooks'/'env_lifecycle.py'; sys.argv=[str(p),'--event','SessionStart']; runpy.run_path(str(p),run_name='__main__')\"",
+            "timeout": 30,
+            "statusMessage": "Reconciling ENV task and claim state",
+            "additionalContextLimit": 900
+          }
+        ]
+      }
+    ],
+    "PreToolUse": [
+      {
+        "matcher": "^(Bash|apply_patch|Edit|Write)$",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "python3 \"$(git rev-parse --show-toplevel)/.codex/hooks/env_lifecycle.py\" --event PreToolUse",
+            "commandWindows": "py -3 -c \"import pathlib,subprocess,sys,runpy; r=pathlib.Path(subprocess.check_output(['git','rev-parse','--show-toplevel'],text=True).strip()); p=r/'.codex'/'hooks'/'env_lifecycle.py'; sys.argv=[str(p),'--event','PreToolUse']; runpy.run_path(str(p),run_name='__main__')\"",
+            "timeout": 45,
+            "statusMessage": "Checking ENV claim and mutation scope"
+          }
+        ]
+      }
+    ],
+    "PostToolUse": [
+      {
+        "matcher": "^(Bash|apply_patch|Edit|Write)$",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "python3 \"$(git rev-parse --show-toplevel)/.codex/hooks/env_lifecycle.py\" --event PostToolUse",
+            "commandWindows": "py -3 -c \"import pathlib,subprocess,sys,runpy; r=pathlib.Path(subprocess.check_output(['git','rev-parse','--show-toplevel'],text=True).strip()); p=r/'.codex'/'hooks'/'env_lifecycle.py'; sys.argv=[str(p),'--event','PostToolUse']; runpy.run_path(str(p),run_name='__main__')\"",
+            "timeout": 30,
+            "statusMessage": "Capturing a redacted ENV mutation receipt",
+            "additionalContextLimit": 900
+          }
+        ]
+      }
+    ],
+    "PreCompact": [
+      {
+        "matcher": "manual|auto",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "python3 \"$(git rev-parse --show-toplevel)/.codex/hooks/env_lifecycle.py\" --event PreCompact",
+            "commandWindows": "py -3 -c \"import pathlib,subprocess,sys,runpy; r=pathlib.Path(subprocess.check_output(['git','rev-parse','--show-toplevel'],text=True).strip()); p=r/'.codex'/'hooks'/'env_lifecycle.py'; sys.argv=[str(p),'--event','PreCompact']; runpy.run_path(str(p),run_name='__main__')\"",
+            "timeout": 45,
+            "statusMessage": "Verifying a durable ENV checkpoint"
+          }
+        ]
+      }
+    ],
+    "PostCompact": [
+      {
+        "matcher": "manual|auto",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "python3 \"$(git rev-parse --show-toplevel)/.codex/hooks/env_lifecycle.py\" --event PostCompact",
+            "commandWindows": "py -3 -c \"import pathlib,subprocess,sys,runpy; r=pathlib.Path(subprocess.check_output(['git','rev-parse','--show-toplevel'],text=True).strip()); p=r/'.codex'/'hooks'/'env_lifecycle.py'; sys.argv=[str(p),'--event','PostCompact']; runpy.run_path(str(p),run_name='__main__')\"",
+            "timeout": 30,
+            "statusMessage": "Restoring ENV execution context"
+          }
+        ]
+      }
+    ],
+    "Stop": [
+      {
+        "hooks": [
+          {
+            "type": "command",
+            "command": "python3 \"$(git rev-parse --show-toplevel)/.codex/hooks/env_lifecycle.py\" --event Stop",
+            "commandWindows": "py -3 -c \"import pathlib,subprocess,sys,runpy; r=pathlib.Path(subprocess.check_output(['git','rev-parse','--show-toplevel'],text=True).strip()); p=r/'.codex'/'hooks'/'env_lifecycle.py'; sys.argv=[str(p),'--event','Stop']; runpy.run_path(str(p),run_name='__main__')\"",
+            "timeout": 45,
+            "statusMessage": "Verifying the ENV lane checkpoint"
+          }
+        ]
+      }
+    ],
+    "Interrupt": [
+      {
+        "hooks": [
+          {
+            "type": "command",
+            "command": "python3 \"$(git rev-parse --show-toplevel)/.codex/hooks/env_lifecycle.py\" --event Interrupt",
+            "commandWindows": "py -3 -c \"import pathlib,subprocess,sys,runpy; r=pathlib.Path(subprocess.check_output(['git','rev-parse','--show-toplevel'],text=True).strip()); p=r/'.codex'/'hooks'/'env_lifecycle.py'; sys.argv=[str(p),'--event','Interrupt']; runpy.run_path(str(p),run_name='__main__')\"",
+            "timeout": 3,
+            "statusMessage": "Recording ENV recovery guidance"
+          }
+        ]
+      }
+    ],
+    "SessionEnd": [
+      {
+        "matcher": "other",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "python3 \"$(git rev-parse --show-toplevel)/.codex/hooks/env_lifecycle.py\" --event SessionEnd",
+            "commandWindows": "py -3 -c \"import pathlib,subprocess,sys,runpy; r=pathlib.Path(subprocess.check_output(['git','rev-parse','--show-toplevel'],text=True).strip()); p=r/'.codex'/'hooks'/'env_lifecycle.py'; sys.argv=[str(p),'--event','SessionEnd']; runpy.run_path(str(p),run_name='__main__')\"",
+            "timeout": 3,
+            "statusMessage": "Checking ENV resume state"
+          }
+        ]
+      }
+    ]
+  }
+}
