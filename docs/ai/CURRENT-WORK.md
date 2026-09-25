@@ -1,6 +1,6 @@
 # CURRENT WORK
 
-Status: CLAIMED
+Status: RECOVERY_HOLD
 
 Allowed statuses:
 
@@ -9,6 +9,7 @@ Allowed statuses:
 - READY_FOR_IMPLEMENTATION
 - READY
 - CLAIMED
+- RECOVERY_HOLD
 - IMPLEMENTING
 - VERIFYING
 - REVIEW_REQUESTED
@@ -37,13 +38,14 @@ exact-SHA independent review and merge into `main`.
   "coordination_registry": {
     "version": 1,
     "enforcement_mode": "BOOTSTRAP_CONTROL",
-    "expected_policy_revision": "6360e149f42c419a8d7f878f28fc439e0ef1f6cc",
+    "expected_policy_revision": "94c1a8f9dda5424c0403c69d26e17d6d9e8e38ed",
+    "expected_registry_hash": "2d1b901b013fbc149c2d95db619dae8ec038ba3e0d2fde49e0b2c93c6b425d0a",
     "claims": [
       {
         "task_id": "ENV-COORD-002",
         "claim_id": "ENV-COORD-002-C1",
         "claim_generation": 1,
-        "status": "CLAIMED",
+        "status": "RECOVERY_HOLD",
         "owner_role": "core_implementation",
         "agent_model": "GLM-5.3 MAX",
         "execution_holder_id": "zcode-env-coord-002-g1-primary",
@@ -75,28 +77,29 @@ exact-SHA independent review and merge into `main`.
           "bootstrap claim transition reviewed and merged before implementation mutation"
         ],
         "last_checkpoint_pointer": "docs/ai/handoffs/ENV-COORD-002-GLM.md",
-        "one_next_safe_action": "Obtain independent exact-SHA review of this bootstrap claim transition, merge it, then create the isolated implementation worktree and launch the single GLM-5.3 MAX execution holder."
+        "one_next_safe_action": "Keep generation 1 and the current scope locked; collect holder-bound lifecycle checkpoint, admission high-water, zero-active-admissions and external-outcome evidence before any release, reassignment, generation change or mutation authorization."
       }
     ]
   }
 }
 ```
 
-## Active frontier - 2026-09-07
+## Active frontier - 2026-09-26
 
 - **`ENV-COORD-001` / CLOSED / PR #82** — Astra independently APPROVED exact architecture SHA `e5f6a419aa226151788763970e8c008f48d4a28d` with no blockers; PR #82 merged with expected-head protection as `6360e149f42c419a8d7f878f28fc439e0ef1f6cc`. Production activation is still blocked because coordination enforcement is not yet installed.
-- **`ENV-COORD-002` / CLAIM PROPOSED / BOOTSTRAP_CONTROL** — deterministic Coordination Guard core + registry parser + tests. Proposed owner GLM-5.3 MAX, claim `ENV-COORD-002-C1`, generation `1`, execution holder `zcode-env-coord-002-g1-primary`, planned branch `feat/env-coord-002`. No implementation mutation is authorized until this claim transition is independently reviewed and merged into authoritative `main`.
-- **`ENV-INT-GISTDA-CORE-001` / REVIEW_REQUESTED / PR #80** — separate GISTDA scope; no overlap with coordination bootstrap.
+- **ENV-COORD-002 / RECOVERY_HOLD / BOOTSTRAP_CONTROL** — Coordination Guard core and deterministic tests are merged through PR #84. Claim ENV-COORD-002-C1, generation 1, holder zcode-env-coord-002-g1-primary, and its original four-file scope remain locked. Runtime/session effects observed to date are reconciled, but no typed holder binding, lifecycle checkpoint, admission high-water, or active-admission count exists; do not release, reassign, or start mutation.
+- **CLOSED ENV-INT-GISTDA-CORE-001 / PR #80** — merged as bf26cb523c375f44d3bdd0ee9a6d0d66f1eb81bb on 2026-09-16; exact-head scripts, smoke, and notify checks succeeded.
 - **`ENV-BUILDING-REPAIR-001` / DECISION_REQUIRED / PR #75** — Building/repair remains no-touch.
 - **`ENV-OPS-001A` / READY BUT DISPATCH-PAUSED** — production dispatch remains paused until later coordination enforcement gates permit it.
+- **Open proposals, not active claims:** PR #87 remains OPEN at c8a8437f2f4471f2ea08d8836ed20b8f17ac4c0b with green scripts/notify checks and a CHANGES_REQUIRED author comment; its candidate registry is not authoritative. PR #88 remains OPEN at 2727abc9c8c50bb84dbf09e2a0b0383cbe5e2e16 with green scripts/notify checks and no GitHub review decision; its recovery Work Order is proposal evidence only.
 
 Current coordination authority:
-- central control-transition proposer/integration owner: GPT-5.6 Sol;
+- central control-transition proposer/integration owner: ENV Coordinator protocol role; model-name labels are routing preferences, not authentication (§3.3). Current mission supervisor: GPT-6 Luna MAX under the owner's current instruction; the transition still requires exact-SHA independent review and human authorization.
 - approved architecture: `docs/ai/architecture/ENV-COORDINATION-GUARD.md`;
 - active proposed Work Order: `docs/work-orders/ENV-COORD-002.md`;
 - proposed implementation/result lane: `docs/ai/handoffs/ENV-COORD-002-GLM.md`;
 - enforcement mode: `BOOTSTRAP_CONTROL`, not `ENFORCING`;
-- one next safe action: independently review this bootstrap claim transition at exact SHA, merge only if APPROVED, then create `A:\\GitHub\\envww-coord-002` and launch the single GLM-5.3 MAX holder.
+- one next safe action: keep C1 in RECOVERY_HOLD until the missing holder-bound lifecycle/admission/outcome facts are machine-proven; after this transition is accepted, open the separately scoped ENV autonomy-bootstrap claim/worktree requested by the project owner.
 
 ## Prior execution state - 2026-09-02
 
