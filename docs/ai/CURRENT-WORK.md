@@ -83,7 +83,7 @@ exact-SHA independent review and merge into `main`.
         "task_id": "ENV-AUTONOMY-001",
         "claim_id": "ENV-AUTONOMY-001-C1",
         "claim_generation": 1,
-        "status": "REVIEW_REQUESTED",
+        "status": "CHANGES_REQUIRED",
         "owner_role": "env_project_supervisor",
         "agent_model": "GPT-6 Luna MAX",
         "execution_holder_id": "exec-holder-env-autonomy-001-g1-10b79866-9012-4701-9cf9-33ce6d00df5f",
@@ -126,7 +126,7 @@ exact-SHA independent review and merge into `main`.
           "Project owner mission: install an ENV-local autonomy layer before resuming canonical Roadmap work"
         ],
         "last_checkpoint_pointer": "docs/ai/handoffs/ENV-AUTONOMY-001.md",
-        "one_next_safe_action": "The three P1 findings from review at f7ea87d942cfcc5118d0fde63037cd4de89a7bc4 are repaired in code commit db8d4785a07b36c76e206da6706a9426d5962114. Local gates pass and exact-head hosted scripts/notify checks pass on db8; publish the REVIEW_REQUESTED docs checkpoint, then require fresh exact-head CI and independent review for the resulting PR head. Keep provider dispatch disabled while quota/upstream admission is UNKNOWN and preserve BOOTSTRAP_CONTROL/AUTONOMY_NOT_READY."
+        "one_next_safe_action": "Fresh independent review of PR #91 head 6dbfd47fef14ef782d138dc357d47e31d3d41313 found three P1s and one P2: PowerShell wildcard reads bypass protected-path checks; unresolved operation intents block their valid REQUESTED/OUTCOME lifecycle transitions; receipt verification rechecks live admission instead of persisted admission evidence; and the durable run binding omits exact claim scope. Repair only within registered runtime/tests scope, add focused regressions, and publish a CHANGES_REQUIRED checkpoint before requesting another exact-head review. Keep provider dispatch disabled and preserve BOOTSTRAP_CONTROL/AUTONOMY_NOT_READY."
       }
     ]
   }
@@ -137,7 +137,7 @@ exact-SHA independent review and merge into `main`.
 
 - **`ENV-COORD-001` / CLOSED / PR #82** — Astra independently APPROVED exact architecture SHA `e5f6a419aa226151788763970e8c008f48d4a28d` with no blockers; PR #82 merged with expected-head protection as `6360e149f42c419a8d7f878f28fc439e0ef1f6cc`. Production activation is still blocked because coordination enforcement is not yet installed.
 - **ENV-COORD-002 / RECOVERY_HOLD / BOOTSTRAP_CONTROL** — PR #89 merged as `839ff34185dff675a7bfd4adf6350d6b2c1e4eaa`. Claim ENV-COORD-002-C1, generation 1, holder zcode-env-coord-002-g1-primary, and its original four-file scope remain locked. Runtime/session effects observed to date are reconciled, but no typed holder binding, lifecycle checkpoint, admission high-water, or active-admission count exists; do not release, reassign, or start mutation in that scope.
-- **ENV-AUTONOMY-001 / REVIEW_REQUESTED / BOOTSTRAP_CONTROL** — The three P1 findings from exact-head review at `f7ea87d942cfcc5118d0fde63037cd4de89a7bc4` are repaired in code commit `db8d4785a07b36c76e206da6706a9426d5962114`: Git shell classification fails closed on mutation options; unresolved `UNKNOWN` hook effects block checkpoint/recovery until reconciled; and Kilo receipts persist against trusted claim and published lifecycle evidence. Local autonomy tests **22/22**, Coordination Guard **344/344**, workflow-action **14/14**, workflow semantic check, `split_sql`, compile, and diff checks pass. Exact-head hosted run `36195805695` (`scripts` and `notify`) passed on db8; fresh exact-head checks and independent review are pending for the docs-checkpoint PR head. Keep provider dispatch disabled (`UNKNOWN` quota/upstream), `AUTONOMY_NOT_READY`, and `ENFORCEMENT_NOT_ACTIVE`. C1's four files and production/frontend/schema/data paths remain untouched.
+- **ENV-AUTONOMY-001 / CHANGES_REQUIRED / BOOTSTRAP_CONTROL** — The three original P1 findings were repaired at `db8d4785a07b36c76e206da6706a9426d5962114`, and exact-head Actions run `36196641540` passed at `6dbfd47fef14ef782d138dc357d47e31d3d41313`. Fresh review at that head found three P1s and one P2: PowerShell wildcard reads can reach protected `.env`/`data/raw`; the unresolved-operation gate blocks valid Kilo REQUESTED/OPERATION_OUTCOME progression; historical REQUESTED receipt verification depends on current provider admission; and receipt binding omits exact scope. Repair within the registered runtime/tests scope, preserve provider dispatch disabled (`UNKNOWN` quota/upstream), publish a `CHANGES_REQUIRED` checkpoint, then request fresh exact-head review and CI. Keep `AUTONOMY_NOT_READY` and `ENFORCEMENT_NOT_ACTIVE`; C1's four files and production/frontend/schema/data paths remain untouched.
 - **CLOSED ENV-INT-GISTDA-CORE-001 / PR #80** — merged as bf26cb523c375f44d3bdd0ee9a6d0d66f1eb81bb on 2026-09-16; exact-head scripts, smoke, and notify checks succeeded.
 - **`ENV-BUILDING-REPAIR-001` / DECISION_REQUIRED / PR #75** — Building/repair remains no-touch.
 - **`ENV-OPS-001A` / READY BUT DISPATCH-PAUSED** — production dispatch remains paused until later coordination enforcement gates permit it.

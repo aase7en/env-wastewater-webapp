@@ -2,7 +2,7 @@
 
 ## Assignment
 
-- Status: `REVIEW_REQUESTED / BOOTSTRAP_CONTROL` in this candidate; trusted
+- Status: `CHANGES_REQUIRED / BOOTSTRAP_CONTROL` in this candidate; trusted
   `origin/main` remains `CLAIMED` until the implementation PR merges.
 - Task: `ENV-AUTONOMY-001`
 - Claim: `ENV-AUTONOMY-001-C1`, generation `1`
@@ -19,12 +19,14 @@
 The separate generation-1 bootstrap claim is authoritative on `origin/main`
 after PR #90 merged as `0ea079d69c3186272f1ae6be82cbbeb22ed99266`. The three
 P1 findings from independent review at `f7ea87d942cfcc5118d0fde63037cd4de89a7bc4`
-are repaired in code commit `db8d4785a07b36c76e206da6706a9426d5962114`:
-Git mutation options fail closed, unresolved `UNKNOWN` hook effects block
-checkpoint/recovery until reconciled, and Kilo receipts persist from trusted
-claim and published lifecycle evidence. Local gates and exact-head hosted
-checks pass on db8; the docs-checkpoint PR head needs fresh hosted CI and
-independent review. No C1 file was changed, and no claim release,
+are repaired in code commit `db8d4785a07b36c76e206da6706a9426d5962114`.
+Fresh review at `6dbfd47fef14ef782d138dc357d47e31d3d41313` found three P1s
+and one P2: wildcard read commands can bypass protected `.env`/`data/raw`
+checks; the unresolved-operation guard blocks valid Kilo receipt/outcome
+progress; old `REQUESTED` receipts depend on current admission during verify;
+and the durable receipt binding lacks exact claim scope. Hosted Actions run
+`36196641540` passed at that exact SHA, but these correctness findings require
+repair and fresh review. No C1 file was changed, and no claim release,
 reassignment, quiescence, or transfer evidence was created. The runtime and
 local hooks must continue to report
 `BOOTSTRAP_CONTROL`, `ENFORCEMENT_NOT_ACTIVE`, and `AUTONOMY_NOT_READY` until
@@ -165,6 +167,25 @@ their independent server and live-acceptance gates pass.
       "published": false,
       "task_id": "ENV-AUTONOMY-001",
       "terminal_result": null
+    },
+    {
+      "claim_generation": 1,
+      "claim_id": "ENV-AUTONOMY-001-C1",
+      "event_id": "env-autonomy-001-checkpoint-0008",
+      "event_seq": 8,
+      "event_type": "CHECKPOINT",
+      "goal_id": "01a0d917-7b29-7970-8bb7-3c6df13e4bd3",
+      "operation_id": null,
+      "operation_outcome": null,
+      "payload": {
+        "lane_status": "CHANGES_REQUIRED",
+        "recorded_at_utc": "2026-09-25T22:36:08Z",
+        "source_head_sha": "6dbfd47fef14ef782d138dc357d47e31d3d41313"
+      },
+      "previous_event_id": "env-autonomy-001-checkpoint-0007",
+      "published": false,
+      "task_id": "ENV-AUTONOMY-001",
+      "terminal_result": null
     }
   ],
   "goal_id": "01a0d917-7b29-7970-8bb7-3c6df13e4bd3",
@@ -219,8 +240,9 @@ their independent server and live-acceptance gates pass.
   `24047043787b3099d44d8e23ab508ec427a3c5fc` was verified published with no
   unresolved effects. GitHub Actions run `36195805695` verified exact code
   head `db8d4785a07b36c76e206da6706a9426d5962114` and passed `scripts` plus
-  `notify`; new exact-head checks and fresh independent review are pending for
-  the docs-checkpoint PR head.
+  `notify`. Final-candidate run `36196641540` passed `scripts` and `notify` at
+  `6dbfd47fef14ef782d138dc357d47e31d3d41313`; the fresh review findings below
+  remain unresolved.
 - Self-review of PR #91 found three defects before independent review: the
   remote/local handoff string comparison drops Git's final newline; the
   canonical READY parser matches the registry JSON before the human frontier;
@@ -240,6 +262,10 @@ their independent server and live-acceptance gates pass.
   reconciliation/recovery, and persisted claim-bound receipt transitions.
   Fresh provider admission remains `UNKNOWN`; request dispatch is disabled,
   no Kilo prompt or roll-call was sent, and JEV remains `UNAVAILABLE`.
+- The `6dbfd47fef14ef782d138dc357d47e31d3d41313` review findings supersede
+  the prior `REVIEW_REQUESTED` state. Keep the candidate `CHANGES_REQUIRED`
+  until wildcard denial, matched lifecycle progress, historical admission
+  verification, and exact scope binding are repaired and independently checked.
 - A comparison against `origin/main` confirms the C1 claim record is unchanged
   (canonical JSON SHA-256
   `68943625ae4123f838ebc7fde4ff9bf02bb279716caa28e0600dbd0ca5a97077`);
@@ -257,9 +283,9 @@ its exact path/SHA.
 
 ## One next safe action
 
-Publish the typed `REVIEW_REQUESTED` checkpoint for code parent
-`db8d4785a07b36c76e206da6706a9426d5962114`, then require fresh exact-head CI
-and independent review for the docs-checkpoint PR head. Only the independent
-reviewer may merge after approval and exact-base recheck; keep
+Repair the three P1 findings and one P2 from exact-head review at
+`6dbfd47fef14ef782d138dc357d47e31d3d41313`, publish a typed
+`CHANGES_REQUIRED` checkpoint, then require fresh exact-head CI and independent
+review. Only the independent reviewer may merge after approval and exact-base recheck; keep
 `BOOTSTRAP_CONTROL`, `ENFORCEMENT_NOT_ACTIVE`, and `AUTONOMY_NOT_READY` until
 the remaining live acceptance gates pass.

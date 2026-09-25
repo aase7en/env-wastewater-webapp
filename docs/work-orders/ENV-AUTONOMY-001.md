@@ -2,10 +2,10 @@
 
 ## Assignment
 
-- Status: `REVIEW_REQUESTED / BOOTSTRAP_CONTROL` in PR #91 after the three
-  findings from exact-head review at `f7ea87d942cfcc5118d0fde63037cd4de89a7bc4`
-  were repaired in code commit `db8d4785a07b36c76e206da6706a9426d5962114`;
-  trusted `origin/main` remains `CLAIMED` until this implementation PR merges.
+- Status: `CHANGES_REQUIRED / BOOTSTRAP_CONTROL` after fresh exact-head review
+  of PR #91 at `6dbfd47fef14ef782d138dc357d47e31d3d41313` found three P1s and
+  one P2; trusted `origin/main` remains `CLAIMED` until this implementation PR
+  merges.
 - Owner role: ENV project supervisor
 - Supervisor route: GPT-6 Luna MAX (routing metadata only)
 - Reviewer: independent GPT-6 Sol reviewer; implementation author must not merge
@@ -72,10 +72,17 @@ mutable scope may be changed by this work.
   runtime status passes this claim's identity preflight; refill finds 0
   canonical SAFE_READY tasks, and Kilo admission remains `UNKNOWN` for both
   proxy quota and upstream readiness. No provider request was made.
-- GitHub Actions run `36195805695` is verified against code HEAD
-  `db8d4785a07b36c76e206da6706a9426d5962114`; both `scripts` and `notify`
-  succeeded. The docs-only checkpoint creates a new PR head, so its exact-head
-  checks and independent review are pending.
+- GitHub Actions run `36195805695` passed at code HEAD
+  `db8d4785a07b36c76e206da6706a9426d5962114`. Final-candidate run
+  `36196641540` passed `scripts` and `notify` at `6dbfd47fef14ef782d138dc357d47e31d3d41313`;
+  the fresh review findings below remain unresolved.
+- Fresh review at `6dbfd47fef14ef782d138dc357d47e31d3d41313` found three P1s:
+  PowerShell wildcard path reads bypass protected-file checks; the unresolved
+  operation gate deadlocks valid Kilo request/outcome recording; and verifying
+  a published `REQUESTED` receipt incorrectly depends on current live admission.
+  It also found one P2: the durable dispatch receipt omits exact claim scope.
+  Hosted Actions run `36196641540` passed `scripts` and `notify` on that exact
+  SHA; these findings still require repair and fresh review.
 - The installed Kilo 7.7.2 CLI help exposes `profile`, `models`, and
   `roll-call`; the official CLI reference describes `roll-call` as a model
   connectivity/latency test that sends prompts. Kilo's published balance is
@@ -271,4 +278,4 @@ decision.
 
 ## One next safe action
 
-The three P1 findings from review at `f7ea87d942cfcc5118d0fde63037cd4de89a7bc4` are repaired at code commit `db8d4785a07b36c76e206da6706a9426d5962114`; local gates and that code head's `scripts`/`notify` checks pass. Publish the typed `REVIEW_REQUESTED` checkpoint, then require fresh exact-head hosted CI and independent review on the resulting PR head. If approved, only the independent reviewer may merge after expected-head and current-base recheck. Keep Kilo dispatch disabled while quota/upstream admission is `UNKNOWN`, and preserve `ENFORCEMENT_NOT_ACTIVE` and `AUTONOMY_NOT_READY` until actual hook activation, server controls, and all applicable live proofs are verified.
+Repair the three P1 findings and one P2 from exact-head review at `6dbfd47fef14ef782d138dc357d47e31d3d41313`: deny wildcard/unsafe read paths before hook bypass; permit only identity-matched REQUESTED and OPERATION_OUTCOME progress for an existing operation while preserving UNKNOWN retry blocks; verify a REQUESTED receipt from persisted admission evidence without re-probing current quota; and bind each durable receipt to the exact claim scope. Add focused regressions, publish the typed `CHANGES_REQUIRED` checkpoint, rerun applicable local and hosted gates, then request fresh independent exact-SHA review. Keep Kilo dispatch disabled while admission is `UNKNOWN`, and preserve `ENFORCEMENT_NOT_ACTIVE` and `AUTONOMY_NOT_READY` until actual hook activation, server controls, and all applicable live proofs are verified.
