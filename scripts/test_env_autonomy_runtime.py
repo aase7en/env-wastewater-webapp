@@ -355,6 +355,98 @@ class BindingAndSelectionTests(unittest.TestCase):
 
 
 class ReviewAndLifecycleTests(unittest.TestCase):
+    def test_unknown_posttool_receipt_is_journaled_and_reconciled_in_same_handoff(self):
+        with tempfile.TemporaryDirectory(prefix="env-hook-observation-") as temp_dir:
+            root = Path(temp_dir)
+            handoff_rel = "docs/ai/handoffs/ENV-AUTONOMY-001.md"
+            handoff_path = root / handoff_rel
+            handoff_path.parent.mkdir(parents=True)
+            changed_path = root / "docs/changed.md"
+            changed_path.parent.mkdir(parents=True, exist_ok=True)
+            changed_path.write_text("after tool mutation\n", encoding="utf-8")
+            test_claim = claim(
+                "ENV-AUTONOMY-001", "ENV-AUTONOMY-001-C1", "CLAIMED", ["docs/changed.md"]
+            )
+            test_claim.update({"worktree": str(root), "branch": "test/hook-observation", "handoff_path": handoff_rel})
+            lifecycle = {
+                "version": 1, "task_id": test_claim["task_id"],
+                "claim_id": test_claim["claim_id"], "claim_generation": 1,
+                "goal_id": "goal-hook-1", "codex_hook_observations": [],
+                "events": [{
+                    "task_id": test_claim["task_id"], "claim_id": test_claim["claim_id"],
+                    "claim_generation": 1, "goal_id": "goal-hook-1",
+                    "event_type": "GOAL_START", "event_seq": 1,
+                    "event_id": "hook-goal-start", "previous_event_id": guard.GENESIS,
+                    "terminal_result": None, "operation_id": None,
+                    "operation_outcome": None, "payload": None, "published": True,
+                }],
+            }
+            handoff_path.write_text(
+                "# Hook observation fixture\n\n" + runtime.LIFECYCLE_START + "\n```json\n"
+                + json.dumps(lifecycle, indent=2) + "\n```\n" + runtime.LIFECYCLE_END + "\n",
+                encoding="utf-8",
+            )
+            actual = {
+                "repo": runtime.REPO_SLUG, "worktree": str(root),
+                "branch": test_claim["branch"], "head_sha": "b" * 40,
+                "claim_base_ancestor": True, "current_policy_ancestor": True,
+            }
+            trusted = policy(test_claim)
+            with patch.object(runtime, "_actual_context", return_value=actual), \
+                 patch.object(runtime, "validate_lane_binding"), \
+                 patch.object(runtime.guard, "evaluate_mutation", return_value=SimpleNamespace(safe_to_mutate=True, reason=None)), \
+                 patch.object(runtime, "_mutation_links", return_value=[]):
+                recorded = []
+                for index, response in enumerate((None, {"isError": True}), start=1):
+                    observation = runtime.record_hook_observation(root, trusted, {
+                        "tool_name": "Edit", "tool_input": {"file_path": str(changed_path)},
+                        "tool_response": response, "session_id": "session-hook",
+                        "turn_id": f"turn-{index}", "tool_use_id": f"tool-{index}",
+                        "model": "GPT-6 Luna MAX", "hook_event_name": "PostToolUse",
+                    })
+                    self.assertEqual(observation["effect_state"], "UNKNOWN")
+                    recorded.append(observation)
+
+                text = handoff_path.read_text(encoding="utf-8")
+                document, log = runtime._read_lifecycle_log(text, test_claim)
+                self.assertTrue(log.has_unresolved_external_operations)
+                self.assertTrue(runtime._has_unresolved_hook_observations(document, log))
+                with patch.object(runtime, "load_trusted_policy", return_value=(trusted, "")), \
+                     patch.object(runtime, "_run_git", return_value=str(root)):
+                    blocked = runtime.hook_pretool({
+                        "tool_name": "Edit", "tool_input": {"file_path": str(changed_path)},
+                        "session_id": "session-hook", "turn_id": "turn-retry", "tool_use_id": "tool-retry",
+                        "model": "GPT-6 Luna MAX",
+                    }, root)
+                self.assertEqual(blocked["permissionDecision"], "deny")
+                self.assertEqual(blocked["reason"], "UNRESOLVED_EXTERNAL_EFFECT")
+                for observation in recorded:
+                    latest = log.events[-1]
+                    runtime._append_lifecycle_event_to_document(document, {
+                        "task_id": test_claim["task_id"], "claim_id": test_claim["claim_id"],
+                        "claim_generation": 1, "goal_id": log.active_goal_id,
+                        "event_type": "OPERATION_RECONCILED", "event_seq": latest.event_seq + 1,
+                        "event_id": f"reconcile-{observation['tool_use_id']}",
+                        "previous_event_id": log.head_event_id, "terminal_result": None,
+                        "operation_id": observation["operation_id"],
+                        "operation_outcome": "SUCCEEDED",
+                        "payload": {"evidence_sha256": "e" * 64, "observed_at_utc": "2026-09-26T00:00:01Z"},
+                        "published": False,
+                    })
+                    text = runtime._replace_lifecycle_block(text, document)
+                    _, log = runtime._read_lifecycle_log(text, test_claim)
+                self.assertFalse(log.has_unresolved_external_operations)
+                self.assertFalse(runtime._has_unresolved_hook_observations(document, log))
+                handoff_path.write_text(runtime._replace_lifecycle_block(text, document), encoding="utf-8")
+                with patch.object(runtime, "load_trusted_policy", return_value=(trusted, "")), \
+                     patch.object(runtime, "_run_git", return_value=str(root)):
+                    allowed = runtime.hook_pretool({
+                        "tool_name": "Edit", "tool_input": {"file_path": str(changed_path)},
+                        "session_id": "session-hook", "turn_id": "turn-retry", "tool_use_id": "tool-retry",
+                        "model": "GPT-6 Luna MAX",
+                    }, root)
+                self.assertEqual(allowed["permissionDecision"], "allow")
+
     def test_published_checkpoint_verifies_handoff_with_final_newline(self):
         with tempfile.TemporaryDirectory(prefix="env-autonomy-git-") as temp_dir:
             root = Path(temp_dir) / "work"
@@ -386,7 +478,7 @@ class ReviewAndLifecycleTests(unittest.TestCase):
             git("push", "--set-upstream", "origin", branch)
             parent_sha = git("rev-parse", "HEAD")
 
-            test_claim = claim("fixture-task", "fixture-claim", "CLAIMED", ["docs/**"])
+            test_claim = claim("fixture-task", "fixture-claim", "PARKED", ["docs/**"])
             test_claim["branch"] = branch
             handoff_path = "docs/ai/handoffs/fixture-task.md"
             test_claim["handoff_path"] = handoff_path
@@ -407,7 +499,7 @@ class ReviewAndLifecycleTests(unittest.TestCase):
                     "terminal_result": None, "operation_id": None,
                     "operation_outcome": None,
                     "payload": {
-                        "lane_status": "ACTIVE", "recorded_at_utc": "2026-09-26T00:00:00Z",
+                        "lane_status": "PARKED", "recorded_at_utc": "2026-09-26T00:00:00Z",
                         "source_head_sha": parent_sha,
                     },
                     "published": True,
@@ -434,6 +526,50 @@ class ReviewAndLifecycleTests(unittest.TestCase):
             self.assertTrue(result["ok"], result)
             self.assertEqual(result["checkpoint_state"], "PUBLISHED")
             self.assertEqual(result["latest_event_id"], "checkpoint-1")
+            self.assertIsNotNone(runtime.read_published_lane_checkpoint(root, test_claim))
+
+            operation_id = "codex-hook-fixture-unknown"
+            document, _ = runtime._lifecycle_document(path.read_text(encoding="utf-8"))
+            document["codex_hook_observations"].append({
+                "tool_use_id": "tool-unknown", "operation_id": operation_id,
+                "effect_state": "UNKNOWN",
+            })
+
+            def append_event(event_type, event_id, *, outcome=None, payload=None):
+                text = runtime._replace_lifecycle_block(path.read_text(encoding="utf-8"), document)
+                _, log = runtime._read_lifecycle_log(text, test_claim)
+                latest = log.events[-1]
+                return runtime._append_lifecycle_event_to_document(document, {
+                    "task_id": test_claim["task_id"], "claim_id": test_claim["claim_id"],
+                    "claim_generation": test_claim["claim_generation"], "goal_id": log.active_goal_id,
+                    "event_type": event_type, "event_seq": latest.event_seq + 1,
+                    "event_id": event_id, "previous_event_id": log.head_event_id,
+                    "terminal_result": None,
+                    "operation_id": operation_id if event_type.startswith("OPERATION_") else None,
+                    "operation_outcome": outcome, "payload": payload, "published": False,
+                })
+
+            append_event("OPERATION_INTENT", "intent-unknown", payload={
+                "provider": "codex-cli", "model": "GPT-6 Sol", "variant": "post-tool-hook",
+                "run_id": "codex:session:turn:tool-unknown",
+                "admission_evidence_sha256": "e" * 64, "starting_head_sha": git("rev-parse", "HEAD"),
+            })
+            append_event("OPERATION_OUTCOME", "outcome-unknown", outcome="UNKNOWN", payload={
+                "evidence_sha256": "f" * 64, "observed_at_utc": "2026-09-26T00:01:00Z",
+            })
+            parent_sha = git("rev-parse", "HEAD")
+            append_event("CHECKPOINT", "checkpoint-after-unknown", payload={
+                "lane_status": "PARKED", "recorded_at_utc": "2026-09-26T00:02:00Z",
+                "source_head_sha": parent_sha,
+            })
+            path.write_text(runtime._replace_lifecycle_block(path.read_text(encoding="utf-8"), document), encoding="utf-8")
+            git("add", handoff_path)
+            git("commit", "-m", "fixture unresolved hook effect")
+            git("push", "origin", branch)
+            blocked = runtime.verify_published_checkpoint(root, policy(test_claim), test_claim)
+            self.assertFalse(blocked["ok"])
+            self.assertEqual(blocked["reason"], "UNRESOLVED_HOOK_OBSERVATION")
+            self.assertIsNone(runtime.read_published_lane_checkpoint(root, test_claim))
 
     def test_published_checkpoint_must_describe_its_handoff_commit_parent(self):
         parent = "a" * 40
@@ -497,36 +633,237 @@ class ReviewAndLifecycleTests(unittest.TestCase):
             parsed, _ = runtime._lifecycle_document(path.read_text(encoding="utf-8"))
             self.assertEqual(parsed["events"][0]["event_id"], "start")
 
-    def test_kilo_receipt_is_ordered_identity_bound_and_redacted(self):
-        binding = {key: value for key, value in {
-            "task_id": "task", "claim_id": "claim", "claim_generation": 1,
-            "execution_holder_id": "holder", "worktree": "C:/work", "branch": "task",
-            "base_sha": "a" * 40, "head_sha": "b" * 40, "provider": "cointh-glm",
-            "model": "glm-5.3", "variant": "max", "run_id": "run-1",
-        }.items()}
-        receipt = {"binding": binding}
-        digest = "d" * 64
-        wrong_route = {"binding": {**binding, "provider": "other-provider"}}
-        with self.assertRaisesRegex(runtime.AutonomyFailure, "KILO_ROUTE_UNSUPPORTED"):
-            runtime.transition_kilo_receipt(wrong_route, "REQUESTED", {})
-        bad_sha = {"binding": {**binding, "head_sha": "short"}}
-        with self.assertRaisesRegex(runtime.AutonomyFailure, "KILO_RECEIPT_INVALID"):
-            runtime.transition_kilo_receipt(bad_sha, "REQUESTED", {})
-        receipt = runtime.transition_kilo_receipt(receipt, "REQUESTED", {})
-        receipt = runtime.transition_kilo_receipt(receipt, "RESULT_WRITTEN", {"result_sha256": digest, "result_status": "SUCCEEDED"})
-        self.assertNotIn("raw_output", receipt)
-        with self.assertRaisesRegex(runtime.AutonomyFailure, "KILO_RAW_OUTPUT_FORBIDDEN"):
-            runtime.transition_kilo_receipt(receipt, "INGESTED_TO_SSOT", {"verified_in_handoff": True, "nested": {"output": "private"}})
-        with self.assertRaisesRegex(runtime.AutonomyFailure, "KILO_RECEIPT_NOT_INGESTED"):
-            runtime.transition_kilo_receipt(receipt, "INGESTED_TO_SSOT", {"verified_in_handoff": True})
-        ingested = runtime.transition_kilo_receipt(receipt, "INGESTED_TO_SSOT", {
-            "verified_in_handoff": True, "handoff_event_id": "env-operation-outcome-1",
-            "result_sha256": digest,
-        })
-        with self.assertRaisesRegex(runtime.AutonomyFailure, "KILO_RECEIPT_NOT_DURABLE"):
-            runtime.transition_kilo_receipt(ingested, "ARCHIVED/CLEARED", {"published_checkpoint_sha": "not-a-sha"})
-        archived = runtime.transition_kilo_receipt(ingested, "ARCHIVED/CLEARED", {"published_checkpoint_sha": "c" * 40})
-        self.assertEqual(archived["state"], "ARCHIVED/CLEARED")
+    def test_kilo_receipt_is_persisted_from_trusted_published_handoff(self):
+        with tempfile.TemporaryDirectory(prefix="env-kilo-receipt-") as temp_dir:
+            root = Path(temp_dir) / "work"
+            remote = Path(temp_dir) / "origin.git"
+            branch = "test/kilo-receipt"
+
+            def git(*args: str) -> str:
+                result = subprocess.run(
+                    ["git", *args], cwd=root, check=True, capture_output=True,
+                    text=True, encoding="utf-8",
+                )
+                return result.stdout.strip()
+
+            subprocess.run(["git", "init", "--bare", str(remote)], check=True, capture_output=True)
+            root.mkdir()
+            subprocess.run(["git", "init", str(root)], check=True, capture_output=True)
+            git("branch", "-M", branch)
+            git("config", "user.name", "ENV receipt test")
+            git("config", "user.email", "env-receipt-test@example.invalid")
+            (root / "README.md").write_text("synthetic receipt fixture\n", encoding="utf-8")
+            git("add", "README.md")
+            git("commit", "-m", "receipt fixture base")
+            test_claim = claim(
+                "ENV-AUTONOMY-001", "ENV-AUTONOMY-001-C1", "CLAIMED",
+                ["docs/ai/handoffs/ENV-AUTONOMY-001.md"],
+            )
+            test_claim.update({
+                "worktree": str(root), "branch": branch, "base_sha": git("rev-parse", "HEAD"),
+                "handoff_path": "docs/ai/handoffs/ENV-AUTONOMY-001.md",
+            })
+            git("remote", "add", "origin", str(remote))
+            git("push", "--set-upstream", "origin", branch)
+            base_sha = test_claim["base_sha"]
+            lifecycle = {
+                "version": 1,
+                "task_id": test_claim["task_id"],
+                "claim_id": test_claim["claim_id"],
+                "claim_generation": test_claim["claim_generation"],
+                "goal_id": "goal-kilo-1",
+                "events": [
+                    {
+                        "task_id": test_claim["task_id"], "claim_id": test_claim["claim_id"],
+                        "claim_generation": 1, "goal_id": "goal-kilo-1",
+                        "event_type": "GOAL_START", "event_seq": 1,
+                        "event_id": "kilo-goal-start", "previous_event_id": guard.GENESIS,
+                        "terminal_result": None, "operation_id": None,
+                        "operation_outcome": None, "payload": None, "published": True,
+                    },
+                    {
+                        "task_id": test_claim["task_id"], "claim_id": test_claim["claim_id"],
+                        "claim_generation": 1, "goal_id": "goal-kilo-1",
+                        "event_type": "CHECKPOINT", "event_seq": 2,
+                        "event_id": "kilo-checkpoint-1", "previous_event_id": "kilo-goal-start",
+                        "terminal_result": None, "operation_id": None,
+                        "operation_outcome": None,
+                        "payload": {"lane_status": "ACTIVE", "source_head_sha": base_sha,
+                                    "recorded_at_utc": "2026-09-26T00:00:00Z"},
+                        "published": True,
+                    },
+                ],
+                "codex_hook_observations": [],
+                "kilo_receipts": [],
+            }
+            handoff_path = root / test_claim["handoff_path"]
+            handoff_path.parent.mkdir(parents=True)
+            handoff_path.write_text(
+                "# Kilo receipt fixture\n\n" + runtime.LIFECYCLE_START + "\n```json\n"
+                + json.dumps(lifecycle, indent=2) + "\n```\n" + runtime.LIFECYCLE_END + "\n",
+                encoding="utf-8",
+            )
+            git("add", test_claim["handoff_path"])
+            git("commit", "-m", "publish initial receipt checkpoint")
+            git("push", "origin", branch)
+            trusted = policy(test_claim)
+
+            def actual_context(_root, _claim):
+                return {
+                    "repo": runtime.REPO_SLUG, "worktree": str(root), "branch": branch,
+                    "head_sha": git("rev-parse", "HEAD"),
+                    "claim_base_ancestor": True, "current_policy_ancestor": True,
+                }
+
+            def publish(message):
+                git("add", test_claim["handoff_path"])
+                git("commit", "-m", message)
+                git("push", "origin", branch)
+
+            run_id = "kilo-run-001"
+
+            def ready_preflight(_root, model, variant):
+                digest = "a" * 64 if variant == "max" else "b" * 64
+                return {
+                    "verified": True, "adapter_status": "READY",
+                    "proxy_quota_status": "READY", "upstream_model_status": "READY",
+                    "external_call_started": False, "provider": "cointh-glm",
+                    "model": model, "variant": variant, "evidence_sha256": digest,
+                    "observed_at_utc": dt.datetime.now(dt.timezone.utc).isoformat().replace("+00:00", "Z"),
+                }
+
+            def append_event(event_type, event_id, *, operation_id=None, outcome=None, payload=None):
+                text = handoff_path.read_text(encoding="utf-8")
+                document, log = runtime._read_lifecycle_log(text, test_claim)
+                latest = log.events[-1]
+                runtime._append_lifecycle_event_to_document(document, {
+                    "task_id": test_claim["task_id"], "claim_id": test_claim["claim_id"],
+                    "claim_generation": 1, "goal_id": log.active_goal_id,
+                    "event_type": event_type, "event_seq": latest.event_seq + 1,
+                    "event_id": event_id, "previous_event_id": log.head_event_id,
+                    "terminal_result": None, "operation_id": operation_id,
+                    "operation_outcome": outcome, "payload": payload, "published": False,
+                })
+                handoff_path.write_text(runtime._replace_lifecycle_block(text, document), encoding="utf-8")
+
+            with patch.object(runtime, "_actual_context", side_effect=actual_context):
+                with self.assertRaisesRegex(runtime.AutonomyFailure, "KILO_OPERATION_EVIDENCE_INVALID"):
+                    runtime.transition_kilo_receipt(root, trusted, "caller-claimed-run", "REQUESTED")
+
+                append_event("OPERATION_INTENT", "kilo-intent-1", operation_id=run_id, payload={
+                    "provider": "cointh-glm", "model": "glm-5.3", "variant": "max",
+                    "run_id": run_id, "admission_evidence_sha256": "a" * 64,
+                    "starting_head_sha": base_sha,
+                })
+                publish("publish operation intent")
+                with self.assertRaisesRegex(runtime.AutonomyFailure, "KILO_ADMISSION_UNVERIFIED"):
+                    runtime.transition_kilo_receipt(root, trusted, run_id, "REQUESTED")
+                with patch.object(runtime, "_kilo_preflight_snapshot", side_effect=ready_preflight):
+                    requested = runtime.transition_kilo_receipt(root, trusted, run_id, "REQUESTED")
+                self.assertEqual(requested["state"], "REQUESTED")
+                publish("persist requested receipt")
+                with patch.object(runtime, "_kilo_preflight_snapshot", side_effect=ready_preflight):
+                    self.assertEqual(runtime.verify_kilo_receipt(root, trusted, run_id)["state"], "REQUESTED")
+                request_doc, request_log = runtime._read_lifecycle_log(
+                    handoff_path.read_text(encoding="utf-8"), test_claim
+                )
+                request_intent, request_outcome = runtime._kilo_operation_events(request_log, run_id)
+                request_binding = runtime._trusted_kilo_binding(
+                    root, test_claim, actual_context(root, test_claim), run_id, request_intent
+                )
+                forged_request = json.loads(json.dumps(request_doc["kilo_receipts"][0]))
+                forged_request["last_evidence"]["operation_intent_event_id"] = "caller-invented-event"
+                with self.assertRaisesRegex(runtime.AutonomyFailure, "KILO_RECEIPT_RECORD_INVALID"):
+                    runtime._validate_persisted_kilo_receipt(
+                        forged_request, request_binding, request_intent, request_outcome, request_log
+                    )
+
+                digest = "d" * 64
+                append_event("OPERATION_OUTCOME", "kilo-outcome-1", operation_id=run_id,
+                             outcome="SUCCEEDED", payload={"evidence_sha256": digest,
+                                                           "observed_at_utc": "2026-09-26T00:01:00Z"})
+                publish("publish operation result")
+                with self.assertRaisesRegex(runtime.AutonomyFailure, "KILO_RESULT_NOT_IN_HANDOFF"):
+                    runtime.transition_kilo_receipt(
+                        root, trusted, run_id, "RESULT_WRITTEN", result_sha256="f" * 64,
+                        result_status="SUCCEEDED",
+                    )
+                written = runtime.transition_kilo_receipt(
+                    root, trusted, run_id, "RESULT_WRITTEN", result_sha256=digest,
+                    result_status="SUCCEEDED",
+                )
+                self.assertEqual(written["state"], "RESULT_WRITTEN")
+                publish("persist result receipt")
+                ingested = runtime.transition_kilo_receipt(root, trusted, run_id, "INGESTED_TO_SSOT")
+                self.assertEqual(ingested["state"], "INGESTED_TO_SSOT")
+                publish("persist ingested receipt")
+                self.assertEqual(runtime.verify_kilo_receipt(root, trusted, run_id)["state"], "INGESTED_TO_SSOT")
+
+                archived = runtime.transition_kilo_receipt(root, trusted, run_id, "ARCHIVED/CLEARED")
+                self.assertEqual(archived["publication_state"], "PENDING_PUBLICATION")
+                publish("publish archived receipt checkpoint")
+                verified = runtime.verify_kilo_receipt(root, trusted, run_id)
+                self.assertTrue(verified["ok"], verified)
+                self.assertEqual(verified["state"], "ARCHIVED/CLEARED")
+                archive_doc, archive_log = runtime._read_lifecycle_log(
+                    handoff_path.read_text(encoding="utf-8"), test_claim
+                )
+                archive_intent, archive_outcome = runtime._kilo_operation_events(archive_log, run_id)
+                archive_binding = runtime._trusted_kilo_binding(
+                    root, test_claim, actual_context(root, test_claim), run_id, archive_intent
+                )
+                forged_archive = json.loads(json.dumps(archive_doc["kilo_receipts"][0]))
+                forged_archive["last_evidence"]["archive_checkpoint_source_sha"] = "f" * 40
+                with self.assertRaisesRegex(runtime.AutonomyFailure, "KILO_RECEIPT_NOT_DURABLE"):
+                    runtime._validate_persisted_kilo_receipt(
+                        forged_archive, archive_binding, archive_intent, archive_outcome, archive_log
+                    )
+                stored = json.loads(json.dumps(runtime._lifecycle_document(
+                    handoff_path.read_text(encoding="utf-8")
+                )[0]))
+                self.assertNotIn("raw_output", json.dumps(stored))
+                with self.assertRaises(TypeError):
+                    runtime.transition_kilo_receipt(
+                        root, trusted, run_id, "ARCHIVED/CLEARED", verified_in_handoff=True
+                    )
+
+                unknown_run = "kilo-run-unknown"
+                append_event("OPERATION_INTENT", "kilo-intent-unknown", operation_id=unknown_run, payload={
+                    "provider": "cointh-glm", "model": "glm-5.3", "variant": "flash",
+                    "run_id": unknown_run, "admission_evidence_sha256": "b" * 64,
+                    "starting_head_sha": git("rev-parse", "HEAD"),
+                })
+                publish("publish second operation intent")
+                with patch.object(runtime, "_kilo_preflight_snapshot", side_effect=ready_preflight):
+                    runtime.transition_kilo_receipt(root, trusted, unknown_run, "REQUESTED")
+                publish("persist second requested receipt")
+                unknown_digest = "e" * 64
+                append_event("OPERATION_OUTCOME", "kilo-outcome-unknown", operation_id=unknown_run,
+                             outcome="UNKNOWN", payload={"evidence_sha256": unknown_digest,
+                                                           "observed_at_utc": "2026-09-26T00:02:00Z"})
+                publish("publish unknown operation result")
+                runtime.transition_kilo_receipt(
+                    root, trusted, unknown_run, "RESULT_WRITTEN",
+                    result_sha256=unknown_digest, result_status="UNKNOWN",
+                )
+                publish("persist unknown result receipt")
+                unresolved = runtime.verify_kilo_receipt(root, trusted, unknown_run)
+                self.assertFalse(unresolved["ok"])
+                self.assertEqual(unresolved["reason"], "UNRESOLVED_EXTERNAL_OPERATION")
+                with self.assertRaisesRegex(runtime.AutonomyFailure, "UNRESOLVED_EXTERNAL_OPERATION"):
+                    runtime.transition_kilo_receipt(root, trusted, unknown_run, "INGESTED_TO_SSOT")
+
+                append_event("OPERATION_RECONCILED", "kilo-reconciled-unknown", operation_id=unknown_run,
+                             outcome="SUCCEEDED", payload={"evidence_sha256": "c" * 64,
+                                                            "observed_at_utc": "2026-09-26T00:03:00Z"})
+                publish("publish operation reconciliation")
+                runtime.transition_kilo_receipt(root, trusted, unknown_run, "INGESTED_TO_SSOT")
+                publish("persist reconciled result receipt")
+                runtime.transition_kilo_receipt(root, trusted, unknown_run, "ARCHIVED/CLEARED")
+                publish("publish reconciled archived receipt")
+                reconciled = runtime.verify_kilo_receipt(root, trusted, unknown_run)
+                self.assertTrue(reconciled["ok"], reconciled)
+                self.assertEqual(reconciled["state"], "ARCHIVED/CLEARED")
 
 
 class HookClassifierTests(unittest.TestCase):
@@ -544,6 +881,49 @@ class HookClassifierTests(unittest.TestCase):
         self.assertEqual(runtime.classify_shell_command("rg token data --no-ignore-vcs")["kind"], "UNKNOWN")
         self.assertEqual(runtime.classify_shell_command("uv run python scripts/test_split_sql.py")["kind"], "READ_ONLY")
         self.assertEqual(runtime.classify_shell_command("git diff --check")["kind"], "READ_ONLY")
+        self.assertEqual(runtime.classify_shell_command("git branch --show-current")["kind"], "READ_ONLY")
+        self.assertEqual(runtime.classify_shell_command("git show HEAD:README.md")["kind"], "READ_ONLY")
+        self.assertNotEqual(runtime.classify_shell_command("git diff")["kind"], "READ_ONLY")
+        self.assertNotEqual(runtime.classify_shell_command("git show HEAD")["kind"], "READ_ONLY")
+        self.assertNotEqual(runtime.classify_shell_command("git show HEAD:../README.md")["kind"], "READ_ONLY")
+        self.assertNotEqual(runtime.classify_shell_command("git log --oneline")["kind"], "READ_ONLY")
+        self.assertEqual(runtime.classify_shell_command("git fetch origin main")["kind"], "GIT_FETCH")
+        self.assertEqual(
+            runtime.classify_shell_command(
+                "python scripts/env_autonomy_runtime.py kilo-receipt-transition --run-id run-1 --next-state REQUESTED"
+            )["kind"],
+            "AUTONOMY_EVENT",
+        )
+        self.assertEqual(
+            runtime.classify_shell_command(
+                "python scripts/env_autonomy_runtime.py kilo-receipt-verify --run-id run-1"
+            )["kind"],
+            "READ_ONLY",
+        )
+
+    def test_mutating_git_read_subcommands_are_denied_before_preflight_bypass(self):
+        commands = (
+            "git branch -D codex/other-lane",
+            "git branch --delete codex/other-lane",
+            "git diff --output=docs/ai/CURRENT-WORK.md",
+            "git diff -o docs/ai/CURRENT-WORK.md",
+            "git show --output=docs/ai/CURRENT-WORK.md HEAD",
+            "git show HEAD --output docs/ai/CURRENT-WORK.md",
+            "git log --output=docs/ai/CURRENT-WORK.md",
+            "git show HEAD",
+            "git status --output=docs/ai/CURRENT-WORK.md",
+            "git fetch origin",
+            "rg --pre touch pattern .",
+            "rg --pre=touch pattern .",
+        )
+        for command in commands:
+            with self.subTest(command=command):
+                classified = runtime.classify_shell_command(command)
+                self.assertNotEqual(classified["kind"], "READ_ONLY")
+                decision = runtime.hook_pretool(
+                    {"tool_name": "Bash", "tool_input": {"command": command}}, Path.cwd()
+                )
+                self.assertEqual(decision["permissionDecision"], "deny")
 
 
 if __name__ == "__main__":

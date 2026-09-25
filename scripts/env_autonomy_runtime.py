@@ -558,6 +558,72 @@ def append_lifecycle_event(handoff_path: Path, event_data: dict) -> dict:
     }
 
 
+def _append_lifecycle_event_to_document(document: dict, event_data: dict) -> guard.LifecycleEvent:
+    """Validate and append one pending event to an already parsed handoff block."""
+    events = document.get("events")
+    if not isinstance(events, list):
+        raise AutonomyFailure("LIFECYCLE_BLOCK_MALFORMED")
+    log = guard.LifecycleLog(document.get("claim_id"), document.get("claim_generation"))
+    try:
+        for raw in events:
+            if not isinstance(raw, dict):
+                raise AutonomyFailure("LIFECYCLE_BLOCK_MALFORMED")
+            log.apply(guard.LifecycleEvent(**{**raw, "published": True}))
+        event = guard.LifecycleEvent(**{**event_data, "published": True})
+        log.apply(event)
+    except TypeError as exc:
+        raise AutonomyFailure("LIFECYCLE_EVENT_INVALID", type(exc).__name__) from None
+    except guard.GuardFailure as exc:
+        raise AutonomyFailure(exc.reason, exc.detail) from None
+    events.append({**event.__dict__, "published": False})
+    return event
+
+
+def _has_unresolved_hook_observations(document: dict, log: guard.LifecycleLog) -> bool:
+    """UNKNOWN post-tool receipts remain blocking until their lifecycle run is reconciled."""
+    observations = document.get("codex_hook_observations", [])
+    if not isinstance(observations, list):
+        raise AutonomyFailure("LIFECYCLE_BLOCK_MALFORMED", "hook observations must be a list")
+    for observation in observations:
+        if not isinstance(observation, dict):
+            raise AutonomyFailure("LIFECYCLE_BLOCK_MALFORMED", "hook observation must be an object")
+        state = observation.get("effect_state")
+        if state not in ("OBSERVED", "FAILED", "UNKNOWN"):
+            raise AutonomyFailure("LIFECYCLE_BLOCK_MALFORMED", "unknown hook effect state")
+        if state != "UNKNOWN":
+            continue
+        operation_id = observation.get("operation_id")
+        if not isinstance(operation_id, str) or not operation_id:
+            return True
+        try:
+            operation = log.operation_record(operation_id)
+        except guard.GuardFailure:
+            return True
+        if operation.get("outcome") != "UNKNOWN" or operation.get("reconciled_outcome") not in ("SUCCEEDED", "FAILED"):
+            return True
+    return False
+
+
+def _is_reconciliation_command(tool_name: str, tool_input: dict) -> bool:
+    """Permit only the typed lifecycle reconciliation command through an UNKNOWN gate."""
+    if tool_name != "Bash" or not isinstance(tool_input.get("command"), str):
+        return False
+    try:
+        tokens = shlex.split(tool_input["command"], posix=True)
+    except ValueError:
+        return False
+    if tokens and tokens[0] in ("python", "python3", "py"):
+        tokens = tokens[1:]
+        if tokens[:1] == ["-3"]:
+            tokens = tokens[1:]
+    if len(tokens) < 2 or tokens[0].replace("\\", "/") != "scripts/env_autonomy_runtime.py":
+        return False
+    if tokens[1] != "append-event":
+        return False
+    values = [tokens[i + 1] for i, token in enumerate(tokens[:-1]) if token == "--event-type"]
+    return values == ["OPERATION_RECONCILED"]
+
+
 def record_hook_observation(root: Path, policy: guard.TrustedPolicy, event: dict) -> dict:
     """Append hash-only local mutation receipts to the lane handoff."""
     claim = policy.claim_by_task("ENV-AUTONOMY-001")
@@ -630,13 +696,22 @@ def record_hook_observation(root: Path, policy: guard.TrustedPolicy, event: dict
     response = event.get("tool_response")
     serialized_input = json.dumps(tool_input, sort_keys=True, ensure_ascii=False, separators=(",", ":"))
     serialized_response = json.dumps(response, sort_keys=True, ensure_ascii=False, default=str, separators=(",", ":"))
+    observation_run_id = f"codex:{session_id}:{turn_id}:{tool_use_id}"
+    effect_unknown = response is None or (
+        isinstance(response, dict) and response.get("isError") is True
+    )
+    operation_id = (
+        "codex-hook-" + hashlib.sha256(observation_run_id.encode("utf-8")).hexdigest()
+        if effect_unknown else None
+    )
     observation = {
         "hook_event_name": event.get("hook_event_name", "PostToolUse"),
         "tool_name": tool_name,
         "tool_use_id": tool_use_id,
         "session_id": session_id,
         "turn_id": turn_id,
-        "run_id": f"{session_id}:{turn_id}",
+        "run_id": observation_run_id,
+        "operation_id": operation_id,
         "task_id": claim["task_id"],
         "claim_id": claim["claim_id"],
         "claim_generation": claim["claim_generation"],
@@ -652,9 +727,7 @@ def record_hook_observation(root: Path, policy: guard.TrustedPolicy, event: dict
         "input_sha256": hashlib.sha256(serialized_input.encode("utf-8")).hexdigest(),
         "result_sha256": hashlib.sha256(serialized_response.encode("utf-8")).hexdigest(),
         "effect_state": (
-            "UNKNOWN" if response is None else
-            "FAILED" if isinstance(response, dict) and response.get("isError") is True else
-            "OBSERVED"
+            "UNKNOWN" if effect_unknown else "OBSERVED"
         ),
         "publication_state": "PENDING_PUBLICATION",
     }
@@ -667,6 +740,42 @@ def record_hook_observation(root: Path, policy: guard.TrustedPolicy, event: dict
     if any(isinstance(item, dict) and item.get("tool_use_id") == tool_use_id for item in observations):
         return {"recorded": True, "idempotent": True, "tool_use_id": tool_use_id}
     observations.append(observation)
+    if operation_id is not None:
+        _, log = _read_lifecycle_log(handoff_text, claim)
+        if log.active_goal_id is None:
+            raise AutonomyFailure("ACTIVE_GOAL_REQUIRED")
+        now = dt.datetime.now(dt.timezone.utc).isoformat(timespec="seconds").replace("+00:00", "Z")
+        intent_id = f"env-codex-hook-intent-{uuid.uuid4().hex}"
+        common = {
+            "task_id": claim["task_id"], "claim_id": claim["claim_id"],
+            "claim_generation": claim["claim_generation"], "goal_id": log.active_goal_id,
+            "event_seq": log.events[-1].event_seq + 1, "previous_event_id": log.head_event_id,
+            "terminal_result": None, "operation_id": operation_id,
+            "operation_outcome": None, "published": False,
+        }
+        _append_lifecycle_event_to_document(document, {
+            **common, "event_type": "OPERATION_INTENT", "event_id": intent_id,
+            "payload": {
+                "provider": "codex-cli", "model": observation["codex_model"],
+                "variant": "post-tool-hook", "run_id": observation_run_id,
+                "admission_evidence_sha256": observation["input_sha256"],
+                "starting_head_sha": observation["head_sha"],
+            },
+        })
+        _, pending_log = _read_lifecycle_log(
+            _replace_lifecycle_block(handoff_text, document), claim
+        )
+        _append_lifecycle_event_to_document(document, {
+            **common, "event_type": "OPERATION_OUTCOME",
+            "event_seq": pending_log.events[-1].event_seq + 1,
+            "event_id": f"env-codex-hook-outcome-{uuid.uuid4().hex}",
+            "previous_event_id": pending_log.head_event_id,
+            "operation_outcome": "UNKNOWN",
+            "payload": {
+                "evidence_sha256": observation["result_sha256"],
+                "observed_at_utc": now,
+            },
+        })
     updated = _replace_lifecycle_block(handoff_text, document)
     handoff_path.write_text(updated, encoding="utf-8", newline="\n")
     return observation
@@ -718,6 +827,7 @@ def verify_published_event(root: Path, policy: guard.TrustedPolicy, claim: dict)
             raise AutonomyFailure(exc.reason, exc.detail) from None
         raise AutonomyFailure("LIFECYCLE_EVENT_INVALID", type(exc).__name__) from None
     latest = events[-1] if events else None
+    unresolved_hook_observations = _has_unresolved_hook_observations(document, log)
     return {
         "ok": True,
         "publication_state": "PUBLISHED",
@@ -729,7 +839,10 @@ def verify_published_event(root: Path, policy: guard.TrustedPolicy, claim: dict)
         "latest_event_type": latest.get("event_type") if isinstance(latest, dict) else None,
         "lane_status": (latest.get("payload") or {}).get("lane_status")
             if isinstance(latest, dict) and isinstance(latest.get("payload"), dict) else None,
-        "unresolved_external_operations": log.has_unresolved_external_operations,
+        "unresolved_external_operations": (
+            log.has_unresolved_external_operations or unresolved_hook_observations
+        ),
+        "unresolved_hook_observations": unresolved_hook_observations,
     }
 
 
@@ -740,6 +853,8 @@ def verify_published_checkpoint(root: Path, policy: guard.TrustedPolicy, claim: 
         return {"ok": False, "checkpoint_state": publication.get("publication_state"), "reason": publication.get("reason")}
     if publication.get("latest_event_type") != "CHECKPOINT":
         return {"ok": False, "checkpoint_state": "PUBLISHED_BUT_STALE", "reason": "LATEST_EVENT_IS_NOT_CHECKPOINT"}
+    if publication.get("unresolved_hook_observations") is True:
+        return {"ok": False, "checkpoint_state": "PUBLISHED_WITH_UNKNOWN_EFFECT", "reason": "UNRESOLVED_HOOK_OBSERVATION"}
     if publication.get("unresolved_external_operations") is True:
         return {"ok": False, "checkpoint_state": "PUBLISHED_WITH_UNKNOWN_EFFECT", "reason": "UNRESOLVED_EXTERNAL_OPERATION"}
     root = Path(_run_git(["rev-parse", "--show-toplevel"], root.resolve())).resolve()
@@ -808,6 +923,7 @@ def read_published_lane_checkpoint(root: Path, claim: dict) -> Optional[dict]:
             or lane_status != claim.get("status")
             or lane_status not in PARKED_STATES
             or log.has_unresolved_external_operations
+            or _has_unresolved_hook_observations(document, log)
         ):
             return None
         parent = _run_git(["rev-parse", f"{handoff_commit}^"], root, check=False)
@@ -856,88 +972,324 @@ def dependencies_satisfied(root: Path, policy: guard.TrustedPolicy, claim: dict,
 
 
 KILO_RECEIPT_STATES = ("REQUESTED", "RESULT_WRITTEN", "INGESTED_TO_SSOT", "ARCHIVED/CLEARED")
-RAW_EVIDENCE_KEYS = frozenset((
-    "raw_output", "output", "transcript", "prompt", "messages", "conversation",
-    "input_text", "response_text", "stdout", "stderr",
-))
 
 
-def _contains_raw_evidence(value: Any) -> bool:
-    if isinstance(value, dict):
-        return any(
-            isinstance(key, str) and key.casefold() in RAW_EVIDENCE_KEYS
-            or _contains_raw_evidence(item)
-            for key, item in value.items()
-        )
-    if isinstance(value, list):
-        return any(_contains_raw_evidence(item) for item in value)
-    return False
+def _kilo_operation_events(log: guard.LifecycleLog, run_id: str) -> tuple[guard.LifecycleEvent, Optional[guard.LifecycleEvent]]:
+    events = [event for event in log.events if event.operation_id == run_id]
+    intents = [event for event in events if event.event_type == "OPERATION_INTENT"]
+    outcomes = [event for event in events if event.event_type == "OPERATION_OUTCOME"]
+    if len(intents) != 1 or len(outcomes) > 1:
+        raise AutonomyFailure("KILO_OPERATION_EVIDENCE_INVALID")
+    return intents[0], outcomes[0] if outcomes else None
 
 
-def transition_kilo_receipt(receipt: dict, next_state: str, evidence: dict) -> dict:
-    """Validate the ENV-AGENT-OPS-002 one-packet receipt lifecycle."""
-    if not isinstance(receipt, dict) or not isinstance(evidence, dict):
+def _trusted_kilo_binding(
+    root: Path, claim: dict, actual: dict, run_id: str, intent: guard.LifecycleEvent
+) -> dict:
+    payload = intent.payload
+    if (
+        intent.task_id != claim["task_id"]
+        or intent.claim_id != claim["claim_id"]
+        or intent.claim_generation != claim["claim_generation"]
+        or intent.operation_id != run_id
+        or not isinstance(payload, dict)
+        or payload.get("run_id") != run_id
+    ):
+        raise AutonomyFailure("KILO_RECEIPT_IDENTITY_MISMATCH")
+    provider, model, variant = (payload.get(key) for key in ("provider", "model", "variant"))
+    if not all(isinstance(value, str) and value for value in (provider, model, variant)):
+        raise AutonomyFailure("KILO_RECEIPT_INVALID", "operation intent route is incomplete")
+    if (
+        provider.casefold() != "cointh-glm"
+        or (model.casefold(), variant.casefold())
+        not in (("glm-5.3", "max"), ("glm-5.3", "flash"))
+    ):
+        raise AutonomyFailure("KILO_ROUTE_UNSUPPORTED")
+    starting_head = payload.get("starting_head_sha")
+    admission_digest = payload.get("admission_evidence_sha256")
+    if not isinstance(starting_head, str) or not re.fullmatch(r"[0-9a-f]{40}", starting_head):
+        raise AutonomyFailure("KILO_RECEIPT_INVALID", "operation intent lacks exact starting HEAD")
+    if not isinstance(admission_digest, str) or not re.fullmatch(r"[0-9a-f]{64}", admission_digest):
+        raise AutonomyFailure("KILO_ADMISSION_UNVERIFIED")
+    if (
+        actual.get("repo", "").casefold() != REPO_SLUG.casefold()
+        or _norm_worktree(actual.get("worktree", "")) != _norm_worktree(claim["worktree"])
+        or actual.get("branch") != claim["branch"]
+        or actual.get("claim_base_ancestor") is not True
+        or actual.get("current_policy_ancestor") is not True
+        or not _is_ancestor(root, claim["base_sha"], starting_head)
+        or not _is_ancestor(root, starting_head, actual["head_sha"])
+    ):
+        raise AutonomyFailure("KILO_RECEIPT_CONTEXT_DRIFT")
+    return {
+        "repo": REPO_SLUG,
+        "task_id": claim["task_id"],
+        "claim_id": claim["claim_id"],
+        "claim_generation": claim["claim_generation"],
+        "execution_holder_id": claim["execution_holder_id"],
+        "worktree": actual["worktree"],
+        "branch": actual["branch"],
+        "base_sha": claim["base_sha"],
+        "head_sha": starting_head,
+        "provider": provider,
+        "model": model,
+        "variant": variant,
+        "run_id": run_id,
+        "operation_intent_event_id": intent.event_id,
+    }
+
+
+def _validate_persisted_kilo_receipt(
+    receipt: dict,
+    binding: dict,
+    intent: guard.LifecycleEvent,
+    outcome: Optional[guard.LifecycleEvent],
+    log: guard.LifecycleLog,
+) -> None:
+    """Re-derive stored receipt claims from the handoff operation/checkpoint events."""
+    if receipt.get("run_id") != binding["run_id"] or receipt.get("binding") != binding:
+        raise AutonomyFailure("KILO_RECEIPT_IDENTITY_MISMATCH")
+    state = receipt.get("state")
+    evidence = receipt.get("last_evidence")
+    if not isinstance(evidence, dict):
+        raise AutonomyFailure("KILO_RECEIPT_RECORD_INVALID")
+    if state == "REQUESTED":
+        expected = {"operation_intent_event_id": intent.event_id}
+    elif state in ("RESULT_WRITTEN", "INGESTED_TO_SSOT", "ARCHIVED/CLEARED"):
+        if outcome is None or not isinstance(outcome.payload, dict):
+            raise AutonomyFailure("KILO_RESULT_NOT_IN_HANDOFF")
+        digest = outcome.payload.get("evidence_sha256")
+        if not isinstance(digest, str) or not re.fullmatch(r"[0-9a-f]{64}", digest):
+            raise AutonomyFailure("KILO_RESULT_NOT_IN_HANDOFF")
+        expected = {
+            "result_sha256": digest,
+            "result_status": outcome.operation_outcome,
+            "handoff_event_id": outcome.event_id,
+        }
+        if state in ("INGESTED_TO_SSOT", "ARCHIVED/CLEARED"):
+            effect = log.operation_record(binding["run_id"])
+            if effect["outcome"] == "UNKNOWN" and effect.get("reconciled_outcome") not in ("SUCCEEDED", "FAILED"):
+                raise AutonomyFailure("UNRESOLVED_EXTERNAL_OPERATION")
+            expected.update({
+                "ingested_event_id": outcome.event_id,
+                "ingested_result_sha256": digest,
+            })
+        if state == "ARCHIVED/CLEARED":
+            archive_event_id = evidence.get("archive_checkpoint_event_id")
+            archive_source_sha = evidence.get("archive_checkpoint_source_sha")
+            archive_event = next(
+                (event for event in log.events if event.event_id == archive_event_id), None
+            )
+            if (
+                archive_event is None or archive_event.event_type != "CHECKPOINT"
+                or not isinstance(archive_event.payload, dict)
+                or archive_event.payload.get("source_head_sha") != archive_source_sha
+                or not isinstance(archive_source_sha, str)
+                or not re.fullmatch(r"[0-9a-f]{40}", archive_source_sha)
+            ):
+                raise AutonomyFailure("KILO_RECEIPT_NOT_DURABLE")
+            expected.update({
+                "archive_checkpoint_event_id": archive_event_id,
+                "archive_checkpoint_source_sha": archive_source_sha,
+            })
+    else:
+        raise AutonomyFailure("KILO_RECEIPT_RECORD_INVALID")
+    if evidence != expected:
+        raise AutonomyFailure("KILO_RECEIPT_RECORD_INVALID")
+
+
+def transition_kilo_receipt(
+    root: Path,
+    policy: guard.TrustedPolicy,
+    run_id: str,
+    next_state: str,
+    *,
+    result_sha256: Optional[str] = None,
+    result_status: Optional[str] = None,
+) -> dict:
+    """Persist one Kilo receipt transition in the existing published lane handoff."""
+    if not isinstance(run_id, str) or not run_id.strip() or next_state not in KILO_RECEIPT_STATES:
         raise AutonomyFailure("KILO_RECEIPT_INVALID")
-    current = receipt.get("state")
+    claim = policy.claim_by_task("ENV-AUTONOMY-001")
+    if claim is None:
+        raise AutonomyFailure("UNKNOWN_TASK")
+    actual = _actual_context(root, claim)
+    publication = verify_published_event(root, policy, claim)
+    if publication.get("ok") is not True:
+        raise AutonomyFailure("KILO_HANDOFF_NOT_PUBLISHED", publication.get("reason", "unknown"))
+    root = Path(actual["worktree"]).resolve()
+    handoff_path = root / claim["handoff_path"]
+    handoff_text = handoff_path.read_text(encoding="utf-8")
+    document, log = _read_lifecycle_log(handoff_text, claim)
+    intent, outcome = _kilo_operation_events(log, run_id)
+    binding = _trusted_kilo_binding(root, claim, actual, run_id, intent)
+    receipts = document.setdefault("kilo_receipts", [])
+    if not isinstance(receipts, list) or any(not isinstance(item, dict) for item in receipts):
+        raise AutonomyFailure("KILO_RECEIPT_STORE_MALFORMED")
+    existing = next((item for item in receipts if item.get("run_id") == run_id), None)
+    current_state = existing.get("state") if existing else None
+    if existing is not None:
+        _validate_persisted_kilo_receipt(existing, binding, intent, outcome, log)
     allowed = {
         None: "REQUESTED",
         "REQUESTED": "RESULT_WRITTEN",
         "RESULT_WRITTEN": "INGESTED_TO_SSOT",
         "INGESTED_TO_SSOT": "ARCHIVED/CLEARED",
     }
-    if next_state not in KILO_RECEIPT_STATES or allowed.get(current) != next_state:
+    if allowed.get(current_state) != next_state:
         raise AutonomyFailure("KILO_RECEIPT_OUT_OF_ORDER")
-    identity_fields = (
-        "task_id", "claim_id", "execution_holder_id",
-        "worktree", "branch", "base_sha", "head_sha", "provider", "model",
-        "variant", "run_id",
-    )
-    if not isinstance(receipt.get("binding"), dict):
-        raise AutonomyFailure("KILO_RECEIPT_INVALID", "missing bound identity")
-    if _contains_raw_evidence(receipt) or _contains_raw_evidence(evidence):
-        raise AutonomyFailure("KILO_RAW_OUTPUT_FORBIDDEN")
-    binding = receipt["binding"]
-    try:
-        _exact_int(binding.get("claim_generation"), "claim_generation", 1)
-    except AutonomyFailure:
-        raise AutonomyFailure("KILO_RECEIPT_INVALID", "claim_generation must be a positive integer") from None
-    for field in identity_fields:
-        value = binding.get(field)
-        if not isinstance(value, str) or not value:
-            raise AutonomyFailure("KILO_RECEIPT_INVALID", f"missing {field}")
-        if field in evidence and evidence[field] != value:
-            raise AutonomyFailure("KILO_RECEIPT_IDENTITY_MISMATCH", field)
-    if not all(re.fullmatch(r"[0-9a-f]{40}", binding[field]) for field in ("base_sha", "head_sha")):
-        raise AutonomyFailure("KILO_RECEIPT_INVALID", "base_sha and head_sha must be full lowercase Git SHAs")
-    if (
-        binding["provider"].casefold() != "cointh-glm"
-        or (binding["model"].casefold(), binding["variant"].casefold())
-        not in (("glm-5.3", "max"), ("glm-5.3", "flash"))
-    ):
-        raise AutonomyFailure("KILO_ROUTE_UNSUPPORTED")
-    if next_state == "RESULT_WRITTEN":
-        digest = evidence.get("result_sha256")
-        if not isinstance(digest, str) or not re.fullmatch(r"[0-9a-f]{64}", digest):
-            raise AutonomyFailure("KILO_RECEIPT_INVALID", "result_sha256 required; raw output is not accepted")
-        if evidence.get("result_status") not in ("SUCCEEDED", "FAILED", "UNKNOWN"):
-            raise AutonomyFailure("KILO_RECEIPT_INVALID", "invalid result_status")
-    elif next_state == "INGESTED_TO_SSOT":
-        previous_evidence = receipt.get("last_evidence")
-        result_digest = previous_evidence.get("result_sha256") if isinstance(previous_evidence, dict) else None
-        event_id = evidence.get("handoff_event_id")
+
+    if next_state == "REQUESTED":
+        if outcome is not None:
+            raise AutonomyFailure("KILO_REQUEST_ALREADY_HAS_OUTCOME")
+        _require_kilo_admission(root, binding, intent)
+        receipt = {
+            "run_id": run_id,
+            "binding": binding,
+            "state": next_state,
+            "last_evidence": {"operation_intent_event_id": intent.event_id},
+        }
+        receipts.append(receipt)
+    elif next_state == "RESULT_WRITTEN":
+        digest = result_sha256
         if (
-            evidence.get("verified_in_handoff") is not True
-            or not isinstance(event_id, str) or not event_id
-            or evidence.get("result_sha256") != result_digest
+            outcome is None
+            or not isinstance(digest, str)
+            or not re.fullmatch(r"[0-9a-f]{64}", digest)
+            or result_status not in guard.OPERATION_OUTCOMES
+            or outcome.operation_outcome != result_status
+            or not isinstance(outcome.payload, dict)
+            or outcome.payload.get("evidence_sha256") != digest
         ):
+            raise AutonomyFailure("KILO_RESULT_NOT_IN_HANDOFF")
+        receipt = existing
+        receipt["state"] = next_state
+        receipt["last_evidence"] = {
+            "result_sha256": digest,
+            "result_status": result_status,
+            "handoff_event_id": outcome.event_id,
+        }
+    elif next_state == "INGESTED_TO_SSOT":
+        if outcome is None or not isinstance(outcome.payload, dict):
             raise AutonomyFailure("KILO_RECEIPT_NOT_INGESTED")
-    elif next_state == "ARCHIVED/CLEARED":
-        if not isinstance(evidence.get("published_checkpoint_sha"), str) or not re.fullmatch(
-            r"[0-9a-f]{40}", evidence["published_checkpoint_sha"]
+        effect = log.operation_record(run_id)
+        if effect["outcome"] == "UNKNOWN" and effect.get("reconciled_outcome") not in ("SUCCEEDED", "FAILED"):
+            raise AutonomyFailure("UNRESOLVED_EXTERNAL_OPERATION")
+        prior = existing.get("last_evidence")
+        if not isinstance(prior, dict) or prior.get("handoff_event_id") != outcome.event_id:
+            raise AutonomyFailure("KILO_RECEIPT_NOT_INGESTED")
+        receipt = existing
+        receipt["state"] = next_state
+        receipt["last_evidence"] = {
+            **prior,
+            "ingested_event_id": outcome.event_id,
+            "ingested_result_sha256": outcome.payload.get("evidence_sha256"),
+        }
+    else:
+        effect = log.operation_record(run_id)
+        if (
+            outcome is None
+            or (effect["outcome"] == "UNKNOWN" and effect.get("reconciled_outcome") not in ("SUCCEEDED", "FAILED"))
+            or log.has_unresolved_external_operations
+            or _has_unresolved_hook_observations(document, log)
         ):
             raise AutonomyFailure("KILO_RECEIPT_NOT_DURABLE")
-    updated = {**receipt, "state": next_state, "last_evidence": dict(evidence)}
-    return updated
+        if existing.get("last_evidence", {}).get("ingested_event_id") != outcome.event_id:
+            raise AutonomyFailure("KILO_RECEIPT_NOT_INGESTED")
+        checkpoint_event_id = f"env-kilo-receipt-checkpoint-{uuid.uuid4().hex}"
+        checkpoint = {
+            "task_id": claim["task_id"], "claim_id": claim["claim_id"],
+            "claim_generation": claim["claim_generation"], "goal_id": log.active_goal_id,
+            "event_type": "CHECKPOINT", "event_seq": log.events[-1].event_seq + 1,
+            "event_id": checkpoint_event_id, "previous_event_id": log.head_event_id,
+            "terminal_result": None, "operation_id": None, "operation_outcome": None,
+            "payload": {
+                "lane_status": "ACTIVE", "source_head_sha": actual["head_sha"],
+                "recorded_at_utc": dt.datetime.now(dt.timezone.utc).isoformat(timespec="seconds").replace("+00:00", "Z"),
+            },
+            "published": False,
+        }
+        existing["state"] = next_state
+        existing["last_evidence"] = {
+            **existing["last_evidence"],
+            "archive_checkpoint_event_id": checkpoint_event_id,
+            "archive_checkpoint_source_sha": actual["head_sha"],
+        }
+        _append_lifecycle_event_to_document(document, checkpoint)
+
+    updated = _replace_lifecycle_block(handoff_text, document)
+    handoff_path.write_text(updated, encoding="utf-8", newline="\n")
+    return {
+        "ok": True,
+        "run_id": run_id,
+        "state": next_state,
+        "binding": binding,
+        "publication_state": "PENDING_PUBLICATION",
+    }
+
+
+def verify_kilo_receipt(root: Path, policy: guard.TrustedPolicy, run_id: str) -> dict:
+    """Verify receipt state from the clean remote handoff and its actual lifecycle events."""
+    claim = policy.claim_by_task("ENV-AUTONOMY-001")
+    if claim is None:
+        raise AutonomyFailure("UNKNOWN_TASK")
+    actual = _actual_context(root, claim)
+    publication = verify_published_event(root, policy, claim)
+    if publication.get("ok") is not True:
+        return {"ok": False, "reason": "KILO_HANDOFF_NOT_PUBLISHED"}
+    handoff_text = (Path(actual["worktree"]) / claim["handoff_path"]).read_text(encoding="utf-8")
+    document, log = _read_lifecycle_log(handoff_text, claim)
+    receipts = document.get("kilo_receipts", [])
+    if not isinstance(receipts, list) or any(not isinstance(item, dict) for item in receipts):
+        raise AutonomyFailure("KILO_RECEIPT_STORE_MALFORMED")
+    receipt = next((item for item in receipts if item.get("run_id") == run_id), None)
+    if receipt is None or receipt.get("state") not in KILO_RECEIPT_STATES:
+        return {"ok": False, "reason": "KILO_RECEIPT_NOT_FOUND"}
+    intent, outcome = _kilo_operation_events(log, run_id)
+    binding = _trusted_kilo_binding(Path(actual["worktree"]), claim, actual, run_id, intent)
+    try:
+        _validate_persisted_kilo_receipt(receipt, binding, intent, outcome, log)
+    except AutonomyFailure as exc:
+        return {"ok": False, "reason": exc.reason, "state": receipt.get("state")}
+    if receipt.get("binding") != binding:
+        return {"ok": False, "reason": "KILO_RECEIPT_IDENTITY_MISMATCH"}
+    state = receipt["state"]
+    evidence = receipt.get("last_evidence")
+    if not isinstance(evidence, dict):
+        return {"ok": False, "reason": "KILO_RECEIPT_EVIDENCE_MISSING", "state": state}
+    if state == "REQUESTED":
+        try:
+            _require_kilo_admission(Path(actual["worktree"]), binding, intent)
+        except AutonomyFailure as exc:
+            return {"ok": False, "reason": exc.reason, "state": state}
+    if state in ("RESULT_WRITTEN", "INGESTED_TO_SSOT", "ARCHIVED/CLEARED"):
+        if (
+            outcome is None
+            or evidence.get("result_sha256", evidence.get("ingested_result_sha256"))
+            != (outcome.payload or {}).get("evidence_sha256")
+        ):
+            return {"ok": False, "reason": "KILO_RESULT_NOT_IN_HANDOFF", "state": state}
+        effect = log.operation_record(run_id)
+        if effect["outcome"] == "UNKNOWN" and effect.get("reconciled_outcome") not in ("SUCCEEDED", "FAILED"):
+            return {"ok": False, "reason": "UNRESOLVED_EXTERNAL_OPERATION", "state": state}
+    if state == "ARCHIVED/CLEARED":
+        checkpoint = verify_published_checkpoint(root, policy, claim)
+        if (
+            checkpoint.get("ok") is not True
+            or checkpoint.get("latest_event_id") != evidence.get("archive_checkpoint_event_id")
+            or checkpoint.get("checkpoint_sha") != publication.get("checkpoint_sha")
+        ):
+            return {"ok": False, "reason": "KILO_RECEIPT_NOT_DURABLE", "state": state}
+        return {
+            "ok": True, "run_id": run_id, "state": state,
+            "published_checkpoint_sha": checkpoint["checkpoint_sha"],
+            "handoff_event_id": evidence.get("ingested_event_id"),
+        }
+    return {
+        "ok": True, "run_id": run_id, "state": state,
+        "unresolved_external_operations": publication.get("unresolved_external_operations", False),
+        "handoff_event_id": evidence.get("handoff_event_id") or evidence.get("operation_intent_event_id"),
+    }
 
 
 def _parse_patch_paths(patch_text: str) -> list[tuple[str, str, Optional[str]]]:
@@ -1070,30 +1422,62 @@ def classify_shell_command(command: str) -> dict:
         if sub in ("reset", "clean", "checkout", "switch", "apply", "rm", "mv", "worktree", "update-ref"):
             return {"kind": "DENY", "reason": "UNSAFE_GIT_MUTATION"}
         if sub == "fetch":
-            if len(tokens) < 3 or tokens[2] != "origin" or any(token.startswith("-") for token in tokens[3:]):
+            if len(tokens) != 4 or tokens[2] != "origin" or tokens[3].startswith("-"):
                 return {"kind": "UNKNOWN", "reason": "FETCH_TARGET_UNBOUND"}
+            return {"kind": "GIT_FETCH", "changes": []}
+        if sub == "status" and tokens in (
+            ["git", "status"], ["git", "status", "--short"],
+            ["git", "status", "--porcelain"], ["git", "status", "-sb"],
+        ):
             return {"kind": "READ_ONLY", "changes": []}
-        if sub in ("status", "diff", "log", "show", "rev-parse", "branch"):
+        if sub == "diff" and tokens == ["git", "diff", "--check"]:
+            return {"kind": "READ_ONLY", "changes": []}
+        if sub == "branch" and tokens in (
+            ["git", "branch"], ["git", "branch", "--list"],
+            ["git", "branch", "--show-current"],
+        ):
+            return {"kind": "READ_ONLY", "changes": []}
+        if sub == "show" and len(tokens) == 3 and ":" in tokens[2]:
+            revision, path = tokens[2].split(":", 1)
+            if (
+                revision and not revision.startswith("-")
+                and re.fullmatch(r"[A-Za-z0-9_./@{}^~+-]+", revision)
+                and path and not path.startswith("/")
+                and all(part not in ("", ".", "..") for part in path.split("/"))
+            ):
+                return {"kind": "READ_ONLY", "changes": []}
+        if sub == "rev-parse" and tokens in (
+            ["git", "rev-parse", "HEAD"], ["git", "rev-parse", "origin/main"],
+            ["git", "rev-parse", "--show-toplevel"],
+            ["git", "rev-parse", "--abbrev-ref", "HEAD"],
+        ):
             return {"kind": "READ_ONLY", "changes": []}
         if sub == "remote" and tokens[2:] == ["-v"]:
             return {"kind": "READ_ONLY", "changes": []}
-    if tokens[0].casefold() in ("rg", "get-content", "select-string"):
-        if tokens[0].casefold() == "rg" and any(
-            token.casefold() == "--hidden"
-            or token.casefold().startswith("--no-ignore")
-            or re.fullmatch(r"-u+", token.casefold()) is not None
-            for token in tokens
+    if tokens[0].casefold() == "rg":
+        safe_flags = {
+            "-n", "--line-number", "-i", "--ignore-case", "-F", "--fixed-strings",
+            "-s", "--case-sensitive", "-S", "--smart-case", "-l", "--files-with-matches",
+            "-c", "--count", "--heading", "--no-heading", "--color", "never",
+            "--no-messages", "--trim", "--text",
+        }
+        args = tokens[1:]
+        if not any(not token.startswith("-") for token in args) or any(
+            token.startswith("-") and token not in safe_flags and token != "--"
+            for token in args
         ):
-            return {"kind": "UNKNOWN", "reason": "HIDDEN_OR_IGNORED_FILE_SCAN_FORBIDDEN"}
+            return {"kind": "UNKNOWN", "reason": "UNSAFE_RIPGREP_OPTION"}
+        return {"kind": "READ_ONLY", "changes": []}
+    if tokens[0].casefold() in ("get-content", "select-string"):
         return {"kind": "READ_ONLY", "changes": []}
     if tokens[0].casefold() in ("python", "python3", "py"):
         args = tokens[1:]
         if args and args[0] == "-3":
             args = args[1:]
         if len(args) >= 2 and args[0].replace("\\", "/") == "scripts/env_autonomy_runtime.py":
-            if args[1] in ("status", "refill", "verify-checkpoint", "verify-event", "kilo-preflight", "route"):
+            if args[1] in ("status", "refill", "verify-checkpoint", "verify-event", "kilo-preflight", "route", "kilo-receipt-verify"):
                 return {"kind": "READ_ONLY", "changes": []}
-            if args[1] == "append-event":
+            if args[1] in ("append-event", "kilo-receipt-transition"):
                 return {"kind": "AUTONOMY_EVENT", "changes": [("modify", HANDOFF, None)]}
         if args and args[0].replace("\\", "/") in (
             "scripts/env_coordination_guard.py", "scripts/test_env_autonomy_runtime.py",
@@ -1126,7 +1510,7 @@ def hook_pretool(event: dict, root: Path) -> dict:
             return {"permissionDecision": "allow"}
         if classified["kind"] == "DENY":
             return {"permissionDecision": "deny", "reason": classified["reason"]}
-        if classified["kind"] not in ("GIT_STAGE_OR_COMMIT", "GIT_PUSH", "AUTONOMY_EVENT"):
+        if classified["kind"] not in ("GIT_STAGE_OR_COMMIT", "GIT_PUSH", "GIT_FETCH", "AUTONOMY_EVENT"):
             return {"permissionDecision": "deny", "reason": classified.get("reason", "UNCLASSIFIED_MUTATION")}
         changes = list(classified.get("changes", []))
     else:
@@ -1155,6 +1539,29 @@ def hook_pretool(event: dict, root: Path) -> dict:
             "run_id": f"codex:{session_id}:{turn_id}:{tool_use_id}",
         }
         validate_lane_binding(policy, binding, actual)
+
+        if tool_name == "Bash" and classified["kind"] == "GIT_FETCH":
+            tokens = shlex.split(tool_input["command"], posix=True)
+            if tokens not in (
+                ["git", "fetch", "origin", "main"],
+                ["git", "fetch", "origin", claim["branch"]],
+            ):
+                raise AutonomyFailure("FETCH_TARGET_UNBOUND")
+            return {"permissionDecision": "allow"}
+
+        handoff_path = root / claim["handoff_path"]
+        handoff_text = handoff_path.read_text(encoding="utf-8")
+        lifecycle_document, lifecycle_log = _read_lifecycle_log(handoff_text, claim)
+        unresolved = (
+            lifecycle_log.has_unresolved_external_operations
+            or _has_unresolved_hook_observations(lifecycle_document, lifecycle_log)
+        )
+        may_publish_or_reconcile = (
+            classified is not None
+            and classified["kind"] in ("GIT_STAGE_OR_COMMIT", "GIT_PUSH")
+        ) or _is_reconciliation_command(tool_name, tool_input)
+        if unresolved and not may_publish_or_reconcile:
+            raise AutonomyFailure("UNRESOLVED_EXTERNAL_EFFECT")
 
         if tool_name == "Bash" and classified["kind"] == "GIT_STAGE_OR_COMMIT":
             tokens = shlex.split(tool_input["command"], posix=True)
@@ -1211,7 +1618,19 @@ def hook_pretool(event: dict, root: Path) -> dict:
             if not changes:
                 raise AutonomyFailure("NO_CLAIMED_CHANGES_TO_PUBLISH")
         elif tool_name == "Bash" and classified["kind"] == "AUTONOMY_EVENT":
-            if not re.fullmatch(r"(?is)(?:python|python3|py\s+-3)\s+scripts[\\/]env_autonomy_runtime\.py\s+append-event(?:\s+.+)?", tool_input["command"].strip()):
+            try:
+                runtime_tokens = shlex.split(tool_input["command"], posix=True)
+            except ValueError:
+                raise AutonomyFailure("AUTONOMY_EVENT_COMMAND_UNSUPPORTED") from None
+            if runtime_tokens and runtime_tokens[0] in ("python", "python3", "py"):
+                runtime_tokens = runtime_tokens[1:]
+                if runtime_tokens[:1] == ["-3"]:
+                    runtime_tokens = runtime_tokens[1:]
+            if (
+                len(runtime_tokens) < 3
+                or runtime_tokens[0].replace("\\", "/") != "scripts/env_autonomy_runtime.py"
+                or runtime_tokens[1] not in ("append-event", "kilo-receipt-transition")
+            ):
                 raise AutonomyFailure("AUTONOMY_EVENT_COMMAND_UNSUPPORTED")
 
         normalized = []
@@ -1433,6 +1852,10 @@ def _cmd_append_event(args) -> int:
         "payload": payload,
         "published": False,
     }
+    if event_type == "OPERATION_INTENT" and isinstance(args.provider, str) and args.provider.casefold() == "cointh-glm":
+        _require_kilo_admission(root, {
+            "provider": args.provider, "model": args.model, "variant": args.variant,
+        }, guard.LifecycleEvent(**event))
     result = append_lifecycle_event(handoff_path, event)
     result.update({
         "task_id": claim["task_id"], "claim_id": claim["claim_id"],
@@ -1444,15 +1867,76 @@ def _cmd_append_event(args) -> int:
 
 def _cmd_kilo_preflight(args) -> int:
     """Report the adapter gate without launching or probing a model."""
-    return _emit({
+    return _emit(_kilo_preflight_snapshot(Path(args.root or Path.cwd()).resolve(), None, None), 2)
+
+
+def _kilo_preflight_snapshot(root: Path, model: Optional[str], variant: Optional[str]) -> dict:
+    """Current secret-safe admission probe state; unconfigured remains UNKNOWN and denied."""
+    return {
         "ok": False,
         "adapter_status": "NOT_CONFIGURED_FOR_SECRET_SAFE_QUOTA_PROBE",
         "proxy_quota_status": "UNKNOWN",
         "upstream_model_status": "UNKNOWN",
         "reason": "PROVIDER_ADMISSION_PATH_UNVERIFIED",
         "external_call_started": False,
+        "provider": "cointh-glm",
+        "model": model,
+        "variant": variant,
         "autonomy_status": "AUTONOMY_NOT_READY",
-    }, 2)
+    }
+
+
+def _require_kilo_admission(root: Path, binding: dict, intent: guard.LifecycleEvent) -> None:
+    """Refuse a provider request until separate quota/upstream evidence is fresh and exact."""
+    snapshot = _kilo_preflight_snapshot(root, binding["model"], binding["variant"])
+    payload = intent.payload if isinstance(intent.payload, dict) else {}
+    observed_at = snapshot.get("observed_at_utc")
+    digest = snapshot.get("evidence_sha256")
+    verified_time = None
+    if isinstance(observed_at, str):
+        try:
+            verified_time = dt.datetime.fromisoformat(observed_at.replace("Z", "+00:00"))
+        except ValueError:
+            verified_time = None
+    fresh = False
+    if verified_time is not None and verified_time.tzinfo is not None:
+        age = (dt.datetime.now(dt.timezone.utc) - verified_time.astimezone(dt.timezone.utc)).total_seconds()
+        fresh = 0 <= age <= PROVIDER_EVIDENCE_MAX_AGE_SECONDS
+    if not (
+        snapshot.get("verified") is True
+        and snapshot.get("adapter_status") == "READY"
+        and snapshot.get("proxy_quota_status") == "READY"
+        and snapshot.get("upstream_model_status") == "READY"
+        and snapshot.get("external_call_started") is False
+        and snapshot.get("provider") == binding["provider"]
+        and snapshot.get("model") == binding["model"]
+        and snapshot.get("variant") == binding["variant"]
+        and isinstance(digest, str)
+        and re.fullmatch(r"[0-9a-f]{64}", digest)
+        and payload.get("admission_evidence_sha256") == digest
+        and fresh
+    ):
+        raise AutonomyFailure("KILO_ADMISSION_UNVERIFIED")
+
+
+def _cmd_kilo_receipt_transition(args) -> int:
+    root = Path(args.root or Path.cwd()).resolve()
+    policy, _ = load_trusted_policy(root)
+    try:
+        result = transition_kilo_receipt(
+            root, policy, args.run_id, args.next_state,
+            result_sha256=args.result_sha256, result_status=args.result_status,
+        )
+    except AutonomyFailure as exc:
+        return _emit({"ok": False, "reason": exc.reason}, 2)
+    return _emit(result)
+
+
+def _cmd_kilo_receipt_verify(args) -> int:
+    root = Path(args.root or Path.cwd()).resolve()
+    policy, _ = load_trusted_policy(root)
+    result = verify_kilo_receipt(root, policy, args.run_id)
+    return _emit(result, 0 if result.get("ok") is True else 2)
 
 
 def _cmd_route(args) -> int:
@@ -1634,7 +2118,7 @@ def main(argv: Optional[list[str]] = None) -> int:
     append_event.add_argument("--root")
     append_event.add_argument("--goal-id")
     append_event.add_argument("--run-id")
-    append_event.add_argument("--lane-status", choices=("ACTIVE", "WAITING_EXTERNAL", "PARKED", "REPAIR_REQUIRED", "REVIEW_REQUESTED"))
+    append_event.add_argument("--lane-status", choices=("ACTIVE", "WAITING_EXTERNAL", "PARKED", "REPAIR_REQUIRED", "REVIEW_REQUESTED", "CHANGES_REQUIRED"))
     append_event.add_argument("--terminal-result", choices=guard.TERMINAL_GOAL_RESULTS)
     append_event.add_argument("--operation-id")
     append_event.add_argument("--operation-outcome", choices=guard.OPERATION_OUTCOMES)
@@ -1655,6 +2139,17 @@ def main(argv: Optional[list[str]] = None) -> int:
     kilo_preflight = sub.add_parser("kilo-preflight", help="report the current non-billable GLM admission gate without dispatch")
     kilo_preflight.add_argument("--root")
     kilo_preflight.set_defaults(func=_cmd_kilo_preflight)
+    kilo_receipt = sub.add_parser("kilo-receipt-transition", help="persist one verified Kilo receipt state in the lane handoff")
+    kilo_receipt.add_argument("--run-id", required=True)
+    kilo_receipt.add_argument("--next-state", required=True, choices=KILO_RECEIPT_STATES)
+    kilo_receipt.add_argument("--result-sha256")
+    kilo_receipt.add_argument("--result-status", choices=guard.OPERATION_OUTCOMES)
+    kilo_receipt.add_argument("--root")
+    kilo_receipt.set_defaults(func=_cmd_kilo_receipt_transition)
+    kilo_receipt_verify = sub.add_parser("kilo-receipt-verify", help="verify the persisted Kilo receipt from the remote lane handoff")
+    kilo_receipt_verify.add_argument("--run-id", required=True)
+    kilo_receipt_verify.add_argument("--root")
+    kilo_receipt_verify.set_defaults(func=_cmd_kilo_receipt_verify)
     route = sub.add_parser("route", help="report a task-fit route selection without provider dispatch")
     route.add_argument("--task-category", required=True, choices=sorted(ROUTE_DEFAULTS))
     route.add_argument("--lane-kind")
