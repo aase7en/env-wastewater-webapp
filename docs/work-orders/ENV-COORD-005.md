@@ -42,13 +42,19 @@ session actions, but that does not repair the missing lifecycle proof.
 Work-order recovery classification: `RECOVERY_REQUIRED` (choice C), an advisory
 work-item disposition only. The evidence does not support `ACTIVE`; runtime and
 observed Git effects are reconciled; no unknown external effect was identified;
-formal ENV quiescence remains unproved. Under the parent architecture, the
-corresponding claim-control posture is `RECOVERY_HOLD`. The authoritative
-registry has not made that transition: it still records generation 1 as
-`CLAIMED`, and the claim and scope remain locked. This is a missing-adapter /
-durable-observation gap, not a request for human recollection. Do not issue a
-release or reassignment receipt for this historical run from the Kilo tool-call
-count.
+formal ENV quiescence remains unproved. The parent architecture names the
+locked recovery posture `RECOVERY_HOLD`; here that term describes the required
+lock behavior only and is not a registry transition. The authoritative registry
+still records generation 1 as `CLAIMED`, and the claim and scope remain locked.
+This is a missing-adapter / durable-observation gap, not a request for human
+recollection. Do not issue a release or reassignment receipt for this historical
+run from the Kilo tool-call count.
+
+This Work Order does not authorize a C1 claim-state transition. Keep the
+authoritative state `CLAIMED` and the scope locked. No transition, including
+to `RECOVERY_HOLD`, release, or reassignment, is allowed until the required
+runtime identity, lifecycle checkpoint, admission high-water, zero active
+admissions, external-outcome, and side-effect evidence is proven.
 
 Recovery observation (2026-09-25; proposal evidence, not a canonical receipt):
 
@@ -64,7 +70,7 @@ Recovery observation (2026-09-25; proposal evidence, not a canonical receipt):
 | Active admissions | `UNKNOWN` to the ENV authority; Kilo reports all 58 recorded calls completed and session stopped |
 | External outcomes | No unresolved effect identified in the recorded Kilo actions; no ENV operation-outcome ledger was emitted |
 | Side-effect classification | `KNOWN_EFFECT_RECONCILED` for observed Git changes: branch commit is merged through PR #84 at main `94c1a8f9dda5424c0403c69d26e17d6d9e8e38ed`; untracked `.kilo/` and `.serena/` entries predate the session and remain untouched |
-| Work-order disposition | `RECOVERY_REQUIRED` (advisory only); recommend preserving generation 1 under `RECOVERY_HOLD` semantics |
+| Work-order disposition | `RECOVERY_REQUIRED` (advisory only); keep generation 1 locked; `RECOVERY_HOLD` is not recorded in the registry |
 | Authoritative registry state | `CLAIMED`, generation 1; unchanged pending a separately authorized control transition |
 | Receipt status | Observation only; not a `QUIESCENCE_ATTESTATION` and not a claim-release receipt |
 
@@ -170,8 +176,12 @@ environmental writes.
 
 ## Activation gates
 
-- The historical COORD-002 recovery has an accepted control transition; until
-  then its existing scope remains locked.
+- Every required fact for a C1 claim-state transition is machine-proven:
+  terminal runtime bound to the registered holder, known lifecycle checkpoint,
+  admission high-water, zero active admissions, no unresolved external outcome,
+  and reconciled side effects. Until all are proven, the registry remains
+  `CLAIMED` and locked; do not transition to `RECOVERY_HOLD`, release, or
+  reassign.
 - The canonical execution authority and atomic admission/result API are named,
   version-pinned, and proven to bind ENV claim identity. The adapter adds no
   competing authority.
@@ -237,8 +247,12 @@ unreviewed writer.
 
 Keep `ENV-COORD-002-C1` locked; the authoritative registry remains `CLAIMED`,
 generation 1. Treat `RECOVERY_REQUIRED` as this Work Order's advisory
-classification and preserve the claim under `RECOVERY_HOLD` semantics. Obtain
-the designated control owner's exact-SHA decision on recording the recovery
-hold through the separately authorized control path, then establish the
-canonical execution-authority contract with the A-Conductor owner. Do not
-activate this adapter claim until both decisions are durable.
+classification. The present evidence lacks a typed holder/session binding,
+lifecycle checkpoint, admission high-water, and zero-active-admissions
+observation, so no claim-state transition is permitted. Establish whether the
+existing canonical execution authority can provide those facts without
+backfilling invented events; if it cannot, keep the claim locked and return to
+`DECISION_REQUIRED` for a recovery contract. After, and only after, every
+transition fact is proven, obtain fresh exact-SHA review and the separate
+human-authorized control merge. Do not activate this adapter claim before the
+canonical authority contract and transition evidence are durable.
