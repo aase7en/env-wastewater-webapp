@@ -18,9 +18,11 @@ still records `ENV-COORD-002-C1`, generation `1`, holder
 Read-only recovery found the Kilo session `ses_f41557e93ffezzqC5u0tui2EyB`,
 title `ENV-COORD-002 R17 strict registry schema`, model `cointh-glm/glm-5.3/max`,
 and worktree `A:\GitHub\envww-coord-002`. Its 58 recorded tool calls are
-`completed`; the last assistant step ended with `stop`. A fresh narrow Windows
-process check found no process carrying that session, holder, or worktree
-identity. The session's patch paths match the four COORD-002 mutable paths.
+`completed`; the last assistant step ended with `stop`. The targeted Windows
+process check on 2026-09-26 found no process matching the session, holder,
+worktree, or recovered-HEAD markers and no `kilo`/`zcode` process tree. This is
+a runtime observation only; it does not establish admission quiescence. The
+session's patch paths match the four COORD-002 mutable paths.
 Its Git effects are reconciled: branch head `297133f452b5af73be90ef08b63275cf4ca28873`
 is present in merged PR #84, now on main; PR #87 remains a separate open
 proposal at `c8a8437f2f4471f2ea08d8836ed20b8f17ac4c0b`.
@@ -59,7 +61,8 @@ do not release, reassign, create a new generation, or authorize new mutation
 until the required runtime, lifecycle checkpoint, admission high-water,
 zero-active-admissions, external-outcome, and side-effect evidence is proven.
 
-Recovery observation (2026-09-25; proposal evidence, not a canonical receipt):
+Recovery observation (2026-09-26; proposal evidence, not a canonical receipt;
+runtime process check refreshed on this date):
 
 | Field | Observed value |
 | --- | --- |
@@ -67,6 +70,7 @@ Recovery observation (2026-09-25; proposal evidence, not a canonical receipt):
 | Task / claim / generation | `ENV-COORD-002` / `ENV-COORD-002-C1` / `1` |
 | Registered holder | `zcode-env-coord-002-g1-primary` |
 | Runtime session | `ses_f41557e93ffezzqC5u0tui2EyB`; provider identity is correlated by task title, model, branch/worktree, and exact patch scope, but not typed to the registered holder ID |
+| Targeted process check | 2026-09-26: no process matched the session, holder, worktree, or recovered-HEAD markers; no `kilo`/`zcode` process tree was observed. This is not ENV quiescence proof. |
 | Worktree / branch / recovered HEAD | `A:\GitHub\envww-coord-002` / `feat/env-coord-002` / `297133f452b5af73be90ef08b63275cf4ca28873` |
 | Lifecycle checkpoint | `NOT_EMITTED` by the ENV lifecycle authority |
 | Admission high-water | `NOT_EMITTED`; Kilo tool-call count is not an ENV admission counter |
