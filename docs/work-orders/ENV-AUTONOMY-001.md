@@ -2,9 +2,10 @@
 
 ## Assignment
 
-- Status: `CHANGES_REQUIRED / BOOTSTRAP_CONTROL` in PR #91 after exact-head
-  review at `f7ea87d942cfcc5118d0fde63037cd4de89a7bc4`; trusted `origin/main`
-  remains `CLAIMED` until this implementation PR merges.
+- Status: `REVIEW_REQUESTED / BOOTSTRAP_CONTROL` in PR #91 after the three
+  findings from exact-head review at `f7ea87d942cfcc5118d0fde63037cd4de89a7bc4`
+  were repaired in code commit `db8d4785a07b36c76e206da6706a9426d5962114`;
+  trusted `origin/main` remains `CLAIMED` until this implementation PR merges.
 - Owner role: ENV project supervisor
 - Supervisor route: GPT-6 Luna MAX (routing metadata only)
 - Reviewer: independent GPT-6 Sol reviewer; implementation author must not merge
@@ -63,7 +64,7 @@ mutable scope may be changed by this work.
   task-bound provider admission. GPT-6 Sol is reserved for independent
   cross-cutting exact-SHA review. Model names are routing preferences, not
   identity or authorization evidence.
-- Current local verification after repair: focused autonomy runtime **20/20 PASS**,
+- Current local verification after repair: focused autonomy runtime **22/22 PASS**,
   Coordination Guard regressions **344/344 PASS**, workflow-action
   regressions **14/14 PASS**, workflow semantic checker PASS, `split_sql`
   regressions PASS, Python compilation PASS, and `git diff --check` exits 0
@@ -71,6 +72,10 @@ mutable scope may be changed by this work.
   runtime status passes this claim's identity preflight; refill finds 0
   canonical SAFE_READY tasks, and Kilo admission remains `UNKNOWN` for both
   proxy quota and upstream readiness. No provider request was made.
+- GitHub Actions run `36195805695` is verified against code HEAD
+  `db8d4785a07b36c76e206da6706a9426d5962114`; both `scripts` and `notify`
+  succeeded. The docs-only checkpoint creates a new PR head, so its exact-head
+  checks and independent review are pending.
 - The installed Kilo 7.7.2 CLI help exposes `profile`, `models`, and
   `roll-call`; the official CLI reference describes `roll-call` as a model
   connectivity/latency test that sends prompts. Kilo's published balance is
@@ -191,6 +196,14 @@ turns from failed executions.
 - Before a material GLM dispatch, refresh proxy quota and upstream model
   readiness separately through a verified secret-safe path. `UNKNOWN` fails
   closed; 401/403 means auth/entitlement, not quota exhaustion.
+- Dispatch admission requires fresh task-bound evidence with both proxy quota
+  and upstream readiness `READY`. The current `kilo-preflight` adapter returns
+  `UNKNOWN` (`NOT_CONFIGURED_FOR_SECRET_SAFE_QUOTA_PROBE`) and refuses request
+  admission; no Kilo prompt/roll-call has been sent. The persisted
+  `kilo-receipt-transition` / `kilo-receipt-verify` CLI stores receipts in the
+  existing lane handoff and derives state from trusted claim/context plus
+  published lifecycle evidence; caller-supplied booleans and event/SHA claims
+  are not accepted as proof.
 - Bind each dispatch to task, claim/generation/holder, worktree, branch,
   exact HEAD/base, exact scope, provider/model/variant, and execution/run ID.
 - Treat Kilo/ZCode session list/export as observation only. Direct CLI presence,
@@ -258,4 +271,4 @@ decision.
 
 ## One next safe action
 
-Repair the three P1 findings at exact head `f7ea87d942cfcc5118d0fde63037cd4de89a7bc4`: restrict Git shell classification to exact read-only forms; block checkpoint and parked recovery while any recorded hook effect is `UNKNOWN`; and persist Kilo receipt transitions only after validating trusted claim identity, actual handoff events, and the published checkpoint. Add regression coverage, rerun local gates, publish the `CHANGES_REQUIRED` checkpoint, and request fresh exact-SHA review. Keep `ENFORCEMENT_NOT_ACTIVE` and `AUTONOMY_NOT_READY` until actual hook activation, server controls, and all applicable live proofs are verified.
+The three P1 findings from review at `f7ea87d942cfcc5118d0fde63037cd4de89a7bc4` are repaired at code commit `db8d4785a07b36c76e206da6706a9426d5962114`; local gates and that code head's `scripts`/`notify` checks pass. Publish the typed `REVIEW_REQUESTED` checkpoint, then require fresh exact-head hosted CI and independent review on the resulting PR head. If approved, only the independent reviewer may merge after expected-head and current-base recheck. Keep Kilo dispatch disabled while quota/upstream admission is `UNKNOWN`, and preserve `ENFORCEMENT_NOT_ACTIVE` and `AUTONOMY_NOT_READY` until actual hook activation, server controls, and all applicable live proofs are verified.

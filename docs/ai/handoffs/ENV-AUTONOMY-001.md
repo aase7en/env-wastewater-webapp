@@ -2,7 +2,7 @@
 
 ## Assignment
 
-- Status: `CHANGES_REQUIRED / BOOTSTRAP_CONTROL` in this candidate; trusted
+- Status: `REVIEW_REQUESTED / BOOTSTRAP_CONTROL` in this candidate; trusted
   `origin/main` remains `CLAIMED` until the implementation PR merges.
 - Task: `ENV-AUTONOMY-001`
 - Claim: `ENV-AUTONOMY-001-C1`, generation `1`
@@ -17,15 +17,16 @@
 ## Checkpoint
 
 The separate generation-1 bootstrap claim is authoritative on `origin/main`
-after PR #90 merged as `0ea079d69c3186272f1ae6be82cbbeb22ed99266`. The
-registered runtime/hooks/skills candidate is `CHANGES_REQUIRED` after
-independent exact-head review of `f7ea87d942cfcc5118d0fde63037cd4de89a7bc4`.
-Review found three P1 defects: mutating Git options pass the read-only shell
-classifier; unresolved `UNKNOWN` hook observations do not block checkpoint or
-parked recovery; and Kilo receipt transitions are neither persisted nor bound
-to trusted claim and handoff evidence. No C1 file was changed, and no claim
-release, reassignment, quiescence, or transfer evidence was created. The
-runtime and local hooks must continue to report
+after PR #90 merged as `0ea079d69c3186272f1ae6be82cbbeb22ed99266`. The three
+P1 findings from independent review at `f7ea87d942cfcc5118d0fde63037cd4de89a7bc4`
+are repaired in code commit `db8d4785a07b36c76e206da6706a9426d5962114`:
+Git mutation options fail closed, unresolved `UNKNOWN` hook effects block
+checkpoint/recovery until reconciled, and Kilo receipts persist from trusted
+claim and published lifecycle evidence. Local gates and exact-head hosted
+checks pass on db8; the docs-checkpoint PR head needs fresh hosted CI and
+independent review. No C1 file was changed, and no claim release,
+reassignment, quiescence, or transfer evidence was created. The runtime and
+local hooks must continue to report
 `BOOTSTRAP_CONTROL`, `ENFORCEMENT_NOT_ACTIVE`, and `AUTONOMY_NOT_READY` until
 their independent server and live-acceptance gates pass.
 
@@ -145,6 +146,25 @@ their independent server and live-acceptance gates pass.
       "published": false,
       "task_id": "ENV-AUTONOMY-001",
       "terminal_result": null
+    },
+    {
+      "claim_generation": 1,
+      "claim_id": "ENV-AUTONOMY-001-C1",
+      "event_id": "env-autonomy-001-checkpoint-0007",
+      "event_seq": 7,
+      "event_type": "CHECKPOINT",
+      "goal_id": "01a0d917-7b29-7970-8bb7-3c6df13e4bd3",
+      "operation_id": null,
+      "operation_outcome": null,
+      "payload": {
+        "lane_status": "REVIEW_REQUESTED",
+        "recorded_at_utc": "2026-09-25T22:23:44Z",
+        "source_head_sha": "db8d4785a07b36c76e206da6706a9426d5962114"
+      },
+      "previous_event_id": "env-autonomy-001-checkpoint-d642ea33",
+      "published": false,
+      "task_id": "ENV-AUTONOMY-001",
+      "terminal_result": null
     }
   ],
   "goal_id": "01a0d917-7b29-7970-8bb7-3c6df13e4bd3",
@@ -192,13 +212,15 @@ their independent server and live-acceptance gates pass.
 - `python scripts/env_autonomy_runtime.py kilo-preflight --root .` reports
   proxy quota and upstream model status `UNKNOWN`; it performed no external
   call. Route metadata leaves dispatch disabled. JEV remains `UNAVAILABLE`.
-- Focused autonomy runtime tests pass **20/20**; Coordination Guard passes
+- Focused autonomy runtime tests pass **22/22**; Coordination Guard passes
   **344/344**; workflow-action tests pass **14/14**; semantic workflow check,
   `split_sql`, Python compilation, and `git diff --check` pass. The prior
   `CHANGES_REQUIRED` checkpoint at
-  `ccf498bd8439edfdd63740d8db64f1220fdb92f6` was verified published with no
-  unresolved effects. Exact hosted CI and fresh independent review remain
-  pending for this review-request candidate.
+  `24047043787b3099d44d8e23ab508ec427a3c5fc` was verified published with no
+  unresolved effects. GitHub Actions run `36195805695` verified exact code
+  head `db8d4785a07b36c76e206da6706a9426d5962114` and passed `scripts` plus
+  `notify`; new exact-head checks and fresh independent review are pending for
+  the docs-checkpoint PR head.
 - Self-review of PR #91 found three defects before independent review: the
   remote/local handoff string comparison drops Git's final newline; the
   canonical READY parser matches the registry JSON before the human frontier;
@@ -213,6 +235,11 @@ their independent server and live-acceptance gates pass.
   caller-asserted ingestion/archive evidence without validating or persisting
   it against the trusted claim and published handoff. The exact-head hosted
   `scripts` and `notify` checks succeeded, but do not cover these findings.
+- Repair commit `db8d4785a07b36c76e206da6706a9426d5962114` closes all three
+  findings and adds regression coverage for option bypasses, unknown-effect
+  reconciliation/recovery, and persisted claim-bound receipt transitions.
+  Fresh provider admission remains `UNKNOWN`; request dispatch is disabled,
+  no Kilo prompt or roll-call was sent, and JEV remains `UNAVAILABLE`.
 - A comparison against `origin/main` confirms the C1 claim record is unchanged
   (canonical JSON SHA-256
   `68943625ae4123f838ebc7fde4ff9bf02bb279716caa28e0600dbd0ca5a97077`);
@@ -230,7 +257,9 @@ its exact path/SHA.
 
 ## One next safe action
 
-Repair the three P1 findings from the exact-head review, revalidate and publish
-a new `CHANGES_REQUIRED` checkpoint, then request fresh exact-SHA review for
-PR #91. Only the independent reviewer may merge after approval and exact-base
-recheck.
+Publish the typed `REVIEW_REQUESTED` checkpoint for code parent
+`db8d4785a07b36c76e206da6706a9426d5962114`, then require fresh exact-head CI
+and independent review for the docs-checkpoint PR head. Only the independent
+reviewer may merge after approval and exact-base recheck; keep
+`BOOTSTRAP_CONTROL`, `ENFORCEMENT_NOT_ACTIVE`, and `AUTONOMY_NOT_READY` until
+the remaining live acceptance gates pass.
