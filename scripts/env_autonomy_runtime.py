@@ -18,7 +18,7 @@ import stat
 import subprocess
 import sys
 import uuid
-from pathlib import Path
+from pathlib import Path, PureWindowsPath
 from typing import Any, Iterable, Optional
 
 import env_coordination_guard as guard
@@ -616,8 +616,11 @@ def _safe_repository_read_paths(root: Path, paths: Any) -> bool:
         if not isinstance(raw_path, str) or not raw_path.strip():
             return False
         candidate = Path(raw_path)
-        if candidate.is_absolute() or candidate.drive or candidate.root or any(
-            part == ".." for part in candidate.parts
+        windows_candidate = PureWindowsPath(raw_path)
+        if (
+            candidate.is_absolute() or candidate.drive or candidate.root
+            or windows_candidate.drive or windows_candidate.root
+            or any(part == ".." for part in candidate.parts)
         ):
             return False
         try:
