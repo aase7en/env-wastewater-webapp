@@ -2,10 +2,9 @@
 
 ## Assignment
 
-- Status: `CHANGES_REQUIRED / BOOTSTRAP_CONTROL` after hosted Actions run
-  `36205380772` found a Linux/Windows path-semantics mismatch in a regression
-  at candidate `cb1c396`; trusted `origin/main` remains `CLAIMED` until this
-  implementation PR merges.
+- Status: `REVIEW_REQUESTED / BOOTSTRAP_CONTROL` after repair commit
+  `7b456fc` and exact-head hosted run `36205630853` passed at `35c0091`;
+  trusted `origin/main` remains `CLAIMED` until this implementation PR merges.
 - Owner role: ENV project supervisor
 - Supervisor route: GPT-6 Luna MAX (routing metadata only)
 - Reviewer: independent GPT-6 Sol reviewer; implementation author must not merge
@@ -79,8 +78,11 @@ mutable scope may be changed by this work.
   `cb1c396`: Linux treated `C:outside.txt` as an ordinary relative filename,
   unlike Windows' drive-relative path semantics. Commit `7b456fc` now checks
   Windows drive/root syntax with `PureWindowsPath` on every host. Local
-  autonomy tests pass **25/25** after this repair; exact-head hosted Actions
-  must be rerun before review.
+  autonomy tests pass **25/25** after this repair. Exact-head hosted Actions
+  run `36205630853` then passed `scripts` and `notify` on
+  `35c009143f3841ecacd0013118a5492fcced38df`. The docs checkpoint now records
+  `REVIEW_REQUESTED` from that code HEAD; the final documentation head still
+  requires its own hosted Actions run before fresh review.
 - Fresh review at `6dbfd47fef14ef782d138dc357d47e31d3d41313` found three P1s
   and one P2: wildcard protected-path reads, blocked Kilo REQUESTED/outcome
   progress, historical receipt verification coupled to current admission, and
@@ -88,8 +90,7 @@ mutable scope may be changed by this work.
   and `1565c5b` address those findings. The real checkpoint CLI also exposed
   immutable trusted-claim dependencies as tuples while the binding API expects
   lists; `1565c5b` normalizes that comparison, pinned by a new regression.
-  Exact-head hosted Actions and fresh independent review are pending on the
-  new published candidate.
+  Fresh independent review is pending on the new published candidate.
 - The installed Kilo 7.7.2 CLI help exposes `profile`, `models`, and
   `roll-call`; the official CLI reference describes `roll-call` as a model
   connectivity/latency test that sends prompts. Kilo's published balance is
@@ -285,4 +286,4 @@ decision.
 
 ## One next safe action
 
-Commits `87a5d47` and `1565c5b` repair the four independent-review findings and the immutable trusted-dependency binding blocker. Commit `7b456fc` fixes the cross-platform Windows path fixture identified by hosted run `36205380772`; local autonomy tests pass **25/25**. The lane handoff records `CHANGES_REQUIRED` in event `env-autonomy-001-checkpoint-0010` from code HEAD `7b456fc`; publish and verify that checkpoint, rerun exact-head hosted CI, and then request fresh independent exact-SHA review if the checks pass. Keep Kilo dispatch disabled while admission is `UNKNOWN`, and preserve `ENFORCEMENT_NOT_ACTIVE` and `AUTONOMY_NOT_READY` until actual hook activation, server controls, and all applicable live proofs are verified.
+Commits `87a5d47` and `1565c5b` repair the four independent-review findings and the immutable trusted-dependency binding blocker. Commit `7b456fc` fixes the cross-platform Windows path fixture identified by hosted run `36205380772`; local autonomy tests pass **25/25**, and hosted run `36205630853` passed `scripts` and `notify` at code head `35c0091`. The lane handoff records `REVIEW_REQUESTED` in event `env-autonomy-001-checkpoint-0011` from code HEAD `35c0091`; publish and verify that checkpoint, require green Actions on the final docs head, then request fresh independent exact-SHA review. Keep Kilo dispatch disabled while admission is `UNKNOWN`, and preserve `ENFORCEMENT_NOT_ACTIVE` and `AUTONOMY_NOT_READY` until actual hook activation, server controls, and all applicable live proofs are verified.

@@ -2,7 +2,7 @@
 
 ## Assignment
 
-- Status: `CHANGES_REQUIRED / BOOTSTRAP_CONTROL` in this candidate; trusted
+- Status: `REVIEW_REQUESTED / BOOTSTRAP_CONTROL` in this candidate; trusted
   `origin/main` remains `CLAIMED` until the implementation PR merges.
 - Task: `ENV-AUTONOMY-001`
 - Claim: `ENV-AUTONOMY-001-C1`, generation `1`
@@ -28,10 +28,13 @@ missing exact claim scope in the durable binding. Commits `87a5d47` and
 dependency tuple/list comparison that blocked the real checkpoint CLI.
 Hosted run `36205380772` then failed the new Windows drive-relative fixture on
 Linux at `cb1c396`; commit `7b456fc` checks Windows drive/root semantics on all
-hosts, and local autonomy tests pass **25/25**. Lifecycle event
-`env-autonomy-001-checkpoint-0010` records `CHANGES_REQUIRED` from code HEAD
-`7b456fc`, pending publication and verification at the resulting docs head.
-Exact-head hosted Actions must pass before fresh independent review. Kilo
+hosts, and local autonomy tests pass **25/25**. Exact-head run `36205630853`
+passed `scripts` and `notify` at code HEAD
+`35c009143f3841ecacd0013118a5492fcced38df`. Lifecycle event
+`env-autonomy-001-checkpoint-0011` records `REVIEW_REQUESTED` from code HEAD
+`35c0091`, pending publication and verification at the resulting docs head.
+Exact-head hosted Actions must pass again on that final docs head before fresh
+independent review. Kilo
 quota/upstream remain `UNKNOWN`, JEV remains `UNAVAILABLE`, and no provider
 request was made. No C1 file was changed, and no claim release, reassignment,
 quiescence, or transfer evidence was created. Keep `BOOTSTRAP_CONTROL`,
@@ -227,6 +230,25 @@ server and live-acceptance gates pass.
         "source_head_sha": "7b456fc92d0be045c948f175e153cb6f65ecb8e5"
       },
       "previous_event_id": "env-autonomy-001-checkpoint-0009",
+      "published": false,
+      "task_id": "ENV-AUTONOMY-001",
+      "terminal_result": null
+    },
+    {
+      "claim_generation": 1,
+      "claim_id": "ENV-AUTONOMY-001-C1",
+      "event_id": "env-autonomy-001-checkpoint-0011",
+      "event_seq": 11,
+      "event_type": "CHECKPOINT",
+      "goal_id": "01a0d917-7b29-7970-8bb7-3c6df13e4bd3",
+      "operation_id": null,
+      "operation_outcome": null,
+      "payload": {
+        "lane_status": "REVIEW_REQUESTED",
+        "recorded_at_utc": "2026-09-26T00:42:30Z",
+        "source_head_sha": "35c009143f3841ecacd0013118a5492fcced38df"
+      },
+      "previous_event_id": "env-autonomy-001-checkpoint-0010",
       "published": false,
       "task_id": "ENV-AUTONOMY-001",
       "terminal_result": null
