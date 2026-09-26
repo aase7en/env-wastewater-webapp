@@ -178,7 +178,10 @@ def validate_lane_binding(
         raise AutonomyFailure("WRONG_CLAIM", "task/claim not present in trusted CURRENT-WORK")
     if binding["work_order_path"] != claim["work_order_path"]:
         raise AutonomyFailure("WRONG_WORK_ORDER", "work order differs from trusted claim")
-    if binding["dependencies"] != claim["dependencies"] or not isinstance(binding["dependencies"], list):
+    if (
+        not isinstance(binding["dependencies"], list)
+        or binding["dependencies"] != list(claim["dependencies"])
+    ):
         raise AutonomyFailure("DEPENDENCY_MISMATCH", "dependencies differ from trusted claim")
     if binding["scope"] == [] or not isinstance(binding["scope"], list):
         raise AutonomyFailure("INVALID_SCOPE", "scope must be a non-empty list")

@@ -197,6 +197,23 @@ class BindingAndSelectionTests(unittest.TestCase):
         with self.assertRaisesRegex(runtime.AutonomyFailure, "CONTEXT_DRIFT"):
             runtime.validate_lane_binding(trusted, binding_for(active), drifted)
 
+    def test_binding_accepts_dependency_list_for_immutable_trusted_claim(self):
+        active = claim("ENV-AUTONOMY-001", "ENV-AUTONOMY-001-C1", "CLAIMED", ["scripts/**"])
+        active["dependencies"] = ("dependency-a",)
+        trusted = policy(active)
+        actual = {
+            "repo": runtime.REPO_SLUG,
+            "worktree": active["worktree"],
+            "branch": active["branch"],
+            "head_sha": "3" * 40,
+            "claim_base_ancestor": True,
+            "current_policy_ancestor": True,
+        }
+        binding = binding_for(active)
+        binding["dependencies"] = ["dependency-a"]
+        result = runtime.validate_lane_binding(trusted, binding, actual)
+        self.assertEqual(result["claim_id"], active["claim_id"])
+
     def test_refill_requires_canonical_safe_ready_and_free_capacity(self):
         active = claim("ENV-AUTONOMY-001", "ENV-AUTONOMY-001-C1", "CLAIMED", ["scripts/**"])
         ready = claim("ENV-OPS-001A", "ENV-OPS-001A-C1", "READY", ["frontend/src/pages/Operations/**"])
