@@ -115,3 +115,7 @@ and Phase 2 (Supabase insert, gated behind explicit user approval each time)
 are both complete as of 2026-07-05 — 907/907 rows migrated. Remaining
 follow-ups (personnel/location FK backfill, discharge-volume field) are
 tracked there too.
+
+## Shared prompt placement protocol
+
+When handing a prompt/instruction to the user for another AI agent, session, Goal, CLI, or UI surface, follow the canonical A-Wiki protocol at `aase7en/A-Wiki:docs/protocols/prompt-placement-protocol.md`. Before the prompt, state exact `PLACEMENT`, `MODE`, `PURPOSE`, whether it replaces/appends/interrupts/queues, and `WHEN TO SEND`. This placement contract does not change ENV task/claim/worktree/review authority, PHI boundaries, or the active Roadmap.
