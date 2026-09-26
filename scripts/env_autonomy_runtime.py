@@ -604,6 +604,55 @@ def _has_unresolved_hook_observations(document: dict, log: guard.LifecycleLog) -
     return False
 
 
+def _safe_repository_read_paths(root: Path, paths: Any) -> bool:
+    """Allow only literal reads that resolve inside the repo and outside protected data."""
+    if not isinstance(paths, list) or not paths:
+        return False
+    resolved_root = Path(root).resolve()
+    for raw_path in paths:
+        if not isinstance(raw_path, str) or not raw_path.strip():
+            return False
+        candidate = Path(raw_path)
+        if candidate.is_absolute() or candidate.drive or candidate.root or any(
+            part == ".." for part in candidate.parts
+        ):
+            return False
+        try:
+            resolved = (resolved_root / candidate).resolve(strict=False)
+            relative = resolved.relative_to(resolved_root).as_posix().casefold()
+        except (OSError, RuntimeError, ValueError):
+            return False
+        parts = relative.split("/")
+        if ".env" in relative or parts[:2] == ["data", "raw"]:
+            return False
+    return True
+
+
+def _parse_literal_shell_read_paths(tokens: list[str]) -> Optional[list[str]]:
+    """Accept only narrow literal-path forms for shell file-reading commands."""
+    if not tokens:
+        return None
+    command = tokens[0].casefold()
+    path = None
+    if command == "get-content":
+        if len(tokens) == 2:
+            path = tokens[1]
+        elif len(tokens) == 3 and tokens[1].casefold() in ("-path", "-literalpath"):
+            path = tokens[2]
+    elif command == "select-string":
+        if (
+            len(tokens) == 5
+            and tokens[1].casefold() in ("-path", "-literalpath")
+            and tokens[3].casefold() == "-pattern"
+        ):
+            path = tokens[2]
+    if not isinstance(path, str) or not path.strip() or path.startswith("-"):
+        return None
+    if any(character in path for character in "*?[]") or "," in path:
+        return None
+    return [path]
+
+
 def _is_reconciliation_command(tool_name: str, tool_input: dict) -> bool:
     """Permit only the typed lifecycle reconciliation command through an UNKNOWN gate."""
     if tool_name != "Bash" or not isinstance(tool_input.get("command"), str):
@@ -622,6 +671,96 @@ def _is_reconciliation_command(tool_name: str, tool_input: dict) -> bool:
         return False
     values = [tokens[i + 1] for i, token in enumerate(tokens[:-1]) if token == "--event-type"]
     return values == ["OPERATION_RECONCILED"]
+
+
+def _runtime_event_cli_args(tool_name: str, tool_input: dict) -> Optional[tuple[str, list[str]]]:
+    if tool_name != "Bash" or not isinstance(tool_input.get("command"), str):
+        return None
+    try:
+        tokens = shlex.split(tool_input["command"], posix=True)
+    except ValueError:
+        return None
+    if tokens and tokens[0] in ("python", "python3", "py"):
+        tokens = tokens[1:]
+        if tokens[:1] == ["-3"]:
+            tokens = tokens[1:]
+    if (
+        len(tokens) < 3
+        or tokens[0].replace("\\", "/") != "scripts/env_autonomy_runtime.py"
+        or tokens[1] not in ("append-event", "kilo-receipt-transition")
+        or "--root" in tokens[2:]
+        or any(token.startswith("--root=") for token in tokens[2:])
+    ):
+        return None
+    return tokens[1], tokens[2:]
+
+
+def _parse_strict_cli_options(args: list[str], allowed: set[str]) -> Optional[dict[str, str]]:
+    if not args or len(args) % 2:
+        return None
+    parsed: dict[str, str] = {}
+    for index in range(0, len(args), 2):
+        option, value = args[index], args[index + 1]
+        if (
+            option not in allowed or option in parsed
+            or not value or value.startswith("--")
+        ):
+            return None
+        parsed[option] = value
+    return parsed
+
+
+def _pending_operation_intent(log: guard.LifecycleLog, operation_id: str) -> Optional[guard.LifecycleEvent]:
+    try:
+        record = log.operation_record(operation_id)
+    except guard.GuardFailure:
+        return None
+    if record.get("outcome") is not None:
+        return None
+    intents = [
+        event for event in log.events
+        if event.event_type == "OPERATION_INTENT" and event.operation_id == operation_id
+    ]
+    return intents[0] if len(intents) == 1 else None
+
+
+def _is_pending_operation_progress_command(
+    tool_name: str, tool_input: dict, log: guard.LifecycleLog
+) -> bool:
+    """Allow only the matching request receipt or typed outcome for an open intent."""
+    parsed = _runtime_event_cli_args(tool_name, tool_input)
+    if parsed is None:
+        return False
+    subcommand, args = parsed
+    if subcommand == "kilo-receipt-transition":
+        options = _parse_strict_cli_options(args, {"--run-id", "--next-state"})
+        if options is None or set(options) != {"--run-id", "--next-state"}:
+            return False
+        if options["--next-state"] != "REQUESTED":
+            return False
+        intent = _pending_operation_intent(log, options["--run-id"])
+        payload = intent.payload if intent is not None and isinstance(intent.payload, dict) else {}
+        provider = payload.get("provider")
+        return (
+            payload.get("run_id") == options["--run-id"]
+            and isinstance(provider, str)
+            and provider.casefold() == "cointh-glm"
+        )
+    if subcommand == "append-event":
+        allowed = {"--event-type", "--operation-id", "--operation-outcome", "--evidence-sha256", "--goal-id"}
+        options = _parse_strict_cli_options(args, allowed)
+        required = {"--event-type", "--operation-id", "--operation-outcome", "--evidence-sha256"}
+        if options is None or not required.issubset(options):
+            return False
+        digest = options["--evidence-sha256"]
+        if (
+            options["--event-type"] != "OPERATION_OUTCOME"
+            or options["--operation-outcome"] not in guard.OPERATION_OUTCOMES
+            or not re.fullmatch(r"[0-9a-f]{64}", digest)
+        ):
+            return False
+        return _pending_operation_intent(log, options["--operation-id"]) is not None
+    return False
 
 
 def record_hook_observation(root: Path, policy: guard.TrustedPolicy, event: dict) -> dict:
@@ -994,6 +1133,10 @@ def _trusted_kilo_binding(
         or intent.operation_id != run_id
         or not isinstance(payload, dict)
         or payload.get("run_id") != run_id
+        or payload.get("work_order_path") != claim["work_order_path"]
+        or payload.get("scope") != list(claim["mutable_scope"])
+        or payload.get("dependencies") != list(claim["dependencies"])
+        or payload.get("lane_kind") != "MUTATION"
     ):
         raise AutonomyFailure("KILO_RECEIPT_IDENTITY_MISMATCH")
     provider, model, variant = (payload.get(key) for key in ("provider", "model", "variant"))
@@ -1036,7 +1179,23 @@ def _trusted_kilo_binding(
         "variant": variant,
         "run_id": run_id,
         "operation_intent_event_id": intent.event_id,
+        "work_order_path": claim["work_order_path"],
+        "scope": list(claim["mutable_scope"]),
+        "dependencies": list(claim["dependencies"]),
+        "lane_kind": "MUTATION",
     }
+
+
+def _parse_aware_utc_timestamp(value: Any) -> Optional[dt.datetime]:
+    if not isinstance(value, str) or not value:
+        return None
+    try:
+        parsed = dt.datetime.fromisoformat(value.replace("Z", "+00:00"))
+    except ValueError:
+        return None
+    if parsed.tzinfo is None:
+        return None
+    return parsed.astimezone(dt.timezone.utc)
 
 
 def _validate_persisted_kilo_receipt(
@@ -1054,7 +1213,43 @@ def _validate_persisted_kilo_receipt(
     if not isinstance(evidence, dict):
         raise AutonomyFailure("KILO_RECEIPT_RECORD_INVALID")
     if state == "REQUESTED":
-        expected = {"operation_intent_event_id": intent.event_id}
+        payload = intent.payload if isinstance(intent.payload, dict) else {}
+        admission = evidence.get("admission")
+        if (
+            set(evidence) != {"operation_intent_event_id", "requested_at_utc", "admission"}
+            or evidence.get("operation_intent_event_id") != intent.event_id
+            or not isinstance(admission, dict)
+            or set(admission) != {
+                "verified", "adapter_status", "proxy_quota_status", "upstream_model_status",
+                "external_call_started", "provider", "model", "variant",
+                "evidence_sha256", "observed_at_utc",
+            }
+            or admission.get("verified") is not True
+            or admission.get("adapter_status") != "READY"
+            or admission.get("proxy_quota_status") != "READY"
+            or admission.get("upstream_model_status") != "READY"
+            or admission.get("external_call_started") is not False
+            or admission.get("provider") != binding["provider"]
+            or admission.get("model") != binding["model"]
+            or admission.get("variant") != binding["variant"]
+            or admission.get("evidence_sha256") != payload.get("admission_evidence_sha256")
+            or not isinstance(admission.get("evidence_sha256"), str)
+            or not re.fullmatch(r"[0-9a-f]{64}", admission["evidence_sha256"])
+        ):
+            raise AutonomyFailure("KILO_RECEIPT_RECORD_INVALID")
+        requested_at = _parse_aware_utc_timestamp(evidence.get("requested_at_utc"))
+        observed_at = _parse_aware_utc_timestamp(admission.get("observed_at_utc"))
+        if (
+            requested_at is None or observed_at is None
+            or (requested_at - observed_at).total_seconds() < 0
+            or (requested_at - observed_at).total_seconds() > PROVIDER_EVIDENCE_MAX_AGE_SECONDS
+        ):
+            raise AutonomyFailure("KILO_RECEIPT_RECORD_INVALID")
+        expected = {
+            "operation_intent_event_id": intent.event_id,
+            "requested_at_utc": evidence["requested_at_utc"],
+            "admission": admission,
+        }
     elif state in ("RESULT_WRITTEN", "INGESTED_TO_SSOT", "ARCHIVED/CLEARED"):
         if outcome is None or not isinstance(outcome.payload, dict):
             raise AutonomyFailure("KILO_RESULT_NOT_IN_HANDOFF")
@@ -1142,12 +1337,17 @@ def transition_kilo_receipt(
     if next_state == "REQUESTED":
         if outcome is not None:
             raise AutonomyFailure("KILO_REQUEST_ALREADY_HAS_OUTCOME")
-        _require_kilo_admission(root, binding, intent)
+        admission = _require_kilo_admission(root, binding, intent)
+        requested_at_utc = admission.pop("validated_at_utc")
         receipt = {
             "run_id": run_id,
             "binding": binding,
             "state": next_state,
-            "last_evidence": {"operation_intent_event_id": intent.event_id},
+            "last_evidence": {
+                "operation_intent_event_id": intent.event_id,
+                "requested_at_utc": requested_at_utc,
+                "admission": admission,
+            },
         }
         receipts.append(receipt)
     elif next_state == "RESULT_WRITTEN":
@@ -1257,11 +1457,6 @@ def verify_kilo_receipt(root: Path, policy: guard.TrustedPolicy, run_id: str) ->
     evidence = receipt.get("last_evidence")
     if not isinstance(evidence, dict):
         return {"ok": False, "reason": "KILO_RECEIPT_EVIDENCE_MISSING", "state": state}
-    if state == "REQUESTED":
-        try:
-            _require_kilo_admission(Path(actual["worktree"]), binding, intent)
-        except AutonomyFailure as exc:
-            return {"ok": False, "reason": exc.reason, "state": state}
     if state in ("RESULT_WRITTEN", "INGESTED_TO_SSOT", "ARCHIVED/CLEARED"):
         if (
             outcome is None
@@ -1288,6 +1483,10 @@ def verify_kilo_receipt(root: Path, policy: guard.TrustedPolicy, run_id: str) ->
     return {
         "ok": True, "run_id": run_id, "state": state,
         "unresolved_external_operations": publication.get("unresolved_external_operations", False),
+        **({
+            "admission_evidence_state": "VERIFIED_AT_REQUEST_TIME",
+            "admission_evidence_sha256": evidence["admission"]["evidence_sha256"],
+        } if state == "REQUESTED" else {}),
         "handoff_event_id": evidence.get("handoff_event_id") or evidence.get("operation_intent_event_id"),
     }
 
@@ -1469,7 +1668,12 @@ def classify_shell_command(command: str) -> dict:
             return {"kind": "UNKNOWN", "reason": "UNSAFE_RIPGREP_OPTION"}
         return {"kind": "READ_ONLY", "changes": []}
     if tokens[0].casefold() in ("get-content", "select-string"):
-        return {"kind": "READ_ONLY", "changes": []}
+        if "\\" in text:
+            return {"kind": "UNKNOWN", "reason": "UNSAFE_SHELL_READ_ARGUMENTS"}
+        read_paths = _parse_literal_shell_read_paths(tokens)
+        if read_paths is None:
+            return {"kind": "UNKNOWN", "reason": "UNSAFE_SHELL_READ_ARGUMENTS"}
+        return {"kind": "READ_ONLY", "changes": [], "read_paths": read_paths}
     if tokens[0].casefold() in ("python", "python3", "py"):
         args = tokens[1:]
         if args and args[0] == "-3":
@@ -1507,6 +1711,9 @@ def hook_pretool(event: dict, root: Path) -> dict:
     elif tool_name == "Bash":
         classified = classify_shell_command(tool_input.get("command"))
         if classified["kind"] == "READ_ONLY":
+            read_paths = classified.get("read_paths")
+            if read_paths is not None and not _safe_repository_read_paths(root, read_paths):
+                return {"permissionDecision": "deny", "reason": "UNSAFE_READ_PATH"}
             return {"permissionDecision": "allow"}
         if classified["kind"] == "DENY":
             return {"permissionDecision": "deny", "reason": classified["reason"]}
@@ -1552,15 +1759,19 @@ def hook_pretool(event: dict, root: Path) -> dict:
         handoff_path = root / claim["handoff_path"]
         handoff_text = handoff_path.read_text(encoding="utf-8")
         lifecycle_document, lifecycle_log = _read_lifecycle_log(handoff_text, claim)
-        unresolved = (
-            lifecycle_log.has_unresolved_external_operations
-            or _has_unresolved_hook_observations(lifecycle_document, lifecycle_log)
+        unresolved_hook_observations = _has_unresolved_hook_observations(
+            lifecycle_document, lifecycle_log
         )
+        unresolved = lifecycle_log.has_unresolved_external_operations or unresolved_hook_observations
         may_publish_or_reconcile = (
             classified is not None
             and classified["kind"] in ("GIT_STAGE_OR_COMMIT", "GIT_PUSH")
         ) or _is_reconciliation_command(tool_name, tool_input)
-        if unresolved and not may_publish_or_reconcile:
+        may_progress_pending_operation = (
+            not unresolved_hook_observations
+            and _is_pending_operation_progress_command(tool_name, tool_input, lifecycle_log)
+        )
+        if unresolved and not (may_publish_or_reconcile or may_progress_pending_operation):
             raise AutonomyFailure("UNRESOLVED_EXTERNAL_EFFECT")
 
         if tool_name == "Bash" and classified["kind"] == "GIT_STAGE_OR_COMMIT":
@@ -1829,6 +2040,10 @@ def _cmd_append_event(args) -> int:
             "provider": args.provider, "model": args.model, "variant": args.variant,
             "run_id": args.run_id, "admission_evidence_sha256": args.evidence_sha256,
             "starting_head_sha": actual["head_sha"],
+            "work_order_path": claim["work_order_path"],
+            "scope": list(claim["mutable_scope"]),
+            "dependencies": list(claim["dependencies"]),
+            "lane_kind": "MUTATION",
         }
     elif event_type in ("OPERATION_OUTCOME", "OPERATION_RECONCILED"):
         if not operation_id or not operation_outcome or not args.evidence_sha256:
@@ -1886,21 +2101,17 @@ def _kilo_preflight_snapshot(root: Path, model: Optional[str], variant: Optional
     }
 
 
-def _require_kilo_admission(root: Path, binding: dict, intent: guard.LifecycleEvent) -> None:
+def _require_kilo_admission(root: Path, binding: dict, intent: guard.LifecycleEvent) -> dict:
     """Refuse a provider request until separate quota/upstream evidence is fresh and exact."""
     snapshot = _kilo_preflight_snapshot(root, binding["model"], binding["variant"])
+    validated_at = dt.datetime.now(dt.timezone.utc)
     payload = intent.payload if isinstance(intent.payload, dict) else {}
     observed_at = snapshot.get("observed_at_utc")
     digest = snapshot.get("evidence_sha256")
-    verified_time = None
-    if isinstance(observed_at, str):
-        try:
-            verified_time = dt.datetime.fromisoformat(observed_at.replace("Z", "+00:00"))
-        except ValueError:
-            verified_time = None
+    verified_time = _parse_aware_utc_timestamp(observed_at)
     fresh = False
-    if verified_time is not None and verified_time.tzinfo is not None:
-        age = (dt.datetime.now(dt.timezone.utc) - verified_time.astimezone(dt.timezone.utc)).total_seconds()
+    if verified_time is not None:
+        age = (validated_at - verified_time).total_seconds()
         fresh = 0 <= age <= PROVIDER_EVIDENCE_MAX_AGE_SECONDS
     if not (
         snapshot.get("verified") is True
@@ -1917,6 +2128,20 @@ def _require_kilo_admission(root: Path, binding: dict, intent: guard.LifecycleEv
         and fresh
     ):
         raise AutonomyFailure("KILO_ADMISSION_UNVERIFIED")
+    # Persist only the exact, non-secret fields needed to verify the historical request.
+    return {
+        "verified": True,
+        "adapter_status": "READY",
+        "proxy_quota_status": "READY",
+        "upstream_model_status": "READY",
+        "external_call_started": False,
+        "provider": binding["provider"],
+        "model": binding["model"],
+        "variant": binding["variant"],
+        "evidence_sha256": digest,
+        "observed_at_utc": observed_at,
+        "validated_at_utc": validated_at.isoformat().replace("+00:00", "Z"),
+    }
 
 
 def _cmd_kilo_receipt_transition(args) -> int:

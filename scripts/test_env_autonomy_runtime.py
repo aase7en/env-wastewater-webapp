@@ -720,6 +720,20 @@ class ReviewAndLifecycleTests(unittest.TestCase):
                 git("commit", "-m", message)
                 git("push", "origin", branch)
 
+            def pretool(command: str, turn_id: str):
+                with patch.object(runtime, "load_trusted_policy", return_value=(trusted, "")), \
+                     patch.object(runtime, "_actual_context", side_effect=actual_context), \
+                     patch.object(runtime, "validate_lane_binding"), \
+                     patch.object(runtime.guard, "evaluate_mutation", return_value=SimpleNamespace(
+                         safe_to_mutate=True, reason=None
+                     )), \
+                     patch.object(runtime, "_mutation_links", return_value=[]):
+                    return runtime.hook_pretool({
+                        "tool_name": "Bash", "tool_input": {"command": command},
+                        "session_id": "session-kilo", "turn_id": turn_id,
+                        "tool_use_id": f"tool-{turn_id}", "model": "GPT-6 Luna MAX",
+                    }, root)
+
             run_id = "kilo-run-001"
 
             def ready_preflight(_root, model, variant):
@@ -754,16 +768,40 @@ class ReviewAndLifecycleTests(unittest.TestCase):
                     "provider": "cointh-glm", "model": "glm-5.3", "variant": "max",
                     "run_id": run_id, "admission_evidence_sha256": "a" * 64,
                     "starting_head_sha": base_sha,
+                    "work_order_path": test_claim["work_order_path"],
+                    "scope": list(test_claim["mutable_scope"]),
+                    "dependencies": list(test_claim["dependencies"]),
+                    "lane_kind": "MUTATION",
                 })
                 publish("publish operation intent")
+                request_command = (
+                    "python scripts/env_autonomy_runtime.py kilo-receipt-transition "
+                    f"--run-id {run_id} --next-state REQUESTED"
+                )
+                self.assertEqual(pretool(request_command, "request")["permissionDecision"], "allow")
                 with self.assertRaisesRegex(runtime.AutonomyFailure, "KILO_ADMISSION_UNVERIFIED"):
                     runtime.transition_kilo_receipt(root, trusted, run_id, "REQUESTED")
                 with patch.object(runtime, "_kilo_preflight_snapshot", side_effect=ready_preflight):
                     requested = runtime.transition_kilo_receipt(root, trusted, run_id, "REQUESTED")
                 self.assertEqual(requested["state"], "REQUESTED")
                 publish("persist requested receipt")
-                with patch.object(runtime, "_kilo_preflight_snapshot", side_effect=ready_preflight):
-                    self.assertEqual(runtime.verify_kilo_receipt(root, trusted, run_id)["state"], "REQUESTED")
+                outcome_command = (
+                    "python scripts/env_autonomy_runtime.py append-event --event-type OPERATION_OUTCOME "
+                    f"--operation-id {run_id} --operation-outcome SUCCEEDED --evidence-sha256 {'d' * 64}"
+                )
+                self.assertEqual(pretool(outcome_command, "outcome")["permissionDecision"], "allow")
+                self.assertEqual(
+                    pretool(outcome_command.replace(run_id, "different-run"), "wrong-outcome")["permissionDecision"],
+                    "deny",
+                )
+                with patch.object(
+                    runtime, "_kilo_preflight_snapshot",
+                    side_effect=AssertionError("historical receipt verification must not re-probe admission"),
+                ):
+                    recovered = runtime.verify_kilo_receipt(root, trusted, run_id)
+                self.assertEqual(recovered["state"], "REQUESTED")
+                self.assertEqual(recovered["admission_evidence_state"], "VERIFIED_AT_REQUEST_TIME")
+                self.assertEqual(recovered["admission_evidence_sha256"], "a" * 64)
                 request_doc, request_log = runtime._read_lifecycle_log(
                     handoff_path.read_text(encoding="utf-8"), test_claim
                 )
@@ -771,11 +809,31 @@ class ReviewAndLifecycleTests(unittest.TestCase):
                 request_binding = runtime._trusted_kilo_binding(
                     root, test_claim, actual_context(root, test_claim), run_id, request_intent
                 )
+                persisted_admission = request_doc["kilo_receipts"][0]["last_evidence"]["admission"]
+                self.assertEqual(persisted_admission["proxy_quota_status"], "READY")
+                self.assertEqual(persisted_admission["upstream_model_status"], "READY")
+                self.assertEqual(persisted_admission["evidence_sha256"], "a" * 64)
+                self.assertEqual(request_binding["work_order_path"], test_claim["work_order_path"])
+                self.assertEqual(request_binding["scope"], test_claim["mutable_scope"])
+                self.assertEqual(request_binding["dependencies"], test_claim["dependencies"])
+                self.assertEqual(request_binding["lane_kind"], "MUTATION")
+                request_intent.payload["scope"] = ["docs/**"]
+                with self.assertRaisesRegex(runtime.AutonomyFailure, "KILO_RECEIPT_IDENTITY_MISMATCH"):
+                    runtime._trusted_kilo_binding(
+                        root, test_claim, actual_context(root, test_claim), run_id, request_intent
+                    )
+                request_intent.payload["scope"] = list(test_claim["mutable_scope"])
                 forged_request = json.loads(json.dumps(request_doc["kilo_receipts"][0]))
                 forged_request["last_evidence"]["operation_intent_event_id"] = "caller-invented-event"
                 with self.assertRaisesRegex(runtime.AutonomyFailure, "KILO_RECEIPT_RECORD_INVALID"):
                     runtime._validate_persisted_kilo_receipt(
                         forged_request, request_binding, request_intent, request_outcome, request_log
+                    )
+                forged_admission = json.loads(json.dumps(request_doc["kilo_receipts"][0]))
+                forged_admission["last_evidence"]["admission"]["evidence_sha256"] = "c" * 64
+                with self.assertRaisesRegex(runtime.AutonomyFailure, "KILO_RECEIPT_RECORD_INVALID"):
+                    runtime._validate_persisted_kilo_receipt(
+                        forged_admission, request_binding, request_intent, request_outcome, request_log
                     )
 
                 digest = "d" * 64
@@ -832,6 +890,10 @@ class ReviewAndLifecycleTests(unittest.TestCase):
                     "provider": "cointh-glm", "model": "glm-5.3", "variant": "flash",
                     "run_id": unknown_run, "admission_evidence_sha256": "b" * 64,
                     "starting_head_sha": git("rev-parse", "HEAD"),
+                    "work_order_path": test_claim["work_order_path"],
+                    "scope": list(test_claim["mutable_scope"]),
+                    "dependencies": list(test_claim["dependencies"]),
+                    "lane_kind": "MUTATION",
                 })
                 publish("publish second operation intent")
                 with patch.object(runtime, "_kilo_preflight_snapshot", side_effect=ready_preflight):
@@ -924,6 +986,48 @@ class HookClassifierTests(unittest.TestCase):
                     {"tool_name": "Bash", "tool_input": {"command": command}}, Path.cwd()
                 )
                 self.assertEqual(decision["permissionDecision"], "deny")
+
+    def test_protected_path_wildcards_are_denied_before_read_only_hook_bypass(self):
+        commands = (
+            "Get-Content .e??",
+            "Select-String -Path .e?? -Pattern x",
+            "Get-Content data/r??/*",
+        )
+        for command in commands:
+            with self.subTest(command=command):
+                self.assertNotEqual(runtime.classify_shell_command(command)["kind"], "READ_ONLY")
+                decision = runtime.hook_pretool(
+                    {"tool_name": "Bash", "tool_input": {"command": command}}, Path.cwd()
+                )
+                self.assertEqual(decision["permissionDecision"], "deny")
+
+    def test_literal_shell_reads_must_resolve_inside_unprotected_repo_paths(self):
+        with tempfile.TemporaryDirectory(prefix="env-autonomy-shell-read-") as temp_dir:
+            root = Path(temp_dir)
+            (root / "docs").mkdir()
+            (root / "docs" / "note.md").write_text("synthetic fixture", encoding="utf-8")
+            safe_commands = (
+                "Get-Content docs/note.md",
+                "Select-String -Path docs/note.md -Pattern synthetic",
+            )
+            for command in safe_commands:
+                with self.subTest(command=command):
+                    decision = runtime.hook_pretool(
+                        {"tool_name": "Bash", "tool_input": {"command": command}}, root
+                    )
+                    self.assertEqual(decision["permissionDecision"], "allow")
+
+            unsafe_commands = (
+                "Get-Content ../outside.txt",
+                "Get-Content C:outside.txt",
+                f"Get-Content {root / 'outside.txt'}",
+            )
+            for command in unsafe_commands:
+                with self.subTest(command=command):
+                    decision = runtime.hook_pretool(
+                        {"tool_name": "Bash", "tool_input": {"command": command}}, root
+                    )
+                    self.assertEqual(decision["permissionDecision"], "deny")
 
 
 if __name__ == "__main__":
