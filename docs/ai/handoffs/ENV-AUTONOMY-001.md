@@ -2,31 +2,392 @@
 
 ## Assignment
 
-- Status: `CLAIM_PROPOSED / BOOTSTRAP_CONTROL`
+- Status: `REVIEW_REQUESTED / BOOTSTRAP_CONTROL` in this candidate; trusted
+  `origin/main` remains `CLAIMED` until the implementation PR merges.
 - Task: `ENV-AUTONOMY-001`
 - Claim: `ENV-AUTONOMY-001-C1`, generation `1`
 - Execution holder: `exec-holder-env-autonomy-001-g1-10b79866-9012-4701-9cf9-33ce6d00df5f`
 - Repository: `aase7en/env-wastewater-webapp`
 - Worktree: `A:\GitHub\_worktrees\env-autonomy-bootstrap-20260926`
 - Branch: `codex/env-autonomy-bootstrap-20260926`
-- Base/start HEAD: `839ff34185dff675a7bfd4adf6350d6b2c1e4eaa`
+- Claim base: `839ff34185dff675a7bfd4adf6350d6b2c1e4eaa`
+- Current `origin/main` and implementation start HEAD: `0ea079d69c3186272f1ae6be82cbbeb22ed99266`
 - Last updated: 2026-09-26
 
 ## Checkpoint
 
-This is a proposed, disjoint bootstrap claim. It is not authoritative until
-the exact-SHA reviewed control transition merges into `main`. No implementation
-files have been changed. C1 remains locked at generation 1 in
-`RECOVERY_HOLD`; no quiescence or transfer evidence was created.
+The separate generation-1 bootstrap claim is authoritative on `origin/main`
+after PR #90 merged as `0ea079d69c3186272f1ae6be82cbbeb22ed99266`. The three
+P1 findings from independent review at `f7ea87d942cfcc5118d0fde63037cd4de89a7bc4`
+were repaired in code commit `db8d4785a07b36c76e206da6706a9426d5962114`.
+Fresh review at `6dbfd47fef14ef782d138dc357d47e31d3d41313` found three P1s
+and one P2: wildcard protected-path reads, blocked matching Kilo receipt/outcome
+progress, historical REQUESTED verification tied to current admission, and
+missing exact claim scope in the durable binding. Commits `87a5d47` and
+`1565c5b` repair those findings; `1565c5b` also fixes a trusted immutable
+dependency tuple/list comparison that blocked the real checkpoint CLI.
+Hosted run `36205380772` then failed the new Windows drive-relative fixture on
+Linux at `cb1c396`; commit `7b456fc` checks Windows drive/root semantics on all
+hosts, and local autonomy tests pass **25/25**. Exact-head run `36205630853`
+passed `scripts` and `notify` at code HEAD
+`35c009143f3841ecacd0013118a5492fcced38df`. Fresh exact-SHA review at
+`cc17d283307605e44eff70794f3695b866ec34d9` found P1: first-time Kilo
+`REQUESTED` receipt creation did not recheck that the current claim remained
+mutable. Commit `b37a1c3c0ea57e0739c877f914a12cae3eee7ffc` runs
+`guard.preflight` against the current claim/context only when creating a new
+receipt; historical verification and existing receipt transitions remain
+available after status changes. The added regression failed before the fix;
+after it, autonomy runtime passes **25/25**, Coordination Guard **344/344**,
+workflow-action tests **14/14**, semantic workflow check, `split_sql`, Python
+compilation, and `git diff --check` pass. Exact-head Actions run `36206561773`
+passed `scripts` and `notify` at the code SHA above. The prior event
+`env-autonomy-001-checkpoint-0011` was superseded; event
+`env-autonomy-001-checkpoint-0012` records `CHANGES_REQUIRED` from the code
+SHA above and was published at docs head `76d4852510826fb47feba3c0d2fd2504e3c71b35`.
+Exact-head Actions run `36207026611` passed there. Fresh review at that head
+found a second P1: `rg -n X data/./raw` passed through as `READ_ONLY`, bypassing
+the protected raw-data path check. Commit `9fde31603a6162998bbbf79db2936fe5b9f1dae0`
+parses ripgrep operands and resolves every path; dot/parent/backslash aliases,
+glob/brace expansion, and home expansion are denied. The new hook regression
+reproduced the allow before the fix. The full autonomy suite now passes
+**26/26**, Coordination Guard **344/344**, workflow-action tests **14/14**,
+semantic workflow check, `split_sql`, Python compilation, and diff-check pass.
+Exact-head run `36207604091` passed `scripts` and `notify` on code SHA
+`9fde31603a6162998bbbf79db2936fe5b9f1dae0`; event
+`env-autonomy-001-checkpoint-0013` was published at docs head
+`64e05ee74bc933ed593c1366f1aaf0dbfcd5fa64`, where Actions run `36208275593`
+also passed.
+Fresh review at `64e05ee74bc933ed593c1366f1aaf0dbfcd5fa64` found P1: POSIX
+`shlex.split(..., posix=True)` removed backslashes from an unquoted Windows
+`rg` path, making it appear to read `data.raw`; the hook allowed it. The
+reviewer did not read raw data.
+Commit `1d9b769e317f3a3c5a84790813ba4f23b0c68791` rejects backslash-bearing
+`rg` commands as `UNKNOWN`. The RED regression covers the Windows alias,
+quoted path, and POSIX escape form; the direct repository-path validator also
+rejects the backslash alias.
+Local autonomy runtime passes **26/26**, Coordination Guard **344/344**,
+workflow-action tests **14/14**, semantic workflow check, `split_sql`, Python
+compilation, and diff-check. Exact-head run `36209048628` passed `scripts` and
+`notify` on code SHA `1d9b769e317f3a3c5a84790813ba4f23b0c68791`.
+Event `env-autonomy-001-checkpoint-0014` was verified `PUBLISHED` at docs head
+`e3a24c4370c600108cb5bea23ac99f27b55bfa35`. Actions run `36210668259` passed
+`scripts`; its `notify` job succeeded with Telegram delivery skipped because
+repo secrets are unset. The independent review at `e3a24c4` found no source
+P0-P2 issue, but required the formal `REVIEW_REQUESTED` claim/checkpoint state.
+The claim record is now `REVIEW_REQUESTED`; event
+`env-event-56e9a1dd-ea10-485f-b304-4580431ce1cb` records that state from
+source head `e3a24c4370c600108cb5bea23ac99f27b55bfa35` and is pending
+publication. Publish/verify it, require hosted Actions on the resulting docs
+head, then request fresh independent exact-SHA review.
+Kilo quota/upstream remain `UNKNOWN`, JEV remains `UNAVAILABLE`, and no
+provider request was made. No C1 file was changed, and no claim release,
+reassignment, quiescence, or transfer evidence was created. Keep `BOOTSTRAP_CONTROL`,
+`ENFORCEMENT_NOT_ACTIVE`, and `AUTONOMY_NOT_READY` until their independent
+server and live-acceptance gates pass.
+
+<!-- ENV-AUTONOMY-LIFECYCLE:START -->
+```json
+{
+  "claim_generation": 1,
+  "claim_id": "ENV-AUTONOMY-001-C1",
+  "codex_hook_observations": [],
+  "events": [
+    {
+      "claim_generation": 1,
+      "claim_id": "ENV-AUTONOMY-001-C1",
+      "event_id": "env-autonomy-001-goal-start-0001",
+      "event_seq": 1,
+      "event_type": "GOAL_START",
+      "goal_id": "01a0d917-7b29-7970-8bb7-3c6df13e4bd3",
+      "operation_id": null,
+      "operation_outcome": null,
+      "payload": null,
+      "previous_event_id": "GENESIS",
+      "published": true,
+      "task_id": "ENV-AUTONOMY-001",
+      "terminal_result": null
+    },
+    {
+      "claim_generation": 1,
+      "claim_id": "ENV-AUTONOMY-001-C1",
+      "event_id": "env-autonomy-001-checkpoint-0001",
+      "event_seq": 2,
+      "event_type": "CHECKPOINT",
+      "goal_id": "01a0d917-7b29-7970-8bb7-3c6df13e4bd3",
+      "operation_id": null,
+      "operation_outcome": null,
+      "payload": {
+        "lane_status": "ACTIVE",
+        "recorded_at_utc": "2026-09-25T20:43:05Z",
+        "source_head_sha": "0ea079d69c3186272f1ae6be82cbbeb22ed99266"
+      },
+      "previous_event_id": "env-autonomy-001-goal-start-0001",
+      "published": true,
+      "task_id": "ENV-AUTONOMY-001",
+      "terminal_result": null
+    },
+    {
+      "claim_generation": 1,
+      "claim_id": "ENV-AUTONOMY-001-C1",
+      "event_id": "env-autonomy-001-checkpoint-0002",
+      "event_seq": 3,
+      "event_type": "CHECKPOINT",
+      "goal_id": "01a0d917-7b29-7970-8bb7-3c6df13e4bd3",
+      "operation_id": null,
+      "operation_outcome": null,
+      "payload": {
+        "lane_status": "REVIEW_REQUESTED",
+        "recorded_at_utc": "2026-09-25T21:09:38Z",
+        "source_head_sha": "3698a874edbd5b41b97bf95568caac01fcb29ed6"
+      },
+      "previous_event_id": "env-autonomy-001-checkpoint-0001",
+      "published": true,
+      "task_id": "ENV-AUTONOMY-001",
+      "terminal_result": null
+    },
+    {
+      "claim_generation": 1,
+      "claim_id": "ENV-AUTONOMY-001-C1",
+      "event_id": "env-autonomy-001-checkpoint-0003",
+      "event_seq": 4,
+      "event_type": "CHECKPOINT",
+      "goal_id": "01a0d917-7b29-7970-8bb7-3c6df13e4bd3",
+      "operation_id": null,
+      "operation_outcome": null,
+      "payload": {
+        "lane_status": "CHANGES_REQUIRED",
+        "recorded_at_utc": "2026-09-25T21:24:02Z",
+        "source_head_sha": "9312e5eb432dd7d43f3c6bad308cb0e5aad02a49"
+      },
+      "previous_event_id": "env-autonomy-001-checkpoint-0002",
+      "published": true,
+      "task_id": "ENV-AUTONOMY-001",
+      "terminal_result": null
+    },
+    {
+      "claim_generation": 1,
+      "claim_id": "ENV-AUTONOMY-001-C1",
+      "event_id": "env-autonomy-001-checkpoint-0004",
+      "event_seq": 5,
+      "event_type": "CHECKPOINT",
+      "goal_id": "01a0d917-7b29-7970-8bb7-3c6df13e4bd3",
+      "operation_id": null,
+      "operation_outcome": null,
+      "payload": {
+        "lane_status": "REVIEW_REQUESTED",
+        "recorded_at_utc": "2026-09-25T21:25:01Z",
+        "source_head_sha": "ccf498bd8439edfdd63740d8db64f1220fdb92f6"
+      },
+      "previous_event_id": "env-autonomy-001-checkpoint-0003",
+      "published": true,
+      "task_id": "ENV-AUTONOMY-001",
+      "terminal_result": null
+    },
+    {
+      "claim_generation": 1,
+      "claim_id": "ENV-AUTONOMY-001-C1",
+      "event_id": "env-autonomy-001-checkpoint-d642ea33",
+      "event_seq": 6,
+      "event_type": "CHECKPOINT",
+      "goal_id": "01a0d917-7b29-7970-8bb7-3c6df13e4bd3",
+      "operation_id": null,
+      "operation_outcome": null,
+      "payload": {
+        "lane_status": "CHANGES_REQUIRED",
+        "recorded_at_utc": "2026-09-25T21:39:33Z",
+        "source_head_sha": "f7ea87d942cfcc5118d0fde63037cd4de89a7bc4"
+      },
+      "previous_event_id": "env-autonomy-001-checkpoint-0004",
+      "published": false,
+      "task_id": "ENV-AUTONOMY-001",
+      "terminal_result": null
+    },
+    {
+      "claim_generation": 1,
+      "claim_id": "ENV-AUTONOMY-001-C1",
+      "event_id": "env-autonomy-001-checkpoint-0007",
+      "event_seq": 7,
+      "event_type": "CHECKPOINT",
+      "goal_id": "01a0d917-7b29-7970-8bb7-3c6df13e4bd3",
+      "operation_id": null,
+      "operation_outcome": null,
+      "payload": {
+        "lane_status": "REVIEW_REQUESTED",
+        "recorded_at_utc": "2026-09-25T22:23:44Z",
+        "source_head_sha": "db8d4785a07b36c76e206da6706a9426d5962114"
+      },
+      "previous_event_id": "env-autonomy-001-checkpoint-d642ea33",
+      "published": false,
+      "task_id": "ENV-AUTONOMY-001",
+      "terminal_result": null
+    },
+    {
+      "claim_generation": 1,
+      "claim_id": "ENV-AUTONOMY-001-C1",
+      "event_id": "env-autonomy-001-checkpoint-0008",
+      "event_seq": 8,
+      "event_type": "CHECKPOINT",
+      "goal_id": "01a0d917-7b29-7970-8bb7-3c6df13e4bd3",
+      "operation_id": null,
+      "operation_outcome": null,
+      "payload": {
+        "lane_status": "CHANGES_REQUIRED",
+        "recorded_at_utc": "2026-09-25T22:36:08Z",
+        "source_head_sha": "6dbfd47fef14ef782d138dc357d47e31d3d41313"
+      },
+      "previous_event_id": "env-autonomy-001-checkpoint-0007",
+      "published": false,
+      "task_id": "ENV-AUTONOMY-001",
+      "terminal_result": null
+    },
+    {
+      "claim_generation": 1,
+      "claim_id": "ENV-AUTONOMY-001-C1",
+      "event_id": "env-autonomy-001-checkpoint-0009",
+      "event_seq": 9,
+      "event_type": "CHECKPOINT",
+      "goal_id": "01a0d917-7b29-7970-8bb7-3c6df13e4bd3",
+      "operation_id": null,
+      "operation_outcome": null,
+      "payload": {
+        "lane_status": "REVIEW_REQUESTED",
+        "recorded_at_utc": "2026-09-26T00:31:18Z",
+        "source_head_sha": "1565c5b8f4918949eb04739da72b215144879015"
+      },
+      "previous_event_id": "env-autonomy-001-checkpoint-0008",
+      "published": false,
+      "task_id": "ENV-AUTONOMY-001",
+      "terminal_result": null
+    },
+    {
+      "claim_generation": 1,
+      "claim_id": "ENV-AUTONOMY-001-C1",
+      "event_id": "env-autonomy-001-checkpoint-0010",
+      "event_seq": 10,
+      "event_type": "CHECKPOINT",
+      "goal_id": "01a0d917-7b29-7970-8bb7-3c6df13e4bd3",
+      "operation_id": null,
+      "operation_outcome": null,
+      "payload": {
+        "lane_status": "CHANGES_REQUIRED",
+        "recorded_at_utc": "2026-09-26T00:37:25Z",
+        "source_head_sha": "7b456fc92d0be045c948f175e153cb6f65ecb8e5"
+      },
+      "previous_event_id": "env-autonomy-001-checkpoint-0009",
+      "published": false,
+      "task_id": "ENV-AUTONOMY-001",
+      "terminal_result": null
+    },
+    {
+      "claim_generation": 1,
+      "claim_id": "ENV-AUTONOMY-001-C1",
+      "event_id": "env-autonomy-001-checkpoint-0011",
+      "event_seq": 11,
+      "event_type": "CHECKPOINT",
+      "goal_id": "01a0d917-7b29-7970-8bb7-3c6df13e4bd3",
+      "operation_id": null,
+      "operation_outcome": null,
+      "payload": {
+        "lane_status": "REVIEW_REQUESTED",
+        "recorded_at_utc": "2026-09-26T00:42:30Z",
+        "source_head_sha": "35c009143f3841ecacd0013118a5492fcced38df"
+      },
+      "previous_event_id": "env-autonomy-001-checkpoint-0010",
+      "published": false,
+      "task_id": "ENV-AUTONOMY-001",
+      "terminal_result": null
+    },
+    {
+      "claim_generation": 1,
+      "claim_id": "ENV-AUTONOMY-001-C1",
+      "event_id": "env-autonomy-001-checkpoint-0012",
+      "event_seq": 12,
+      "event_type": "CHECKPOINT",
+      "goal_id": "01a0d917-7b29-7970-8bb7-3c6df13e4bd3",
+      "operation_id": null,
+      "operation_outcome": null,
+      "payload": {
+        "lane_status": "CHANGES_REQUIRED",
+        "recorded_at_utc": "2026-09-26T00:57:47Z",
+        "source_head_sha": "b37a1c3c0ea57e0739c877f914a12cae3eee7ffc"
+      },
+      "previous_event_id": "env-autonomy-001-checkpoint-0011",
+      "published": false,
+      "task_id": "ENV-AUTONOMY-001",
+      "terminal_result": null
+    },
+    {
+      "claim_generation": 1,
+      "claim_id": "ENV-AUTONOMY-001-C1",
+      "event_id": "env-autonomy-001-checkpoint-0013",
+      "event_seq": 13,
+      "event_type": "CHECKPOINT",
+      "goal_id": "01a0d917-7b29-7970-8bb7-3c6df13e4bd3",
+      "operation_id": null,
+      "operation_outcome": null,
+      "payload": {
+        "lane_status": "CHANGES_REQUIRED",
+        "recorded_at_utc": "2026-09-26T01:12:17Z",
+        "source_head_sha": "9fde31603a6162998bbbf79db2936fe5b9f1dae0"
+      },
+      "previous_event_id": "env-autonomy-001-checkpoint-0012",
+      "published": false,
+      "task_id": "ENV-AUTONOMY-001",
+      "terminal_result": null
+    },
+    {
+      "claim_generation": 1,
+      "claim_id": "ENV-AUTONOMY-001-C1",
+      "event_id": "env-autonomy-001-checkpoint-0014",
+      "event_seq": 14,
+      "event_type": "CHECKPOINT",
+      "goal_id": "01a0d917-7b29-7970-8bb7-3c6df13e4bd3",
+      "operation_id": null,
+      "operation_outcome": null,
+      "payload": {
+        "lane_status": "CHANGES_REQUIRED",
+        "recorded_at_utc": "2026-09-26T01:41:48Z",
+        "source_head_sha": "1d9b769e317f3a3c5a84790813ba4f23b0c68791"
+      },
+      "previous_event_id": "env-autonomy-001-checkpoint-0013",
+      "published": false,
+      "task_id": "ENV-AUTONOMY-001",
+      "terminal_result": null
+    },
+    {
+      "claim_generation": 1,
+      "claim_id": "ENV-AUTONOMY-001-C1",
+      "event_id": "env-event-56e9a1dd-ea10-485f-b304-4580431ce1cb",
+      "event_seq": 15,
+      "event_type": "CHECKPOINT",
+      "goal_id": "01a0d917-7b29-7970-8bb7-3c6df13e4bd3",
+      "operation_id": null,
+      "operation_outcome": null,
+      "payload": {
+        "lane_status": "REVIEW_REQUESTED",
+        "recorded_at_utc": "2026-09-26T02:18:29Z",
+        "source_head_sha": "e3a24c4370c600108cb5bea23ac99f27b55bfa35"
+      },
+      "previous_event_id": "env-autonomy-001-checkpoint-0014",
+      "published": false,
+      "task_id": "ENV-AUTONOMY-001",
+      "terminal_result": null
+    }
+  ],
+  "goal_id": "01a0d917-7b29-7970-8bb7-3c6df13e4bd3",
+  "version": 1
+}
+```
+<!-- ENV-AUTONOMY-LIFECYCLE:END -->
 
 ## Reconciled facts
 
 - PR #89 merged as `839ff34185dff675a7bfd4adf6350d6b2c1e4eaa`; trusted guard
   status shows C1 in `RECOVERY_HOLD`, same holder/generation/scope, and
   `BOOTSTRAP_CONTROL`.
-- The candidate's expected control fences are policy revision
-  `839ff34185dff675a7bfd4adf6350d6b2c1e4eaa` and registry hash
-  `894aa6d6238c7f2624dfea5d55f1cf0148868a96aa052a1e9b7d294abefda060`.
+- PR #90 merged the disjoint ENV-AUTONOMY-001 claim as
+  `0ea079d69c3186272f1ae6be82cbbeb22ed99266`; the active registry hash is
+  `2e8da438901c452cdc709942603733153aba7bd4b88c5bbda201cb02f059ed24`.
 - PR #87 and PR #88 remain open on the previous base `94c1a8f9...`; neither is
   an active authoritative claim. PR #87 has an author CHANGES_REQUIRED
   comment; PR #88 has no GitHub review decision.
@@ -43,6 +404,64 @@ files have been changed. C1 remains locked at generation 1 in
 - Kilo CLI 7.7.2 is installed. The older sanitized GLM session export is not
   current provider admission evidence. No JEV executable or tool route was
   found in the current inventory.
+- No external provider call has been made by this bootstrap lane. Kilo's
+  general balance is not proof of the `cointh-glm` proxy quota or upstream
+  readiness.
+
+## Current implementation evidence
+
+- `python scripts/env_autonomy_runtime.py status --root .` passes identity
+  preflight for this exact task/claim/generation/holder and reports
+  `BOOTSTRAP_CONTROL` + `AUTONOMY_NOT_READY`.
+- `python scripts/env_autonomy_runtime.py refill --root .` reports one active
+  mutable lane, two free slots, zero canonical SAFE_READY candidates, and
+  `AUTO_REFILL_REQUIRED=false` / `NO_CANONICAL_SAFE_READY_LANE`.
+- `python scripts/env_autonomy_runtime.py kilo-preflight --root .` reports
+  proxy quota and upstream model status `UNKNOWN`; it performed no external
+  call. Route metadata leaves dispatch disabled. JEV remains `UNAVAILABLE`.
+- Focused autonomy runtime tests pass **26/26**; Coordination Guard passes
+  **344/344**; workflow-action tests pass **14/14**; semantic workflow check,
+  `split_sql`, Python compilation, and `git diff --check` pass. The prior
+  `CHANGES_REQUIRED` checkpoint at
+  `24047043787b3099d44d8e23ab508ec427a3c5fc` was verified published with no
+  unresolved effects. GitHub Actions run `36195805695` verified exact code
+  head `db8d4785a07b36c76e206da6706a9426d5962114` and passed `scripts` plus
+  `notify`. Final-candidate run `36196641540` passed `scripts` and `notify` at
+  `6dbfd47fef14ef782d138dc357d47e31d3d41313`; the fresh review findings below
+  remain unresolved.
+- Self-review of PR #91 found three defects before independent review: the
+  remote/local handoff string comparison drops Git's final newline; the
+  canonical READY parser matches the registry JSON before the human frontier;
+  and refill marks production dispatch authorized despite
+  `ENFORCEMENT_NOT_ACTIVE`. The current candidate fixes all three, adds
+  regression coverage, and reached `REVIEW_REQUESTED` after full local
+  validation and publication of the prior checkpoint. Exact-SHA review at
+  `cc17d28` found the new-request mutability P1 described above; `b37a1c3`
+  repairs it. A later review at `76d4852` found a protected `data/raw/` read
+  bypass through ripgrep path aliases; `9fde316` repairs that path and the
+  candidate remains `CHANGES_REQUIRED` pending fresh review on the final docs
+  head.
+- Independent exact-head review at `f7ea87d942cfcc5118d0fde63037cd4de89a7bc4`
+  returned `CHANGES_REQUIRED` with three P1 findings: Git shell mutation-option
+  bypasses; checkpoint and parked recovery ignoring recorded hook observations
+  whose effect state is `UNKNOWN`; and a Kilo receipt helper that accepts
+  caller-asserted ingestion/archive evidence without validating or persisting
+  it against the trusted claim and published handoff. The exact-head hosted
+  `scripts` and `notify` checks succeeded, but do not cover these findings.
+- Repair commit `db8d4785a07b36c76e206da6706a9426d5962114` closes all three
+  findings and adds regression coverage for option bypasses, unknown-effect
+  reconciliation/recovery, and persisted claim-bound receipt transitions.
+  Fresh provider admission remains `UNKNOWN`; request dispatch is disabled,
+  no Kilo prompt or roll-call was sent, and JEV remains `UNAVAILABLE`.
+- The findings from review at `6dbfd47` were repaired in `87a5d47` and
+  `1565c5b`; the later P1 findings at `cc17d28`, `76d4852`, and `64e05ee`
+  were repaired in `b37a1c3`, `9fde316`, and `1d9b769`, respectively. Keep
+  the candidate `CHANGES_REQUIRED` until a fresh independent review accepts
+  the exact final docs head after hosted CI.
+- A comparison against `origin/main` confirms the C1 claim record is unchanged
+  (canonical JSON SHA-256
+  `68943625ae4123f838ebc7fde4ff9bf02bb279716caa28e0600dbd0ca5a97077`);
+  `git diff` for its four locked files is empty.
 
 ## Local-worktree caveat
 
@@ -55,7 +474,9 @@ requires a clean supervisor session, use a separate clean worktree and record
 its exact path/SHA.
 
 ## One next safe action
-
-Obtain independent exact-SHA review of the claim proposal, re-pin current main
-and candidate immediately before expected-head merge, then verify the merged
-claim and unchanged C1 lock. Do not implement before that result.
+Publish and verify `env-event-56e9a1dd-ea10-485f-b304-4580431ce1cb` from
+source head `e3a24c4370c600108cb5bea23ac99f27b55bfa35`, require exact-head
+hosted Actions on the resulting docs commit, then request fresh independent
+exact-SHA review. Only the independent reviewer may approve and merge after
+exact-base/head recheck; keep `BOOTSTRAP_CONTROL`, `ENFORCEMENT_NOT_ACTIVE`,
+and `AUTONOMY_NOT_READY` until the remaining live acceptance gates pass.

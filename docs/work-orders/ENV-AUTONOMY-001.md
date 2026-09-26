@@ -2,14 +2,25 @@
 
 ## Assignment
 
-- Status: `CLAIM_PROPOSED / BOOTSTRAP_CONTROL`
+- Status: `REVIEW_REQUESTED / BOOTSTRAP_CONTROL` after the Windows/POSIX
+  ripgrep path interpretation P1 at `64e05ee` was repaired in `1d9b769`.
+  Local autonomy 26/26, Coordination Guard 344/344, workflow actions 14/14,
+  `split_sql`, Python compilation, and diff-check pass. Exact-code run
+  `36209048628` and docs-head run `36210668259` passed `scripts`; the latter's
+  notify job succeeded with Telegram delivery skipped because repo secrets are
+  unset. Event #14 verifies PUBLISHED at `e3a24c4`. Event
+  `env-event-56e9a1dd-ea10-485f-b304-4580431ce1cb` records
+  `REVIEW_REQUESTED` from that source head and awaits publication; hosted CI
+  and fresh independent review of the resulting docs head remain pending.
+  Trusted `origin/main` remains `CLAIMED` until this implementation PR merges.
 - Owner role: ENV project supervisor
 - Supervisor route: GPT-6 Luna MAX (routing metadata only)
 - Reviewer: independent GPT-6 Sol reviewer; implementation author must not merge
 - Repository: `aase7en/env-wastewater-webapp`
 - Worktree: `A:\GitHub\_worktrees\env-autonomy-bootstrap-20260926`
 - Branch: `codex/env-autonomy-bootstrap-20260926`
-- Base: `origin/main@839ff34185dff675a7bfd4adf6350d6b2c1e4eaa`
+- Claim base: `839ff34185dff675a7bfd4adf6350d6b2c1e4eaa`
+- Current implementation base: `origin/main@0ea079d69c3186272f1ae6be82cbbeb22ed99266`
 - Execution holder: `exec-holder-env-autonomy-001-g1-10b79866-9012-4701-9cf9-33ce6d00df5f`
 - Last updated: 2026-09-26
 
@@ -29,9 +40,11 @@ mutable scope may be changed by this work.
 
 ## Current evidence and model fit — 2026-09-26
 
-- Trusted base is `839ff34185dff675a7bfd4adf6350d6b2c1e4eaa`; the registry
-  parsed successfully after PR #89, with C1 in `RECOVERY_HOLD` and enforcement
-  still `BOOTSTRAP_CONTROL`.
+- The claim transition in PR #90 was independently reviewed and merged as
+  `0ea079d69c3186272f1ae6be82cbbeb22ed99266`; current trusted registry hash is
+  `2e8da438901c452cdc709942603733153aba7bd4b88c5bbda201cb02f059ed24`.
+  The autonomy claim is `CLAIMED`, generation 1. C1 remains in
+  `RECOVERY_HOLD`; enforcement is still `BOOTSTRAP_CONTROL`.
 - The local supervisor worktree at
   `A:\GitHub\_worktrees\env-wastewater-webapp-codex-supervisor` remains
   detached at its earlier base and has untracked `.serena/`. It is preserved
@@ -58,14 +71,90 @@ mutable scope may be changed by this work.
   task-bound provider admission. GPT-6 Sol is reserved for independent
   cross-cutting exact-SHA review. Model names are routing preferences, not
   identity or authorization evidence.
+- Local verification on the current code candidate: autonomy runtime
+  **25/25 PASS**, Coordination Guard **344/344 PASS**, workflow-action
+  regressions **14/14 PASS**, workflow semantic checker PASS, `split_sql`
+  regressions PASS, Python compilation PASS, and `git diff --check` exits 0
+  (with CRLF-normalization warnings only). The actual runtime status passes
+  this claim's identity preflight; refill finds 0 canonical SAFE_READY tasks,
+  and Kilo admission remains `UNKNOWN` for both proxy quota and upstream
+  readiness. No provider request was made.
+- GitHub Actions run `36195805695` passed at code HEAD
+  `db8d4785a07b36c76e206da6706a9426d5962114`; run `36196641540` passed
+  `scripts` and `notify` at `6dbfd47fef14ef782d138dc357d47e31d3d41313`.
+  After the four review repairs, `36205380772` failed the `scripts` job at
+  `cb1c396`: Linux treated `C:outside.txt` as an ordinary relative filename,
+  unlike Windows' drive-relative path semantics. Commit `7b456fc` now checks
+  Windows drive/root syntax with `PureWindowsPath` on every host. Local
+  autonomy tests pass **25/25** after this repair. Exact-head hosted Actions
+  run `36205630853` then passed `scripts` and `notify` on
+  `35c009143f3841ecacd0013118a5492fcced38df`. A fresh exact-SHA review at
+  `cc17d283307605e44eff70794f3695b866ec34d9` found P1: first-time Kilo
+  `REQUESTED` receipt creation checked admission but not current claim
+  mutability. Commit `b37a1c3c0ea57e0739c877f914a12cae3eee7ffc` now runs
+  `guard.preflight` with the current claim/context only when creating a new
+  receipt; existing receipt verification and later transitions remain usable
+  after status changes. The new regression was RED before the fix. Local
+  autonomy tests pass **25/25**, Coordination Guard **344/344**, workflow
+  actions **14/14**, semantic workflow check, `split_sql`, Python compilation,
+  and `git diff --check` pass. Exact-head run `36206561773` passed `scripts`
+  and `notify` at the code SHA above. Lifecycle event
+  `env-autonomy-001-checkpoint-0012` records `CHANGES_REQUIRED` from that SHA;
+  publish/verify it and require hosted Actions on the final docs head before
+  fresh independent review.
+- Fresh review at `6dbfd47fef14ef782d138dc357d47e31d3d41313` found three P1s
+  and one P2: wildcard protected-path reads, blocked Kilo REQUESTED/outcome
+  progress, historical receipt verification coupled to current admission, and
+  missing exact claim scope in the durable binding. Code commits `87a5d47`
+  and `1565c5b` address those findings. The real checkpoint CLI also exposed
+  immutable trusted-claim dependencies as tuples while the binding API expects
+  lists; `1565c5b` normalizes that comparison, pinned by a new regression.
+  The newer P1 finding is repaired in `b37a1c3`; fresh exact-head review at
+  the final docs SHA remains pending.
+- Fresh exact-SHA review at `76d4852510826fb47feba3c0d2fd2504e3c71b35`
+  reproduced a P1 protected-read bypass: `rg -n X data/./raw` classified as
+  `READ_ONLY` and was allowed without path resolution. This can address the
+  protected `data/raw/` directory despite raw-data ignore rules; no raw file
+  was read during review. Commit `9fde31603a6162998bbbf79db2936fe5b9f1dae0`
+  adds literal ripgrep path parsing and resolved-path validation.
+- A fresh review at `64e05ee74bc933ed593c1366f1aaf0dbfcd5fa64` reproduced
+  another P1: POSIX `shlex` stripped backslashes from unquoted Windows `rg`
+  operands. The path became `data.raw`, which passed the hook; no raw data
+  was read. Commit `1d9b769` fails closed as `UNKNOWN` for any
+  backslash-bearing `rg` command, avoiding platform-dependent tokenization.
+  The RED regression covers the Windows alias, a quoted path, a POSIX
+  escape form, and the direct path resolver. Autonomy 26/26, Coordination
+  Guard 344/344, workflow actions 14/14, `split_sql`, Python compilation,
+  and diff-check pass; run `36209048628` passed scripts and notify on
+  exact code SHA `1d9b769e317f3a3c5a84790813ba4f23b0c68791`.
+  Event `env-autonomy-001-checkpoint-0014` was verified `PUBLISHED` at docs
+  head `e3a24c4370c600108cb5bea23ac99f27b55bfa35`; Actions run `36210668259`
+  passed `scripts`, and its `notify` job succeeded with Telegram delivery
+  skipped because repo secrets are unset. The independent review at that head
+  found no source P0-P2 issue but required the formal `REVIEW_REQUESTED`
+  claim/checkpoint state. The claim record is now `REVIEW_REQUESTED`; event
+  `env-event-56e9a1dd-ea10-485f-b304-4580431ce1cb` records it from source head
+  `e3a24c4370c600108cb5bea23ac99f27b55bfa35` and awaits publication. Require
+  exact-head hosted CI on the resulting docs commit and fresh independent
+  review before approval. No `data/raw/` contents were read.
+- The installed Kilo 7.7.2 CLI help exposes `profile`, `models`, and
+  `roll-call`; the official CLI reference describes `roll-call` as a model
+  connectivity/latency test that sends prompts. Kilo's published balance is
+  account credit state, while successful inference is a separate upstream
+  request. No documented non-billable `cointh-glm` quota + upstream readiness
+  probe was identified, so no `roll-call` or model call was made. References:
+  [Kilo CLI reference](https://kilo.ai/docs/code-with-ai/platforms/cli-reference),
+  [Kilo Gateway usage and billing](https://kilo.ai/docs/gateway/usage-and-billing).
 
-## Claim transition
+## Claim transition — merged and verified
 
-The candidate adds `ENV-AUTONOMY-001-C1`, generation 1, with the exact
-worktree, branch, base, holder, and scope recorded in the canonical registry
-inside `docs/ai/CURRENT-WORK.md`.
+PR #90 added `ENV-AUTONOMY-001-C1`, generation 1, with the exact worktree,
+branch, base, holder, and scope recorded in the canonical registry inside
+`docs/ai/CURRENT-WORK.md`. It received independent exact-SHA approval and
+merged as `0ea079d69c3186272f1ae6be82cbbeb22ed99266`; the accepted Guard
+registry is authoritative and implementation is active within that scope.
 
-Optimistic-concurrency fences for this proposal:
+Optimistic-concurrency fences at proposal time:
 
 - expected policy revision: `839ff34185dff675a7bfd4adf6350d6b2c1e4eaa`
 - expected registry hash: `894aa6d6238c7f2624dfea5d55f1cf0148868a96aa052a1e9b7d294abefda060`
@@ -73,10 +162,9 @@ Optimistic-concurrency fences for this proposal:
 - proposed claim generation: `1`
 - proposed status: `CLAIMED`
 
-The candidate registry is not authority. Exact-SHA independent review, current
-base and remote-diff checks, green exact-head CI, explicit owner
-authorization already present in this task, and expected-head merge are
-required before implementation mutation.
+The merged claim authorizes implementation only within the exact mutable
+scope below. It does not authorize server-side enforcement or production lane
+dispatch.
 
 ## Mutable scope
 
@@ -169,6 +257,14 @@ turns from failed executions.
 - Before a material GLM dispatch, refresh proxy quota and upstream model
   readiness separately through a verified secret-safe path. `UNKNOWN` fails
   closed; 401/403 means auth/entitlement, not quota exhaustion.
+- Dispatch admission requires fresh task-bound evidence with both proxy quota
+  and upstream readiness `READY`. The current `kilo-preflight` adapter returns
+  `UNKNOWN` (`NOT_CONFIGURED_FOR_SECRET_SAFE_QUOTA_PROBE`) and refuses request
+  admission; no Kilo prompt/roll-call has been sent. The persisted
+  `kilo-receipt-transition` / `kilo-receipt-verify` CLI stores receipts in the
+  existing lane handoff and derives state from trusted claim/context plus
+  published lifecycle evidence; caller-supplied booleans and event/SHA claims
+  are not accepted as proof.
 - Bind each dispatch to task, claim/generation/holder, worktree, branch,
   exact HEAD/base, exact scope, provider/model/variant, and execution/run ID.
 - Treat Kilo/ZCode session list/export as observation only. Direct CLI presence,
@@ -235,8 +331,9 @@ missing user-only credential, authorization, access, or unresolved authority
 decision.
 
 ## One next safe action
-
-Review this docs-only exact-SHA claim transition, refresh the base/registry
-fences and CI, then let the independent reviewer merge only with
-`--match-head-commit`. No skills, hooks, scripts, or runtime mutation before
-that merge is verified on main.
+Publish and verify event `env-event-56e9a1dd-ea10-485f-b304-4580431ce1cb` from
+source head `e3a24c4370c600108cb5bea23ac99f27b55bfa35`, require green Actions
+on the resulting docs head, then request fresh independent exact-SHA review.
+Keep Kilo dispatch disabled while admission is `UNKNOWN`, and preserve
+`ENFORCEMENT_NOT_ACTIVE` and `AUTONOMY_NOT_READY` until actual hook activation,
+server controls, and all live proofs are verified.
