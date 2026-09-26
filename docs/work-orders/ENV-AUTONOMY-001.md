@@ -2,12 +2,16 @@
 
 ## Assignment
 
-- Status: `CHANGES_REQUIRED / BOOTSTRAP_CONTROL` after fresh exact-SHA review
-  at `64e05ee` found a P1 Windows/POSIX ripgrep path interpretation gap.
-  Commit `1d9b769` rejects backslash-bearing `rg` commands; the RED
-  regression and affected local suites pass. Hosted run `36209048628`
-  passed `scripts` and `notify` on code SHA `1d9b769e317f3a3c5a84790813ba4f23b0c68791`.
-  Event #14 and exact-head hosted CI on the docs commit remain pending.
+- Status: `REVIEW_REQUESTED / BOOTSTRAP_CONTROL` after the Windows/POSIX
+  ripgrep path interpretation P1 at `64e05ee` was repaired in `1d9b769`.
+  Local autonomy 26/26, Coordination Guard 344/344, workflow actions 14/14,
+  `split_sql`, Python compilation, and diff-check pass. Exact-code run
+  `36209048628` and docs-head run `36210668259` passed `scripts`; the latter's
+  notify job succeeded with Telegram delivery skipped because repo secrets are
+  unset. Event #14 verifies PUBLISHED at `e3a24c4`. Event
+  `env-event-56e9a1dd-ea10-485f-b304-4580431ce1cb` records
+  `REVIEW_REQUESTED` from that source head and awaits publication; hosted CI
+  and fresh independent review of the resulting docs head remain pending.
   Trusted `origin/main` remains `CLAIMED` until this implementation PR merges.
 - Owner role: ENV project supervisor
 - Supervisor route: GPT-6 Luna MAX (routing metadata only)
@@ -123,10 +127,16 @@ mutable scope may be changed by this work.
   Guard 344/344, workflow actions 14/14, `split_sql`, Python compilation,
   and diff-check pass; run `36209048628` passed scripts and notify on
   exact code SHA `1d9b769e317f3a3c5a84790813ba4f23b0c68791`.
-  Event `env-autonomy-001-checkpoint-0014` records `CHANGES_REQUIRED` from
-  that SHA and is pending publication; exact-head hosted CI on the resulting
-  docs commit is required before fresh independent review. No `data/raw/`
-  contents were read.
+  Event `env-autonomy-001-checkpoint-0014` was verified `PUBLISHED` at docs
+  head `e3a24c4370c600108cb5bea23ac99f27b55bfa35`; Actions run `36210668259`
+  passed `scripts`, and its `notify` job succeeded with Telegram delivery
+  skipped because repo secrets are unset. The independent review at that head
+  found no source P0-P2 issue but required the formal `REVIEW_REQUESTED`
+  claim/checkpoint state. The claim record is now `REVIEW_REQUESTED`; event
+  `env-event-56e9a1dd-ea10-485f-b304-4580431ce1cb` records it from source head
+  `e3a24c4370c600108cb5bea23ac99f27b55bfa35` and awaits publication. Require
+  exact-head hosted CI on the resulting docs commit and fresh independent
+  review before approval. No `data/raw/` contents were read.
 - The installed Kilo 7.7.2 CLI help exposes `profile`, `models`, and
   `roll-call`; the official CLI reference describes `roll-call` as a model
   connectivity/latency test that sends prompts. Kilo's published balance is
@@ -321,15 +331,9 @@ missing user-only credential, authorization, access, or unresolved authority
 decision.
 
 ## One next safe action
-Fresh independent review at exact head
-`64e05ee74bc933ed593c1366f1aaf0dbfcd5fa64` found a Windows/POSIX
-backslash-interpretation P1. Commit
-`1d9b769e317f3a3c5a84790813ba4f23b0c68791` rejects backslash-bearing `rg`
-commands; the RED regression and full affected local suites pass, including
-autonomy runtime **26/26**. Exact-head run `36209048628` passed `scripts` and
-`notify` on that code SHA. Event `env-autonomy-001-checkpoint-0014` records
-`CHANGES_REQUIRED`; publish and verify it, require green Actions on the final
-docs head, then request fresh independent exact-SHA review. Keep Kilo dispatch
-disabled while admission is `UNKNOWN`, and preserve `ENFORCEMENT_NOT_ACTIVE`
-and `AUTONOMY_NOT_READY` until actual hook activation, server controls, and
-all live proofs are verified.
+Publish and verify event `env-event-56e9a1dd-ea10-485f-b304-4580431ce1cb` from
+source head `e3a24c4370c600108cb5bea23ac99f27b55bfa35`, require green Actions
+on the resulting docs head, then request fresh independent exact-SHA review.
+Keep Kilo dispatch disabled while admission is `UNKNOWN`, and preserve
+`ENFORCEMENT_NOT_ACTIVE` and `AUTONOMY_NOT_READY` until actual hook activation,
+server controls, and all live proofs are verified.

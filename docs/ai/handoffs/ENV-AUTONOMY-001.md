@@ -2,7 +2,7 @@
 
 ## Assignment
 
-- Status: `CHANGES_REQUIRED / BOOTSTRAP_CONTROL` in this candidate; trusted
+- Status: `REVIEW_REQUESTED / BOOTSTRAP_CONTROL` in this candidate; trusted
   `origin/main` remains `CLAIMED` until the implementation PR merges.
 - Task: `ENV-AUTONOMY-001`
 - Claim: `ENV-AUTONOMY-001-C1`, generation `1`
@@ -69,9 +69,16 @@ Local autonomy runtime passes **26/26**, Coordination Guard **344/344**,
 workflow-action tests **14/14**, semantic workflow check, `split_sql`, Python
 compilation, and diff-check. Exact-head run `36209048628` passed `scripts` and
 `notify` on code SHA `1d9b769e317f3a3c5a84790813ba4f23b0c68791`.
-Event `env-autonomy-001-checkpoint-0014` records `CHANGES_REQUIRED` from that
-code SHA and is pending publication. Publish/verify it, require hosted Actions
-on the resulting docs head, then request fresh independent exact-SHA review.
+Event `env-autonomy-001-checkpoint-0014` was verified `PUBLISHED` at docs head
+`e3a24c4370c600108cb5bea23ac99f27b55bfa35`. Actions run `36210668259` passed
+`scripts`; its `notify` job succeeded with Telegram delivery skipped because
+repo secrets are unset. The independent review at `e3a24c4` found no source
+P0-P2 issue, but required the formal `REVIEW_REQUESTED` claim/checkpoint state.
+The claim record is now `REVIEW_REQUESTED`; event
+`env-event-56e9a1dd-ea10-485f-b304-4580431ce1cb` records that state from
+source head `e3a24c4370c600108cb5bea23ac99f27b55bfa35` and is pending
+publication. Publish/verify it, require hosted Actions on the resulting docs
+head, then request fresh independent exact-SHA review.
 Kilo quota/upstream remain `UNKNOWN`, JEV remains `UNAVAILABLE`, and no
 provider request was made. No C1 file was changed, and no claim release,
 reassignment, quiescence, or transfer evidence was created. Keep `BOOTSTRAP_CONTROL`,
@@ -346,6 +353,25 @@ server and live-acceptance gates pass.
       "published": false,
       "task_id": "ENV-AUTONOMY-001",
       "terminal_result": null
+    },
+    {
+      "claim_generation": 1,
+      "claim_id": "ENV-AUTONOMY-001-C1",
+      "event_id": "env-event-56e9a1dd-ea10-485f-b304-4580431ce1cb",
+      "event_seq": 15,
+      "event_type": "CHECKPOINT",
+      "goal_id": "01a0d917-7b29-7970-8bb7-3c6df13e4bd3",
+      "operation_id": null,
+      "operation_outcome": null,
+      "payload": {
+        "lane_status": "REVIEW_REQUESTED",
+        "recorded_at_utc": "2026-09-26T02:18:29Z",
+        "source_head_sha": "e3a24c4370c600108cb5bea23ac99f27b55bfa35"
+      },
+      "previous_event_id": "env-autonomy-001-checkpoint-0014",
+      "published": false,
+      "task_id": "ENV-AUTONOMY-001",
+      "terminal_result": null
     }
   ],
   "goal_id": "01a0d917-7b29-7970-8bb7-3c6df13e4bd3",
@@ -448,9 +474,9 @@ requires a clean supervisor session, use a separate clean worktree and record
 its exact path/SHA.
 
 ## One next safe action
-Publish and verify `env-autonomy-001-checkpoint-0014` from code SHA
-`1d9b769e317f3a3c5a84790813ba4f23b0c68791`, require exact-head hosted
-Actions on the resulting docs commit, then request fresh independent
+Publish and verify `env-event-56e9a1dd-ea10-485f-b304-4580431ce1cb` from
+source head `e3a24c4370c600108cb5bea23ac99f27b55bfa35`, require exact-head
+hosted Actions on the resulting docs commit, then request fresh independent
 exact-SHA review. Only the independent reviewer may approve and merge after
 exact-base/head recheck; keep `BOOTSTRAP_CONTROL`, `ENFORCEMENT_NOT_ACTIVE`,
 and `AUTONOMY_NOT_READY` until the remaining live acceptance gates pass.
