@@ -2,10 +2,10 @@
 
 ## Assignment
 
-- Status: `CHANGES_REQUIRED / BOOTSTRAP_CONTROL` after fresh exact-head review
-  of PR #91 at `6dbfd47fef14ef782d138dc357d47e31d3d41313` found three P1s and
-  one P2; trusted `origin/main` remains `CLAIMED` until this implementation PR
-  merges.
+- Status: `REVIEW_REQUESTED / BOOTSTRAP_CONTROL` after repairing the four
+  findings from PR #91 review at `6dbfd47fef14ef782d138dc357d47e31d3d41313`
+  and one runtime blocker found while publishing the next checkpoint; trusted
+  `origin/main` remains `CLAIMED` until this implementation PR merges.
 - Owner role: ENV project supervisor
 - Supervisor route: GPT-6 Luna MAX (routing metadata only)
 - Reviewer: independent GPT-6 Sol reviewer; implementation author must not merge
@@ -64,25 +64,27 @@ mutable scope may be changed by this work.
   task-bound provider admission. GPT-6 Sol is reserved for independent
   cross-cutting exact-SHA review. Model names are routing preferences, not
   identity or authorization evidence.
-- Current local verification after repair: focused autonomy runtime **22/22 PASS**,
-  Coordination Guard regressions **344/344 PASS**, workflow-action
+- Local verification on the current code candidate: autonomy runtime
+  **25/25 PASS**, Coordination Guard **344/344 PASS**, workflow-action
   regressions **14/14 PASS**, workflow semantic checker PASS, `split_sql`
   regressions PASS, Python compilation PASS, and `git diff --check` exits 0
-  (with CRLF-normalization warnings only). The actual
-  runtime status passes this claim's identity preflight; refill finds 0
-  canonical SAFE_READY tasks, and Kilo admission remains `UNKNOWN` for both
-  proxy quota and upstream readiness. No provider request was made.
+  (with CRLF-normalization warnings only). The actual runtime status passes
+  this claim's identity preflight; refill finds 0 canonical SAFE_READY tasks,
+  and Kilo admission remains `UNKNOWN` for both proxy quota and upstream
+  readiness. No provider request was made.
 - GitHub Actions run `36195805695` passed at code HEAD
   `db8d4785a07b36c76e206da6706a9426d5962114`. Final-candidate run
   `36196641540` passed `scripts` and `notify` at `6dbfd47fef14ef782d138dc357d47e31d3d41313`;
   the fresh review findings below remain unresolved.
-- Fresh review at `6dbfd47fef14ef782d138dc357d47e31d3d41313` found three P1s:
-  PowerShell wildcard path reads bypass protected-file checks; the unresolved
-  operation gate deadlocks valid Kilo request/outcome recording; and verifying
-  a published `REQUESTED` receipt incorrectly depends on current live admission.
-  It also found one P2: the durable dispatch receipt omits exact claim scope.
-  Hosted Actions run `36196641540` passed `scripts` and `notify` on that exact
-  SHA; these findings still require repair and fresh review.
+- Fresh review at `6dbfd47fef14ef782d138dc357d47e31d3d41313` found three P1s
+  and one P2: wildcard protected-path reads, blocked Kilo REQUESTED/outcome
+  progress, historical receipt verification coupled to current admission, and
+  missing exact claim scope in the durable binding. Code commits `87a5d47`
+  and `1565c5b` address those findings. The real checkpoint CLI also exposed
+  immutable trusted-claim dependencies as tuples while the binding API expects
+  lists; `1565c5b` normalizes that comparison, pinned by a new regression.
+  Exact-head hosted Actions and fresh independent review are pending on the
+  new published candidate.
 - The installed Kilo 7.7.2 CLI help exposes `profile`, `models`, and
   `roll-call`; the official CLI reference describes `roll-call` as a model
   connectivity/latency test that sends prompts. Kilo's published balance is
@@ -278,4 +280,4 @@ decision.
 
 ## One next safe action
 
-Repair the three P1 findings and one P2 from exact-head review at `6dbfd47fef14ef782d138dc357d47e31d3d41313`: deny wildcard/unsafe read paths before hook bypass; permit only identity-matched REQUESTED and OPERATION_OUTCOME progress for an existing operation while preserving UNKNOWN retry blocks; verify a REQUESTED receipt from persisted admission evidence without re-probing current quota; and bind each durable receipt to the exact claim scope. Add focused regressions, publish the typed `CHANGES_REQUIRED` checkpoint, rerun applicable local and hosted gates, then request fresh independent exact-SHA review. Keep Kilo dispatch disabled while admission is `UNKNOWN`, and preserve `ENFORCEMENT_NOT_ACTIVE` and `AUTONOMY_NOT_READY` until actual hook activation, server controls, and all applicable live proofs are verified.
+The implementation repairs are committed as `87a5d47` and `1565c5b`, including regression coverage for protected reads, pending operation progress, persisted request-time admission, exact Kilo binding, and immutable trusted dependencies. The lane handoff now has a typed `REVIEW_REQUESTED` event tied to code HEAD `1565c5b`; publish and verify that checkpoint, run exact-head hosted CI, and obtain a fresh independent exact-SHA review. Keep Kilo dispatch disabled while admission is `UNKNOWN`, and preserve `ENFORCEMENT_NOT_ACTIVE` and `AUTONOMY_NOT_READY` until actual hook activation, server controls, and all applicable live proofs are verified.

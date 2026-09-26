@@ -2,7 +2,7 @@
 
 ## Assignment
 
-- Status: `CHANGES_REQUIRED / BOOTSTRAP_CONTROL` in this candidate; trusted
+- Status: `REVIEW_REQUESTED / BOOTSTRAP_CONTROL` in this candidate; trusted
   `origin/main` remains `CLAIMED` until the implementation PR merges.
 - Task: `ENV-AUTONOMY-001`
 - Claim: `ENV-AUTONOMY-001-C1`, generation `1`
@@ -19,18 +19,24 @@
 The separate generation-1 bootstrap claim is authoritative on `origin/main`
 after PR #90 merged as `0ea079d69c3186272f1ae6be82cbbeb22ed99266`. The three
 P1 findings from independent review at `f7ea87d942cfcc5118d0fde63037cd4de89a7bc4`
-are repaired in code commit `db8d4785a07b36c76e206da6706a9426d5962114`.
+were repaired in code commit `db8d4785a07b36c76e206da6706a9426d5962114`.
 Fresh review at `6dbfd47fef14ef782d138dc357d47e31d3d41313` found three P1s
-and one P2: wildcard read commands can bypass protected `.env`/`data/raw`
-checks; the unresolved-operation guard blocks valid Kilo receipt/outcome
-progress; old `REQUESTED` receipts depend on current admission during verify;
-and the durable receipt binding lacks exact claim scope. Hosted Actions run
-`36196641540` passed at that exact SHA, but these correctness findings require
-repair and fresh review. No C1 file was changed, and no claim release,
-reassignment, quiescence, or transfer evidence was created. The runtime and
-local hooks must continue to report
-`BOOTSTRAP_CONTROL`, `ENFORCEMENT_NOT_ACTIVE`, and `AUTONOMY_NOT_READY` until
-their independent server and live-acceptance gates pass.
+and one P2: wildcard protected-path reads, blocked matching Kilo receipt/outcome
+progress, historical REQUESTED verification tied to current admission, and
+missing exact claim scope in the durable binding. Code commits `87a5d47` and
+`1565c5b` repair those findings. The latter also fixes a trusted immutable
+dependency tuple/list comparison that blocked the real checkpoint CLI; a
+regression covers the frozen claim shape. Local autonomy tests pass **25/25**;
+Coordination Guard **344/344**; workflow actions **14/14**; workflow semantics,
+`split_sql`, Python compilation, and `git diff --check` pass. Lifecycle event
+`env-autonomy-001-checkpoint-0009` records `REVIEW_REQUESTED` from code HEAD
+`1565c5b`, pending publication and verification at the resulting exact docs
+head. Fresh hosted Actions and independent review are required there. Kilo
+quota/upstream remain `UNKNOWN`, JEV remains `UNAVAILABLE`, and no provider
+request was made. No C1 file was changed, and no claim release, reassignment,
+quiescence, or transfer evidence was created. Keep `BOOTSTRAP_CONTROL`,
+`ENFORCEMENT_NOT_ACTIVE`, and `AUTONOMY_NOT_READY` until their independent
+server and live-acceptance gates pass.
 
 <!-- ENV-AUTONOMY-LIFECYCLE:START -->
 ```json
@@ -183,6 +189,25 @@ their independent server and live-acceptance gates pass.
         "source_head_sha": "6dbfd47fef14ef782d138dc357d47e31d3d41313"
       },
       "previous_event_id": "env-autonomy-001-checkpoint-0007",
+      "published": false,
+      "task_id": "ENV-AUTONOMY-001",
+      "terminal_result": null
+    },
+    {
+      "claim_generation": 1,
+      "claim_id": "ENV-AUTONOMY-001-C1",
+      "event_id": "env-autonomy-001-checkpoint-0009",
+      "event_seq": 9,
+      "event_type": "CHECKPOINT",
+      "goal_id": "01a0d917-7b29-7970-8bb7-3c6df13e4bd3",
+      "operation_id": null,
+      "operation_outcome": null,
+      "payload": {
+        "lane_status": "REVIEW_REQUESTED",
+        "recorded_at_utc": "2026-09-26T00:31:18Z",
+        "source_head_sha": "1565c5b8f4918949eb04739da72b215144879015"
+      },
+      "previous_event_id": "env-autonomy-001-checkpoint-0008",
       "published": false,
       "task_id": "ENV-AUTONOMY-001",
       "terminal_result": null
