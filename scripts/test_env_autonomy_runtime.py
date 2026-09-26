@@ -1065,11 +1065,11 @@ class HookClassifierTests(unittest.TestCase):
                 )["permissionDecision"],
                 "allow",
             )
+            self.assertFalse(runtime._safe_repository_read_paths(root, [r"data\.\raw"]))
 
             unsafe_commands = (
                 "rg -n X data/./raw",
                 "rg -n X data/not-raw/../raw",
-                "rg -n X 'data\\.\\raw'",
                 "rg -n X data/*",
                 "rg -n X 'data/{raw,safe}'",
                 "rg -n X ~/private",
@@ -1082,6 +1082,21 @@ class HookClassifierTests(unittest.TestCase):
                     )
                     self.assertEqual(decision["permissionDecision"], "deny")
                     self.assertEqual(decision["reason"], "UNSAFE_READ_PATH")
+
+            ambiguous_backslash_commands = (
+                r"rg -n X data\.\raw",
+                r"rg -n X 'data\.\raw'",
+                r"rg -n X data/ra\w",
+            )
+            for command in ambiguous_backslash_commands:
+                with self.subTest(command=command):
+                    classification = runtime.classify_shell_command(command)
+                    self.assertEqual(classification["kind"], "UNKNOWN")
+                    self.assertEqual(classification["reason"], "AMBIGUOUS_RIPGREP_BACKSLASH")
+                    decision = runtime.hook_pretool(
+                        {"tool_name": "Bash", "tool_input": {"command": command}}, root
+                    )
+                    self.assertEqual(decision["permissionDecision"], "deny")
 
 
 if __name__ == "__main__":

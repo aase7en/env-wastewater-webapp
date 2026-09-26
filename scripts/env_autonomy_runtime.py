@@ -1712,6 +1712,11 @@ def classify_shell_command(command: str) -> dict:
         if sub == "remote" and tokens[2:] == ["-v"]:
             return {"kind": "READ_ONLY", "changes": []}
     if tokens[0].casefold() == "rg":
+        # Backslash means a path separator to Windows shells and an escape to
+        # POSIX shells. Do not let platform-dependent tokenization rewrite an
+        # rg operand before the repository-path validator sees it.
+        if "\\" in text:
+            return {"kind": "UNKNOWN", "reason": "AMBIGUOUS_RIPGREP_BACKSLASH"}
         read_paths = _parse_literal_ripgrep_read_paths(tokens)
         if read_paths is None:
             return {"kind": "UNKNOWN", "reason": "UNSAFE_RIPGREP_OPTION"}
