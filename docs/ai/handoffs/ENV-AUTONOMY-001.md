@@ -2,7 +2,7 @@
 
 ## Assignment
 
-- Status: `REVIEW_REQUESTED / BOOTSTRAP_CONTROL` in this candidate; trusted
+- Status: `CHANGES_REQUIRED / BOOTSTRAP_CONTROL` in this candidate; trusted
   `origin/main` remains `CLAIMED` until the implementation PR merges.
 - Task: `ENV-AUTONOMY-001`
 - Claim: `ENV-AUTONOMY-001-C1`, generation `1`
@@ -23,15 +23,15 @@ were repaired in code commit `db8d4785a07b36c76e206da6706a9426d5962114`.
 Fresh review at `6dbfd47fef14ef782d138dc357d47e31d3d41313` found three P1s
 and one P2: wildcard protected-path reads, blocked matching Kilo receipt/outcome
 progress, historical REQUESTED verification tied to current admission, and
-missing exact claim scope in the durable binding. Code commits `87a5d47` and
-`1565c5b` repair those findings. The latter also fixes a trusted immutable
-dependency tuple/list comparison that blocked the real checkpoint CLI; a
-regression covers the frozen claim shape. Local autonomy tests pass **25/25**;
-Coordination Guard **344/344**; workflow actions **14/14**; workflow semantics,
-`split_sql`, Python compilation, and `git diff --check` pass. Lifecycle event
-`env-autonomy-001-checkpoint-0009` records `REVIEW_REQUESTED` from code HEAD
-`1565c5b`, pending publication and verification at the resulting exact docs
-head. Fresh hosted Actions and independent review are required there. Kilo
+missing exact claim scope in the durable binding. Commits `87a5d47` and
+`1565c5b` repair those findings; `1565c5b` also fixes a trusted immutable
+dependency tuple/list comparison that blocked the real checkpoint CLI.
+Hosted run `36205380772` then failed the new Windows drive-relative fixture on
+Linux at `cb1c396`; commit `7b456fc` checks Windows drive/root semantics on all
+hosts, and local autonomy tests pass **25/25**. Lifecycle event
+`env-autonomy-001-checkpoint-0010` records `CHANGES_REQUIRED` from code HEAD
+`7b456fc`, pending publication and verification at the resulting docs head.
+Exact-head hosted Actions must pass before fresh independent review. Kilo
 quota/upstream remain `UNKNOWN`, JEV remains `UNAVAILABLE`, and no provider
 request was made. No C1 file was changed, and no claim release, reassignment,
 quiescence, or transfer evidence was created. Keep `BOOTSTRAP_CONTROL`,
@@ -208,6 +208,25 @@ server and live-acceptance gates pass.
         "source_head_sha": "1565c5b8f4918949eb04739da72b215144879015"
       },
       "previous_event_id": "env-autonomy-001-checkpoint-0008",
+      "published": false,
+      "task_id": "ENV-AUTONOMY-001",
+      "terminal_result": null
+    },
+    {
+      "claim_generation": 1,
+      "claim_id": "ENV-AUTONOMY-001-C1",
+      "event_id": "env-autonomy-001-checkpoint-0010",
+      "event_seq": 10,
+      "event_type": "CHECKPOINT",
+      "goal_id": "01a0d917-7b29-7970-8bb7-3c6df13e4bd3",
+      "operation_id": null,
+      "operation_outcome": null,
+      "payload": {
+        "lane_status": "CHANGES_REQUIRED",
+        "recorded_at_utc": "2026-09-26T00:37:25Z",
+        "source_head_sha": "7b456fc92d0be045c948f175e153cb6f65ecb8e5"
+      },
+      "previous_event_id": "env-autonomy-001-checkpoint-0009",
       "published": false,
       "task_id": "ENV-AUTONOMY-001",
       "terminal_result": null

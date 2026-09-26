@@ -2,10 +2,10 @@
 
 ## Assignment
 
-- Status: `REVIEW_REQUESTED / BOOTSTRAP_CONTROL` after repairing the four
-  findings from PR #91 review at `6dbfd47fef14ef782d138dc357d47e31d3d41313`
-  and one runtime blocker found while publishing the next checkpoint; trusted
-  `origin/main` remains `CLAIMED` until this implementation PR merges.
+- Status: `CHANGES_REQUIRED / BOOTSTRAP_CONTROL` after hosted Actions run
+  `36205380772` found a Linux/Windows path-semantics mismatch in a regression
+  at candidate `cb1c396`; trusted `origin/main` remains `CLAIMED` until this
+  implementation PR merges.
 - Owner role: ENV project supervisor
 - Supervisor route: GPT-6 Luna MAX (routing metadata only)
 - Reviewer: independent GPT-6 Sol reviewer; implementation author must not merge
@@ -73,9 +73,14 @@ mutable scope may be changed by this work.
   and Kilo admission remains `UNKNOWN` for both proxy quota and upstream
   readiness. No provider request was made.
 - GitHub Actions run `36195805695` passed at code HEAD
-  `db8d4785a07b36c76e206da6706a9426d5962114`. Final-candidate run
-  `36196641540` passed `scripts` and `notify` at `6dbfd47fef14ef782d138dc357d47e31d3d41313`;
-  the fresh review findings below remain unresolved.
+  `db8d4785a07b36c76e206da6706a9426d5962114`; run `36196641540` passed
+  `scripts` and `notify` at `6dbfd47fef14ef782d138dc357d47e31d3d41313`.
+  After the four review repairs, `36205380772` failed the `scripts` job at
+  `cb1c396`: Linux treated `C:outside.txt` as an ordinary relative filename,
+  unlike Windows' drive-relative path semantics. Commit `7b456fc` now checks
+  Windows drive/root syntax with `PureWindowsPath` on every host. Local
+  autonomy tests pass **25/25** after this repair; exact-head hosted Actions
+  must be rerun before review.
 - Fresh review at `6dbfd47fef14ef782d138dc357d47e31d3d41313` found three P1s
   and one P2: wildcard protected-path reads, blocked Kilo REQUESTED/outcome
   progress, historical receipt verification coupled to current admission, and
@@ -280,4 +285,4 @@ decision.
 
 ## One next safe action
 
-The implementation repairs are committed as `87a5d47` and `1565c5b`, including regression coverage for protected reads, pending operation progress, persisted request-time admission, exact Kilo binding, and immutable trusted dependencies. The lane handoff now has a typed `REVIEW_REQUESTED` event tied to code HEAD `1565c5b`; publish and verify that checkpoint, run exact-head hosted CI, and obtain a fresh independent exact-SHA review. Keep Kilo dispatch disabled while admission is `UNKNOWN`, and preserve `ENFORCEMENT_NOT_ACTIVE` and `AUTONOMY_NOT_READY` until actual hook activation, server controls, and all applicable live proofs are verified.
+Commits `87a5d47` and `1565c5b` repair the four independent-review findings and the immutable trusted-dependency binding blocker. Commit `7b456fc` fixes the cross-platform Windows path fixture identified by hosted run `36205380772`; local autonomy tests pass **25/25**. The lane handoff records `CHANGES_REQUIRED` in event `env-autonomy-001-checkpoint-0010` from code HEAD `7b456fc`; publish and verify that checkpoint, rerun exact-head hosted CI, and then request fresh independent exact-SHA review if the checks pass. Keep Kilo dispatch disabled while admission is `UNKNOWN`, and preserve `ENFORCEMENT_NOT_ACTIVE` and `AUTONOMY_NOT_READY` until actual hook activation, server controls, and all applicable live proofs are verified.
