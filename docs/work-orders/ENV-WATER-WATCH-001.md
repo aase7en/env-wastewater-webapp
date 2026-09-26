@@ -1,6 +1,6 @@
 # ENV-WATER-WATCH-001 — Uthai/Ayutthaya Water Watch public infographic vertical slice
 
-Status: CANDIDATE_READY
+Status: REVIEW_REQUESTED
 Owner / integrator: GPT-5.6 Sol
 Visual implementation lane: SunDay-Worker 2 (ownership transferred after Worker 1 Active Project drift was detected; bounded repository mutation)
 Core/data review owner: GLM-5.3 MAX when the source/risk contract reaches review
@@ -11,6 +11,8 @@ Branch: `feature/uthai-water-watch-001`
 Base: `origin/main@6987036740de4fd3b4c1a51639b1631860262242`
 Activation authority: explicit user instruction, 2026-09-26
 Last updated: 2026-09-26
+Pull request: #93
+Source candidate: `fca8809f25b7036e0c176bf2412388c5c51d7a94`
 
 > Coordination note: `docs/ai/CURRENT-WORK.md` is currently owned by an active ENV autonomy lane. This slice does not mutate that shared SSoT while ownership is active. The work order itself records the bounded authorization from the user's explicit instruction. Integration into canonical current-work must be reconciled at the next safe coordination boundary.
 
