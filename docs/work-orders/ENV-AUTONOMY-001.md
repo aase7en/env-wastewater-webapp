@@ -2,9 +2,11 @@
 
 ## Assignment
 
-- Status: `REVIEW_REQUESTED / BOOTSTRAP_CONTROL` after repair commit
-  `7b456fc` and exact-head hosted run `36205630853` passed at `35c0091`;
-  trusted `origin/main` remains `CLAIMED` until this implementation PR merges.
+- Status: `CHANGES_REQUIRED / BOOTSTRAP_CONTROL` after fresh exact-SHA review
+  at `cc17d28` found a P1 in new Kilo receipt admission. Repair commit
+  `b37a1c3` and exact-head hosted run `36206561773` passed at code SHA
+  `b37a1c3c0ea57e0739c877f914a12cae3eee7ffc`; trusted `origin/main` remains
+  `CLAIMED` until this implementation PR merges.
 - Owner role: ENV project supervisor
 - Supervisor route: GPT-6 Luna MAX (routing metadata only)
 - Reviewer: independent GPT-6 Sol reviewer; implementation author must not merge
@@ -80,9 +82,20 @@ mutable scope may be changed by this work.
   Windows drive/root syntax with `PureWindowsPath` on every host. Local
   autonomy tests pass **25/25** after this repair. Exact-head hosted Actions
   run `36205630853` then passed `scripts` and `notify` on
-  `35c009143f3841ecacd0013118a5492fcced38df`. The docs checkpoint now records
-  `REVIEW_REQUESTED` from that code HEAD; the final documentation head still
-  requires its own hosted Actions run before fresh review.
+  `35c009143f3841ecacd0013118a5492fcced38df`. A fresh exact-SHA review at
+  `cc17d283307605e44eff70794f3695b866ec34d9` found P1: first-time Kilo
+  `REQUESTED` receipt creation checked admission but not current claim
+  mutability. Commit `b37a1c3c0ea57e0739c877f914a12cae3eee7ffc` now runs
+  `guard.preflight` with the current claim/context only when creating a new
+  receipt; existing receipt verification and later transitions remain usable
+  after status changes. The new regression was RED before the fix. Local
+  autonomy tests pass **25/25**, Coordination Guard **344/344**, workflow
+  actions **14/14**, semantic workflow check, `split_sql`, Python compilation,
+  and `git diff --check` pass. Exact-head run `36206561773` passed `scripts`
+  and `notify` at the code SHA above. Lifecycle event
+  `env-autonomy-001-checkpoint-0012` records `CHANGES_REQUIRED` from that SHA;
+  publish/verify it and require hosted Actions on the final docs head before
+  fresh independent review.
 - Fresh review at `6dbfd47fef14ef782d138dc357d47e31d3d41313` found three P1s
   and one P2: wildcard protected-path reads, blocked Kilo REQUESTED/outcome
   progress, historical receipt verification coupled to current admission, and
@@ -90,7 +103,8 @@ mutable scope may be changed by this work.
   and `1565c5b` address those findings. The real checkpoint CLI also exposed
   immutable trusted-claim dependencies as tuples while the binding API expects
   lists; `1565c5b` normalizes that comparison, pinned by a new regression.
-  Fresh independent review is pending on the new published candidate.
+  The newer P1 finding is repaired in `b37a1c3`; fresh exact-head review at
+  the final docs SHA remains pending.
 - The installed Kilo 7.7.2 CLI help exposes `profile`, `models`, and
   `roll-call`; the official CLI reference describes `roll-call` as a model
   connectivity/latency test that sends prompts. Kilo's published balance is
@@ -286,4 +300,4 @@ decision.
 
 ## One next safe action
 
-Commits `87a5d47` and `1565c5b` repair the four independent-review findings and the immutable trusted-dependency binding blocker. Commit `7b456fc` fixes the cross-platform Windows path fixture identified by hosted run `36205380772`; local autonomy tests pass **25/25**, and hosted run `36205630853` passed `scripts` and `notify` at code head `35c0091`. The lane handoff records `REVIEW_REQUESTED` in event `env-autonomy-001-checkpoint-0011` from code HEAD `35c0091`; publish and verify that checkpoint, require green Actions on the final docs head, then request fresh independent exact-SHA review. Keep Kilo dispatch disabled while admission is `UNKNOWN`, and preserve `ENFORCEMENT_NOT_ACTIVE` and `AUTONOMY_NOT_READY` until actual hook activation, server controls, and all applicable live proofs are verified.
+Fresh independent review at exact head `cc17d283307605e44eff70794f3695b866ec34d9` found P1 in first-time Kilo receipt creation. Commit `b37a1c3c0ea57e0739c877f914a12cae3eee7ffc` adds current-claim `guard.preflight` for a new `REQUESTED` receipt and a RED-first regression; the post-fix autonomy suite passes **25/25**, and hosted run `36206561773` passed `scripts` and `notify` on that exact code SHA. Event `env-autonomy-001-checkpoint-0012` records `CHANGES_REQUIRED` from `b37a1c3`; publish and verify it, require green Actions on the final docs head, then request fresh independent exact-SHA review. Keep Kilo dispatch disabled while admission is `UNKNOWN`, and preserve `ENFORCEMENT_NOT_ACTIVE` and `AUTONOMY_NOT_READY` until actual hook activation, server controls, and all applicable live proofs are verified.

@@ -2,7 +2,7 @@
 
 ## Assignment
 
-- Status: `REVIEW_REQUESTED / BOOTSTRAP_CONTROL` in this candidate; trusted
+- Status: `CHANGES_REQUIRED / BOOTSTRAP_CONTROL` in this candidate; trusted
   `origin/main` remains `CLAIMED` until the implementation PR merges.
 - Task: `ENV-AUTONOMY-001`
 - Claim: `ENV-AUTONOMY-001-C1`, generation `1`
@@ -30,9 +30,20 @@ Hosted run `36205380772` then failed the new Windows drive-relative fixture on
 Linux at `cb1c396`; commit `7b456fc` checks Windows drive/root semantics on all
 hosts, and local autonomy tests pass **25/25**. Exact-head run `36205630853`
 passed `scripts` and `notify` at code HEAD
-`35c009143f3841ecacd0013118a5492fcced38df`. Lifecycle event
-`env-autonomy-001-checkpoint-0011` records `REVIEW_REQUESTED` from code HEAD
-`35c0091`, pending publication and verification at the resulting docs head.
+`35c009143f3841ecacd0013118a5492fcced38df`. Fresh exact-SHA review at
+`cc17d283307605e44eff70794f3695b866ec34d9` found P1: first-time Kilo
+`REQUESTED` receipt creation did not recheck that the current claim remained
+mutable. Commit `b37a1c3c0ea57e0739c877f914a12cae3eee7ffc` runs
+`guard.preflight` against the current claim/context only when creating a new
+receipt; historical verification and existing receipt transitions remain
+available after status changes. The added regression failed before the fix;
+after it, autonomy runtime passes **25/25**, Coordination Guard **344/344**,
+workflow-action tests **14/14**, semantic workflow check, `split_sql`, Python
+compilation, and `git diff --check` pass. Exact-head Actions run `36206561773`
+passed `scripts` and `notify` at the code SHA above. The prior event
+`env-autonomy-001-checkpoint-0011` was superseded; event
+`env-autonomy-001-checkpoint-0012` records `CHANGES_REQUIRED` from the code
+SHA above, pending publication and verification at the resulting docs head.
 Exact-head hosted Actions must pass again on that final docs head before fresh
 independent review. Kilo
 quota/upstream remain `UNKNOWN`, JEV remains `UNAVAILABLE`, and no provider
@@ -252,6 +263,25 @@ server and live-acceptance gates pass.
       "published": false,
       "task_id": "ENV-AUTONOMY-001",
       "terminal_result": null
+    },
+    {
+      "claim_generation": 1,
+      "claim_id": "ENV-AUTONOMY-001-C1",
+      "event_id": "env-autonomy-001-checkpoint-0012",
+      "event_seq": 12,
+      "event_type": "CHECKPOINT",
+      "goal_id": "01a0d917-7b29-7970-8bb7-3c6df13e4bd3",
+      "operation_id": null,
+      "operation_outcome": null,
+      "payload": {
+        "lane_status": "CHANGES_REQUIRED",
+        "recorded_at_utc": "2026-09-26T00:57:47Z",
+        "source_head_sha": "b37a1c3c0ea57e0739c877f914a12cae3eee7ffc"
+      },
+      "previous_event_id": "env-autonomy-001-checkpoint-0011",
+      "published": false,
+      "task_id": "ENV-AUTONOMY-001",
+      "terminal_result": null
     }
   ],
   "goal_id": "01a0d917-7b29-7970-8bb7-3c6df13e4bd3",
@@ -299,7 +329,7 @@ server and live-acceptance gates pass.
 - `python scripts/env_autonomy_runtime.py kilo-preflight --root .` reports
   proxy quota and upstream model status `UNKNOWN`; it performed no external
   call. Route metadata leaves dispatch disabled. JEV remains `UNAVAILABLE`.
-- Focused autonomy runtime tests pass **22/22**; Coordination Guard passes
+- Focused autonomy runtime tests pass **25/25**; Coordination Guard passes
   **344/344**; workflow-action tests pass **14/14**; semantic workflow check,
   `split_sql`, Python compilation, and `git diff --check` pass. The prior
   `CHANGES_REQUIRED` checkpoint at
@@ -314,8 +344,11 @@ server and live-acceptance gates pass.
   canonical READY parser matches the registry JSON before the human frontier;
   and refill marks production dispatch authorized despite
   `ENFORCEMENT_NOT_ACTIVE`. The current candidate fixes all three, adds
-  regression coverage, and is back at `REVIEW_REQUESTED` after full local
-  validation and publication of the prior checkpoint.
+  regression coverage, and reached `REVIEW_REQUESTED` after full local
+  validation and publication of the prior checkpoint. A subsequent exact-SHA
+  review at `cc17d28` found the new-request mutability P1 described above;
+  `b37a1c3` repairs it and the candidate is now `CHANGES_REQUIRED` pending
+  fresh review.
 - Independent exact-head review at `f7ea87d942cfcc5118d0fde63037cd4de89a7bc4`
   returned `CHANGES_REQUIRED` with three P1 findings: Git shell mutation-option
   bypasses; checkpoint and parked recovery ignoring recorded hook observations
@@ -328,10 +361,10 @@ server and live-acceptance gates pass.
   reconciliation/recovery, and persisted claim-bound receipt transitions.
   Fresh provider admission remains `UNKNOWN`; request dispatch is disabled,
   no Kilo prompt or roll-call was sent, and JEV remains `UNAVAILABLE`.
-- The `6dbfd47fef14ef782d138dc357d47e31d3d41313` review findings supersede
-  the prior `REVIEW_REQUESTED` state. Keep the candidate `CHANGES_REQUIRED`
-  until wildcard denial, matched lifecycle progress, historical admission
-  verification, and exact scope binding are repaired and independently checked.
+- The `6dbfd47fef14ef782d138dc357d47e31d3d41313` review findings were repaired
+  in `87a5d47` and `1565c5b`; the later P1 at `cc17d28` is repaired in
+  `b37a1c3`. Keep the candidate `CHANGES_REQUIRED` until a fresh independent
+  review accepts the exact final docs head after hosted CI.
 - A comparison against `origin/main` confirms the C1 claim record is unchanged
   (canonical JSON SHA-256
   `68943625ae4123f838ebc7fde4ff9bf02bb279716caa28e0600dbd0ca5a97077`);
