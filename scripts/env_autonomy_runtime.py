@@ -18,7 +18,7 @@ import stat
 import subprocess
 import sys
 import uuid
-from pathlib import Path, PureWindowsPath
+from pathlib import Path, PurePosixPath, PureWindowsPath
 from typing import Any, Iterable, Optional
 
 import env_coordination_guard as guard
@@ -615,12 +615,16 @@ def _safe_repository_read_paths(root: Path, paths: Any) -> bool:
     for raw_path in paths:
         if not isinstance(raw_path, str) or not raw_path.strip():
             return False
-        candidate = Path(raw_path)
+        if raw_path.startswith("~") or any(character in raw_path for character in "*?[]{}"):
+            return False
+        portable_path = raw_path.replace("\\", "/")
+        candidate = Path(portable_path)
         windows_candidate = PureWindowsPath(raw_path)
+        portable_parts = PurePosixPath(portable_path).parts
         if (
             candidate.is_absolute() or candidate.drive or candidate.root
             or windows_candidate.drive or windows_candidate.root
-            or any(part == ".." for part in candidate.parts)
+            or any(part == ".." for part in portable_parts)
         ):
             return False
         try:
@@ -657,6 +661,43 @@ def _parse_literal_shell_read_paths(tokens: list[str]) -> Optional[list[str]]:
     if any(character in path for character in "*?[]") or "," in path:
         return None
     return [path]
+
+
+def _parse_literal_ripgrep_read_paths(tokens: list[str]) -> Optional[list[str]]:
+    """Return the explicit ripgrep path, defaulting to the current repo root."""
+    if not tokens or tokens[0].casefold() != "rg":
+        return None
+    flag_options = {
+        "-n", "--line-number", "-i", "--ignore-case", "-F", "--fixed-strings",
+        "-s", "--case-sensitive", "-S", "--smart-case", "-l", "--files-with-matches",
+        "-c", "--count", "--heading", "--no-heading", "--no-messages", "--trim", "--text",
+    }
+    operands = []
+    after_options = False
+    index = 1
+    while index < len(tokens):
+        token = tokens[index]
+        if not after_options and token == "--":
+            after_options = True
+            index += 1
+            continue
+        if not after_options and token in flag_options:
+            index += 1
+            continue
+        if not after_options and token == "--color":
+            if index + 1 >= len(tokens) or tokens[index + 1] not in ("never", "auto", "always"):
+                return None
+            index += 2
+            continue
+        if not after_options and token.startswith("-"):
+            return None
+        operands.append(token)
+        index += 1
+    if len(operands) == 1:
+        return ["."]
+    if len(operands) == 2 and operands[1] != "-":
+        return [operands[1]]
+    return None
 
 
 def _is_reconciliation_command(tool_name: str, tool_input: dict) -> bool:
@@ -1671,19 +1712,10 @@ def classify_shell_command(command: str) -> dict:
         if sub == "remote" and tokens[2:] == ["-v"]:
             return {"kind": "READ_ONLY", "changes": []}
     if tokens[0].casefold() == "rg":
-        safe_flags = {
-            "-n", "--line-number", "-i", "--ignore-case", "-F", "--fixed-strings",
-            "-s", "--case-sensitive", "-S", "--smart-case", "-l", "--files-with-matches",
-            "-c", "--count", "--heading", "--no-heading", "--color", "never",
-            "--no-messages", "--trim", "--text",
-        }
-        args = tokens[1:]
-        if not any(not token.startswith("-") for token in args) or any(
-            token.startswith("-") and token not in safe_flags and token != "--"
-            for token in args
-        ):
+        read_paths = _parse_literal_ripgrep_read_paths(tokens)
+        if read_paths is None:
             return {"kind": "UNKNOWN", "reason": "UNSAFE_RIPGREP_OPTION"}
-        return {"kind": "READ_ONLY", "changes": []}
+        return {"kind": "READ_ONLY", "changes": [], "read_paths": read_paths}
     if tokens[0].casefold() in ("get-content", "select-string"):
         if "\\" in text:
             return {"kind": "UNKNOWN", "reason": "UNSAFE_SHELL_READ_ARGUMENTS"}

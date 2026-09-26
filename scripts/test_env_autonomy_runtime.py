@@ -1050,6 +1050,39 @@ class HookClassifierTests(unittest.TestCase):
                     )
                     self.assertEqual(decision["permissionDecision"], "deny")
 
+    def test_ripgrep_paths_must_resolve_outside_protected_data(self):
+        with tempfile.TemporaryDirectory(prefix="env-autonomy-rg-read-") as temp_dir:
+            root = Path(temp_dir)
+            (root / "docs").mkdir()
+            (root / "docs" / "note.md").write_text("synthetic fixture", encoding="utf-8")
+
+            safe_command = "rg -n synthetic docs/note.md"
+            safe_classification = runtime.classify_shell_command(safe_command)
+            self.assertEqual(safe_classification["kind"], "READ_ONLY")
+            self.assertEqual(
+                runtime.hook_pretool(
+                    {"tool_name": "Bash", "tool_input": {"command": safe_command}}, root
+                )["permissionDecision"],
+                "allow",
+            )
+
+            unsafe_commands = (
+                "rg -n X data/./raw",
+                "rg -n X data/not-raw/../raw",
+                "rg -n X 'data\\.\\raw'",
+                "rg -n X data/*",
+                "rg -n X 'data/{raw,safe}'",
+                "rg -n X ~/private",
+            )
+            for command in unsafe_commands:
+                with self.subTest(command=command):
+                    self.assertEqual(runtime.classify_shell_command(command)["kind"], "READ_ONLY")
+                    decision = runtime.hook_pretool(
+                        {"tool_name": "Bash", "tool_input": {"command": command}}, root
+                    )
+                    self.assertEqual(decision["permissionDecision"], "deny")
+                    self.assertEqual(decision["reason"], "UNSAFE_READ_PATH")
+
 
 if __name__ == "__main__":
     unittest.main(verbosity=2)
