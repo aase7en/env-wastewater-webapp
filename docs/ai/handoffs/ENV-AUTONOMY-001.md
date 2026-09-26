@@ -43,9 +43,20 @@ compilation, and `git diff --check` pass. Exact-head Actions run `36206561773`
 passed `scripts` and `notify` at the code SHA above. The prior event
 `env-autonomy-001-checkpoint-0011` was superseded; event
 `env-autonomy-001-checkpoint-0012` records `CHANGES_REQUIRED` from the code
-SHA above, pending publication and verification at the resulting docs head.
-Exact-head hosted Actions must pass again on that final docs head before fresh
-independent review. Kilo
+SHA above and was published at docs head `76d4852510826fb47feba3c0d2fd2504e3c71b35`.
+Exact-head Actions run `36207026611` passed there. Fresh review at that head
+found a second P1: `rg -n X data/./raw` passed through as `READ_ONLY`, bypassing
+the protected raw-data path check. Commit `9fde31603a6162998bbbf79db2936fe5b9f1dae0`
+parses ripgrep operands and resolves every path; dot/parent/backslash aliases,
+glob/brace expansion, and home expansion are denied. The new hook regression
+reproduced the allow before the fix. The full autonomy suite now passes
+**26/26**, Coordination Guard **344/344**, workflow-action tests **14/14**,
+semantic workflow check, `split_sql`, Python compilation, and diff-check pass.
+Exact-head hosted Actions run `36207604091` passed `scripts` and `notify` on
+the code SHA above; the docs checkpoint still needs its own exact-head run.
+Event `env-autonomy-001-checkpoint-0013` records `CHANGES_REQUIRED` from the
+new code SHA and is pending publication. Exact-head hosted Actions must pass
+on the resulting docs head before another independent review. Kilo
 quota/upstream remain `UNKNOWN`, JEV remains `UNAVAILABLE`, and no provider
 request was made. No C1 file was changed, and no claim release, reassignment,
 quiescence, or transfer evidence was created. Keep `BOOTSTRAP_CONTROL`,
@@ -282,6 +293,25 @@ server and live-acceptance gates pass.
       "published": false,
       "task_id": "ENV-AUTONOMY-001",
       "terminal_result": null
+    },
+    {
+      "claim_generation": 1,
+      "claim_id": "ENV-AUTONOMY-001-C1",
+      "event_id": "env-autonomy-001-checkpoint-0013",
+      "event_seq": 13,
+      "event_type": "CHECKPOINT",
+      "goal_id": "01a0d917-7b29-7970-8bb7-3c6df13e4bd3",
+      "operation_id": null,
+      "operation_outcome": null,
+      "payload": {
+        "lane_status": "CHANGES_REQUIRED",
+        "recorded_at_utc": "2026-09-26T01:12:17Z",
+        "source_head_sha": "9fde31603a6162998bbbf79db2936fe5b9f1dae0"
+      },
+      "previous_event_id": "env-autonomy-001-checkpoint-0012",
+      "published": false,
+      "task_id": "ENV-AUTONOMY-001",
+      "terminal_result": null
     }
   ],
   "goal_id": "01a0d917-7b29-7970-8bb7-3c6df13e4bd3",
@@ -329,7 +359,7 @@ server and live-acceptance gates pass.
 - `python scripts/env_autonomy_runtime.py kilo-preflight --root .` reports
   proxy quota and upstream model status `UNKNOWN`; it performed no external
   call. Route metadata leaves dispatch disabled. JEV remains `UNAVAILABLE`.
-- Focused autonomy runtime tests pass **25/25**; Coordination Guard passes
+- Focused autonomy runtime tests pass **26/26**; Coordination Guard passes
   **344/344**; workflow-action tests pass **14/14**; semantic workflow check,
   `split_sql`, Python compilation, and `git diff --check` pass. The prior
   `CHANGES_REQUIRED` checkpoint at
@@ -345,10 +375,12 @@ server and live-acceptance gates pass.
   and refill marks production dispatch authorized despite
   `ENFORCEMENT_NOT_ACTIVE`. The current candidate fixes all three, adds
   regression coverage, and reached `REVIEW_REQUESTED` after full local
-  validation and publication of the prior checkpoint. A subsequent exact-SHA
-  review at `cc17d28` found the new-request mutability P1 described above;
-  `b37a1c3` repairs it and the candidate is now `CHANGES_REQUIRED` pending
-  fresh review.
+  validation and publication of the prior checkpoint. Exact-SHA review at
+  `cc17d28` found the new-request mutability P1 described above; `b37a1c3`
+  repairs it. A later review at `76d4852` found a protected `data/raw/` read
+  bypass through ripgrep path aliases; `9fde316` repairs that path and the
+  candidate remains `CHANGES_REQUIRED` pending fresh review on the final docs
+  head.
 - Independent exact-head review at `f7ea87d942cfcc5118d0fde63037cd4de89a7bc4`
   returned `CHANGES_REQUIRED` with three P1 findings: Git shell mutation-option
   bypasses; checkpoint and parked recovery ignoring recorded hook observations
@@ -361,10 +393,11 @@ server and live-acceptance gates pass.
   reconciliation/recovery, and persisted claim-bound receipt transitions.
   Fresh provider admission remains `UNKNOWN`; request dispatch is disabled,
   no Kilo prompt or roll-call was sent, and JEV remains `UNAVAILABLE`.
-- The `6dbfd47fef14ef782d138dc357d47e31d3d41313` review findings were repaired
-  in `87a5d47` and `1565c5b`; the later P1 at `cc17d28` is repaired in
-  `b37a1c3`. Keep the candidate `CHANGES_REQUIRED` until a fresh independent
-  review accepts the exact final docs head after hosted CI.
+- The `6dbfd47fef14ef782d138dc357d47e31d3d41313` findings were repaired in
+  `87a5d47` and `1565c5b`; the P1 at `cc17d28` is repaired in `b37a1c3`, and
+  the protected-read P1 at `76d4852` is repaired in `9fde316`. Keep the
+  candidate `CHANGES_REQUIRED` until a fresh independent review accepts the
+  exact final docs head after hosted CI.
 - A comparison against `origin/main` confirms the C1 claim record is unchanged
   (canonical JSON SHA-256
   `68943625ae4123f838ebc7fde4ff9bf02bb279716caa28e0600dbd0ca5a97077`);
@@ -382,9 +415,9 @@ its exact path/SHA.
 
 ## One next safe action
 
-Repair the three P1 findings and one P2 from exact-head review at
-`6dbfd47fef14ef782d138dc357d47e31d3d41313`, publish a typed
-`CHANGES_REQUIRED` checkpoint, then require fresh exact-head CI and independent
-review. Only the independent reviewer may merge after approval and exact-base recheck; keep
+Publish and verify `env-autonomy-001-checkpoint-0013` from code SHA
+`9fde31603a6162998bbbf79db2936fe5b9f1dae0`, require exact-head hosted CI on
+the final docs commit, then request fresh independent exact-SHA review. Only
+the independent reviewer may merge after approval and exact-base recheck; keep
 `BOOTSTRAP_CONTROL`, `ENFORCEMENT_NOT_ACTIVE`, and `AUTONOMY_NOT_READY` until
 the remaining live acceptance gates pass.
