@@ -799,6 +799,10 @@ class ReviewAndLifecycleTests(unittest.TestCase):
                 with self.assertRaisesRegex(runtime.AutonomyFailure, "KILO_ADMISSION_UNVERIFIED"):
                     runtime.transition_kilo_receipt(root, trusted, run_id, "REQUESTED")
                 with patch.object(runtime, "_kilo_preflight_snapshot", side_effect=ready_preflight):
+                    held_claim = {**test_claim, "status": "RECOVERY_HOLD"}
+                    held_policy = policy(held_claim)
+                    with self.assertRaisesRegex(runtime.AutonomyFailure, "CLAIM_STATUS_NOT_MUTABLE"):
+                        runtime.transition_kilo_receipt(root, held_policy, run_id, "REQUESTED")
                     requested = runtime.transition_kilo_receipt(root, trusted, run_id, "REQUESTED")
                 self.assertEqual(requested["state"], "REQUESTED")
                 publish("persist requested receipt")

@@ -1343,6 +1343,17 @@ def transition_kilo_receipt(
     if next_state == "REQUESTED":
         if outcome is not None:
             raise AutonomyFailure("KILO_REQUEST_ALREADY_HAS_OUTCOME")
+        if existing is None:
+            preflight_ctx = {
+                "task_id": claim["task_id"], "claim_id": claim["claim_id"],
+                "claim_generation": claim["claim_generation"],
+                "execution_holder_id": claim["execution_holder_id"],
+                "worktree": actual["worktree"], "branch": actual["branch"],
+                "base_ancestor_of_head": actual["claim_base_ancestor"],
+            }
+            decision = guard.preflight(policy, preflight_ctx)
+            if not decision.safe_to_mutate:
+                raise AutonomyFailure(decision.reason or "PREFLIGHT_DENIED")
         admission = _require_kilo_admission(root, binding, intent)
         requested_at_utc = admission.pop("validated_at_utc")
         receipt = {
