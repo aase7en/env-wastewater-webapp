@@ -3,11 +3,12 @@
 ## Assignment
 
 - Status: `CHANGES_REQUIRED / BOOTSTRAP_CONTROL` after fresh exact-SHA review
-  at `76d4852` found a P1 in protected raw-data reads through `rg` path
-  operands. Repair commit `9fde316` passes the local affected suites, and
-  hosted run `36207604091` passed `scripts` and `notify` on that exact code SHA.
-  The docs checkpoint still needs exact-head hosted CI. Trusted `origin/main` remains
-  `CLAIMED` until this implementation PR merges.
+  at `64e05ee` found a P1 Windows/POSIX ripgrep path interpretation gap.
+  Commit `1d9b769` rejects backslash-bearing `rg` commands; the RED
+  regression and affected local suites pass. Hosted run `36209048628`
+  passed `scripts` and `notify` on code SHA `1d9b769e317f3a3c5a84790813ba4f23b0c68791`.
+  Event #14 and exact-head hosted CI on the docs commit remain pending.
+  Trusted `origin/main` remains `CLAIMED` until this implementation PR merges.
 - Owner role: ENV project supervisor
 - Supervisor route: GPT-6 Luna MAX (routing metadata only)
 - Reviewer: independent GPT-6 Sol reviewer; implementation author must not merge
@@ -111,15 +112,21 @@ mutable scope may be changed by this work.
   `READ_ONLY` and was allowed without path resolution. This can address the
   protected `data/raw/` directory despite raw-data ignore rules; no raw file
   was read during review. Commit `9fde31603a6162998bbbf79db2936fe5b9f1dae0`
-  adds a strict literal ripgrep operand parser and resolves every read path
-  against the repository before the hook allows it. Dot/parent/backslash path
-  aliases and shell glob/brace/home expansions are denied. The new hook test
-  reproduced the allow before the fix and denies those forms afterward while
-  preserving an ordinary literal repository read. The code commit is pushed;
-  exact-head hosted run `36207604091` passed `scripts` and `notify` on the code
-  SHA; the docs checkpoint still needs its own exact-head run. Lifecycle event
-  `env-autonomy-001-checkpoint-0013` records `CHANGES_REQUIRED` from that code
-  SHA and must be published before fresh independent exact-SHA review.
+  adds literal ripgrep path parsing and resolved-path validation.
+- A fresh review at `64e05ee74bc933ed593c1366f1aaf0dbfcd5fa64` reproduced
+  another P1: POSIX `shlex` stripped backslashes from unquoted Windows `rg`
+  operands. The path became `data.raw`, which passed the hook; no raw data
+  was read. Commit `1d9b769` fails closed as `UNKNOWN` for any
+  backslash-bearing `rg` command, avoiding platform-dependent tokenization.
+  The RED regression covers the Windows alias, a quoted path, a POSIX
+  escape form, and the direct path resolver. Autonomy 26/26, Coordination
+  Guard 344/344, workflow actions 14/14, `split_sql`, Python compilation,
+  and diff-check pass; run `36209048628` passed scripts and notify on
+  exact code SHA `1d9b769e317f3a3c5a84790813ba4f23b0c68791`.
+  Event `env-autonomy-001-checkpoint-0014` records `CHANGES_REQUIRED` from
+  that SHA and is pending publication; exact-head hosted CI on the resulting
+  docs commit is required before fresh independent review. No `data/raw/`
+  contents were read.
 - The installed Kilo 7.7.2 CLI help exposes `profile`, `models`, and
   `roll-call`; the official CLI reference describes `roll-call` as a model
   connectivity/latency test that sends prompts. Kilo's published balance is
@@ -314,5 +321,15 @@ missing user-only credential, authorization, access, or unresolved authority
 decision.
 
 ## One next safe action
-
-Fresh independent review at exact head `76d4852510826fb47feba3c0d2fd2504e3c71b35` found a protected `data/raw/` read bypass through unresolved ripgrep paths. Commit `9fde31603a6162998bbbf79db2936fe5b9f1dae0` adds literal path parsing and resolved-path validation; the RED-first hook regression and full affected local suites now pass, including autonomy runtime **26/26**. Event `env-autonomy-001-checkpoint-0013` records `CHANGES_REQUIRED` from `9fde316`; publish and verify it, require green Actions on the final docs head, then request a fresh independent exact-SHA review. Keep Kilo dispatch disabled while admission is `UNKNOWN`, and preserve `ENFORCEMENT_NOT_ACTIVE` and `AUTONOMY_NOT_READY` until actual hook activation, server controls, and all applicable live proofs are verified.
+Fresh independent review at exact head
+`64e05ee74bc933ed593c1366f1aaf0dbfcd5fa64` found a Windows/POSIX
+backslash-interpretation P1. Commit
+`1d9b769e317f3a3c5a84790813ba4f23b0c68791` rejects backslash-bearing `rg`
+commands; the RED regression and full affected local suites pass, including
+autonomy runtime **26/26**. Exact-head run `36209048628` passed `scripts` and
+`notify` on that code SHA. Event `env-autonomy-001-checkpoint-0014` records
+`CHANGES_REQUIRED`; publish and verify it, require green Actions on the final
+docs head, then request fresh independent exact-SHA review. Keep Kilo dispatch
+disabled while admission is `UNKNOWN`, and preserve `ENFORCEMENT_NOT_ACTIVE`
+and `AUTONOMY_NOT_READY` until actual hook activation, server controls, and
+all live proofs are verified.
