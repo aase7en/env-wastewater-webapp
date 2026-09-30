@@ -1,6 +1,6 @@
 # Environmental Operations Digital Twin Roadmap
 
-Last updated: 2026-08-21
+Last updated: 2026-09-30
 
 ## Phase 0 — Repository and workflow alignment
 
@@ -66,6 +66,16 @@ Planned source families:
 Architecture and work queue: `docs/ai/environmental-intelligence/`.
 
 Mandatory rules: forecast != observation, satellite estimate != ground measurement, stale != live, missing != safe, credentials remain server-side.
+
+## Parallel Track — Programmatic Media / Code-to-Video
+
+Status: IDEA / PLANNING ONLY
+
+This future capability would reuse validated ENV Digital Twin scenes/data to render deterministic educational/demo media through Three.js/R3F + WebGL, a controlled timeline/frame renderer, and FFmpeg. The objective is to reuse the same spatial assets for interactive web and video outputs while reducing dependence on generative-video inference for diagrammatic/process/3D explainer content.
+
+Authoritative idea note: `docs/ai/digital-twin/12-PROGRAMMATIC-MEDIA-CODE-TO-VIDEO.md`.
+
+No implementation is authorized by this roadmap entry. A future bounded Work Order must first define reuse boundaries, storyboard/scene contract, ownership, data-honesty gates, compute measurements, and independent review.
 
 ## Phase 2 — Wastewater plant twin
 
