@@ -1,6 +1,6 @@
 # Digital Twin Documentation Index
 
-Last updated: 2026-08-21
+Last updated: 2026-09-30
 
 This directory is the durable project memory for the Digital Twin stream. Chat history and temporary attachment paths are not authoritative.
 
@@ -18,6 +18,7 @@ This directory is the durable project memory for the Digital Twin stream. Chat h
 10. `09-SITE-VISUAL-REFERENCE.md`
 11. `10-SESSION-LEDGER.md`
 12. `11-UTHAI-ACTIVATED-SLUDGE-PROCESS-KNOWLEDGE.md` — user-confirmed wastewater process topology; mandatory for wastewater process/Digital Twin flow work
+13. `12-PROGRAMMATIC-MEDIA-CODE-TO-VIDEO.md` — future Code-to-Video/WebGL media pipeline idea; planning only, not implementation authorization
 
 ## Current State
 
@@ -27,6 +28,7 @@ This directory is the durable project memory for the Digital Twin stream. Chat h
 - Scene visual implementation: not yet authorized
 - Active documentation work order: `DT-VIS-P000`
 - Proposed next implementation: `DT-VIS-P001`
+- Programmatic Media / Code-to-Video: recorded as a future planning idea; no implementation Work Order is active
 
 ## Source-of-Truth Precedence
 
