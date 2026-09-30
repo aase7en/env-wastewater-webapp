@@ -29,6 +29,10 @@ import { ChemicalPage } from "./pages/ChemicalPage";
 import { RegulationsPage } from "./pages/RegulationsPage";
 import { PDFDesignerPage } from "./pages/PDFDesignerPage";
 import { AttachmentsPage } from "./pages/AttachmentsPage";
+const WaterWatchPage = lazy(() =>
+  import("./pages/WaterWatchPage").then((m) => ({ default: m.WaterWatchPage })),
+);
+
 // Lazy-load heavy chart pages + admin (recharts/jspdf pull big bundles).
 // Keeps main chunk lean; loads on first navigation to each route.
 const TrendsPage = lazy(() =>
@@ -70,6 +74,17 @@ export default function App() {
             <Route path="/login" element={<AuthPage />} />
           <Route path="/auth/callback" element={<AuthCallback />} />
           <Route path="/pending-approval" element={<PendingApprovalPage />} />
+          {/* ENV-WATER-WATCH-001 — public, simulated visual slice.
+              No RequireAuth: this surface is designed for hospital display
+              and future public situational communication. */}
+          <Route
+            path="/water-watch"
+            element={
+              <Suspense fallback={<PageSkeleton />}>
+                <WaterWatchPage />
+              </Suspense>
+            }
+          />
 
           {/* Authenticated app shell */}
           <Route
