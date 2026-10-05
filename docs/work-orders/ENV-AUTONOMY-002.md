@@ -58,14 +58,43 @@ and in `docs/ai/handoffs/ENV-AUTONOMY-001.md`.
    `changed_paths` from it. Handle the idempotent shape explicitly and return
    the original observation/no-op.
 
+## Successor lifecycle routing prerequisite
+
+Before the five Astra repairs begin, close the exact reviewer blocker found on
+PR #96: the current `append-event` CLI is hard-coded to
+`ENV-AUTONOMY-001`, so the successor cannot publish its own lifecycle
+checkpoint. This prerequisite is explicitly authorized within the existing
+runtime/test/handoff mutable scope:
+
+- add `--task` to `append-event` with backward-compatible default
+  `ENV-AUTONOMY-001`, then resolve the claim with
+  `policy.claim_by_task(args.task)`; unknown tasks must fail closed;
+- preserve all existing claim/worktree/scope validation; selecting a task
+  never creates authority;
+- use the version-1 lifecycle bootstrap block already registered in
+  `docs/ai/handoffs/ENV-AUTONOMY-002.md`; it intentionally contains no
+  fabricated goal event;
+- after this routing fix is GREEN, append the first `GOAL_START` for
+  `ENV-AUTONOMY-002` using the actual current execution goal id via
+  `--goal-id`, publish/verify it, then use the normal typed lifecycle path for
+  checkpoints and operation events;
+- add deterministic regressions proving successor task selection works, the
+  old default remains compatible, unknown tasks fail closed, and no C1 or
+  other-claim handoff is modified.
+
+This is bounded execution plumbing for the already-registered successor claim;
+it grants no new task, scope, provider, review, merge, or completion authority.
+
 ## Execution contract
 
-- Reproduce each finding as a deterministic RED test before its repair
-  (in-memory/synthetic probes that never read real `.env`/`data/raw` values).
+- Reproduce each Astra finding as a deterministic RED test before its repair
+  (in-memory/synthetic probes that never read real `.env`/`data/raw` values),
+  and reproduce the lifecycle-routing blocker before its prerequisite repair.
 - Keep all existing suites green: autonomy 26/26 + guard 344/344 baselines
   may grow but never regress; `py_compile`, `git diff --check` must pass.
-- No behavior changes beyond the five findings; no registry/C1/architecture
-  edits; no provider dispatch; keep `AUTONOMY_NOT_READY` /
+- No behavior changes beyond the five Astra findings plus the bounded
+  successor lifecycle-routing/bootstrap prerequisite above; no registry/C1/
+  architecture edits; no provider dispatch; keep `AUTONOMY_NOT_READY` /
   `ENFORCEMENT_NOT_ACTIVE` truthful.
 - Stop at `REVIEW_REQUESTED` with exact HEAD, changed files, RED→GREEN
   evidence, and the PR URL. Independent GPT-6 Astra review of the exact SHA
