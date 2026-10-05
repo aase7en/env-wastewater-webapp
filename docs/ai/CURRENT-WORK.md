@@ -38,8 +38,8 @@ exact-SHA independent review and merge into `main`.
   "coordination_registry": {
     "version": 1,
     "enforcement_mode": "BOOTSTRAP_CONTROL",
-    "expected_policy_revision": "839ff34185dff675a7bfd4adf6350d6b2c1e4eaa",
-    "expected_registry_hash": "894aa6d6238c7f2624dfea5d55f1cf0148868a96aa052a1e9b7d294abefda060",
+    "expected_policy_revision": "9f5a089f99e9682848aae62b5b4842566c0b8081",
+    "expected_registry_hash": "ab4fba204ff9736952448d1e0767d7d2974744bfd258d775f2ac537d0c52ba31",
     "claims": [
       {
         "task_id": "ENV-COORD-002",
@@ -83,7 +83,7 @@ exact-SHA independent review and merge into `main`.
         "task_id": "ENV-AUTONOMY-001",
         "claim_id": "ENV-AUTONOMY-001-C1",
         "claim_generation": 1,
-        "status": "REVIEW_REQUESTED",
+        "status": "CLOSED",
         "owner_role": "env_project_supervisor",
         "agent_model": "GPT-6 Luna MAX",
         "execution_holder_id": "exec-holder-env-autonomy-001-g1-10b79866-9012-4701-9cf9-33ce6d00df5f",
@@ -126,18 +126,62 @@ exact-SHA independent review and merge into `main`.
           "Project owner mission: install an ENV-local autonomy layer before resuming canonical Roadmap work"
         ],
         "last_checkpoint_pointer": "docs/ai/handoffs/ENV-AUTONOMY-001.md",
-        "one_next_safe_action": "Fresh review at 64e05ee74bc933ed593c1366f1aaf0dbfcd5fa64 found a P1 Windows/POSIX ripgrep backslash-interpretation bypass; commit 1d9b769 fails closed for backslash-bearing rg commands and the regression plus local suites pass. Exact-code Actions run 36209048628 and docs-head run 36210668259 passed scripts; notify also succeeded, with Telegram send skipped because repo secrets are unset. The review at e3a24c4370c600108cb5bea23ac99f27b55bfa35 found no source P0-P2 issue but required the formal REVIEW_REQUESTED state. Event env-event-56e9a1dd-ea10-485f-b304-4580431ce1cb records that state from source head e3a24c4370c600108cb5bea23ac99f27b55bfa35; publish/verify it, require hosted Actions on the resulting docs head, then request fresh independent exact-SHA review. Keep Kilo disabled, C1 locked, and BOOTSTRAP_CONTROL/AUTONOMY_NOT_READY truthful."
+        "one_next_safe_action": "CLOSED 2026-10-05: PR #91 merged by the project owner as 6987036740de4fd3b4c1a51639b1631860262242 with expected head e4013bd verified; event env-event-56e9a1dd PUBLISHED at e4013bd; post-main autonomy 26/26 + guard 344/344 and main CI 36742258503 green; retroactive independent review (GPT-6 Astra via Codex CLI, 2026-10-05) returned CHANGES_REQUIRED with 3 P1 + 2 P2 findings owned by successor claim ENV-AUTONOMY-002-C1. Scope lock released; worktree preserved clean at e4013bd. Autonomy stays BOOTSTRAP_CONTROL / AUTONOMY_NOT_READY / ENFORCEMENT_NOT_ACTIVE with Kilo/cointh dispatch disabled."
+      },
+      {
+        "task_id": "ENV-AUTONOMY-002",
+        "claim_id": "ENV-AUTONOMY-002-C1",
+        "claim_generation": 1,
+        "status": "CLAIMED",
+        "owner_role": "core_implementation",
+        "agent_model": "GLM-5.3 MAX",
+        "execution_holder_id": "zcode-env-autonomy-002-g1-primary",
+        "worktree": "A:/GitHub/_worktrees/env-autonomy-002-20261005",
+        "branch": "codex/env-autonomy-002-hardening",
+        "base_sha": "9f5a089f99e9682848aae62b5b4842566c0b8081",
+        "mutable_scope": [
+          "scripts/env_autonomy_runtime.py",
+          "scripts/test_env_autonomy_runtime.py",
+          ".codex/hooks.json",
+          ".codex/hooks/env_lifecycle.py",
+          "docs/work-orders/ENV-AUTONOMY-002.md",
+          "docs/ai/handoffs/ENV-AUTONOMY-002.md"
+        ],
+        "forbidden_scope": [
+          "docs/ai/CURRENT-WORK.md",
+          "docs/ai/HANDOFF.md",
+          "scripts/env_coordination_guard.py",
+          "scripts/test_env_coordination_guard.py",
+          "docs/work-orders/ENV-COORD-002.md",
+          "docs/ai/handoffs/ENV-COORD-002-GLM.md",
+          "docs/ai/architecture/ENV-COORDINATION-GUARD.md",
+          "AGENTS.md",
+          "frontend/**",
+          "supabase/**",
+          "data/**",
+          ".env"
+        ],
+        "work_order_path": "docs/work-orders/ENV-AUTONOMY-002.md",
+        "handoff_path": "docs/ai/handoffs/ENV-AUTONOMY-002.md",
+        "review_owner": "Independent GPT-6 Astra reviewer via Codex CLI (GPT-6.1 Sol not admitted on this account); implementing lane must not merge",
+        "dependencies": [
+          "ENV-AUTONOMY-001-C1 merged as 6987036740de4fd3b4c1a51639b1631860262242 and CLOSED 2026-10-05 with the retroactive review verdict CHANGES_REQUIRED",
+          "ENV-COORD-002-C1 generation-1 RECOVERY_HOLD scope stays locked and disjoint"
+        ],
+        "last_checkpoint_pointer": "docs/ai/handoffs/ENV-AUTONOMY-002.md",
+        "one_next_safe_action": "Reproduce each of the five 2026-10-05 Astra findings as a truthful RED test (PowerShell/rg argument-splatting protected-read bypass; admitted session-identity drift after claim reassignment; unpublished OPERATION_RECONCILED admission bypass; unredacted git remote -v allowance; duplicate post-tool receipt KeyError), implement the smallest fail-closed repair for each, run the full local battery (autonomy + guard suites, py_compile, diff-check), publish the lane checkpoint, then stop at REVIEW_REQUESTED for independent exact-SHA review."
       }
     ]
   }
 }
 ```
 
-## Active frontier - 2026-09-26
+## Active frontier - 2026-10-05
 
 - **`ENV-COORD-001` / CLOSED / PR #82** — Astra independently APPROVED exact architecture SHA `e5f6a419aa226151788763970e8c008f48d4a28d` with no blockers; PR #82 merged with expected-head protection as `6360e149f42c419a8d7f878f28fc439e0ef1f6cc`. Production activation is still blocked because coordination enforcement is not yet installed.
 - **ENV-COORD-002 / RECOVERY_HOLD / BOOTSTRAP_CONTROL** — PR #89 merged as `839ff34185dff675a7bfd4adf6350d6b2c1e4eaa`. Claim ENV-COORD-002-C1, generation 1, holder zcode-env-coord-002-g1-primary, and its original four-file scope remain locked. Runtime/session effects observed to date are reconciled, but no typed holder binding, lifecycle checkpoint, admission high-water, or active-admission count exists; do not release, reassign, or start mutation in that scope.
-- **ENV-AUTONOMY-001 / REVIEW_REQUESTED / BOOTSTRAP_CONTROL** — Earlier P1 findings were repaired through `9fde316`. Fresh review at `64e05ee74bc933ed593c1366f1aaf0dbfcd5fa64` found a Windows/POSIX ripgrep backslash-interpretation bypass: an unquoted Windows path was tokenized as `data.raw`, which the hook allowed. Commit `1d9b769` rejects backslash-bearing `rg` commands as `UNKNOWN`; regression coverage includes Windows and POSIX interpretations. Local autonomy **26/26**, Coordination Guard **344/344**, workflow-action **14/14**, `split_sql`, Python compilation, and diff-check pass. Exact-code run `36209048628` and docs-head run `36210668259` passed the `scripts` job; the latter's notify job succeeded while Telegram delivery was skipped because repo secrets are unset. Independent review at `e3a24c4370c600108cb5bea23ac99f27b55bfa35` found no source P0-P2 issue but required the formal `REVIEW_REQUESTED` state. Typed event `env-event-56e9a1dd-ea10-485f-b304-4580431ce1cb` records `REVIEW_REQUESTED` from source head `e3a24c4370c600108cb5bea23ac99f27b55bfa35` and awaits publication; exact-head CI and fresh review of the resulting docs head remain pending. Keep Kilo disabled (`UNKNOWN` quota/upstream), `AUTONOMY_NOT_READY` and `ENFORCEMENT_NOT_ACTIVE` truthful; C1 and protected data scopes remain untouched.
+- **ENV-AUTONOMY-001 / CLOSED / PR #91** — merged by the project owner as `6987036740de4fd3b4c1a51639b1631860262242` with second parent `e4013bd` (expected head verified; owner merge is the recorded acceptance — no formal GitHub review decision exists). Lifecycle event `env-event-56e9a1dd` was already PUBLISHED at `e4013bd`; the registry's lingering `REVIEW_REQUESTED` was classified 2026-10-05 as `MERGED_NOT_FOLDED` / SSOT drift. Post-main verification at `origin/main@9f5a089`: autonomy **26/26**, guard **344/344**, main `test` run `36742258503` SUCCESS. Retroactive independent review (GPT-6 Astra via Codex CLI, 2026-10-05; GPT-6.1 Sol not admitted on the account) returned **CHANGES_REQUIRED: 3 P1 + 2 P2** on `scripts/env_autonomy_runtime.py` — splatting protected-read bypass, session-identity drift after reassignment, unpublished-reconciliation admission bypass, unredacted `git remote -v`, duplicate-receipt `KeyError`. Claim ENV-AUTONOMY-001-C1 closed at generation 1 (closeout event `env-autonomy-001-checkpoint-0016`); the findings are owned by successor claim **ENV-AUTONOMY-002-C1** (disjoint from C1). Autonomy stays `BOOTSTRAP_CONTROL` / `AUTONOMY_NOT_READY` / `ENFORCEMENT_NOT_ACTIVE`; Kilo/cointh dispatch remains disabled (`UNKNOWN` quota/upstream).
+- **ENV-AUTONOMY-002 / CLAIMED / BOOTSTRAP_CONTROL** — successor fail-closed hardening claim registered 2026-10-05 (holder `zcode-env-autonomy-002-g1-primary`, worktree `A:/GitHub/_worktrees/env-autonomy-002-20261005`, branch `codex/env-autonomy-002-hardening`, base `9f5a089`). Scope is exactly the autonomy runtime + tests + hooks + its own Work Order/handoff; disjoint from C1's locked four files. Contract: `docs/work-orders/ENV-AUTONOMY-002.md`.
 - **CLOSED ENV-INT-GISTDA-CORE-001 / PR #80** — merged as bf26cb523c375f44d3bdd0ee9a6d0d66f1eb81bb on 2026-09-16; exact-head scripts, smoke, and notify checks succeeded.
 - **`ENV-BUILDING-REPAIR-001` / DECISION_REQUIRED / PR #75** — Building/repair remains no-touch.
 - **`ENV-OPS-001A` / READY BUT DISPATCH-PAUSED** — production dispatch remains paused until later coordination enforcement gates permit it.
@@ -145,13 +189,13 @@ exact-SHA independent review and merge into `main`.
 - **Open proposals, not active claims:** PR #87 remains OPEN at c8a8437f2f4471f2ea08d8836ed20b8f17ac4c0b against the prior base `94c1a8f9...`; its scripts/notify checks are green and its author comment `#5834942914` says CHANGES_REQUIRED. PR #88 remains OPEN at 2727abc9c8c50bb84dbf09e2a0b0383cbe5e2e16 against the prior base `94c1a8f9...`; its scripts/notify checks are green, but GitHub has no formal review decision. Neither candidate registry is authoritative.
 
 Current coordination authority:
-- central control-transition proposer/integration owner: ENV Coordinator protocol role; model-name labels are routing preferences, not authentication (§3.3). Current mission supervisor: GPT-6 Luna MAX under the owner's current instruction. ENV-AUTONOMY-001's separate claim is merged; its implementation remains `BOOTSTRAP_CONTROL` pending exact-SHA review, CI, merge, actual hook activation, and live acceptance proofs.
+- central control-transition proposer/integration owner: ENV Coordinator protocol role; model-name labels are routing preferences, not authentication (§3.3). Current mission supervisor: GPT-6 Luna MAX under the owner's current instruction. ENV-AUTONOMY-001 is merged and CLOSED; its successor hardening claim ENV-AUTONOMY-002-C1 is active strictly within its registered scope; actual hook activation, server enforcement, and live acceptance proofs remain future authorized gates.
 - approved architecture: `docs/ai/architecture/ENV-COORDINATION-GUARD.md`;
 - active hold Work Order: `docs/work-orders/ENV-COORD-002-C1-RECOVERY-HOLD.md`;
 - locked C1 implementation contract/result lane: `docs/work-orders/ENV-COORD-002.md` and `docs/ai/handoffs/ENV-COORD-002-GLM.md`;
-- active separate autonomy Work Order: `docs/work-orders/ENV-AUTONOMY-001.md`;
+- closed autonomy Work Order: `docs/work-orders/ENV-AUTONOMY-001.md`; active hardening Work Order: `docs/work-orders/ENV-AUTONOMY-002.md`;
 - enforcement mode: `BOOTSTRAP_CONTROL`, not `ENFORCING`;
-- one next safe action: keep C1 in RECOVERY_HOLD until the missing holder-bound lifecycle/admission/outcome facts are machine-proven; continue ENV-AUTONOMY-001 only within its disjoint registered scope, and do not let it write within C1 scope.
+- one next safe action: keep C1 in RECOVERY_HOLD until holder-bound lifecycle/admission/outcome facts are machine-proven or the owner authorizes release with a durable loss/risk record; execute ENV-AUTONOMY-002-C1 only within its disjoint registered scope against the five 2026-10-05 Astra findings, and let no lane write within C1 scope.
 
 ## Prior execution state - 2026-09-02
 

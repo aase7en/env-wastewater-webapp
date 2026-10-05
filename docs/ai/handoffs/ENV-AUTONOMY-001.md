@@ -372,6 +372,25 @@ server and live-acceptance gates pass.
       "published": false,
       "task_id": "ENV-AUTONOMY-001",
       "terminal_result": null
+    },
+    {
+      "claim_generation": 1,
+      "claim_id": "ENV-AUTONOMY-001-C1",
+      "event_id": "env-autonomy-001-checkpoint-0016",
+      "event_seq": 16,
+      "event_type": "CHECKPOINT",
+      "goal_id": "01a0d917-7b29-7970-8bb7-3c6df13e4bd3",
+      "operation_id": null,
+      "operation_outcome": null,
+      "payload": {
+        "lane_status": "CLOSED",
+        "recorded_at_utc": "2026-10-05T11:12:00Z",
+        "source_head_sha": "9f5a089f99e9682848aae62b5b4842566c0b8081"
+      },
+      "previous_event_id": "env-event-56e9a1dd-ea10-485f-b304-4580431ce1cb",
+      "published": false,
+      "task_id": "ENV-AUTONOMY-001",
+      "terminal_result": null
     }
   ],
   "goal_id": "01a0d917-7b29-7970-8bb7-3c6df13e4bd3",
@@ -473,10 +492,68 @@ cleaned, deleted, moved, or overwritten. If a later hook-activation gate
 requires a clean supervisor session, use a separate clean worktree and record
 its exact path/SHA.
 
-## One next safe action
+## One next safe action (superseded 2026-10-05 — see closeout below)
 Publish and verify `env-event-56e9a1dd-ea10-485f-b304-4580431ce1cb` from
 source head `e3a24c4370c600108cb5bea23ac99f27b55bfa35`, require exact-head
 hosted Actions on the resulting docs commit, then request fresh independent
 exact-SHA review. Only the independent reviewer may approve and merge after
 exact-base/head recheck; keep `BOOTSTRAP_CONTROL`, `ENFORCEMENT_NOT_ACTIVE`,
 and `AUTONOMY_NOT_READY` until the remaining live acceptance gates pass.
+
+## Result — owner merge, retroactive review, and closeout — 2026-10-05
+
+- **Publication truth (verifier over prose):** event
+  `env-event-56e9a1dd-ea10-485f-b304-4580431ce1cb` was published at docs head
+  `e4013bdb9655bd45a25daa384d5471834cac6166` (`docs: request env autonomy
+  review`), the exact branch head of
+  `origin/codex/env-autonomy-bootstrap-20260926`. The claim worktree
+  `A:\GitHub\_worktrees\env-autonomy-bootstrap-20260926` is clean at that SHA.
+  The pre-merge `verify-event` failure from the supervisor mirror was
+  `REMOTE_HEAD_MISMATCH` caused by running the verifier outside the claim
+  worktree, not by missing publication.
+- **Merge evidence:** PR #91 was merged by the project owner (`aase7en`) on
+  2026-09-26T02:29:33Z as
+  `6987036740de4fd3b4c1a51639b1631860262242` with parents
+  `0ea079d69c3186272f1ae6be82cbbeb22ed99266` (main) and
+  `e4013bdb9655bd45a25daa384d5471834cac6166` (expected head — verified). No
+  formal GitHub review decision was recorded; the owner merge is the recorded
+  acceptance. The registry's lingering `REVIEW_REQUESTED` status is classified
+  as `MERGED_NOT_FOLDED` / SSOT drift.
+- **Post-main verification (2026-10-05, at `origin/main@9f5a089`):**
+  `pytest scripts/test_env_autonomy_runtime.py` **26/26 + 28 subtests**,
+  `pytest scripts/test_env_coordination_guard.py` **344/344 + 450 subtests**,
+  main `test` workflow run `36742258503` SUCCESS at `9f5a089`; Pages and
+  keep-alive workflows green at the same head. The implementation files are
+  unchanged since `e4013bd` (PRs #92/#95 touched only unrelated docs).
+- **Retroactive independent exact-SHA review (2026-10-05):** dispatched
+  through Codex CLI because GPT-6.1 Sol is not admitted on the current
+  ChatGPT account (`HTTP 400: model not supported`); independent reviewer
+  GPT-6 Astra (high reasoning, read-only) returned
+  **`VERDICT: CHANGES_REQUIRED`** at `9f5a089` with **3 P1 + 2 P2 findings**
+  on `scripts/env_autonomy_runtime.py` (session transcript digest retained in
+  the PR; two findings independently spot-confirmed in source):
+  1. P1 PowerShell/ripgrep argument-splatting (`@readArgs`) is treated as a
+     literal path, so `Get-Content @readArgs` can read protected `.env`/
+     `data/raw` while the classifier returns `allow`.
+  2. P1 mutation admission compares policy-derived claim identity against
+     itself, so a resumed pre-reassignment session passes preflight under a
+     new generation/holder.
+  3. P1 replay coerces a locally appended unpublished
+     `OPERATION_RECONCILED` event to `published=True`, clearing the
+     unresolved-operation gate before durable publication.
+  4. P2 `git remote -v` is an unconditional unredacted READ_ONLY allowance and
+     can print an embedded auth token into transcripts.
+  5. P2 a duplicate post-tool receipt (`tool_use_id` redelivery) raises an
+     uncaught `KeyError` instead of the idempotent no-op result.
+- **Disposition:** the implementation is merged and post-main green, so the
+  claim closes factually; the findings do not unmerge. Successor claim
+  `ENV-AUTONOMY-002-C1` (fail-closed hardening, disjoint from C1) owns the
+  RED-first repair of all five findings. Autonomy remains
+  `BOOTSTRAP_CONTROL` / `AUTONOMY_NOT_READY` / `ENFORCEMENT_NOT_ACTIVE`;
+  Kilo/cointh dispatch stays disabled (quota/upstream `UNKNOWN`); the hooks
+  remain unactivated repo-local guardrails.
+- **Closeout event:** `env-autonomy-001-checkpoint-0016` (seq 16,
+  `lane_status: CLOSED`, source head `9f5a089`) appended through
+  `append_lifecycle_event` with guard replay validation `applied`.
+- **Worktree disposition:** `A:\GitHub\_worktrees\env-autonomy-bootstrap-20260926`
+  stays clean at `e4013bd` (fully merged); no cleanup, reset, or deletion.
