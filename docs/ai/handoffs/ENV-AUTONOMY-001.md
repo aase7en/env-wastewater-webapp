@@ -545,6 +545,8 @@ and `AUTONOMY_NOT_READY` until the remaining live acceptance gates pass.
      can print an embedded auth token into transcripts.
   5. P2 a duplicate post-tool receipt (`tool_use_id` redelivery) raises an
      uncaught `KeyError` instead of the idempotent no-op result.
+- **Retiring-holder drain proof (2026-10-05):** native Codex Goal for thread `01a0d917-7b29-7970-8bb7-3c6df13e4bd3` is absent; last turn `01a0db9c-78e6-71a2-a199-4746c46ef369` is terminal/failed with a recorded `task_complete`; the exact thread queue is empty; no workload process is bound to the holder/thread/worktree; the worktree is clean at remote-exact `e4013bd` and fully merged into `origin/main`; Kilo has no matching session. From the claim worktree, `verify-event` and `verify-checkpoint` both prove the latest lifecycle head PUBLISHED at `e4013bd` with no unresolved external operations and no unresolved hook observations. These holder-specific facts satisfy the practical stopped/drained reconciliation barrier for this retired claim; they are separate from, and grant no release of, ENV-COORD-002-C1.
+
 - **Disposition:** the implementation is merged and post-main green, so the
   claim closes factually; the findings do not unmerge. Successor claim
   `ENV-AUTONOMY-002-C1` (fail-closed hardening, disjoint from C1) owns the
