@@ -52,9 +52,14 @@ activity. Therefore:
 - Theory: an admitted-but-unobserved provider invocation from the holder era
   could still surface and act. Mitigations: its session shows a terminal
   finish stop; 15+ days of no matching process/session/push activity; the
-  worktree/branch are fully reconciled with main; any late-arriving writer
-  would fail current scope/claim checks because the claim would be CLOSED
-  (released claims hold no lock and confer no authority).
+  worktree/branch are fully reconciled with main. A late-arriving writer that
+  performs a **fresh guard admission** would fail scope/claim checks because
+  a CLOSED claim confers no mutation authorization. However, this rejection
+  is **conditional on fresh admission**: repo-local hooks are unactivated and
+  `main` is currently unprotected (no rulesets), so an already-admitted
+  invocation would NOT be runtime-rejected — unenforced late writes remain an
+  explicit residual risk under the bootstrap-limitations contract in
+  `docs/ai/architecture/ENV-COORDINATION-GUARD.md`.
 - Practical exposure is limited to the four locked files, which are already
   merged and green (guard 344/344 at current main).
 
@@ -74,7 +79,10 @@ activity. Therefore:
   record referenced). If holder-era evidence ever surfaces later, the
   coordinator records it as a new defect/lesson and, if materially unsafe,
   proposes a new guard WO under a fresh claim — CLOSED claims confer no
-  authority, so no stale writer gains anything.
+  authorization for fresh admissions. A stale writer that skips the guard
+  (possible while hooks are unactivated and `main` is unprotected) is not
+  runtime-rejected; any such commits are unenforced late writes to be
+  reconciled as defects, not silently accepted as lawful.
 - Unreleased alternative (KEEP_C1_RECOVERY_HOLD) remains available at any
   time before the owner's decision; nothing in this record mutates the claim.
 
