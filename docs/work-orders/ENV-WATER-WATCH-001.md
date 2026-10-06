@@ -278,3 +278,38 @@ Escalate `DECISION_REQUIRED` if implementation would require:
 - schema/RLS changes;
 - changing active shared navigation ownership;
 - claiming public redistribution rights not proven by provider terms.
+
+## Result — R1 mobile station repair (claim ENV-WATER-WATCH-001-R1) — 2026-10-06
+
+- **Authorization:** claim ENV-WATER-WATCH-001-R1 (generation 1, holder
+  `zcode-env-water-watch-001-r1-primary`) became authoritative on main when
+  PR #97 merged as `889963648c06ff9910b6497f72a1158f8a37696c`; base remains
+  `700c186` (PR #93's head).
+- **Blocking finding repaired:** the 2026-10-01 exact-head review found the
+  fixed ~132px station cards at 8/29/50/71/92% centers overlapping (~50px on
+  390px viewports) and clipping outside the river container, masked from the
+  old `scrollWidth` E2E by `overflow-hidden`.
+- **Repair:** absolute river markers now render only at `xl+` (the 150px card
+  variant moved to `2xl` — 1280px was a marginal clip); below `xl` the
+  stations recompose into an ordered, non-overlapping stacked list
+  (ต้นน้ำ → ปลายน้ำ) with distinct `water-watch-station-row-*` testids.
+- **Regression:** new geometry spec asserts, at 390px and 768px (stacked) and
+  1280px (absolute markers), that every station is visible, fully contained
+  in the river section, and pairwise non-overlapping by bounding box —
+  the assertion class the old document-width E2E could not provide.
+- **RED proof:** reverting only the component to the pre-repair state made
+  all three geometry tests fail (3/3 RED); restoring the repair returned
+  6/6 GREEN. This proves the regression catches the original defect rather
+  than passing vacuously.
+- **Gates on the final tree:** focused Water Watch Vitest 4/4 PASS;
+  `tsc -b` PASS; focused Playwright water-watch suite **6/6 PASS**
+  (3 originals + 3 new geometry) with synthetic process-only public env
+  (`VITE_SUPABASE_URL=https://synthetic-env-e2e.local`,
+  `VITE_SUPABASE_ANON_KEY=synthetic-anon-key-e2e` — no credential file read
+  or created); `vite build` PASS; `git diff --check` PASS.
+- **Scope:** exactly `frontend/src/features/water-watch/**`,
+  `frontend/tests/e2e/water-watch.spec.ts`, this Work Order, and the lane
+  handoff; no App.tsx/lib/schema/RLS/CURRENT-WORK/HANDOFF change; no real
+  environmental writes; SIMULATED disclosure unchanged.
+- **Status:** `RE-REVIEW_REQUESTED` — independent GPT-6 Astra exact-SHA
+  review of the new PR #93 head required before merge.

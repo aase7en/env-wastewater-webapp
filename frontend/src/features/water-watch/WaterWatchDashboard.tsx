@@ -49,7 +49,7 @@ function StationMarker({ station }: { station: WaterWatchStation }) {
       data-testid={`water-watch-station-${station.id}`}
     >
       <div
-        className={`w-[132px] rounded-xl border bg-white/95 px-3 py-2 text-center shadow-lg xl:w-[150px] ${risk.surfaceClass}`}
+        className={`w-[132px] rounded-xl border bg-white/95 px-3 py-2 text-center shadow-lg 2xl:w-[150px] ${risk.surfaceClass}`}
       >
         <p className="truncate text-[11px] font-semibold text-slate-600">{station.area}</p>
         <p className={`mt-0.5 text-xs font-bold ${risk.textClass}`}>{risk.shortLabel}</p>
@@ -65,6 +65,55 @@ function StationMarker({ station }: { station: WaterWatchStation }) {
         <div className="h-2 w-2 rounded-full bg-white" />
       </div>
     </div>
+  );
+}
+
+function StationListRow({ station, index }: { station: WaterWatchStation; index: number }) {
+  const risk = getRiskPresentation(station.risk);
+  return (
+    <li
+      className={`flex items-center gap-3 rounded-xl border bg-white/95 px-3 py-2 shadow-sm ${risk.surfaceClass}`}
+      data-station-order={index + 1}
+      data-testid={`water-watch-station-row-${station.id}`}
+    >
+      <div
+        className={`grid h-8 w-8 shrink-0 place-items-center rounded-full border-4 border-white shadow-md ${risk.dotClass}`}
+        aria-hidden="true"
+      >
+        <div className="h-2 w-2 rounded-full bg-white" />
+      </div>
+      <div className="min-w-0 flex-1">
+        <p className="truncate text-xs font-semibold text-slate-700">
+          {index + 1}. {station.area} · {station.name}
+        </p>
+        <p className="truncate text-[10px] text-slate-500">{station.helper}</p>
+      </div>
+      <div className="shrink-0 text-right">
+        <p className="text-base font-extrabold leading-none text-slate-900">{station.value ?? "—"}</p>
+        <p className={`mt-0.5 text-[10px] font-bold ${risk.textClass}`}>
+          {risk.shortLabel} · แนวโน้ม: {getTrendLabel(station.trend)}
+        </p>
+      </div>
+    </li>
+  );
+}
+
+function RiverBandSvg() {
+  const path =
+    "M0 128 C140 45 235 185 365 112 C490 42 570 184 705 106 C820 40 900 158 1000 86";
+  return (
+    <svg viewBox="0 0 1000 220" className="h-full w-full" preserveAspectRatio="none">
+      <path d={path} fill="none" stroke="rgba(14,165,233,0.22)" strokeWidth="38" strokeLinecap="round" />
+      <path d={path} fill="none" stroke="rgb(14,165,233)" strokeWidth="20" strokeLinecap="round" />
+      <path
+        d={path}
+        fill="none"
+        stroke="rgba(255,255,255,0.72)"
+        strokeWidth="3"
+        strokeDasharray="10 16"
+        strokeLinecap="round"
+      />
+    </svg>
   );
 }
 
@@ -87,37 +136,34 @@ function RiverStory({ snapshot }: { snapshot: WaterWatchSnapshot }) {
         </div>
       </div>
 
-      <div className="absolute inset-x-5 bottom-6 top-[118px]" aria-hidden="true">
-        <svg viewBox="0 0 1000 220" className="h-full w-full" preserveAspectRatio="none">
-          <path
-            d="M0 128 C140 45 235 185 365 112 C490 42 570 184 705 106 C820 40 900 158 1000 86"
-            fill="none"
-            stroke="rgba(14,165,233,0.22)"
-            strokeWidth="38"
-            strokeLinecap="round"
-          />
-          <path
-            d="M0 128 C140 45 235 185 365 112 C490 42 570 184 705 106 C820 40 900 158 1000 86"
-            fill="none"
-            stroke="rgb(14,165,233)"
-            strokeWidth="20"
-            strokeLinecap="round"
-          />
-          <path
-            d="M0 128 C140 45 235 185 365 112 C490 42 570 184 705 106 C820 40 900 158 1000 86"
-            fill="none"
-            stroke="rgba(255,255,255,0.72)"
-            strokeWidth="3"
-            strokeDasharray="10 16"
-            strokeLinecap="round"
-          />
-        </svg>
+      {/* xl+: river band stretched between the header and the bottom labels */}
+      <div className="absolute inset-x-5 bottom-6 top-[118px] hidden xl:block" aria-hidden="true">
+        <RiverBandSvg />
       </div>
 
-      <div className="absolute inset-x-0 top-12 bottom-10">
+      {/* xl+: absolute station markers along the river; fixed-width cards cannot
+          fit without overlap below xl, so mobile uses the ordered list below */}
+      <div className="absolute inset-x-0 top-12 bottom-10 hidden xl:block">
         {snapshot.stations.map((station) => (
           <StationMarker key={station.id} station={station} />
         ))}
+      </div>
+
+      {/* below xl: compact river band + ordered non-overlapping station list
+          (ต้นน้ำ → ปลายน้ำ). This is a story sequence, not a scale map. */}
+      <div className="xl:hidden">
+        <div className="h-[112px]" aria-hidden="true" />
+        <div className="mx-5 h-[92px]" aria-hidden="true">
+          <RiverBandSvg />
+        </div>
+        <ol
+          className="mx-4 mb-12 mt-3 flex flex-col gap-2"
+          aria-label="รายการสถานีเรียงจากต้นน้ำไปปลายน้ำ"
+        >
+          {snapshot.stations.map((station, index) => (
+            <StationListRow key={station.id} station={station} index={index} />
+          ))}
+        </ol>
       </div>
 
       <div className="absolute bottom-3 left-4 flex items-center gap-2 rounded-full bg-white/90 px-3 py-1.5 text-[11px] font-semibold text-slate-600 shadow-sm">
