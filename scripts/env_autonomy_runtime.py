@@ -822,6 +822,8 @@ def record_hook_observation(root: Path, policy: guard.TrustedPolicy, event: dict
     if tool_name == "Bash":
         classified = classify_shell_command(tool_input.get("command"))
         if classified["kind"] in ("GIT_STAGE_OR_COMMIT", "GIT_PUSH"):
+            actual = _actual_context(root, claim)
+            _record_session_binding(Path(actual["worktree"]), claim, event.get("session_id"))
             return {"recorded": False, "reason": "GIT_PUBLICATION_IS_VERIFIED_FROM_REMOTE"}
         if classified["kind"] != "AUTONOMY_EVENT":
             reason = "READ_ONLY" if classified["kind"] == "READ_ONLY" else "NOT_A_MUTATION_RECEIPT"
@@ -1664,7 +1666,9 @@ def classify_shell_command(command: str) -> dict:
     # PowerShell splatting (@name), rg @file argument indirection, and cmd.exe
     # %VAR% expansion all defer argument resolution to a value this hook cannot
     # see; reject the syntax instead of validating the unexpanded token.
-    if re.search(r"@\w", text) or re.search(r"%[^%\s]+%", text):
+    # cmd.exe variable names may contain whitespace, so ANY %-delimited
+    # token is expansion syntax this hook cannot resolve; reject it all.
+    if re.search(r"@\w", text) or re.search(r"%[^%]+%", text):
         return {"kind": "UNKNOWN", "reason": "SPLATTING_OR_INDIRECTION_FORBIDDEN"}
     try:
         tokens = shlex.split(text, posix=True)
@@ -1823,7 +1827,7 @@ def hook_pretool(event: dict, root: Path) -> dict:
         mutation_intent = (
             classified is not None
             and classified["kind"] in ("GIT_STAGE_OR_COMMIT", "GIT_PUSH", "AUTONOMY_EVENT")
-        ) or tool_name in ("Edit", "Write", "apply_patch")
+        ) or tool_name in ("Edit", "Write", "apply_patch", "ApplyPatch")
         if mutation_intent:
             _reject_session_identity_drift(lifecycle_document, claim, session_id)
         unresolved_hook_observations = _has_unresolved_hook_observations(
@@ -2036,21 +2040,38 @@ def _cmd_refill(args) -> int:
 
 
 def _has_unpublished_operation_resolution(root: Path, claim: dict, document: dict) -> bool:
-    """An OPERATION_RECONCILED/OPERATION_OUTCOME event is authoritative only
-    once the commit carrying it is the remote branch head; a locally appended
-    reconciliation must not re-open mutation admission before publication."""
+    """A local OPERATION_RECONCILED/OPERATION_OUTCOME event re-opens mutation
+    admission only once the SAME event (by event_id) is present in the remote
+    branch's handoff document. Branch-head equality is not proof: an
+    uncommitted reconciliation can coexist with HEAD == remote, and later
+    local commits would wrongly re-block published resolutions. Fails closed
+    when the remote handoff is unreadable."""
     events = document.get("events")
     if not isinstance(events, list):
         return False
-    if not any(
-        isinstance(raw, dict)
+    local_ids = {
+        raw.get("event_id") for raw in events
+        if isinstance(raw, dict)
         and raw.get("event_type") in ("OPERATION_RECONCILED", "OPERATION_OUTCOME")
-        for raw in events
-    ):
+    }
+    if not local_ids:
         return False
-    local_head = _run_git(["rev-parse", "HEAD"], root)
-    remote_head = _run_git(["rev-parse", f"origin/{claim['branch']}"], root, check=False)
-    return not remote_head or remote_head != local_head
+    remote_text = _run_git(
+        ["show", f"origin/{claim['branch']}:{claim['handoff_path']}"], root, check=False
+    )
+    if not remote_text:
+        return True
+    try:
+        remote_document, _ = _lifecycle_document(remote_text)
+    except AutonomyFailure:
+        return True
+    remote_events = remote_document.get("events")
+    remote_ids = (
+        {raw.get("event_id") for raw in remote_events if isinstance(raw, dict)}
+        if isinstance(remote_events, list)
+        else set()
+    )
+    return not local_ids.issubset(remote_ids)
 
 
 def _reject_session_identity_drift(document: dict, claim: dict, session_id) -> None:
@@ -2103,6 +2124,22 @@ def _enforce_session_admission(document: dict, claim: dict, session_id) -> bool:
         "execution_holder_id": expected[2],
     }
     return True
+
+
+def _record_session_binding(root: Path, claim: dict, session_id) -> None:
+    """Persist a session admission during PostToolUse for admission paths whose
+    receipts return early (git add/commit/push). Write-only helper: it never
+    runs during PreToolUse."""
+    if not isinstance(session_id, str) or not session_id:
+        return
+    handoff_path = Path(root) / claim["handoff_path"]
+    handoff_text = handoff_path.read_text(encoding="utf-8")
+    document, _ = _lifecycle_document(handoff_text)
+    if _enforce_session_admission(document, claim, session_id):
+        handoff_path.write_text(
+            _replace_lifecycle_block(handoff_text, document),
+            encoding="utf-8", newline="\n",
+        )
 
 
 def _posttool_receipt_context(context: str, observation: dict) -> str:

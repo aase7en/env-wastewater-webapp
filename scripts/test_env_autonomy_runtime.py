@@ -455,8 +455,16 @@ class ReviewAndLifecycleTests(unittest.TestCase):
                 self.assertFalse(log.has_unresolved_external_operations)
                 self.assertFalse(runtime._has_unresolved_hook_observations(document, log))
                 handoff_path.write_text(runtime._replace_lifecycle_block(text, document), encoding="utf-8")
-                with patch.object(runtime, "load_trusted_policy", return_value=(trusted, "")), \
-                     patch.object(runtime, "_run_git", return_value=str(root)):
+
+                def published_remote_git(args, cwd=None, check=True, preserve_output=False):
+                    if args[0] == "show":
+                        return handoff_path.read_text(encoding="utf-8")
+                    return str(root)
+
+                with (
+                    patch.object(runtime, "load_trusted_policy", return_value=(trusted, "")),
+                    patch.object(runtime, "_run_git", side_effect=published_remote_git),
+                ):
                     allowed = runtime.hook_pretool({
                         "tool_name": "Edit", "tool_input": {"file_path": str(changed_path)},
                         "session_id": "session-hook", "turn_id": "turn-retry", "tool_use_id": "tool-retry",
@@ -1120,42 +1128,260 @@ class AstraHardeningTests(unittest.TestCase):
         classified = runtime.classify_shell_command("git remote -v")
         self.assertNotEqual(classified["kind"], "READ_ONLY")
 
-    def test_unpublished_operation_resolution_keeps_mutation_blocked_until_pushed(self):
-        claim_record = claim("ENV-AUTONOMY-001", "ENV-AUTONOMY-001-C1", "CLAIMED", ["docs/ai/handoffs/ENV-AUTONOMY-001.md"])
-        events = [
-            lifecycle_event("ENV-AUTONOMY-001", claim_record["claim_id"], "GOAL_START", 1, "e1", guard.GENESIS, goal_id="g1"),
-            lifecycle_event("ENV-AUTONOMY-001", claim_record["claim_id"], "OPERATION_INTENT", 2, "e2", "e1", operation_id="op-1"),
-            lifecycle_event("ENV-AUTONOMY-001", claim_record["claim_id"], "OPERATION_OUTCOME", 3, "e3", "e2", operation_id="op-1", operation_outcome="UNKNOWN"),
-        ]
-        document = {
-            "version": 1, "claim_id": claim_record["claim_id"], "claim_generation": 1,
-            "events": [{**event.__dict__, "published": False} for event in events],
+    def _hook_fixture(self, temp_dir: Path, claim_record: dict, generation: int = 1):
+        handoff_rel = claim_record["handoff_path"]
+        handoff_path = temp_dir / handoff_rel
+        handoff_path.parent.mkdir(parents=True, exist_ok=True)
+        events = [{
+            "task_id": claim_record["task_id"], "claim_id": claim_record["claim_id"],
+            "claim_generation": generation, "goal_id": "goal-hook-1",
+            "event_type": "GOAL_START", "event_seq": 1,
+            "event_id": "hook-goal-start", "previous_event_id": guard.GENESIS,
+            "terminal_result": None, "operation_id": None,
+            "operation_outcome": None, "payload": None, "published": True,
+        }]
+        lifecycle = {
+            "version": 1, "task_id": claim_record["task_id"],
+            "claim_id": claim_record["claim_id"], "claim_generation": generation,
+            "goal_id": "goal-hook-1", "codex_hook_observations": [],
+            "events": events,
         }
-        document["events"].append({
-            **lifecycle_event(
-                "ENV-AUTONOMY-001", claim_record["claim_id"], "OPERATION_RECONCILED", 4, "e4", "e3",
-                operation_id="op-1", operation_outcome="SUCCEEDED", goal_id="g1",
-            ).__dict__,
-            "published": False,
-        })
+        handoff_path.write_text(
+            "# Hook fixture\n\n" + runtime.LIFECYCLE_START + "\n```json\n"
+            + json.dumps(lifecycle, indent=2) + "\n```\n" + runtime.LIFECYCLE_END + "\n",
+            encoding="utf-8",
+        )
+        return handoff_path, lifecycle
+
+    def _hook_patches(self, temp_dir: Path, claim_record: dict, trusted, remote_handoff_text: str | None):
+        actual = {
+            "repo": runtime.REPO_SLUG, "worktree": str(temp_dir),
+            "branch": claim_record["branch"], "head_sha": "b" * 40,
+            "claim_base_ancestor": True, "current_policy_ancestor": True,
+        }
+        remote_show = f"show origin/{claim_record['branch']}:{claim_record['handoff_path']}"
+        def fake_run_git(args, cwd=None, check=True, preserve_output=False):
+            if args == ["rev-parse", "--show-toplevel"]:
+                return str(temp_dir)
+            if args[:1] == ["show"] and " ".join(args) == remote_show:
+                return remote_handoff_text or ""
+            raise AssertionError(f"unexpected git call: {args}")
+        return (
+            patch.object(runtime, "load_trusted_policy", return_value=(trusted, "")),
+            patch.object(runtime, "_actual_context", return_value=actual),
+            patch.object(runtime, "validate_lane_binding"),
+            patch.object(runtime.guard, "evaluate_mutation",
+                         return_value=SimpleNamespace(safe_to_mutate=True, reason=None)),
+            patch.object(runtime, "_mutation_links", return_value=[]),
+            patch.object(runtime, "_run_git", side_effect=fake_run_git),
+        )
+
+    def test_hook_pretool_blocks_edit_while_reconciliation_is_not_in_remote_handoff(self):
+        claim_record = claim("ENV-AUTONOMY-001", "ENV-AUTONOMY-001-C1", "CLAIMED",
+                             ["docs/ai/handoffs/ENV-AUTONOMY-001.md"])
+        claim_record.update({"worktree": "C:/wt", "branch": "test/hook-observation"})
         with tempfile.TemporaryDirectory() as folder:
-            root = Path(folder)
-            git_outputs = {
-                "rev-parse HEAD": "5" * 40,
-                "rev-parse origin/test/ENV-AUTONOMY-001": "4" * 40,
+            temp_dir = Path(folder)
+            handoff_path, lifecycle = self._hook_fixture(temp_dir, claim_record)
+            document, log = runtime._read_lifecycle_log(
+                handoff_path.read_text(encoding="utf-8"), claim_record
+            )
+            runtime._append_lifecycle_event_to_document(document, {
+                "task_id": claim_record["task_id"], "claim_id": claim_record["claim_id"],
+                "claim_generation": 1, "goal_id": "goal-hook-1",
+                "event_type": "OPERATION_INTENT", "event_seq": log.events[-1].event_seq + 1,
+                "event_id": "intent-op-1", "previous_event_id": log.head_event_id,
+                "terminal_result": None, "operation_id": "op-1",
+                "operation_outcome": None,
+                "payload": {"provider": "codex-cli", "model": "GPT-6 Luna MAX",
+                            "variant": "local-hook", "run_id": "run-op-1",
+                            "admission_evidence_sha256": "a" * 64,
+                            "starting_head_sha": "b" * 40},
+                "published": False,
+            })
+            runtime._append_lifecycle_event_to_document(document, {
+                "task_id": claim_record["task_id"], "claim_id": claim_record["claim_id"],
+                "claim_generation": 1, "goal_id": "goal-hook-1",
+                "event_type": "OPERATION_OUTCOME", "event_seq": 3,
+                "event_id": "outcome-op-1", "previous_event_id": "intent-op-1",
+                "terminal_result": None, "operation_id": "op-1",
+                "operation_outcome": "UNKNOWN",
+                "payload": {"evidence_sha256": "d" * 64, "observed_at_utc": "2026-10-06T00:00:00Z"},
+                "published": False,
+            })
+            runtime._append_lifecycle_event_to_document(document, {
+                "task_id": claim_record["task_id"], "claim_id": claim_record["claim_id"],
+                "claim_generation": 1, "goal_id": "goal-hook-1",
+                "event_type": "OPERATION_RECONCILED", "event_seq": 4,
+                "event_id": "reconcile-local", "previous_event_id": "outcome-op-1",
+                "terminal_result": None, "operation_id": "op-1",
+                "operation_outcome": "SUCCEEDED",
+                "payload": {"evidence_sha256": "e" * 64, "observed_at_utc": "2026-10-06T00:00:00Z"},
+                "published": False,
+            })
+            handoff_path.write_text(
+                runtime._replace_lifecycle_block(handoff_path.read_text(encoding="utf-8"), document),
+                encoding="utf-8",
+            )
+            trusted = policy(claim_record)
+            remote_document = {"version": 1, "claim_id": claim_record["claim_id"],
+                               "claim_generation": 1, "goal_id": "goal-hook-1", "events": [
+                                   dict(document["events"][0], published=True),
+                                   dict(document["events"][1], published=True),
+                                   dict(document["events"][2], published=True)]}
+            remote_text = (runtime.LIFECYCLE_START + "\n```json\n"
+                           + json.dumps(remote_document) + "\n```\n" + runtime.LIFECYCLE_END)
+            patches = self._hook_patches(temp_dir, claim_record, trusted, remote_text)
+            with patches[0], patches[1], patches[2], patches[3], patches[4], patches[5]:
+                blocked = runtime.hook_pretool({
+                    "tool_name": "Edit",
+                    "tool_input": {"file_path": str(temp_dir / "docs" / "x.md")},
+                    "session_id": "session-hook", "turn_id": "t1",
+                    "tool_use_id": "tool-1", "model": "GPT-6 Luna MAX",
+                }, temp_dir)
+            self.assertEqual(blocked["permissionDecision"], "deny")
+            self.assertEqual(blocked["reason"], "UNRESOLVED_EXTERNAL_EFFECT")
+
+            _, remote_log = runtime._read_lifecycle_log(remote_text, claim_record)
+            remote_document["events"].append({
+                "task_id": claim_record["task_id"], "claim_id": claim_record["claim_id"],
+                "claim_generation": 1, "goal_id": "goal-hook-1",
+                "event_type": "OPERATION_RECONCILED",
+                "event_seq": remote_log.events[-1].event_seq + 1,
+                "event_id": "reconcile-local", "previous_event_id": remote_log.head_event_id,
+                "terminal_result": None, "operation_id": "op-1",
+                "operation_outcome": "SUCCEEDED",
+                "payload": {"evidence_sha256": "e" * 64, "observed_at_utc": "2026-10-06T00:00:00Z"},
+                "published": True,
+            })
+            remote_text = (runtime.LIFECYCLE_START + "\n```json\n"
+                           + json.dumps(remote_document) + "\n```\n" + runtime.LIFECYCLE_END)
+            patches = self._hook_patches(temp_dir, claim_record, trusted, remote_text)
+            with patches[0], patches[1], patches[2], patches[3], patches[4], patches[5]:
+                allowed = runtime.hook_pretool({
+                    "tool_name": "Edit",
+                    "tool_input": {"file_path": str(temp_dir / "docs" / "x.md")},
+                    "session_id": "session-hook", "turn_id": "t2",
+                    "tool_use_id": "tool-2", "model": "GPT-6 Luna MAX",
+                }, temp_dir)
+            self.assertEqual(allowed["permissionDecision"], "allow")
+
+    def test_git_publication_commands_record_session_binding_across_reassignment(self):
+        first = claim("ENV-AUTONOMY-001", "ENV-AUTONOMY-001-C1", "CLAIMED",
+                      ["docs/ai/handoffs/ENV-AUTONOMY-001.md"])
+        first.update({"worktree": "C:/wt", "branch": "test/hook-observation"})
+        reassigned = claim("ENV-AUTONOMY-001", "ENV-AUTONOMY-001-C1", "CLAIMED",
+                           ["docs/ai/handoffs/ENV-AUTONOMY-001.md"],
+                           generation=2, holder="holder-B")
+        reassigned.update({"worktree": "C:/wt", "branch": "test/hook-observation"})
+        with tempfile.TemporaryDirectory() as folder:
+            temp_dir = Path(folder)
+            self._hook_fixture(temp_dir, first)
+            actual = {
+                "repo": runtime.REPO_SLUG, "worktree": str(temp_dir),
+                "branch": first["branch"], "head_sha": "b" * 40,
+                "claim_base_ancestor": True, "current_policy_ancestor": True,
             }
-            def fake_run_git(args, cwd=None, check=True, preserve_output=False):
-                key = " ".join(args)
-                if key in git_outputs:
-                    return git_outputs[key]
-                raise AssertionError(f"unexpected git call: {args}")
-            with patch.object(runtime, "_run_git", side_effect=fake_run_git):
-                unresolved = runtime._has_unpublished_operation_resolution(root, claim_record, document)
-            self.assertTrue(unresolved)
-            git_outputs["rev-parse origin/test/ENV-AUTONOMY-001"] = "5" * 40
-            with patch.object(runtime, "_run_git", side_effect=fake_run_git):
-                unresolved = runtime._has_unpublished_operation_resolution(root, claim_record, document)
-            self.assertFalse(unresolved)
+            trusted_first = policy(first)
+            with patch.object(runtime, "_actual_context", return_value=actual):
+                observation = runtime.record_hook_observation(temp_dir, trusted_first, {
+                    "tool_name": "Bash",
+                    "tool_input": {"command": "git commit -m publish"},
+                    "tool_response": {"isError": False},
+                    "session_id": "session-pub", "turn_id": "t1",
+                    "tool_use_id": "tool-1", "model": "GPT-6 Luna MAX",
+                    "hook_event_name": "PostToolUse",
+                })
+            self.assertFalse(observation["recorded"])
+            handoff_text = (temp_dir / first["handoff_path"]).read_text(encoding="utf-8")
+            document, _ = runtime._lifecycle_document(handoff_text)
+            recorded = document["session_admissions"]["session-pub"]
+            self.assertEqual(recorded["claim_generation"], 1)
+
+            gen2_document, _ = runtime._lifecycle_document(
+                (temp_dir / first["handoff_path"]).read_text(encoding="utf-8")
+            )
+            gen2_document["claim_generation"] = 2
+            for raw in gen2_document["events"]:
+                raw["claim_generation"] = 2
+            (temp_dir / first["handoff_path"]).write_text(
+                runtime._replace_lifecycle_block(
+                    (temp_dir / first["handoff_path"]).read_text(encoding="utf-8"),
+                    gen2_document,
+                ),
+                encoding="utf-8",
+            )
+            trusted_second = policy(reassigned)
+            patches = self._hook_patches(temp_dir, reassigned, trusted_second, None)
+            with patches[0], patches[1], patches[2], patches[3], patches[4], patches[5]:
+                decision = runtime.hook_pretool({
+                    "tool_name": "Edit",
+                    "tool_input": {"file_path": str(temp_dir / "docs" / "x.md")},
+                    "session_id": "session-pub", "turn_id": "t2",
+                    "tool_use_id": "tool-2", "model": "GPT-6 Luna MAX",
+                }, temp_dir)
+            self.assertEqual(decision["permissionDecision"], "deny")
+            self.assertEqual(decision["reason"], "SESSION_IDENTITY_DRIFT")
+
+    def test_applypatch_alias_is_covered_by_the_identity_drift_check(self):
+        first = claim("ENV-AUTONOMY-001", "ENV-AUTONOMY-001-C1", "CLAIMED",
+                      ["docs/ai/handoffs/ENV-AUTONOMY-001.md"])
+        first.update({"worktree": "C:/wt", "branch": "test/hook-observation"})
+        reassigned = claim("ENV-AUTONOMY-001", "ENV-AUTONOMY-001-C1", "CLAIMED",
+                           ["docs/ai/handoffs/ENV-AUTONOMY-001.md"],
+                           generation=2, holder="holder-B")
+        reassigned.update({"worktree": "C:/wt", "branch": "test/hook-observation"})
+        with tempfile.TemporaryDirectory() as folder:
+            temp_dir = Path(folder)
+            self._hook_fixture(temp_dir, first)
+            actual = {
+                "repo": runtime.REPO_SLUG, "worktree": str(temp_dir),
+                "branch": first["branch"], "head_sha": "b" * 40,
+                "claim_base_ancestor": True, "current_policy_ancestor": True,
+            }
+            trusted_first = policy(first)
+            with patch.object(runtime, "_actual_context", return_value=actual),                  patch.object(runtime, "validate_lane_binding"),                  patch.object(runtime.guard, "evaluate_mutation",
+                              return_value=SimpleNamespace(safe_to_mutate=True, reason=None)),                  patch.object(runtime, "_mutation_links", return_value=[]):
+                runtime.record_hook_observation(temp_dir, trusted_first, {
+                    "tool_name": "Edit",
+                    "tool_input": {"file_path": str(temp_dir / "docs" / "x.md")},
+                    "tool_response": {"isError": False},
+                    "session_id": "session-patch", "turn_id": "t1",
+                    "tool_use_id": "tool-1", "model": "GPT-6 Luna MAX",
+                    "hook_event_name": "PostToolUse",
+                })
+            gen2_document, _ = runtime._lifecycle_document(
+                (temp_dir / first["handoff_path"]).read_text(encoding="utf-8")
+            )
+            gen2_document["claim_generation"] = 2
+            for raw in gen2_document["events"]:
+                raw["claim_generation"] = 2
+            (temp_dir / first["handoff_path"]).write_text(
+                runtime._replace_lifecycle_block(
+                    (temp_dir / first["handoff_path"]).read_text(encoding="utf-8"),
+                    gen2_document,
+                ),
+                encoding="utf-8",
+            )
+            trusted_second = policy(reassigned)
+            patches = self._hook_patches(temp_dir, reassigned, trusted_second, None)
+            with patches[0], patches[1], patches[2], patches[3], patches[4], patches[5]:
+                decision = runtime.hook_pretool({
+                    "tool_name": "ApplyPatch",
+                    "tool_input": {"patch": "*** Begin Patch\n*** Update File: docs/x.md\n@@\n*** End Patch"},
+                    "session_id": "session-patch", "turn_id": "t2",
+                    "tool_use_id": "tool-2", "model": "GPT-6 Luna MAX",
+                }, temp_dir)
+            self.assertEqual(decision["permissionDecision"], "deny")
+            self.assertEqual(decision["reason"], "SESSION_IDENTITY_DRIFT")
+
+    def test_hook_pretool_rejects_cmd_expansion_with_whitespace_in_var_name(self):
+        decision = runtime.hook_pretool({
+            "tool_name": "Bash",
+            "tool_input": {"command": 'rg pattern "%READ TARGET%"'},
+        }, Path.cwd())
+        self.assertEqual(decision["permissionDecision"], "deny")
+        self.assertEqual(decision["reason"], "SPLATTING_OR_INDIRECTION_FORBIDDEN")
 
     def test_session_identity_drift_after_reassignment_is_rejected(self):
         first = claim("ENV-AUTONOMY-001", "ENV-AUTONOMY-001-C1", "CLAIMED", ["docs/ai/handoffs/ENV-AUTONOMY-001.md"])

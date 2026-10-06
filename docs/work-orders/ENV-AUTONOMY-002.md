@@ -136,3 +136,35 @@ closeout folded into SSoT.
   CURRENT-WORK, HANDOFF, architecture, frontend, Supabase, or data change;
   no provider dispatch; `AUTONOMY_NOT_READY` / `ENFORCEMENT_NOT_ACTIVE`
   remain truthful.
+
+## R2 review repair — 2026-10-06
+
+- **Review:** independent GPT-6 Astra exact-SHA review of `79ee2a1` returned
+  `CHANGES_REQUIRED` (4 P1 + 1 P2), each reproduced by read-only synthetic
+  probes: (1) cmd.exe variable names may contain whitespace, so `%READ
+  TARGET%` bypassed the splatting regex; (2) branch-head equality is not
+  publication proof for reconciliations (uncommitted append with HEAD ==
+  remote stays allowed; historical resolutions re-block after later local
+  commits); (3) `git add/commit/push` never reach the receipt-recording
+  call, so publication-only sessions carry no recorded identity and inherit
+  a replacement holder's authority; (4) the `ApplyPatch` alias escapes the
+  casefolded mutation-intent predicate (`applypatch` ≠ `apply_patch`);
+  (5) four of six hardening tests called new helpers directly, so RED
+  demonstrated helper absence rather than integration detection.
+- **Repairs (R2):** (1) ANY `%...%` token is rejected as expansion syntax;
+  (2) `_has_unpublished_operation_resolution` now compares local resolution
+  event_ids against the remote branch's handoff document and fails closed
+  when the remote handoff is unreadable; (3) `_record_session_binding`
+  persists the session admission during PostToolUse for the git-publication
+  early-return path (never during PreToolUse); (4) the mutation-intent
+  predicate lists both `apply_patch` and `ApplyPatch` spellings explicitly;
+  (5) three new behavioral tests drive `hook_pretool`/`record_hook_observation`
+  end-to-end (reconciliation blocked until the remote handoff contains the
+  event; git-commit publication records a binding that then denies the same
+  session after reassignment; the ApplyPatch alias is drift-checked), the
+  splatting test drives `hook_pretool`, and the old journal test's remote
+  simulation now returns a real handoff document.
+- **Full battery on the final tree:** autonomy + guard **379 passed + 482
+  subtests**, workflow runtimes **14/14**, checker **PASS**, `py_compile`
+  **PASS**, `git diff --check` **PASS**. Scope unchanged (registered six
+  paths only); C1-locked files untouched; no provider dispatch.
