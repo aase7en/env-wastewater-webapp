@@ -95,6 +95,25 @@ GREEN, the executing lane supplies its real goal id on the first typed
       "published": false,
       "task_id": "ENV-AUTONOMY-002",
       "terminal_result": null
+    },
+    {
+      "claim_generation": 1,
+      "claim_id": "ENV-AUTONOMY-002-C1",
+      "event_id": "env-event-ae653199-8b6f-4929-9cd3-d6d55250a38f",
+      "event_seq": 4,
+      "event_type": "CHECKPOINT",
+      "goal_id": "3a3ab9a2-3867-4698-b180-1e85c058ab08",
+      "operation_id": null,
+      "operation_outcome": null,
+      "payload": {
+        "lane_status": "REVIEW_REQUESTED",
+        "recorded_at_utc": "2026-10-06T08:47:27Z",
+        "source_head_sha": "85fefc022d6c95be3a8a0286051d0695c0da45c0"
+      },
+      "previous_event_id": "env-event-217b0c8a-22cd-492a-87ac-c91b2809e256",
+      "published": false,
+      "task_id": "ENV-AUTONOMY-002",
+      "terminal_result": null
     }
   ],
   "goal_id": null,
