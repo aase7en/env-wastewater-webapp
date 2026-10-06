@@ -124,3 +124,10 @@ GREEN, the executing lane supplies its real goal id on the first typed
   battery re-passed (**379 + 482 subtests**, workflow 14/14, checker,
   py_compile, diff-check). A fresh `REVIEW_REQUESTED` lifecycle event follows
   this note at the new head.
+
+## R3 repair checkpoint — 2026-10-06
+
+- R3 review of `0eea65b` returned one P2 (entrypoint-level regression
+  coverage); repaired — both regressions now drive `_cmd_hook` and
+  `_cmd_append_event` end-to-end (evidence in the Work Order R3 section).
+  Full battery re-passed. A fresh `REVIEW_REQUESTED` event follows.
