@@ -105,3 +105,84 @@ it grants no new task, scope, provider, review, merge, or completion authority.
 All five findings closed with regression coverage; fresh independent
 exact-SHA review `APPROVED`; expected-head merge; post-main suites green;
 closeout folded into SSoT.
+
+## Result — implementation and verification — 2026-10-06
+
+- **Branch/base:** `codex/env-autonomy-002-hardening` rebased onto
+  `origin/main@889963648c06ff9910b6497f72a1158f8a37696c` after PRs #96/#97/#98
+  merged all four control transitions (ENV-AUTONOMY-001 CLOSED,
+  ENV-COORD-002-C1 released by owner decision, this claim CLAIMED).
+- **RED-first evidence:** the six-test `AstraHardeningTests` class failed on
+  the pre-repair runtime (all six RED, including four subtests) before any
+  repair; after the repairs all six pass. Tests never read real
+  `.env`/`data/raw` values (synthetic fixtures only).
+- **Repairs delivered:** (1) splatting/indirection (`@name`, `%VAR%`) rejected
+  as `SPLATTING_OR_INDIRECTION_FORBIDDEN` before literal-path classification;
+  (2) the unredacted `git remote -v` READ_ONLY allowance removed (falls
+  through to UNCLASSIFIED fail-closed); (3) `_has_unpublished_operation_resolution`
+  blocks mutation admission while a locally appended reconciliation is not yet
+  the remote branch head; (4) `_reject_session_identity_drift` /
+  `_enforce_session_admission` pin each session to its first-admitted claim
+  identity (check-only in PreToolUse; recording rides the PostToolUse receipt
+  write so admission never dirties the worktree); (5) `_posttool_receipt_context`
+  handles the idempotent duplicate-receipt shape instead of raising KeyError;
+  (6) the successor routing prerequisite — `append-event --task` with
+  backward-compatible default `ENV-AUTONOMY-001`, unknown tasks fail closed,
+  routing never creates authority.
+- **Full battery on the final rebased tree:** autonomy + guard combined
+  **376 passed + 482 subtests** (32 autonomy incl. the 6 new, 344 guard),
+  workflow runtimes **14/14**, checker **PASS**, `py_compile` **PASS**,
+  `git diff --check` **PASS**. No C1-locked file touched; no registry,
+  CURRENT-WORK, HANDOFF, architecture, frontend, Supabase, or data change;
+  no provider dispatch; `AUTONOMY_NOT_READY` / `ENFORCEMENT_NOT_ACTIVE`
+  remain truthful.
+
+## R2 review repair — 2026-10-06
+
+- **Review:** independent GPT-6 Astra exact-SHA review of `79ee2a1` returned
+  `CHANGES_REQUIRED` (4 P1 + 1 P2), each reproduced by read-only synthetic
+  probes: (1) cmd.exe variable names may contain whitespace, so `%READ
+  TARGET%` bypassed the splatting regex; (2) branch-head equality is not
+  publication proof for reconciliations (uncommitted append with HEAD ==
+  remote stays allowed; historical resolutions re-block after later local
+  commits); (3) `git add/commit/push` never reach the receipt-recording
+  call, so publication-only sessions carry no recorded identity and inherit
+  a replacement holder's authority; (4) the `ApplyPatch` alias escapes the
+  casefolded mutation-intent predicate (`applypatch` ≠ `apply_patch`);
+  (5) four of six hardening tests called new helpers directly, so RED
+  demonstrated helper absence rather than integration detection.
+- **Repairs (R2):** (1) ANY `%...%` token is rejected as expansion syntax;
+  (2) `_has_unpublished_operation_resolution` now compares local resolution
+  event_ids against the remote branch's handoff document and fails closed
+  when the remote handoff is unreadable; (3) `_record_session_binding`
+  persists the session admission during PostToolUse for the git-publication
+  early-return path (never during PreToolUse); (4) the mutation-intent
+  predicate lists both `apply_patch` and `ApplyPatch` spellings explicitly;
+  (5) three new behavioral tests drive `hook_pretool`/`record_hook_observation`
+  end-to-end (reconciliation blocked until the remote handoff contains the
+  event; git-commit publication records a binding that then denies the same
+  session after reassignment; the ApplyPatch alias is drift-checked), the
+  splatting test drives `hook_pretool`, and the old journal test's remote
+  simulation now returns a real handoff document.
+- **Full battery on the final tree:** autonomy + guard **379 passed + 482
+  subtests**, workflow runtimes **14/14**, checker **PASS**, `py_compile`
+  **PASS**, `git diff --check` **PASS**. Scope unchanged (registered six
+  paths only); C1-locked files untouched; no provider dispatch.
+
+## R3 review repair — 2026-10-06
+
+- **Review:** R3 at `0eea65b` returned `CHANGES_REQUIRED` with a single P2:
+  the duplicate-receipt and task-routing regressions still called
+  `_posttool_receipt_context` / `_resolve_append_event_claim` directly, so a
+  broken `_cmd_hook` receipt path or hard-coded CLI claim selection would
+  pass undetected.
+- **Repair:** both tests now drive the real entrypoints. The duplicate test
+  delivers the SAME `tool_use_id` twice through `_cmd_hook` PostToolUse
+  (stdin event JSON, stdout captured), asserts exit 0 + well-formed
+  hookSpecificOutput both times, and proves exactly one receipt is journaled.
+  The routing test drives `_cmd_append_event --task ENV-AUTONOMY-002` with
+  the publication/binding gates verified-green, asserts the successor
+  handoff alone receives the event and the ENV-AUTONOMY-001 handoff bytes
+  are unchanged, and keeps the unknown-task fail-closed assertion.
+- **Battery:** autonomy + guard **379 + 482 subtests**, workflow **14/14**,
+  checker **PASS**, `py_compile` **PASS**, `git diff --check` **PASS**.

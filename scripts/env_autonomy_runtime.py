@@ -822,6 +822,8 @@ def record_hook_observation(root: Path, policy: guard.TrustedPolicy, event: dict
     if tool_name == "Bash":
         classified = classify_shell_command(tool_input.get("command"))
         if classified["kind"] in ("GIT_STAGE_OR_COMMIT", "GIT_PUSH"):
+            actual = _actual_context(root, claim)
+            _record_session_binding(Path(actual["worktree"]), claim, event.get("session_id"))
             return {"recorded": False, "reason": "GIT_PUBLICATION_IS_VERIFIED_FROM_REMOTE"}
         if classified["kind"] != "AUTONOMY_EVENT":
             reason = "READ_ONLY" if classified["kind"] == "READ_ONLY" else "NOT_A_MUTATION_RECEIPT"
@@ -926,6 +928,7 @@ def record_hook_observation(root: Path, policy: guard.TrustedPolicy, event: dict
     if any(isinstance(item, dict) and item.get("tool_use_id") == tool_use_id for item in observations):
         return {"recorded": True, "idempotent": True, "tool_use_id": tool_use_id}
     observations.append(observation)
+    _enforce_session_admission(document, claim, session_id)
     if operation_id is not None:
         _, log = _read_lifecycle_log(handoff_text, claim)
         if log.active_goal_id is None:
@@ -1660,6 +1663,13 @@ def classify_shell_command(command: str) -> dict:
     # substitution, grouping and redirection syntax before shlex sees it.
     if re.search(r"[;&|<>`$()\r\n]", text):
         return {"kind": "UNKNOWN", "reason": "COMPOUND_SHELL_COMMAND_FORBIDDEN"}
+    # PowerShell splatting (@name), rg @file argument indirection, and cmd.exe
+    # %VAR% expansion all defer argument resolution to a value this hook cannot
+    # see; reject the syntax instead of validating the unexpanded token.
+    # cmd.exe variable names may contain whitespace, so ANY %-delimited
+    # token is expansion syntax this hook cannot resolve; reject it all.
+    if re.search(r"@\w", text) or re.search(r"%[^%]+%", text):
+        return {"kind": "UNKNOWN", "reason": "SPLATTING_OR_INDIRECTION_FORBIDDEN"}
     try:
         tokens = shlex.split(text, posix=True)
     except ValueError:
@@ -1709,8 +1719,9 @@ def classify_shell_command(command: str) -> dict:
             ["git", "rev-parse", "--abbrev-ref", "HEAD"],
         ):
             return {"kind": "READ_ONLY", "changes": []}
-        if sub == "remote" and tokens[2:] == ["-v"]:
-            return {"kind": "READ_ONLY", "changes": []}
+        # `git remote -v` intentionally has no allowance: a credential-bearing
+        # remote URL would print unredacted into the transcript. It falls
+        # through to UNCLASSIFIED_SHELL_COMMAND (fail closed).
     if tokens[0].casefold() == "rg":
         # Backslash means a path separator to Windows shells and an escape to
         # POSIX shells. Do not let platform-dependent tokenization rewrite an
@@ -1813,10 +1824,20 @@ def hook_pretool(event: dict, root: Path) -> dict:
         handoff_path = root / claim["handoff_path"]
         handoff_text = handoff_path.read_text(encoding="utf-8")
         lifecycle_document, lifecycle_log = _read_lifecycle_log(handoff_text, claim)
+        mutation_intent = (
+            classified is not None
+            and classified["kind"] in ("GIT_STAGE_OR_COMMIT", "GIT_PUSH", "AUTONOMY_EVENT")
+        ) or tool_name in ("Edit", "Write", "apply_patch", "ApplyPatch")
+        if mutation_intent:
+            _reject_session_identity_drift(lifecycle_document, claim, session_id)
         unresolved_hook_observations = _has_unresolved_hook_observations(
             lifecycle_document, lifecycle_log
         )
-        unresolved = lifecycle_log.has_unresolved_external_operations or unresolved_hook_observations
+        unresolved = (
+            lifecycle_log.has_unresolved_external_operations
+            or unresolved_hook_observations
+            or _has_unpublished_operation_resolution(root, claim, lifecycle_document)
+        )
         may_publish_or_reconcile = (
             classified is not None
             and classified["kind"] in ("GIT_STAGE_OR_COMMIT", "GIT_PUSH")
@@ -2018,6 +2039,133 @@ def _cmd_refill(args) -> int:
     return _emit(result)
 
 
+def _has_unpublished_operation_resolution(root: Path, claim: dict, document: dict) -> bool:
+    """A local OPERATION_RECONCILED/OPERATION_OUTCOME event re-opens mutation
+    admission only once the SAME event (by event_id) is present in the remote
+    branch's handoff document. Branch-head equality is not proof: an
+    uncommitted reconciliation can coexist with HEAD == remote, and later
+    local commits would wrongly re-block published resolutions. Fails closed
+    when the remote handoff is unreadable."""
+    events = document.get("events")
+    if not isinstance(events, list):
+        return False
+    local_ids = {
+        raw.get("event_id") for raw in events
+        if isinstance(raw, dict)
+        and raw.get("event_type") in ("OPERATION_RECONCILED", "OPERATION_OUTCOME")
+    }
+    if not local_ids:
+        return False
+    remote_text = _run_git(
+        ["show", f"origin/{claim['branch']}:{claim['handoff_path']}"], root, check=False
+    )
+    if not remote_text:
+        return True
+    try:
+        remote_document, _ = _lifecycle_document(remote_text)
+    except AutonomyFailure:
+        return True
+    remote_events = remote_document.get("events")
+    remote_ids = (
+        {raw.get("event_id") for raw in remote_events if isinstance(raw, dict)}
+        if isinstance(remote_events, list)
+        else set()
+    )
+    return not local_ids.issubset(remote_ids)
+
+
+def _reject_session_identity_drift(document: dict, claim: dict, session_id) -> None:
+    """PreToolUse guard: reject a session whose recorded admission binds a
+    different claim identity (claim/generation/holder) than the current claim.
+    Recording happens only in the PostToolUse receipt write, so admission
+    checking never dirties the worktree."""
+    if not isinstance(session_id, str) or not session_id:
+        return
+    admissions = document.get("session_admissions")
+    if not isinstance(admissions, dict):
+        return
+    recorded = admissions.get(session_id)
+    if not isinstance(recorded, dict):
+        return
+    expected = (claim["claim_id"], claim["claim_generation"], claim["execution_holder_id"])
+    if (
+        recorded.get("claim_id"),
+        recorded.get("claim_generation"),
+        recorded.get("execution_holder_id"),
+    ) != expected:
+        raise AutonomyFailure("SESSION_IDENTITY_DRIFT")
+
+
+def _enforce_session_admission(document: dict, claim: dict, session_id) -> bool:
+    """Pin each session to the claim identity it was first admitted under; a
+    resumed pre-reassignment session must not inherit its replacement's
+    ownership. Returns True when a new admission was recorded."""
+    if not isinstance(session_id, str) or not session_id:
+        return False
+    admissions = document.get("session_admissions")
+    if admissions is None:
+        admissions = {}
+        document["session_admissions"] = admissions
+    if not isinstance(admissions, dict):
+        raise AutonomyFailure("LIFECYCLE_BLOCK_MALFORMED", "session admissions must be an object")
+    expected = (claim["claim_id"], claim["claim_generation"], claim["execution_holder_id"])
+    recorded = admissions.get(session_id)
+    if isinstance(recorded, dict):
+        if (
+            recorded.get("claim_id"),
+            recorded.get("claim_generation"),
+            recorded.get("execution_holder_id"),
+        ) != expected:
+            raise AutonomyFailure("SESSION_IDENTITY_DRIFT")
+        return False
+    admissions[session_id] = {
+        "claim_id": expected[0],
+        "claim_generation": expected[1],
+        "execution_holder_id": expected[2],
+    }
+    return True
+
+
+def _record_session_binding(root: Path, claim: dict, session_id) -> None:
+    """Persist a session admission during PostToolUse for admission paths whose
+    receipts return early (git add/commit/push). Write-only helper: it never
+    runs during PreToolUse."""
+    if not isinstance(session_id, str) or not session_id:
+        return
+    handoff_path = Path(root) / claim["handoff_path"]
+    handoff_text = handoff_path.read_text(encoding="utf-8")
+    document, _ = _lifecycle_document(handoff_text)
+    if _enforce_session_admission(document, claim, session_id):
+        handoff_path.write_text(
+            _replace_lifecycle_block(handoff_text, document),
+            encoding="utf-8", newline="\n",
+        )
+
+
+def _posttool_receipt_context(context: str, observation: dict) -> str:
+    """Build the PostToolUse receipt context for every observation shape,
+    including the idempotent duplicate-receipt no-op result."""
+    if observation.get("idempotent") is True:
+        return context + f" Duplicate tool receipt {observation.get('tool_use_id')} already journaled; no-op."
+    if observation.get("recorded") is False:
+        return context + f" Tool receipt note: {observation.get('reason')}; use the published Git head for verification."
+    return context + (
+        f" Hash-only mutation receipt {observation['tool_use_id']} covers "
+        f"{len(observation['changed_paths'])} claimed path(s); publish the handoff fast-forward and verify remote head."
+    )
+
+
+def _resolve_append_event_claim(policy: guard.TrustedPolicy, task) -> dict:
+    """Select the claim an append-event applies to. Default keeps the historic
+    ENV-AUTONOMY-001 route; unknown tasks fail closed. Routing never creates
+    authority (ENV-AUTONOMY-002 successor lifecycle-routing prerequisite)."""
+    selected = task if isinstance(task, str) and task else "ENV-AUTONOMY-001"
+    resolved = policy.claim_by_task(selected)
+    if resolved is None:
+        raise AutonomyFailure("UNKNOWN_TASK")
+    return resolved
+
+
 def _read_lifecycle_log(handoff_text: str, claim: dict) -> tuple[dict, guard.LifecycleLog]:
     document, _ = _lifecycle_document(handoff_text)
     if (document.get("claim_id"), document.get("claim_generation")) != (
@@ -2045,9 +2193,7 @@ def _read_lifecycle_log(handoff_text: str, claim: dict) -> tuple[dict, guard.Lif
 def _cmd_append_event(args) -> int:
     root = Path(args.root or Path.cwd()).resolve()
     policy, _ = load_trusted_policy(root)
-    claim = policy.claim_by_task("ENV-AUTONOMY-001")
-    if claim is None:
-        raise AutonomyFailure("UNKNOWN_TASK")
+    claim = _resolve_append_event_claim(policy, getattr(args, "task", None))
     actual = _actual_context(root, claim)
     run_id = args.run_id or f"codex-local:{uuid.uuid4()}"
     binding = {
@@ -2287,13 +2433,7 @@ def _cmd_hook(args) -> int:
             observation = record_hook_observation(root, policy, event)
             if observation.get("reason") == "READ_ONLY":
                 return _emit({})
-            if observation.get("recorded") is False:
-                context += f" Tool receipt note: {observation.get('reason')}; use the published Git head for verification."
-            else:
-                context += (
-                    f" Hash-only mutation receipt {observation['tool_use_id']} covers "
-                    f"{len(observation['changed_paths'])} claimed path(s); publish the handoff fast-forward and verify remote head."
-                )
+            context = _posttool_receipt_context(context, observation)
             return _emit({"hookSpecificOutput": {"hookEventName": "PostToolUse", "additionalContext": context}})
         if args.event == "SessionStart":
             checkpoint = verify_published_checkpoint(root, policy, claim)
@@ -2393,6 +2533,7 @@ def main(argv: Optional[list[str]] = None) -> int:
     hook.add_argument("--root")
     hook.set_defaults(func=_cmd_hook)
     append_event = sub.add_parser("append-event", help="append one typed lifecycle event to the existing lane handoff")
+    append_event.add_argument("--task", help="task_id whose claim owns the handoff (default ENV-AUTONOMY-001)")
     append_event.add_argument("--event-type", required=True, choices=guard.LIFECYCLE_EVENT_TYPES)
     append_event.add_argument("--root")
     append_event.add_argument("--goal-id")
