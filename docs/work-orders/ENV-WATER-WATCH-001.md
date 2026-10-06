@@ -313,3 +313,23 @@ Escalate `DECISION_REQUIRED` if implementation would require:
   environmental writes; SIMULATED disclosure unchanged.
 - **Status:** `RE-REVIEW_REQUESTED` — independent GPT-6 Astra exact-SHA
   review of the new PR #93 head required before merge.
+
+## R2 review repair — 2026-10-06
+
+- **Review:** independent GPT-6 Astra exact-SHA review of `5240e19` returned
+  `CHANGES_REQUIRED` (1 P1 + 1 P2): at 1024–1279px the `lg:` fixed-height/
+  overflow-hidden root still applied while the stacked variant was active,
+  clipping the lower stations without scroll; and the geometry regression
+  asserted only horizontal containment.
+- **Repair (R2):** the enclosing fixed-height composition moved from `lg:` to
+  `xl:` on the dashboard root, so every width below `xl` (including
+  1024–1279px) is content-sized and scrollable while the stacked stations are
+  active; the geometry helper now asserts vertical containment (`y` and
+  `y + height` against the section bounds) as well as horizontal; a new
+  1024×768 laptop-width test covers the previously uncovered interval.
+- **RED proof:** temporarily restoring `lg:h-[100svh] lg:min-h-0
+  lg:overflow-hidden` on the root made the new 1024×768 test fail (1 RED —
+  exactly the clipping the reviewer reproduced); restoring `xl:` returned
+  **7/7 GREEN** (3 original + 4 geometry: 390/768/1024/1280).
+- **Gates:** focused Vitest 4/4; `tsc -b` PASS; Playwright **7/7**; 
+  `git diff --check` PASS.

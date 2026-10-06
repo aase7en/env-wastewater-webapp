@@ -27,6 +27,8 @@ async function expectStationGeometry(page: Page, testidPrefix: string) {
     expect(box).toBeTruthy();
     expect(box!.x).toBeGreaterThanOrEqual(sectionBox!.x - 0.5);
     expect(box!.x + box!.width).toBeLessThanOrEqual(sectionBox!.x + sectionBox!.width + 0.5);
+    expect(box!.y).toBeGreaterThanOrEqual(sectionBox!.y - 0.5);
+    expect(box!.y + box!.height).toBeLessThanOrEqual(sectionBox!.y + sectionBox!.height + 0.5);
     boxes.push(box!);
   }
 
@@ -118,6 +120,20 @@ test("Water Watch tablet-width station cards stay visible, non-overlapping and u
   await page.setViewportSize({ width: 768, height: 1024 });
   await page.goto("/water-watch");
   await expectStationGeometry(page, "water-watch-station-row-");
+});
+
+test("Water Watch laptop-width (1024-1279) stacked stations stay visible, non-overlapping and unclipped", async ({ page }) => {
+  // 1024-1279px keeps the stacked variant while the desktop grids apply; the
+  // enclosing layout must stay content-sized/scrollable here, not fixed-height.
+  await page.setViewportSize({ width: 1024, height: 768 });
+  await page.goto("/water-watch");
+  await expectStationGeometry(page, "water-watch-station-row-");
+
+  const geometry = await page.evaluate(() => ({
+    viewport: window.innerWidth,
+    documentWidth: document.documentElement.scrollWidth,
+  }));
+  expect(geometry.documentWidth).toBeLessThanOrEqual(geometry.viewport);
 });
 
 test("Water Watch desktop river markers stay non-overlapping and unclipped at their tightest width", async ({ page }) => {

@@ -337,7 +337,7 @@ export function WaterWatchDashboard({ snapshot }: { snapshot: WaterWatchSnapshot
 
   return (
     <main
-      className="mx-auto flex min-h-screen w-full max-w-[1920px] flex-col gap-3 bg-gradient-to-b from-sky-50 via-white to-cyan-50 p-3 text-slate-900 sm:p-4 lg:h-[100svh] lg:min-h-0 lg:overflow-hidden lg:p-5"
+      className="mx-auto flex min-h-screen w-full max-w-[1920px] flex-col gap-3 bg-gradient-to-b from-sky-50 via-white to-cyan-50 p-3 text-slate-900 sm:p-4 xl:h-[100svh] xl:min-h-0 xl:overflow-hidden xl:p-5"
       data-testid="water-watch-dashboard"
       data-mode={snapshot.mode}
     >
