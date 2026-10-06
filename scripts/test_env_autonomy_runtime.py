@@ -1099,5 +1099,111 @@ class HookClassifierTests(unittest.TestCase):
                     self.assertEqual(decision["permissionDecision"], "deny")
 
 
+class AstraHardeningTests(unittest.TestCase):
+    """RED-first coverage for the five 2026-10-05 GPT-6 Astra findings and the
+    successor lifecycle-routing prerequisite (docs/work-orders/ENV-AUTONOMY-002.md)."""
+
+    def test_powershell_splatting_and_indirection_rejected_before_literal_reads(self):
+        commands = (
+            "Get-Content @readArgs",
+            "Select-String @searchArgs",
+            "rg pattern @argsfile",
+            "Get-Content %APPDATA%/secret.txt",
+        )
+        for command in commands:
+            with self.subTest(command=command):
+                classified = runtime.classify_shell_command(command)
+                self.assertEqual(classified["kind"], "UNKNOWN")
+                self.assertEqual(classified["reason"], "SPLATTING_OR_INDIRECTION_FORBIDDEN")
+
+    def test_git_remote_dash_v_is_not_an_unredacted_read_only_allowance(self):
+        classified = runtime.classify_shell_command("git remote -v")
+        self.assertNotEqual(classified["kind"], "READ_ONLY")
+
+    def test_unpublished_operation_resolution_keeps_mutation_blocked_until_pushed(self):
+        claim_record = claim("ENV-AUTONOMY-001", "ENV-AUTONOMY-001-C1", "CLAIMED", ["docs/ai/handoffs/ENV-AUTONOMY-001.md"])
+        events = [
+            lifecycle_event("ENV-AUTONOMY-001", claim_record["claim_id"], "GOAL_START", 1, "e1", guard.GENESIS, goal_id="g1"),
+            lifecycle_event("ENV-AUTONOMY-001", claim_record["claim_id"], "OPERATION_INTENT", 2, "e2", "e1", operation_id="op-1"),
+            lifecycle_event("ENV-AUTONOMY-001", claim_record["claim_id"], "OPERATION_OUTCOME", 3, "e3", "e2", operation_id="op-1", operation_outcome="UNKNOWN"),
+        ]
+        document = {
+            "version": 1, "claim_id": claim_record["claim_id"], "claim_generation": 1,
+            "events": [{**event.__dict__, "published": False} for event in events],
+        }
+        document["events"].append({
+            **lifecycle_event(
+                "ENV-AUTONOMY-001", claim_record["claim_id"], "OPERATION_RECONCILED", 4, "e4", "e3",
+                operation_id="op-1", operation_outcome="SUCCEEDED", goal_id="g1",
+            ).__dict__,
+            "published": False,
+        })
+        with tempfile.TemporaryDirectory() as folder:
+            root = Path(folder)
+            git_outputs = {
+                "rev-parse HEAD": "5" * 40,
+                "rev-parse origin/test/ENV-AUTONOMY-001": "4" * 40,
+            }
+            def fake_run_git(args, cwd=None, check=True, preserve_output=False):
+                key = " ".join(args)
+                if key in git_outputs:
+                    return git_outputs[key]
+                raise AssertionError(f"unexpected git call: {args}")
+            with patch.object(runtime, "_run_git", side_effect=fake_run_git):
+                unresolved = runtime._has_unpublished_operation_resolution(root, claim_record, document)
+            self.assertTrue(unresolved)
+            git_outputs["rev-parse origin/test/ENV-AUTONOMY-001"] = "5" * 40
+            with patch.object(runtime, "_run_git", side_effect=fake_run_git):
+                unresolved = runtime._has_unpublished_operation_resolution(root, claim_record, document)
+            self.assertFalse(unresolved)
+
+    def test_session_identity_drift_after_reassignment_is_rejected(self):
+        first = claim("ENV-AUTONOMY-001", "ENV-AUTONOMY-001-C1", "CLAIMED", ["docs/ai/handoffs/ENV-AUTONOMY-001.md"])
+        reassigned = claim(
+            "ENV-AUTONOMY-001", "ENV-AUTONOMY-001-C1", "CLAIMED",
+            ["docs/ai/handoffs/ENV-AUTONOMY-001.md"], generation=2, holder="holder-B",
+        )
+        document = {
+            "version": 1, "claim_id": "ENV-AUTONOMY-001-C1", "claim_generation": 2,
+            "events": [],
+            "session_admissions": {
+                "old-session": {
+                    "claim_id": "ENV-AUTONOMY-001-C1", "claim_generation": 1,
+                    "execution_holder_id": first["execution_holder_id"],
+                },
+            },
+        }
+        with self.assertRaises(runtime.AutonomyFailure) as raised:
+            runtime._enforce_session_admission(document, reassigned, "old-session")
+        self.assertEqual(str(raised.exception.reason if hasattr(raised.exception, "reason") else raised.exception), "SESSION_IDENTITY_DRIFT")
+        runtime._enforce_session_admission(document, reassigned, "fresh-session")
+        recorded = document["session_admissions"]["fresh-session"]
+        self.assertEqual(recorded["claim_id"], reassigned["claim_id"])
+        self.assertEqual(recorded["claim_generation"], reassigned["claim_generation"])
+        self.assertEqual(recorded["execution_holder_id"], reassigned["execution_holder_id"])
+
+    def test_duplicate_posttool_receipt_returns_idempotent_noop_context(self):
+        base = "ENV receipt."
+        duplicate = {"recorded": True, "idempotent": True, "tool_use_id": "tool-1"}
+        context = runtime._posttool_receipt_context(base, duplicate)
+        self.assertIn("Duplicate", context)
+        fresh = {
+            "recorded": True, "idempotent": False, "tool_use_id": "tool-2",
+            "changed_paths": ["docs/ai/handoffs/ENV-AUTONOMY-001.md"],
+        }
+        context = runtime._posttool_receipt_context(base, fresh)
+        self.assertIn("1 claimed path", context)
+
+    def test_append_event_routes_to_requested_task_and_fails_closed(self):
+        first = claim("ENV-AUTONOMY-001", "ENV-AUTONOMY-001-C1", "CLAIMED", ["docs/ai/handoffs/ENV-AUTONOMY-001.md"])
+        successor = claim("ENV-AUTONOMY-002", "ENV-AUTONOMY-002-C1", "CLAIMED", ["docs/ai/handoffs/ENV-AUTONOMY-002.md"])
+        trusted = policy(first, successor)
+        self.assertEqual(runtime._resolve_append_event_claim(trusted, None)["claim_id"], first["claim_id"])
+        self.assertEqual(runtime._resolve_append_event_claim(trusted, "ENV-AUTONOMY-002")["claim_id"], successor["claim_id"])
+        with self.assertRaises(runtime.AutonomyFailure):
+            runtime._resolve_append_event_claim(trusted, "ENV-COORD-002")
+
+
+
 if __name__ == "__main__":
     unittest.main(verbosity=2)
