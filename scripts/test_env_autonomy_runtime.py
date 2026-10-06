@@ -1408,28 +1408,170 @@ class AstraHardeningTests(unittest.TestCase):
         self.assertEqual(recorded["claim_generation"], reassigned["claim_generation"])
         self.assertEqual(recorded["execution_holder_id"], reassigned["execution_holder_id"])
 
-    def test_duplicate_posttool_receipt_returns_idempotent_noop_context(self):
-        base = "ENV receipt."
-        duplicate = {"recorded": True, "idempotent": True, "tool_use_id": "tool-1"}
-        context = runtime._posttool_receipt_context(base, duplicate)
-        self.assertIn("Duplicate", context)
-        fresh = {
-            "recorded": True, "idempotent": False, "tool_use_id": "tool-2",
-            "changed_paths": ["docs/ai/handoffs/ENV-AUTONOMY-001.md"],
-        }
-        context = runtime._posttool_receipt_context(base, fresh)
-        self.assertIn("1 claimed path", context)
+    def test_duplicate_posttool_receipt_through_hook_entrypoint_is_noop(self):
+        import io
+        from contextlib import redirect_stdout
+        with tempfile.TemporaryDirectory(prefix="env-hook-dup-") as temp_dir:
+            root = Path(temp_dir)
+            handoff_rel = "docs/ai/handoffs/ENV-AUTONOMY-001.md"
+            handoff_path = root / handoff_rel
+            handoff_path.parent.mkdir(parents=True)
+            changed_path = root / "docs" / "changed.md"
+            changed_path.parent.mkdir(parents=True, exist_ok=True)
+            changed_path.write_text("after tool mutation\n", encoding="utf-8")
+            test_claim = claim(
+                "ENV-AUTONOMY-001", "ENV-AUTONOMY-001-C1", "CLAIMED", ["docs/changed.md"]
+            )
+            test_claim.update({"worktree": str(root), "branch": "test/hook-dup",
+                               "handoff_path": handoff_rel})
+            observation = {
+                "hook_event_name": "PostToolUse", "tool_name": "Edit",
+                "tool_use_id": "tool-dup", "session_id": "session-dup",
+                "turn_id": "turn-1", "run_id": "codex:session-dup:turn-1:tool-dup",
+                "operation_id": None,
+                "task_id": test_claim["task_id"], "claim_id": test_claim["claim_id"],
+                "claim_generation": 1,
+                "execution_holder_id": test_claim["execution_holder_id"],
+                "repo": runtime.REPO_SLUG, "worktree": str(root),
+                "branch": test_claim["branch"], "codex_model": "GPT-6 Luna MAX",
+                "base_sha": test_claim["base_sha"], "head_sha": "b" * 40,
+                "changed_paths": ["docs/changed.md"], "content_sha256": {},
+                "input_sha256": "1" * 64, "result_sha256": "2" * 64,
+                "effect_state": "OBSERVED", "publication_state": "PENDING_PUBLICATION",
+            }
+            lifecycle = {
+                "version": 1, "task_id": test_claim["task_id"],
+                "claim_id": test_claim["claim_id"], "claim_generation": 1,
+                "goal_id": "goal-dup-1", "codex_hook_observations": [observation],
+                "session_admissions": {}, "events": [{
+                    "task_id": test_claim["task_id"], "claim_id": test_claim["claim_id"],
+                    "claim_generation": 1, "goal_id": "goal-dup-1",
+                    "event_type": "GOAL_START", "event_seq": 1,
+                    "event_id": "dup-goal-start", "previous_event_id": guard.GENESIS,
+                    "terminal_result": None, "operation_id": None,
+                    "operation_outcome": None, "payload": None, "published": True,
+                }],
+            }
+            handoff_path.write_text(
+                "# Dup fixture" + "\n\n" + runtime.LIFECYCLE_START + "\n```json\n"
+                + json.dumps(lifecycle, indent=2) + "\n```\n" + runtime.LIFECYCLE_END + "\n",
+                encoding="utf-8",
+            )
+            actual = {
+                "repo": runtime.REPO_SLUG, "worktree": str(root),
+                "branch": test_claim["branch"], "head_sha": "b" * 40,
+                "claim_base_ancestor": True, "current_policy_ancestor": True,
+            }
+            trusted = policy(test_claim)
+            event_json = json.dumps({
+                "tool_name": "Edit",
+                "tool_input": {"file_path": str(changed_path)},
+                "tool_response": {"isError": False},
+                "session_id": "session-dup", "turn_id": "turn-2",
+                "tool_use_id": "tool-dup", "model": "GPT-6 Luna MAX",
+                "hook_event_name": "PostToolUse",
+            })
+            for delivery in (1, 2):
+                with patch.object(runtime, "load_trusted_policy", return_value=(trusted, "")), \
+                     patch.object(runtime, "_actual_context", return_value=actual), \
+                     patch.object(runtime, "validate_lane_binding"), \
+                     patch.object(runtime.guard, "evaluate_mutation",
+                                  return_value=SimpleNamespace(safe_to_mutate=True, reason=None)), \
+                     patch.object(runtime, "_mutation_links", return_value=[]), \
+                     patch.object(runtime, "_run_git", return_value=str(root)):
+                    captured = io.StringIO()
+                    with patch.object(sys, "stdin", io.StringIO(event_json)):
+                        with redirect_stdout(captured):
+                            exit_code = runtime._cmd_hook(SimpleNamespace(
+                                event="PostToolUse", root=str(root)
+                            ))
+                    self.assertEqual(exit_code, 0)
+                    payload = json.loads(captured.getvalue())
+                    self.assertIn("hookSpecificOutput", payload)
+            text = handoff_path.read_text(encoding="utf-8")
+            document, _ = runtime._lifecycle_document(text)
+            receipts = [item for item in document["codex_hook_observations"]
+                        if item.get("tool_use_id") == "tool-dup"]
+            self.assertEqual(len(receipts), 1)
 
-    def test_append_event_routes_to_requested_task_and_fails_closed(self):
+    def test_append_event_cli_selects_successor_task_and_leaves_other_handoffs_untouched(self):
+        import io
+        from contextlib import redirect_stdout
         first = claim("ENV-AUTONOMY-001", "ENV-AUTONOMY-001-C1", "CLAIMED", ["docs/ai/handoffs/ENV-AUTONOMY-001.md"])
         successor = claim("ENV-AUTONOMY-002", "ENV-AUTONOMY-002-C1", "CLAIMED", ["docs/ai/handoffs/ENV-AUTONOMY-002.md"])
+        for record in (first, successor):
+            record.update({"worktree": "C:/wt", "branch": "test/route", "agent_model": "GLM-5.3 MAX"})
         trusted = policy(first, successor)
-        self.assertEqual(runtime._resolve_append_event_claim(trusted, None)["claim_id"], first["claim_id"])
-        self.assertEqual(runtime._resolve_append_event_claim(trusted, "ENV-AUTONOMY-002")["claim_id"], successor["claim_id"])
-        with self.assertRaises(runtime.AutonomyFailure):
-            runtime._resolve_append_event_claim(trusted, "ENV-COORD-002")
+        with tempfile.TemporaryDirectory() as folder:
+            root = Path(folder)
+            texts = {}
+            for record in (first, successor):
+                handoff_path = root / record["handoff_path"]
+                handoff_path.parent.mkdir(parents=True, exist_ok=True)
+                lifecycle = {
+                    "version": 1, "task_id": record["task_id"],
+                    "claim_id": record["claim_id"], "claim_generation": 1,
+                    "goal_id": "goal-route-1", "events": [{
+                        "task_id": record["task_id"], "claim_id": record["claim_id"],
+                        "claim_generation": 1, "goal_id": "goal-route-1",
+                        "event_type": "GOAL_START", "event_seq": 1,
+                        "event_id": "route-goal-" + record["task_id"],
+                        "previous_event_id": guard.GENESIS, "terminal_result": None,
+                        "operation_id": None, "operation_outcome": None,
+                        "payload": None, "published": True,
+                    }],
+                }
+                text = ("# Route fixture" + "\n\n" + runtime.LIFECYCLE_START + "\n```json\n"
+                        + json.dumps(lifecycle, indent=2) + "\n```\n"
+                        + runtime.LIFECYCLE_END + "\n")
+                handoff_path.write_text(text, encoding="utf-8")
+                texts[record["claim_id"]] = text
+            captured_paths = []
 
+            def fake_append(handoff_path, event_data):
+                captured_paths.append(Path(handoff_path))
+                self.assertEqual(event_data["task_id"], "ENV-AUTONOMY-002")
+                return {"ok": True, "event_status": "applied",
+                        "checkpoint_state": "PENDING_PUBLICATION"}
 
+            actual = {
+                "repo": runtime.REPO_SLUG, "worktree": str(root),
+                "branch": "test/route", "head_sha": "b" * 40,
+                "claim_base_ancestor": True, "current_policy_ancestor": True,
+            }
+            with patch.object(runtime, "load_trusted_policy", return_value=(trusted, "")), \
+                 patch.object(runtime, "_actual_context", return_value=actual), \
+                 patch.object(runtime, "validate_lane_binding"), \
+                 patch.object(runtime, "verify_published_event", return_value={
+                     "ok": True, "checkpoint_sha": "b" * 40,
+                     "event_head": "route-goal-head",
+                     "handoff_commit": "b" * 40, "active_goal_id": "goal-route-1",
+                     "latest_event_id": "route-goal-ENV-AUTONOMY-002",
+                     "latest_event_type": "CHECKPOINT", "lane_status": None,
+                     "unresolved_external_operations": False,
+                     "unresolved_hook_observations": False,
+                 }), \
+                 patch.object(runtime, "append_lifecycle_event", side_effect=fake_append):
+                captured_cli = io.StringIO()
+                with redirect_stdout(captured_cli):
+                    runtime._cmd_append_event(SimpleNamespace(
+                        task="ENV-AUTONOMY-002", root=str(root),
+                        event_type="CHECKPOINT", goal_id=None, run_id=None,
+                        lane_status="REVIEW_REQUESTED", terminal_result=None,
+                        operation_id=None, operation_outcome=None, provider=None,
+                        model=None, variant=None, evidence_sha256=None,
+                    ))
+            result = json.loads(captured_cli.getvalue())
+            self.assertTrue(result["ok"])
+            self.assertEqual(result["task_id"], "ENV-AUTONOMY-002")
+            self.assertEqual(len(captured_paths), 1)
+            self.assertEqual(captured_paths[0].as_posix(),
+                             (root / successor["handoff_path"]).as_posix())
+            first_path = root / first["handoff_path"]
+            self.assertEqual(first_path.read_text(encoding="utf-8"),
+                             texts[first["claim_id"]])
+            with self.assertRaises(runtime.AutonomyFailure):
+                runtime._resolve_append_event_claim(trusted, "ENV-COORD-002")
 
 if __name__ == "__main__":
     unittest.main(verbosity=2)

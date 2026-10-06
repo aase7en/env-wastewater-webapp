@@ -168,3 +168,21 @@ closeout folded into SSoT.
   subtests**, workflow runtimes **14/14**, checker **PASS**, `py_compile`
   **PASS**, `git diff --check` **PASS**. Scope unchanged (registered six
   paths only); C1-locked files untouched; no provider dispatch.
+
+## R3 review repair — 2026-10-06
+
+- **Review:** R3 at `0eea65b` returned `CHANGES_REQUIRED` with a single P2:
+  the duplicate-receipt and task-routing regressions still called
+  `_posttool_receipt_context` / `_resolve_append_event_claim` directly, so a
+  broken `_cmd_hook` receipt path or hard-coded CLI claim selection would
+  pass undetected.
+- **Repair:** both tests now drive the real entrypoints. The duplicate test
+  delivers the SAME `tool_use_id` twice through `_cmd_hook` PostToolUse
+  (stdin event JSON, stdout captured), asserts exit 0 + well-formed
+  hookSpecificOutput both times, and proves exactly one receipt is journaled.
+  The routing test drives `_cmd_append_event --task ENV-AUTONOMY-002` with
+  the publication/binding gates verified-green, asserts the successor
+  handoff alone receives the event and the ENV-AUTONOMY-001 handoff bytes
+  are unchanged, and keeps the unknown-task fail-closed assertion.
+- **Battery:** autonomy + guard **379 + 482 subtests**, workflow **14/14**,
+  checker **PASS**, `py_compile` **PASS**, `git diff --check` **PASS**.
