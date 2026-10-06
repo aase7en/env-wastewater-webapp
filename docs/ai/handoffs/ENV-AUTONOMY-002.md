@@ -39,13 +39,29 @@ GREEN, the executing lane supplies its real goal id on the first typed
 <!-- ENV-AUTONOMY-LIFECYCLE:START -->
 ```json
 {
-  "version": 1,
-  "task_id": "ENV-AUTONOMY-002",
-  "claim_id": "ENV-AUTONOMY-002-C1",
   "claim_generation": 1,
-  "goal_id": null,
+  "claim_id": "ENV-AUTONOMY-002-C1",
   "codex_hook_observations": [],
-  "events": []
+  "events": [
+    {
+      "claim_generation": 1,
+      "claim_id": "ENV-AUTONOMY-002-C1",
+      "event_id": "env-event-16a0fb19-3fdc-4d69-95df-2e5feb1c8ad9",
+      "event_seq": 1,
+      "event_type": "GOAL_START",
+      "goal_id": "3a3ab9a2-3867-4698-b180-1e85c058ab08",
+      "operation_id": null,
+      "operation_outcome": null,
+      "payload": null,
+      "previous_event_id": "GENESIS",
+      "published": false,
+      "task_id": "ENV-AUTONOMY-002",
+      "terminal_result": null
+    }
+  ],
+  "goal_id": null,
+  "task_id": "ENV-AUTONOMY-002",
+  "version": 1
 }
 ```
 <!-- ENV-AUTONOMY-LIFECYCLE:END -->
