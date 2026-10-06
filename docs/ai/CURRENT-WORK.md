@@ -38,14 +38,14 @@ exact-SHA independent review and merge into `main`.
   "coordination_registry": {
     "version": 1,
     "enforcement_mode": "BOOTSTRAP_CONTROL",
-    "expected_policy_revision": "9f5a089f99e9682848aae62b5b4842566c0b8081",
-    "expected_registry_hash": "ab4fba204ff9736952448d1e0767d7d2974744bfd258d775f2ac537d0c52ba31",
+    "expected_policy_revision": "860b5cce1690b20ad1b37f57cf64cc847b5737c1",
+    "expected_registry_hash": "233e51be0d9f1dd9bcad5d76386ef0d08e24085b5b752a4be3539970e924c3fa",
     "claims": [
       {
         "task_id": "ENV-COORD-002",
         "claim_id": "ENV-COORD-002-C1",
         "claim_generation": 1,
-        "status": "RECOVERY_HOLD",
+        "status": "CLOSED",
         "owner_role": "core_implementation",
         "agent_model": "GLM-5.3 MAX",
         "execution_holder_id": "zcode-env-coord-002-g1-primary",
@@ -77,7 +77,7 @@ exact-SHA independent review and merge into `main`.
           "bootstrap claim transition reviewed and merged before implementation mutation"
         ],
         "last_checkpoint_pointer": "docs/ai/handoffs/ENV-COORD-002-GLM.md",
-        "one_next_safe_action": "Keep generation 1 and the current scope locked; collect holder-bound lifecycle checkpoint, admission high-water, zero-active-admissions and external-outcome evidence before any release, reassignment, generation change or mutation authorization."
+        "one_next_safe_action": "CLOSED 2026-10-06 by explicit owner decision (AUTHORIZE_C1_RELEASE_WITH_DURABLE_LOSS_RISK_RECORD) recorded in this reviewed transition: the implementation is fully merged (R17 head 297133f ancestor of main), the worktree is clean, no holder process or Kilo session exists, and the §4.2B typed facts are permanently unproducible because the telemetry mechanism postdates the holder. The durable loss/risk record at docs/work-orders/ENV-COORD-002-C1-RELEASE-RISK-RECORD.md documents practical quiescence, the unknowable historical facts, the residual unenforced-late-write risk, and the rollback plan. Scope lock released at generation 1; no stale writer gains authority for fresh guard admissions."
       },
       {
         "task_id": "ENV-AUTONOMY-001",
@@ -170,6 +170,45 @@ exact-SHA independent review and merge into `main`.
         ],
         "last_checkpoint_pointer": "docs/ai/handoffs/ENV-AUTONOMY-002.md",
         "one_next_safe_action": "Reproduce each of the five 2026-10-05 Astra findings as a truthful RED test (PowerShell/rg argument-splatting protected-read bypass; admitted session-identity drift after claim reassignment; unpublished OPERATION_RECONCILED admission bypass; unredacted git remote -v allowance; duplicate post-tool receipt KeyError), implement the smallest fail-closed repair for each, run the full local battery (autonomy + guard suites, py_compile, diff-check), publish the lane checkpoint, then stop at REVIEW_REQUESTED for independent exact-SHA review."
+      },
+      {
+        "task_id": "ENV-WATER-WATCH-001",
+        "claim_id": "ENV-WATER-WATCH-001-R1",
+        "claim_generation": 1,
+        "status": "CLAIMED",
+        "owner_role": "product_repair_implementation",
+        "agent_model": "GLM-5.3 MAX",
+        "execution_holder_id": "zcode-env-water-watch-001-r1-primary",
+        "worktree": "A:/GitHub/_worktrees/env-water-watch-001",
+        "branch": "feature/uthai-water-watch-001",
+        "base_sha": "700c186cef76ce2e4071a210a06942facd09e946",
+        "mutable_scope": [
+          "frontend/src/features/water-watch/**",
+          "frontend/src/pages/WaterWatchPage.tsx",
+          "frontend/tests/e2e/water-watch.spec.ts",
+          "docs/work-orders/ENV-WATER-WATCH-001.md",
+          "docs/ai/handoffs/ENV-WATER-WATCH-001-GLM.md"
+        ],
+        "forbidden_scope": [
+          "docs/ai/CURRENT-WORK.md",
+          "docs/ai/HANDOFF.md",
+          "AGENTS.md",
+          "frontend/src/App.tsx",
+          "frontend/src/lib/**",
+          "supabase/**",
+          "scripts/**",
+          "data/**",
+          ".env"
+        ],
+        "work_order_path": "docs/work-orders/ENV-WATER-WATCH-001.md",
+        "handoff_path": "docs/ai/handoffs/ENV-WATER-WATCH-001-GLM.md",
+        "review_owner": "Independent GPT-6 Astra reviewer via Codex CLI (GPT-6.1 Sol not admitted on this account); implementing lane must not merge",
+        "dependencies": [
+          "PR #93 open at exact head 700c186 with green test/E2E CI and the 2026-10-01 exact-head sidecar review finding a blocking mobile station-card responsive defect (author identity cannot serve as the independent reviewer)",
+          "Project owner recovery instruction 2026-10-05: when a valid bounded claim exists, repair the mobile station layout, add a focused regression, freeze a new exact SHA, obtain genuinely independent review, CI, merge, and post-main closeout"
+        ],
+        "last_checkpoint_pointer": "docs/ai/handoffs/ENV-WATER-WATCH-001-GLM.md",
+        "one_next_safe_action": "Repair the below-xl station presentation into an ordered non-overlapping list (gate absolute river markers to xl+), add Playwright geometry regression proving per-station visibility, pairwise non-overlap and section containment at 390/768 and the absolute variant at 1280, run focused water-watch unit + E2E suites and the standard local gates, freeze the exact new SHA on feature/uthai-water-watch-001, update the PR #93 evidence, then stop at RE-REVIEW_REQUESTED for independent exact-SHA review. The Work Order file arrives on this claim's own branch via PR #93 and must be extended there, not duplicated on main."
       }
     ]
   }
@@ -179,10 +218,11 @@ exact-SHA independent review and merge into `main`.
 ## Active frontier - 2026-10-05
 
 - **`ENV-COORD-001` / CLOSED / PR #82** — Astra independently APPROVED exact architecture SHA `e5f6a419aa226151788763970e8c008f48d4a28d` with no blockers; PR #82 merged with expected-head protection as `6360e149f42c419a8d7f878f28fc439e0ef1f6cc`. Production activation is still blocked because coordination enforcement is not yet installed.
-- **ENV-COORD-002 / RECOVERY_HOLD / BOOTSTRAP_CONTROL** — PR #89 merged as `839ff34185dff675a7bfd4adf6350d6b2c1e4eaa`. Claim ENV-COORD-002-C1, generation 1, holder zcode-env-coord-002-g1-primary, and its original four-file scope remain locked. Runtime/session effects observed to date are reconciled, but no typed holder binding, lifecycle checkpoint, admission high-water, or active-admission count exists; do not release, reassign, or start mutation in that scope.
+- **ENV-COORD-002 / CLOSED (owner-authorized release) / BOOTSTRAP_CONTROL** — PR #89 merged as `839ff34185dff675a7bfd4adf6350d6b2c1e4eaa`. Claim ENV-COORD-002-C1, generation 1, released 2026-10-06 by the owner's explicit `AUTHORIZE_C1_RELEASE_WITH_DURABLE_LOSS_RISK_RECORD` decision recorded in this transition (PR #97): the implementation is fully merged (R17 head `297133f` ancestor of main), the worktree is clean, no holder process or Kilo session exists, and the §4.2B typed facts are permanently unproducible because the telemetry mechanism postdates the holder. Durable loss/risk record: `docs/work-orders/ENV-COORD-002-C1-RELEASE-RISK-RECORD.md` (merged via PR #96). Scope lock released; a stale writer gains no authority for fresh guard admissions; unenforced late writes (hooks unactivated, main unprotected) remain documented residual risk.
 - **ENV-AUTONOMY-001 / CLOSED / PR #91** — merged by the project owner as `6987036740de4fd3b4c1a51639b1631860262242` with second parent `e4013bd` (expected head verified; owner merge is the recorded acceptance — no formal GitHub review decision exists). Lifecycle event `env-event-56e9a1dd` was already PUBLISHED at `e4013bd`; the registry's lingering `REVIEW_REQUESTED` was classified 2026-10-05 as `MERGED_NOT_FOLDED` / SSOT drift. Post-main verification at `origin/main@9f5a089`: autonomy **26/26**, guard **344/344**, main `test` run `36742258503` SUCCESS. Retroactive independent review (GPT-6 Astra via Codex CLI, 2026-10-05; GPT-6.1 Sol not admitted on the account) returned **CHANGES_REQUIRED: 3 P1 + 2 P2** on `scripts/env_autonomy_runtime.py` — splatting protected-read bypass, session-identity drift after reassignment, unpublished-reconciliation admission bypass, unredacted `git remote -v`, duplicate-receipt `KeyError`. Claim ENV-AUTONOMY-001-C1 closed at generation 1 (closeout event `env-autonomy-001-checkpoint-0016`); the findings are owned by successor claim **ENV-AUTONOMY-002-C1** (disjoint from C1). Autonomy stays `BOOTSTRAP_CONTROL` / `AUTONOMY_NOT_READY` / `ENFORCEMENT_NOT_ACTIVE`; Kilo/cointh dispatch remains disabled (`UNKNOWN` quota/upstream).
 - **ENV-AUTONOMY-001 retiring-holder drain proof (2026-10-05)** — native Goal absent for `01a0d917-7b29-7970-8bb7-3c6df13e4bd3`; last turn terminal with recorded `task_complete`; exact queue empty; no holder/thread/worktree workload process; claim worktree clean and remote-exact at `e4013bd`, fully merged into main; no matching Kilo session; canonical lifecycle `verify-event` + `verify-checkpoint` both PUBLISHED with no unresolved external/hook effects. This evidence supports only the AUTONOMY-001 closeout and does not alter the separate ENV-COORD-002-C1 hold.
 - **ENV-AUTONOMY-002 / CLAIMED / BOOTSTRAP_CONTROL** — successor fail-closed hardening claim registered 2026-10-05 (holder `zcode-env-autonomy-002-g1-primary`, worktree `A:/GitHub/_worktrees/env-autonomy-002-20261005`, branch `codex/env-autonomy-002-hardening`, base `9f5a089`). Scope is exactly the autonomy runtime + tests + hooks + its own Work Order/handoff; disjoint from C1's locked four files. Contract: `docs/work-orders/ENV-AUTONOMY-002.md`.
+- **ENV-WATER-WATCH-001 / CLAIMED (R1 repair) / PR #93** — PR #93 remains OPEN at head `700c186` (MERGEABLE; exact-head `test` + E2E smoke CI green) against base `47794c4`. The 2026-10-01 exact-head sidecar review by the PR author found a **blocking mobile responsive defect**: station cards are fixed ~132px at 8/29/50/71/92% centers, so on ~390px viewports adjacent cards overlap by ~50px and the first/last cards clip outside the river container, masked by `overflow-hidden` from the existing `scrollWidth <= viewport` E2E. Author identity cannot serve as the independent reviewer, so the review gate remains unsatisfied. Repair claim `ENV-WATER-WATCH-001-R1` registered 2026-10-05 (holder `zcode-env-water-watch-001-r1-primary`, worktree `A:/GitHub/_worktrees/env-water-watch-001`, branch `feature/uthai-water-watch-001`, base `700c186`): mobile-specific non-overlapping ordered station list below `xl`, absolute river markers gated to `xl+`, geometry regression proving per-station visibility, pairwise non-overlap, and section containment. Lane handoff: `docs/ai/handoffs/ENV-WATER-WATCH-001-GLM.md`.
 - **CLOSED ENV-INT-GISTDA-CORE-001 / PR #80** — merged as bf26cb523c375f44d3bdd0ee9a6d0d66f1eb81bb on 2026-09-16; exact-head scripts, smoke, and notify checks succeeded.
 - **`ENV-BUILDING-REPAIR-001` / DECISION_REQUIRED / PR #75** — Building/repair remains no-touch.
 - **`ENV-OPS-001A` / READY BUT DISPATCH-PAUSED** — production dispatch remains paused until later coordination enforcement gates permit it.
@@ -192,11 +232,11 @@ exact-SHA independent review and merge into `main`.
 Current coordination authority:
 - central control-transition proposer/integration owner: ENV Coordinator protocol role; model-name labels are routing preferences, not authentication (§3.3). Current mission supervisor: GPT-6 Luna MAX under the owner's current instruction. ENV-AUTONOMY-001 is merged and CLOSED; its successor hardening claim ENV-AUTONOMY-002-C1 is active strictly within its registered scope; actual hook activation, server enforcement, and live acceptance proofs remain future authorized gates.
 - approved architecture: `docs/ai/architecture/ENV-COORDINATION-GUARD.md`;
-- active hold Work Order: `docs/work-orders/ENV-COORD-002-C1-RECOVERY-HOLD.md`;
+- closed hold Work Order: `docs/work-orders/ENV-COORD-002-C1-RECOVERY-HOLD.md` (superseded 2026-10-06 by the owner-authorized C1 release; durable risk record `docs/work-orders/ENV-COORD-002-C1-RELEASE-RISK-RECORD.md`);
 - locked C1 implementation contract/result lane: `docs/work-orders/ENV-COORD-002.md` and `docs/ai/handoffs/ENV-COORD-002-GLM.md`;
 - closed autonomy Work Order: `docs/work-orders/ENV-AUTONOMY-001.md`; active hardening Work Order: `docs/work-orders/ENV-AUTONOMY-002.md`;
 - enforcement mode: `BOOTSTRAP_CONTROL`, not `ENFORCING`;
-- one next safe action: keep C1 in RECOVERY_HOLD until holder-bound lifecycle/admission/outcome facts are machine-proven or the owner authorizes release with a durable loss/risk record; execute ENV-AUTONOMY-002-C1 only within its disjoint registered scope against the five 2026-10-05 Astra findings, and let no lane write within C1 scope.
+- one next safe action: execute ENV-AUTONOMY-002-C1 and ENV-WATER-WATCH-001-R1 only within their disjoint registered scopes; C1 is CLOSED (owner-authorized release with the durable risk record), so its four files are releasable to future claims through fresh ownership gates.
 
 ## Prior execution state - 2026-09-02
 
