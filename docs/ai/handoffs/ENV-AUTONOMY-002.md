@@ -96,3 +96,12 @@ GREEN, the executing lane supplies its real goal id on the first typed
   PASS. Evidence detail in `docs/work-orders/ENV-AUTONOMY-002.md` Result
   section. Lifecycle events on this handoff: GOAL_START (below) published;
   CHECKPOINT (REVIEW_REQUESTED) follows the PR opening.
+
+## R2 repair checkpoint — 2026-10-06
+
+- The 2026-10-06 review of `79ee2a1` returned CHANGES_REQUIRED (4 P1 + 1 P2);
+  all five findings are repaired (full evidence in the Work Order R2 section),
+  the lane was rebased onto `origin/main@c5fa87c` (PR #93 merge), and the full
+  battery re-passed (**379 + 482 subtests**, workflow 14/14, checker,
+  py_compile, diff-check). A fresh `REVIEW_REQUESTED` lifecycle event follows
+  this note at the new head.
