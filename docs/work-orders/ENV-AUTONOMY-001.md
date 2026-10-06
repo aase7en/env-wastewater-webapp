@@ -2,17 +2,19 @@
 
 ## Assignment
 
-- Status: `REVIEW_REQUESTED / BOOTSTRAP_CONTROL` after the Windows/POSIX
-  ripgrep path interpretation P1 at `64e05ee` was repaired in `1d9b769`.
-  Local autonomy 26/26, Coordination Guard 344/344, workflow actions 14/14,
-  `split_sql`, Python compilation, and diff-check pass. Exact-code run
-  `36209048628` and docs-head run `36210668259` passed `scripts`; the latter's
-  notify job succeeded with Telegram delivery skipped because repo secrets are
-  unset. Event #14 verifies PUBLISHED at `e3a24c4`. Event
-  `env-event-56e9a1dd-ea10-485f-b304-4580431ce1cb` records
-  `REVIEW_REQUESTED` from that source head and awaits publication; hosted CI
-  and fresh independent review of the resulting docs head remain pending.
-  Trusted `origin/main` remains `CLAIMED` until this implementation PR merges.
+- Status: `CLOSED / BOOTSTRAP_CONTROL` as of 2026-10-05. PR #91 was merged by
+  the project owner as `6987036740de4fd3b4c1a51639b1631860262242` with the
+  expected head `e4013bdb9655bd45a25daa384d5471834cac6166` as second parent;
+  lifecycle event `env-event-56e9a1dd` was published at that head. Post-main
+  verification at `origin/main@9f5a089`: autonomy **26/26**, guard **344/344**,
+  main CI run `36742258503` SUCCESS. A retroactive independent review
+  (GPT-6 Astra via Codex CLI; GPT-6.1 Sol not admitted on the account)
+  returned `CHANGES_REQUIRED` with 3 P1 + 2 P2 findings on
+  `scripts/env_autonomy_runtime.py`; the merged claim closes factually and
+  successor claim `ENV-AUTONOMY-002-C1` owns the fail-closed hardening.
+  Full evidence: `docs/ai/handoffs/ENV-AUTONOMY-001.md` closeout section.
+  The layer stays `AUTONOMY_NOT_READY` / `ENFORCEMENT_NOT_ACTIVE` with
+  provider dispatch disabled.
 - Owner role: ENV project supervisor
 - Supervisor route: GPT-6 Luna MAX (routing metadata only)
 - Reviewer: independent GPT-6 Sol reviewer; implementation author must not merge
