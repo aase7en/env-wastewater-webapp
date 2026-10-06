@@ -49,3 +49,15 @@ GREEN, the executing lane supplies its real goal id on the first typed
 }
 ```
 <!-- ENV-AUTONOMY-LIFECYCLE:END -->
+
+## Execution checkpoint — 2026-10-06
+
+- Claim became authoritative on main when PR #97 merged as
+  `889963648c06ff9910b6497f72a1158f8a37696c`. The implementation branch was
+  rebased onto that main; the six-test RED→GREEN hardening class and all five
+  Astra repairs plus the `--task` routing prerequisite are complete.
+- Full battery on the final tree: **376 passed + 482 subtests** (autonomy 32
+  + guard 344), workflow 14/14, checker PASS, py_compile PASS, diff-check
+  PASS. Evidence detail in `docs/work-orders/ENV-AUTONOMY-002.md` Result
+  section. Lifecycle events on this handoff: GOAL_START (below) published;
+  CHECKPOINT (REVIEW_REQUESTED) follows the PR opening.

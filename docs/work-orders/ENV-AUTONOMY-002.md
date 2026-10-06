@@ -105,3 +105,34 @@ it grants no new task, scope, provider, review, merge, or completion authority.
 All five findings closed with regression coverage; fresh independent
 exact-SHA review `APPROVED`; expected-head merge; post-main suites green;
 closeout folded into SSoT.
+
+## Result — implementation and verification — 2026-10-06
+
+- **Branch/base:** `codex/env-autonomy-002-hardening` rebased onto
+  `origin/main@889963648c06ff9910b6497f72a1158f8a37696c` after PRs #96/#97/#98
+  merged all four control transitions (ENV-AUTONOMY-001 CLOSED,
+  ENV-COORD-002-C1 released by owner decision, this claim CLAIMED).
+- **RED-first evidence:** the six-test `AstraHardeningTests` class failed on
+  the pre-repair runtime (all six RED, including four subtests) before any
+  repair; after the repairs all six pass. Tests never read real
+  `.env`/`data/raw` values (synthetic fixtures only).
+- **Repairs delivered:** (1) splatting/indirection (`@name`, `%VAR%`) rejected
+  as `SPLATTING_OR_INDIRECTION_FORBIDDEN` before literal-path classification;
+  (2) the unredacted `git remote -v` READ_ONLY allowance removed (falls
+  through to UNCLASSIFIED fail-closed); (3) `_has_unpublished_operation_resolution`
+  blocks mutation admission while a locally appended reconciliation is not yet
+  the remote branch head; (4) `_reject_session_identity_drift` /
+  `_enforce_session_admission` pin each session to its first-admitted claim
+  identity (check-only in PreToolUse; recording rides the PostToolUse receipt
+  write so admission never dirties the worktree); (5) `_posttool_receipt_context`
+  handles the idempotent duplicate-receipt shape instead of raising KeyError;
+  (6) the successor routing prerequisite — `append-event --task` with
+  backward-compatible default `ENV-AUTONOMY-001`, unknown tasks fail closed,
+  routing never creates authority.
+- **Full battery on the final rebased tree:** autonomy + guard combined
+  **376 passed + 482 subtests** (32 autonomy incl. the 6 new, 344 guard),
+  workflow runtimes **14/14**, checker **PASS**, `py_compile` **PASS**,
+  `git diff --check` **PASS**. No C1-locked file touched; no registry,
+  CURRENT-WORK, HANDOFF, architecture, frontend, Supabase, or data change;
+  no provider dispatch; `AUTONOMY_NOT_READY` / `ENFORCEMENT_NOT_ACTIVE`
+  remain truthful.
