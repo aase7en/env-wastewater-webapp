@@ -273,6 +273,22 @@ Source record:
 
 **Domains affected:** carbon rollup views and every TS consumer of nullable aggregates; effective-dated reference tables (emission factors and any future rate/version tables); realtime hooks over manual aggregate data.
 
+## ENV-DEFECT-015 — Exact-SHA review coverage does not survive later commits on a reviewed branch
+
+**Failure class:** review-gate integrity / exact-SHA evidence discipline.
+
+**Symptom:** a lane reached "independently reviewed, no actionable defects" (PR #96 R2 at `faba4f5`, PR #97 R1 at `faee4440`), then repair/drain-proof commits were pushed to the same branches afterwards (`2889025`, `b3bedde`, `9a83a7e`), leaving the branch heads without exact-SHA review coverage while the recorded approvals made the lanes *look* review-complete during recovery.
+
+**Root cause:** review verdicts are bound to one exact SHA, but stacked-branch maintenance (cherry-picking the base PR's review repairs onto the stacked PR, appending evidence bullets after an approval round) silently moves heads past their reviewed SHAs. No mechanism compares the current branch head against the SHA named in the latest review record before declaring a lane review-ready.
+
+**How detected:** 2026-10-05 supervision recovery cross-checked review-artifact mtimes (22:20/22:24/22:44) against branch commit timestamps (22:33/22:47) and found every recorded approval predates the current heads.
+
+**Prevention rule:** a lane is REVIEW_REQUESTED-ready only when the SHA named by its latest independent review record equals the current pushed head. Any post-approval commit on a reviewed branch re-opens the review gate at the new SHA; stack-sync commits count as head movement for the stacked PR. Record the reviewed SHA beside every verdict when harvesting.
+
+**Regression/evidence:** PR #96 (R2 at `faba4f5` vs final head `b3bedde`), PR #97 (R1 at `faee4440` vs final head `9a83a7e`); replacement reviews dispatched 2026-10-06 for both final heads.
+
+**Domains affected:** coordination control transitions, stacked PRs, review harvesting, lane recovery.
+
 ---
 
 ## Adding future entries
