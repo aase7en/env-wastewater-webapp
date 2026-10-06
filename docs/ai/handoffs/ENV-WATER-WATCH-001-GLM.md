@@ -41,3 +41,11 @@ non-overlapping, not merely that document overflow is hidden.
   focused Vitest 4/4 PASS and `tsc -b` PASS at the staged state. Playwright
   run, full gates, WO extension, exact-SHA freeze, and PR #93 evidence
   update follow after the claim transition merges to main.
+
+## Closeout — 2026-10-06
+
+- PR #93 merged as `c5fa87c9` (second parent = reviewed head `c8364fd`;
+  R3 independent APPROVED `issuecomment-6011184241`; exact-head CI
+  `37426880808`/`37426880810` success).
+- The claim closes at generation 1 through the 2026-10-06 closeout
+  transition (all four registry claims CLOSED). Worktree preserved clean.

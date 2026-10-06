@@ -38,8 +38,8 @@ exact-SHA independent review and merge into `main`.
   "coordination_registry": {
     "version": 1,
     "enforcement_mode": "BOOTSTRAP_CONTROL",
-    "expected_policy_revision": "860b5cce1690b20ad1b37f57cf64cc847b5737c1",
-    "expected_registry_hash": "233e51be0d9f1dd9bcad5d76386ef0d08e24085b5b752a4be3539970e924c3fa",
+    "expected_policy_revision": "e7d83db8e11c13f5383942af47a2032b67d4a33a",
+    "expected_registry_hash": "b57aa10d26cb6dd60434a9d040b13bb218336124105b426e42a4469187fb40e6",
     "claims": [
       {
         "task_id": "ENV-COORD-002",
@@ -132,7 +132,7 @@ exact-SHA independent review and merge into `main`.
         "task_id": "ENV-AUTONOMY-002",
         "claim_id": "ENV-AUTONOMY-002-C1",
         "claim_generation": 1,
-        "status": "CLAIMED",
+        "status": "CLOSED",
         "owner_role": "core_implementation",
         "agent_model": "GLM-5.3 MAX",
         "execution_holder_id": "zcode-env-autonomy-002-g1-primary",
@@ -169,13 +169,13 @@ exact-SHA independent review and merge into `main`.
           "ENV-COORD-002-C1 generation-1 RECOVERY_HOLD scope stays locked and disjoint"
         ],
         "last_checkpoint_pointer": "docs/ai/handoffs/ENV-AUTONOMY-002.md",
-        "one_next_safe_action": "Reproduce each of the five 2026-10-05 Astra findings as a truthful RED test (PowerShell/rg argument-splatting protected-read bypass; admitted session-identity drift after claim reassignment; unpublished OPERATION_RECONCILED admission bypass; unredacted git remote -v allowance; duplicate post-tool receipt KeyError), implement the smallest fail-closed repair for each, run the full local battery (autonomy + guard suites, py_compile, diff-check), publish the lane checkpoint, then stop at REVIEW_REQUESTED for independent exact-SHA review."
+        "one_next_safe_action": "CLOSED 2026-10-06: PR #99 merged by owner-authorized supervisor execution as e7d83db8 (second parent = reviewed head 3a9313c; R4 APPROVED issuecomment-6012779129; exact-head CI 37438518180 success). Post-main suites 379+482 subtests green on the merged tree. All five retroactive-review findings plus the routing prerequisite are durably repaired with entrypoint-level regressions. Scope lock released; worktree preserved."
       },
       {
         "task_id": "ENV-WATER-WATCH-001",
         "claim_id": "ENV-WATER-WATCH-001-R1",
         "claim_generation": 1,
-        "status": "CLAIMED",
+        "status": "CLOSED",
         "owner_role": "product_repair_implementation",
         "agent_model": "GLM-5.3 MAX",
         "execution_holder_id": "zcode-env-water-watch-001-r1-primary",
@@ -208,7 +208,7 @@ exact-SHA independent review and merge into `main`.
           "Project owner recovery instruction 2026-10-05: when a valid bounded claim exists, repair the mobile station layout, add a focused regression, freeze a new exact SHA, obtain genuinely independent review, CI, merge, and post-main closeout"
         ],
         "last_checkpoint_pointer": "docs/ai/handoffs/ENV-WATER-WATCH-001-GLM.md",
-        "one_next_safe_action": "Repair the below-xl station presentation into an ordered non-overlapping list (gate absolute river markers to xl+), add Playwright geometry regression proving per-station visibility, pairwise non-overlap and section containment at 390/768 and the absolute variant at 1280, run focused water-watch unit + E2E suites and the standard local gates, freeze the exact new SHA on feature/uthai-water-watch-001, update the PR #93 evidence, then stop at RE-REVIEW_REQUESTED for independent exact-SHA review. The Work Order file arrives on this claim's own branch via PR #93 and must be extended there, not duplicated on main."
+        "one_next_safe_action": "CLOSED 2026-10-06: repair merged via PR #93 as c5fa87c9 (R3 APPROVED issuecomment-6011184241; exact-head CI 37426880808/37426880810 success; second parent = reviewed head c8364fd). Mobile station presentation is non-overlapping below xl with vertical+horizontal containment regressions at 390/768/1024/1280. Scope lock released; worktree preserved clean."
       }
     ]
   }
@@ -234,7 +234,7 @@ Current coordination authority:
 - approved architecture: `docs/ai/architecture/ENV-COORDINATION-GUARD.md`;
 - closed hold Work Order: `docs/work-orders/ENV-COORD-002-C1-RECOVERY-HOLD.md` (superseded 2026-10-06 by the owner-authorized C1 release; durable risk record `docs/work-orders/ENV-COORD-002-C1-RELEASE-RISK-RECORD.md`);
 - locked C1 implementation contract/result lane: `docs/work-orders/ENV-COORD-002.md` and `docs/ai/handoffs/ENV-COORD-002-GLM.md`;
-- closed autonomy Work Order: `docs/work-orders/ENV-AUTONOMY-001.md`; active hardening Work Order: `docs/work-orders/ENV-AUTONOMY-002.md`;
+- closed autonomy + hardening Work Orders: `docs/work-orders/ENV-AUTONOMY-001.md`, `docs/work-orders/ENV-AUTONOMY-002.md`;
 - enforcement mode: `BOOTSTRAP_CONTROL`, not `ENFORCING`;
 - one next safe action: execute ENV-AUTONOMY-002-C1 and ENV-WATER-WATCH-001-R1 only within their disjoint registered scopes; C1 is CLOSED (owner-authorized release with the durable risk record), so its four files are releasable to future claims through fresh ownership gates.
 
