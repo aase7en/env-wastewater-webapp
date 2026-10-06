@@ -1,5 +1,10 @@
 # HANDOFF
 
+## Owner-authorized control transitions - 2026-10-06
+
+- PR #96 merged by owner-authorized supervisor execution as `4ededd9f632aa602e59c7386289ea6eeef46f6c5` (second parent = expected head `1c281a8`); PR #98 merged as `860b5cce1690b20ad1b37f57cf64cc847b5737c1`. Runtime `status` against the merged main confirms policy revision `4ededd9`, registry hash `233e51be…` byte-identical, and ENV-AUTONOMY-001-C1 **CLOSED**.
+- The owner answered both standing decisions: (1) `AUTHORIZE_C1_RELEASE_WITH_DURABLE_LOSS_RISK_RECORD` — this candidate marks ENV-COORD-002-C1 **CLOSED** at generation 1 per the risk record; (2) supervisor merge execution is explicitly authorized for the control transitions. PR #97's fence is re-pinned to `860b5cc` (current main after #98) and the candidate awaits its fresh independent exact-SHA review before merge.
+
 ## ENV-AUTONOMY-001 closeout and hardening-successor checkpoint - 2026-10-05
 
 - Recovery re-pinned live state: `origin/main@9f5a089f99e9682848aae62b5b4842566c0b8081`; the lingering `REVIEW_REQUESTED` for ENV-AUTONOMY-001 was **MERGED_NOT_FOLDED / SSOT drift** — verifier truth showed event `env-event-56e9a1dd` already PUBLISHED at branch head `e4013bd` and PR #91 merged by the owner as `6987036` with that exact expected head. A `verify-event` `REMOTE_HEAD_MISMATCH` from the supervisor mirror is an artifact of running the verifier outside the claim worktree, not evidence about publication.
