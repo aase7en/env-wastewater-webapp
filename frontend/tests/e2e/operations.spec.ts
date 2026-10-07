@@ -30,7 +30,7 @@ const repairs = [
   {
     id: "rep-inprogress-1",
     equipment_id: "11111111-1111-4111-8111-111111111111",
-    reading_id: null,
+    reading_id: "55555555-5555-4555-8555-555555555555",
     reported_by: "22222222-2222-4222-8222-222222222222",
     cause: "ท่อจ่ายน้ำยารั่วที่ข้อต่อ",
     status: "in_progress",
@@ -93,10 +93,12 @@ async function mockBoard(page: Page, repairBody: unknown = repairs, alertBody: u
   await page.route(ALERT_ROUTE, (route) => json(route, alertBody, alertStatus));
 }
 
-/** A16: fail the test if any non-GET request leaves the page (read-only board). */
+/** A16: fail the test if any state-changing request leaves the page
+ *  (read-only board; GET/HEAD/OPTIONS are legitimate reads — HEAD is the
+ *  unread-count query from countUnreadAlerts). */
 function forbidWrites(page: Page) {
   page.on("request", (req) => {
-    if (req.url().includes("/rest/v1/") && req.method() !== "GET") {
+    if (req.url().includes("/rest/v1/") && !["GET", "HEAD", "OPTIONS"].includes(req.method())) {
       throw new Error(`Unexpected write to Supabase REST: ${req.method()} ${req.url()}`);
     }
   });
@@ -211,7 +213,7 @@ test.describe("Operations Attention Board — A1–A16", () => {
     await authed.goto("/operations");
     await expect(authed.locator("section[data-source='repair_request']")).toBeVisible();
 
-    for (let i = 0; i < 15; i++) {
+    for (let i = 0; i < 40; i++) {
       await authed.keyboard.press("Tab");
       const inBoard = await authed.evaluate(() => {
         const el = document.activeElement;

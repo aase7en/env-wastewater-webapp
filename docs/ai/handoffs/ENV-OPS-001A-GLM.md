@@ -20,13 +20,20 @@
 
 ## Checkpoint
 
-- This claim's lane has not started; authority begins when the claim
-  transition merges. A LEGACY unclaimed attempt exists in the dirty
-  worktree `A:/GitHub/envww-ops-001a` (branch `feat/env-ops-001a`) —
-  preserve it untouched (never clean/reset/stash/delete); its content is
-  reference-only and never committable as-is (several dirty files are
-  outside this claim's scope). Dispatch basis: the owner-authorized
-  exception to the bootstrap production-dispatch pause (risk record in
-  the Work Order). Next action: create the isolated
-  `feat/env-ops-001a-c1` worktree from merged main, establish RED
-  evidence for A1–A16, then implement per the Work Order.
+- 2026-10-07 (GREEN frozen): RED-first acceptance spec committed first
+  (`3c395c5`; 8/8 truthful missing-board failures with shell+auth rendering),
+  then implementation: `OperationsPage.tsx` (two-source read-only board,
+  data-honesty invariants per contract), `/operations` route wiring in
+  `App.tsx` (RequireAuth, no nav/AppShell changes), spec refinements
+  (in_progress fixture gains real reading linkage; Tab depth 40 through
+  shell nav; HEAD count allowed in the read-only guard).
+  Gates: operations Playwright 8/8; full Vitest 24 files / 357 tests;
+  `tsc -b` clean; lint 0 errors; build success; `git diff --check` clean;
+  changed files exactly the claim's mutable scope. Status:
+  REVIEW_REQUESTED — awaiting independent exact-SHA review (R2 fresh
+  GLM-5.3 MAX reviewer context per owner routing policy 2026-10-07);
+  implementing lane must not merge its own PR.
+- Lane basis: owner-authorized dispatch exception (risk record in the Work
+  Order). Legacy unclaimed attempt in the dirty worktree
+  `A:/GitHub/envww-ops-001a` (branch `feat/env-ops-001a`) preserved
+  untouched — reference-only, never committable as-is.
