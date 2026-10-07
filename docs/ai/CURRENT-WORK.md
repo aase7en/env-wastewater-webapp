@@ -39,7 +39,7 @@ exact-SHA independent review and merge into `main`.
     "version": 1,
     "enforcement_mode": "BOOTSTRAP_CONTROL",
     "expected_policy_revision": "08c08ebf888b9ec90169e91f4df12d2379f7f110",
-    "expected_registry_hash": "ebf9cc9af7e93fa99fd0a6b111f8e51fef249d68b66b8089203cc091f1942312",
+    "expected_registry_hash": "ebf9cc9af7e93fa99fd0a6b111f8e51fef249d68b66b8089203cc491f1942312",
     "claims": [
       {
         "task_id": "ENV-COORD-002",
