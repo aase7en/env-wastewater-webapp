@@ -20,7 +20,8 @@
 
 ## Checkpoint
 
-- 2026-10-07 (CLOSED): R2 fresh-GLM independent review APPROVED at exact
+- 2026-10-08 (CLOSED, effective on closeout-transition merge; implementation
+  verified 2026-10-07): R2 fresh-GLM independent review APPROVED at exact
   head `f7425c1` (`issuecomment-6041738245`; reviewer independently re-ran
   the spec 8/8; 3 non-blocking P3 notes). PR #107 merged as `bf9bc539`
   (second parent = reviewed head; expected-head guard). Post-main verified
@@ -39,7 +40,10 @@
   shell nav; HEAD count allowed in the read-only guard).
   Gates: operations Playwright 8/8; full Vitest 24 files / 357 tests;
   `tsc -b` clean; lint 0 errors; build success; `git diff --check` clean;
-  changed files exactly the claim's mutable scope.
+  changed files exactly the claim's mutable scope. Status at freeze
+  (historical): REVIEW_REQUESTED — awaiting independent exact-SHA review
+  (R2 fresh GLM-5.3 MAX reviewer context per owner routing policy
+  2026-10-07); implementing lane must not merge its own PR.
 - Lane basis: owner-authorized dispatch exception (risk record in the Work
   Order). Legacy unclaimed attempt in the dirty worktree
   `A:/GitHub/envww-ops-001a` (branch `feat/env-ops-001a`) preserved
