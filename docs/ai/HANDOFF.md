@@ -948,3 +948,8 @@ GLM must not merge PR #33. Next owner: GPT 5.6 Sol reviewer / merge owner.
 - Evidence snapshot: current Z.ai GLM-5.3 release material + Artificial Analysis support GLM as a strong Core/long-horizon/security candidate, with explicit limitation that benchmark results are task-fit evidence rather than universal ranking. Current Matt Pocock engineering docs still support the grill-with-docs -> to-spec -> to-tickets -> implement -> code-review chain and red-capable diagnosing-bugs loop.
 - Review/merge evidence: GLM-5.3 MAX APPROVED exact SHA `c603a25e7dbc19f9e17e5300b91e5f35446485f8`; PR #58 merged as `077a18d59d605f8b0f50fe7d67cce8771b296fa2`; exact-main test `33329666902` SUCCESS; no runtime/schema/data/workflow/package changes.
 - One next safe action: restore authenticated Supabase access and finish `FUEL-CORE-001` live migration/read-only verification before Garbage Core.
+
+## All-lanes closeout checkpoint - 2026-10-06
+
+- PR #99 (ENV-AUTONOMY-002 hardening) merged as `e7d83db8` after four independent review rounds (R1 4×P1+1×P2 → R3-input 1×P2 → R4 APPROVED); post-main suites 379+482 subtests green. PR #93 (Water Watch R1 repair) merged as `c5fa87c9` after R3 APPROVED with full containment regressions.
+- This closeout transition marks all four registry claims CLOSED (ENV-COORD-002-C1 by owner-authorized release; ENV-AUTONOMY-001-C1, ENV-AUTONOMY-002-C1, ENV-WATER-WATCH-001-R1 by verified merges). The coordination stack (guard 344/344 + hardened autonomy runtime) is durably on main. Next roadmap work requires a fresh claim transition through the same reviewed pipeline.

@@ -150,3 +150,13 @@ GREEN, the executing lane supplies its real goal id on the first typed
   coverage); repaired — both regressions now drive `_cmd_hook` and
   `_cmd_append_event` end-to-end (evidence in the Work Order R3 section).
   Full battery re-passed. A fresh `REVIEW_REQUESTED` event follows.
+
+## Closeout — 2026-10-06
+
+- PR #99 merged by owner-authorized supervisor execution as `e7d83db8`
+  (second parent = reviewed head `3a9313c`; R4 independent APPROVED
+  `issuecomment-6012779129`; exact-head CI `37438518180` success).
+- Post-main verification: lane rebased onto the merge; autonomy + guard
+  **379 passed + 482 subtests** green on the post-main tree.
+- The claim closes at generation 1 through the 2026-10-06 closeout
+  transition (all four registry claims CLOSED). Worktree preserved.
