@@ -38,8 +38,8 @@ exact-SHA independent review and merge into `main`.
   "coordination_registry": {
     "version": 1,
     "enforcement_mode": "BOOTSTRAP_CONTROL",
-    "expected_policy_revision": "e7d83db8e11c13f5383942af47a2032b67d4a33a",
-    "expected_registry_hash": "e798fc2417a7a0af36809e371cb27510ebe823e2e6155527ff882bc01fcffdbe",
+    "expected_policy_revision": "08c08ebf888b9ec90169e91f4df12d2379f7f110",
+    "expected_registry_hash": "ebf9cc9af7e93fa99fd0a6b111f8e51fef249d68b66b8089203cc091f1942312",
     "claims": [
       {
         "task_id": "ENV-COORD-002",
@@ -209,6 +209,45 @@ exact-SHA independent review and merge into `main`.
         ],
         "last_checkpoint_pointer": "docs/ai/handoffs/ENV-WATER-WATCH-001-GLM.md",
         "one_next_safe_action": "CLOSED 2026-10-06: repair merged via PR #93 as c5fa87c9 (R3 APPROVED issuecomment-6011184241; exact-head CI 37426880808/37426880810 success; second parent = reviewed head c8364fd). Mobile station presentation is non-overlapping below xl with vertical+horizontal containment regressions at 390/768/1024/1280. Scope lock released; worktree preserved clean."
+      },
+      {
+        "task_id": "ENV-OPS-001A",
+        "claim_id": "ENV-OPS-001A-C1",
+        "claim_generation": 1,
+        "status": "CLAIMED",
+        "owner_role": "product_implementation",
+        "agent_model": "GLM-5.3 MAX",
+        "execution_holder_id": "zcode-env-ops-001a-g1-primary",
+        "worktree": "A:/GitHub/_worktrees/env-ops-001a-20261007",
+        "branch": "feat/env-ops-001a",
+        "base_sha": "08c08ebf888b9ec90169e91f4df12d2379f7f110",
+        "mutable_scope": [
+          "frontend/src/pages/OperationsPage.tsx",
+          "frontend/src/App.tsx",
+          "frontend/tests/e2e/operations.spec.ts",
+          "docs/work-orders/ENV-OPS-001A.md",
+          "docs/ai/handoffs/ENV-OPS-001A-GLM.md"
+        ],
+        "forbidden_scope": [
+          "docs/ai/CURRENT-WORK.md",
+          "docs/ai/HANDOFF.md",
+          "AGENTS.md",
+          "frontend/src/lib/**",
+          "frontend/src/pages/BuildingPage.tsx",
+          "supabase/**",
+          "scripts/**",
+          "data/**",
+          ".env"
+        ],
+        "work_order_path": "docs/work-orders/ENV-OPS-001A.md",
+        "handoff_path": "docs/ai/handoffs/ENV-OPS-001A-GLM.md",
+        "review_owner": "Independent GPT-6 Astra reviewer via Codex CLI; implementing lane must not merge",
+        "dependencies": [
+          "ENV-OPS-001 contract reviewed and merged (docs/work-orders/ENV-OPS-001.md) with read-only two-source scope and A1-A16 acceptance matrix",
+          "Coordination stack hardened and closed on main 08c08ebf (guard + autonomy runtime); this reviewed claim transition itself lifts the historical dispatch pause as the fresh ownership gate the contract requires"
+        ],
+        "last_checkpoint_pointer": "docs/ai/handoffs/ENV-OPS-001A-GLM.md",
+        "one_next_safe_action": "Establish truthful RED browser evidence for the A1-A16 matrix at 360/390/430/desktop on the isolated feat/env-ops-001a worktree, implement the read-only two-source Operations Attention Board (unresolved core.repair_request open/in_progress + wastewater.threshold_alert with read_at as presentation acknowledgement only), never normalizing the two families into a fabricated incident object, never labeling empty or polling data normal/live, run the full gate battery from the contract, freeze the exact SHA, then stop at REVIEW_REQUESTED for independent exact-SHA review."
       }
     ]
   }
@@ -225,7 +264,7 @@ exact-SHA independent review and merge into `main`.
 - **ENV-WATER-WATCH-001 / CLOSED / PR #93** — repair merged as `c5fa87c9` (second parent = reviewed head `c8364fd`; R3 independent APPROVED `issuecomment-6011184241`; exact-head CI `37426880808`/`37426880810` success). The 2026-10-01 blocking mobile overlap finding is closed: stations recompose into an ordered non-overlapping stacked list below `xl`, absolute markers gated to `xl+`, with full horizontal+vertical containment regressions at 390/768/1024/1280 (7/7 Playwright). Claim CLOSED at generation 1; worktree `env-water-watch-001` preserved clean.
 - **CLOSED ENV-INT-GISTDA-CORE-001 / PR #80** — merged as bf26cb523c375f44d3bdd0ee9a6d0d66f1eb81bb on 2026-09-16; exact-head scripts, smoke, and notify checks succeeded.
 - **`ENV-BUILDING-REPAIR-001` / DECISION_REQUIRED / PR #75** — Building/repair remains no-touch.
-- **`ENV-OPS-001A` / READY BUT DISPATCH-PAUSED** — production dispatch remains paused until later coordination enforcement gates permit it.
+- **ENV-OPS-001A / CLAIMED (C1, this transition) / PR pending** — the historical dispatch pause is lifted by this reviewed claim transition: the coordination stack (guard + hardened autonomy runtime) is durable on closed main `08c08ebf`, and this transition IS the fresh ownership gate the merged ENV-OPS-001 contract requires. Claim `ENV-OPS-001A-C1` (holder `zcode-env-ops-001a-g1-primary`, worktree `A:/GitHub/_worktrees/env-ops-001a-20261007`, branch `feat/env-ops-001a`, base `08c08ebf`) authorizes only the contract's read-only two-source board scope; Building/env-int/lib/schema remain forbidden. Authority begins only after this transition merges.
 - **Open draft PR #85 / ENV-PREVIEW-001** — synthetic browser-local preview proposal at head `d7c48cf3ee4e2056586ef63fd9cc3cb74a2e71e1`, based on older main `7d4e6b52c616ff15f86e399a085ef16477d38ef8`. The PR description says REVIEW_REQUESTED, but the current registry has no active ENV-PREVIEW claim; preserve as a proposal and do not merge until ownership/base are reconciled.
 - **Open proposals, not active claims:** PR #87 remains OPEN at c8a8437f2f4471f2ea08d8836ed20b8f17ac4c0b against the prior base `94c1a8f9...`; its scripts/notify checks are green and its author comment `#5834942914` says CHANGES_REQUIRED. PR #88 remains OPEN at 2727abc9c8c50bb84dbf09e2a0b0383cbe5e2e16 against the prior base `94c1a8f9...`; its scripts/notify checks are green, but GitHub has no formal review decision. Neither candidate registry is authoritative.
 
@@ -236,7 +275,7 @@ Current coordination authority:
 - locked C1 implementation contract/result lane: `docs/work-orders/ENV-COORD-002.md` and `docs/ai/handoffs/ENV-COORD-002-GLM.md`;
 - closed autonomy + hardening Work Orders: `docs/work-orders/ENV-AUTONOMY-001.md`, `docs/work-orders/ENV-AUTONOMY-002.md`;
 - enforcement mode: `BOOTSTRAP_CONTROL`, not `ENFORCING`;
-- one next safe action: all four registry claims are CLOSED and the coordination stack (guard + hardened autonomy runtime) is durably on main. Any next work — ENV-OPS-001A dispatch, ENV-COORD-003 shadow CI, or fresh guard/autonomy changes — requires a NEW claim transition through the same reviewed pipeline; no closed lane confers execution authority. Autonomy remains BOOTSTRAP_CONTROL / AUTONOMY_NOT_READY / ENFORCEMENT_NOT_ACTIVE truthfully.
+- one next safe action: this transition registers the ENV-OPS-001A-C1 claim and lifts its historical dispatch pause (coordination stack durable on closed main 08c08ebf; BOOTSTRAP_CONTROL discipline still applies to the new lane). On merge, implement the read-only Operations Attention Board strictly within the registered scope; all other work still requires a NEW claim transition. Autonomy remains BOOTSTRAP_CONTROL / AUTONOMY_NOT_READY / ENFORCEMENT_NOT_ACTIVE truthfully.
 
 ## Prior execution state - 2026-09-02
 
