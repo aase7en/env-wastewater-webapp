@@ -18,5 +18,7 @@
 ## Checkpoint
 
 - Lane not yet started; authority begins when the claim transition merges.
-  Next action: create the isolated `feat/env-ops-001a` worktree from current
-  main, establish RED evidence for A1–A16, then implement per the Work Order.
+  Dispatch basis: the owner-authorized exception to the bootstrap
+  production-dispatch pause (risk record in the Work Order). Next action:
+  create the isolated `feat/env-ops-001a` worktree from current main,
+  establish RED evidence for A1–A16, then implement per the Work Order.
