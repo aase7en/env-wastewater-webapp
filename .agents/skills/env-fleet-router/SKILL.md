@@ -5,7 +5,7 @@ description: Route ENV task categories by bounded model fit and verified provide
 
 # ENV-Fleet-Router
 
-Use `python scripts/env_autonomy_runtime.py route --task-category <category>` to report task fit. The command never calls a provider.
+Use `python scripts/env_autonomy_runtime.py route --task-category <category>` to report task fit. The command never calls a provider. For `independent_review`, `--review-risk-tier R2` (the default) reports the fresh GLM-5.3 MAX reviewer route and `--review-risk-tier R3` reports the required GPT-6.1 Sol cross-model route.
 
 | Task category | Candidate route | Boundary |
 | --- | --- | --- |

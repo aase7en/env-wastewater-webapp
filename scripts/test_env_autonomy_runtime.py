@@ -107,10 +107,35 @@ class ProviderAndRoutingTests(unittest.TestCase):
         self.assertFalse(runtime.route_fit("GLM-5.3 Flash", "core_engineering", "MUTATION")["safe"])
         self.assertFalse(runtime.route_fit("JEV", "read_only_advisory", "MUTATION")["safe"])
         self.assertTrue(runtime.route_fit("JEV", "read_only_advisory", "READ_ONLY_ADVISORY")["safe"])
-        self.assertFalse(runtime.route_fit("GPT-6 Sol", "independent_review", "MUTATION")["safe"])
+        self.assertFalse(runtime.route_fit("GPT-6.1 Sol", "independent_review", "MUTATION")["safe"])
         self.assertEqual(runtime.select_route("core_engineering")["dispatch_allowed"], False)
         self.assertEqual(runtime.select_route("core_engineering")["route_state"], "ADMISSION_REQUIRED")
         self.assertEqual(runtime.select_route("read_only_advisory")["route_state"], "UNAVAILABLE")
+
+    def test_independent_review_defaults_to_fresh_glm_r2_reviewer(self):
+        result = runtime.select_route("independent_review")
+        self.assertEqual(result["model"], "GLM-5.3 MAX")
+        self.assertEqual(result["lane_kind"], "INDEPENDENT_REVIEW")
+        self.assertEqual(result["provider_candidate"], "cointh-glm")
+        self.assertEqual(result["route_state"], "ADMISSION_REQUIRED")
+        self.assertEqual(result["dispatch_allowed"], False)
+        self.assertTrue(runtime.route_fit("GLM-5.3 MAX", "independent_review", "INDEPENDENT_REVIEW")["safe"])
+
+    def test_r3_independent_review_selects_gpt61_sol_cross_model_route(self):
+        result = runtime.select_route("independent_review", review_risk_tier="R3")
+        self.assertEqual(result["model"], "GPT-6.1 Sol")
+        self.assertEqual(result["provider_candidate"], "codex-cli")
+        self.assertEqual(result["route_state"], "ADMISSION_REQUIRED")
+        self.assertEqual(result["reason"], "R3_CROSS_MODEL_ADMISSION_REQUIRED")
+        self.assertEqual(result["dispatch_allowed"], False)
+
+    def test_review_risk_tier_fails_closed_outside_independent_review(self):
+        with self.assertRaises(runtime.AutonomyFailure) as raised:
+            runtime.select_route("core_engineering", review_risk_tier="R3")
+        self.assertEqual(raised.exception.reason, "REVIEW_TIER_ONLY_FOR_INDEPENDENT_REVIEW")
+        with self.assertRaises(runtime.AutonomyFailure) as raised:
+            runtime.select_route("independent_review", review_risk_tier="R4")
+        self.assertEqual(raised.exception.reason, "REVIEW_TIER_UNSUPPORTED")
 
     def test_provider_quota_and_upstream_are_separate_fresh_gates(self):
         now = dt.datetime(2026, 9, 26, 4, 0, tzinfo=dt.timezone.utc)
