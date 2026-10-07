@@ -29,6 +29,7 @@ import { ChemicalPage } from "./pages/ChemicalPage";
 import { RegulationsPage } from "./pages/RegulationsPage";
 import { PDFDesignerPage } from "./pages/PDFDesignerPage";
 import { AttachmentsPage } from "./pages/AttachmentsPage";
+import { OperationsPage } from "./pages/OperationsPage";
 const WaterWatchPage = lazy(() =>
   import("./pages/WaterWatchPage").then((m) => ({ default: m.WaterWatchPage })),
 );
@@ -151,6 +152,14 @@ export default function App() {
                     element={
                       <RequireAuth>
                         <ReportsPage />
+                      </RequireAuth>
+                    }
+                  />
+                  <Route
+                    path="/operations"
+                    element={
+                      <RequireAuth>
+                        <OperationsPage />
                       </RequireAuth>
                     }
                   />
