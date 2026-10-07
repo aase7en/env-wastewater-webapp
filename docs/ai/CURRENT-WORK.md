@@ -38,7 +38,7 @@ exact-SHA independent review and merge into `main`.
   "coordination_registry": {
     "version": 1,
     "enforcement_mode": "BOOTSTRAP_CONTROL",
-    "expected_policy_revision": "31909865751b1e57bf020ba7ff9e134debf7cc8a",
+    "expected_policy_revision": "3a953832881dcec3da2bd714f6fef9b57a107acc",
     "expected_registry_hash": "ebf9cc9af7e93fa99fd0a6b111f8e51fef249d68b66b8089203cc491f1942312",
     "claims": [
       {
