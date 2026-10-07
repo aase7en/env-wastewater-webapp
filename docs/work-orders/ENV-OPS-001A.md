@@ -10,7 +10,9 @@ Repository: aase7en/env-wastewater-webapp.
   (GLM-5.3 MAX lane; external cointh/Kilo dispatch remains disabled, so the
   admitted route is the in-session GLM lane under the supervisor).
 - Worktree `A:\GitHub\_worktrees\env-ops-001a-20261007`, branch
-  `feat/env-ops-001a`, base `origin/main@08c08ebf888b9ec90169e91f4df12d2379f7f110`.
+  `feat/env-ops-001a-c1`, cut from current merged main at transition-merge
+  time (the claim transition's own branch point is recorded as
+  `origin/main@08c08ebf888b9ec90169e91f4df12d2379f7f110`).
 - Contract: `docs/work-orders/ENV-OPS-001.md` (reviewed and merged; its
   archaeology, data-honesty invariants, UX contract, A1–A16 acceptance matrix,
   no-touch list, and gate battery are binding for this slice).
@@ -55,6 +57,38 @@ Compensating controls applied instead:
 
 This exception does NOT activate other production lanes, does not change
 enforcement mode, and does not confer authority beyond the registered scope.
+
+## Pre-existing unreconciled work — preserve, never clean (R3 round-3 finding)
+
+`feat/env-ops-001a` (the ORIGINAL branch name considered for this lane) is
+already checked out at the legacy contract-era worktree
+`A:/GitHub/envww-ops-001a`, whose HEAD `685037e5…` is a fully merged
+ancestor of main (no unpushed commits) but which is DIRTY with an earlier
+unclaimed implementation attempt:
+
+- modified: `docs/ai/CURRENT-WORK.md`, `docs/ai/HANDOFF.md`,
+  `docs/ai/ROADMAP.md`, `docs/ai/graph/PROJECT-GRAPH.md`,
+  `docs/ai/handoffs/ENV-OPS-001-SOL.md`, `docs/work-orders/ENV-OPS-001.md`,
+  `frontend/src/App.tsx`, `frontend/src/pages/OverviewPage.tsx`;
+- untracked: `frontend/src/pages/OperationsPage.tsx`,
+  `frontend/tests/e2e/operations-attention.spec.ts`.
+
+Reconciliation rules (binding on this lane):
+
+1. Per `AGENTS.md` git safety, that worktree must never be cleaned, reset,
+   stashed, deleted, moved, or overwritten — it is unclaimed work of
+   unknown provenance/quality, and several dirty files
+   (`OverviewPage.tsx`, the docs set) are OUTSIDE this claim's mutable
+   scope and are not admitted by it.
+2. To avoid the checked-out-branch conflict, this claim's implementation
+   uses the FRESH branch `feat/env-ops-001a-c1` in the registered isolated
+   worktree, cut from merged main.
+3. The legacy worktree's content may be consulted as REFERENCE ONLY
+   (e.g., the draft OperationsPage/spec); nothing from it may be committed
+   as-is into this lane — all implementation must satisfy the RED-first
+   A1–A16 contract from scratch.
+4. Disposition of the legacy worktree/branch is a separate future
+   owner-decided cleanup; this claim neither authorizes nor performs it.
 
 ## Mutable scope (exactly)
 
