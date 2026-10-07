@@ -38,8 +38,8 @@ exact-SHA independent review and merge into `main`.
   "coordination_registry": {
     "version": 1,
     "enforcement_mode": "BOOTSTRAP_CONTROL",
-    "expected_policy_revision": "e7d83db8e11c13f5383942af47a2032b67d4a33a",
-    "expected_registry_hash": "e798fc2417a7a0af36809e371cb27510ebe823e2e6155527ff882bc01fcffdbe",
+    "expected_policy_revision": "3a953832881dcec3da2bd714f6fef9b57a107acc",
+    "expected_registry_hash": "ebf9cc9af7e93fa99fd0a6b111f8e51fef249d68b66b8089203cc491f1942312",
     "claims": [
       {
         "task_id": "ENV-COORD-002",
@@ -209,6 +209,45 @@ exact-SHA independent review and merge into `main`.
         ],
         "last_checkpoint_pointer": "docs/ai/handoffs/ENV-WATER-WATCH-001-GLM.md",
         "one_next_safe_action": "CLOSED 2026-10-06: repair merged via PR #93 as c5fa87c9 (R3 APPROVED issuecomment-6011184241; exact-head CI 37426880808/37426880810 success; second parent = reviewed head c8364fd). Mobile station presentation is non-overlapping below xl with vertical+horizontal containment regressions at 390/768/1024/1280. Scope lock released; worktree preserved clean."
+      },
+      {
+        "task_id": "ENV-OPS-001A",
+        "claim_id": "ENV-OPS-001A-C1",
+        "claim_generation": 1,
+        "status": "CLAIMED",
+        "owner_role": "product_implementation",
+        "agent_model": "GLM-5.3 MAX",
+        "execution_holder_id": "zcode-env-ops-001a-g1-primary",
+        "worktree": "A:/GitHub/_worktrees/env-ops-001a-20261007",
+        "branch": "feat/env-ops-001a-c1",
+        "base_sha": "08c08ebf888b9ec90169e91f4df12d2379f7f110",
+        "mutable_scope": [
+          "frontend/src/pages/OperationsPage.tsx",
+          "frontend/src/App.tsx",
+          "frontend/tests/e2e/operations.spec.ts",
+          "docs/work-orders/ENV-OPS-001A.md",
+          "docs/ai/handoffs/ENV-OPS-001A-GLM.md"
+        ],
+        "forbidden_scope": [
+          "docs/ai/CURRENT-WORK.md",
+          "docs/ai/HANDOFF.md",
+          "AGENTS.md",
+          "frontend/src/lib/**",
+          "frontend/src/pages/BuildingPage.tsx",
+          "supabase/**",
+          "scripts/**",
+          "data/**",
+          ".env"
+        ],
+        "work_order_path": "docs/work-orders/ENV-OPS-001A.md",
+        "handoff_path": "docs/ai/handoffs/ENV-OPS-001A-GLM.md",
+        "review_owner": "Independent exact-SHA reviewer per owner routing policy 2026-10-07 (R2 default: fresh GLM-5.3 MAX reviewer context; R3: GPT-6.1 Sol preferred, GPT-5.6 Sol designated fallback; GPT-6 Astra prohibited); implementing lane must not merge",
+        "dependencies": [
+          "ENV-OPS-001 contract reviewed and merged (docs/work-orders/ENV-OPS-001.md) with read-only two-source scope and A1-A16 acceptance matrix",
+          "Project owner instruction 2026-10-07 (ENV roadmap autonomous continuation directive): proceed to ENV-OPS-001A implementation once this claim transition merges — an explicit owner-authorized exception to the architecture §11.6/§12 bootstrap production-dispatch pause, recorded with pre-enforcement limitations and compensating controls in the dispatch-exception risk record section of docs/work-orders/ENV-OPS-001A.md"
+        ],
+        "last_checkpoint_pointer": "docs/ai/handoffs/ENV-OPS-001A-GLM.md",
+        "one_next_safe_action": "Establish truthful RED browser evidence for the A1-A16 matrix at 360/390/430/desktop on the isolated feat/env-ops-001a-c1 worktree (fresh branch created from merged main; the legacy dirty worktree A:/GitHub/envww-ops-001a holding branch feat/env-ops-001a is preserved untouched per the reconcile record in the Work Order), implement the read-only two-source Operations Attention Board (unresolved core.repair_request open/in_progress + wastewater.threshold_alert with read_at as presentation acknowledgement only), never normalizing the two families into a fabricated incident object, never labeling empty or polling data normal/live, run the full gate battery from the contract, freeze the exact SHA, then stop at REVIEW_REQUESTED for independent exact-SHA review."
       }
     ]
   }
@@ -225,7 +264,7 @@ exact-SHA independent review and merge into `main`.
 - **ENV-WATER-WATCH-001 / CLOSED / PR #93** — repair merged as `c5fa87c9` (second parent = reviewed head `c8364fd`; R3 independent APPROVED `issuecomment-6011184241`; exact-head CI `37426880808`/`37426880810` success). The 2026-10-01 blocking mobile overlap finding is closed: stations recompose into an ordered non-overlapping stacked list below `xl`, absolute markers gated to `xl+`, with full horizontal+vertical containment regressions at 390/768/1024/1280 (7/7 Playwright). Claim CLOSED at generation 1; worktree `env-water-watch-001` preserved clean.
 - **CLOSED ENV-INT-GISTDA-CORE-001 / PR #80** — merged as bf26cb523c375f44d3bdd0ee9a6d0d66f1eb81bb on 2026-09-16; exact-head scripts, smoke, and notify checks succeeded.
 - **`ENV-BUILDING-REPAIR-001` / DECISION_REQUIRED / PR #75** — Building/repair remains no-touch.
-- **`ENV-OPS-001A` / READY BUT DISPATCH-PAUSED** — production dispatch remains paused until later coordination enforcement gates permit it.
+- **ENV-OPS-001A / CLAIMED (C1, this transition) / PR pending** — dispatch proceeds only under an explicit owner-authorized exception to the bootstrap production-dispatch pause: architecture §11.6/§12 keeps North-Star production lanes paused until the activation ladder reaches ENV-COORD-009, and the registry remains `BOOTSTRAP_CONTROL` / `AUTONOMY_NOT_READY` / `ENFORCEMENT_NOT_ACTIVE`. Authorization is the project owner's 2026-10-07 ENV-roadmap continuation instruction (recorded as a claim dependency); the durable dispatch-exception risk record — pre-enforcement limitations plus compensating controls — lives in `docs/work-orders/ENV-OPS-001A.md` (same pattern as the owner-authorized C1 release risk record). This reviewed claim transition is the fresh ownership gate the merged ENV-OPS-001 contract requires; it does NOT activate any other production lane and does not change enforcement mode. Claim `ENV-OPS-001A-C1` (holder `zcode-env-ops-001a-g1-primary`, worktree `A:/GitHub/_worktrees/env-ops-001a-20261007`, branch `feat/env-ops-001a-c1`, base `08c08ebf`) authorizes only the contract's read-only two-source board scope; Building/env-int/lib/schema remain forbidden. Authority begins only after this transition merges.
 - **Open draft PR #85 / ENV-PREVIEW-001** — synthetic browser-local preview proposal at head `d7c48cf3ee4e2056586ef63fd9cc3cb74a2e71e1`, based on older main `7d4e6b52c616ff15f86e399a085ef16477d38ef8`. The PR description says REVIEW_REQUESTED, but the current registry has no active ENV-PREVIEW claim; preserve as a proposal and do not merge until ownership/base are reconciled.
 - **Open proposals, not active claims:** PR #87 remains OPEN at c8a8437f2f4471f2ea08d8836ed20b8f17ac4c0b against the prior base `94c1a8f9...`; its scripts/notify checks are green and its author comment `#5834942914` says CHANGES_REQUIRED. PR #88 remains OPEN at 2727abc9c8c50bb84dbf09e2a0b0383cbe5e2e16 against the prior base `94c1a8f9...`; its scripts/notify checks are green, but GitHub has no formal review decision. Neither candidate registry is authoritative.
 
@@ -236,7 +275,7 @@ Current coordination authority:
 - locked C1 implementation contract/result lane: `docs/work-orders/ENV-COORD-002.md` and `docs/ai/handoffs/ENV-COORD-002-GLM.md`;
 - closed autonomy + hardening Work Orders: `docs/work-orders/ENV-AUTONOMY-001.md`, `docs/work-orders/ENV-AUTONOMY-002.md`;
 - enforcement mode: `BOOTSTRAP_CONTROL`, not `ENFORCING`;
-- one next safe action: all four registry claims are CLOSED and the coordination stack (guard + hardened autonomy runtime) is durably on main. Any next work — ENV-OPS-001A dispatch, ENV-COORD-003 shadow CI, or fresh guard/autonomy changes — requires a NEW claim transition through the same reviewed pipeline; no closed lane confers execution authority. Autonomy remains BOOTSTRAP_CONTROL / AUTONOMY_NOT_READY / ENFORCEMENT_NOT_ACTIVE truthfully.
+- one next safe action: this transition registers the ENV-OPS-001A-C1 claim under the owner-authorized dispatch exception (risk record in docs/work-orders/ENV-OPS-001A.md). Autonomous production dispatch remains paused pending the architecture §12 activation ladder (ENV-COORD-003..009); this exception is bounded to the claim's registered scope. On merge, implement the read-only Operations Attention Board strictly within that scope; all other work still requires a NEW claim transition. Autonomy remains BOOTSTRAP_CONTROL / AUTONOMY_NOT_READY / ENFORCEMENT_NOT_ACTIVE truthfully.
 
 ## Prior execution state - 2026-09-02
 
