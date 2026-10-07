@@ -39,8 +39,8 @@ PARKED_STATES = frozenset(("WAITING_EXTERNAL", "PARKED"))
 ACTIVE_REVIEW_STATUSES = frozenset(("REVIEWING", "REVIEW_REQUESTED", "RE-REVIEW_REQUESTED"))
 SUPPORTED_MODELS = {
     "gpt-6 luna max": {"orchestration", "routine_integration", "low_risk_analysis"},
-    "gpt-6 sol": {"independent_review"},
-    "glm-5.3 max": {"core_engineering", "security", "data_contract", "bounded_implementation"},
+    "gpt-6.1 sol": {"independent_review"},
+    "glm-5.3 max": {"core_engineering", "security", "data_contract", "bounded_implementation", "independent_review"},
     "glm-5.3 flash": {"read_only_analysis", "low_risk_analysis"},
     "jev": {"read_only_advisory"},
 }
@@ -53,7 +53,7 @@ ROUTE_DEFAULTS = {
     "bounded_implementation": ("GLM-5.3 MAX", "MUTATION"),
     "read_only_analysis": ("GLM-5.3 Flash", "READ_ONLY_ANALYSIS"),
     "low_risk_analysis": ("GLM-5.3 Flash", "LOW_RISK"),
-    "independent_review": ("GPT-6 Sol", "INDEPENDENT_REVIEW"),
+    "independent_review": ("GLM-5.3 MAX", "INDEPENDENT_REVIEW"),
     "read_only_advisory": ("JEV", "READ_ONLY_ADVISORY"),
 }
 
@@ -241,20 +241,39 @@ def route_fit(model: str, task_category: str, lane_kind: str) -> dict:
         return {"safe": False, "reason": "TASK_FIT_MISMATCH"}
     if model_key == "jev" and lane_kind != "READ_ONLY_ADVISORY":
         return {"safe": False, "reason": "JEV_READ_ONLY_ONLY"}
-    if model_key == "gpt-6 sol" and lane_kind != "INDEPENDENT_REVIEW":
+    if model_key == "gpt-6.1 sol" and lane_kind != "INDEPENDENT_REVIEW":
         return {"safe": False, "reason": "REVIEWER_ROLE_ONLY"}
     if model_key == "glm-5.3 flash" and lane_kind not in ("READ_ONLY_ANALYSIS", "LOW_RISK"):
         return {"safe": False, "reason": "FLASH_READ_ONLY_OR_LOW_RISK_ONLY"}
     return {"safe": True, "reason": None}
 
 
-def select_route(task_category: str, lane_kind: Optional[str] = None, *, jev_available: bool = False) -> dict:
-    """Choose the default task-fit model without treating a label as live admission."""
+def select_route(
+    task_category: str,
+    lane_kind: Optional[str] = None,
+    *,
+    jev_available: bool = False,
+    review_risk_tier: Optional[str] = None,
+) -> dict:
+    """Choose the default task-fit model without treating a label as live admission.
+
+    Owner routing policy (2026-10-07): ordinary R2 independent review defaults
+    to a fresh GLM-5.3 MAX reviewer context; deterministic R3/critical review
+    requires the GPT-6.1 Sol cross-model route (review_risk_tier="R3").
+    """
     category = _nonempty(task_category, "task_category").casefold()
     selected = ROUTE_DEFAULTS.get(category)
     if selected is None:
         return {"selected": False, "reason": "TASK_CATEGORY_UNSUPPORTED"}
     model, default_lane = selected
+    if review_risk_tier is not None:
+        tier = _nonempty(review_risk_tier, "review_risk_tier").upper()
+        if tier not in ("R2", "R3"):
+            raise AutonomyFailure("REVIEW_TIER_UNSUPPORTED", tier)
+        if category != "independent_review":
+            raise AutonomyFailure("REVIEW_TIER_ONLY_FOR_INDEPENDENT_REVIEW", category)
+        if tier == "R3":
+            model = "GPT-6.1 Sol"
     effective_lane = lane_kind or default_lane
     fit = route_fit(model, category, effective_lane)
     if not fit["safe"]:
@@ -265,15 +284,23 @@ def select_route(task_category: str, lane_kind: Optional[str] = None, *, jev_ava
             "route_state": "UNAVAILABLE", "dispatch_allowed": False,
             "reason": "NO_SUPPORTED_LIVE_JEV_ROUTE",
         }
-    requires_external_admission = model.startswith("GLM-") or model == "JEV"
+    requires_external_admission = model.startswith("GLM-") or model == "JEV" or model == "GPT-6.1 Sol"
     return {
         "selected": True,
         "model": model,
-        "provider_candidate": "cointh-glm" if model.startswith("GLM-") else None,
+        "provider_candidate": (
+            "cointh-glm" if model.startswith("GLM-")
+            else "codex-cli" if model == "GPT-6.1 Sol"
+            else None
+        ),
         "lane_kind": effective_lane,
         "route_state": "ADMISSION_REQUIRED" if requires_external_admission else "SELECTION_ONLY",
         "dispatch_allowed": False,
-        "reason": "LIVE_PROVIDER_ADMISSION_REQUIRED" if requires_external_admission else "DISPATCH_ADAPTER_NOT_CONFIGURED",
+        "reason": (
+            "R3_CROSS_MODEL_ADMISSION_REQUIRED" if model == "GPT-6.1 Sol"
+            else "LIVE_PROVIDER_ADMISSION_REQUIRED" if requires_external_admission
+            else "DISPATCH_ADAPTER_NOT_CONFIGURED"
+        ),
     }
 
 
@@ -2366,7 +2393,7 @@ def _cmd_kilo_receipt_verify(args) -> int:
 
 def _cmd_route(args) -> int:
     """Report task-fit selection only; never launches a provider."""
-    result = select_route(args.task_category, args.lane_kind)
+    result = select_route(args.task_category, args.lane_kind, review_risk_tier=args.review_risk_tier)
     return _emit({**result, "external_call_started": False})
 
 
@@ -2573,6 +2600,8 @@ def main(argv: Optional[list[str]] = None) -> int:
     route = sub.add_parser("route", help="report a task-fit route selection without provider dispatch")
     route.add_argument("--task-category", required=True, choices=sorted(ROUTE_DEFAULTS))
     route.add_argument("--lane-kind")
+    route.add_argument("--review-risk-tier", choices=["R2", "R3"], default=None,
+                       help="only valid with --task-category independent_review: R2 (default) = fresh GLM-5.3 MAX reviewer; R3 = GPT-6.1 Sol")
     route.set_defaults(func=_cmd_route)
     args = parser.parse_args(argv)
     try:
