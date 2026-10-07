@@ -20,6 +20,17 @@
 
 ## Checkpoint
 
+- 2026-10-08 (CLOSED, effective on closeout-transition merge; implementation
+  verified 2026-10-07): R2 fresh-GLM independent review APPROVED at exact
+  head `f7425c1` (`issuecomment-6041738245`; reviewer independently re-ran
+  the spec 8/8; 3 non-blocking P3 notes). PR #107 merged as `bf9bc539`
+  (second parent = reviewed head; expected-head guard). Post-main verified
+  at `bf9bc53`: main test + E2E smoke + Pages deploy all SUCCESS. One
+  transient GitHub write-API outage (HTTP 500 on POSTs) delayed the verdict
+  comment/merge by one supervisor wake; recovered with no state loss.
+  Claim ENV-OPS-001A-C1 CLOSED at generation 1 via the reviewed closeout
+  transition. Worktree `env-ops-001a-20261007` preserved clean at
+  `f7425c1`, fully merged; CLOSED confers no fresh mutation authority.
 - 2026-10-07 (GREEN frozen): RED-first acceptance spec committed first
   (`3c395c5`; 8/8 truthful missing-board failures with shell+auth rendering),
   then implementation: `OperationsPage.tsx` (two-source read-only board,
@@ -29,10 +40,10 @@
   shell nav; HEAD count allowed in the read-only guard).
   Gates: operations Playwright 8/8; full Vitest 24 files / 357 tests;
   `tsc -b` clean; lint 0 errors; build success; `git diff --check` clean;
-  changed files exactly the claim's mutable scope. Status:
-  REVIEW_REQUESTED — awaiting independent exact-SHA review (R2 fresh
-  GLM-5.3 MAX reviewer context per owner routing policy 2026-10-07);
-  implementing lane must not merge its own PR.
+  changed files exactly the claim's mutable scope. Status at freeze
+  (historical): REVIEW_REQUESTED — awaiting independent exact-SHA review
+  (R2 fresh GLM-5.3 MAX reviewer context per owner routing policy
+  2026-10-07); implementing lane must not merge its own PR.
 - Lane basis: owner-authorized dispatch exception (risk record in the Work
   Order). Legacy unclaimed attempt in the dirty worktree
   `A:/GitHub/envww-ops-001a` (branch `feat/env-ops-001a`) preserved
