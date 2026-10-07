@@ -1,6 +1,6 @@
 # ENV-OPS-001A — Read-only Operations Attention Board (implementation slice)
 
-Status: CLAIMED / BOOTSTRAP_CONTROL (registered by the 2026-10-07 claim transition; authority begins when that transition merges)
+Status: CLOSED 2026-10-07 (implemented and merged via PR #107 as bf9bc539; claim ENV-OPS-001A-C1 closed at generation 1 by the reviewed closeout transition)
 Risk: MEDIUM — new public read-only surface; no schema/data/provider changes.
 Repository: aase7en/env-wastewater-webapp.
 
