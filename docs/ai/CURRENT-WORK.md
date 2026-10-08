@@ -261,7 +261,8 @@ exact-SHA independent review and merge into `main`.
         "branch": "feat/env-building-repair-001",
         "base_sha": "e6bb3f019167f4c8a53326d42f5e5a32d9f18a76",
         "mutable_scope": [
-          "supabase/migrations/20261008000001_building_repair_c1.sql",
+          "supabase/migrations/20261008000001_building_repair_c1_expand.sql",
+          "supabase/migrations/20261010000001_building_repair_c1_contract.sql",
           "scripts/building_repair_contract.py",
           "scripts/test_building_repair_contract.py",
           "frontend/src/lib/building.ts",
@@ -295,7 +296,7 @@ exact-SHA independent review and merge into `main`.
           "Project owner ENV-roadmap continuation instruction (2026-10-07): proceed through the reviewed claim pipeline - an explicit owner-authorized exception to the architecture 11.6/12 bootstrap production-dispatch pause, recorded with pre-enforcement limitations and compensating controls in the dispatch-exception risk record section of docs/work-orders/ENV-BUILDING-REPAIR-001-IMPL.md"
         ],
         "last_checkpoint_pointer": "docs/ai/handoffs/ENV-BUILDING-REPAIR-001-GLM.md",
-        "one_next_safe_action": "After this transition merges: re-run the ownership gate in the isolated feat/env-building-repair-001 worktree, then execute the decision packet's D2 node RED-first - schema/RLS/RPC contract tests (atomic rollback, same-key retry, concurrent double-submit, same-key/different-payload rejection, reporter spoof denial, pending-role denial, link uniqueness/immutability, cancellation and delete restrictions, strict import booleans, historical import policy, facade exposure, audit capture, truthful linked history) before any migration is authored; LIVE ENV_DB application of any migration remains a separate HUMAN_AUTHORIZATION_REQUIRED gate."
+        "one_next_safe_action": "After this transition merges: re-run the ownership gate in the isolated feat/env-building-repair-001 worktree, then execute the decision packet's D2 node RED-first - schema/RLS/RPC contract tests for the expand/contract rollout (atomic rollback, same-key retry, concurrent double-submit, same-key/different-payload rejection, reporter spoof denial, pending-role denial, link uniqueness/immutability, cancellation and delete restrictions, strict import booleans, historical import policy, facade exposure, audit capture, truthful linked history) before any migration is authored; LIVE ENV_DB application of any migration remains a separate HUMAN_AUTHORIZATION_REQUIRED gate."
       }
     ]
   }

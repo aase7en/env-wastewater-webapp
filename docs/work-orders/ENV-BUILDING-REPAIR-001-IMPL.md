@@ -57,14 +57,17 @@ between reading_id and inspection_round_id); cancellation lifecycle;
 delete/unlink restrictions; strict Thai/English import booleans; historical
 import policy (no silent promotion, no heuristic backfill); facade/PostgREST
 exposure; audit capture; truthful linked status in Building history.
-D3 migration + rollback/postflight proof — author
-`supabase/migrations/20261008000001_building_repair_c1.sql` implementing the
-11 clauses (nullable `core.repair_request.inspection_round_id` FK →
-`building.inspection_round(id) ON DELETE RESTRICT`, unique when non-null,
-single-origin constraint, one transactional RPC with stable client key,
-server-derived `reported_by` via `auth.uid()`, RLS alignment, locked
-`search_path` if definer, revoke/grant, facade view recreation, audit).
-LIVE application = HUMAN_AUTHORIZATION_REQUIRED (below).
+D3a EXPAND migration + rollback/postflight proof — author
+`supabase/migrations/20261008000001_building_repair_c1_expand.sql` with
+ONLY additive schema: nullable `core.repair_request.inspection_round_id`
+FK → `building.inspection_round(id) ON DELETE RESTRICT`, unique index
+when non-null, single-origin constraint, the one transactional RPC with
+stable client key, server-derived `reported_by` via `auth.uid()`, RLS
+alignment, locked `search_path` if definer, revoke/grant, facade view
+recreation, audit. **No direct-write ban in this phase** — the
+currently deployed client (direct insert in `building.ts:42-47`) must
+keep working unchanged after expand applies. LIVE application =
+HUMAN_AUTHORIZATION_REQUIRED Gate 1 (below).
 D4 Building data-layer RED→GREEN (`frontend/src/lib/building.ts`,
 `repair.ts`: RPC path replaces direct insert; select includes the link).
 D5 import parser/promotion RED→GREEN (`frontend/src/lib/import-adapters/building.ts`
@@ -82,32 +85,48 @@ D7 focused + full Vitest/TypeScript/lint/build/Playwright
 (`frontend/tests/e2e/building-repair.spec.ts`).
 D8 independent Standards + Spec/UX + security exact-SHA review (R3
 cross-model route).
-D9 PR/CI/merge — ONLY after the LIVE-DB gate above (expected-head;
-supervisor execution per standing owner authorization).
-D10 exact-main CI/E2E/Pages + live DB postflight + deployed smoke (live DB
-steps only after the human gate).
+D9 PR/CI/merge — ONLY after Gate 1 (expected-head; supervisor execution
+per standing owner authorization) — Pages then serves the RPC client.
+D9b quiescence/monitoring window for cached old clients: after deploy,
+observe legacy direct-write attempts (audit/monitoring query defined in
+the migration postflight); window = at least 48h AND zero observed
+legacy repair-needed write attempts from the old path before
+proceeding (staff usage is periodic, not realtime; the app is a
+refreshed SPA, so a short measured window suffices — evidence recorded,
+never assumed).
+D3b CONTRACT migration — author
+`supabase/migrations/20261010000001_building_repair_c1_contract.sql`
+enforcing the clause-5 ban (direct REST/view writes can no longer
+create or update `repair_needed=true` outside the invariant-preserving
+RPC) plus any residual constraints. LIVE application =
+HUMAN_AUTHORIZATION_REQUIRED Gate 2 — presented only after D9b's
+evidence threshold is met.
+D10 exact-main CI/E2E/Pages + live DB postflight + deployed smoke.
 D11 SSoT closeout + next-node selection.
 
 ## Hard gates (no autonomous crossing)
 
-- **LIVE ENV_DB application of the migration (and any live RPC/RLS
-  verification against production) requires explicit owner authorization**
-  (HUMAN_AUTHORIZATION_REQUIRED): one compact ask presenting the exact
-  migration SQL, rollback plan, and postflight checks.
-- **Deployment ordering (R3 round-1 P1): the implementation PR is NOT
-  merged — and therefore NOT deployed to Pages — until the live-DB
-  migration has been applied under the gate above.** Merging main-tracked
-  frontend code auto-deploys; D4's client requires the new RPC/column, so
-  code-before-schema would break production Building reads/submissions.
-  Node order: D2→D3 author→D4–D7 (mocked/local)→D8 review→**LIVE-DB
-  gate→D9 merge**→D10 exact-main verification. Autonomous work proceeds
-  through D8 and the prepared gate ask; nothing merges before the gate.
+- **Gate 1 — LIVE ENV_DB application of the EXPAND migration (and any
+  live RPC/RLS verification against production) requires explicit owner
+  authorization** (HUMAN_AUTHORIZATION_REQUIRED): one compact ask with
+  the exact migration SQL, rollback plan, and postflight checks.
+- **Gate 2 — LIVE ENV_DB application of the CONTRACT migration**: same
+  form; presented only after the new client is deployed (D9) AND the D9b
+  quiescence evidence threshold (≥48h + zero legacy direct-write
+  attempts) is recorded.
+- **Rollout ordering (expand/contract — R3 rounds 1+2): code-before-schema
+  breaks the new client; schema-with-ban-before-code breaks the old
+  client.** Therefore: expand is purely additive and safe under the old
+  client; the implementation PR merges only after Gate 1; the direct-write
+  ban lands only via Gate 2 after deploy + measured quiescence. Autonomous
+  work proceeds through D8, the prepared Gate-1 ask, and (after D9/D9b
+  evidence) the prepared Gate-2 ask; no gate is crossed autonomously.
 - No real environmental writes in tests; no PHI; `.env`/`data/**` never
   touched; user-facing dates พ.ศ.
 
 ## Mutable scope (exactly)
 
-As registered in the claim (13 paths). Everything else forbidden — notably
+As registered in the claim (14 paths). Everything else forbidden — notably
 the Operations surface (OperationsPage/operations.spec — read-only reuse of
 `repair.ts` changes must not alter that page's behavior), env-int, guard and
 autonomy scripts, `data/**`, `.env`.
