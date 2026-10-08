@@ -38,8 +38,8 @@ exact-SHA independent review and merge into `main`.
   "coordination_registry": {
     "version": 1,
     "enforcement_mode": "BOOTSTRAP_CONTROL",
-    "expected_policy_revision": "bf9bc539d5ec60f4e02586648a0f08a6bd9f9ffa",
-    "expected_registry_hash": "638934e37d03532fe73474700ed532415a4f75af7ddc675641c33702c475361d",
+    "expected_policy_revision": "e6bb3f019167f4c8a53326d42f5e5a32d9f18a76",
+    "expected_registry_hash": "a7a444dc8af89a406f309c042aac47350839c71dbd5a2ff72d5f78d9a1478576",
     "claims": [
       {
         "task_id": "ENV-COORD-002",
@@ -248,6 +248,57 @@ exact-SHA independent review and merge into `main`.
         ],
         "last_checkpoint_pointer": "docs/ai/handoffs/ENV-OPS-001A-GLM.md",
         "one_next_safe_action": "CLOSED 2026-10-08 (implementation verified 2026-10-07; closure effective only when this transition merges): implementation merged via PR #107 as bf9bc539 (second parent = reviewed head f7425c11; R2 fresh-GLM independent APPROVED issuecomment-6041738245; exact-head CI green incl. E2E smoke; post-main test + E2E smoke + Pages deploy all success on bf9bc53). RED-first A1-A16 spec preceded implementation (commit 3c395c5, 8/8 truthful failures); gates green (operations Playwright 8/8, Vitest 24/357, tsc, lint, build, diff-check, scope exact). Lane worktree env-ops-001a-20261007 preserved clean at f7425c11, fully merged; legacy dirty worktree envww-ops-001a preserved untouched per its reconcile record. Scope lock released; CLOSED confers no fresh mutation authority."
+      },
+      {
+        "task_id": "ENV-BUILDING-REPAIR-001",
+        "claim_id": "ENV-BUILDING-REPAIR-001-C1",
+        "claim_generation": 1,
+        "status": "CLAIMED",
+        "owner_role": "product_implementation",
+        "agent_model": "GLM-5.3 MAX",
+        "execution_holder_id": "zcode-env-building-repair-001-g1-primary",
+        "worktree": "A:/GitHub/_worktrees/env-building-repair-001-20261008",
+        "branch": "feat/env-building-repair-001",
+        "base_sha": "e6bb3f019167f4c8a53326d42f5e5a32d9f18a76",
+        "mutable_scope": [
+          "supabase/migrations/20261008000001_building_repair_c1_expand.sql",
+          "supabase/migrations/20261010000001_building_repair_c1_contract.sql",
+          "scripts/building_repair_contract.py",
+          "scripts/test_building_repair_contract.py",
+          "frontend/src/lib/building.ts",
+          "frontend/src/lib/repair.ts",
+          "frontend/src/pages/BuildingPage.tsx",
+          "frontend/src/lib/import-adapters/building.ts",
+          "frontend/src/lib/import-adapters/building.test.ts",
+          "frontend/src/lib/sw-register.ts",
+          "frontend/public/sw.js",
+          "frontend/src/pages/BulkImportPage.tsx",
+          "frontend/src/components/repair/RepairRequestModal.tsx",
+          "frontend/tests/e2e/building-repair.spec.ts",
+          "docs/work-orders/ENV-BUILDING-REPAIR-001-IMPL.md",
+          "docs/ai/handoffs/ENV-BUILDING-REPAIR-001-GLM.md"
+        ],
+        "forbidden_scope": [
+          "docs/ai/CURRENT-WORK.md",
+          "docs/ai/HANDOFF.md",
+          "AGENTS.md",
+          "frontend/src/lib/env-int/**",
+          "frontend/src/pages/OperationsPage.tsx",
+          "frontend/tests/e2e/operations.spec.ts",
+          "scripts/env_coordination_guard.py",
+          "scripts/env_autonomy_runtime.py",
+          "data/**",
+          ".env"
+        ],
+        "work_order_path": "docs/work-orders/ENV-BUILDING-REPAIR-001-IMPL.md",
+        "handoff_path": "docs/ai/handoffs/ENV-BUILDING-REPAIR-001-GLM.md",
+        "review_owner": "Independent exact-SHA reviewer per owner routing policy 2026-10-07 (R2 default: fresh GLM-5.3 MAX reviewer context; R3: GPT-6.1 Sol preferred, GPT-5.6 Sol designated fallback; GPT-6 Astra prohibited); implementing lane must not merge",
+        "dependencies": [
+          "Owner C1 decision recorded durably on main (docs/work-orders/ENV-BUILDING-REPAIR-001.md, merged via PR #106 as 3be68a2): one aggregate linked repair request per inspection round with the complete 11-clause safety package - all clauses binding, none optional",
+          "Project owner ENV-roadmap continuation instruction (2026-10-07): proceed through the reviewed claim pipeline - an explicit owner-authorized exception to the architecture 11.6/12 bootstrap production-dispatch pause, recorded with pre-enforcement limitations and compensating controls in the dispatch-exception risk record section of docs/work-orders/ENV-BUILDING-REPAIR-001-IMPL.md"
+        ],
+        "last_checkpoint_pointer": "docs/ai/handoffs/ENV-BUILDING-REPAIR-001-GLM.md",
+        "one_next_safe_action": "After this transition merges: re-run the ownership gate in the isolated feat/env-building-repair-001 worktree, then execute the decision packet's D2 node RED-first - schema/RLS/RPC contract tests for the expand/contract rollout (atomic rollback, same-key retry, concurrent double-submit, same-key/different-payload rejection, reporter spoof denial, pending-role denial, link uniqueness/immutability, cancellation and delete restrictions, strict import booleans, historical import policy, facade exposure, audit capture, truthful linked history) before any migration is authored; LIVE ENV_DB application of any migration remains a separate HUMAN_AUTHORIZATION_REQUIRED gate."
       }
     ]
   }
@@ -263,7 +314,7 @@ exact-SHA independent review and merge into `main`.
 - **ENV-AUTONOMY-002 / CLOSED / PR #99** — merged by owner-authorized supervisor execution as `e7d83db8` (second parent = reviewed head `3a9313c`; R4 independent APPROVED `issuecomment-6012779129`; exact-head CI `37438518180` success; post-main suites 379+482 subtests green). Review trail: R1 CHANGES_REQUIRED (4 P1 + 1 P2), R3-input CHANGES_REQUIRED (1 P2), R4 APPROVED — every finding repaired with entrypoint-level regressions. Claim CLOSED at generation 1; worktree `env-autonomy-002-20261005` preserved.
 - **ENV-WATER-WATCH-001 / CLOSED / PR #93** — repair merged as `c5fa87c9` (second parent = reviewed head `c8364fd`; R3 independent APPROVED `issuecomment-6011184241`; exact-head CI `37426880808`/`37426880810` success). The 2026-10-01 blocking mobile overlap finding is closed: stations recompose into an ordered non-overlapping stacked list below `xl`, absolute markers gated to `xl+`, with full horizontal+vertical containment regressions at 390/768/1024/1280 (7/7 Playwright). Claim CLOSED at generation 1; worktree `env-water-watch-001` preserved clean.
 - **CLOSED ENV-INT-GISTDA-CORE-001 / PR #80** — merged as bf26cb523c375f44d3bdd0ee9a6d0d66f1eb81bb on 2026-09-16; exact-head scripts, smoke, and notify checks succeeded.
-- **`ENV-BUILDING-REPAIR-001` / DECIDED_C1 (2026-10-07 owner decision; PR #75 gate resolved)** — the project owner approved C1: one Building inspection round may create at most one aggregate linked repair request, using the complete 11-clause C1 safety package (durable `inspection_round -> repair_request` linkage, uniqueness/idempotency, explicit repair cause, atomic transactional server command, retry/double-submit safety, reporter identity + RLS, no heuristic backfill, explicit cancellation lifecycle, no provenance-destroying delete/unlink, truthful Building history from the durable link, strict import behavior, RED-first tests + exact-SHA review + post-main verification). Bounded current-product decision — NOT a permanent C2 prohibition (future C2 requires its own roadmap item, never silent scope expansion). Full audited packet + verbatim owner decision record: `docs/work-orders/ENV-BUILDING-REPAIR-001.md` (decision branch `docs/building-repair-001-decision` / PR #75 superseded by this record). Building/repair production files remain untouched until a fresh ENV-BUILDING-REPAIR-001 registry claim transition authorizes implementation.
+- **`ENV-BUILDING-REPAIR-001` / DECIDED_C1 + CLAIMED (C1, this transition) / PR pending** — the project owner approved C1: one Building inspection round may create at most one aggregate linked repair request, using the complete 11-clause C1 safety package (durable `inspection_round -> repair_request` linkage, uniqueness/idempotency, explicit repair cause, atomic transactional server command, retry/double-submit safety, reporter identity + RLS, no heuristic backfill, explicit cancellation lifecycle, no provenance-destroying delete/unlink, truthful Building history from the durable link, strict import behavior, RED-first tests + exact-SHA review + post-main verification). Bounded current-product decision — NOT a permanent C2 prohibition (future C2 requires its own roadmap item, never silent scope expansion). Full audited packet + verbatim owner decision record: `docs/work-orders/ENV-BUILDING-REPAIR-001.md` (decision branch `docs/building-repair-001-decision` / PR #75 superseded by this record). This transition registers claim `ENV-BUILDING-REPAIR-001-C1` (holder `zcode-env-building-repair-001-g1-primary`, worktree `A:/GitHub/_worktrees/env-building-repair-001-20261008`, branch `feat/env-building-repair-001`, base `e6bb3f0`) under the owner-authorized dispatch-exception pattern (risk record in `docs/work-orders/ENV-BUILDING-REPAIR-001-IMPL.md`); it executes the packet's D2–D11 implementation graph, and LIVE ENV_DB application of any migration remains a separate HUMAN_AUTHORIZATION_REQUIRED gate. Authority begins only after this transition merges.
 - **ENV-OPS-001A / CLOSED (C1) / PR #107** — implementation merged as `bf9bc539` (second parent = reviewed head `f7425c11`; R2 fresh-GLM independent APPROVED `issuecomment-6041738245`; exact-head CI green incl. E2E smoke; post-main test + E2E smoke + Pages deploy all success on `bf9bc53`). The read-only two-source Operations Attention Board lives at `/operations`: RED-first A1–A16 spec preceded implementation (commit `3c395c5`, 8/8 truthful failures); unresolved repairs (`open`/`in_progress`) and threshold events (read_at = presentation acknowledgement only) remain distinct source-local panels, never normalized into a fabricated incident object; empty ≠ normal; polling ≠ live; partial-source failure stays visible; no fabricated severity. The lane ran under the owner-authorized dispatch exception (risk record in `docs/work-orders/ENV-OPS-001A.md`); autonomous production dispatch remains paused pending the §12 activation ladder. Lane worktree `env-ops-001a-20261007` preserved clean at `f7425c11` (fully merged); the legacy dirty worktree `envww-ops-001a` remains preserved untouched per its reconcile record. CLOSED confers no fresh mutation authority.
 - **Open draft PR #85 / ENV-PREVIEW-001** — synthetic browser-local preview proposal at head `d7c48cf3ee4e2056586ef63fd9cc3cb74a2e71e1`, based on older main `7d4e6b52c616ff15f86e399a085ef16477d38ef8`. The PR description says REVIEW_REQUESTED, but the current registry has no active ENV-PREVIEW claim; preserve as a proposal and do not merge until ownership/base are reconciled.
 - **Open proposals, not active claims:** PR #87 remains OPEN at c8a8437f2f4471f2ea08d8836ed20b8f17ac4c0b against the prior base `94c1a8f9...`; its scripts/notify checks are green and its author comment `#5834942914` says CHANGES_REQUIRED. PR #88 remains OPEN at 2727abc9c8c50bb84dbf09e2a0b0383cbe5e2e16 against the prior base `94c1a8f9...`; its scripts/notify checks are green, but GitHub has no formal review decision. Neither candidate registry is authoritative.
@@ -275,7 +326,7 @@ Current coordination authority:
 - locked C1 implementation contract/result lane: `docs/work-orders/ENV-COORD-002.md` and `docs/ai/handoffs/ENV-COORD-002-GLM.md`;
 - closed autonomy + hardening Work Orders: `docs/work-orders/ENV-AUTONOMY-001.md`, `docs/work-orders/ENV-AUTONOMY-002.md`;
 - enforcement mode: `BOOTSTRAP_CONTROL`, not `ENFORCING`;
-- one next safe action: this transition closes ENV-OPS-001A-C1 after verified merge and post-main evidence. Autonomous production dispatch remains paused pending the architecture §12 activation ladder (ENV-COORD-003..009); product-lane work proceeds only through the owner-authorized-exception pattern with its durable risk record. All further work — ENV-BUILDING-REPAIR-001 implementation (owner decided C1 2026-10-07), ENV-COORD-003 shadow CI, or any other lane — requires a NEW claim transition through this same reviewed pipeline; no closed lane confers execution authority. Autonomy remains BOOTSTRAP_CONTROL / AUTONOMY_NOT_READY / ENFORCEMENT_NOT_ACTIVE truthfully.
+- one next safe action: this transition registers the ENV-BUILDING-REPAIR-001-C1 claim under the owner-authorized dispatch exception (risk record in docs/work-orders/ENV-BUILDING-REPAIR-001-IMPL.md). On merge: ownership gate in the isolated feat/env-building-repair-001 worktree, then the decision packet's D2 node RED-first (schema/RLS/RPC contract tests) before any migration is authored; LIVE ENV_DB migration application stays a HUMAN_AUTHORIZATION_REQUIRED gate. Autonomous production dispatch remains paused pending the architecture §12 activation ladder (ENV-COORD-003..009); product-lane work proceeds only through the owner-authorized-exception pattern. All other work still requires a NEW claim transition; no closed lane confers execution authority. Autonomy remains BOOTSTRAP_CONTROL / AUTONOMY_NOT_READY / ENFORCEMENT_NOT_ACTIVE truthfully.
 
 ## Prior execution state - 2026-09-02
 
