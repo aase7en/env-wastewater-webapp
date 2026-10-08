@@ -84,20 +84,29 @@ remain enabled until this commit; (3) installs a DURABLE bidirectional
 direct-write ban (enforced by triggers on `building.inspection_round`,
 not just a one-time assertion — R3 round 6): (a) direct REST/view
 writes that would create or update `repair_needed=true` outside the
-RPC are rejected with a clearly readable error and the rejected
-attempt is audit-logged; (b) direct writes that would flip
-`repair_needed` from true to false on a LINKED inspection are likewise
-rejected and audit-logged — clause 7 reserves true→false for the
-explicit cancellation RPC (actor, time, reason). D2's RED tests cover
-BOTH rejection directions post-contract (a direct true-set and a direct
-linked true→false flip must both fail with readable errors). (R3
-rounds 4–5: a normalizing-trigger compatibility option was analyzed
-and is INFEASIBLE — the legacy direct write lacks the clause-2
-mandatory values (explicit cause, issues_found premise, durable
-location) and carries no stable retry key, so a trigger would have to
-fabricate data, reject anyway, or lose idempotency; the hard ban is
-the only contract-faithful path.) No standalone preflight is trusted
-for correctness.
+RPC are rejected; (b) direct writes that would flip `repair_needed`
+from true to false on a LINKED inspection are likewise rejected —
+there is NO true→false route: clause 7's explicit cancellation
+PRESERVES the true flag and the historical link, changing only the
+repair's lifecycle status (cancelled, with actor/time/reason); the
+flag stays true forever after a linked repair exists (packet clause
+1). Rejections in both directions RAISE a distinct greppable
+SQLSTATE + readable message, which is durably captured in the
+PostgreSQL server log (an in-transaction audit-table insert would
+roll back with the rejected statement — R3 round 7 — so rejected
+attempts are captured via the server log, while COMMITTED RPC-path
+operations (create/cancel) remain audit-logged via the existing
+AFTER-DML audit mechanism). D2's RED tests cover BOTH rejection
+directions post-contract (a direct true-set and a direct linked
+true→false flip must both fail with the pinned SQLSTATEs) AND the
+cancellation semantics (flag stays true, link intact, repair status
+cancelled). (R3 rounds 4–5: a normalizing-trigger compatibility
+option was analyzed and is INFEASIBLE — the legacy direct write lacks
+the clause-2 mandatory values (explicit cause, issues_found premise,
+durable location) and carries no stable retry key, so a trigger would
+have to fabricate data, reject anyway, or lose idempotency; the hard
+ban is the only contract-faithful path.) No standalone preflight is
+trusted for correctness.
 D4 Building data-layer RED→GREEN (`frontend/src/lib/building.ts`,
 `repair.ts`: RPC path replaces direct insert; select includes the link).
 D5 import parser/promotion RED→GREEN (`frontend/src/lib/import-adapters/building.ts`
@@ -157,7 +166,7 @@ SQL, rollback, postflight, the D9b positive-evidence record, both
 preflight orphan lists (if any), and the RESIDUAL stale-client risk
 stated plainly — a pre-deploy tab that never navigated will have its
 first legacy `repair_needed=true` write after Gate 2 rejected with a
-visible, readable error (audit-logged); reload loads the new bundle
+visible, readable error (captured in the DB server log); reload loads the new bundle
 (network-first HTML + versioned SW) and the new client's
 value-preserving retry recovers the submission. The owner authorizes
 or withholds/delays Gate 2; autonomous agents never choose.**
