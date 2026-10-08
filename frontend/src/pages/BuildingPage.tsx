@@ -56,6 +56,10 @@ export function BuildingPage() {
   // retries of the SAME submission (ambiguous failures), regenerated
   // only after success/reset so the server can dedupe.
   const clientKeyRef = useRef(crypto.randomUUID());
+  // D8 R5 P2: snapshot of the payload bound to the CURRENT client key —
+  // the key is valid only for unchanged retries of a FAILED repair
+  // submission; any payload edit after a failure rotates it.
+  const attemptPayloadRef = useRef<string | null>(null);
 
   const locations = useQuery({
     queryKey: ["c1-locations"] as const,
@@ -81,18 +85,28 @@ export function BuildingPage() {
     setSaving(true);
     try {
       if (form.repair_needed) {
+        const payload = JSON.stringify([form, cause.trim()]);
+        if (attemptPayloadRef.current !== null
+            && attemptPayloadRef.current !== payload) {
+          // The previous attempt failed and the payload has since been
+          // edited: the old key belongs to the abandoned attempt.
+          clientKeyRef.current = crypto.randomUUID();
+        }
+        attemptPayloadRef.current = payload;
         await createBuildingRoundWithRepair(
           form, cause.trim(), clientKeyRef.current,
         );
       } else {
         await createBuildingRound({ ...form, issues_found: form.issues_found });
       }
-      // D8 R4 P2-4: rotate after EVERY successful save — a plain save
-      // abandons any in-flight repair attempt; reusing its key later
-      // would false-match (or spurious-conflict) if that attempt had
-      // actually committed. The key is retained ONLY across unchanged
-      // retries of a FAILED repair submission (the catch path below).
+      // D8 R4 P2-4 + R5 P2: rotate after EVERY successful save — a
+      // plain save abandons any in-flight repair attempt; reusing its
+      // key later would false-match (or spurious-conflict) if that
+      // attempt had actually committed. The attempt binding is cleared;
+      // the key is retained ONLY across unchanged retries of a FAILED
+      // repair submission (rotation on payload change, above).
       clientKeyRef.current = crypto.randomUUID();
+      attemptPayloadRef.current = null;
       toast("success", "บันทึกสำเร็จ");
       setForm({ ...form, findings: null, issues_found: false, repair_needed: false, note: null });
       setCause("");

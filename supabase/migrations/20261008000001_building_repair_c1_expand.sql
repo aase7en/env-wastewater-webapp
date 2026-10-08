@@ -365,15 +365,25 @@ BEGIN
                cancelled_at = now(),
                cancelled_reason = v_reason
          WHERE id = p_repair_id;
-        -- D8 R4 P1-3: a class-II row (flag flipped false during the
-        -- expand window) must not survive cancellation with the
-        -- invariant broken — the Gate-2 assertion counts it either way.
-        -- Restoration is idempotent for healthy rows (flags already
-        -- true); the marker lets these UPDATEs pass the contract guards.
+        -- D8 R4 P1-3 + R5 P1-3: a class-II row (flag flipped false
+        -- during the expand window) must not survive cancellation with
+        -- the invariant broken — and the Gate-2 assertions alone would
+        -- not catch a stripped PREMISE. Restore the complete trusted
+        -- premise the RPC originally wrote (repair_needed + issues_found
+        -- true); a missing location_id cannot be fabricated — reject for
+        -- explicit owner reconciliation instead. The marker lets these
+        -- UPDATEs pass the contract guards; any RAISE rolls the whole
+        -- cancellation back (no half-applied state).
+        IF EXISTS (SELECT 1 FROM building.inspection_round ir
+                    WHERE ir.id = v_linked AND ir.location_id IS NULL) THEN
+            RAISE EXCEPTION
+                'ENV_C1_CANCEL_PREMISE: linked round % lost its durable location during the expand window — explicit owner reconciliation required before cancellation', v_linked
+                USING ERRCODE = '23514';
+        END IF;
         UPDATE building.inspection_round ir
-           SET repair_needed = TRUE
+           SET repair_needed = TRUE, issues_found = TRUE
          WHERE ir.id = v_linked
-           AND ir.repair_needed IS NOT TRUE;
+           AND (ir.repair_needed IS NOT TRUE OR ir.issues_found IS NOT TRUE);
         PERFORM core.c1_rpc_end();
     EXCEPTION WHEN OTHERS THEN
         PERFORM core.c1_rpc_end();
@@ -458,15 +468,27 @@ CREATE OR REPLACE VIEW public.repair_request
 
 GRANT SELECT ON public.repair_request TO authenticated;
 
--- D8 R3 P1-5 + R4 P1-1: block ONLY the link column during the expand
--- window. Column-level REVOKE keeps every existing manual-repair
--- workflow working through the view (INSERT without the link, UPDATE
--- status on UNLINKED rows, reading-originated seeding, resolve) while
--- making it impossible for ANY caller — pending included — to forge an
--- inspection link before the contract triggers exist. (security_invoker
--- views check base-table column privileges, so a column revoke gates
--- the view too.)
-REVOKE INSERT (inspection_round_id), UPDATE (inspection_round_id)
-    ON core.repair_request FROM authenticated, anon, PUBLIC;
+-- D8 R3 P1-5 + R4 P1-1 + R5 P1-1/P1-2: narrow the table privileges.
+-- The base schema granted table-level INSERT/UPDATE/DELETE to
+-- authenticated; PostgreSQL privileges are ADDITIVE, so a column-level
+-- REVOKE alone cannot subtract that. The correct shape is: revoke the
+-- table grants, then re-grant ONLY the columns the manual-repair
+-- workflows use (INSERT without the link — manual and reading-origin
+-- seeding; UPDATE status/resolved_at — resolve). The link column and
+-- the RPC-owned cancellation fields stay ungranted, so NO caller can
+-- forge an inspection link or spoof cancellation before the contract
+-- triggers exist. DELETE is not re-granted at all: no client workflow
+-- deletes repairs, and clause 8 protects linked provenance (an
+-- RPC-created linked repair therefore cannot be deleted during the
+-- expand window either). security_invoker views check these same
+-- base-table column privileges, so the facade is gated identically.
+REVOKE INSERT, UPDATE, DELETE ON core.repair_request FROM authenticated;
+REVOKE ALL ON core.repair_request FROM anon, PUBLIC;
+GRANT INSERT (id, equipment_id, reading_id, reported_by, cause, status,
+              created_at, resolved_at)
+    ON core.repair_request TO authenticated;
+GRANT UPDATE (equipment_id, reading_id, reported_by, cause, status,
+              created_at, resolved_at)
+    ON core.repair_request TO authenticated;
 
 COMMIT;
