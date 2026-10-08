@@ -17,6 +17,13 @@ const FALSE_TOKENS = new Set(["false", "0", "no", "ไม่", "ไม่มี"
 
 export function parseBuildingImportBoolean(raw: unknown, column: string): boolean {
   if (typeof raw === "boolean") return raw;
+  // CSV dynamicTyping:true and XLSX numeric cells deliver canonical
+  // 0/1 as NUMBERS (D8 R3 P2-8) — accept exactly those two numbers.
+  if (typeof raw === "number") {
+    if (raw === 1) return true;
+    if (raw === 0) return false;
+    throw new Error(`คอลัมน์ ${column} ต้องเป็น true/false เท่านั้น`);
+  }
   if (typeof raw !== "string") {
     throw new Error(`คอลัมน์ ${column} ต้องเป็น true/false เท่านั้น`);
   }

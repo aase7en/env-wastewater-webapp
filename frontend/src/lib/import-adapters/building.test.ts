@@ -34,6 +34,12 @@ describe("parseBuildingImportBoolean", () => {
       expect(() => parseBuildingImportBoolean(t, "c")).toThrow();
     }
   });
+
+  it("accepts NUMERIC 0/1 from CSV dynamicTyping / XLSX cells (D8 R3 P2-8)", () => {
+    expect(parseBuildingImportBoolean(1, "c")).toBe(true);
+    expect(parseBuildingImportBoolean(0, "c")).toBe(false);
+    expect(() => parseBuildingImportBoolean(2, "c")).toThrow();
+  });
 });
 
 describe("buildingAdapter.mapRow", () => {
@@ -57,6 +63,12 @@ describe("buildingAdapter.mapRow", () => {
   it("regression: CSV 'false'/'0' strings parse as FALSE (the old defect)", () => {
     expect(mapRow({ issues_found: "false" }).issues_found).toBe(false);
     expect(mapRow({ repair_needed: "0" }).repair_needed).toBe(false);
+  });
+
+  it("regression: NUMERIC cells — issues_found=1 imports, repair_needed=1 rejected (clause 9)", () => {
+    expect(mapRow({ issues_found: 1 }).issues_found).toBe(true);
+    expect(() => mapRow({ repair_needed: 1 })).toThrow(/หน้า ตรวจอาคารสถานที่/);
+    expect(mapRow({ repair_needed: 0 }).repair_needed).toBe(false);
   });
 
   it("clause 9: imported repair-needed TRUE rows are rejected — never auto-issued", () => {

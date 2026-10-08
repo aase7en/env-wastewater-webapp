@@ -117,6 +117,7 @@ DECLARE
     v_inspector    text := NULLIF(btrim(COALESCE(p_inspector, '')), '');
     v_findings     text := NULLIF(btrim(COALESCE(p_findings, '')), '');
     v_equipment    uuid := p_equipment_id;
+    v_equip        uuid;
     v_round_type   text := COALESCE(NULLIF(btrim(COALESCE(p_round_type, '')), ''), 'monthly');
     v_severity     text := NULLIF(btrim(COALESCE(p_severity, '')), '');
     v_assigned_to  text := NULLIF(btrim(COALESCE(p_assigned_to, '')), '');
@@ -157,11 +158,13 @@ BEGIN
      WHERE rr.inspection_round_id = p_client_key;
 
     IF v_repair_id IS NOT NULL THEN
+        -- Linked pair already exists under this key.
         SELECT ir.* INTO r_round
           FROM building.inspection_round ir
          WHERE ir.id = p_client_key;
-        SELECT cause INTO v_cause FROM core.repair_request WHERE id = v_repair_id;
-        -- D8 R1 P1-5: compare the COMPLETE canonical payload.
+        SELECT cause, equipment_id INTO v_cause, v_equip FROM core.repair_request WHERE id = v_repair_id;
+        -- D8 R1 P1-5 + D8 R3 P2-7: compare the COMPLETE canonical payload
+        -- INCLUDING the existing repair's equipment association.
         IF r_round.round_date      IS DISTINCT FROM v_round_date
            OR r_round.location_id  IS DISTINCT FROM p_location_id
            OR r_round.inspector    IS DISTINCT FROM v_inspector
@@ -170,27 +173,40 @@ BEGIN
            OR r_round.round_type   IS DISTINCT FROM v_round_type
            OR r_round.severity     IS DISTINCT FROM v_severity
            OR r_round.assigned_to  IS DISTINCT FROM v_assigned_to
+           OR v_equip              IS DISTINCT FROM v_equipment
         THEN
             RAISE EXCEPTION 'ENV_C1_KEY_PAYLOAD_CONFLICT: this client key already exists with a different payload'
                 USING ERRCODE = '23505';
+        END IF;
+        -- D8 R3 P1-4: class-II reconciliation — a linked repair whose
+        -- inspection flag was flipped false by a direct writer during
+        -- the expand window. The sanctioned RPC RESTORES the premise
+        -- (clause 2) and the flag (clause 1) instead of returning with
+        -- the invariant still broken.
+        IF r_round.repair_needed IS NOT TRUE OR r_round.issues_found IS NOT TRUE
+           OR r_round.location_id IS NULL THEN
+            UPDATE building.inspection_round
+               SET issues_found = TRUE,
+                   repair_needed = TRUE,
+                   location_id = COALESCE(location_id, p_location_id)
+             WHERE id = p_client_key;
         END IF;
         RETURN QUERY SELECT v_round_id, v_repair_id, TRUE;
         RETURN;
     END IF;
 
-    -- D8 R1 P1-6: if the round already exists (e.g. created plain by the
-    -- old client, or a partially-retried chain), validate it before
-    -- linking: it must be a matching, qualified round. Only then attach.
+    -- D8 R1 P1-6 + D8 R3 P1-3: the round exists WITHOUT a linked repair
+    -- — either a plain old-client round, or exactly a Gate-2 class-I
+    -- orphan (repair_needed=true written directly by the old client,
+    -- which this RPC must be able to PROMOTE). Validate the payload and
+    -- the premise, then link — promoting when flagged.
     SELECT ir.* INTO r_round
       FROM building.inspection_round ir
      WHERE ir.id = p_client_key;
     IF FOUND THEN
-        IF r_round.repair_needed OR r_round.issues_found THEN
-            RAISE EXCEPTION 'ENV_C1_ROUND_STATE_CONFLICT: existing round % is already flagged; reconcile via owner-directed promotion, not resubmission', p_client_key
-                USING ERRCODE = '23514';
-        END IF;
         IF r_round.round_date  IS DISTINCT FROM v_round_date
-           OR r_round.location_id IS DISTINCT FROM p_location_id
+           OR (r_round.location_id IS NOT NULL
+               AND r_round.location_id IS DISTINCT FROM p_location_id)
            OR r_round.inspector IS DISTINCT FROM v_inspector
            OR r_round.findings  IS DISTINCT FROM v_findings
            OR r_round.round_type IS DISTINCT FROM v_round_type
@@ -199,6 +215,13 @@ BEGIN
         THEN
             RAISE EXCEPTION 'ENV_C1_KEY_PAYLOAD_CONFLICT: existing round under this client key has a different payload'
                 USING ERRCODE = '23505';
+        END IF;
+        -- Class-I promotion only from a sound premise (clause 2): the
+        -- orphan must have issues_found=true and a location, exactly as
+        -- a fresh RPC-created round would.
+        IF r_round.issues_found IS NOT TRUE OR r_round.location_id IS NULL THEN
+            RAISE EXCEPTION 'ENV_C1_PROMOTION_PREMISE: existing round % lacks the issues_found premise or durable location — fix the row before promotion', p_client_key
+                USING ERRCODE = '23514';
         END IF;
         UPDATE building.inspection_round
            SET issues_found = TRUE, repair_needed = TRUE
@@ -324,13 +347,24 @@ BEGIN
             USING ERRCODE = '23514';
     END IF;
 
-    UPDATE core.repair_request
-       SET status = 'cancelled',
-           resolved_at = COALESCE(resolved_at, now()),
-           cancelled_by = v_actor,
-           cancelled_at = now(),
-           cancelled_reason = v_reason
-     WHERE id = p_repair_id;
+    -- D8 R3 P1-1: this UPDATE is RPC-owned DML — run it under the
+    -- transaction-local marker so the contract-phase lifecycle guard
+    -- recognizes it as the sanctioned path (otherwise every UI
+    -- cancellation would be rejected post-Gate-2).
+    PERFORM core.c1_rpc_begin();
+    BEGIN
+        UPDATE core.repair_request
+           SET status = 'cancelled',
+               resolved_at = COALESCE(resolved_at, now()),
+               cancelled_by = v_actor,
+               cancelled_at = now(),
+               cancelled_reason = v_reason
+         WHERE id = p_repair_id;
+        PERFORM core.c1_rpc_end();
+    EXCEPTION WHEN OTHERS THEN
+        PERFORM core.c1_rpc_end();
+        RAISE;
+    END;
     -- The linked inspection keeps repair_needed = true and the link.
 END;
 $fn$;
@@ -396,11 +430,20 @@ GRANT EXECUTE ON FUNCTION public.cancel_building_repair(uuid, text)
     TO authenticated;
 
 -- ── Clause 10: recreate the facade so PostgREST sees the link ──────────
+--
+-- D8 R3 P1-5: the facade is READ-ONLY. All repair creation/mutation
+-- goes through the RPCs (clause 5); direct table/view DML is revoked
+-- from the start of the rollout (expand window included), so no
+-- caller — pending or otherwise — can forge inspection links while
+-- the contract-phase triggers do not yet exist. The old client only
+-- writes building.inspection_round (plain rounds), which stays allowed.
 
 CREATE OR REPLACE VIEW public.repair_request
     WITH (security_invoker = on) AS
     SELECT * FROM core.repair_request;
 
 GRANT SELECT ON public.repair_request TO authenticated;
+REVOKE INSERT, UPDATE, DELETE ON core.repair_request FROM authenticated;
+REVOKE INSERT, UPDATE, DELETE ON public.repair_request FROM anon, PUBLIC;
 
 COMMIT;

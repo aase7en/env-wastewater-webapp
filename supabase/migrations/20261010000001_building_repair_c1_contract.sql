@@ -166,21 +166,37 @@ BEGIN
             USING ERRCODE = '42501';
     END IF;
 
-    IF TG_OP = 'UPDATE' AND OLD.inspection_round_id IS NOT NULL THEN
-        IF NEW.inspection_round_id IS DISTINCT FROM OLD.inspection_round_id THEN
+    IF TG_OP = 'UPDATE' THEN
+        -- D8 R3 P1-2: linking an UNLINKED repair to a round directly is
+        -- the same forgery as a linked INSERT — the guard must cover
+        -- NULL -> non-NULL too, not just changes from an existing link.
+        IF OLD.inspection_round_id IS NULL
+           AND NEW.inspection_round_id IS NOT NULL THEN
             RAISE EXCEPTION
-                'ENV_C1_BAN_LINKED_REPAIR_UNLINK: a linked repair''s inspection_round_id is immutable (clause 8)'
+                'ENV_C1_BAN_LINKED_REPAIR_INSERT: direct updates cannot attach inspection_round_id — use the create_building_repair RPC (clause 5)'
                 USING ERRCODE = '42501';
         END IF;
-        -- D8 R2 P1-2: lifecycle status + cancellation audit fields on a
-        -- linked repair are RPC-owned; direct PATCHes bypass actor/reason.
-        IF NEW.status IS DISTINCT FROM OLD.status
-           OR NEW.cancelled_by IS DISTINCT FROM OLD.cancelled_by
-           OR NEW.cancelled_at IS DISTINCT FROM OLD.cancelled_at
-           OR NEW.cancelled_reason IS DISTINCT FROM OLD.cancelled_reason THEN
-            RAISE EXCEPTION
-                'ENV_C1_BAN_LINKED_REPAIR_LIFECYCLE: a linked repair''s status/cancellation fields change only via cancel_building_repair (clause 7)'
-                USING ERRCODE = '42501';
+        IF OLD.inspection_round_id IS NOT NULL THEN
+            IF NEW.inspection_round_id IS DISTINCT FROM OLD.inspection_round_id THEN
+                RAISE EXCEPTION
+                    'ENV_C1_BAN_LINKED_REPAIR_UNLINK: a linked repair''s inspection_round_id is immutable (clause 8)'
+                    USING ERRCODE = '42501';
+            END IF;
+            -- D8 R2 P1-2 + D8 R3 P1-6: lifecycle status, cancellation
+            -- audit fields, reporter, and creation/resolution timestamps
+            -- on a linked repair are RPC-owned; direct PATCHes bypass
+            -- actor/reason and spoof provenance.
+            IF NEW.status IS DISTINCT FROM OLD.status
+               OR NEW.cancelled_by IS DISTINCT FROM OLD.cancelled_by
+               OR NEW.cancelled_at IS DISTINCT FROM OLD.cancelled_at
+               OR NEW.cancelled_reason IS DISTINCT FROM OLD.cancelled_reason
+               OR NEW.reported_by IS DISTINCT FROM OLD.reported_by
+               OR NEW.created_at IS DISTINCT FROM OLD.created_at
+               OR NEW.resolved_at IS DISTINCT FROM OLD.resolved_at THEN
+                RAISE EXCEPTION
+                    'ENV_C1_BAN_LINKED_REPAIR_LIFECYCLE: a linked repair''s lifecycle, reporter, and timestamp fields change only via the sanctioned RPCs (clauses 6-7)'
+                    USING ERRCODE = '42501';
+            END IF;
         END IF;
     END IF;
 
