@@ -20,6 +20,18 @@
 
 ## Checkpoint
 
+- 2026-10-08 (D6+D7 done, commits `2fddeb5`+`abbb555`): BuildingPage
+  truthful UI (wrench/status ONLY from the durable link; legacy
+  flag-only honest; linked rows undeletable; cause+location client
+  gates; RPC submit w/ stable client key + double-submit lock;
+  a11y/mobile incl. 360/390/430 no overflow) + sw-register reload
+  wiring + sw.js v2 bump; focused E2E 6/6 green; full battery green
+  (Vitest 25/364, tsc, lint 0, pytest 388+491 subtests, 14 typed
+  live-window skips). ALL CODE NODES D2–D7 COMPLETE. Next: D8
+  independent cross-model review (GPT-6.1 Sol preferred → GPT-5.6 Sol
+  fallback) of the frozen exact SHA covering BOTH migrations + client
+  + wiring + tests; then the compact human Gate-1 ask (exact expand
+  SQL + rollback + postflight) — LIVE application never autonomous.
 - 2026-10-08 (D4+D5 done, commit `d8fd815`): building.ts gains the
   linked-repair embed + createBuildingRoundWithRepair() RPC wrapper
   (stable client key); repair.ts exposes read-only
