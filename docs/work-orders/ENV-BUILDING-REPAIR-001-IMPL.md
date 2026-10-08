@@ -80,17 +80,24 @@ the clause-1 invariant in BOTH directions — (i) ZERO
 window; FK/uniqueness cannot see this cross-table mismatch) — any
 violation aborts the whole migration with a typed error,
 self-defending against the preflight race since legacy direct writes
-remain enabled until this commit; (3) installs the clause-5
-direct-write ban as a HARD ban: direct REST/view writes that would
-create or update `repair_needed=true` are rejected with a clearly
-readable error and the rejected attempt is audit-logged. (R3 rounds
-4–5: a normalizing-trigger compatibility option was analyzed and is
-INFEASIBLE — the legacy direct write lacks the clause-2 mandatory
-values (explicit cause, issues_found premise, durable location) and
-carries no stable retry key, so a trigger would have to fabricate
-data, reject anyway, or lose idempotency; the hard ban is the only
-contract-faithful path.) No standalone preflight is trusted for
-correctness.
+remain enabled until this commit; (3) installs a DURABLE bidirectional
+direct-write ban (enforced by triggers on `building.inspection_round`,
+not just a one-time assertion — R3 round 6): (a) direct REST/view
+writes that would create or update `repair_needed=true` outside the
+RPC are rejected with a clearly readable error and the rejected
+attempt is audit-logged; (b) direct writes that would flip
+`repair_needed` from true to false on a LINKED inspection are likewise
+rejected and audit-logged — clause 7 reserves true→false for the
+explicit cancellation RPC (actor, time, reason). D2's RED tests cover
+BOTH rejection directions post-contract (a direct true-set and a direct
+linked true→false flip must both fail with readable errors). (R3
+rounds 4–5: a normalizing-trigger compatibility option was analyzed
+and is INFEASIBLE — the legacy direct write lacks the clause-2
+mandatory values (explicit cause, issues_found premise, durable
+location) and carries no stable retry key, so a trigger would have to
+fabricate data, reject anyway, or lose idempotency; the hard ban is
+the only contract-faithful path.) No standalone preflight is trusted
+for correctness.
 D4 Building data-layer RED→GREEN (`frontend/src/lib/building.ts`,
 `repair.ts`: RPC path replaces direct insert; select includes the link).
 D5 import parser/promotion RED→GREEN (`frontend/src/lib/import-adapters/building.ts`
