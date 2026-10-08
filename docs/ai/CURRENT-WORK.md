@@ -270,6 +270,7 @@ exact-SHA independent review and merge into `main`.
           "frontend/src/pages/BuildingPage.tsx",
           "frontend/src/lib/import-adapters/building.ts",
           "frontend/src/lib/import-adapters/building.test.ts",
+          "frontend/src/lib/sw-register.ts",
           "frontend/src/pages/BulkImportPage.tsx",
           "frontend/src/components/repair/RepairRequestModal.tsx",
           "frontend/tests/e2e/building-repair.spec.ts",

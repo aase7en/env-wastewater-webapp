@@ -39,7 +39,7 @@ activated) remain true throughout this lane.
 
 Compensating controls: this reviewed claim transition with predecessor
 fences; the packet's 11 non-negotiable clauses; RED-first contract tests
-(D2) before any migration exists; single-migration scope; forbidden-scope
+(D2) before any migration exists; two-migration expand/contract scope (paths exact in the registry); forbidden-scope
 locks (Operations surface, env-int, guard/autonomy scripts, data, .env);
 independent exact-SHA cross-model review before merge; expected-head merge
 + post-main verification; LIVE ENV_DB application held at a
@@ -66,8 +66,14 @@ stable client key, server-derived `reported_by` via `auth.uid()`, RLS
 alignment, locked `search_path` if definer, revoke/grant, facade view
 recreation, audit. **No direct-write ban in this phase** — the
 currently deployed client (direct insert in `building.ts:42-47`) must
-keep working unchanged after expand applies. LIVE application =
-HUMAN_AUTHORIZATION_REQUIRED Gate 1 (below).
+keep working unchanged after expand applies.
+D3b CONTRACT migration — authored NOW, alongside D3a (so D8's single
+exact-SHA review covers BOTH migration files and all code; only its
+LIVE application is deferred): author
+`supabase/migrations/20261010000001_building_repair_c1_contract.sql`
+enforcing the clause-5 ban (direct REST/view writes can no longer
+create or update `repair_needed=true` outside the invariant-preserving
+RPC) plus any residual link constraints.
 D4 Building data-layer RED→GREEN (`frontend/src/lib/building.ts`,
 `repair.ts`: RPC path replaces direct insert; select includes the link).
 D5 import parser/promotion RED→GREEN (`frontend/src/lib/import-adapters/building.ts`
@@ -80,27 +86,38 @@ D6 minimal truthful Building UX + mobile/a11y RED→GREEN (`BuildingPage.tsx`,
 `RepairRequestModal.tsx`: wrench/"แจ้งซ่อมแล้ว" renders ONLY from the durable
 link; explicit repair cause field; 360/390/430 px; ≥44px targets; programmatic
 labels; keyboard flow; no clipped overflow; persistent/focused conditional
-errors; value-preserving retry).
+errors; value-preserving retry) — AND stale-client elimination wiring in
+`frontend/src/lib/sw-register.ts`: the existing `sw-update-available`
+CustomEvent (currently dispatched with NO listener) gets a listener that
+surfaces the update and reloads on `controllerchange`, so deployed clients
+take up the new bundle promptly instead of running the old direct-insert
+path indefinitely against the cache-forever service worker.
 D7 focused + full Vitest/TypeScript/lint/build/Playwright
 (`frontend/tests/e2e/building-repair.spec.ts`).
 D8 independent Standards + Spec/UX + security exact-SHA review (R3
-cross-model route).
-D9 PR/CI/merge — ONLY after Gate 1 (expected-head; supervisor execution
-per standing owner authorization) — Pages then serves the RPC client.
-D9b quiescence/monitoring window for cached old clients: after deploy,
-observe legacy direct-write attempts (audit/monitoring query defined in
-the migration postflight); window = at least 48h AND zero observed
-legacy repair-needed write attempts from the old path before
-proceeding (staff usage is periodic, not realtime; the app is a
-refreshed SPA, so a short measured window suffices — evidence recorded,
-never assumed).
-D3b CONTRACT migration — author
-`supabase/migrations/20261010000001_building_repair_c1_contract.sql`
-enforcing the clause-5 ban (direct REST/view writes can no longer
-create or update `repair_needed=true` outside the invariant-preserving
-RPC) plus any residual constraints. LIVE application =
-HUMAN_AUTHORIZATION_REQUIRED Gate 2 — presented only after D9b's
-evidence threshold is met.
+cross-model route) — covers BOTH migration files, the client, the
+sw-register wiring, and the tests at one frozen SHA.
+Gate 1 → D9 PR/CI/merge — ONLY after Gate 1 (expected-head; supervisor
+execution per standing owner authorization) — Pages then serves the RPC
+client with the forced-update wiring.
+D9b quiescence/monitoring window for cached old clients — POSITIVE
+evidence, not absence of traffic: (a) the deployed bundle provably
+contains the sw-update reload wiring; (b) at least one RPC-path
+Building submission observed (new client active in production); (c)
+≥48h elapsed since deploy; (d) zero legacy direct-write repair-needed
+attempts observed in the window (audit/monitoring query defined in the
+migration postflight). All four recorded, never assumed.
+Gate 2 preflight — orphan reconciliation: old-client submissions with
+`repair_needed=true` between Gate 1 and D9b succeed by design yet have
+no linked repair (violating clause 1). Before Gate 2, a deterministic
+query must return ZERO inspection rows with `repair_needed=true` and no
+linked repair. If any exist, the Gate-2 ask lists each one explicitly
+for owner-directed promotion through the same server RPC (the packet's
+explicit operator-promotion path — never heuristic backfill, never
+silent rewriting). Gate 2 cannot proceed while any orphan is
+unreconciled.
+Gate 2 → apply the CONTRACT migration (from the reviewed+MERGED main
+blob; applied-file blob must equal merged main, per repo precedent).
 D10 exact-main CI/E2E/Pages + live DB postflight + deployed smoke.
 D11 SSoT closeout + next-node selection.
 
@@ -111,22 +128,27 @@ D11 SSoT closeout + next-node selection.
   authorization** (HUMAN_AUTHORIZATION_REQUIRED): one compact ask with
   the exact migration SQL, rollback plan, and postflight checks.
 - **Gate 2 — LIVE ENV_DB application of the CONTRACT migration**: same
-  form; presented only after the new client is deployed (D9) AND the D9b
-  quiescence evidence threshold (≥48h + zero legacy direct-write
-  attempts) is recorded.
-- **Rollout ordering (expand/contract — R3 rounds 1+2): code-before-schema
+  form; presented only after ALL of: new client deployed (D9), the four
+  D9b positive-evidence items, and the Gate-2 preflight showing zero
+  unlinked `repair_needed=true` rows (or every orphan explicitly
+  owner-promoted via the RPC). The applied file must be the reviewed,
+  merged-main blob.
+- **Rollout ordering (expand/contract — R3 rounds 1–3): code-before-schema
   breaks the new client; schema-with-ban-before-code breaks the old
-  client.** Therefore: expand is purely additive and safe under the old
-  client; the implementation PR merges only after Gate 1; the direct-write
-  ban lands only via Gate 2 after deploy + measured quiescence. Autonomous
-  work proceeds through D8, the prepared Gate-1 ask, and (after D9/D9b
-  evidence) the prepared Gate-2 ask; no gate is crossed autonomously.
+  client; absence-of-traffic proves nothing about stale clients; and
+  unreviewed SQL never touches production.** Therefore: BOTH migrations
+  are authored and reviewed (D8) and merged (D9) as one exact SHA; only
+  their APPLICATION is split — expand at Gate 1 (before merge/deploy),
+  contract at Gate 2 (after deploy + positive quiescence + orphan
+  reconciliation). No gate is crossed autonomously.
 - No real environmental writes in tests; no PHI; `.env`/`data/**` never
   touched; user-facing dates พ.ศ.
 
 ## Mutable scope (exactly)
 
-As registered in the claim (14 paths). Everything else forbidden — notably
+As registered in the claim (15 paths — including
+`frontend/src/lib/sw-register.ts` for the stale-client reload wiring).
+Everything else forbidden — notably
 the Operations surface (OperationsPage/operations.spec — read-only reuse of
 `repair.ts` changes must not alter that page's behavior), env-int, guard and
 autonomy scripts, `data/**`, `.env`.
