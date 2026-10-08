@@ -166,7 +166,12 @@ BEGIN
         -- D8 R1 P1-5 + D8 R3 P2-7: compare the COMPLETE canonical payload
         -- INCLUDING the existing repair's equipment association.
         IF r_round.round_date      IS DISTINCT FROM v_round_date
-           OR r_round.location_id  IS DISTINCT FROM p_location_id
+           -- D8 R4 P1-2: a NULL stored location on a linked pair is a
+           -- RESTORABLE expand-window injury, not a payload conflict —
+           -- the restoration below refills it from this retry's value.
+           -- A non-NULL mismatch stays a conflict.
+           OR (r_round.location_id IS NOT NULL
+               AND r_round.location_id IS DISTINCT FROM p_location_id)
            OR r_round.inspector    IS DISTINCT FROM v_inspector
            OR r_round.findings     IS DISTINCT FROM v_findings
            OR v_cause              IS DISTINCT FROM btrim(p_cause)
@@ -360,6 +365,15 @@ BEGIN
                cancelled_at = now(),
                cancelled_reason = v_reason
          WHERE id = p_repair_id;
+        -- D8 R4 P1-3: a class-II row (flag flipped false during the
+        -- expand window) must not survive cancellation with the
+        -- invariant broken — the Gate-2 assertion counts it either way.
+        -- Restoration is idempotent for healthy rows (flags already
+        -- true); the marker lets these UPDATEs pass the contract guards.
+        UPDATE building.inspection_round ir
+           SET repair_needed = TRUE
+         WHERE ir.id = v_linked
+           AND ir.repair_needed IS NOT TRUE;
         PERFORM core.c1_rpc_end();
     EXCEPTION WHEN OTHERS THEN
         PERFORM core.c1_rpc_end();
@@ -443,7 +457,16 @@ CREATE OR REPLACE VIEW public.repair_request
     SELECT * FROM core.repair_request;
 
 GRANT SELECT ON public.repair_request TO authenticated;
-REVOKE INSERT, UPDATE, DELETE ON core.repair_request FROM authenticated;
-REVOKE INSERT, UPDATE, DELETE ON public.repair_request FROM anon, PUBLIC;
+
+-- D8 R3 P1-5 + R4 P1-1: block ONLY the link column during the expand
+-- window. Column-level REVOKE keeps every existing manual-repair
+-- workflow working through the view (INSERT without the link, UPDATE
+-- status on UNLINKED rows, reading-originated seeding, resolve) while
+-- making it impossible for ANY caller — pending included — to forge an
+-- inspection link before the contract triggers exist. (security_invoker
+-- views check base-table column privileges, so a column revoke gates
+-- the view too.)
+REVOKE INSERT (inspection_round_id), UPDATE (inspection_round_id)
+    ON core.repair_request FROM authenticated, anon, PUBLIC;
 
 COMMIT;

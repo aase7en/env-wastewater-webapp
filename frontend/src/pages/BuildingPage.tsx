@@ -84,10 +84,15 @@ export function BuildingPage() {
         await createBuildingRoundWithRepair(
           form, cause.trim(), clientKeyRef.current,
         );
-        clientKeyRef.current = crypto.randomUUID(); // fresh key for the next submission
       } else {
         await createBuildingRound({ ...form, issues_found: form.issues_found });
       }
+      // D8 R4 P2-4: rotate after EVERY successful save — a plain save
+      // abandons any in-flight repair attempt; reusing its key later
+      // would false-match (or spurious-conflict) if that attempt had
+      // actually committed. The key is retained ONLY across unchanged
+      // retries of a FAILED repair submission (the catch path below).
+      clientKeyRef.current = crypto.randomUUID();
       toast("success", "บันทึกสำเร็จ");
       setForm({ ...form, findings: null, issues_found: false, repair_needed: false, note: null });
       setCause("");
