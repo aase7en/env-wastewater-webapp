@@ -7,18 +7,26 @@
 -- reconciliation. The applied file must be the reviewed merged-main
 -- blob.
 --
--- One transaction (R3 rounds 5–8):
+-- One transaction (R3 rounds 5–8 + D8 R1):
 --   (1) ACCESS EXCLUSIVE locks on both tables;
---   (2) re-assert clause 1 in BOTH directions (typed abort on any
---       violation — self-defending against the preflight race);
---   (3) install the DURABLE bidirectional direct-write ban triggers:
---       direct true-set outside the RPC and direct linked true→false
---       are both rejected with pinned SQLSTATE '42501' and greppable
---       messages (captured durably in the PostgreSQL server log; an
---       in-transaction audit insert would roll back with the rejected
---       statement). There is NO true→false route: clause-7
---       cancellation preserves the true flag and the link, changing
---       only the repair lifecycle status.
+--   (2) re-assert clause 1 in BOTH directions (typed aborts);
+--   (3) install the DURABLE bidirectional direct-write ban triggers on
+--       building.inspection_round — sanctioned RPC writes are marked
+--       with a TRANSACTION-LOCAL trusted setting set by the RPC itself
+--       (D8 R1 P1-3: pg_trigger_depth() does NOT distinguish
+--       RPC-originated row writes — function-call depth does not raise
+--       trigger depth — so depth was replaced by an explicit marker);
+--   (4) repair-side provenance protection (D8 R1 P1-7): a linked
+--       repair cannot be deleted or have its inspection_round_id
+--       changed/unset outside the RPC path — direct REST mutation
+--       raises with a pinned SQLSTATE, so a true inspection can never
+--       be orphaned by a direct write.
+--
+-- Rejections use pinned SQLSTATE '42501' and greppable ENV_C1_BAN_*
+-- messages (captured durably in the PostgreSQL server log; an
+-- in-transaction audit insert would roll back with the rejected
+-- statement). There is NO true→false route: clause-7 cancellation
+-- (core.cancel_building_repair) preserves the flag and the link.
 
 BEGIN;
 
@@ -65,13 +73,10 @@ $assert$;
 
 -- ── (3) Durable bidirectional direct-write ban (clause 5) ──────────────
 --
--- Writes made from inside core.create_building_repair (trigger depth >
--- 1) pass: the RPC IS the invariant-preserving path. Direct REST/view
--- writes (trigger depth 1) that would set the flag true — on either
--- INSERT or UPDATE — or flip a linked round's flag away from true are
--- rejected. Nothing here, and nothing the RPC exposes, ever clears the
--- flag on a linked round: cancellation changes the repair lifecycle
--- status only.
+-- The sanctioned RPCs set a transaction-local marker
+-- (env_c1.rpc_write = 'on') before their DML and clear it after; the
+-- trigger honors ONLY that marker. Direct REST/view writes never set
+-- it and are rejected in both directions.
 
 CREATE OR REPLACE FUNCTION building.fn_c1_guard_repair_needed()
 RETURNS trigger
@@ -80,20 +85,20 @@ SECURITY DEFINER
 SET search_path = building, core, public, pg_temp
 AS $fn$
 BEGIN
-    IF pg_trigger_depth() > 1 THEN
-        RETURN NEW;  -- writes performed by core.create_building_repair
+    IF current_setting('env_c1.rpc_write', true) = 'on' THEN
+        RETURN NEW;  -- sanctioned core.create_building_repair path
     END IF;
 
     IF TG_OP = 'INSERT' AND NEW.repair_needed IS TRUE THEN
         RAISE EXCEPTION
-            'ENV_C1_BAN_DIRECT_TRUE_SET: direct inserts cannot set repair_needed — use core.create_building_repair'
+            'ENV_C1_BAN_DIRECT_TRUE_SET: direct inserts cannot set repair_needed — use the create_building_repair RPC'
             USING ERRCODE = '42501';
     END IF;
 
     IF TG_OP = 'UPDATE' THEN
         IF OLD.repair_needed IS NOT TRUE AND NEW.repair_needed IS TRUE THEN
             RAISE EXCEPTION
-                'ENV_C1_BAN_DIRECT_TRUE_SET: direct updates cannot set repair_needed — use core.create_building_repair'
+                'ENV_C1_BAN_DIRECT_TRUE_SET: direct updates cannot set repair_needed — use the create_building_repair RPC'
                 USING ERRCODE = '42501';
         END IF;
         IF OLD.repair_needed IS TRUE AND NEW.repair_needed IS NOT TRUE THEN
@@ -113,11 +118,49 @@ CREATE TRIGGER trg_c1_guard_repair_needed
     FOR EACH ROW
     EXECUTE FUNCTION building.fn_c1_guard_repair_needed();
 
-COMMENT ON FUNCTION building.fn_c1_guard_repair_needed() IS
-    'ENV-BUILDING-REPAIR-001 C1 clause 5: durable bidirectional direct-'
-    'write ban. Direct true-set and direct linked true→false both raise '
-    'SQLSTATE 42501 with greppable ENV_C1_BAN_* messages (server-log '
-    'capture; transactional audit of rolled-back writes is impossible '
-    'by design). RPC-originated writes pass via trigger depth.';
+-- (Marker helpers core.c1_rpc_begin/c1_rpc_end and the self-wrapping
+--  core.create_building_repair / core.cancel_building_repair are defined
+--  in the EXPAND migration; the triggers above honor the marker.)
+
+-- ── (4) Repair-side provenance protection (D8 R1 P1-7) ────────────────
+
+CREATE OR REPLACE FUNCTION core.fn_c1_guard_repair_link()
+RETURNS trigger
+LANGUAGE plpgsql
+SECURITY DEFINER
+SET search_path = core, building, public, pg_temp
+AS $fn$
+BEGIN
+    IF current_setting('env_c1.rpc_write', true) = 'on' THEN
+        RETURN NEW;  -- sanctioned RPC path (create/cancel)
+    END IF;
+
+    IF TG_OP = 'DELETE' AND OLD.inspection_round_id IS NOT NULL THEN
+        RAISE EXCEPTION
+            'ENV_C1_BAN_LINKED_REPAIR_DELETE: a linked repair cannot be deleted — its provenance is protected (clause 8)'
+            USING ERRCODE = '42501';
+    END IF;
+
+    IF TG_OP = 'UPDATE' AND OLD.inspection_round_id IS NOT NULL
+       AND NEW.inspection_round_id IS DISTINCT FROM OLD.inspection_round_id THEN
+        RAISE EXCEPTION
+            'ENV_C1_BAN_LINKED_REPAIR_UNLINK: a linked repair''s inspection_round_id is immutable (clause 8)'
+            USING ERRCODE = '42501';
+    END IF;
+
+    RETURN NEW;
+END;
+$fn$;
+
+DROP TRIGGER IF EXISTS trg_c1_guard_repair_link ON core.repair_request;
+CREATE TRIGGER trg_c1_guard_repair_link
+    BEFORE DELETE OR UPDATE OF inspection_round_id ON core.repair_request
+    FOR EACH ROW
+    EXECUTE FUNCTION core.fn_c1_guard_repair_link();
+
+-- Clause 6 RLS alignment: repair_request + inspection_round already
+-- carry OAUTH-4 fn_is_staff_or_admin policies (verified on main); the
+-- direct-write ban triggers above close the remaining provenance holes
+-- on top of RLS.
 
 COMMIT;

@@ -98,8 +98,9 @@ test.describe("Building C1 — truthful linked-repair UI", () => {
     await mockBuilding(authed);
     await authed.goto("/building");
 
-    // Linked row: wrench chip + exact status text from the repair row.
-    await expect(authed.getByText("🔧 แจ้งซ่อมแล้ว · รอดำเนินการ")).toBeVisible();
+    // Linked row: wrench chip + REAL request id + exact status text.
+    await expect(authed.getByLabel(/ใบแจ้งซ่อม cccccccc สถานะ รอดำเนินการ/)).toBeVisible();
+    await expect(authed.getByText(/#cccccccc/)).toBeVisible();
 
     // Legacy flag-only row: honest absence, never a fabricated wrench.
     await expect(authed.getByText("ยังไม่มีใบแจ้งซ่อม (รายการเดิม)")).toBeVisible();
@@ -138,8 +139,10 @@ test.describe("Building C1 — truthful linked-repair UI", () => {
     await authed.getByText("ต้องแจ้งซ่อม", { exact: true }).click();
     await authed.getByRole("button", { name: "บันทึก" }).click();
 
-    await expect(authed.getByText("กรุณาระบุสาเหตุที่ต้องซ่อม")).toBeVisible();
-    await expect(authed.getByText("การแจ้งซ่อมต้องระบุสถานที่")).toBeVisible();
+    await expect(authed.locator("p:not(.sr-only)").filter({ hasText: "กรุณาระบุสาเหตุที่ต้องซ่อม" })).toBeVisible();
+    await expect(authed.locator("#bl-cause-error")).toBeAttached(); // SR association
+    await expect(authed.locator("p:not(.sr-only)").filter({ hasText: "การแจ้งซ่อมต้องระบุสถานที่" })).toBeVisible();
+    await expect(authed.locator("#bl-location-error")).toBeAttached();
     expect(h.rpcCalls()).toBe(0);
   });
 
@@ -177,6 +180,27 @@ test.describe("Building C1 — truthful linked-repair UI", () => {
 
     expect(keys).toHaveLength(2);
     expect(keys[0]).toBe(keys[1]); // same stable client key across the retry
+  });
+
+  test("clause 7: cancel records reason, keeps link, flips status only", async ({ authed }) => {
+    let cancelled = false;
+    await authed.route(ROUND_ROUTE, (r) =>
+      r.fulfill({ status: 200, contentType: "application/json", body: JSON.stringify(rounds()) }));
+    await authed.route(LOC_ROUTE, (r) =>
+      r.fulfill({ status: 200, contentType: "application/json", body: JSON.stringify(LOCATIONS) }));
+    await authed.route("**/rest/v1/rpc/cancel_building_repair", (r) => {
+      cancelled = true;
+      return r.fulfill({ status: 200, contentType: "application/json", body: "null" });
+    });
+
+    await authed.goto("/building");
+    await authed.getByRole("button", { name: "ยกเลิกใบแจ้งซ่อม…" }).click();
+    await authed.getByLabel(/เหตุผลการยกเลิกใบแจ้งซ่อม/).fill("ซ่อมเองได้ ไม่ต้องส่งช่าง");
+    await authed.getByRole("button", { name: "ยืนยันยกเลิก" }).click();
+    await expect(authed.getByText(/ยกเลิกใบแจ้งซ่อมแล้ว/)).toBeVisible({ timeout: 8000 });
+    expect(cancelled).toBe(true);
+    // The wrench chip + id remain visible — provenance preserved.
+    await expect(authed.getByText(/#cccccccc/)).toBeVisible();
   });
 
   test("A13-style: 360/390/430 have no horizontal document overflow", async ({ authed }) => {

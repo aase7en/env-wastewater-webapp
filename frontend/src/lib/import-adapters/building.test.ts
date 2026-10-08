@@ -5,8 +5,9 @@
  * Mirrors the D2 contract in scripts/building_repair_contract.py:
  * only the canonical Thai/English token sets parse; the historical
  * truthy-coercion defect ("false"/"0" read as true) is forbidden;
- * unrecognized tokens throw the row (preview-visible, explicit
- * operator promotion only — never silent).
+ * unrecognized tokens throw the row. Clause 9: imported operational
+ * TRUE rows are rejected (preview-visible) — promotion goes through
+ * the BuildingPage RPC, never a direct import.
  */
 import { describe, expect, it } from "vitest";
 import { buildingAdapter, parseBuildingImportBoolean } from "./building";
@@ -44,7 +45,7 @@ describe("buildingAdapter.mapRow", () => {
 
   it("parses the Thai columns strictly", () => {
     expect(mapRow({ พบปัญหา: "ไม่มี", ต้องซ่อม: "ไม่" }).repair_needed).toBe(false);
-    expect(mapRow({ ต้องซ่อม: "ใช่" }).repair_needed).toBe(true);
+    expect(mapRow({ ต้องซ่อม: "ไม่มี" }).repair_needed).toBe(false);
   });
 
   it("throws the row when the boolean token is unrecognized", () => {
@@ -56,5 +57,17 @@ describe("buildingAdapter.mapRow", () => {
   it("regression: CSV 'false'/'0' strings parse as FALSE (the old defect)", () => {
     expect(mapRow({ issues_found: "false" }).issues_found).toBe(false);
     expect(mapRow({ repair_needed: "0" }).repair_needed).toBe(false);
+  });
+
+  it("clause 9: imported repair-needed TRUE rows are rejected — never auto-issued", () => {
+    for (const v of ["true", "1", "ใช่", "มี"]) {
+      expect(() => mapRow({ repair_needed: v })).toThrow(/หน้า ตรวจอาคารสถานที่/);
+    }
+  });
+
+  it("issues_found TRUE without repair_needed remains importable (no repair implied)", () => {
+    const row = mapRow({ issues_found: "true" });
+    expect(row.issues_found).toBe(true);
+    expect(row.repair_needed).toBe(false);
   });
 });

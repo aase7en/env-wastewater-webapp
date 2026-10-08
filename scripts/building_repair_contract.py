@@ -121,13 +121,27 @@ def contract_locks_tables(sql: str) -> bool:
 
 
 def contract_asserts_both_directions(sql: str) -> bool:
-    """R3 rounds 5–6: ONE transaction re-asserts clause 1 BOTH ways."""
+    """R3 rounds 5–6 + D8 R1 P2: ONE transaction re-asserts clause 1 BOTH
+    ways — checked STRUCTURALLY: each direction's anti-join shape AND its
+    typed abort marker must be present (a bare RAISE anywhere no longer
+    satisfies this)."""
     s = strip_sql_comments(sql)
-    return (
-        "raise" in s.lower()
-        and "repair_needed" in s.lower()
-        and "inspection_round_id" in s.lower()
+    class_i = (
+        "ENV_C1_ASSERT_CLASS_I" in s
+        and re.search(
+            r"repair_needed\s+is\s+true.*not\s+exists\s*\(\s*select\s+1\s+from\s+core\.repair_request",
+            s, re.I | re.S,
+        ) is not None
     )
+    class_ii = (
+        "ENV_C1_ASSERT_CLASS_II" in s
+        and re.search(
+            r"rr\.inspection_round_id\s+is\s+not\s+null.*exists\s*\(\s*select\s+1\s+from\s+building\.inspection_round",
+            s, re.I | re.S,
+        ) is not None
+        and re.search(r"ir\.repair_needed\s+is\s+not\s+true", s, re.I) is not None
+    )
+    return class_i and class_ii
 
 
 def contract_bidirectional_ban(sql: str) -> bool:

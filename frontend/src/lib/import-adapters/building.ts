@@ -53,9 +53,19 @@ export const buildingAdapter: Adapter<{
       })(),
       repair_needed: (() => {
         const v = raw["repair_needed"] ?? raw["ต้องซ่อม"];
-        return v === undefined || v === null || v === ""
-          ? false
-          : parseBuildingImportBoolean(v, "ต้องซ่อม/repair_needed");
+        if (v === undefined || v === null || v === "") return false;
+        const parsed = parseBuildingImportBoolean(v, "ต้องซ่อม/repair_needed");
+        // ENV-BUILDING-REPAIR-001 C1 clause 9: imported operational TRUE
+        // rows are NEVER auto-issued. They are rejected here so the row
+        // lands in the preview error list; an operator promotes them
+        // through the SAME server command (BuildingPage submit ->
+        // create_building_repair RPC) — no silent promotion, no orphan.
+        if (parsed === true) {
+          throw new Error(
+            "แถวนี้ระบุ 'ต้องซ่อม' — ระบบไม่นำเข้าอัตโนมัติ กรุณาบันทึกผ่านหน้า ตรวจอาคารสถานที่ เพื่อสร้างใบแจ้งซ่อมที่เชื่อมโยงถูกต้อง",
+          );
+        }
+        return false;
       })(),
       round_type: str(raw["round_type"] ?? raw["type"]) ?? "monthly",
     };
