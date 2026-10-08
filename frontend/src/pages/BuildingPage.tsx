@@ -109,7 +109,12 @@ export function BuildingPage() {
     const reason = cancelReason.trim();
     if (!reason) { toast("error", "กรุณาระบุเหตุผลการยกเลิก"); return; }
     try {
-      await supabase.rpc("cancel_building_repair", { p_repair_id: repairId, p_reason: reason });
+      // D8 R2 P1-7: PostgREST resolves RPC failures with { error }, not a
+      // throw — check it or the page would show success on failure.
+      const { error } = await supabase.rpc("cancel_building_repair", {
+        p_repair_id: repairId, p_reason: reason,
+      });
+      if (error) throw new Error(error.message);
       toast("success", "ยกเลิกใบแจ้งซ่อมแล้ว (คงประวัติการแจ้งซ่อม)");
       setCancellingId(null); setCancelReason(""); refresh();
     } catch (e) { toast("error", `ผิดพลาด: ${(e as Error).message}`); }
@@ -216,7 +221,7 @@ export function BuildingPage() {
                         {linked ? (
                           <span
                             className="inline-flex items-center gap-1 rounded-full border border-amber-400/40 bg-amber-400/10 px-2 py-0.5 text-xs font-thai text-amber-300"
-                            aria-label={`แจ้งซ่อมแล้ว ใบแจ้งซ่อม ${linked.id.slice(0, 8)} สถานะ ${REPAIR_STATUS_LABELS[linked.status] ?? linked.status}`}
+                            aria-label={`แจ้งซ่อมแล้ว ใบแจ้งซ่อม ${linked.id} สถานะ ${REPAIR_STATUS_LABELS[linked.status] ?? linked.status}`}
                           >
                             🔧 แจ้งซ่อมแล้ว · #{linked.id.slice(0, 8)} · {REPAIR_STATUS_LABELS[linked.status] ?? linked.status}
                           </span>

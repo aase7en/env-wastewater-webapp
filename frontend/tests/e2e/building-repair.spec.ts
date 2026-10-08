@@ -81,13 +81,16 @@ async function mockBuilding(page: import("@playwright/test").Page, roundRows = r
   });
   await page.route(RPC_ROUTE, (r) => {
     rpcCalls += 1;
+    // PostgREST serializes RETURNS TABLE as an ARRAY of rows (D8 R2 P2-9).
     return r.fulfill({
       status: 200, contentType: "application/json",
-      body: JSON.stringify({
-        inspection_round_id: "dddddddd-0000-4000-8000-000000000001",
-        repair_request_id: "cccccccc-0000-4000-8000-000000000009",
-        already_exists: rpcCalls > 1,
-      }),
+      body: JSON.stringify([
+        {
+          inspection_round_id: "dddddddd-0000-4000-8000-000000000001",
+          repair_request_id: "cccccccc-0000-4000-8000-000000000009",
+          already_exists: rpcCalls > 1,
+        },
+      ]),
     });
   });
   return { rpcCalls: () => rpcCalls, directWrites };
@@ -99,7 +102,7 @@ test.describe("Building C1 — truthful linked-repair UI", () => {
     await authed.goto("/building");
 
     // Linked row: wrench chip + REAL request id + exact status text.
-    await expect(authed.getByLabel(/ใบแจ้งซ่อม cccccccc สถานะ รอดำเนินการ/)).toBeVisible();
+    await expect(authed.getByLabel(/ใบแจ้งซ่อม cccccccc-0000-4000-8000-000000000001 สถานะ รอดำเนินการ/)).toBeVisible();
     await expect(authed.getByText(/#cccccccc/)).toBeVisible();
 
     // Legacy flag-only row: honest absence, never a fabricated wrench.
@@ -163,7 +166,7 @@ test.describe("Building C1 — truthful linked-repair UI", () => {
       }
       return route.fulfill({
         status: 200, contentType: "application/json",
-        body: JSON.stringify({ inspection_round_id: "d1", repair_request_id: "r9", already_exists: true }),
+        body: JSON.stringify([{ inspection_round_id: "d1", repair_request_id: "r9", already_exists: true }]),
       });
     });
 

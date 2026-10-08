@@ -94,9 +94,19 @@ export async function createBuildingRoundWithRepair(
     p_findings: input.findings,
     p_cause: cause,
     p_equipment_id: equipmentId ?? null,
+    // D8 R2 P1-4: preserve every inspection field the form accepts.
+    p_round_type: input.round_type ?? null,
+    p_severity: input.severity ?? null,
+    p_assigned_to: input.assigned_to ?? null,
   });
   if (error) throw new Error(error.message);
-  return data as CreateBuildingRepairResult;
+  // D8 R2 P2-9: the RPC RETURNS TABLE, so PostgREST delivers an array
+  // of rows — unwrap the single row (empty only on server bugs).
+  const rows = (data ?? []) as CreateBuildingRepairResult[];
+  if (!Array.isArray(rows) || rows.length < 1) {
+    throw new Error("create_building_repair returned no row");
+  }
+  return rows[0];
 }
 
 export async function deleteBuildingRound(id: string): Promise<void> {

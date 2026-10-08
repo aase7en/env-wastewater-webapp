@@ -106,6 +106,22 @@ BEGIN
                 'ENV_C1_BAN_DIRECT_TRUE_TO_FALSE: a linked round keeps repair_needed true — cancellation changes the repair lifecycle status, never the flag'
                 USING ERRCODE = '42501';
         END IF;
+        -- D8 R2 P1-3: a TRUE round's clause-2 premise is durable too.
+        -- Patching issues_found to false or stripping location_id while
+        -- the flag stays true would leave an invalid repair-needed round;
+        -- the trigger column list below makes these transitions reachable.
+        IF NEW.repair_needed IS TRUE THEN
+            IF NEW.issues_found IS NOT TRUE THEN
+                RAISE EXCEPTION
+                    'ENV_C1_BAN_PREMISE_STRIP: a repair-needed round must keep issues_found true (clause 2)'
+                    USING ERRCODE = '42501';
+            END IF;
+            IF NEW.location_id IS NULL THEN
+                RAISE EXCEPTION
+                    'ENV_C1_BAN_PREMISE_STRIP: a repair-needed round must keep its durable location (clause 2)'
+                    USING ERRCODE = '42501';
+            END IF;
+        END IF;
     END IF;
 
     RETURN NEW;
@@ -114,7 +130,8 @@ $fn$;
 
 DROP TRIGGER IF EXISTS trg_c1_guard_repair_needed ON building.inspection_round;
 CREATE TRIGGER trg_c1_guard_repair_needed
-    BEFORE INSERT OR UPDATE OF repair_needed ON building.inspection_round
+    BEFORE INSERT OR UPDATE OF repair_needed, issues_found, location_id
+    ON building.inspection_round
     FOR EACH ROW
     EXECUTE FUNCTION building.fn_c1_guard_repair_needed();
 
@@ -122,7 +139,7 @@ CREATE TRIGGER trg_c1_guard_repair_needed
 --  core.create_building_repair / core.cancel_building_repair are defined
 --  in the EXPAND migration; the triggers above honor the marker.)
 
--- ── (4) Repair-side provenance protection (D8 R1 P1-7) ────────────────
+-- ── (4) Repair-side provenance + protected-field protection ────────────
 
 CREATE OR REPLACE FUNCTION core.fn_c1_guard_repair_link()
 RETURNS trigger
@@ -132,7 +149,15 @@ SET search_path = core, building, public, pg_temp
 AS $fn$
 BEGIN
     IF current_setting('env_c1.rpc_write', true) = 'on' THEN
-        RETURN NEW;  -- sanctioned RPC path (create/cancel)
+        -- Sanctioned RPC path (create/cancel). BEFORE DELETE must return
+        -- OLD (NEW is NULL there) or permitted deletions are suppressed.
+        RETURN CASE WHEN TG_OP = 'DELETE' THEN OLD ELSE NEW END;
+    END IF;
+
+    IF TG_OP = 'INSERT' AND NEW.inspection_round_id IS NOT NULL THEN
+        RAISE EXCEPTION
+            'ENV_C1_BAN_LINKED_REPAIR_INSERT: direct inserts cannot set inspection_round_id — use the create_building_repair RPC (clause 5)'
+            USING ERRCODE = '42501';
     END IF;
 
     IF TG_OP = 'DELETE' AND OLD.inspection_round_id IS NOT NULL THEN
@@ -141,26 +166,66 @@ BEGIN
             USING ERRCODE = '42501';
     END IF;
 
-    IF TG_OP = 'UPDATE' AND OLD.inspection_round_id IS NOT NULL
-       AND NEW.inspection_round_id IS DISTINCT FROM OLD.inspection_round_id THEN
-        RAISE EXCEPTION
-            'ENV_C1_BAN_LINKED_REPAIR_UNLINK: a linked repair''s inspection_round_id is immutable (clause 8)'
-            USING ERRCODE = '42501';
+    IF TG_OP = 'UPDATE' AND OLD.inspection_round_id IS NOT NULL THEN
+        IF NEW.inspection_round_id IS DISTINCT FROM OLD.inspection_round_id THEN
+            RAISE EXCEPTION
+                'ENV_C1_BAN_LINKED_REPAIR_UNLINK: a linked repair''s inspection_round_id is immutable (clause 8)'
+                USING ERRCODE = '42501';
+        END IF;
+        -- D8 R2 P1-2: lifecycle status + cancellation audit fields on a
+        -- linked repair are RPC-owned; direct PATCHes bypass actor/reason.
+        IF NEW.status IS DISTINCT FROM OLD.status
+           OR NEW.cancelled_by IS DISTINCT FROM OLD.cancelled_by
+           OR NEW.cancelled_at IS DISTINCT FROM OLD.cancelled_at
+           OR NEW.cancelled_reason IS DISTINCT FROM OLD.cancelled_reason THEN
+            RAISE EXCEPTION
+                'ENV_C1_BAN_LINKED_REPAIR_LIFECYCLE: a linked repair''s status/cancellation fields change only via cancel_building_repair (clause 7)'
+                USING ERRCODE = '42501';
+        END IF;
     END IF;
 
-    RETURN NEW;
+    RETURN CASE WHEN TG_OP = 'DELETE' THEN OLD ELSE NEW END;
 END;
 $fn$;
 
 DROP TRIGGER IF EXISTS trg_c1_guard_repair_link ON core.repair_request;
 CREATE TRIGGER trg_c1_guard_repair_link
-    BEFORE DELETE OR UPDATE OF inspection_round_id ON core.repair_request
+    BEFORE INSERT OR DELETE OR UPDATE
+    ON core.repair_request
     FOR EACH ROW
     EXECUTE FUNCTION core.fn_c1_guard_repair_link();
 
--- Clause 6 RLS alignment: repair_request + inspection_round already
--- carry OAUTH-4 fn_is_staff_or_admin policies (verified on main); the
--- direct-write ban triggers above close the remaining provenance holes
--- on top of RLS.
+-- ── (5) Clause 6 RLS alignment for core.repair_request (D8 R2 P1-1) ────
+--
+-- The pre-C1 policy on this table was the broad authenticated ALL
+-- (true/true) shape from V1a — OAUTH-4 repolicied other transactional
+-- tables but NOT this one (contrary to the R1 claim here). Pending
+-- authenticated users could therefore mutate repairs through the public
+-- facade. Drop every existing policy on the table and install the
+-- canonical staff/admin gate (same helper as OAUTH-4, avoids the
+-- app_user RLS recursion).
+
+DO $repolicy$
+DECLARE
+    v_policy text;
+BEGIN
+    FOR v_policy IN
+        SELECT policyname FROM pg_policies
+         WHERE schemaname = 'core' AND tablename = 'repair_request'
+    LOOP
+        EXECUTE format('DROP POLICY %I ON core.repair_request', v_policy);
+    END LOOP;
+END
+$repolicy$;
+
+CREATE POLICY repair_request_staff_or_admin_rw ON core.repair_request
+    FOR ALL TO authenticated
+    USING (core.fn_is_staff_or_admin())
+    WITH CHECK (core.fn_is_staff_or_admin());
+
+COMMENT ON POLICY repair_request_staff_or_admin_rw ON core.repair_request IS
+    'ENV-BUILDING-REPAIR-001 C1 clause 6: repairs are staff/admin-only '
+    '(pending denied) — replaces the broad authenticated ALL(true) policy '
+    'that OAUTH-4 never covered for this table.';
 
 COMMIT;

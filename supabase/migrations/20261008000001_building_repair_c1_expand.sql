@@ -96,7 +96,10 @@ CREATE OR REPLACE FUNCTION core.create_building_repair_inner(
     p_inspector       text,
     p_findings        text,
     p_cause           text,   -- explicit nonblank repair cause (clause 2)
-    p_equipment_id    uuid DEFAULT NULL
+    p_equipment_id    uuid DEFAULT NULL,
+    p_round_type      text DEFAULT NULL,
+    p_severity        text DEFAULT NULL,
+    p_assigned_to     text DEFAULT NULL
 )
 RETURNS TABLE (inspection_round_id uuid, repair_request_id uuid, already_exists boolean)
 LANGUAGE plpgsql
@@ -114,6 +117,9 @@ DECLARE
     v_inspector    text := NULLIF(btrim(COALESCE(p_inspector, '')), '');
     v_findings     text := NULLIF(btrim(COALESCE(p_findings, '')), '');
     v_equipment    uuid := p_equipment_id;
+    v_round_type   text := COALESCE(NULLIF(btrim(COALESCE(p_round_type, '')), ''), 'monthly');
+    v_severity     text := NULLIF(btrim(COALESCE(p_severity, '')), '');
+    v_assigned_to  text := NULLIF(btrim(COALESCE(p_assigned_to, '')), '');
     r_round        building.inspection_round%ROWTYPE;
 BEGIN
     -- Clause 6: server-side identity + in-function role check.
@@ -161,6 +167,9 @@ BEGIN
            OR r_round.inspector    IS DISTINCT FROM v_inspector
            OR r_round.findings     IS DISTINCT FROM v_findings
            OR v_cause              IS DISTINCT FROM btrim(p_cause)
+           OR r_round.round_type   IS DISTINCT FROM v_round_type
+           OR r_round.severity     IS DISTINCT FROM v_severity
+           OR r_round.assigned_to  IS DISTINCT FROM v_assigned_to
         THEN
             RAISE EXCEPTION 'ENV_C1_KEY_PAYLOAD_CONFLICT: this client key already exists with a different payload'
                 USING ERRCODE = '23505';
@@ -184,6 +193,9 @@ BEGIN
            OR r_round.location_id IS DISTINCT FROM p_location_id
            OR r_round.inspector IS DISTINCT FROM v_inspector
            OR r_round.findings  IS DISTINCT FROM v_findings
+           OR r_round.round_type IS DISTINCT FROM v_round_type
+           OR r_round.severity IS DISTINCT FROM v_severity
+           OR r_round.assigned_to IS DISTINCT FROM v_assigned_to
         THEN
             RAISE EXCEPTION 'ENV_C1_KEY_PAYLOAD_CONFLICT: existing round under this client key has a different payload'
                 USING ERRCODE = '23505';
@@ -194,10 +206,12 @@ BEGIN
     ELSE
         INSERT INTO building.inspection_round AS ir (
             id, round_date, location_id, inspector, findings,
-            issues_found, repair_needed, recorded_by
+            issues_found, repair_needed, recorded_by,
+            round_type, severity, assigned_to
         ) VALUES (
             v_round_id, v_round_date, p_location_id,
-            v_inspector, v_findings, TRUE, TRUE, v_actor
+            v_inspector, v_findings, TRUE, TRUE, v_actor,
+            v_round_type, v_severity, v_assigned_to
         );
     END IF;
 
@@ -219,7 +233,10 @@ CREATE OR REPLACE FUNCTION core.create_building_repair(
     p_inspector       text,
     p_findings        text,
     p_cause           text,
-    p_equipment_id    uuid DEFAULT NULL
+    p_equipment_id    uuid DEFAULT NULL,
+    p_round_type      text DEFAULT NULL,
+    p_severity        text DEFAULT NULL,
+    p_assigned_to     text DEFAULT NULL
 )
 RETURNS TABLE (inspection_round_id uuid, repair_request_id uuid, already_exists boolean)
 LANGUAGE plpgsql
@@ -235,7 +252,7 @@ BEGIN
     BEGIN
         SELECT * INTO v_ins, v_rep, v_dup FROM core.create_building_repair_inner(
             p_client_key, p_round_date, p_location_id, p_inspector, p_findings,
-            p_cause, p_equipment_id
+            p_cause, p_equipment_id, p_round_type, p_severity, p_assigned_to
         );
         PERFORM core.c1_rpc_end();
     EXCEPTION WHEN OTHERS THEN
@@ -246,14 +263,14 @@ BEGIN
 END;
 $fn$;
 
-REVOKE EXECUTE ON FUNCTION core.create_building_repair_inner(uuid, date, uuid, text, text, text, uuid)
+REVOKE EXECUTE ON FUNCTION core.create_building_repair_inner(uuid, date, uuid, text, text, text, uuid, text, text, text)
     FROM PUBLIC, anon;
-REVOKE EXECUTE ON FUNCTION core.create_building_repair(uuid, date, uuid, text, text, text, uuid)
+REVOKE EXECUTE ON FUNCTION core.create_building_repair(uuid, date, uuid, text, text, text, uuid, text, text, text)
     FROM PUBLIC, anon;
-GRANT EXECUTE ON FUNCTION core.create_building_repair(uuid, date, uuid, text, text, text, uuid)
+GRANT EXECUTE ON FUNCTION core.create_building_repair(uuid, date, uuid, text, text, text, uuid, text, text, text)
     TO authenticated;
 
-COMMENT ON FUNCTION core.create_building_repair_inner(uuid, date, uuid, text, text, text, uuid) IS
+COMMENT ON FUNCTION core.create_building_repair_inner(uuid, date, uuid, text, text, text, uuid, text, text, text) IS
     'ENV-BUILDING-REPAIR-001 C1 (clause 5): body of the single transactional, '
     'idempotent, invariant-preserving path creating one inspection round '
     'and its at-most-one aggregate linked repair. Stable client key = '
@@ -338,7 +355,8 @@ COMMENT ON FUNCTION core.cancel_building_repair(uuid, text) IS
 
 CREATE OR REPLACE FUNCTION public.create_building_repair(
     p_client_key uuid, p_round_date date, p_location_id uuid,
-    p_inspector text, p_findings text, p_cause text, p_equipment_id uuid DEFAULT NULL
+    p_inspector text, p_findings text, p_cause text, p_equipment_id uuid DEFAULT NULL,
+    p_round_type text DEFAULT NULL, p_severity text DEFAULT NULL, p_assigned_to text DEFAULT NULL
 )
 RETURNS TABLE (inspection_round_id uuid, repair_request_id uuid, already_exists boolean)
 LANGUAGE plpgsql
@@ -348,14 +366,15 @@ AS $fn$
 BEGIN
     RETURN QUERY SELECT * FROM core.create_building_repair(
         p_client_key, p_round_date, p_location_id,
-        p_inspector, p_findings, p_cause, p_equipment_id
+        p_inspector, p_findings, p_cause, p_equipment_id,
+        p_round_type, p_severity, p_assigned_to
     );
 END;
 $fn$;
 
-REVOKE EXECUTE ON FUNCTION public.create_building_repair(uuid, date, uuid, text, text, text, uuid)
+REVOKE EXECUTE ON FUNCTION public.create_building_repair(uuid, date, uuid, text, text, text, uuid, text, text, text)
     FROM PUBLIC, anon;
-GRANT EXECUTE ON FUNCTION public.create_building_repair(uuid, date, uuid, text, text, text, uuid)
+GRANT EXECUTE ON FUNCTION public.create_building_repair(uuid, date, uuid, text, text, text, uuid, text, text, text)
     TO authenticated;
 
 CREATE OR REPLACE FUNCTION public.cancel_building_repair(

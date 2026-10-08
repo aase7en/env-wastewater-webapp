@@ -264,14 +264,22 @@ class C1LiveBehaviorMatrix(unittest.TestCase):
         # would), then attempt the direct flip WITHOUT the marker.
         round_id = "00000000-1c1a-4000-8000-000000000002"
         repair_id = "00000000-1c1a-4000-8000-000000000003"
-        q("SELECT set_config('env_c1.rpc_write', 'on', false)")
-        q("INSERT INTO building.inspection_round"
-          " (id, round_date, issues_found, repair_needed)"
-          f" VALUES ('{round_id}', CURRENT_DATE, TRUE, TRUE)")
-        q("INSERT INTO core.repair_request"
-          " (id, inspection_round_id, cause, status)"
-          f" VALUES ('{repair_id}', '{round_id}', 'live-matrix probe', 'open')")
-        q("SELECT set_config('env_c1.rpc_write', '', false)")
+        # D8 R2 P1-5: each q() is a separate API request, possibly a
+        # different pooled session — a session-scoped marker cannot span
+        # them. Build the probe pair inside ONE transaction with the
+        # transaction-local marker (set_config ... true), committed by
+        # the same statement batch.
+        q(
+            "BEGIN;"
+            " SELECT set_config('env_c1.rpc_write', 'on', true);"
+            f" INSERT INTO building.inspection_round"
+            f" (id, round_date, issues_found, repair_needed)"
+            f" VALUES ('{round_id}', CURRENT_DATE, TRUE, TRUE);"
+            f" INSERT INTO core.repair_request"
+            f" (id, inspection_round_id, cause, status)"
+            f" VALUES ('{repair_id}', '{round_id}', 'live-matrix probe', 'open');"
+            " COMMIT;"
+        )
         try:
             with self.assertRaisesRegex(RuntimeError, "ENV_C1_BAN_DIRECT_TRUE_TO_FALSE"):
                 q(f"UPDATE building.inspection_round SET repair_needed = FALSE"
@@ -283,10 +291,13 @@ class C1LiveBehaviorMatrix(unittest.TestCase):
                 q(f"UPDATE core.repair_request SET inspection_round_id = NULL"
                   f" WHERE id = '{repair_id}'")
         finally:
-            q("SELECT set_config('env_c1.rpc_write', 'on', false)")
-            q(f"DELETE FROM core.repair_request WHERE id = '{repair_id}'")
-            q(f"DELETE FROM building.inspection_round WHERE id = '{round_id}'")
-            q("SELECT set_config('env_c1.rpc_write', '', false)")
+            q(
+                "BEGIN;"
+                " SELECT set_config('env_c1.rpc_write', 'on', true);"
+                f" DELETE FROM core.repair_request WHERE id = '{repair_id}';"
+                f" DELETE FROM building.inspection_round WHERE id = '{round_id}';"
+                " COMMIT;"
+            )
 
     def test_matrix_cancel_rpc_requires_reason_and_target(self):
         self._window("GATE2_CONTRACT_APPLY", "D10_POSTFLIGHT")
