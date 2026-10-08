@@ -73,12 +73,23 @@ LIVE application is deferred): author
 `supabase/migrations/20261010000001_building_repair_c1_contract.sql`
 which in ONE transaction: (1) takes ACCESS EXCLUSIVE locks on
 `building.inspection_round` and `core.repair_request`; (2) re-asserts
-the zero-orphan invariant (any `repair_needed=true` row without its
-linked repair aborts the whole migration with a typed error —
-self-defending against the preflight race, since legacy direct writes
-remain enabled until this commit); (3) installs the clause-5
-direct-write ban + residual link constraints per the owner's Gate-2
-compatibility decision (below). No standalone preflight is trusted for
+the clause-1 invariant in BOTH directions — (i) ZERO
+`repair_needed=true` inspections without their linked repair, AND
+(ii) ZERO linked repairs whose inspection has `repair_needed=false`
+(a direct writer can flip a linked flag false during the expand
+window; FK/uniqueness cannot see this cross-table mismatch) — any
+violation aborts the whole migration with a typed error,
+self-defending against the preflight race since legacy direct writes
+remain enabled until this commit; (3) installs the clause-5
+direct-write ban as a HARD ban: direct REST/view writes that would
+create or update `repair_needed=true` are rejected with a clearly
+readable error and the rejected attempt is audit-logged. (R3 rounds
+4–5: a normalizing-trigger compatibility option was analyzed and is
+INFEASIBLE — the legacy direct write lacks the clause-2 mandatory
+values (explicit cause, issues_found premise, durable location) and
+carries no stable retry key, so a trigger would have to fabricate
+data, reject anyway, or lose idempotency; the hard ban is the only
+contract-faithful path.) No standalone preflight is trusted for
 correctness.
 D4 Building data-layer RED→GREEN (`frontend/src/lib/building.ts`,
 `repair.ts`: RPC path replaces direct insert; select includes the link).
@@ -116,30 +127,33 @@ Building submission observed (new client active in production); (c)
 ≥48h elapsed since deploy; (d) zero legacy direct-write repair-needed
 attempts observed in the window (audit/monitoring query defined in the
 migration postflight). All four recorded, never assumed.
-Gate 2 preflight — orphan reconciliation: old-client submissions with
-`repair_needed=true` between Gate 1 and D9b succeed by design yet have
-no linked repair (violating clause 1). Before Gate 2, a deterministic
-query must return ZERO inspection rows with `repair_needed=true` and no
-linked repair. If any exist, the Gate-2 ask lists each one explicitly
-for owner-directed promotion through the same server RPC (the packet's
-explicit operator-promotion path — never heuristic backfill, never
-silent rewriting). Gate 2 cannot proceed while any orphan is
-unreconciled.
+Gate 2 preflight — orphan reconciliation (BOTH clause-1 violation
+classes; early-warning listing only — correctness is enforced
+atomically inside D3b, never by this preflight): class (i)
+`repair_needed=true` inspections without their linked repair
+(old-client submissions between Gate 1 and D9b succeed by design yet
+create no repair) — each is listed in the Gate-2 ask for owner-
+directed promotion through the same server RPC (the packet's explicit
+operator-promotion path — never heuristic backfill, never silent
+rewriting); class (ii) linked repairs whose inspection flag was later
+flipped `false` by a direct writer during the expand window — each is
+listed for owner-directed disposition under clause 7 (explicit
+cancellation with actor/time/reason, or the owner directs flag
+restoration through the RPC). Gate 2 cannot be presented while any
+unreconciled row of either class remains.
 Gate 2 → apply the CONTRACT migration (from the reviewed+MERGED main
 blob; applied-file blob must equal merged main, per repo precedent).
-**Gate-2 owner decision — residual stale-client compatibility (R3
-round 4): the Gate-2 ask presents exactly two options and D3b
-implements the owner's choice. (A) Normalizing-trigger compatibility: a
-BEFORE trigger redirects any legacy direct `repair_needed=true`
-write into the invariant-preserving linked-repair creation inside the
-same transaction — no client breakage; the invariant holds by
-construction; the RPC remains the canonical path and the trigger is
-audit-logged as legacy-origin. (B) Hard ban with acknowledged bounded
-breakage: a never-reloaded pre-deploy tab's FIRST legacy write after
-Gate 2 fails with a visible error; reload loads the new bundle
+**Gate-2 authorization content (R3 rounds 4–5): since D3b is frozen,
+reviewed, and merged BEFORE Gate 2 opens, the ask carries no
+post-hoc design choice — it is an informed authorization: the exact
+SQL, rollback, postflight, the D9b positive-evidence record, both
+preflight orphan lists (if any), and the RESIDUAL stale-client risk
+stated plainly — a pre-deploy tab that never navigated will have its
+first legacy `repair_needed=true` write after Gate 2 rejected with a
+visible, readable error (audit-logged); reload loads the new bundle
 (network-first HTML + versioned SW) and the new client's
-value-preserving retry recovers the submission.** The owner picks;
-autonomous agents never choose.
+value-preserving retry recovers the submission. The owner authorizes
+or withholds/delays Gate 2; autonomous agents never choose.**
 D10 exact-main CI/E2E/Pages + live DB postflight + deployed smoke.
 D11 SSoT closeout + next-node selection.
 
@@ -151,18 +165,23 @@ D11 SSoT closeout + next-node selection.
   the exact migration SQL, rollback plan, and postflight checks.
 - **Gate 2 — LIVE ENV_DB application of the CONTRACT migration**: same
   form; presented only after ALL of: new client deployed (D9), the four
-  D9b positive-evidence items, and the Gate-2 preflight showing zero
-  unlinked `repair_needed=true` rows (or every orphan explicitly
-  owner-promoted via the RPC). The applied file must be the reviewed,
-  merged-main blob.
-- **Rollout ordering (expand/contract — R3 rounds 1–3): code-before-schema
+  D9b positive-evidence items, and the Gate-2 preflight showing ZERO
+  unreconciled rows in BOTH clause-1 violation classes (class (i)
+  promoted via the RPC; class (ii) dispositioned per clause 7). The
+  ask is an informed authorization (SQL + rollback + postflight + D9b
+  record + residual stale-tab rejection risk stated plainly); the
+  applied file must be the reviewed, merged-main blob; D3b itself
+  re-asserts both invariant directions atomically under table locks.
+- **Rollout ordering (expand/contract — R3 rounds 1–5): code-before-schema
   breaks the new client; schema-with-ban-before-code breaks the old
-  client; absence-of-traffic proves nothing about stale clients; and
-  unreviewed SQL never touches production.** Therefore: BOTH migrations
+  client; absence-of-traffic proves nothing about stale clients;
+  unreviewed SQL never touches production; a compatibility trigger is
+  infeasible without fabricating clause-2 values; and the clause-1
+  invariant must hold in BOTH directions.** Therefore: BOTH migrations
   are authored and reviewed (D8) and merged (D9) as one exact SHA; only
   their APPLICATION is split — expand at Gate 1 (before merge/deploy),
-  contract at Gate 2 (after deploy + positive quiescence + orphan
-  reconciliation). No gate is crossed autonomously.
+  contract at Gate 2 (after deploy + positive quiescence + both-class
+  orphan reconciliation). No gate is crossed autonomously.
 - No real environmental writes in tests; no PHI; `.env`/`data/**` never
   touched; user-facing dates พ.ศ.
 
