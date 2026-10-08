@@ -115,8 +115,8 @@ def contract_locks_tables(sql: str) -> bool:
     """R3 round 5: contract migration locks both tables."""
     s = strip_sql_comments(sql)
     return (
-        re.search(r"lock\s+table\s+.*building\.inspection_round\s+in\s+access\s+exclusive\s+mode", s, re.I) is not None
-        and re.search(r"lock\s+table\s+.*core\.repair_request\s+in\s+access\s+exclusive\s+mode", s, re.I) is not None
+        re.search(r"lock\s+table\s+.*building\.inspection_round\s+in\s+access\s+exclusive\s+mode", s, re.I | re.S) is not None
+        and re.search(r"lock\s+table\s+.*core\.repair_request\s+in\s+access\s+exclusive\s+mode", s, re.I | re.S) is not None
     )
 
 
