@@ -20,16 +20,24 @@
 
 ## Checkpoint
 
+- 2026-10-08 (D3a+D3b authored, commit `e9f8509`): both migrations
+  written per the 8-round-hardened WO — expand = additive link (FK
+  RESTRICT + unique-when-non-null + single-origin CHECK) + the ONE
+  transactional idempotent RPC `core.create_building_repair` (stable
+  client key, same-key/different-cause rejection, auth.uid() reporter,
+  locked search_path, in-function staff/admin role gate, facade
+  recreation); contract = per-table ACCESS EXCLUSIVE locks +
+  both-direction clause-1 assert + durable bidirectional ban trigger
+  (pinned 42501 / ENV_C1_BAN_* messages, RPC passes at trigger
+  depth>1, no true→false route). D2 static contract tests GREEN (6
+  passed + 9 subtests; 14 typed live-window skips). Not yet applied
+  anywhere live. Next: D4 data layer (building.ts/repair.ts RPC
+  path), D5 import adapter/promotion, D6 truthful UI + stale-client
+  wiring, D7 gate battery, D8 cross-model review, Gate 1 ask.
 - 2026-10-08 (D2 RED recorded, commit `15daa1f`): claim merged via PR
   #109 as `cc524dc` after the 8-round R3 trail (final APPROVED
   @cfeae2d); ownership gate PASSED in this worktree (identity_preflight
-  True). D2 authored `scripts/building_repair_contract.py` (static SQL
-  contract checks incl. the pinned ban SQLSTATEs + no-true→false rule;
-  live gate-window guard; strict import-boolean parser) and
-  `scripts/test_building_repair_contract.py`. RED evidence: 3 FAILED
-  (static contract vs absent migrations), 3 PASSED (import booleans),
-  14 SKIPPED (typed NO_LIVE_GATE_WINDOW). Next action: author D3a
-  expand + D3b contract migrations to turn the static checks green;
-  live matrix executes only inside human-authorized gate windows.
+  True). RED evidence: 3 FAILED / 3 PASSED / 14 SKIPPED (typed
+  NO_LIVE_GATE_WINDOW).
 - Historical: lane opened after the claim transition merged; D2 was
   the first node per the WO.
