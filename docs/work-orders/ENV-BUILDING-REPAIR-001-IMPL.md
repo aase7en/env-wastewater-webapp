@@ -71,9 +71,15 @@ D3b CONTRACT migration — authored NOW, alongside D3a (so D8's single
 exact-SHA review covers BOTH migration files and all code; only its
 LIVE application is deferred): author
 `supabase/migrations/20261010000001_building_repair_c1_contract.sql`
-enforcing the clause-5 ban (direct REST/view writes can no longer
-create or update `repair_needed=true` outside the invariant-preserving
-RPC) plus any residual link constraints.
+which in ONE transaction: (1) takes ACCESS EXCLUSIVE locks on
+`building.inspection_round` and `core.repair_request`; (2) re-asserts
+the zero-orphan invariant (any `repair_needed=true` row without its
+linked repair aborts the whole migration with a typed error —
+self-defending against the preflight race, since legacy direct writes
+remain enabled until this commit); (3) installs the clause-5
+direct-write ban + residual link constraints per the owner's Gate-2
+compatibility decision (below). No standalone preflight is trusted for
+correctness.
 D4 Building data-layer RED→GREEN (`frontend/src/lib/building.ts`,
 `repair.ts`: RPC path replaces direct insert; select includes the link).
 D5 import parser/promotion RED→GREEN (`frontend/src/lib/import-adapters/building.ts`
@@ -86,12 +92,15 @@ D6 minimal truthful Building UX + mobile/a11y RED→GREEN (`BuildingPage.tsx`,
 `RepairRequestModal.tsx`: wrench/"แจ้งซ่อมแล้ว" renders ONLY from the durable
 link; explicit repair cause field; 360/390/430 px; ≥44px targets; programmatic
 labels; keyboard flow; no clipped overflow; persistent/focused conditional
-errors; value-preserving retry) — AND stale-client elimination wiring in
-`frontend/src/lib/sw-register.ts`: the existing `sw-update-available`
-CustomEvent (currently dispatched with NO listener) gets a listener that
-surfaces the update and reloads on `controllerchange`, so deployed clients
-take up the new bundle promptly instead of running the old direct-insert
-path indefinitely against the cache-forever service worker.
+errors; value-preserving retry) — AND stale-client mitigation wiring:
+`frontend/src/lib/sw-register.ts` gains the listener for the existing
+`sw-update-available` CustomEvent + reload on `controllerchange`, and
+`frontend/public/sw.js` gets a VERSION bump so any tab that reloads or
+navigates (HTML is network-first) immediately picks up the new worker
+and bundle. ACKNOWLEDGED LIMIT (R3 round 4): a pre-deploy tab that
+NEVER navigates still runs old JS with no listener — no new code can
+reach it; the residual risk is handled by the Gate-2 owner decision
+below, not assumed away.
 D7 focused + full Vitest/TypeScript/lint/build/Playwright
 (`frontend/tests/e2e/building-repair.spec.ts`).
 D8 independent Standards + Spec/UX + security exact-SHA review (R3
@@ -118,6 +127,19 @@ silent rewriting). Gate 2 cannot proceed while any orphan is
 unreconciled.
 Gate 2 → apply the CONTRACT migration (from the reviewed+MERGED main
 blob; applied-file blob must equal merged main, per repo precedent).
+**Gate-2 owner decision — residual stale-client compatibility (R3
+round 4): the Gate-2 ask presents exactly two options and D3b
+implements the owner's choice. (A) Normalizing-trigger compatibility: a
+BEFORE trigger redirects any legacy direct `repair_needed=true`
+write into the invariant-preserving linked-repair creation inside the
+same transaction — no client breakage; the invariant holds by
+construction; the RPC remains the canonical path and the trigger is
+audit-logged as legacy-origin. (B) Hard ban with acknowledged bounded
+breakage: a never-reloaded pre-deploy tab's FIRST legacy write after
+Gate 2 fails with a visible error; reload loads the new bundle
+(network-first HTML + versioned SW) and the new client's
+value-preserving retry recovers the submission.** The owner picks;
+autonomous agents never choose.
 D10 exact-main CI/E2E/Pages + live DB postflight + deployed smoke.
 D11 SSoT closeout + next-node selection.
 
@@ -146,7 +168,7 @@ D11 SSoT closeout + next-node selection.
 
 ## Mutable scope (exactly)
 
-As registered in the claim (15 paths — including
+As registered in the claim (16 paths — including
 `frontend/src/lib/sw-register.ts` for the stale-client reload wiring).
 Everything else forbidden — notably
 the Operations surface (OperationsPage/operations.spec — read-only reuse of
