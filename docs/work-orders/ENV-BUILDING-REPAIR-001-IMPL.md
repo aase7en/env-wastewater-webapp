@@ -67,8 +67,12 @@ server-derived `reported_by` via `auth.uid()`, RLS alignment, locked
 LIVE application = HUMAN_AUTHORIZATION_REQUIRED (below).
 D4 Building data-layer RED→GREEN (`frontend/src/lib/building.ts`,
 `repair.ts`: RPC path replaces direct insert; select includes the link).
-D5 import parser/promotion RED→GREEN (`BulkImportPage.tsx`; strict parsing,
-preview, explicit operator promotion only).
+D5 import parser/promotion RED→GREEN (`frontend/src/lib/import-adapters/building.ts`
+— the authoritative parsing seam, including its strict Thai/English boolean
+handling (adjacent defect: values like "false"/"0" must parse strictly) —
+plus a new focused `building.test.ts` following the sibling adapter test
+convention, and `BulkImportPage.tsx` promotion flow: preview, explicit
+operator promotion only, no silent historical promotion).
 D6 minimal truthful Building UX + mobile/a11y RED→GREEN (`BuildingPage.tsx`,
 `RepairRequestModal.tsx`: wrench/"แจ้งซ่อมแล้ว" renders ONLY from the durable
 link; explicit repair cause field; 360/390/430 px; ≥44px targets; programmatic
@@ -78,8 +82,8 @@ D7 focused + full Vitest/TypeScript/lint/build/Playwright
 (`frontend/tests/e2e/building-repair.spec.ts`).
 D8 independent Standards + Spec/UX + security exact-SHA review (R3
 cross-model route).
-D9 PR/CI/merge (expected-head; supervisor execution per standing owner
-authorization).
+D9 PR/CI/merge — ONLY after the LIVE-DB gate above (expected-head;
+supervisor execution per standing owner authorization).
 D10 exact-main CI/E2E/Pages + live DB postflight + deployed smoke (live DB
 steps only after the human gate).
 D11 SSoT closeout + next-node selection.
@@ -89,15 +93,21 @@ D11 SSoT closeout + next-node selection.
 - **LIVE ENV_DB application of the migration (and any live RPC/RLS
   verification against production) requires explicit owner authorization**
   (HUMAN_AUTHORIZATION_REQUIRED): one compact ask presenting the exact
-  migration SQL, rollback plan, and postflight checks. Everything before
-  that gate (D2 contract tests, migration authoring, D4–D7 against
-  mocked/local surfaces, review, code merge) proceeds autonomously.
+  migration SQL, rollback plan, and postflight checks.
+- **Deployment ordering (R3 round-1 P1): the implementation PR is NOT
+  merged — and therefore NOT deployed to Pages — until the live-DB
+  migration has been applied under the gate above.** Merging main-tracked
+  frontend code auto-deploys; D4's client requires the new RPC/column, so
+  code-before-schema would break production Building reads/submissions.
+  Node order: D2→D3 author→D4–D7 (mocked/local)→D8 review→**LIVE-DB
+  gate→D9 merge**→D10 exact-main verification. Autonomous work proceeds
+  through D8 and the prepared gate ask; nothing merges before the gate.
 - No real environmental writes in tests; no PHI; `.env`/`data/**` never
   touched; user-facing dates พ.ศ.
 
 ## Mutable scope (exactly)
 
-As registered in the claim (11 paths). Everything else forbidden — notably
+As registered in the claim (13 paths). Everything else forbidden — notably
 the Operations surface (OperationsPage/operations.spec — read-only reuse of
 `repair.ts` changes must not alter that page's behavior), env-int, guard and
 autonomy scripts, `data/**`, `.env`.
