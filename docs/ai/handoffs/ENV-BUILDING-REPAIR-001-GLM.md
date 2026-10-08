@@ -20,6 +20,16 @@
 
 ## Checkpoint
 
+- 2026-10-08 (D4+D5 done, commit `d8fd815`): building.ts gains the
+  linked-repair embed + createBuildingRoundWithRepair() RPC wrapper
+  (stable client key); repair.ts exposes read-only
+  inspection_round_id in selects; import adapter booleans now STRICT
+  (adjacent truthy-coercion defect fixed; building.test.ts 7 tests
+  incl. regression). Gates: tsc clean, lint 0 errors, Vitest 25/364
+  green, D2 contract suite green. Next: D6 truthful UI (wrench only
+  from the durable link; explicit cause field; mobile/a11y) +
+  stale-client wiring (sw-register listener + sw.js VERSION bump) →
+  D7 focused E2E + gate battery → D8 cross-model review → Gate 1 ask.
 - 2026-10-08 (D3a+D3b authored, commit `e9f8509`): both migrations
   written per the 8-round-hardened WO — expand = additive link (FK
   RESTRICT + unique-when-non-null + single-origin CHECK) + the ONE
