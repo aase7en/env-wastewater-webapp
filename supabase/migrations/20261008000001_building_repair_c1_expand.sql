@@ -327,6 +327,7 @@ DECLARE
     v_role   text;
     v_reason text := NULLIF(btrim(COALESCE(p_reason, '')), '');
     v_linked uuid;
+    v_loc    uuid;
 BEGIN
     IF v_actor IS NULL THEN
         RAISE EXCEPTION 'ENV_C1_AUTH_REQUIRED: caller must be signed in'
@@ -374,16 +375,25 @@ BEGIN
         -- explicit owner reconciliation instead. The marker lets these
         -- UPDATEs pass the contract guards; any RAISE rolls the whole
         -- cancellation back (no half-applied state).
-        IF EXISTS (SELECT 1 FROM building.inspection_round ir
-                    WHERE ir.id = v_linked AND ir.location_id IS NULL) THEN
+        -- D8 R6 P2: lock the linked row FIRST, then validate the premise
+        -- under that lock — a concurrent direct writer can no longer slip
+        -- a NULL location between the check and the flag restoration.
+        UPDATE building.inspection_round ir
+           SET repair_needed = TRUE, issues_found = TRUE
+         WHERE ir.id = v_linked
+           AND (ir.repair_needed IS NOT TRUE OR ir.issues_found IS NOT TRUE)
+        RETURNING ir.location_id INTO v_loc;
+        IF NOT FOUND THEN
+            SELECT ir.location_id INTO v_loc
+              FROM building.inspection_round ir
+             WHERE ir.id = v_linked
+               FOR UPDATE;
+        END IF;
+        IF v_loc IS NULL THEN
             RAISE EXCEPTION
                 'ENV_C1_CANCEL_PREMISE: linked round % lost its durable location during the expand window — explicit owner reconciliation required before cancellation', v_linked
                 USING ERRCODE = '23514';
         END IF;
-        UPDATE building.inspection_round ir
-           SET repair_needed = TRUE, issues_found = TRUE
-         WHERE ir.id = v_linked
-           AND (ir.repair_needed IS NOT TRUE OR ir.issues_found IS NOT TRUE);
         PERFORM core.c1_rpc_end();
     EXCEPTION WHEN OTHERS THEN
         PERFORM core.c1_rpc_end();
@@ -490,5 +500,76 @@ GRANT INSERT (id, equipment_id, reading_id, reported_by, cause, status,
 GRANT UPDATE (equipment_id, reading_id, reported_by, cause, status,
               created_at, resolved_at)
     ON core.repair_request TO authenticated;
+
+-- D8 R6 P1-1: column grants cannot distinguish linked from unlinked
+-- rows, so status/resolved_at must stay writable for MANUAL rows while
+-- staying spoof-proof on LINKED rows during the expand window. Install
+-- the linked-row lifecycle guard HERE (marker-honoring, same shape the
+-- contract migration will re-assert); direct PATCHes of status,
+-- resolved_at, reported_by, created_at, or the cancellation fields on a
+-- LINKED repair raise from Gate 1 onward — cancellation is
+-- cancel-RPC-only from day one. Manual (unlinked) rows keep the full
+-- granted workflow.
+
+CREATE OR REPLACE FUNCTION core.fn_c1_guard_repair_link()
+RETURNS trigger
+LANGUAGE plpgsql
+SECURITY DEFINER
+SET search_path = core, building, public, pg_temp
+AS $fn$
+BEGIN
+    IF current_setting('env_c1.rpc_write', true) = 'on' THEN
+        RETURN CASE WHEN TG_OP = 'DELETE' THEN OLD ELSE NEW END;
+    END IF;
+
+    IF TG_OP = 'INSERT' AND NEW.inspection_round_id IS NOT NULL THEN
+        RAISE EXCEPTION
+            'ENV_C1_BAN_LINKED_REPAIR_INSERT: direct inserts cannot set inspection_round_id — use the create_building_repair RPC (clause 5)'
+            USING ERRCODE = '42501';
+    END IF;
+
+    IF TG_OP = 'DELETE' AND OLD.inspection_round_id IS NOT NULL THEN
+        RAISE EXCEPTION
+            'ENV_C1_BAN_LINKED_REPAIR_DELETE: a linked repair cannot be deleted — its provenance is protected (clause 8)'
+            USING ERRCODE = '42501';
+    END IF;
+
+    IF TG_OP = 'UPDATE' THEN
+        IF OLD.inspection_round_id IS NULL
+           AND NEW.inspection_round_id IS NOT NULL THEN
+            RAISE EXCEPTION
+                'ENV_C1_BAN_LINKED_REPAIR_INSERT: direct updates cannot attach inspection_round_id — use the create_building_repair RPC (clause 5)'
+                USING ERRCODE = '42501';
+        END IF;
+        IF OLD.inspection_round_id IS NOT NULL THEN
+            IF NEW.inspection_round_id IS DISTINCT FROM OLD.inspection_round_id THEN
+                RAISE EXCEPTION
+                    'ENV_C1_BAN_LINKED_REPAIR_UNLINK: a linked repair''s inspection_round_id is immutable (clause 8)'
+                    USING ERRCODE = '42501';
+            END IF;
+            IF NEW.status IS DISTINCT FROM OLD.status
+               OR NEW.cancelled_by IS DISTINCT FROM OLD.cancelled_by
+               OR NEW.cancelled_at IS DISTINCT FROM OLD.cancelled_at
+               OR NEW.cancelled_reason IS DISTINCT FROM OLD.cancelled_reason
+               OR NEW.reported_by IS DISTINCT FROM OLD.reported_by
+               OR NEW.created_at IS DISTINCT FROM OLD.created_at
+               OR NEW.resolved_at IS DISTINCT FROM OLD.resolved_at THEN
+                RAISE EXCEPTION
+                    'ENV_C1_BAN_LINKED_REPAIR_LIFECYCLE: a linked repair''s lifecycle, reporter, and timestamp fields change only via the sanctioned RPCs (clauses 6-7)'
+                    USING ERRCODE = '42501';
+            END IF;
+        END IF;
+    END IF;
+
+    RETURN CASE WHEN TG_OP = 'DELETE' THEN OLD ELSE NEW END;
+END;
+$fn$;
+
+DROP TRIGGER IF EXISTS trg_c1_guard_repair_link ON core.repair_request;
+CREATE TRIGGER trg_c1_guard_repair_link
+    BEFORE INSERT OR DELETE OR UPDATE
+    ON core.repair_request
+    FOR EACH ROW
+    EXECUTE FUNCTION core.fn_c1_guard_repair_link();
 
 COMMIT;

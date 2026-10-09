@@ -54,6 +54,22 @@ BEGIN
             USING ERRCODE = '23514';
     END IF;
 
+    -- D8 R6 P1-2: the FULL clause-2 premise must hold on every true
+    -- round before the guard is installed — a direct expand-window
+    -- writer can leave the flag true while stripping issues_found or
+    -- the durable location; those rows require explicit owner
+    -- reconciliation, not a silent pass.
+    SELECT count(*) INTO v_missing_repair
+      FROM building.inspection_round ir
+     WHERE ir.repair_needed IS TRUE
+       AND (ir.issues_found IS NOT TRUE OR ir.location_id IS NULL);
+    IF v_missing_repair > 0 THEN
+        RAISE EXCEPTION
+            'ENV_C1_ASSERT_PREMISE: % repair-needed round(s) lack the issues_found premise or durable location — explicit owner reconciliation required before Gate 2',
+            v_missing_repair
+            USING ERRCODE = '23514';
+    END IF;
+
     SELECT count(*) INTO v_stale_flag
       FROM core.repair_request rr
      WHERE rr.inspection_round_id IS NOT NULL
