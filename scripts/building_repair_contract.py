@@ -141,7 +141,19 @@ def contract_asserts_both_directions(sql: str) -> bool:
         ) is not None
         and re.search(r"ir\.repair_needed\s+is\s+not\s+true", s, re.I) is not None
     )
-    return class_i and class_ii
+    # D8 R7 P2-2: the clause-2 premise assertion is structural, not just
+    # link parity — ENV_C1_ASSERT_PREMISE plus the premise predicate
+    # (issues_found NOT TRUE OR location NULL on a true round) must both
+    # be present, or the check fails closed.
+    premise = (
+        "ENV_C1_ASSERT_PREMISE" in s
+        and re.search(
+            r"repair_needed\s+is\s+true\s+and\s*\(\s*(?:ir\.)?issues_found\s+is\s+not\s+true"
+            r"\s+or\s+(?:ir\.)?location_id\s+is\s+null",
+            s, re.I | re.S,
+        ) is not None
+    )
+    return class_i and class_ii and premise
 
 
 def contract_bidirectional_ban(sql: str) -> bool:

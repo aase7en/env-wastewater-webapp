@@ -85,11 +85,30 @@ class C1StaticSqlContractExpand(unittest.TestCase):
         self.assertRegex(sql, r"cancel_building_repair")
 
     def test_expand_contains_no_direct_write_ban(self):
-        """R3 round 2: expand is purely additive — the ban lives only in
-        the contract migration (old client keeps working after Gate 1)."""
+        """R3 round 2 + D8 R7 P2-1: expand adds NO repair_needed ban on
+        building.inspection_round (old client keeps working after Gate 1)
+        — but it DOES install the linked-REPAIR guard from Gate 1 (D8 R6
+        P1-1). Pin both sides so neither can silently regress."""
         sql = c.strip_sql_comments(_read(c.EXPAND_MIGRATION))
-        self.assertNotIn(c.BAN_TRUE_SET_MESSAGE, sql)
-        self.assertNotIn("TRIGGER trg_c1_guard", sql.upper())
+        low = sql.lower()
+        # No round-side ban in expand:
+        self.assertNotIn(c.BAN_TRUE_SET_MESSAGE.lower(), low)
+        self.assertNotIn("trg_c1_guard_repair_needed", low)
+        # Round guard belongs to contract only:
+        self.assertNotIn("fn_c1_guard_repair_needed", low)
+        # Linked-repair guard IS installed in expand (positive pins):
+        self.assertIn("create or replace function core.fn_c1_guard_repair_link", low)
+        self.assertIn("create trigger trg_c1_guard_repair_link", low)
+        self.assertIn("env_c1_ban_linked_repair_insert", low)
+        self.assertIn("env_c1_ban_linked_repair_delete", low)
+        self.assertIn("env_c1_ban_linked_repair_unlink", low)
+        self.assertIn("env_c1_ban_linked_repair_lifecycle", low)
+        # Protected linked-row fields pinned (lifecycle/reporter/timestamps):
+        self.assertIn("new.status is distinct from old.status", low)
+        self.assertIn("new.reported_by is distinct from old.reported_by", low)
+        self.assertIn("new.created_at is distinct from old.created_at", low)
+        self.assertIn("new.resolved_at is distinct from old.resolved_at", low)
+        self.assertIn("new.cancelled_reason is distinct from old.cancelled_reason", low)
 
 
 class C1StaticSqlContractContract(unittest.TestCase):
@@ -200,6 +219,14 @@ class C1LiveBehaviorMatrix(unittest.TestCase):
         )
         self.assertEqual(class_i[0]["n"], 0, f"class-I orphans: {json.dumps(class_i)}")
         self.assertEqual(class_ii[0]["n"], 0, f"class-II stale flags: {json.dumps(class_ii)}")
+        # D8 R7 P2-2: clause-2 premise must ALSO hold on every true round
+        # (the Gate-2 assertion's third check, pinned behaviorally).
+        premise = q(
+            "SELECT count(*) AS n FROM building.inspection_round ir"
+            " WHERE ir.repair_needed IS TRUE"
+            "   AND (ir.issues_found IS NOT TRUE OR ir.location_id IS NULL)"
+        )
+        self.assertEqual(premise[0]["n"], 0, f"premise-stripped true rounds: {json.dumps(premise)}")
 
     def test_matrix_rpc_exists_and_fails_closed_without_caller(self):
         self._window("GATE1_EXPAND_APPLY", "GATE2_CONTRACT_APPLY", "D10_POSTFLIGHT")
