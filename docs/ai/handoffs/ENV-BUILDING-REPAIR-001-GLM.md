@@ -20,6 +20,19 @@
 
 ## Checkpoint
 
+- 2026-10-09 (D8 COMPLETE, APPROVED @`ac92ac7` after 8 review rounds by
+  GPT-5.6 Sol fallback; verdict issuecomment-6072799538; exact-head CI
+  green incl. 4m41s smoke; reviewer independently mutation-tested the
+  static pins — 16/16 killed). Full trail: R1 10P1+4P2 → R2 7P1+2P2 →
+  R3 6P1+2P2 → R4 3P1+P2 → R5 3P1+P2 → R6 2P1+P2 → R7 2P2 → R8
+  APPROVED; every round repaired with the full battery green. Per the
+  WO hard gates, D9 (merge) is BLOCKED on human Gate 1 (live expand
+  application) — the compact ask (exact SQL + rollback + postflight)
+  was presented to the owner in the canonical session
+  (sess_272219b6). Next: on Gate-1 authorization → apply expand via
+  the Management API → live matrix GATE1_EXPAND_APPLY → expected-head
+  merge of PR #111 → D9b positive-quiescence window → Gate-2 ask →
+  D10 → D11 closeout.
 - 2026-10-08 (D6+D7 done, commits `2fddeb5`+`abbb555`): BuildingPage
   truthful UI (wrench/status ONLY from the durable link; legacy
   flag-only honest; linked rows undeletable; cause+location client
