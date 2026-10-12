@@ -107,8 +107,15 @@ the registry claim; single-writer rule for DashboardPage.tsx during D3.
   presence/labels, evidence-panel open/close/Escape, focus, 44px, mobile
   recomposition, WebGL-fallback DOM parity, semantics badges) — truthful failures
   before implementation.
-- D3 — Codex CLI implementation dispatch (Role B; one admission probe; exact
-  mutable scope = this WO; read-only instructions from the frozen test contract).
+- D3 — Codex CLI implementation dispatch (Role B). **BLOCKED-UNTIL-ADMISSION:
+  the implementation model itself must be admitted** — `gpt-6.1-sol` entitlement
+  must clear (one re-probe per materially changed admission fingerprint) OR the
+  owner explicitly authorizes an alternative implementation model in writing.
+  The recorded `gpt-5.6-sol` admission covers R3 REVIEW ONLY (owner fallback
+  designation) and does NOT qualify it as the Role B implementer. While D3 is
+  blocked, the lane parks in a typed WAITING_MODEL_ADMISSION state after D2;
+  no implementation dispatch occurs, and GLM does not silently self-assign the
+  Track-F visual work.
 - D4 — GLM: integration, full battery green, handoff checkpoint.
 - D5 — Independent review (fresh GLM-5.3 MAX context, exact SHA; implementing
   model never approves). Repair rounds as needed.
