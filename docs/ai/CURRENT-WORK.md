@@ -38,8 +38,8 @@ exact-SHA independent review and merge into `main`.
   "coordination_registry": {
     "version": 1,
     "enforcement_mode": "BOOTSTRAP_CONTROL",
-    "expected_policy_revision": "e6bb3f019167f4c8a53326d42f5e5a32d9f18a76",
-    "expected_registry_hash": "a7a444dc8af89a406f309c042aac47350839c71dbd5a2ff72d5f78d9a1478576",
+    "expected_policy_revision": "1c91af4591f549741c1a8295f7fd180d9865bc87",
+    "expected_registry_hash": "637f1c0d47f2c5d79c2d254bd870b16e94e975274ac55cc98a7328460fb4d04c",
     "claims": [
       {
         "task_id": "ENV-COORD-002",
@@ -299,6 +299,62 @@ exact-SHA independent review and merge into `main`.
         ],
         "last_checkpoint_pointer": "docs/ai/handoffs/ENV-BUILDING-REPAIR-001-GLM.md",
         "one_next_safe_action": "After this transition merges: re-run the ownership gate in the isolated feat/env-building-repair-001 worktree, then execute the decision packet's D2 node RED-first - schema/RLS/RPC contract tests for the expand/contract rollout (atomic rollback, same-key retry, concurrent double-submit, same-key/different-payload rejection, reporter spoof denial, pending-role denial, link uniqueness/immutability, cancellation and delete restrictions, strict import booleans, historical import policy, facade exposure, audit capture, truthful linked history) before any migration is authored; LIVE ENV_DB application of any migration remains a separate HUMAN_AUTHORIZATION_REQUIRED gate."
+      },
+      {
+        "task_id": "DT-VIS-P003",
+        "claim_id": "DT-VIS-P003-C1",
+        "claim_generation": 1,
+        "status": "CLAIMED",
+        "owner_role": "product_implementation",
+        "agent_model": "Codex CLI GPT-6.1 Sol MAX (implementation owner, owner directive 2026-10-12 Role B) + GLM-5.3 MAX (claim coordination, Track-Z tests, integration)",
+        "execution_holder_id": "zcode-env-dt-vis-p003-g1-primary",
+        "worktree": "A:/GitHub/_worktrees/env-dtvis-p003-20261012",
+        "branch": "feat/dt-vis-p003",
+        "base_sha": "1c91af4591f549741c1a8295f7fd180d9865bc87",
+        "mutable_scope": [
+          "frontend/src/components/digital-twin/TwinCanvas.tsx",
+          "frontend/src/components/digital-twin/TwinRendererBoundary.tsx",
+          "frontend/src/components/digital-twin/WastewaterTwin.tsx",
+          "frontend/src/lib/twin/dashboard-adapter.ts",
+          "frontend/src/lib/twin/dashboard-adapter.test.ts",
+          "frontend/src/lib/twin/demo-state.ts",
+          "frontend/src/lib/twin/selectors.ts",
+          "frontend/src/lib/twin/store.ts",
+          "frontend/src/lib/twin/types.ts",
+          "frontend/src/lib/twin/webgl.ts",
+          "frontend/src/pages/DashboardPage.tsx",
+          "frontend/tests/e2e/digital-twin.spec.ts",
+          "frontend/tests/e2e/digital-twin-visual.spec.ts",
+          "frontend/tests/e2e/dt-vis-p003.spec.ts",
+          "docs/work-orders/DT-VIS-P003.md",
+          "docs/ai/handoffs/DT-VIS-P003-CODEX.md",
+          "docs/ai/digital-twin/03-MICRO-STEP-BOARD.md"
+        ],
+        "forbidden_scope": [
+          "docs/ai/CURRENT-WORK.md",
+          "docs/ai/HANDOFF.md",
+          "AGENTS.md",
+          "scripts/env_coordination_guard.py",
+          "scripts/env_autonomy_runtime.py",
+          "frontend/src/pages/OperationsPage.tsx",
+          "frontend/tests/e2e/operations.spec.ts",
+          "frontend/src/pages/BuildingPage.tsx",
+          "frontend/src/pages/FlowDiagramPage.tsx",
+          "frontend/src/lib/env-int/**",
+          "data/**",
+          ".env"
+        ],
+        "work_order_path": "docs/work-orders/DT-VIS-P003.md",
+        "handoff_path": "docs/ai/handoffs/DT-VIS-P003-CODEX.md",
+        "review_owner": "Claim transition: deterministic R3 cross-model review (Codex gpt-6.1-sol preferred; GPT-5.6 Sol designated fallback with recorded admission evidence; GPT-6 Astra prohibited; never silent GLM downgrade). Implementation PR: fresh GLM-5.3 MAX reviewer context (cross-model independence vs the Codex author); implementing lane never merges its own PR",
+        "dependencies": [
+          "User-approved P003 design target (2026-09-10) recorded in docs/ai/digital-twin/03-MICRO-STEP-BOARD.md (board Owner: Codex) and docs/ai/design/ENV-EXPERIENCE-MASTER-PLAN.md anchored-callout/evidence-panel sections",
+          "DT-VIS-P001 approved and live; coordinate with the completed ENV-CMD-001/002 command-center contract before touching shared page/shell files (DashboardPage.tsx)",
+          "Owner continuation steer 2026-10-12: continue the ENV Roadmap on non-Building lanes while Building Gate 2 is deferred (PR #111 issuecomment-6127497707) - the owner-authorized dispatch exception recorded in the WO risk-record section",
+          "Owner routing directive 2026-10-12 (durable via PR #112): Codex CLI GPT-6.1 Sol MAX Role B conditions - verified admission (one probe per materially changed fingerprint), exact mutable scope assigned, no competing owner, separate qualified independent reviewer; never author-and-approve"
+        ],
+        "last_checkpoint_pointer": "docs/ai/handoffs/DT-VIS-P003-CODEX.md",
+        "one_next_safe_action": "After this transition merges: create the isolated feat/dt-vis-p003 worktree from the merged main, run the ownership gate, then execute WO D1-D2 (confirm callout/evidence data contracts against existing truthful adapters; GLM RED-first tests) BEFORE the Codex CLI implementation dispatch (D3, one admission probe first)."
       }
     ]
   }
@@ -315,6 +371,7 @@ exact-SHA independent review and merge into `main`.
 - **ENV-WATER-WATCH-001 / CLOSED / PR #93** — repair merged as `c5fa87c9` (second parent = reviewed head `c8364fd`; R3 independent APPROVED `issuecomment-6011184241`; exact-head CI `37426880808`/`37426880810` success). The 2026-10-01 blocking mobile overlap finding is closed: stations recompose into an ordered non-overlapping stacked list below `xl`, absolute markers gated to `xl+`, with full horizontal+vertical containment regressions at 390/768/1024/1280 (7/7 Playwright). Claim CLOSED at generation 1; worktree `env-water-watch-001` preserved clean.
 - **CLOSED ENV-INT-GISTDA-CORE-001 / PR #80** — merged as bf26cb523c375f44d3bdd0ee9a6d0d66f1eb81bb on 2026-09-16; exact-head scripts, smoke, and notify checks succeeded.
 - **`ENV-BUILDING-REPAIR-001` / DECIDED_C1 + CLAIMED (C1, this transition) / PR pending** — the project owner approved C1: one Building inspection round may create at most one aggregate linked repair request, using the complete 11-clause C1 safety package (durable `inspection_round -> repair_request` linkage, uniqueness/idempotency, explicit repair cause, atomic transactional server command, retry/double-submit safety, reporter identity + RLS, no heuristic backfill, explicit cancellation lifecycle, no provenance-destroying delete/unlink, truthful Building history from the durable link, strict import behavior, RED-first tests + exact-SHA review + post-main verification). Bounded current-product decision — NOT a permanent C2 prohibition (future C2 requires its own roadmap item, never silent scope expansion). Full audited packet + verbatim owner decision record: `docs/work-orders/ENV-BUILDING-REPAIR-001.md` (decision branch `docs/building-repair-001-decision` / PR #75 superseded by this record). This transition registers claim `ENV-BUILDING-REPAIR-001-C1` (holder `zcode-env-building-repair-001-g1-primary`, worktree `A:/GitHub/_worktrees/env-building-repair-001-20261008`, branch `feat/env-building-repair-001`, base `e6bb3f0`) under the owner-authorized dispatch-exception pattern (risk record in `docs/work-orders/ENV-BUILDING-REPAIR-001-IMPL.md`); it executes the packet's D2–D11 implementation graph, and LIVE ENV_DB application of any migration remains a separate HUMAN_AUTHORIZATION_REQUIRED gate. Authority begins only after this transition merges.
+- **`DT-VIS-P003` / CLAIMED (C1, this transition)** — activates the user-approved (2026-09-10) Digital Twin design target: anchored **Spatial Status Callouts + Evidence Panel + responsive operational hierarchy** around the existing Twin, per the micro-step board (board Owner: Codex) and the Experience Master Plan. This transition registers claim `DT-VIS-P003-C1` (holder `zcode-env-dt-vis-p003-g1-primary`, worktree `env-dtvis-p003-20261012`, branch `feat/dt-vis-p003`, base `1c91af4`) under the owner-authorized dispatch-exception pattern (risk record in `docs/work-orders/DT-VIS-P003.md`): Codex CLI GPT-6.1 Sol MAX implements the visual slice (owner routing directive 2026-10-12 Role B — verified admission, exact mutable scope, no competing owner, separate independent reviewer, never author-and-approve); GLM-5.3 MAX coordinates and authors the RED-first Track-Z tests. Binding constraints from the board: callouts anchor only to validated asset/domain/source identifiers; truthful LIVE/LATEST/HISTORICAL/SIMULATED/STALE/UNAVAILABLE semantics with color secondary; mobile recomposes to ordered lists/drawers, no floating-label crowding; full DOM/Process/Data fallback under WebGL failure/reduced motion; no new telemetry inference, no per-equipment state from aggregate data, no second competing dashboard; coordinate with the completed Command Center contract on shared shell files. Authority begins only after this transition merges.
 - **ENV-OPS-001A / CLOSED (C1) / PR #107** — implementation merged as `bf9bc539` (second parent = reviewed head `f7425c11`; R2 fresh-GLM independent APPROVED `issuecomment-6041738245`; exact-head CI green incl. E2E smoke; post-main test + E2E smoke + Pages deploy all success on `bf9bc53`). The read-only two-source Operations Attention Board lives at `/operations`: RED-first A1–A16 spec preceded implementation (commit `3c395c5`, 8/8 truthful failures); unresolved repairs (`open`/`in_progress`) and threshold events (read_at = presentation acknowledgement only) remain distinct source-local panels, never normalized into a fabricated incident object; empty ≠ normal; polling ≠ live; partial-source failure stays visible; no fabricated severity. The lane ran under the owner-authorized dispatch exception (risk record in `docs/work-orders/ENV-OPS-001A.md`); autonomous production dispatch remains paused pending the §12 activation ladder. Lane worktree `env-ops-001a-20261007` preserved clean at `f7425c11` (fully merged); the legacy dirty worktree `envww-ops-001a` remains preserved untouched per its reconcile record. CLOSED confers no fresh mutation authority.
 - **Open draft PR #85 / ENV-PREVIEW-001** — synthetic browser-local preview proposal at head `d7c48cf3ee4e2056586ef63fd9cc3cb74a2e71e1`, based on older main `7d4e6b52c616ff15f86e399a085ef16477d38ef8`. The PR description says REVIEW_REQUESTED, but the current registry has no active ENV-PREVIEW claim; preserve as a proposal and do not merge until ownership/base are reconciled.
 - **Open proposals, not active claims:** PR #87 remains OPEN at c8a8437f2f4471f2ea08d8836ed20b8f17ac4c0b against the prior base `94c1a8f9...`; its scripts/notify checks are green and its author comment `#5834942914` says CHANGES_REQUIRED. PR #88 remains OPEN at 2727abc9c8c50bb84dbf09e2a0b0383cbe5e2e16 against the prior base `94c1a8f9...`; its scripts/notify checks are green, but GitHub has no formal review decision. Neither candidate registry is authoritative.
