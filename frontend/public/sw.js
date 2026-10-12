@@ -13,7 +13,12 @@
 // Scope is set via the registering script's location; Vite copies this
 // file as-is from public/ to dist/, and it's served at the repo subpath.
 
-const VERSION = "uth-env-v1";
+// ENV-BUILDING-REPAIR-001 C1 (2026-10-08): VERSION bumped v1 → v2 so
+// every tab that reloads or navigates (HTML is network-first) detects
+// the byte-diff, installs the new worker, and takes the new bundle
+// immediately instead of serving stale assets from the old cache.
+
+const VERSION = "uth-env-v2";
 const BASE = "/env-wastewater-webapp";
 const CACHE_HTML = `${VERSION}-html`;
 const CACHE_ASSET = `${VERSION}-asset`;

@@ -207,6 +207,34 @@ As registered in the claim (16 paths — including
 `frontend/src/lib/sw-register.ts` for the stale-client reload wiring).
 Everything else forbidden — notably
 the Operations surface (OperationsPage/operations.spec — read-only reuse of
+
+## D9 file map (D8 R1 P2-13 reconciliation)
+
+The mutable scope is an upper bound, not a must-touch list. Final
+files-changed and the deliberate untouched paths:
+
+- TOUCHED: both migrations; scripts/building_repair_contract.py +
+  test (static contract + phase-partitioned live matrix);
+  frontend lib building.ts/repair.ts; import-adapters/building.ts +
+  building.test.ts; pages/BuildingPage.tsx; lib/sw-register.ts;
+  public/sw.js; tests/e2e/building-repair.spec.ts; this WO + the lane
+  handoff.
+- DELIBERATELY UNTOUCHED `frontend/src/pages/BulkImportPage.tsx`:
+  clause 9 is enforced at the authoritative seam — the building
+  adapter REJECTS imported repair_needed=true rows (preview-visible)
+  so the generic batch inserter can never auto-issue them; promotion
+  goes through the BuildingPage → create_building_repair RPC. No
+  importer code change is required for that behavior.
+- DELIBERATELY UNTOUCHED
+  `frontend/src/components/repair/RepairRequestModal.tsx`: it creates
+  MANUAL repairs (reading-origin or plain) — legal under clause 4
+  ("genuinely manual requests may have neither" origin) and already
+  requires an explicit cause. The C1 linked-repair cancel affordance
+  lives in BuildingPage (the truthful linked-history surface).
+- Cancellation (clause 7) is implemented server-side
+  (core/public.cancel_building_repair: status-only, flag+link
+  preserved, actor/time/reason recorded) and surfaced in the
+  BuildingPage history row; RepairRequestModal remains create-only.
 `repair.ts` changes must not alter that page's behavior), env-int, guard and
 autonomy scripts, `data/**`, `.env`.
 

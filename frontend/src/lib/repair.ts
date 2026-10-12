@@ -32,6 +32,13 @@ export interface RepairRequest {
   id: string;
   equipment_id: string | null;
   reading_id: string | null;
+  /**
+   * ENV-BUILDING-REPAIR-001 C1 (2026-10-08): durable link to the Building
+   * inspection round when this repair originated there — null for manual
+   * or reading-originated requests. Read-only from the client; creation
+   * goes through `create_building_repair` (building.ts), not this lib.
+   */
+  inspection_round_id: string | null;
   reported_by: string | null;
   cause: string;
   status: RepairStatus;
@@ -68,7 +75,7 @@ export async function createRepairRequest(
       cause,
       // status defaults to 'open' in DB; don't send to avoid overriding
     })
-    .select("id, equipment_id, reading_id, reported_by, cause, status, created_at, resolved_at")
+    .select("id, equipment_id, reading_id, inspection_round_id, reported_by, cause, status, created_at, resolved_at")
     .single();
 
   if (error) throw new Error(error.message);
@@ -89,7 +96,7 @@ export async function fetchRepairRequests(
 ): Promise<RepairRequest[]> {
   let q = supabase
     .from("repair_request")
-    .select("id, equipment_id, reading_id, reported_by, cause, status, created_at, resolved_at")
+    .select("id, equipment_id, reading_id, inspection_round_id, reported_by, cause, status, created_at, resolved_at")
     .order("created_at", { ascending: false })
     .limit(limit);
 
