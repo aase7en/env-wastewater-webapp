@@ -27,21 +27,32 @@ dashboard architecture.
 ## Owner split
 
 - **Codex CLI GPT-6.1 Sol MAX** (dispatched from the canonical session; admission
-  verified by ONE probe before first dispatch; never author-and-approve): visual
-  implementation — callout components, spatial anchoring, evidence panel
-  composition, responsive recomposition, reduced-motion/WebGL-fallback presentation.
+  verified once per materially changed admission fingerprint — see the risk
+  record below; never author-and-approve): visual implementation — callout
+  components, spatial anchoring, evidence panel composition, responsive
+  recomposition, reduced-motion/WebGL-fallback presentation.
 - **GLM-5.3 MAX**: claim coordination; Track-Z data plumbing contracts
   (callout source identifiers, evidence queries via existing truthful adapters);
   RED-first test authoring (unit + Playwright + fallback/a11y); integration
   battery; independent review of the Codex-authored implementation (fresh GLM
   context satisfies cross-model independence).
+- **Per-file ownership boundary (single-writer rule):** during D3 the Codex
+  dispatch is the TEMPORARY SOLE writer of every mutable file — including shared
+  `DashboardPage.tsx`; GLM (and any other agent) touches no mutable file during
+  D3. Ownership of all mutable files transfers back to GLM at the recorded
+  D3→D4 handoff entry in `docs/ai/handoffs/DT-VIS-P003-CODEX.md`, which states
+  the transfer explicitly; before that entry exists, DashboardPage.tsx has
+  exactly one writer (Codex) and no competing owner.
 
-## Scope (mutable, exactly)
+## Scope (mutable, exactly — identical to the registry claim entry)
 
-- `frontend/src/components/digital-twin/**` (existing 3 files + new callout/evidence components)
-- `frontend/src/lib/twin/**` (selectors/adapters/store/types + tests — callout data contracts only)
+- `frontend/src/components/digital-twin/TwinCanvas.tsx`
+- `frontend/src/components/digital-twin/TwinRendererBoundary.tsx`
+- `frontend/src/components/digital-twin/WastewaterTwin.tsx`
+- `frontend/src/components/digital-twin/p003/**` (new callout/evidence components confined to this subfolder)
+- `frontend/src/lib/twin/dashboard-adapter.ts`, `dashboard-adapter.test.ts`, `demo-state.ts`, `selectors.ts`, `store.ts`, `types.ts`, `webgl.ts` (callout data contracts only)
 - `frontend/src/pages/DashboardPage.tsx` (Twin host; coordinate with the ENV-CMD-001/002 command-center contract — no regressions to its hierarchy/semantics)
-- `frontend/tests/e2e/digital-twin.spec.ts`, `frontend/tests/e2e/digital-twin-visual.spec.ts`, + new `frontend/tests/e2e/dt-vis-p003.spec.ts`
+- `frontend/tests/e2e/digital-twin.spec.ts`, `frontend/tests/e2e/digital-twin-visual.spec.ts`, `frontend/tests/e2e/dt-vis-p003.spec.ts`
 - `docs/work-orders/DT-VIS-P003.md` (this file), `docs/ai/handoffs/DT-VIS-P003-CODEX.md`
 - `docs/ai/digital-twin/03-MICRO-STEP-BOARD.md` (P003 status lines only)
 
@@ -73,13 +84,20 @@ Operations/Building/Flow surfaces, `frontend/src/lib/env-int/**`, `data/**`, `.e
 Autonomous production dispatch remains `BOOTSTRAP_CONTROL` / `AUTONOMY_NOT_READY` /
 `ENFORCEMENT_NOT_ACTIVE` (truthful). This lane proceeds under the explicit
 owner-authorized continuation steer (2026-10-12) as a dispatch exception.
-Pre-enforcement limitations: no autonomous production enforcement beyond CI; model
-admission for Codex CLI verified per-dispatch by one probe; human gates remain for
-consequential production changes. Compensating controls: RED-first tests before
-implementation; full local battery (tsc/lint/vitest/playwright) before review;
-fresh-context independent exact-SHA review (GLM reviews Codex-authored code);
-expected-head merge; post-main exact-SHA CI + Pages deploy + deployed smoke;
-bounded mutable scope enforced by the registry claim.
+Pre-enforcement limitations: no autonomous production enforcement beyond CI;
+Codex CLI model admission is verified once per MATERIALLY CHANGED admission
+fingerprint (routing-directive rule — not per dispatch); recorded admission
+evidence 2026-10-12: `gpt-6.1-sol` → HTTP 400 "not supported when using Codex
+with a ChatGPT account" (entitlement; the owner's quota statement does not
+override the provider error); `gpt-5.6-sol` ADMITTED and executed this claim's
+R3 transition review — repair rounds and the D3 implementation dispatch reuse
+this evidence unchanged unless the fingerprint materially changes (one re-probe
+maximum). Human gates remain for consequential production changes.
+Compensating controls: RED-first tests before implementation; full local battery
+(tsc/lint/vitest/playwright) before review; fresh-context independent exact-SHA
+review (GLM reviews Codex-authored code); expected-head merge; post-main
+exact-SHA CI + Pages deploy + deployed smoke; bounded mutable scope enforced by
+the registry claim; single-writer rule for DashboardPage.tsx during D3.
 
 ## D-plan
 

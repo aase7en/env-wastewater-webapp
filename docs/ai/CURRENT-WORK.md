@@ -315,6 +315,7 @@ exact-SHA independent review and merge into `main`.
           "frontend/src/components/digital-twin/TwinCanvas.tsx",
           "frontend/src/components/digital-twin/TwinRendererBoundary.tsx",
           "frontend/src/components/digital-twin/WastewaterTwin.tsx",
+          "frontend/src/components/digital-twin/p003/**",
           "frontend/src/lib/twin/dashboard-adapter.ts",
           "frontend/src/lib/twin/dashboard-adapter.test.ts",
           "frontend/src/lib/twin/demo-state.ts",
@@ -354,7 +355,7 @@ exact-SHA independent review and merge into `main`.
           "Owner routing directive 2026-10-12 (durable via PR #112): Codex CLI GPT-6.1 Sol MAX Role B conditions - verified admission (one probe per materially changed fingerprint), exact mutable scope assigned, no competing owner, separate qualified independent reviewer; never author-and-approve"
         ],
         "last_checkpoint_pointer": "docs/ai/handoffs/DT-VIS-P003-CODEX.md",
-        "one_next_safe_action": "After this transition merges: create the isolated feat/dt-vis-p003 worktree from the merged main, run the ownership gate, then execute WO D1-D2 (confirm callout/evidence data contracts against existing truthful adapters; GLM RED-first tests) BEFORE the Codex CLI implementation dispatch (D3, one admission probe first)."
+        "one_next_safe_action": "After this transition merges: create the isolated feat/dt-vis-p003 worktree from the merged main, run the ownership gate, then execute WO D1-D2 (confirm callout/evidence data contracts against existing truthful adapters; GLM RED-first tests) BEFORE the Codex CLI implementation dispatch (D3). Per-file ownership during D3: Codex is the temporary sole writer of ALL mutable files including shared DashboardPage.tsx; GLM touches no mutable file during D3 and takes ownership back only at the recorded D3-to-D4 handoff."
       }
     ]
   }
@@ -383,7 +384,7 @@ Current coordination authority:
 - locked C1 implementation contract/result lane: `docs/work-orders/ENV-COORD-002.md` and `docs/ai/handoffs/ENV-COORD-002-GLM.md`;
 - closed autonomy + hardening Work Orders: `docs/work-orders/ENV-AUTONOMY-001.md`, `docs/work-orders/ENV-AUTONOMY-002.md`;
 - enforcement mode: `BOOTSTRAP_CONTROL`, not `ENFORCING`;
-- one next safe action: this transition registers the ENV-BUILDING-REPAIR-001-C1 claim under the owner-authorized dispatch exception (risk record in docs/work-orders/ENV-BUILDING-REPAIR-001-IMPL.md). On merge: ownership gate in the isolated feat/env-building-repair-001 worktree, then the decision packet's D2 node RED-first (schema/RLS/RPC contract tests) before any migration is authored; LIVE ENV_DB migration application stays a HUMAN_AUTHORIZATION_REQUIRED gate. Autonomous production dispatch remains paused pending the architecture §12 activation ladder (ENV-COORD-003..009); product-lane work proceeds only through the owner-authorized-exception pattern. All other work still requires a NEW claim transition; no closed lane confers execution authority. Autonomy remains BOOTSTRAP_CONTROL / AUTONOMY_NOT_READY / ENFORCEMENT_NOT_ACTIVE truthfully.
+- one next safe action: TWO active claims after this transition merges. (1) `DT-VIS-P003-C1` (this transition) executes next: isolated `feat/dt-vis-p003` worktree, ownership gate, WO D1-D2 data contracts + GLM RED-first tests, then the Codex CLI implementation dispatch (D3) under the 2026-10-12 Role B conditions. (2) `ENV-BUILDING-REPAIR-001-C1` remains CLAIMED with Gate 1 complete/verified and its remaining D9b/Gate-2/D10/D11 steps DEFERRED by the owner decision of 2026-10-12 (PR #111 issuecomment-6127497707) until real Building usage produces the required evidence; D9b stays WAITING_EXTERNAL, Gate 2 stays HUMAN_AUTHORIZATION_REQUIRED, and no CONTRACT migration is applied. Autonomous production dispatch remains paused pending the architecture §12 activation ladder (ENV-COORD-003..009); product-lane work proceeds only through the owner-authorized-exception pattern. All other work still requires a NEW claim transition; no closed lane confers execution authority. Autonomy remains BOOTSTRAP_CONTROL / AUTONOMY_NOT_READY / ENFORCEMENT_NOT_ACTIVE truthfully.
 
 ## Prior execution state - 2026-09-02
 
