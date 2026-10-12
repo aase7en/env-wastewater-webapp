@@ -86,13 +86,14 @@ Autonomous production dispatch remains `BOOTSTRAP_CONTROL` / `AUTONOMY_NOT_READY
 owner-authorized continuation steer (2026-10-12) as a dispatch exception.
 Pre-enforcement limitations: no autonomous production enforcement beyond CI;
 Codex CLI model admission is verified once per MATERIALLY CHANGED admission
-fingerprint (routing-directive rule — not per dispatch); recorded admission
+  fingerprint (routing-directive rule — not per dispatch); recorded admission
 evidence 2026-10-12: `gpt-6.1-sol` → HTTP 400 "not supported when using Codex
 with a ChatGPT account" (entitlement; the owner's quota statement does not
 override the provider error); `gpt-5.6-sol` ADMITTED and executed this claim's
-R3 transition review — repair rounds and the D3 implementation dispatch reuse
-this evidence unchanged unless the fingerprint materially changes (one re-probe
-maximum). Human gates remain for consequential production changes.
+R3 transition review. This admission evidence may be reused, while the
+fingerprint is unchanged, for R3 REVIEW dispatches ONLY — it never authorizes a
+D3 implementation dispatch (see the D3 gate below). Human gates remain for
+consequential production changes.
 Compensating controls: RED-first tests before implementation; full local battery
 (tsc/lint/vitest/playwright) before review; fresh-context independent exact-SHA
 review (GLM reviews Codex-authored code); expected-head merge; post-main
@@ -113,9 +114,12 @@ the registry claim; single-writer rule for DashboardPage.tsx during D3.
   owner explicitly authorizes an alternative implementation model in writing.
   The recorded `gpt-5.6-sol` admission covers R3 REVIEW ONLY (owner fallback
   designation) and does NOT qualify it as the Role B implementer. While D3 is
-  blocked, the lane parks in a typed WAITING_MODEL_ADMISSION state after D2;
-  no implementation dispatch occurs, and GLM does not silently self-assign the
-  Track-F visual work.
+  blocked, the claim parks in the registry-supported `BLOCKED` status (typed
+  blocker record: model-admission; unblock = gpt-6.1-sol entitlement clearing
+  with one re-probe per materially changed fingerprint, or explicit owner
+  authorization of an alternative implementation model); no implementation
+  dispatch occurs, and GLM does not silently self-assign the Track-F visual
+  work.
 - D4 — GLM: integration, full battery green, handoff checkpoint.
 - D5 — Independent review (fresh GLM-5.3 MAX context, exact SHA; implementing
   model never approves). Repair rounds as needed.

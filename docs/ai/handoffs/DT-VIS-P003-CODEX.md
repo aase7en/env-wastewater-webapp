@@ -13,4 +13,9 @@
   Codex-authored implementation (never author-and-approve).
 - Next: after merge → create isolated worktree `env-dtvis-p003-20261012`
   (branch `feat/dt-vis-p003`) from the merged main → ownership gate → D1 data
-  contracts → D2 RED tests → D3 Codex dispatch (ONE admission probe first).
+  contracts → D2 RED tests → D3 gated: BLOCKED until the implementation model
+  itself is admitted (gpt-6.1-sol entitlement clearing, one re-probe per
+  materially changed fingerprint, or explicit owner authorization of an
+  alternative implementation model; the recorded 2026-10-12 gpt-5.6-sol
+  admission is R3-review-only). Park in registry status `BLOCKED` with the
+  typed model-admission blocker; never dispatch an unadmitted implementer.
