@@ -70,6 +70,20 @@ surfaces, `docs/ai/CURRENT-WORK.md`, guard/autonomy scripts, `data/**`, `.env`.
   reviewer context (independent of the authoring run; the implementing lane
   never merges its own PR) — the repo's established R2 default for Track-Z
   implementation reviews.
+- **Track-F ownership exception (recorded per the standing dispatch-exception
+  pattern):** this slice's page/layout work (SustainabilityPage, AppShell nav
+  entry, responsive/44px behavior) uses only existing Aura tokens and
+  established repo page patterns — no art direction, no 3D, no new visual
+  language. GLM page implementation under an owner-authorized continuation
+  steer with a recorded dispatch-exception risk record is the repo's
+  established pattern: ENV-MOBILE-001..008 (PRs #40/#42/#44/#46/#48/#63/#65/
+  #68), ENV-CMD-002 (PR #73), ENV-OPS-001A (PR #107) — all GLM-implemented
+  UI slices merged under recorded exceptions with independent review. The
+  owner's 2026-10-12 continuation steer is the standing owner authorization
+  for exactly this pattern ("continue the ENV Roadmap on non-Building
+  lanes"; "do not stop ordinary authorized work merely to obtain additional
+  model-routing approval"). No Digital-Twin/art-direction surface is touched
+  (digital-twin/** is in forbidden scope).
 
 ## Dispatch-exception risk record
 
