@@ -61,3 +61,21 @@ with `TwinRendererBoundary` + Suspense + `TwinCanvas` and a DOM
    failure/reduced-motion keeps full information parity.
 6. Anchors: only `asset:aeration-tank-1` exists today; no connector lines; new
    assets join via the existing `TwinAssetId` map without contract change.
+
+## D2 — RED-first test contract landed (2026-10-13)
+
+- `frontend/src/components/digital-twin/p003/callout-model.test.ts` (10 tests):
+  badge truth table (LIVE/LATEST/HISTORICAL/SIMULATED/STALE/UNAVAILABLE incl.
+  stale-override + sensor-live + simulation-only-on-override), stable asset
+  anchoring, UNAVAILABLE never numeric, Thai labels for all badges, detail
+  destination per callout. RED verified: `Cannot find module './callout-model'`
+  (vitest, 1 file failed — implementation module absent by design).
+- `frontend/tests/e2e/dt-vis-p003.spec.ts` (7 tests): accessible callout list +
+  truthful badges; evidence panel with source/freshness/provenance; Escape
+  close + focus return; 44px targets; 390px mobile ordered recomposition with
+  no canvas overlap; WebGL-failure DOM parity; zero connector elements. RED
+  verified: 7/7 failed (Playwright chromium, synthetic VITE_SUPABASE_* env —
+  elements absent pre-implementation).
+- Next: D3 dispatch (`gpt-6-sol` @ max) — Codex becomes the temporary sole
+  writer of ALL mutable files; GLM does not touch them until the recorded
+  D3→D4 handoff entry.
