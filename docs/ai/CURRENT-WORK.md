@@ -396,7 +396,7 @@ exact-SHA independent review and merge into `main`.
         ],
         "work_order_path": "docs/work-orders/ENV-WASTE-CARBON-001.md",
         "handoff_path": "docs/ai/handoffs/ENV-WASTE-CARBON-001-GLM.md",
-        "review_owner": "Claim transition: deterministic R3 cross-model (Codex gpt-6.1-sol preferred but entitlement-blocked on the unchanged fingerprint; GPT-5.6 Sol designated fallback with recorded admission evidence; GPT-6 Astra prohibited; never silent GLM downgrade). Implementation PR: fresh GLM-5.3 MAX reviewer if Codex implements (cross-model independence); implementing lane never merges its own PR",
+        "review_owner": "Claim transition / authority amendments: deterministic R3 cross-model (Codex gpt-6.1-sol preferred but entitlement-blocked on the unchanged fingerprint; GPT-5.6 Sol designated fallback with recorded admission evidence; GPT-6 Astra prohibited; never silent GLM downgrade). Implementation PR: FRESH independent GLM-5.3 MAX reviewer context, unconditionally (same-model fresh-context R2 route per the fleet router since GLM implements; exact SHA; implementing lane never merges its own PR)",
         "dependencies": [
           "ENV-WASTE-CARBON-001A DELIVERED (PR #76 merged 6c36ebe; status reconciled via PR #117 4e65bc1): A-K requirement-gate inventory + rollup honesty contract (hasUnavailableContribution/unavailableSources) + deterministic carbon.v_unified_co2e are live on main and are READ-ONLY inputs to this slice",
           "GARBAGE-CORE-001 canonical segregation semantics (read-only)",
