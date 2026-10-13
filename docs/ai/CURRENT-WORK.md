@@ -361,7 +361,7 @@ exact-SHA independent review and merge into `main`.
         "task_id": "ENV-WASTE-CARBON-001",
         "claim_id": "ENV-WASTE-CARBON-001-C1",
         "claim_generation": 1,
-        "status": "CLAIMED",
+        "status": "IMPLEMENTING",
         "owner_role": "product_implementation",
         "agent_model": "GLM-5.3 MAX (entire lane: D1 contracts, D2 RED-first tests, D3 implementation, D4 integration; route amended 2026-10-13 from Codex-dispatch to the routing-table MEDIUM default - Codex becomes optional enhancement, no admission gate applies because no Codex dispatch occurs; gpt-5.6-sol remains R3-review-only)",
         "execution_holder_id": "zcode-env-waste-carbon-001-g1-primary",
