@@ -1,6 +1,6 @@
 # ENV-WASTE-CARBON-001A — Waste/Plastic/Carbon/T-VER Core Readiness + carbon-rollup data honesty
 
-Status: REVIEW_REQUESTED (implementation complete; awaiting independent GPT MAX exact-SHA review)
+Status: DELIVERED / CLOSED (2026-10-13 reconciliation) — the data-honesty implementation reached main via PR #76 ("preserve unavailable carbon rollup semantics", MERGED as `6c36ebe`); the rollup honesty contract (`hasUnavailableContribution`, `unavailableSources`, NULL-never-zero rendering) and the deterministic `carbon.v_unified_co2e` semantics are live on main. The A–K contract inventory below remains the durable dependency answer for the parent node ENV-WASTE-CARBON-001. This status line was stale (pre-merge text from 2026-09-02) and is reconciled by a reviewed docs-only change.
 Owner: GLM-5.3 MAX (Core Engineering)
 Lead / review / merge owner: GPT MAX (independent exact-SHA review; GLM does not merge)
 Repository: `aase7en/env-wastewater-webapp`
@@ -293,3 +293,12 @@ reviewer rather than adding Playwright surface to justify it.
 Stop at `REVIEW_REQUESTED` with exact pushed SHA. Escalate
 `DECISION_REQUIRED`/`HUMAN_ACTION_REQUIRED` if verified source reality
 contradicts this contract.
+
+## Legacy worktree reconcile record (2026-10-13)
+
+`A:\GitHub\envww-waste-carbon-core-001a` (branch `fix/env-waste-carbon-core-001a`,
+head `9882f29f542fb9bfc72f0950979b871bb1d8949a`, base `64f9f89`) — verified
+CLEAN (zero dirty/untracked entries) and its head IS AN ANCESTOR of current
+`origin/main`, i.e. fully merged. Preserved untouched per the repo git-safety
+rules; safe to remove by the owner at will. No holder process or claim
+references it; the registry has never carried a claim for this sub-lane.
