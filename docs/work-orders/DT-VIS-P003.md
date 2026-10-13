@@ -1,7 +1,7 @@
 # DT-VIS-P003 — Spatial Status Callouts + Evidence Panel (Work Order)
 
 Claim: `DT-VIS-P003-C1` (generation 1) · Status at activation: CLAIMED
-Authoring lane: GLM-5.3 MAX (claim coordination + Track-Z tests) · Implementation owner: **Codex CLI GPT-6.1 Sol MAX** (Track F visual, owner directive 2026-10-12 Role B)
+Authoring lane: GLM-5.3 MAX (claim coordination + Track-Z tests) · Implementation owner: **Codex CLI `gpt-6-sol` @ `model_reasoning_effort=max`** (Track F visual; owner directive 2026-10-12 Role B + explicit model authorization 2026-10-13)
 Base main at transition authoring: `1c91af4591f549741c1a8295f7fd180d9865bc87`
 
 ## Objective
@@ -20,15 +20,20 @@ dashboard architecture.
   evidence panel sections).
 - Owner continuation steer (2026-10-12): continue the ENV Roadmap on non-Building
   lanes; Building Gate 2 deferred (PR #111 issuecomment-6127497707).
-- Owner routing directive (2026-10-12): Codex CLI GPT-6.1 Sol MAX may implement
-  bounded difficult tasks directly (Role B) under its five conditions; GLM-5.3 MAX
-  remains the main engine for coordination/tests; independence floors unchanged.
+- Owner routing directive (2026-10-12, historical text as issued): Codex CLI
+  GPT-6.1 Sol MAX may implement bounded difficult tasks directly (Role B) under
+  its five conditions; GLM-5.3 MAX remains the main engine for
+  coordination/tests; independence floors unchanged.
+- **Owner model authorization (2026-10-13, explicit, supersedes the 6.1 slug
+  for THIS Work Order's D3): `gpt-6-sol` at `model_reasoning_effort=max` is
+  the implementation model** — admission verified by the owner-side read-only
+  probe (CLI 0.157.1, exit 0, MODEL_ADMISSION_OK); explicitly NOT GPT-6 Astra
+  (still prohibited for every purpose); gpt-6.1-sol remains entitlement-blocked
+  and unprobed on its unchanged fingerprint.
 
 ## Owner split
 
-- **Codex CLI GPT-6.1 Sol MAX** (dispatched from the canonical session; admission
-  verified once per materially changed admission fingerprint — see the risk
-  record below; never author-and-approve): visual implementation — callout
+- **Codex CLI `gpt-6-sol` @ `model_reasoning_effort=max`** (dispatched from the canonical session; model authorized by the explicit owner decision of 2026-10-13 with verified admission — see the risk record below; never author-and-approve): visual implementation — callout
   components, spatial anchoring, evidence panel composition, responsive
   recomposition, reduced-motion/WebGL-fallback presentation.
 - **GLM-5.3 MAX**: claim coordination; Track-Z data plumbing contracts
@@ -92,8 +97,12 @@ with a ChatGPT account" (entitlement; the owner's quota statement does not
 override the provider error); `gpt-5.6-sol` ADMITTED and executed this claim's
 R3 transition review. This admission evidence may be reused, while the
 fingerprint is unchanged, for R3 REVIEW dispatches ONLY — it never authorizes a
-D3 implementation dispatch (see the D3 gate below). Human gates remain for
-consequential production changes.
+D3 implementation dispatch. **Owner authorization 2026-10-13 (explicit,
+in-writing): `gpt-6-sol` at `model_reasoning_effort=max` is the D3
+implementation model for this Work Order** (admission verified by the owner-side
+read-only probe: CLI 0.157.1, exit 0, MODEL_ADMISSION_OK; NOT GPT-6 Astra,
+which remains prohibited). Human gates remain for consequential production
+changes.
 Compensating controls: RED-first tests before implementation; full local battery
 (tsc/lint/vitest/playwright) before review; fresh-context independent exact-SHA
 review (GLM reviews Codex-authored code); expected-head merge; post-main
@@ -108,18 +117,23 @@ the registry claim; single-writer rule for DashboardPage.tsx during D3.
   presence/labels, evidence-panel open/close/Escape, focus, 44px, mobile
   recomposition, WebGL-fallback DOM parity, semantics badges) — truthful failures
   before implementation.
-- D3 — Codex CLI implementation dispatch (Role B). **BLOCKED-UNTIL-ADMISSION:
-  the implementation model itself must be admitted** — `gpt-6.1-sol` entitlement
-  must clear (one re-probe per materially changed admission fingerprint) OR the
-  owner explicitly authorizes an alternative implementation model in writing.
-  The recorded `gpt-5.6-sol` admission covers R3 REVIEW ONLY (owner fallback
-  designation) and does NOT qualify it as the Role B implementer. While D3 is
-  blocked, the claim parks in the registry-supported `BLOCKED` status (typed
-  blocker record: model-admission; unblock = gpt-6.1-sol entitlement clearing
-  with one re-probe per materially changed fingerprint, or explicit owner
-  authorization of an alternative implementation model); no implementation
-  dispatch occurs, and GLM does not silently self-assign the Track-F visual
-  work.
+- D3 — Codex CLI implementation dispatch (Role B). **Implementation model
+  authorized by explicit owner decision (2026-10-13): `gpt-6-sol` with
+  `model_reasoning_effort=max`** — the owner designated it in writing as the
+  D3 implementation model for this bounded Work Order, replacing the
+  entitlement-blocked `gpt-6.1-sol` (no re-probes on that unchanged
+  fingerprint). Admission evidence: owner-side independent read-only probe —
+  Codex CLI 0.157.1, model `gpt-6-sol`, effort `max`, exit 0, response
+  `MODEL_ADMISSION_OK`, no project/production mutations; Zcode dispatches the
+  same `codex` CLI on the same machine/account, so the probe transfers — and
+  the D3 dispatch itself re-verifies admission in practice before any file is
+  written. **GPT-6 Astra remains PROHIBITED** (`gpt-6-sol` is a distinct model
+  slug; this authorization is explicitly NOT Astra). The recorded
+  `gpt-5.6-sol` admission remains R3-REVIEW-ONLY. If the `gpt-6-sol` dispatch
+  itself returns a provider admission error, stop, record the exact error,
+  and park the claim in the registry-supported `BLOCKED` status (typed
+  model-admission blocker) — no silent fallback, no GLM self-assignment of
+  the Track-F visual work.
 - D4 — GLM: integration, full battery green, handoff checkpoint.
 - D5 — Independent review (fresh GLM-5.3 MAX context, exact SHA; implementing
   model never approves). Repair rounds as needed.
