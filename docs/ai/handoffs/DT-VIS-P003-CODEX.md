@@ -79,3 +79,51 @@ with `TwinRendererBoundary` + Suspense + `TwinCanvas` and a DOM
 - Next: D3 dispatch (`gpt-6-sol` @ max) — Codex becomes the temporary sole
   writer of ALL mutable files; GLM does not touch them until the recorded
   D3→D4 handoff entry.
+
+## D3 → D4 — Codex implementation handoff (2026-10-13)
+
+- Claim `DT-VIS-P003-C1`, branch `feat/dt-vis-p003`, worktree
+  `A:/GitHub/_worktrees/env-dtvis-p003-20261012`; committed HEAD
+  `32d27e31a66b911f3d2f4527c08361c9d1431b25`, fetched `origin/main`
+  `8e30d52601115ca4173fdc2730ddcaf1432851f9`. D3 changes are left
+  **uncommitted** in this worktree for GLM integration.
+- **Ownership transfer:** the Codex D3 temporary sole-writer window ends at
+  this entry. GLM-5.3 MAX may resume mutation of the claim's mutable scope
+  for D4 integration. A fresh independent GLM context still owns D5 review;
+  the implementation author does not approve or merge it.
+- Implemented pure asset-only callout derivation, the D1 semantic badge table,
+  DOM callout list and evidence panel, transient mapped-asset highlight,
+  Escape/focus return, and responsive Dashboard Twin composition. The
+  renderer boundary, Suspense, Process tab, and 14-day table remain in place.
+  The board's P003 status line now records IMPLEMENTING/pending D4-D5.
+- Evidence panel shows each metric's `observedAt`; a date-only
+  `snapshotDate` is shown only for a present manual-snapshot metric. It does
+  not derive asset DO from plant-wide `do_average` or invent asset trend data.
+  The existing 14-day table is linked and explicitly described as a
+  plant-wide overview, not a per-asset history.
+- Verification: P003 Vitest **10/10 pass**; `dashboard-adapter.test.ts`
+  **7/7 pass**; `npx tsc --noEmit` exit 0; P003 Playwright Chromium
+  **7/7 pass** (dummy Supabase env, exit 0); existing Digital Twin + visual
+  Playwright **11/11 pass**; `npm run lint` exit 0 (only pre-existing,
+  unrelated warnings); `git diff --check` clean.
+- D2 Playwright setup correction: the original spec visited anonymous `/`
+  with the plain fixture, but the Twin tab is on authenticated `/dashboard`.
+  Its original 7 RED failures therefore did not prove P003 behavior. D3
+  changed only test setup: existing authenticated fixture, `/dashboard`, a
+  synthetic session for the configured dummy project, and a mocked dashboard
+  row. **No assertions were changed.** The final green run used a separately
+  managed local Vite server (`E2E_BASE_URL=http://localhost:5173`); the first
+  config-managed-server run passed all seven cases but hung during teardown
+  on this Windows runner and was interrupted.
+- Next: GLM D4 integration/full battery and exact-diff review preparation;
+  preserve this worktree and claim scope. No commit or merge was made by D3.
+
+## D4 — GLM integration battery GREEN (2026-10-13)
+
+Ownership transferred back to GLM at the recorded D3→D4 entry. GLM-verified:
+- `npx tsc --noEmit` clean; `npm run lint` (oxlint) 0 errors / 12 pre-existing warnings.
+- `npx vitest run`: **26 files / 378 tests passed** (incl. new callout-model 10/10; required the standard fresh-worktree `cp .env.example .env` stub).
+- Playwright chromium vs a ref-matching dev server (VITE_SUPABASE_URL=https://gllqtbyofrcjzmbnfoeh.supabase.co + dummy anon key, E2E_BASE_URL=localhost): **18/18 passed** — dt-vis-p003 7/7 + digital-twin + digital-twin-visual regressions all green.
+- Environmental lesson (not a product defect): the authed fixture seeds `sb-<project-ref>-auth-token`; a dummy-host dev server yields a different storage key → login-page bounce. Twin e2e MUST run with a ref-matching VITE_SUPABASE_URL (secret-free dummy anon key suffices; no real credentials involved).
+- Codex D3 deviation verified legitimate: dt-vis-p003.spec.ts switched to the authed fixture + ref-derived storage key + /dashboard route + v_dashboard_14day mock; ALL original assertions unchanged (diff-verified).
+- Next: D5 fresh-GLM independent review at the pushed head; then expected-head merge, post-main CI/deploy/smoke.

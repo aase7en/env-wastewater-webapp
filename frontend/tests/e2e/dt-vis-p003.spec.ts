@@ -1,4 +1,4 @@
-import { expect, test } from "@playwright/test";
+import { expect, test } from "./fixtures";
 
 /**
  * DT-VIS-P003 — Spatial Status Callouts + Evidence Panel (RED-first).
@@ -6,12 +6,39 @@ import { expect, test } from "@playwright/test";
  * fail truthfully before the D3 implementation lands.
  */
 
-test.beforeEach(({ page }) => {
-  void page;
+// The Twin lives behind RequireAuth at /dashboard. The original RED setup
+// visited the anonymous / route, so it could not exercise any P003 assertion.
+test.beforeEach(async ({ authed: page }) => {
+  const projectRef = new URL(
+    process.env.VITE_SUPABASE_URL ?? "https://gllqtbyofrcjzmbnfoeh.supabase.co",
+  ).hostname.split(".")[0];
+  await page.addInitScript((storageKey) => {
+    localStorage.setItem(storageKey, JSON.stringify({
+      access_token: "fake-staff-access-token",
+      refresh_token: "fake-staff-refresh-token",
+      token_type: "bearer",
+      expires_in: 3600,
+      expires_at: Math.floor(Date.now() / 1000) + 3600,
+      user: {
+        id: "00000000-0000-0000-0000-0000000000aa",
+        app_metadata: { provider: "email", providers: ["email"] },
+        user_metadata: { email: "staff@example.test", full_name: "E2E Staff" },
+        aud: "authenticated",
+        email: "staff@example.test",
+      },
+    }));
+  }, `sb-${projectRef}-auth-token`);
+  await page.route("**/rest/v1/v_dashboard_14day**", (route) =>
+    route.fulfill({
+      status: 200,
+      contentType: "application/json",
+      body: JSON.stringify([{ reading_date: "2026-10-13", tds_aeration: 312 }]),
+    }),
+  );
 });
 
-test("twin view exposes an accessible non-Canvas callout list with truthful semantic badges", async ({ page }) => {
-  await page.goto("/");
+test("twin view exposes an accessible non-Canvas callout list with truthful semantic badges", async ({ authed: page }) => {
+  await page.goto("/dashboard");
   await page.getByRole("tab", { name: "3D Plant" }).click();
   const list = page.getByTestId("p003-callout-list");
   await expect(list).toBeVisible();
@@ -26,8 +53,8 @@ test("twin view exposes an accessible non-Canvas callout list with truthful sema
   }
 });
 
-test("selecting a callout opens the evidence panel with source/freshness/provenance", async ({ page }) => {
-  await page.goto("/");
+test("selecting a callout opens the evidence panel with source/freshness/provenance", async ({ authed: page }) => {
+  await page.goto("/dashboard");
   await page.getByRole("tab", { name: "3D Plant" }).click();
   const first = page.getByTestId("p003-callout-list").locator("[data-p003-callout]").first();
   await first.click();
@@ -37,8 +64,8 @@ test("selecting a callout opens the evidence panel with source/freshness/provena
   await expect(panel).toContainText(/สด|ล่าสุด|ประวัติ|จำลอง|เก่า|ไม่พร้อมใช้งาน|LIVE|LATEST|HISTORICAL|SIMULATED|STALE|UNAVAILABLE/);
 });
 
-test("evidence panel closes on Escape and returns focus to the invoking callout", async ({ page }) => {
-  await page.goto("/");
+test("evidence panel closes on Escape and returns focus to the invoking callout", async ({ authed: page }) => {
+  await page.goto("/dashboard");
   await page.getByRole("tab", { name: "3D Plant" }).click();
   const first = page.getByTestId("p003-callout-list").locator("[data-p003-callout]").first();
   await first.click();
@@ -49,8 +76,8 @@ test("evidence panel closes on Escape and returns focus to the invoking callout"
   await expect(first).toBeFocused();
 });
 
-test("callout targets meet the 44px touch minimum", async ({ page }) => {
-  await page.goto("/");
+test("callout targets meet the 44px touch minimum", async ({ authed: page }) => {
+  await page.goto("/dashboard");
   await page.getByRole("tab", { name: "3D Plant" }).click();
   const callouts = page.getByTestId("p003-callout-list").locator("[data-p003-callout]");
   const n = await callouts.count();
@@ -62,9 +89,9 @@ test("callout targets meet the 44px touch minimum", async ({ page }) => {
   }
 });
 
-test("mobile viewport recomposes callouts into an ordered list without Canvas crowding", async ({ page }) => {
+test("mobile viewport recomposes callouts into an ordered list without Canvas crowding", async ({ authed: page }) => {
   await page.setViewportSize({ width: 390, height: 844 });
-  await page.goto("/");
+  await page.goto("/dashboard");
   await page.getByRole("tab", { name: "3D Plant" }).click();
   const list = page.getByTestId("p003-callout-list");
   await expect(list).toBeVisible();
@@ -90,7 +117,7 @@ test("mobile viewport recomposes callouts into an ordered list without Canvas cr
   }
 });
 
-test("WebGL failure keeps callouts and evidence available via DOM fallback", async ({ page }) => {
+test("WebGL failure keeps callouts and evidence available via DOM fallback", async ({ authed: page }) => {
   await page.addInitScript(() => {
     // Force TwinRendererBoundary into its unavailable path
     Object.defineProperty(HTMLCanvasElement.prototype, "getContext", {
@@ -98,7 +125,7 @@ test("WebGL failure keeps callouts and evidence available via DOM fallback", asy
       configurable: true,
     });
   });
-  await page.goto("/");
+  await page.goto("/dashboard");
   await page.getByRole("tab", { name: "3D Plant" }).click();
   const list = page.getByTestId("p003-callout-list");
   await expect(list).toBeVisible();
@@ -107,8 +134,8 @@ test("WebGL failure keeps callouts and evidence available via DOM fallback", asy
   await expect(page.getByTestId("p003-evidence-panel")).toBeVisible();
 });
 
-test("no connector lines or fabricated relationships are rendered", async ({ page }) => {
-  await page.goto("/");
+test("no connector lines or fabricated relationships are rendered", async ({ authed: page }) => {
+  await page.goto("/dashboard");
   await page.getByRole("tab", { name: "3D Plant" }).click();
   await expect(page.locator("[data-p003-connector]")).toHaveCount(0);
 });
