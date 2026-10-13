@@ -93,8 +93,9 @@ D2 — GLM: RED-first tests (unit contract + Playwright: family states, ไม�
 never 0.000, T-VER readiness list without eligibility, badges, a11y 44px,
 360px no-overflow).
 D3 — GLM-5.3 MAX implements `family-state.ts` + SustainabilityPage + route/nav wiring to the frozen D2 contract.
-D4 — GLM battery + receipts. D5 — fresh independent review (GLM if Codex
-implements; cross-model vs author; never author-and-approve). D6 — expected-
+D4 — GLM battery + receipts. D5 — FRESH independent GLM-5.3 MAX review,
+unconditional (same-model fresh-context R2 route per the fleet router since
+GLM implements; exact SHA; implementing lane never merges). D6 — expected-
 head merge, post-main CI/deploy/smoke, board/roadmap status update, closeout
 transition.
 
