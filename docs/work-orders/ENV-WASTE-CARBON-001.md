@@ -1,7 +1,7 @@
 # ENV-WASTE-CARBON-001 — Integrated Waste/Plastic/Carbon/T-VER View (Work Order, C1 slice)
 
 Claim: `ENV-WASTE-CARBON-001-C1` (generation 1) · Status at activation: CLAIMED
-Authoring lane: GLM-5.3 MAX (claim coordination, D1 contracts, D2 RED-first tests, D4 integration) · D3 implementation model: **BLOCKED-UNTIL-ADMISSION** (see below)
+Implementation: **GLM-5.3 MAX** (D1 contracts, D2 RED-first tests, D3 implementation, D4 integration) — amended 2026-10-13 from the original Codex-dispatch route (see the route-amendment record below)
 Base main at transition authoring: `4e65bc1d5b92f35b5f3e8434969cc02546ed9556`
 
 ## Objective
@@ -52,15 +52,24 @@ surfaces, `docs/ai/CURRENT-WORK.md`, guard/autonomy scripts, `data/**`, `.env`.
 
 - GLM-5.3 MAX: D1 (pin the exact nav/route file + contract shapes), D2
   RED-first tests, D4 integration battery, handoff receipts.
-- **D3 implementation dispatch: BLOCKED-UNTIL-ADMISSION.** The PR-#114 owner
-  authorization designated `gpt-6-sol` @ max **for DT-VIS-P003-C1 only**; it
-  does not transfer to this lane. D3 proceeds only after (a) an explicit
-  owner authorization names the implementation model for THIS Work Order
-  (one-line steer + reviewed transition per the PR-#114 pattern), or (b) an
-  admitted default per routing rules emerges. `gpt-5.6-sol` remains
-  R3-REVIEW-ONLY. Until then the claim parks in registry `BLOCKED` after D2.
-- Single-writer rule during any D3 window (Codex sole writer of ALL mutable
-  files); GLM resumes at the recorded D3→D4 handoff.
+- **Route-amendment record (2026-10-13):** the original transition (PR #118)
+  routed D3 to a Codex CLI dispatch gated on a per-lane owner model
+  authorization, because the PR-#114 `gpt-6-sol` authorization was scoped to
+  DT-VIS-P003-C1 only. This amendment re-routes D3 to the standing routing
+  table's default for MEDIUM work — **GLM-5.3 MAX, the main engineering
+  engine** — on the standing objective's own instruction: *"Do not stop
+  ordinary authorized work merely to obtain additional model-routing
+  approval."* This slice is MEDIUM complexity (a page + pure derivation
+  module over existing, test-pinned contracts; no Track-F visual work), so
+  Codex is an optional enhancement, not a dependency. A future owner line
+  naming a Codex model for THIS lane may still upgrade any not-yet-executed
+  dispatch via a reviewed transition; until then no admission gate applies
+  because no Codex dispatch occurs. `gpt-5.6-sol` remains R3-REVIEW-ONLY.
+- Single-writer rule: the claim coordinator (GLM) is the sole writer of all
+  mutable files; no competing owner exists; D5 review is a FRESH GLM-5.3 MAX
+  reviewer context (independent of the authoring run; the implementing lane
+  never merges its own PR) — the repo's established R2 default for Track-Z
+  implementation reviews.
 
 ## Dispatch-exception risk record
 
@@ -83,7 +92,7 @@ the truth-table for family states + T-VER readiness items.
 D2 — GLM: RED-first tests (unit contract + Playwright: family states, ไม่มีข้อมูล
 never 0.000, T-VER readiness list without eligibility, badges, a11y 44px,
 360px no-overflow).
-D3 — implementation dispatch per the gate above.
+D3 — GLM-5.3 MAX implements `family-state.ts` + SustainabilityPage + route/nav wiring to the frozen D2 contract.
 D4 — GLM battery + receipts. D5 — fresh independent review (GLM if Codex
 implements; cross-model vs author; never author-and-approve). D6 — expected-
 head merge, post-main CI/deploy/smoke, board/roadmap status update, closeout
