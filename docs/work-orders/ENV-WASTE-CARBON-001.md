@@ -28,6 +28,11 @@ GARBAGE-CORE-001 `segregation_type` semantics).
   Missing evidence stays explicitly UNAVAILABLE.
 - Waste categories: only the GARBAGE-CORE-001 canonical segregation semantics;
   no plastic-weight estimates beyond recorded data.
+- **Plastic = ABSENT/UNAVAILABLE, explicitly.** Per the delivered 001A
+  contract (A–K; waste_recyclable must never be relabeled as plastic), NO
+  plastic category/mass/unit/factor/mapping exists anywhere. The view must
+  render Plastic as ไม่มีข้อมูล/ABSENT and D2 RED tests must pin that state;
+  relabeling any segregation value as "plastic" is a defect.
 - LIVE/LATEST/HISTORICAL/SIMULATED/STALE/UNAVAILABLE badges where a temporal
   claim is made; color secondary. Thai labels; พ.ศ. dates; unknown ≠ zero.
 
@@ -35,7 +40,7 @@ GARBAGE-CORE-001 `segregation_type` semantics).
 
 - `frontend/src/pages/SustainabilityPage.tsx` (new; route `/sustainability`)
 - `frontend/src/lib/sustainability/**` (new; read-only contract over existing rollup/garbage data)
-- `frontend/src/App.tsx` (route wiring only) · `frontend/src/components/layout/**` nav entry only if that is where routes/nav live — otherwise the single shared nav file (D1 pins it)
+- `frontend/src/App.tsx` (route wiring only) · `frontend/src/components/layout/AppShell.tsx` (nav entry for `/sustainability` only — NAV lives there; no other shell changes)
 - `frontend/tests/e2e/sustainability.spec.ts` (new)
 - `docs/work-orders/ENV-WASTE-CARBON-001.md` (this file), `docs/ai/handoffs/ENV-WASTE-CARBON-001-GLM.md`
 
@@ -88,5 +93,7 @@ transition.
 
 - The page truthfully answers "คาร์บอน/ขยะอะไรบ้างที่มีข้อมูลจริง" with 1
   contributing family + 4 explicit UNAVAILABLE states; T-VER section is
-  readiness-only; all numbers trace to delivered contracts; no horizontal
+  readiness-only; **Plastic renders ABSENT/ไม่มีข้อมูล (pinned by RED tests;
+  no segregation value relabeled as plastic)**; all numbers trace to delivered
+  contracts; no horizontal
   overflow at 360px; a11y floors met; all RED tests green at the reviewed head.

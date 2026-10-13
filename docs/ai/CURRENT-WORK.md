@@ -372,6 +372,7 @@ exact-SHA independent review and merge into `main`.
           "frontend/src/pages/SustainabilityPage.tsx",
           "frontend/src/lib/sustainability/**",
           "frontend/src/App.tsx",
+          "frontend/src/components/layout/AppShell.tsx",
           "frontend/tests/e2e/sustainability.spec.ts",
           "docs/work-orders/ENV-WASTE-CARBON-001.md",
           "docs/ai/handoffs/ENV-WASTE-CARBON-001-GLM.md"
