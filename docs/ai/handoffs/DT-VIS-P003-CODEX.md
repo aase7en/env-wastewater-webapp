@@ -25,3 +25,39 @@
 - PR #114 merged `8e30d52` (second parent = R3-APPROVED `96ebb7d`; verdict issuecomment-6135985226; 2-round GPT-5.6-Sol revalidation): `gpt-6-sol` @ `model_reasoning_effort=max` is the D3 implementation model (explicit owner authorization 2026-10-13; owner-side probe evidence recorded; NOT Astra; gpt-6.1-sol unprobed/unblocked-fingerprint; gpt-5.6-sol R3-review-only). Canonical owner fields updated everywhere.
 - Implementation worktree fast-forwarded to `8e30d52`.
 - Next: D1 (GLM data contracts) → D2 (GLM RED-first tests) → D3 dispatch (`codex exec -m gpt-6-sol -c model_reasoning_effort=max` with an implementation-appropriate sandbox/approval policy — NOT the read-only probe policy; single-writer window opens; skills-context noise is nonfatal and tracked separately).
+
+## D1 — Callout/evidence data contracts pinned (2026-10-13)
+
+Grounding (read from code): `TwinMetric<T>` already carries the truthful
+semantics payload (value | source: manual-snapshot/sensor-telemetry/simulation/
+unavailable | observedAt | provenance.acquisition | freshness); assets today =
+one aeration tank (`asset:aeration-tank-1`, label ถังเติมอากาศ) with 5 metrics,
+of which ONLY `tdsMgL` maps from `DashboardRow.tds_aeration`; DO deliberately
+stays unavailable (plant-wide `do_average` ≠ asset observation); mode ∈
+latest|live|historical|simulation; DashboardPage hosts Twin/Process tabpanels
+with `TwinRendererBoundary` + Suspense + `TwinCanvas` and a DOM
+`ProcessFlowDiagram` fallback; selection contract `onSelectAsset(assetId)`.
+
+**Pinned contracts (no new inference — callouts derive EXCLUSIVELY from
+`WastewaterTwinState.assets[*]`):**
+1. `CalloutModel` = { assetId, assetLabel, metricKey, metricLabel(th),
+   valueLabel, semanticBadge, detailDestination }. New module
+   `frontend/src/components/digital-twin/p003/callout-model.ts` (+ test) —
+   pure derivation, DOM-side.
+2. Semantic badge truth table (exhaustive): source=sensor-telemetry ∧ mode=live
+   → LIVE; source=manual-snapshot → LATEST (HISTORICAL when mode=historical);
+   source=simulation → SIMULATED; source=unavailable → UNAVAILABLE;
+   freshness=stale overrides display to STALE. Color secondary; text badge
+   always (Thai label + EN token).
+3. Evidence panel hierarchy per board: situation → action/attention →
+   source/freshness/provenance (acquisition + observedAt/snapshotDate) →
+   trend/history — asset-specific metrics show only their own observedAt; the
+   14-day DO/pH/Cl table stays the only trend source (no per-metric trend
+   fabrication).
+4. Breakpoints: ≥1024 anchored callouts; 768–1023 split spatial/detail; <768
+   recompose to ordered list + drawer/bottom-sheet (44px targets, Escape
+   close, focus management, aria-live).
+5. Callout list + evidence panel are DOM-first (outside Canvas) so WebGL
+   failure/reduced-motion keeps full information parity.
+6. Anchors: only `asset:aeration-tank-1` exists today; no connector lines; new
+   assets join via the existing `TwinAssetId` map without contract change.
