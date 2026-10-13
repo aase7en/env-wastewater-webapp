@@ -19,3 +19,9 @@
   alternative implementation model; the recorded 2026-10-12 gpt-5.6-sol
   admission is R3-review-only). Park in registry status `BLOCKED` with the
   typed model-admission blocker; never dispatch an unadmitted implementer.
+
+## Checkpoint 1 — D3 model authorization canonical (2026-10-13)
+
+- PR #114 merged `8e30d52` (second parent = R3-APPROVED `96ebb7d`; verdict issuecomment-6135985226; 2-round GPT-5.6-Sol revalidation): `gpt-6-sol` @ `model_reasoning_effort=max` is the D3 implementation model (explicit owner authorization 2026-10-13; owner-side probe evidence recorded; NOT Astra; gpt-6.1-sol unprobed/unblocked-fingerprint; gpt-5.6-sol R3-review-only). Canonical owner fields updated everywhere.
+- Implementation worktree fast-forwarded to `8e30d52`.
+- Next: D1 (GLM data contracts) → D2 (GLM RED-first tests) → D3 dispatch (`codex exec -m gpt-6-sol -c model_reasoning_effort=max` with an implementation-appropriate sandbox/approval policy — NOT the read-only probe policy; single-writer window opens; skills-context noise is nonfatal and tracked separately).
