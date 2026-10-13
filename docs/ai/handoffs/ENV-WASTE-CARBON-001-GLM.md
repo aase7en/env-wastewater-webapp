@@ -78,3 +78,24 @@ card; ≥44px targets; 360px no horizontal overflow; Thai labels; พ.ศ. dates
 New module: `frontend/src/lib/sustainability/family-state.ts` (pure derivation
 from RollupSummary + GarbageLog[]; no new queries) + unit test; page consumes
 it. D2 RED tests target these contracts.
+
+## D2 — RED-first test contract landed (2026-10-13)
+
+- `frontend/src/lib/sustainability/family-state.test.ts` (9 tests): fixed
+  FAMILY_ORDER incl. plastic; electricity CONTRIBUTING/LATEST with real
+  numbers; 4 families UNAVAILABLE ไม่มีข้อมูล never numeric; plastic ABSENT
+  even with waste_recyclable garbage rows; waste segregation summary without
+  fabricated carbon; unavailableSources → UNAVAILABLE-contribution marker
+  never 0.000; known-only-total flag; T-VER readiness statuses
+  DOCUMENTED/ABSENT/PARTIAL with a serialized no-eligibility/no-credit guard.
+  **RED verified**: `Cannot find module './family-state'` (implementation
+  module absent by design).
+- `frontend/tests/e2e/sustainability.spec.ts` (7 tests, authed fixture):
+  six family cards; UNAVAILABLE cards ไม่มีข้อมูล never 0.000; plastic
+  data-family-state=ABSENT; T-VER readiness section with no
+  eligibility/credit/registration text; known-only total marker; NAV
+  ความยั่งยืน ≥44px reaching the page; 360px no horizontal overflow.
+  RED expected pre-implementation (route/elements absent).
+- Next: D3 BLOCKED-UNTIL-ADMISSION for this lane (per-lane owner
+  authorization per the PR-#114 pattern; asked once in PR #118). Until
+  then: no implementation dispatch; claim may park in registry BLOCKED.
