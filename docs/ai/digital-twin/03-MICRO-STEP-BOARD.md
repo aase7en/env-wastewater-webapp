@@ -90,7 +90,7 @@ Use `WAITING_FOR_INPUT` when a task specifically requires user-provided referenc
 
 ### DT-VIS-P003 — Spatial Status Callouts + Evidence Panel + responsive operational hierarchy
 
-- Status: IMPLEMENTING — `DT-VIS-P003-C1` D3 implementation complete in the claim worktree; D4 integration and D5 independent review pending; not merged
+- Status: COMPLETE (2026-10-13) — `DT-VIS-P003-C1` delivered: PR #115 merged as `96b59fb` (second parent = D5-APPROVED reviewed head `ae6e97a`; fresh-GLM cross-model review vs the Codex author, verdict issuecomment-6139798040); exact-main test/E2E-smoke/Pages-deploy all SUCCESS; deployed bundle carries the p003 callout/evidence surfaces with sw uth-env-v2; full D1→D6 trail in docs/ai/handoffs/DT-VIS-P003-CODEX.md
 - Owner: Codex
 - Dependency: DT-VIS-P001 approved; coordinate with completed Command Center contract before touching shared page/shell files
 - Scope:

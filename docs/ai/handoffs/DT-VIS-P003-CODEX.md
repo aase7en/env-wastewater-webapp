@@ -127,3 +127,23 @@ Ownership transferred back to GLM at the recorded D3→D4 entry. GLM-verified:
 - Environmental lesson (not a product defect): the authed fixture seeds `sb-<project-ref>-auth-token`; a dummy-host dev server yields a different storage key → login-page bounce. Twin e2e MUST run with a ref-matching VITE_SUPABASE_URL (secret-free dummy anon key suffices; no real credentials involved).
 - Codex D3 deviation verified legitimate: dt-vis-p003.spec.ts switched to the authed fixture + ref-derived storage key + /dashboard route + v_dashboard_14day mock; ALL original assertions unchanged (diff-verified).
 - Next: D5 fresh-GLM independent review at the pushed head; then expected-head merge, post-main CI/deploy/smoke.
+
+## D5 + D6 — Review, merge, deploy, live-marker receipts (2026-10-13)
+
+- **D5 (independent review)**: fresh-GLM reviewer (separate context; implementation
+  authored by Codex `gpt-6-sol` — cross-model independence satisfied) returned
+  **VERDICT: APPROVED at exact head `ae6e97af832fb5c86e9953164d34a2fd6dc027b7`**
+  with all five adversarial dimensions PASS (truth table, a11y, Command-Center
+  contract, responsive, scope) and 3 non-blocking P3 notes. Durable verdict:
+  PR #115 issuecomment-6139798040.
+- **Merge**: PR #115 expected-head merged as **`96b59fb`** (second parent =
+  reviewed `ae6e97a`; ancestry verified via `git merge-base --is-ancestor`).
+- **Exact-main CI**: `test` SUCCESS; `E2E smoke tests` SUCCESS; Pages deploy
+  run `38357581371` SUCCESS at head `96b59fb`.
+- **D6 live-marker verification (fresh check 2026-10-13, this closeout)**:
+  deployed bundle `assets/index-wU0QHL8u.js` on the live Pages origin contains
+  BOTH `p003-callout-list` and `p003-evidence-panel` test ids; `sw.js` serves
+  `uth-env-v2`. Verified at closeout time from the live origin — not inferred
+  from the deploy run alone.
+- Worktree disposition: `env-dtvis-p003-20261012` preserved clean at `ae6e97a`
+  (fully merged). Lane closed; scope lock released at generation 1.
