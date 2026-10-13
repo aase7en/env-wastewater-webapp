@@ -306,7 +306,7 @@ exact-SHA independent review and merge into `main`.
         "claim_generation": 1,
         "status": "CLAIMED",
         "owner_role": "product_implementation",
-        "agent_model": "Codex CLI GPT-6.1 Sol MAX (implementation owner, owner directive 2026-10-12 Role B) + GLM-5.3 MAX (claim coordination, Track-Z tests, integration)",
+        "agent_model": "Codex CLI gpt-6-sol @ model_reasoning_effort=max (implementation owner, explicit owner authorization 2026-10-13) + GLM-5.3 MAX (claim coordination, Track-Z tests, integration)",
         "execution_holder_id": "zcode-env-dt-vis-p003-g1-primary",
         "worktree": "A:/GitHub/_worktrees/env-dtvis-p003-20261012",
         "branch": "feat/dt-vis-p003",

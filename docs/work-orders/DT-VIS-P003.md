@@ -1,7 +1,7 @@
 # DT-VIS-P003 — Spatial Status Callouts + Evidence Panel (Work Order)
 
 Claim: `DT-VIS-P003-C1` (generation 1) · Status at activation: CLAIMED
-Authoring lane: GLM-5.3 MAX (claim coordination + Track-Z tests) · Implementation owner: **Codex CLI GPT-6.1 Sol MAX** (Track F visual, owner directive 2026-10-12 Role B)
+Authoring lane: GLM-5.3 MAX (claim coordination + Track-Z tests) · Implementation owner: **Codex CLI `gpt-6-sol` @ `model_reasoning_effort=max`** (Track F visual; owner directive 2026-10-12 Role B + explicit model authorization 2026-10-13)
 Base main at transition authoring: `1c91af4591f549741c1a8295f7fd180d9865bc87`
 
 ## Objective
@@ -20,15 +20,20 @@ dashboard architecture.
   evidence panel sections).
 - Owner continuation steer (2026-10-12): continue the ENV Roadmap on non-Building
   lanes; Building Gate 2 deferred (PR #111 issuecomment-6127497707).
-- Owner routing directive (2026-10-12): Codex CLI GPT-6.1 Sol MAX may implement
-  bounded difficult tasks directly (Role B) under its five conditions; GLM-5.3 MAX
-  remains the main engine for coordination/tests; independence floors unchanged.
+- Owner routing directive (2026-10-12, historical text as issued): Codex CLI
+  GPT-6.1 Sol MAX may implement bounded difficult tasks directly (Role B) under
+  its five conditions; GLM-5.3 MAX remains the main engine for
+  coordination/tests; independence floors unchanged.
+- **Owner model authorization (2026-10-13, explicit, supersedes the 6.1 slug
+  for THIS Work Order's D3): `gpt-6-sol` at `model_reasoning_effort=max` is
+  the implementation model** — admission verified by the owner-side read-only
+  probe (CLI 0.157.1, exit 0, MODEL_ADMISSION_OK); explicitly NOT GPT-6 Astra
+  (still prohibited for every purpose); gpt-6.1-sol remains entitlement-blocked
+  and unprobed on its unchanged fingerprint.
 
 ## Owner split
 
-- **Codex CLI GPT-6.1 Sol MAX** (dispatched from the canonical session; admission
-  verified once per materially changed admission fingerprint — see the risk
-  record below; never author-and-approve): visual implementation — callout
+- **Codex CLI `gpt-6-sol` @ `model_reasoning_effort=max`** (dispatched from the canonical session; model authorized by the explicit owner decision of 2026-10-13 with verified admission — see the risk record below; never author-and-approve): visual implementation — callout
   components, spatial anchoring, evidence panel composition, responsive
   recomposition, reduced-motion/WebGL-fallback presentation.
 - **GLM-5.3 MAX**: claim coordination; Track-Z data plumbing contracts
