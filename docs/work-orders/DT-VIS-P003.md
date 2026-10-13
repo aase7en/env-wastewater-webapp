@@ -92,8 +92,12 @@ with a ChatGPT account" (entitlement; the owner's quota statement does not
 override the provider error); `gpt-5.6-sol` ADMITTED and executed this claim's
 R3 transition review. This admission evidence may be reused, while the
 fingerprint is unchanged, for R3 REVIEW dispatches ONLY — it never authorizes a
-D3 implementation dispatch (see the D3 gate below). Human gates remain for
-consequential production changes.
+D3 implementation dispatch. **Owner authorization 2026-10-13 (explicit,
+in-writing): `gpt-6-sol` at `model_reasoning_effort=max` is the D3
+implementation model for this Work Order** (admission verified by the owner-side
+read-only probe: CLI 0.157.1, exit 0, MODEL_ADMISSION_OK; NOT GPT-6 Astra,
+which remains prohibited). Human gates remain for consequential production
+changes.
 Compensating controls: RED-first tests before implementation; full local battery
 (tsc/lint/vitest/playwright) before review; fresh-context independent exact-SHA
 review (GLM reviews Codex-authored code); expected-head merge; post-main
@@ -108,18 +112,23 @@ the registry claim; single-writer rule for DashboardPage.tsx during D3.
   presence/labels, evidence-panel open/close/Escape, focus, 44px, mobile
   recomposition, WebGL-fallback DOM parity, semantics badges) — truthful failures
   before implementation.
-- D3 — Codex CLI implementation dispatch (Role B). **BLOCKED-UNTIL-ADMISSION:
-  the implementation model itself must be admitted** — `gpt-6.1-sol` entitlement
-  must clear (one re-probe per materially changed admission fingerprint) OR the
-  owner explicitly authorizes an alternative implementation model in writing.
-  The recorded `gpt-5.6-sol` admission covers R3 REVIEW ONLY (owner fallback
-  designation) and does NOT qualify it as the Role B implementer. While D3 is
-  blocked, the claim parks in the registry-supported `BLOCKED` status (typed
-  blocker record: model-admission; unblock = gpt-6.1-sol entitlement clearing
-  with one re-probe per materially changed fingerprint, or explicit owner
-  authorization of an alternative implementation model); no implementation
-  dispatch occurs, and GLM does not silently self-assign the Track-F visual
-  work.
+- D3 — Codex CLI implementation dispatch (Role B). **Implementation model
+  authorized by explicit owner decision (2026-10-13): `gpt-6-sol` with
+  `model_reasoning_effort=max`** — the owner designated it in writing as the
+  D3 implementation model for this bounded Work Order, replacing the
+  entitlement-blocked `gpt-6.1-sol` (no re-probes on that unchanged
+  fingerprint). Admission evidence: owner-side independent read-only probe —
+  Codex CLI 0.157.1, model `gpt-6-sol`, effort `max`, exit 0, response
+  `MODEL_ADMISSION_OK`, no project/production mutations; Zcode dispatches the
+  same `codex` CLI on the same machine/account, so the probe transfers — and
+  the D3 dispatch itself re-verifies admission in practice before any file is
+  written. **GPT-6 Astra remains PROHIBITED** (`gpt-6-sol` is a distinct model
+  slug; this authorization is explicitly NOT Astra). The recorded
+  `gpt-5.6-sol` admission remains R3-REVIEW-ONLY. If the `gpt-6-sol` dispatch
+  itself returns a provider admission error, stop, record the exact error,
+  and park the claim in the registry-supported `BLOCKED` status (typed
+  model-admission blocker) — no silent fallback, no GLM self-assignment of
+  the Track-F visual work.
 - D4 — GLM: integration, full battery green, handoff checkpoint.
 - D5 — Independent review (fresh GLM-5.3 MAX context, exact SHA; implementing
   model never approves). Repair rounds as needed.
