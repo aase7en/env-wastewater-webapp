@@ -12,6 +12,7 @@ import { Button } from "../components/ui/Button";
 import { MSymbol } from "../components/ui/MSymbol";
 import { RepairRequestModal } from "../components/repair/RepairRequestModal";
 import { TwinRendererBoundary } from "../components/digital-twin/TwinRendererBoundary";
+import { SpatialStatusCallouts } from "../components/digital-twin/p003/SpatialStatusCallouts";
 import type { TwinRendererStatus } from "../lib/twin/webgl";
 import { fmt, thaiDate, daysSince } from "../lib/utils";
 
@@ -187,31 +188,36 @@ export function DashboardPage() {
         hidden={dashboardView !== "twin"}
       >
         {dashboardView === "twin" ? (
-          <TwinRendererBoundary
-            onUnavailable={() => setTwinRendererStatus("unavailable")}
-            onShowProcess={() => selectDashboardView("process")}
-          >
-            <Suspense
-              fallback={
-                <AuraCard>
-                  <div
-                    className="py-24 text-center text-sm text-aura-textMuted font-thai"
-                    role="status"
-                    aria-live="polite"
-                  >
-                    กำลังเตรียมมุมมอง 3D…
-                  </div>
-                </AuraCard>
-              }
-            >
-              <TwinCanvas
-                row={today}
-                latestDate={latestDate}
-                onRendererStatusChange={setTwinRendererStatus}
+          <div className="grid gap-4 md:grid-cols-[minmax(0,1.12fr)_minmax(0,0.88fr)] lg:grid-cols-[minmax(0,1.65fr)_minmax(16rem,0.85fr)]">
+            <div className="min-w-0">
+              <TwinRendererBoundary
+                onUnavailable={() => setTwinRendererStatus("unavailable")}
                 onShowProcess={() => selectDashboardView("process")}
-              />
-            </Suspense>
-          </TwinRendererBoundary>
+              >
+                <Suspense
+                  fallback={
+                    <AuraCard>
+                      <div
+                        className="py-24 text-center text-sm text-aura-textMuted font-thai"
+                        role="status"
+                        aria-live="polite"
+                      >
+                        กำลังเตรียมมุมมอง 3D…
+                      </div>
+                    </AuraCard>
+                  }
+                >
+                  <TwinCanvas
+                    row={today}
+                    latestDate={latestDate}
+                    onRendererStatusChange={setTwinRendererStatus}
+                    onShowProcess={() => selectDashboardView("process")}
+                  />
+                </Suspense>
+              </TwinRendererBoundary>
+            </div>
+            <SpatialStatusCallouts row={today} />
+          </div>
         ) : null}
       </div>
       <div
@@ -227,7 +233,7 @@ export function DashboardPage() {
 
       {/* 14-day log table */}
       <AuraCard className="p-0 overflow-hidden">
-        <h2 className="font-display font-semibold text-aura-textMain p-4 border-b border-aura-borderSubtle font-thai">
+        <h2 id="dashboard-history-14day" className="font-display font-semibold text-aura-textMain p-4 border-b border-aura-borderSubtle font-thai">
           ประวัติ 14 วัน
         </h2>
         <div className="overflow-x-auto">

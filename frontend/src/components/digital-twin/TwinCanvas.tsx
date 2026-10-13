@@ -88,6 +88,7 @@ export function TwinCanvas({
   );
   const mode = useTwinStore((state) => state.mode);
   const selectedAssetId = useTwinStore((state) => state.selectedAssetId);
+  const focusedAssetId = useTwinStore((state) => state.focusedAssetId);
   const simulationOverrides = useTwinStore((state) => state.simulationOverrides);
   const selectAsset = useTwinStore((state) => state.selectAsset);
   const closeAssetPanel = useTwinStore((state) => state.closeAssetPanel);
@@ -207,7 +208,7 @@ export function TwinCanvas({
           />
           <WastewaterTwin
             asset={tank}
-            selected={selected}
+            selected={selected || focusedAssetId === AERATION_TANK_ID}
             reducedMotion={reducedMotion}
             theme={theme}
             selectionColor={selectionColor}
