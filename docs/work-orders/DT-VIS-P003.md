@@ -154,3 +154,19 @@ Claim transition = deterministic R3 cross-model review (Codex gpt-6.1-sol
 preferred; GPT-5.6 Sol designated fallback with recorded admission evidence;
 never Astra; never silent GLM downgrade). Implementation PR = fresh GLM-5.3 MAX
 reviewer (cross-model vs Codex author). Implementing lane never merges its own PR.
+
+## Completion record (2026-10-13)
+
+D1 contracts @`50c03e0` → D2 RED-first @`32d27e3` (truthful failures: unit
+module-absent; e2e 7/7) → D3 Codex `gpt-6-sol` @ max (Role B per the owner
+authorization recorded via PR #114; single-writer window honored; D3→D4
+transfer recorded) → D4 GLM integration battery @`ae6e97a` (tsc clean; oxlint
+0 errors; vitest 26 files/378 tests; Playwright chromium 18/18 incl. both
+twin regression suites, on a ref-matching dev server with a dummy anon key —
+no real credentials) → D5 fresh-GLM independent APPROVED
+(issuecomment-6139798040; 3 non-blocking P3 notes) → PR #115 expected-head
+merge `96b59fb` → exact-main test/E2E-smoke/Pages-deploy SUCCESS → deployed
+bundle p003 markers verified. Board P003 status reconciled to COMPLETE.
+Claim worktree `env-dtvis-p003-20261012` preserved clean at `ae6e97a`
+(fully merged). WO obligations satisfied; closure effective when this
+transition merges.
