@@ -1,6 +1,14 @@
 # ENV-VIS-STORY-001B — Interactive Scenario Simulation, C1 contract slice (Work Order)
 
-Status: CLAIMED (transition pending R3 review + merge)
+Status: DELIVERED / CLOSED 2026-10-14 — claim ENV-VIS-STORY-001B-C1 closed at
+generation 1. Activation transition PR #135 merged `e5bf6a7` (2-round R3;
+ACTIVATION_BASIS judged SUFFICIENT); implementation PR #136 merged `70d9ab0`
+(second parent = D5-APPROVED `efe670d`; fresh-GLM verdict
+issuecomment-6171174450); exact-main test/E2E-smoke/Pages-deploy ALL SUCCESS.
+Battery: vitest 412/412 + tsc + lint 0 errors. The domain-owner numeric gate
+REMAINS UNPASSED. Receipts durable in docs/ai/handoffs/ENV-VIS-STORY-001B-GLM.md.
+The scenario VIEW (production consumer) + any numeric-effect work need their
+own owner-authorized activation + WO + NEW reviewed claim transition.
 Task: `ENV-VIS-STORY-001B` (Stage 2 of epic ENV-VIS-STORY-001, Issue #110)
 Claim: `ENV-VIS-STORY-001B-C1` (generation 1)
 Base: `fb17c6cb754d372800ddc505bb6dbcec2f6c7e05`
