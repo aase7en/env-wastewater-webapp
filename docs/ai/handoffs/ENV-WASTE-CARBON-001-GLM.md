@@ -99,3 +99,22 @@ it. D2 RED tests target these contracts.
 - Next: D3 BLOCKED-UNTIL-ADMISSION for this lane (per-lane owner
   authorization per the PR-#114 pattern; asked once in PR #118). Until
   then: no implementation dispatch; claim may park in registry BLOCKED.
+
+## D3a + D3b complete — ownership transferred back to GLM (2026-10-14)
+
+- **D3a @3d5d49d (GLM, Track Z):** `family-state.ts` implemented to the frozen
+  unit contract — 9/9 unit green, `tsc --noEmit` clean.
+- **D3b (Codex `gpt-6-sol` @ max, Track F):** implemented
+  `SustainabilityPage.tsx` (frozen hooks consumed read-only; six family cards
+  with data-family/data-family-state; known-total marker; T-VER readiness
+  section with data-readiness-status; no eligibility/credit words),
+  `App.tsx` route wiring, `AppShell.tsx` nav entry ความยั่งยืน. tsc clean.
+  e2e 5/7: the two failures are frozen-spec issues, not product defects —
+  (1) card-count assertion runs before the lazy authed page settles
+  (snapshot showed 5 settling cards; provable test-timing bug, same class as
+  the P003 D2 spec fix); (2) nav-link test assumes top-level dock visibility
+  while the dock's default groups put new modules under ทุกโมดูล
+  (124×82 px link verified once exposed). Both tests left untouched by Codex
+  per the freeze; GLM owns the disposition in D4.
+- **D3b→D4 handoff:** per-file ownership of all mutable files transfers back
+  to GLM at this entry (single-writer window closed; Codex made no commit).
