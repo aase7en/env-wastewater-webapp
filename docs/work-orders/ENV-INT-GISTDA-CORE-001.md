@@ -1,6 +1,6 @@
 # ENV-INT-GISTDA-CORE-001 — deterministic GISTDA PM2.5 adapter/parser core
 
-Status: REVIEW_REQUESTED (review-blocker repaired 2026-09-16 on top of ddb1ac0; awaiting re-review of the new exact SHA)
+Status: DELIVERED / CLOSED (2026-10-14 reconciliation) — merged via PR #80 ("ENV-INT-GISTDA-CORE-001: deterministic GISTDA PM2.5 adapter core", MERGED as `bf26cb52`, ancestor of current main; exact-head scripts/smoke/notify checks succeeded per the 2026-09-16 close). The deterministic parsers + fixtures + tests live on main (`frontend/src/lib/env-int/gistda/` — gistda.ts 336 lines, 26 tests in gistda.test.ts). This status line was stale (pre-merge text from 2026-09-16) and is reconciled by a reviewed docs-only change.
 Owner / implementer: GLM-5.3 MAX (Core Engineering)
 Independent reviewer / merge owner: GPT-5.6 Sol
 Repository: `aase7en/env-wastewater-webapp`
@@ -207,3 +207,12 @@ semantics would need guessing beyond the packet.
   `a92bfec2ffd705bec2a899995026d913412d1f52` (docs-only movement since
   merge base `685037e`; zero overlap with lane scope; nothing to merge).
   PR #80 OPEN at `ddb1ac0` before this push; implementer does not merge.
+
+## Legacy worktree reconcile record (2026-10-14)
+
+`A:\GitHub\envww-env-int-gistda-core-001` (branch `feat/env-int-gistda-core-001`,
+head `6e937b5d1bb85a5cb71234ec0a4865c386834e06`) — verified CLEAN (zero dirty/untracked)
+and its head IS AN ANCESTOR of current `origin/main` (fully merged). Preserved untouched
+per repo git-safety; safe to remove by the owner at will. No claim in the Coordination
+Registry ever referenced this sub-lane (pre-registry lane, merged 2026-09-16 under the
+pre-registry governance; PR #80 merge is the durable authority).
