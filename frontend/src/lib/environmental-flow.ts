@@ -2,6 +2,72 @@ export type EnvironmentalFlowMedium = "water" | "sludge" | "chemical";
 export type EnvironmentalFlowEdgeKind = "normal" | "return" | "exception";
 export type EnvironmentalFlowActivity = "structural" | "unknown";
 
+/**
+ * ENV-VIS-STORY-001A — static process-EXPLANATION topology (Stage 1).
+ *
+ * Derived from the process-topology SSoT
+ * (docs/ai/digital-twin/11-UTHAI-ACTIVATED-SLUDGE-PROCESS-KNOWLEDGE.md,
+ * Recommended Process Graph + modeling rules 1–5). Teaching data only:
+ * NO readings, timestamps, rates, equipment states, or simulation
+ * vocabulary. A drawn pipe proves a connection, never current flow —
+ * bypass/emergency stay `activity: "unknown"` with a
+ * `needs_confirmation` tie-in and must never animate as flowing.
+ * `toEnvironmentalFlowModel()` derives its edge identities/endpoints
+ * from this contract so the project has ONE topology authority.
+ */
+export type ProcessExplanationTieIn = "confirmed" | "needs_confirmation";
+
+export interface ProcessExplanationStage {
+  id: string;
+  /** Thai teaching label (educational, never an operational claim). */
+  label: string;
+}
+
+export interface ProcessExplanationEdge {
+  id: string;
+  from: string;
+  to: string;
+  medium: EnvironmentalFlowMedium;
+  kind: EnvironmentalFlowEdgeKind;
+  activity: EnvironmentalFlowActivity;
+  tieIn: ProcessExplanationTieIn;
+  /** Thai uncertainty note, used on the exception paths only. */
+  note?: string;
+}
+
+export interface ProcessExplanation {
+  stages: readonly ProcessExplanationStage[];
+  edges: readonly ProcessExplanationEdge[];
+}
+
+export const PROCESS_EXPLANATION: ProcessExplanation = {
+  stages: [
+    { id: "influent_collection", label: "ระบบรวบรวมน้ำเสีย" },
+    { id: "pump_sump", label: "บ่อพัก / เครื่องสูบ" },
+    { id: "fine_screen", label: "ตะแกรงละเอียด" },
+    { id: "aeration_tank", label: "บ่อเติมอากาศ" },
+    { id: "secondary_clarifier", label: "บ่อตกตะกอน" },
+    { id: "flow_measurement_weir", label: "บ่อวัดอัตราการไหล" },
+    { id: "chlorine_contact_tank", label: "บ่อสัมผัสคลอรีน" },
+    { id: "treated_effluent_outfall", label: "จุดระบายน้ำทิ้ง" },
+  ],
+  edges: [
+    { id: "influent-entry", from: "influent_collection", to: "pump_sump", medium: "water", kind: "normal", activity: "structural", tieIn: "confirmed" },
+    { id: "pump-sump-to-screening", from: "pump_sump", to: "fine_screen", medium: "water", kind: "normal", activity: "structural", tieIn: "confirmed" },
+    { id: "screening-to-aeration", from: "fine_screen", to: "aeration_tank", medium: "water", kind: "normal", activity: "structural", tieIn: "confirmed" },
+    { id: "aeration-to-clarifier", from: "aeration_tank", to: "secondary_clarifier", medium: "water", kind: "normal", activity: "structural", tieIn: "confirmed" },
+    { id: "clarifier-to-weir", from: "secondary_clarifier", to: "flow_measurement_weir", medium: "water", kind: "normal", activity: "structural", tieIn: "confirmed" },
+    { id: "weir-to-chlorine", from: "flow_measurement_weir", to: "chlorine_contact_tank", medium: "water", kind: "normal", activity: "structural", tieIn: "confirmed" },
+    { id: "chlorine-to-outfall", from: "chlorine_contact_tank", to: "treated_effluent_outfall", medium: "water", kind: "normal", activity: "structural", tieIn: "confirmed" },
+    { id: "ras-return", from: "secondary_clarifier", to: "aeration_tank", medium: "sludge", kind: "return", activity: "structural", tieIn: "confirmed" },
+    { id: "was-to-drying-beds", from: "secondary_clarifier", to: "sludge_drying_beds", medium: "sludge", kind: "normal", activity: "structural", tieIn: "confirmed" },
+    { id: "filtrate-return", from: "sludge_drying_beds", to: "pump_sump", medium: "water", kind: "return", activity: "structural", tieIn: "confirmed" },
+    { id: "chlorine-dosing", from: "chlorine_solution_storage", to: "chlorine_contact_tank", medium: "chemical", kind: "normal", activity: "structural", tieIn: "confirmed" },
+    { id: "pump-sump-bypass", from: "pump_sump", to: "flow_measurement_weir", medium: "water", kind: "exception", activity: "unknown", tieIn: "needs_confirmation", note: "เส้นทางรอง — ยังไม่ยืนยันการเชื่อมต่อจริงและไม่แสดงการไหลปัจจุบัน" },
+    { id: "emergency-overflow", from: "pump_sump", to: "flow_measurement_weir", medium: "water", kind: "exception", activity: "unknown", tieIn: "needs_confirmation", note: "เส้นทางล้นฉุกเฉิน — ยังไม่ยืนยันการเชื่อมต่อจริงและไม่แสดงการไหลปัจจุบัน" },
+  ],
+};
+
 export interface EnvironmentalFlowReading {
   reading_date?: string | null;
   water_used_total?: number | string | null;
@@ -120,20 +186,20 @@ export function toEnvironmentalFlowModel(
       recorded: reading?.wastewater_discharged ?? null,
       quantity: null,
     },
-    edges: [
-      edge("influent-entry", "influent_collection", "pump_sump", "water", "normal", "structural", influent),
-      edge("pump-sump-to-screening", "pump_sump", "fine_screen", "water"),
-      edge("screening-to-aeration", "fine_screen", "aeration_tank", "water"),
-      edge("aeration-to-clarifier", "aeration_tank", "secondary_clarifier", "water"),
-      edge("clarifier-to-weir", "secondary_clarifier", "flow_measurement_weir", "water"),
-      edge("weir-to-chlorine", "flow_measurement_weir", "chlorine_contact_tank", "water"),
-      edge("chlorine-to-outfall", "chlorine_contact_tank", "treated_effluent_outfall", "water"),
-      edge("ras-return", "secondary_clarifier", "aeration_tank", "sludge", "return"),
-      edge("was-to-drying-beds", "secondary_clarifier", "sludge_drying_beds", "sludge", "normal", "structural", excessSludge),
-      edge("filtrate-return", "sludge_drying_beds", "pump_sump", "water", "return"),
-      edge("chlorine-dosing", "chlorine_solution_storage", "chlorine_contact_tank", "chemical"),
-      edge("pump-sump-bypass", "pump_sump", "flow_measurement_weir", "water", "exception", "unknown"),
-      edge("emergency-overflow", "pump_sump", "flow_measurement_weir", "water", "exception", "unknown"),
-    ],
+    edges: PROCESS_EXPLANATION.edges.map((explanation) =>
+      edge(
+        explanation.id,
+        explanation.from,
+        explanation.to,
+        explanation.medium,
+        explanation.kind,
+        explanation.activity,
+        explanation.id === "influent-entry"
+          ? influent
+          : explanation.id === "was-to-drying-beds"
+            ? excessSludge
+            : null,
+      ),
+    ),
   };
 }
