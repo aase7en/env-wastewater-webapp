@@ -131,3 +131,29 @@ it. D2 RED tests target these contracts.
   `tsc --noEmit` clean; oxlint 0 errors / 12 pre-existing warnings.
 - Next: D5 FRESH independent GLM review at the pushed head → expected-head
   merge → D6 deploy + live-marker receipts + closeout.
+
+## D5 + D6 — Review, merge, deploy, live-marker receipts (2026-10-14)
+
+- **D5**: FRESH independent GLM reviewer (separate context; independent of both
+  the GLM Track-Z and Codex Track-F authoring runs) returned **VERDICT:
+  APPROVED at exact head `245c29ac5fd8e054687f6d53c96f35e4e51ba62e`** —
+  truth table, scope, read-only contracts, zero eligibility vocabulary, and
+  all three e2e edits diff-verified substance-preserving; 4 non-blocking
+  notes (P2 latent waste-branch mislabel unreachable today; 3×P3). Durable
+  verdict: PR #121 issuecomment-6160114878.
+- **Merge**: PR #121 expected-head merged as **`2df0bcd`** (second parent =
+  reviewed `245c29a`; ancestry verified).
+- **Exact-main CI**: test SUCCESS (13s); Deploy frontend to GitHub Pages
+  SUCCESS (1m29s); E2E smoke SUCCESS (5m3s) — all at `2df0bcd`.
+- **D6 live-marker verification (fresh, from the live origin)**: deployed
+  index `assets/index-wSPXCzFw.js` carries the ความยั่งยืน nav entry; the
+  lazy route chunk `assets/SustainabilityPage-zh7wi_TM.js` contains BOTH
+  `sustainability-families` and `tver-readiness` test ids. Verified live at
+  closeout time — not inferred from the deploy run alone.
+- Worktree `env-wc001-20261013` preserved clean at `402c7a1` — the receipt-only
+  child of the merged implementation head `245c29a` (`245c29a` fully merged
+  via PR #121; the `402c7a1` receipts tail is carried by the closeout
+  transition). WO obligations satisfied; closure effective when the closeout
+  transition merges. Follow-ups recorded for the parent node: P2 waste-subtotal note,
+  P3 readiness-union/load-guard alignment, P3 factor-readiness basis,
+  P3 known-only-flag pin.
