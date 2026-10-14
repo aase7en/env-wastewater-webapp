@@ -90,3 +90,20 @@ to the C1 fixtures); `__fixtures__/process-scenarios.ts` re-exports it.
   Per the quota-boundary policy (boundaries can be stale - probe once),
   the dispatch is retried once after the repair commit; if the limit
   persists the claim parks at REVIEW_REQUESTED with this blocker recorded.
+
+## PARKED at REVIEW_REQUESTED - provider quota gate (2026-10-14)
+
+- R3 ROUND 2 RETRY (at `8501d18`): the one-per-policy retry ALSO hit the
+  Codex account usage limit ("try again at 11:27 PM"; 3 occurrences in the
+  log). No further probing per the standing policy. The designated fallback
+  `gpt-5.6-sol` shares the same account quota and is therefore equally
+  blocked - no fallback dispatch.
+- **Lane state: PARKED at the typed review gate.** No mutation authority
+  exists (the transition is not merged); D2-D6 do not start. The R1 finding
+  is already repaired at `8501d18`; the round-2 prompt is reproducible from
+  the review-route record.
+- **Resume condition:** after the account quota resets (stated 23:27 local
+  2026-10-14), re-dispatch R3 round 2 at the exact head `8501d18` -> on
+  APPROVED, expected-head merge PR #138 -> D2 RED -> D3a GLM catalog ->
+  D3b Codex view -> D4 -> D5 -> D6. Trigger: the owner's next message or
+  resuming the supervisor automation (both currently owner-controlled).
