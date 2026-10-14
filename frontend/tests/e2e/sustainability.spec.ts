@@ -10,13 +10,16 @@ test("sustainability page shows all six family cards with truthful states", asyn
   await page.goto("/sustainability");
   const list = page.getByTestId("sustainability-families");
   await expect(list).toBeVisible();
+  // Auto-retry: the lazy authed page settles cards progressively.
   const cards = list.locator("[data-family]");
-  expect(await cards.count()).toBe(6);
+  await expect(cards).toHaveCount(6);
 });
 
 test("electricity shows real numbers; 0-row families show ไม่มีข้อมูล never 0.000", async ({ authed: page }) => {
   await page.goto("/sustainability");
   const list = page.getByTestId("sustainability-families");
+  // Wait for the six cards to settle before counting states.
+  await expect(list.locator("[data-family]")).toHaveCount(6);
   const unavailable = list.locator("[data-family-state='UNAVAILABLE']");
   const n = await unavailable.count();
   expect(n).toBeGreaterThanOrEqual(4);
@@ -51,6 +54,9 @@ test("known-only total flag appears when contributions are unavailable", async (
 
 test("nav entry ความยั่งยืน reaches the page and targets meet 44px", async ({ authed: page }) => {
   await page.goto("/");
+  // The floating ModuleDock shows pinned entries; unpinned modules live in
+  // the ทุกโมดูล picker — the truthful user path to a new module.
+  await page.getByRole("button", { name: "ทุกโมดูล" }).click();
   const nav = page.getByRole("link", { name: "ความยั่งยืน" });
   await expect(nav).toBeVisible();
   const box = await nav.boundingBox();

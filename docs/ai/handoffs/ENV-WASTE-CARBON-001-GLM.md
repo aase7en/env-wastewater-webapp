@@ -118,3 +118,16 @@ it. D2 RED tests target these contracts.
   per the freeze; GLM owns the disposition in D4.
 - **D3b→D4 handoff:** per-file ownership of all mutable files transfers back
   to GLM at this entry (single-writer window closed; Codex made no commit).
+
+## D4 — GLM integration battery GREEN (2026-10-14)
+
+- e2e spec corrections (provable test bugs, assertion substance preserved):
+  (1) card-count → `toHaveCount(6)` auto-retry (lazy authed settle); (2) nav
+  test opens ทุกโมดูล picker first — the truthful path to an unpinned module
+  in the floating ModuleDock (Link tile ≥44px verified); (3) test 2 gated on
+  the six-card settle before counting UNAVAILABLE states.
+- Verified: Playwright chromium **7/7** (ref-matching dev server, dummy anon
+  key — no real credentials); vitest full **27 files / 387 tests**;
+  `tsc --noEmit` clean; oxlint 0 errors / 12 pre-existing warnings.
+- Next: D5 FRESH independent GLM review at the pushed head → expected-head
+  merge → D6 deploy + live-marker receipts + closeout.
