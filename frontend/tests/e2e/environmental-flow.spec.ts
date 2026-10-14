@@ -322,12 +322,10 @@ test("banner stays visible with the picker collapsed; loss-of-aeration marks onl
   await page.getByTestId("process-scenario-apply").click();
   await expect(page.getByTestId("process-scenario-banner")).toBeVisible();
 
-  // Collapse the picker section; the banner must persist.
-  await page.getByTestId("process-scenario-picker").click({ position: { x: 8, y: 8 } }).catch(() => {});
-  const summary = page.getByTestId("process-scenario-picker");
-  await summary.evaluate((el) => (el as HTMLElement).blur()).catch(() => {});
-  await page.keyboard.press("Escape").catch(() => {});
-  await page.waitForTimeout(150);
+  // Collapse the scenario panel via its native summary toggle; the picker
+  // must actually hide while the persistent banner stays visible.
+  await page.locator("summary.env-flow-story-scenario-summary").click();
+  await expect(page.getByTestId("process-scenario-picker")).toBeHidden();
   await expect(page.getByTestId("process-scenario-banner")).toBeVisible();
 
   const marker = page.getByTestId("process-scenario-marker");

@@ -177,9 +177,11 @@ describe("ENV-VIS-STORY-001B-VIEW production catalog (RED-first)", () => {
         return entry.isDirectory() ? walk(full) : [full];
       });
     const srcRoot = path.resolve(__dirname, "..");
-    // Pins actual IMPORTS (static or dynamic) — doc-comment mentions of the
+    // Pins actual IMPORT/EXPORT statements (named, dynamic, bare
+    // side-effect, re-export, .js-suffixed) — doc-comment mentions of the
     // fixture path are explanatory, not dependencies.
-    const importPattern = /(?:from\s+|import\()\s*["'][^"']*__fixtures__\/process-scenarios["']/;
+    const importPattern =
+      /(?:^|\n)\s*(?:import|export)[^;\n]*["'][^"']*__fixtures__\/process-scenarios(?:\.js)?["']/;
     const offenders = walk(srcRoot).filter(
       (file) =>
         !file.includes("__fixtures__") &&
