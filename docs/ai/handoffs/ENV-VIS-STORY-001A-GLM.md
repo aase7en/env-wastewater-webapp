@@ -42,3 +42,39 @@ receipt trail.
   once. Next: R3 → expected-head merge → D2 RED → D3a → D3b → D4 → D5 → D6.
 
 (append-only below this line)
+
+## D1 contract table (stage/edge mapping, frozen for D2)
+
+`ProcessExplanation` derives from the 11-UTHAI Recommended Process Graph and
+maps 1:1 onto the EXISTING `toEnvironmentalFlowModel()` edge IDs (single
+topology authority — the derivation changes identities nowhere, it only
+sources them from the shared contract):
+
+| SSoT graph segment | Existing edge ID (environmental-flow.ts) | Medium | Kind | Activity | Tie-in |
+| --- | --- | --- | --- | --- | --- |
+| influent_collection → pump_sump | influent-entry | water | normal | structural | confirmed |
+| pump_sump → fine_screen | pump-sump-to-screening | water | normal | structural | confirmed |
+| fine_screen → aeration_tank | screening-to-aeration | water | normal | structural | confirmed |
+| aeration_tank → secondary_clarifier | aeration-to-clarifier | water | normal | structural | confirmed |
+| secondary_clarifier → flow_measurement_weir | clarifier-to-weir | water | normal | structural | confirmed |
+| flow_measurement_weir → chlorine_contact_tank | weir-to-chlorine | water | normal | structural | confirmed |
+| chlorine_contact_tank → treated_effluent_outfall | chlorine-to-outfall | water | normal | structural | confirmed |
+| secondary_clarifier → ras_pumps → aeration_tank (RAS loop) | ras-return | sludge | return | structural | confirmed |
+| secondary_clarifier → sludge_drying_beds (WAS) | was-to-drying-beds | sludge | normal | structural | confirmed |
+| sludge_drying_beds → drying_bed_filtrate_return → pump_sump | filtrate-return | water | return | structural | confirmed |
+| chlorine_solution_storage → dosing → final treatment | chlorine-dosing | chemical | normal | structural | confirmed |
+| pump_sump → pump_sump_bypass (exception) | pump-sump-bypass | water | exception | **unknown** | **needs_confirmation** |
+| pump_sump → emergency_overflow_line (exception) | emergency-overflow | water | exception | **unknown** | **needs_confirmation** |
+
+Stages (8, Thai teaching labels from the existing `/flow` story):
+ระบบรวบรวมน้ำเสีย influent_collection · บ่อพัก/เครื่องสูบ pump_sump ·
+ตะแกรงละเอียด fine_screen · บ่อเติมอากาศ aeration_tank · บ่อตกตะกอน
+secondary_clarifier · บ่อวัดอัตราการไหล flow_measurement_weir · บ่อสัมผัสคลอรีน
+chlorine_contact_tank · จุดระบายน้ำทิ้ง treated_effluent_outfall.
+
+Contract invariants (D2 RED pins): water/sludge/chemical edges never collapse
+(modeling rule 1); the two exception edges are the ONLY `activity: "unknown"`
++ `tieIn: "needs_confirmation"` entries and never animate; quantity-bearing
+edges (influent-entry, was-to-drying-beds) keep their existing quantity
+semantics BYTE-IDENTICAL; no readings/timestamps/rates/equipment states; no
+SIMULATED/LIVE/real-time vocabulary in the explanation contract.
