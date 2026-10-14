@@ -1,6 +1,16 @@
 # ENV-VIS-STORY-001A — Animated Process Infographic, Stage 1 (Work Order, C1 slice)
 
-Status: CLAIMED (transition pending R3 review + merge)
+Status: DELIVERED / CLOSED 2026-10-14 — claim ENV-VIS-STORY-001A-C1 closed at
+generation 1. Activation transition PR #132 merged `6346d36` (3-round R3;
+ACTIVATION_BASIS judged SUFFICIENT); implementation PR #133 merged `2e21a84`
+(second parent = D5-APPROVED `b4707ec`; fresh-GLM ZERO-findings verdict
+issuecomment-6169149894); exact-main test/E2E-smoke/Pages-deploy ALL SUCCESS;
+deployed markers verified in index-B1bW2CHi.js (step/notice/controls hooks +
+scoped classes + Thai notice + button labels; sw uth-env-v2 unchanged).
+Battery: vitest 400/400 + /flow Playwright 12/12 (3 new RED-first cases) +
+tsc + lint 0 errors. Receipts durable in docs/ai/handoffs/ENV-VIS-STORY-001A-GLM.md.
+Stage 001B/001C each require their own owner-authorized activation + WO +
+NEW reviewed claim transition.
 Task: `ENV-VIS-STORY-001A` (Stage 1 of epic ENV-VIS-STORY-001, Issue #110)
 Claim: `ENV-VIS-STORY-001A-C1` (generation 1)
 Base: `66f343d42066d9b368e310040d6867b4cbe5d2ba`
