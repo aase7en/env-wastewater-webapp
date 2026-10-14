@@ -46,3 +46,32 @@ receipt trail.
   presented once. Next: R3 → expected-head merge → D2 RED → D3 → D4 → D5 → D6.
 
 (append-only below this line)
+
+## D1 contract table (frozen for D2)
+
+Six-scenario inventory (SSoT modeling rule 5) and their EXACT overrides.
+Output invariants for every row: provenance `{ source: "simulation",
+observedAt: null }`; untouched edges render `scenarioState: "baseline"` with
+topology activity/tieIn RETAINED; no numeric effect, unit, or observed
+timestamp anywhere.
+
+| # | Scenario id | Thai label | Overrides (input) | Derived output |
+| --- | --- | --- | --- | --- |
+| 1 | pump-sump-bypass-active | เปิดเส้นทางรองบ่อพัก (สมมุติ) | edge pump-sump-bypass -> active-path | that edge scenarioState "active-path"; its tieIn STAYS needs_confirmation (hypothetical activation never confirms an as-built connection) |
+| 2 | emergency-overflow-active | เปิดเส้นทางล้นฉุกเฉิน (สมมุติ) | edge emergency-overflow -> active-path | same rule as row 1 |
+| 3 | loss-of-aeration | หยุดการเติมอากาศ (บ่อเติมอากาศ) | stage aeration_tank -> { aeration: "interrupted" } | the stage is marked process-interrupted; NO water edge is turned off (an unsupported hydraulic claim per Role A) |
+| 4 | ras-interruption | หยุดส่งตะกอนไหลกลับ (RAS) | edge ras-return -> interrupted | that edge scenarioState "interrupted"; topology untouched |
+| 5 | excess-sludge-wasting | การทิ้งตะกอนส่วนเกิน (WAS) | edge was-to-drying-beds -> active-path | qualitative focus condition only; no quantity implied |
+| 6 | chlorine-dosing-interruption | หยุดจ่ายคลอรีน (สมมุติ) | edge chlorine-dosing -> interrupted | that edge scenarioState "interrupted"; no dose or residual implied |
+
+Type shape: `ScenarioEdgeCondition = "active-path" | "interrupted"`;
+`ScenarioDefinition.edgeOverrides: Partial<Record<ProcessExplanationEdgeId, ScenarioEdgeCondition>>`
+(unknown IDs rejected at compile time AND by a runtime guard);
+`ScenarioDefinition.stageOverrides?: { aeration_tank?: { aeration: "interrupted" } }`
+(the ONLY C1 stage override). `deriveScenarioState` returns
+`{ provenance, edges: Array<topology edge fields + scenarioState: "baseline" | "active-path" | "interrupted">, stages: Array<stage + optional scenarioProcess: "process-interrupted"> }`
+in stable PROCESS_EXPLANATION order. Edge/stage-ID typing: the constant is
+narrowed at the TYPE level so `ProcessExplanationEdgeId` /
+`ProcessExplanationStageId` literal unions are exported from
+`environmental-flow.ts` (compile-time unknown-ID rejection, pinned by an
+@ts-expect-error test) — zero runtime behavior change.

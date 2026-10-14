@@ -49,8 +49,12 @@ evidence).
   TwinMetricSource — naming-compatible but a SEPARATE contract from the
   asset-level numeric `TwinSimulationOverrides`, which stays untouched in
   `twin/**`); preserved `assumptions: string[]`; `edgeOverrides` keyed to
-  PROCESS_EXPLANATION edge IDs (typed via a literal edge-ID type exported from
-  `environmental-flow.ts` — the ONLY change to that file).
+  PROCESS_EXPLANATION edge IDs (typed via literal edge/stage-ID unions
+  exported from `environmental-flow.ts`); optional qualitative
+  `stageOverrides` — C1 allows exactly ONE shape:
+  `{ aeration_tank?: { aeration: "interrupted" } }` (the loss-of-aeration
+  process override; output marks the stage `process-interrupted` and touches
+  NO water edge).
 - `deriveScenarioState(definition): ScenarioState` — synchronous, pure;
   returns ALL 13 edges in stable topology order; each edge RETAINS its
   topology `activity`/`tieIn`/`note` and gains a separate `scenarioState`
@@ -78,9 +82,12 @@ randomness/IO; Stage-1 quantity semantics unchanged (regression).
 
 ## Scope (mutable, exactly — identical to the registry claim entry)
 
-- `frontend/src/lib/environmental-flow.ts` — Track Z GLM, **literal edge-ID
-  typing export ONLY** (no behavior change; Stage-1 tests untouched in
-  substance)
+- `frontend/src/lib/environmental-flow.ts` — Track Z GLM, **type-level
+  narrowing of the topology ONLY**: narrow the PROCESS_EXPLANATION constant /
+  its edge + stage types so literal edge-ID and stage-ID unions are derivable
+  and exported (compile-time rejection of unknown IDs, pinned by an
+  @ts-expect-error test); zero runtime behavior change, Stage-1 tests
+  untouched in substance
 - `frontend/src/lib/process-scenario.ts` — Track Z GLM
 - `frontend/src/lib/__fixtures__/process-scenarios.ts` — Track Z GLM
   (isolated fixtures; never imported by production code paths — test/lib use
@@ -91,7 +98,7 @@ randomness/IO; Stage-1 quantity semantics unchanged (regression).
 
 ## Forbidden
 
-Everything else — including `frontend/src/components/**` (no UI), 
+Everything else — including `frontend/src/components/**` (no UI),
 `frontend/src/index.css`, `frontend/src/lib/twin/**` (the Twin simulation
 contract is a different lane), `frontend/src/App.tsx`, `scripts/**`,
 `supabase/**`, `docs/ai/CURRENT-WORK.md` (via reviewed transitions only),

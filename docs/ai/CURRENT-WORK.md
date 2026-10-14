@@ -550,7 +550,7 @@ exact-SHA independent review and merge into `main`.
         "claim_generation": 1,
         "status": "CLAIMED",
         "owner_role": "product_implementation",
-        "agent_model": "Track Z ONLY - GLM-5.3 MAX sole writer of the four code paths (environmental-flow.ts literal edge-ID typing export ONLY + process-scenario.ts + __fixtures__/process-scenarios.ts + process-scenario.test.ts; also claim coordination, D1 contracts, D2 RED-first tests, D4 battery). No Codex implementation in this slice - Codex gpt-6-sol reviews the claim transition only; gpt-5.6-sol remains R3-review-only; GPT-6 Astra prohibited",
+        "agent_model": "Track Z ONLY - GLM-5.3 MAX sole writer of the four code paths (environmental-flow.ts type-level narrowing of the topology ONLY - literal edge/stage-ID union exports with compile-time unknown-ID rejection; zero behavior change + process-scenario.ts + __fixtures__/process-scenarios.ts + process-scenario.test.ts; also claim coordination, D1 contracts, D2 RED-first tests, D4 battery). No Codex implementation in this slice - Codex gpt-6-sol reviews the claim transition only; gpt-5.6-sol remains R3-review-only; GPT-6 Astra prohibited",
         "execution_holder_id": "zcode-env-vis-story-001b-g1-primary",
         "worktree": "A:/GitHub/_worktrees/env-vis-story-001b-20261014",
         "branch": "feat/env-vis-story-001b",
@@ -589,7 +589,7 @@ exact-SHA independent review and merge into `main`.
           "Owner continuation steer 2026-10-14 (5th repeat, immediately after the report naming 001B next) = recorded activation basis per the PR #132 R3 precedent; JEV UNAVAILABLE per the fleet router - no substitution"
         ],
         "last_checkpoint_pointer": "docs/ai/handoffs/ENV-VIS-STORY-001B-GLM.md",
-        "one_next_safe_action": "CLAIMED 2026-10-14 (effective when this transition merges): execute the WO D-plan - D2 RED invariants (six-scenario inventory, unknown edge-ID rejection, untouched edges + uncertain tie-ins preserved, determinism/no-mutation, compile-time non-assignability to latest-flow/Twin operational types, zero numeric/water-quality/units, no async/clock/random/IO), D3 GLM implementation (ScenarioDefinition + deriveScenarioState + fixtures; environmental-flow.ts gains ONLY a literal edge-ID type export), D4 battery (vitest focused+full, tsc, lint, diff-check; no e2e - no UI), D5 fresh-GLM review at the exact frozen head, D6 expected-head merge + closeout. The domain-owner numeric gate stays UNPASSED; no UI/Twin/effects/writes."
+        "one_next_safe_action": "CLAIMED 2026-10-14 (effective when this transition merges): execute the WO D-plan - D2 RED invariants (six-scenario inventory, unknown edge-ID rejection, untouched edges + uncertain tie-ins preserved, determinism/no-mutation, compile-time non-assignability to latest-flow/Twin operational types, zero numeric/water-quality/units, no async/clock/random/IO), D3 GLM implementation (ScenarioDefinition + deriveScenarioState + fixtures; environmental-flow.ts gains ONLY type-level narrowing + literal edge/stage-ID union exports - compile-time unknown-ID rejection pinned, zero behavior change), D4 battery (vitest focused+full, tsc, lint, diff-check; no e2e - no UI), D5 fresh-GLM review at the exact frozen head, D6 expected-head merge + closeout. The domain-owner numeric gate stays UNPASSED; no UI/Twin/effects/writes."
       }
     ]
   }
