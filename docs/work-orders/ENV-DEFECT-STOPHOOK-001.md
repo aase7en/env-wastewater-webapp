@@ -90,14 +90,20 @@ apparent user message the human did not type.
 
   **PROPOSAL (for the owner's decision; nothing below is implemented):**
   1. In the Codex user hook state, scope the A-Wiki repo-specific hook
-     entries to A-Wiki-rooted sessions instead of user-globally (they are
-     additive per OpenAI hook semantics and currently fire in ENV sessions
-     as recorded in issue #94 - 44 trusted/enabled A-Wiki entries
-     observed). The owner performs this in their Codex settings; the exact
-     mechanics depend on the hook-scoping features available to the owner.
-  2. The ENV project's own hooks stay as-is: after this slice's fix they
-     enforce only in a registered claim's own worktree and are neutral
-     (Stop) or fail closed elsewhere.
+     entries to A-Wiki-rooted sessions instead of user-globally. PRE-
+     CONTAINMENT, they were additive per OpenAI hook semantics and fired
+     in ENV sessions as recorded in issue #94 (44 trusted/enabled A-Wiki
+     entries observed); the issue's containment subsequently DISABLED all
+     44 A-Wiki entries AND the ENV entries, and no re-enable has occurred
+     (no verified re-enable receipt exists - this proposal is what the
+     owner would do INSTEAD of a flat re-enable). The owner performs any
+     change in their Codex settings; the exact mechanics depend on the
+     hook-scoping features available to the owner.
+  2. The ENV project's own hooks stay as-is: after this slice's fix, WHEN
+     (re-)ENABLED by the owner, they would enforce only in a registered
+     claim's own worktree and be neutral (Stop) or fail closed elsewhere;
+     they are currently DISABLED by the issue #94 containment and this
+     slice changes no enablement state.
   3. The A-Wiki-side dual-SessionStart behavior (git pull + wiki checks +
      pharmacy DB build) is out of ENV scope - whether to scope, split, or
      disable those in multi-root sessions is purely the owner's A-Wiki
