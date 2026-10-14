@@ -77,9 +77,12 @@ fixtures re-export the catalog; production modules never import
 `__fixtures__/` (grep-pinned in test). E2E (GLM, environmental-flow.spec.ts):
 all six options listed; select-before-apply changes nothing; apply → banner
 + markers per the frozen table; activated exception cards still render the
-  uncertainty note; clear removes everything; keyboard path; no numbers /
-units / observed timestamps in scenario copy or markers (evidence cards'
-recorded numbers are out of scope); 360/390/430 containment.
+  uncertainty note; clear removes everything; keyboard path; the SIMULATED banner remains visible with the picker
+COLLAPSED while a scenario is applied; the observed quantity-evidence cards
+are UNCHANGED after apply (their recorded numbers are out of scope for the
+no-numbers rule, which covers scenario copy and markers only); the scenario
+UI contains no LIVE/LATEST/HISTORICAL vocabulary; no numbers / units /
+observed timestamps in scenario copy or markers; 360/390/430 containment.
 
 ## Scope (mutable, exactly — identical to the registry claim entry)
 
