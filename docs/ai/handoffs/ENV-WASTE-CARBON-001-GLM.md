@@ -9,10 +9,12 @@
   001A A–K inventory + honesty contracts; 1 contributing family (electricity)
   + 4 explicit UNAVAILABLE families; T-VER evidence-readiness ONLY (never
   eligibility); read-only reuse of the rollup contract.
-- D3 model AUTHORIZED (2026-10-14 owner steer, recorded in-substance in the
-  WO): Codex CLI `gpt-6-sol` @ max implements D3 (Track-F-consistent);
-  single-writer window during the dispatch; gpt-6.1-sol unprobed on its
-  unchanged blocked fingerprint; gpt-5.6-sol R3-review-only. JEV named by the
+- D3 SPLIT by track and model-authorized (2026-10-14 owner steer, recorded
+  in-substance in the WO): D3a = GLM implements `family-state.ts` (Track Z);
+  D3b = Codex CLI `gpt-6-sol` @ max implements the page/route/nav ONLY
+  (Track F; per-file sole writer; GLM paused during the D3b dispatch);
+  gpt-6.1-sol unprobed on its unchanged blocked fingerprint; gpt-5.6-sol
+  R3-review-only. JEV named by the
   owner as helper but UNAVAILABLE per the fleet router — no advisory consumed,
   no probing. D1 (@29f0471: contracts + truth table) and D2 (@1b4f73d: RED
   unit + e2e) are COMPLETE in worktree `env-wc001-20261013` (branch
