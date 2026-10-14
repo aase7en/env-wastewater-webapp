@@ -141,7 +141,7 @@ byte-identical; the 7/7 suite runs as regression only), `docs/ai/CURRENT-WORK.md
   identically; waste still UNAVAILABLE; factor status still PARTIAL; DOM
   byte-identical).
 - Battery green at the frozen head; e2e 7/7 unchanged.
-- No forbidden file touched; receipts durable in the C2 handoff.
+- No forbidden file touched; receipts durable in `docs/ai/handoffs/ENV-WASTE-CARBON-001B-GLM.md`.
 
 ## Dispatch-exception risk record
 
