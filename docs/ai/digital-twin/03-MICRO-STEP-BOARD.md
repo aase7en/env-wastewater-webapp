@@ -42,7 +42,7 @@ Use `WAITING_FOR_INPUT` when a task specifically requires user-provided referenc
 
 ### DT-VIS-P001 — Site-authentic Aeration Diorama Blockout
 
-- Status: READY — user approved continuation of design work on 2026-08-23; implementation must follow `docs/ai/design/DT-VIS-P001-DESIGN-SPEC.md`
+- Status: COMPLETE (2026-08-22) — delivered via PR #23 merged as `491ff6dd980e1e3b032b934588baefb9218b1b2b` ("feat: add site-authentic aeration digital twin slice"; ancestor of main, verified 2026-10-14); implementation followed `docs/ai/design/DT-VIS-P001-DESIGN-SPEC.md` under the 2026-08-23 user approval recorded below. Reconciled from stale READY 2026-10-14 (PR #124 R2 finding). This entry is now the historical contract record; COMPLETE confers no fresh mutation authority — successor work (P002/P003 lineage) used its own claims.
 - Owner: Codex
 - Reviewer: Architecture/UX reviewer
 - Dependencies: merged Digital Twin foundation PR #14 (`da3b70bd`); `docs/ai/design/DT-VIS-P001-DESIGN-SPEC.md`; reference pack may remain partial if uncertainty is documented
