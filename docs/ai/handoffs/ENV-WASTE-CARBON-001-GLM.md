@@ -150,8 +150,10 @@ it. D2 RED tests target these contracts.
   lazy route chunk `assets/SustainabilityPage-zh7wi_TM.js` contains BOTH
   `sustainability-families` and `tver-readiness` test ids. Verified live at
   closeout time — not inferred from the deploy run alone.
-- Worktree `env-wc001-20261013` preserved clean at `245c29a` (fully merged).
-  WO obligations satisfied; closure effective when the closeout transition
-  merges. Follow-ups recorded for the parent node: P2 waste-subtotal note,
+- Worktree `env-wc001-20261013` preserved clean at `402c7a1` — the receipt-only
+  child of the merged implementation head `245c29a` (`245c29a` fully merged
+  via PR #121; the `402c7a1` receipts tail is carried by the closeout
+  transition). WO obligations satisfied; closure effective when the closeout
+  transition merges. Follow-ups recorded for the parent node: P2 waste-subtotal note,
   P3 readiness-union/load-guard alignment, P3 factor-readiness basis,
   P3 known-only-flag pin.
