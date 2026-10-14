@@ -1,6 +1,11 @@
 # ENV-ROUTE-ALIGN-001 — Runtime Route-Table Alignment (Work Order, C1 slice)
 
-Status: CLAIMED (transition pending R3 review + merge)
+Status: DELIVERED / CLOSED 2026-10-14 — claim ENV-ROUTE-ALIGN-001-C1 closed at
+generation 1. Transition PR #129 (3-round R3 gpt-6-sol) merged `cea86c4`;
+implementation PR #130 merged `c2803fe` (second parent = D5-APPROVED `f56a70b`,
+fresh-GLM verdict issuecomment-6166104715); exact-main test SUCCESS. Battery:
+runtime 41 OK (3 new RED-first) + guard 344 OK + CLI probes fail-closed.
+Receipts durable in docs/ai/handoffs/ENV-ROUTE-ALIGN-001-GLM.md.
 Task: `ENV-ROUTE-ALIGN-001`
 Claim: `ENV-ROUTE-ALIGN-001-C1` (generation 1)
 Base: `3cf12092bff0c6d3dee6420097da79012a99fb01`
