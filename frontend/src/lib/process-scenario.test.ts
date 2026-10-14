@@ -153,3 +153,37 @@ describe("never-blends and purity invariants", () => {
     expect(badStage).toBeDefined();
   });
 });
+
+describe("ENV-VIS-STORY-001B-VIEW production catalog (RED-first)", () => {
+  it("exposes PROCESS_SCENARIO_CATALOG as the single six-scenario source", async () => {
+    const catalog = await import("./process-scenarios");
+    expect(catalog.PROCESS_SCENARIO_CATALOG).toHaveLength(6);
+    expect(catalog.PROCESS_SCENARIO_CATALOG.map((s) => s.id)).toEqual(
+      PROCESS_SCENARIOS.map((s) => s.id),
+    );
+  });
+
+  it("the fixture export IS the catalog (re-export, not a copy)", async () => {
+    const catalog = await import("./process-scenarios");
+    expect(PROCESS_SCENARIOS).toBe(catalog.PROCESS_SCENARIO_CATALOG);
+  });
+
+  it("production source never imports __fixtures__", async () => {
+    const fs = await import("node:fs");
+    const path = await import("node:path");
+    const walk = (dir: string): string[] =>
+      fs.readdirSync(dir, { withFileTypes: true }).flatMap((entry) => {
+        const full = path.join(dir, entry.name);
+        return entry.isDirectory() ? walk(full) : [full];
+      });
+    const srcRoot = path.resolve(__dirname, "..");
+    const offenders = walk(srcRoot).filter(
+      (file) =>
+        !file.includes("__fixtures__") &&
+        !file.endsWith(".test.ts") &&
+        !file.endsWith(".spec.ts") &&
+        fs.readFileSync(file, "utf8").includes("__fixtures__/process-scenarios"),
+    );
+    expect(offenders).toEqual([]);
+  });
+});
