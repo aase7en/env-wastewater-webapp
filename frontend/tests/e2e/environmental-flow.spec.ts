@@ -256,3 +256,106 @@ test("bypass and emergency stay static dashed exceptions, never teaching steps",
   const joined = exceptionText.join("\n");
   expect(joined).toContain("ยังไม่ยืนยันการเชื่อมต่อจริง");
 });
+
+// ── ENV-VIS-STORY-001B-VIEW: SIMULATED scenario view (Stage 2 consumer) ──
+
+test("scenario picker lists all six hypothetical scenarios; select alone changes nothing", async ({ page }) => {
+  await installStaffSession(page);
+  await mockLatestReading(page);
+  await page.goto("/flow");
+
+  const picker = page.getByTestId("process-scenario-picker");
+  await expect(picker).toBeVisible();
+  const options = picker.locator("option");
+  await expect(options).toHaveCount(6);
+  for (const label of [
+    "เปิดเส้นทางรองบ่อพัก (สมมุติ)",
+    "เปิดเส้นทางล้นฉุกเฉิน (สมมุติ)",
+    "หยุดการเติมอากาศ (บ่อเติมอากาศ)",
+    "หยุดส่งตะกอนไหลกลับ (RAS)",
+    "การทิ้งตะกอนส่วนเกิน (WAS)",
+    "หยุดจ่ายคลอรีน (สมมุติ)",
+  ]) {
+    await expect(options.filter({ hasText: label })).toHaveCount(1);
+  }
+  // Selecting alone changes nothing: no banner, no markers before ใช้สถานการณ์สมมุติ.
+  await picker.selectOption({ label: "เปิดเส้นทางรองบ่อพัก (สมมุติ)" });
+  await expect(page.getByTestId("process-scenario-banner")).toHaveCount(0);
+  await expect(page.getByTestId("process-scenario-marker")).toHaveCount(0);
+});
+
+test("applying a scenario shows the SIMULATED banner, markers, and assumptions; clear removes them", async ({ page }) => {
+  await installStaffSession(page);
+  await mockLatestReading(page);
+  await page.goto("/flow");
+
+  await page.getByTestId("process-scenario-picker").selectOption({ label: "เปิดเส้นทางรองบ่อพัก (สมมุติ)" });
+  await page.getByTestId("process-scenario-apply").click();
+
+  const banner = page.getByTestId("process-scenario-banner");
+  await expect(banner).toBeVisible();
+  await expect(banner).toContainText("โหมดจำลอง (SIMULATED) — ไม่ใช่ข้อมูลจริง");
+  await expect(banner).toContainText("pump-sump-bypass-active");
+  await expect(banner).toContainText("สมมุติ");
+
+  const marker = page.getByTestId("process-scenario-marker");
+  await expect(marker).toHaveCount(1);
+  await expect(marker.first()).toHaveAttribute("data-scenario-edge-id", "pump-sump-bypass");
+  await expect(marker.first()).toHaveAttribute("data-scenario-state", "active-path");
+  await expect(marker.first()).toContainText("สมมุติ: เปิดใช้เส้นทาง");
+
+  // The activated exception card RETAINS its as-built uncertainty.
+  const exceptionCard = page.locator('[data-exception="true"]').first();
+  await expect(exceptionCard).toContainText("ยังไม่ยืนยันการเชื่อมต่อจริง");
+
+  await page.getByTestId("process-scenario-clear").click();
+  await expect(page.getByTestId("process-scenario-banner")).toHaveCount(0);
+  await expect(page.getByTestId("process-scenario-marker")).toHaveCount(0);
+});
+
+test("banner stays visible with the picker collapsed; loss-of-aeration marks only the stage", async ({ page }) => {
+  await installStaffSession(page);
+  await mockLatestReading(page);
+  await page.goto("/flow");
+
+  await page.getByTestId("process-scenario-picker").selectOption({ label: "หยุดการเติมอากาศ (บ่อเติมอากาศ)" });
+  await page.getByTestId("process-scenario-apply").click();
+  await expect(page.getByTestId("process-scenario-banner")).toBeVisible();
+
+  // Collapse the scenario panel via its native summary toggle; the picker
+  // must actually hide while the persistent banner stays visible.
+  await page.locator("summary.env-flow-story-scenario-summary").click();
+  await expect(page.getByTestId("process-scenario-picker")).toBeHidden();
+  await expect(page.getByTestId("process-scenario-banner")).toBeVisible();
+
+  const marker = page.getByTestId("process-scenario-marker");
+  await expect(marker).toHaveCount(1);
+  await expect(marker.first()).toHaveAttribute("data-scenario-stage-id", "aeration_tank");
+  await expect(marker.first()).toHaveAttribute("data-scenario-state", "process-interrupted");
+  await expect(marker.first()).toContainText("สมมุติ: หยุดเติมอากาศ");
+});
+
+test("observed evidence stays unchanged and scenario UI carries no operational vocabulary", async ({ page }) => {
+  await installStaffSession(page);
+  await mockLatestReading(page);
+  await page.goto("/flow");
+
+  const evidence = page.getByTestId("flow-quantity-evidence");
+  await expect(evidence).toBeVisible();
+  const before = await evidence.innerText();
+
+  await page.getByTestId("process-scenario-picker").selectOption({ label: "หยุดจ่ายคลอรีน (สมมุติ)" });
+  await page.getByTestId("process-scenario-apply").click();
+  await expect(page.getByTestId("process-scenario-banner")).toBeVisible();
+
+  const after = await evidence.innerText();
+  expect(after).toBe(before);
+
+  const scenarioRegionText = await page
+    .getByTestId("process-scenario-banner")
+    .innerText()
+    .catch(() => "");
+  expect(scenarioRegionText).not.toMatch(/LIVE|LATEST|HISTORICAL/i);
+  const markerText = await page.getByTestId("process-scenario-marker").first().innerText();
+  expect(markerText).not.toMatch(/LIVE|LATEST|HISTORICAL|\d+\.\d+/);
+});

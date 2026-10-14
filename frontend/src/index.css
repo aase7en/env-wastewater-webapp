@@ -705,6 +705,154 @@ a:hover { color: var(--aura-accent-hover); }
   overflow-wrap: anywhere;
 }
 
+/* /flow qualitative scenario overlay stays separate from the teaching highlight. */
+.env-flow-story-scenario-panel,
+.env-flow-story-scenario-banner {
+  box-sizing: border-box;
+  min-width: 0;
+  max-width: 100%;
+  border: 1px solid rgb(var(--aura-border-subtle));
+  border-radius: 1rem;
+  background: rgb(var(--aura-surface-high) / 0.55);
+  color: rgb(var(--aura-text-main));
+  overflow-wrap: anywhere;
+}
+
+.env-flow-story-scenario-summary {
+  min-height: 44px;
+  padding: 0.75rem 1rem;
+  font-size: 0.875rem;
+  font-weight: 700;
+  line-height: 1.5;
+  cursor: pointer;
+}
+
+.env-flow-story-scenario-content {
+  min-width: 0;
+  padding: 1rem;
+  border-top: 1px solid rgb(var(--aura-border-subtle));
+}
+
+.env-flow-story-scenario-label {
+  display: block;
+  margin-bottom: 0.5rem;
+  font-size: 0.875rem;
+  font-weight: 600;
+}
+
+.env-flow-story-scenario-picker {
+  display: block;
+  box-sizing: border-box;
+  width: 100%;
+  min-width: 0;
+  max-width: 100%;
+  min-height: 44px;
+  padding: 0.5rem 0.75rem;
+  border: 1px solid rgb(var(--aura-border-subtle));
+  border-radius: 0.75rem;
+  background: rgb(var(--aura-surface-high));
+  color: rgb(var(--aura-text-main));
+  font: inherit;
+  font-size: 0.875rem;
+}
+
+.env-flow-story-scenario-actions {
+  display: flex;
+  min-width: 0;
+  flex-wrap: wrap;
+  gap: 0.75rem;
+  margin-top: 0.75rem;
+}
+
+.env-flow-story-scenario-button {
+  flex: 1 1 10rem;
+  min-width: 0;
+  min-height: 44px;
+  padding: 0.5rem 0.75rem;
+  border: 1px solid var(--alert-amber);
+  border-radius: 0.75rem;
+  background: rgb(var(--aura-surface-high) / 0.8);
+  color: rgb(var(--aura-text-main));
+  font-size: 0.875rem;
+  font-weight: 700;
+  line-height: 1.5;
+  cursor: pointer;
+  white-space: normal;
+  overflow-wrap: anywhere;
+}
+
+.env-flow-story-scenario-button:hover:not(:disabled) {
+  background: rgb(var(--aura-surface-high));
+}
+
+.env-flow-story-scenario-button:disabled {
+  opacity: 0.55;
+  cursor: not-allowed;
+}
+
+.env-flow-story-scenario-summary:focus-visible,
+.env-flow-story-scenario-picker:focus-visible,
+.env-flow-story-scenario-button:focus-visible {
+  outline: 2px solid var(--aura-focus);
+  outline-offset: 3px;
+}
+
+.env-flow-story-scenario-banner {
+  padding: 1rem;
+  border-left: 4px solid var(--alert-amber);
+  line-height: 1.5;
+}
+
+.env-flow-story-scenario-banner-title {
+  font-size: 0.875rem;
+  font-weight: 800;
+}
+
+.env-flow-story-scenario-banner-label {
+  margin-top: 0.5rem;
+  font-size: 0.875rem;
+  font-weight: 700;
+}
+
+.env-flow-story-scenario-banner-id {
+  margin-top: 0.25rem;
+  font-size: 0.75rem;
+}
+
+.env-flow-story-scenario-assumptions {
+  margin-top: 0.5rem;
+  padding-left: 1.25rem;
+  list-style: disc;
+  font-size: 0.75rem;
+}
+
+.env-flow-story-scenario-marker {
+  display: inline-block;
+  box-sizing: border-box;
+  max-width: 100%;
+  margin-top: 0.75rem;
+  padding: 0.35rem 0.5rem;
+  border-left: 4px solid;
+  border-radius: 0.375rem;
+  background: rgb(var(--aura-surface-high));
+  color: rgb(var(--aura-text-main));
+  font-size: 0.75rem;
+  font-weight: 700;
+  line-height: 1.5;
+  white-space: normal;
+  overflow-wrap: anywhere;
+  animation: none;
+  transition: none;
+}
+
+.env-flow-story-scenario-marker--active {
+  border-left-color: var(--alert-amber);
+}
+
+.env-flow-story-scenario-marker--interrupted {
+  border-left-color: var(--alert-red);
+}
+
 @media (max-width: 480px) {
   .env-flow-story-progress {
     order: -1;
