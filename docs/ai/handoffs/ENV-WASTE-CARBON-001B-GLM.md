@@ -1,0 +1,22 @@
+# ENV-WASTE-CARBON-001B — GLM Handoff (sustainability follow-up repairs)
+
+Task `ENV-WASTE-CARBON-001B` (follow-up slice of parent ENV-WASTE-CARBON-001).
+Claim: `ENV-WASTE-CARBON-001B-C1` (generation 1). WO:
+`docs/work-orders/ENV-WASTE-CARBON-001-C2.md`. This file is the durable
+receipt trail for the slice (transitions, RED evidence, dispatch records,
+battery, review verdicts, merge receipts).
+
+## Status
+
+- 2026-10-14 (claim transition authored): WO + registry entry + frontier
+  bullet drafted on `docs/env-wc001-c2-claim` off main `291e896`.
+  Slice task is a FRESH task_id (`ENV-WASTE-CARBON-001B`) — the guard requires
+global task_id uniqueness, so generation-2-on-same-task is not representable;
+the registry task naming follows the ENV-OPS-001 → ENV-OPS-001A slice pattern.
+  Predecessor fence (computed programmatically via the guard module):
+  policy `291e896ff8b03f4a96e63b2e9df6dda7e611df31`, registry block
+  sha256 `cb062476690d520be4110b1c6ac36cd6957b05fedf2ab3463ac082fd8973bc4b`.
+  Next: R3 cross-model review (Codex `gpt-6-sol`) → expected-head merge →
+  D1 contract table → D2 RED → D3a GLM → D3b Codex → D4 battery → D5 → D6.
+
+(append-only below this line)
