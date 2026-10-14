@@ -191,7 +191,7 @@ describe("deriveFamilyStates — 001B follow-up repairs (RED-first)", () => {
     const waste = states.find((s) => s.family === "waste");
     expect(waste?.state).toBe("CONTRIBUTING");
     expect(waste?.valueLabel).toBe("40");
-    expect(waste?.valueLabel).not.toContain("0");
+    expect(waste?.valueLabel).not.toContain("0.000");
     expect(waste?.knownOnlyTotal).toBe(true);
   });
 
