@@ -75,3 +75,11 @@ narrowed at the TYPE level so `ProcessExplanationEdgeId` /
 `ProcessExplanationStageId` literal unions are exported from
 `environmental-flow.ts` (compile-time unknown-ID rejection, pinned by an
 @ts-expect-error test) — zero runtime behavior change.
+
+## Execution receipts
+
+- 2026-10-14 (transition merged): PR #135 merged as `e5bf6a7` (second parent = R3-APPROVED `7fd2522`; trail: R1 CHANGES_REQUIRED with ACTIVATION_BASIS: SUFFICIENT + 3 findings (6170647883-era), R2 APPROVED no-findings 6170740044; main CI test=success). Implementation worktree env-vis-story-001b-20261014 / feat/env-vis-story-001b at base `e5bf6a7`.
+- 2026-10-14 (D2 RED, commit `17e04ca`): all cases failed truthfully (module-not-found) - inventory, unknown-edge rejection, topology retention, loss-of-aeration stage semantics, never-blends provenance/vocabulary, determinism/no-mutation, compile-time non-assignability + type-level ID rejection. One D2 regex self-repair during D3 (bare /DO/i matched "dosing"; pinned as key-form metric fields) and one directive-placement repair (single-line object under @ts-expect-error).
+- 2026-10-14 (D3 GLM Track Z): `process-scenario.ts` (ScenarioDefinition/ScenarioState/deriveScenarioState; synchronous pure; UNKNOWN_SCENARIO_EDGE runtime guard; aeration-interrupted the ONLY stage override) + `__fixtures__/process-scenarios.ts` (the six rule-5 scenarios, Thai hypothetical labels, preserved assumptions; never imported by production paths). `environmental-flow.ts` type-level narrowing: frozen TOPOLOGY_EDGE_IDS/TOPOLOGY_STAGE_IDS tuples + exported ProcessExplanationEdgeId/StageId literal unions + interface ids narrowed (first attempt `as const satisfies` on the whole constant reverted - the tuple discrimination leaked a TS2367 into the FORBIDDEN EnvironmentalFlowStory.tsx; the interface-union form compiles consumers unchanged; the tuples are pinned to the live topology by test).
+- 2026-10-14 (D4 battery): focused scenario 12/12 + environmental-flow 18/18; FULL vitest **412/412** (28 files); `tsc -b` clean; lint 0 errors (12 pre-existing warnings); `git diff --check` clean. No e2e (no UI change).
+- Next: D5 fresh-GLM review at the frozen head -> D6 expected-head merge + exact-main CI verify + closeout transition.

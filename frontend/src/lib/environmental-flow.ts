@@ -18,13 +18,13 @@ export type EnvironmentalFlowActivity = "structural" | "unknown";
 export type ProcessExplanationTieIn = "confirmed" | "needs_confirmation";
 
 export interface ProcessExplanationStage {
-  id: string;
+  id: ProcessExplanationStageId;
   /** Thai teaching label (educational, never an operational claim). */
   label: string;
 }
 
 export interface ProcessExplanationEdge {
-  id: string;
+  id: ProcessExplanationEdgeId;
   from: string;
   to: string;
   medium: EnvironmentalFlowMedium;
@@ -39,6 +39,46 @@ export interface ProcessExplanation {
   stages: readonly ProcessExplanationStage[];
   edges: readonly ProcessExplanationEdge[];
 }
+
+/**
+ * ENV-VIS-STORY-001B-C1: type-level narrowing of the topology. The constant
+ * keeps its annotated (non-tuple) type so existing consumers are unaffected;
+ * the frozen id tuples below carry the literal unions, which reject unknown
+ * edge/stage IDs at compile time. Zero runtime behavior change; the tuples
+ * are pinned to the live topology by tests.
+ */
+const TOPOLOGY_EDGE_IDS = [
+  "influent-entry",
+  "pump-sump-to-screening",
+  "screening-to-aeration",
+  "aeration-to-clarifier",
+  "clarifier-to-weir",
+  "weir-to-chlorine",
+  "chlorine-to-outfall",
+  "ras-return",
+  "was-to-drying-beds",
+  "filtrate-return",
+  "chlorine-dosing",
+  "pump-sump-bypass",
+  "emergency-overflow",
+] as const;
+
+const TOPOLOGY_STAGE_IDS = [
+  "influent_collection",
+  "pump_sump",
+  "fine_screen",
+  "aeration_tank",
+  "secondary_clarifier",
+  "flow_measurement_weir",
+  "chlorine_contact_tank",
+  "treated_effluent_outfall",
+] as const;
+
+/** Literal union of every topology edge id (compile-time unknown-ID rejection). */
+export type ProcessExplanationEdgeId = (typeof TOPOLOGY_EDGE_IDS)[number];
+
+/** Literal union of every topology stage id. */
+export type ProcessExplanationStageId = (typeof TOPOLOGY_STAGE_IDS)[number];
 
 export const PROCESS_EXPLANATION: ProcessExplanation = {
   stages: [
