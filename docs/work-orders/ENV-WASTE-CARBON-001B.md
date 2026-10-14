@@ -14,17 +14,36 @@ Review owner (this transition): deterministic R3 cross-model — Codex `gpt-6-so
 Close the four parent-node follow-ups recorded at C1 delivery (D5 verdict
 `issuecomment-6160114878`; PR #121 `2df0bcd`):
 
-1. **P2 — latent waste-family mislabel.** In
-   `frontend/src/lib/sustainability/family-state.ts`, the waste CONTRIBUTING
-   branch labels its value with `rollup.grandTotalKg` (the ALL-family known
-   total). Unreachable today (waste sources carry no kg in the window) but
-   latent: if waste ever contributes kg, the waste card would display the
-   wrong number. Fix: derive a **waste-family known subtotal** — the sum of
-   non-NULL `kg_co2e` over `rollup.rows` whose `source` maps to family
-   `"waste"` via `SOURCE_FAMILY` — and label the waste card with it; set
-   `knownOnlyTotal: true` on the waste card when any waste-family row carries
-   NULL kg (mirroring electricity semantics). Never coerce NULL to 0; an
-   empty-row family stays UNAVAILABLE (ไม่มีข้อมูล), unchanged.
+1. **P2 — latent per-family mislabels (waste AND electricity).** In
+   `frontend/src/lib/sustainability/family-state.ts`, BOTH CONTRIBUTING
+   branches label their value with rollup-wide aggregates instead of
+   family-local evidence (R3 R1 finding: the electricity branch is the
+   symmetric defect — a waste-only contribution would still render the
+   electricity card as CONTRIBUTING via `grandTotalKg`).
+   Fix (both families): derive each family's CONTRIBUTING state, value label,
+   and `knownOnlyTotal` from **family-mapped rows** —
+   - electricity: presence + known subtotal from rows whose `source` maps to
+     family `"electricity"`; `grandTotalKg` is reserved for the page's
+     overall-total display (ยอดรวมที่ทราบ), never a family card label;
+   - waste: presence + known subtotal from rows whose `source` maps to
+     family `"waste"`; `knownOnlyTotal: true` when any waste-family row
+     carries NULL kg;
+   - `SOURCE_FAMILY` must cover **every waste label the rollup view can
+     emit** (`'waste_' || segregation_type | 'unclassified'`): at minimum
+     `waste_general`, `waste_infectious`, `waste_recyclable`,
+     `waste_chemical`, `waste_organic`, `waste_unclassified`, and bare
+     `waste` (R3 R1 finding: `waste_infectious` and `waste_unclassified`
+     were missing — known infectious kg would silently fall out of the
+     family, and an unclassified NULL row would fail to mark the subtotal
+     incomplete). Implement the mapping by enumerating the canonical
+     segregation set (garbage lib read-only) so a future type cannot
+     silently fall out; pin `waste_infectious` inclusion and
+     `waste_unclassified` NULL-incompleteness in tests.
+   Never coerce NULL to 0; an empty-row family stays UNAVAILABLE
+   (ไม่มีข้อมูล), unchanged. Test scenarios must include **waste-only**
+   (electricity UNAVAILABLE), **electricity-only** (current world), and
+   **mixed** contributions. The T-VER electricity-documentation item derives
+   from electricity-mapped rows, not `grandTotalKg`.
 2. **P3 — pinned DOM readiness status.** `SustainabilityPage.tsx` emits the
    literal `"UNAVAILABLE"` into `data-readiness-status`, a value outside the
    pinned `TverReadinessItem["status"]` union (`DOCUMENTED | ABSENT |
@@ -115,9 +134,12 @@ byte-identical; the 7/7 suite runs as regression only), `docs/ai/CURRENT-WORK.md
 
 ## Acceptance
 
-- All four follow-ups closed with pinned tests; no behavior change on
-  current real-world data (waste still UNAVAILABLE; factor status still
-  PARTIAL; DOM byte-identical).
+- All follow-ups closed with pinned tests (waste AND electricity
+  family-row-derived semantics; both-polarity knownOnlyTotal; pinned DOM
+  status; factor basis); no behavior change on current real-world data
+  (electricity remains the only contributing family and renders
+  identically; waste still UNAVAILABLE; factor status still PARTIAL; DOM
+  byte-identical).
 - Battery green at the frozen head; e2e 7/7 unchanged.
 - No forbidden file touched; receipts durable in the C2 handoff.
 

@@ -446,7 +446,7 @@ exact-SHA independent review and merge into `main`.
         ],
         "work_order_path": "docs/work-orders/ENV-WASTE-CARBON-001B.md",
         "handoff_path": "docs/ai/handoffs/ENV-WASTE-CARBON-001B-GLM.md",
-        "review_owner": "Claim transition: deterministic R3 cross-model (Codex gpt-6-sol - admitted with recorded dispatch evidence; GPT-6 Astra prohibited; never author-and-approve; never silent GLM downgrade). Implementation PR: fresh GLM-5.3 MAX reviewer (cross-model independence vs the Codex Track-F page author); implementing lane never merges its own PR",
+        "review_owner": "Claim transition: deterministic R3 cross-model (Codex gpt-6-sol @ max read-only - live review-route admission evidence = the R1 dispatch itself, exit 0 at head 8ecc8ac, recorded in the handoff review-route section; designated fallback gpt-5.6-sol if a future review dispatch hits a provider admission error; GPT-6 Astra prohibited; never author-and-approve; never silent GLM downgrade). Implementation PR: fresh GLM-5.3 MAX reviewer (cross-model independence vs the Codex Track-F page author); implementing lane never merges its own PR",
         "dependencies": [
           "ENV-WASTE-CARBON-001-C1 DELIVERED (PR #121 merged 2df0bcd; D5 verdict issuecomment-6160114878) - this slice closes the four follow-ups recorded at its delivery (P2 latent waste-subtotal; P3 readiness DOM-status pin; P3 factor-readiness basis; P3 known-only-total discrimination)",
           "ENV-WASTE-CARBON-001A contracts remain READ-ONLY inputs (frozen rollup shape: RollupRow kg_co2e NULL semantics, hasUnavailableContribution, unavailableSources)",
@@ -454,7 +454,7 @@ exact-SHA independent review and merge into `main`.
           "Standing Codex-proactive directive 2026-10-12 (durable via PR #112) Role B conditions govern the D3b dispatch"
         ],
         "last_checkpoint_pointer": "docs/ai/handoffs/ENV-WASTE-CARBON-001B-GLM.md",
-        "one_next_safe_action": "CLAIMED 2026-10-14 (effective when this transition merges): execute the WO D-plan (task ENV-WASTE-CARBON-001B, fresh slice task of the closed parent ENV-WASTE-CARBON-001; closes its recorded follow-ups) - D1 truth table in the handoff, D2 RED-first tests for all four items, D3a GLM lib (waste-family known subtotal + knownOnlyTotal semantics + pinned DOM-status constant + factor-basis derivation), D3b Codex gpt-6-sol @ max page constant adoption (byte-identical DOM), D4 full battery incl. sustainability e2e 7/7 regression, D5 fresh-GLM review at the exact frozen head, D6 expected-head merge + closeout transition. No production data writes; rollup contract consumed read-only."
+        "one_next_safe_action": "CLAIMED 2026-10-14 (effective when this transition merges): execute the WO D-plan (task ENV-WASTE-CARBON-001B, fresh slice task of the closed parent ENV-WASTE-CARBON-001; closes its recorded follow-ups) - D1 truth table in the handoff, D2 RED-first tests for all four items, D3a GLM lib (BOTH families row-derived: electricity + waste presence/subtotal/knownOnlyTotal from family-mapped rows, SOURCE_FAMILY covering every emitted waste label incl. waste_infectious/waste_unclassified; pinned DOM-status constant; factor-basis derivation), D3b Codex gpt-6-sol @ max page constant adoption (byte-identical DOM), D4 full battery incl. sustainability e2e 7/7 regression, D5 fresh-GLM review at the exact frozen head, D6 expected-head merge + closeout transition. No production data writes; rollup contract consumed read-only."
       }
     ]
   }
