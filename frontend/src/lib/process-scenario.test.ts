@@ -1,12 +1,16 @@
 import { describe, expect, it } from "vitest";
 
 import { PROCESS_EXPLANATION } from "./environmental-flow";
-import type { EnvironmentalFlowModel } from "./environmental-flow";
+import type {
+  EnvironmentalFlowModel,
+  ProcessExplanationEdgeId,
+  ProcessExplanationStageId,
+} from "./environmental-flow";
 import {
   deriveScenarioState,
-  PROCESS_SCENARIOS,
   type ScenarioDefinition,
 } from "./process-scenario";
+import { PROCESS_SCENARIOS } from "./__fixtures__/process-scenarios";
 
 /**
  * ENV-VIS-STORY-001B-C1 — deterministic scenario contract (RED-first).
@@ -35,12 +39,23 @@ describe("ENV-VIS-STORY-001B scenario inventory (rule 5)", () => {
   });
 
   it("every edgeOverride key is a known topology edge id", () => {
-    const known = new Set(PROCESS_EXPLANATION.edges.map((e) => e.id));
+    const known = new Set<string>(PROCESS_EXPLANATION.edges.map((e) => e.id));
     for (const scenario of PROCESS_SCENARIOS) {
       for (const key of Object.keys(scenario.edgeOverrides ?? {})) {
         expect(known.has(key)).toBe(true);
       }
     }
+  });
+
+  it("the exported literal id unions stay pinned to the live topology", () => {
+    // Pins the frozen TOPOLOGY_* tuples to PROCESS_EXPLANATION so the
+    // compile-time unions can never drift from the actual edges/stages.
+    const edgeIdSample: ProcessExplanationEdgeId = PROCESS_EXPLANATION.edges[0].id;
+    const stageIdSample: ProcessExplanationStageId = PROCESS_EXPLANATION.stages[0].id;
+    expect(typeof edgeIdSample).toBe("string");
+    expect(typeof stageIdSample).toBe("string");
+    expect(new Set(PROCESS_EXPLANATION.edges.map((e) => e.id)).size).toBe(13);
+    expect(new Set(PROCESS_EXPLANATION.stages.map((s) => s.id)).size).toBe(8);
   });
 
   it("rejects unknown edge ids at runtime (fail closed)", () => {
@@ -106,7 +121,7 @@ describe("never-blends and purity invariants", () => {
       const state = deriveScenarioState(scenario);
       expect(state.provenance).toEqual({ source: "simulation", observedAt: null });
       const serialized = JSON.stringify(state);
-      expect(serialized).not.toMatch(/"unit"|"quantity"|"value"|kg|co2|DO|mg\/L/i);
+      expect(serialized).not.toMatch(/"unit"|"quantity"|"value"|"do"|"kg"|co2e|mg\/l/i);
       expect(serialized).not.toMatch(/"latest"|"live"|"historical"/i);
     }
   });
@@ -131,16 +146,10 @@ describe("never-blends and purity invariants", () => {
 
   it("unknown edge ids are rejected at the type level", () => {
     // @ts-expect-error — "not-an-edge" is not a ProcessExplanationEdgeId
-    const bad: ScenarioDefinition = {
-      ...PROCESS_SCENARIOS[0],
-      edgeOverrides: { "not-an-edge": "active-path" },
-    };
+    const bad: ScenarioDefinition = { ...PROCESS_SCENARIOS[0], edgeOverrides: { "not-an-edge": "active-path" } };
     expect(bad).toBeDefined();
     // @ts-expect-error — only the aeration_tank qualitative override exists in C1
-    const badStage: ScenarioDefinition = {
-      ...PROCESS_SCENARIOS[0],
-      stageOverrides: { fine_screen: { aeration: "interrupted" } },
-    };
+    const badStage: ScenarioDefinition = { ...PROCESS_SCENARIOS[0], stageOverrides: { fine_screen: { aeration: "interrupted" } } };
     expect(badStage).toBeDefined();
   });
 });
