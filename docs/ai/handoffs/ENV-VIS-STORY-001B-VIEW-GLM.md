@@ -103,7 +103,9 @@ to the C1 fixtures); `__fixtures__/process-scenarios.ts` re-exports it.
   is already repaired at `8501d18`; the round-2 prompt is reproducible from
   the review-route record.
 - **Resume condition:** after the account quota resets (stated 23:27 local
-  2026-10-14), re-dispatch R3 round 2 at the exact head `8501d18` -> on
-  APPROVED, expected-head merge PR #138 -> D2 RED -> D3a GLM catalog ->
-  D3b Codex view -> D4 -> D5 -> D6. Trigger: the owner's next message or
-  resuming the supervisor automation (both currently owner-controlled).
+  2026-10-14), re-dispatch R3 round 2 at the CURRENT PR head (this parking
+  commit `633eaf4`, or later if further reviewed repairs land - always the
+  exact remote head) -> on APPROVED, expected-head merge PR #138 -> D2 RED ->
+  D3a GLM catalog -> D3b Codex view -> D4 -> D5 -> D6. Trigger: the owner's
+  next message or resuming the supervisor automation (both currently
+  owner-controlled).
