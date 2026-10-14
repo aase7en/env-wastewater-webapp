@@ -9,8 +9,12 @@ receipts).
 
 - Reviewer: Codex CLI `gpt-6-sol` @ `model_reasoning_effort=max`, sandbox
   read-only, dispatched from this exact worktree at the transition head.
-- Live admission evidence for THIS review route: the R1 dispatch itself
-  (exit code + verdict recorded below when it completes).
+- Live admission evidence for THIS review route (actual dispatch receipts):
+  - **R1 @ `1542e05`**: exit 0, 101,313 tokens — verdict CHANGES_REQUIRED
+    (2xP2: category-specific admission reason; duplicate stale 001B-closure
+    clause) — repaired in `6bb2fb4`.
+  - **R2 @ `6bb2fb4`**: exit 0, 103,277 tokens — verdict CHANGES_REQUIRED
+    (1xP2: this receipt placeholder) — repaired in this commit.
 - Designated fallback if the gpt-6-sol review dispatch hits a provider
   admission error: `gpt-5.6-sol` (admitted R3-review-only across the
   PR #113/#118/#122 trails). GPT-6 Astra prohibited. Never
