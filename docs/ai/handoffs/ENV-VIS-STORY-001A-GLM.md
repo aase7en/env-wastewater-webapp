@@ -78,3 +78,16 @@ Contract invariants (D2 RED pins): water/sludge/chemical edges never collapse
 edges (influent-entry, was-to-drying-beds) keep their existing quantity
 semantics BYTE-IDENTICAL; no readings/timestamps/rates/equipment states; no
 SIMULATED/LIVE/real-time vocabulary in the explanation contract.
+
+## Temporary shared-file ownership (D3b window)
+
+- 2026-10-14: `frontend/src/index.css` (shared stylesheet) + `frontend/src/components/flow/EnvironmentalFlowStory.tsx` are under the Codex D3b sole-writer window (GLM does not touch them until the window closes with the D3b commit).
+
+## Execution receipts
+
+- 2026-10-14 (transition merged): PR #132 merged as `6346d36` (second parent = R3-APPROVED `1f657c0`; 3-round trail: R1 CHANGES_REQUIRED with **ACTIVATION_BASIS: SUFFICIENT** + 2 findings, R2 single P2, R3 APPROVED no-findings; verdicts issuecomment-6168235172 + 6168356965 + 6168442108; main CI test=success). Implementation worktree env-vis-story-001a-20261014 / feat/env-vis-story-001a at base `6346d36`.
+- 2026-10-14 (D2 RED, commit `644fcb2`): 5 truthful failures / 13 passes — PROCESS_EXPLANATION absent (stage inventory, edge separation, uncertain tie-ins, vocabulary absence, shared-topology derivation + quantity semantics).
+- 2026-10-14 (D3a GLM Track Z, commit `4c7dded`): ProcessExplanationStage/Edge/TieIn types + PROCESS_EXPLANATION (8 SSoT stages, 13 edges; the two exception edges the ONLY unknown/needs_confirmation entries, with Thai uncertainty notes); toEnvironmentalFlowModel() derives edges from the contract (one topology authority); focused vitest 18/18.
+- 2026-10-14 (D3b Codex Track F): gpt-6-sol @ max workspace-write bounded two-file dispatch (EnvironmentalFlowStory.tsx + index.css ONLY; ownership window recorded pre-dispatch, closed with the commit; exit 0, 153,746 tokens; Codex self-ran tsc/lint + browser checks at 360/390/430). Delivered: stage strip consumes PROCESS_EXPLANATION; 12-step teaching highlight (8 stages + 4 confirmed branches; exception paths excluded by contract filter); buttons ขั้นถัดไป/ขั้นก่อนหน้า + Arrow keys + Thai counter; notice ภาพอธิบายกระบวนการ ไม่ใช่สถานะปัจจุบัน; calm ring highlight (no marching dashes); prefers-reduced-motion = instant; scoped .env-flow-story-* styles. Commit `82af77d`.
+- 2026-10-14 (D4 battery at e2e head): tsc clean; FULL vitest **400/400**; lint 0 errors (12 pre-existing warnings); /flow Playwright **12/12** (9 existing + 3 new: notice/controls/12-steps; step-through button+keyboard; exceptions static dashed never-steps with Thai uncertainty note); git diff --check clean.
+- Next: D5 fresh-GLM review at the frozen head -> D6 expected-head merge + exact-main CI + deployed smoke + closeout.
