@@ -1,7 +1,16 @@
 # ENV-WASTE-CARBON-001B — Sustainability Follow-up Repairs (Work Order, C1 slice)
 
-Status: CLAIMED (transition pending R3 review + merge; registry task_id uniqueness
-requires a fresh slice task — same pattern as ENV-OPS-001 → ENV-OPS-001A)
+Status: DELIVERED / CLOSED 2026-10-14 — claim ENV-WASTE-CARBON-001B-C1 closed at
+generation 1. Transition PR #126 (3-round R3 gpt-6-sol) merged `52f091b`;
+implementation PR #127 merged `7363617` (second parent = D5-APPROVED `7ebb43b`,
+fresh-GLM cross-model verdict issuecomment-6165136496); exact-main
+test/E2E-smoke/Pages-deploy ALL SUCCESS; deployed markers verified
+(SustainabilityPage-CE-tgpjD.js carries the new waste_infectious SOURCE_FAMILY
+key). All four follow-ups closed; battery vitest 394/394 + tsc + lint 0 errors
++ e2e 7/7 (spec untouched, DOM byte-identical). Receipts durable in
+docs/ai/handoffs/ENV-WASTE-CARBON-001B-GLM.md. Registered originally as a
+fresh slice task (registry task_id uniqueness; ENV-OPS-001 → ENV-OPS-001A
+pattern).
 Task: `ENV-WASTE-CARBON-001B` (follow-up slice of parent `ENV-WASTE-CARBON-001`)
 Claim: `ENV-WASTE-CARBON-001B-C1` (generation 1)
 Base: `291e896ff8b03f4a96e63b2e9df6dda7e611df31`
