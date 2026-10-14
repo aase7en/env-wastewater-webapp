@@ -1,7 +1,7 @@
 # ENV-WASTE-CARBON-001 — Integrated Waste/Plastic/Carbon/T-VER View (Work Order, C1 slice)
 
 Claim: `ENV-WASTE-CARBON-001-C1` (generation 1) · Status: IMPLEMENTING
-Implementation owner (D3): **Codex CLI `gpt-6-sol` @ `model_reasoning_effort=max`** — authorized by the owner's 2026-10-14 steer (verbatim-in-substance: "ทำงานต่อที่ค้างให้จบ โดยใช้ JEV AI และ GPT6-Sol ช่วยในงานที่เหมาะสม" = finish the pending work, using GPT-6 Sol for the appropriate tasks; the only pending model-gated work on this Goal is THIS lane's D3, and the gate ask named exactly a Codex model for this D3). GLM-5.3 MAX: claim coordination, D1 contracts, D2 RED-first tests, D4 integration.
+D3 is SPLIT by track (AGENTS.md ownership): **D3a (Track Z = GLM-5.3 MAX)** implements `frontend/src/lib/sustainability/family-state.ts` to the frozen D2 unit contract (business logic/data contract work). **D3b (Track F = Codex CLI `gpt-6-sol` @ max)** implements the page/layout work — `SustainabilityPage.tsx`, `App.tsx` route wiring, `AppShell.tsx` nav entry — consuming family-state as a read-only import. Codex authorization: owner's 2026-10-14 steer (verbatim-in-substance: "ทำงานต่อที่ค้างให้จบ โดยใช้ JEV AI และ GPT6-Sol ช่วยในงานที่เหมาะสม" = finish the pending work, using GPT-6 Sol for the appropriate tasks; the only pending model-gated work on this Goal was THIS lane's D3b, and the gate ask named exactly a Codex model for it). GLM-5.3 MAX also retains claim coordination, D1 contracts, D2 RED-first tests, D4 integration.
 Base main at transition authoring: `4e65bc1d5b92f35b5f3e8434969cc02546ed9556`
 
 ## Objective
@@ -52,9 +52,9 @@ surfaces, `docs/ai/CURRENT-WORK.md`, guard/autonomy scripts, `data/**`, `.env`.
 
 - GLM-5.3 MAX: D1 (pin the exact nav/route file + contract shapes), D2
   RED-first tests, D4 integration battery, handoff receipts.
-- **D3 implementation model AUTHORIZED (2026-10-14, owner steer, recorded
-  in-substance above): Codex CLI `gpt-6-sol` @ max.** Track-F-consistent
-  (page/layout is the Codex lane per AGENTS.md). Admission evidence: gpt-6-sol
+- **D3b model AUTHORIZED (2026-10-14, owner steer, recorded in-substance
+  above): Codex CLI `gpt-6-sol` @ max — Track-F only** (page/layout/route/
+  nav; `family-state.ts` stays Track Z/GLM per AGENTS.md). Admission: gpt-6-sol
   admitted and exercised end-to-end on DT-VIS-P003 D3 (PR #114/#115);
   gpt-6.1-sol stays unprobed on its unchanged entitlement-blocked fingerprint;
   gpt-5.6-sol remains R3-REVIEW-ONLY. If the dispatch itself returns a
@@ -64,8 +64,11 @@ surfaces, `docs/ai/CURRENT-WORK.md`, guard/autonomy scripts, `data/**`, `.env`.
   `UNAVAILABLE` per the fleet router (no supported live route) — advisory
   input is therefore not consumed for this lane; deterministic + GLM
   reasoning covers routing; no provider-probing loop.
-- Single-writer rule during any D3 window (Codex sole writer of ALL mutable
-  files); GLM resumes at the recorded D3→D4 handoff.
+- Per-file single writers: D3a — GLM is the sole writer of
+  `frontend/src/lib/sustainability/**`; D3b — Codex is the temporary sole
+  writer of `SustainabilityPage.tsx` + `App.tsx` + `AppShell.tsx` ONLY
+  (GLM touches no file during the D3b dispatch and resumes at the recorded
+  D3b→D4 handoff); docs files stay with GLM throughout.
 
 ## Dispatch-exception risk record
 
@@ -88,7 +91,8 @@ the truth-table for family states + T-VER readiness items.
 D2 — GLM: RED-first tests (unit contract + Playwright: family states, ไม่มีข้อมูล
 never 0.000, T-VER readiness list without eligibility, badges, a11y 44px,
 360px no-overflow).
-D3 — Codex CLI `gpt-6-sol` @ max dispatch (single-writer window: Codex is the temporary sole writer of ALL mutable files; GLM resumes at the recorded D3→D4 handoff).
+D3a — GLM implements `family-state.ts` to the frozen unit contract (RED→green).
+D3b — Codex CLI `gpt-6-sol` @ max implements the page/route/nav on top (sole writer of those three files only).
 D4 — GLM battery + receipts. D5 — fresh independent review (GLM if Codex
 implements; cross-model vs author; never author-and-approve). D6 — expected-
 head merge, post-main CI/deploy/smoke, board/roadmap status update, closeout

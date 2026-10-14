@@ -17,8 +17,13 @@
   no probing. D1 (@29f0471: contracts + truth table) and D2 (@1b4f73d: RED
   unit + e2e) are COMPLETE in worktree `env-wc001-20261013` (branch
   `feat/env-waste-carbon-001`).
-- Next: D3 dispatch (family-state.ts + SustainabilityPage + App route +
-  AppShell nav to the frozen D2 contract) → D4 battery (full vitest + tsc +
-  lint + Playwright on a ref-matching dev server) → D5 FRESH independent
-  GLM-5.3 MAX review (cross-model vs the Codex author; implementing lane
-  never merges) → D6 deploy + receipts + closeout.
+- Next (D3 split by track per AGENTS.md): **D3a GLM implements
+  `frontend/src/lib/sustainability/family-state.ts`** to the frozen unit
+  contract (RED→green; GLM sole writer of lib/sustainability/**). **D3b
+  Codex `gpt-6-sol` @ max implements `SustainabilityPage.tsx` + `App.tsx`
+  route + `AppShell.tsx` nav** consuming family-state read-only (Codex sole
+  writer of those three files only; GLM paused during the dispatch). → D4
+  battery (full vitest + tsc + lint + Playwright on a ref-matching dev
+  server) → D5 FRESH independent GLM-5.3 MAX review (cross-model vs the
+  Codex author; implementing lane never merges) → D6 deploy + receipts +
+  closeout.
