@@ -10,12 +10,14 @@ import type { RollupSummary } from "../carbon-rollup";
  * zero: 0-row families render ไม่มีข้อมูล, never a number.
  *
  * Truth table (pinned by family-state.test.ts):
- * - electricity: CONTRIBUTING when the rollup carries known kg (badge LATEST,
- *   manual-snapshot semantics); grandTotalKg is a KNOWN total only — flag
- *   knownOnlyTotal when hasUnavailableContribution.
+ * - electricity: CONTRIBUTING on electricity-row evidence (badge LATEST,
+ *   manual-snapshot semantics); the card value is the family's known
+ *   subtotal — grandTotalKg belongs to the page's overall-total display
+ *   only. knownOnlyTotal flags NULL-kg rows in the family (001B).
  * - fuel / garden_fuel / waste / chemical: UNAVAILABLE today (0 rows) →
- *   ไม่มีข้อมูล, never numeric. Waste may still show a segregation summary
- *   from garbage rows without fabricating a carbon contribution.
+ *   ไม่มีข้อมูล, never numeric. Waste derives the same way from waste-mapped
+ *   rows (every label carbon.v_unified_co2e can emit) and may still show a
+ *   segregation summary from garbage rows without fabricating carbon.
  * - plastic: ABSENT — no plastic category/mass/unit/factor exists anywhere
  *   (001A A–K); waste_recyclable is NOT plastic and is never relabeled.
  */
@@ -63,22 +65,66 @@ export interface TverReadinessItem {
   status: "DOCUMENTED" | "ABSENT" | "PARTIAL";
 }
 
+/**
+ * The page renders exactly one status value beyond the readiness union
+ * (while the query has no result). Pinned here so the DOM attribute value
+ * cannot drift from the lib contract (001B P3).
+ */
+export const READINESS_DOM_STATUS_UNAVAILABLE = "UNAVAILABLE" as const;
+
+export type ReadinessDomStatus = TverReadinessItem["status"] | typeof READINESS_DOM_STATUS_UNAVAILABLE;
+
 const UNAVAILABLE_LABEL = "ไม่มีข้อมูล";
 
-/** Map rollup source labels onto the five A–K carbon source families. */
+/**
+ * Map rollup source labels onto the five A–K carbon source families.
+ * Waste labels mirror exactly what `carbon.v_unified_co2e` can emit:
+ * `'waste_' || segregation_type | 'unclassified'` over the GARBAGE-CORE-001
+ * canonical set (general / infectious / recyclable / chemical / NULL).
+ * A future canonical type must be added here or it silently falls out of
+ * the waste family (001B R3 P2 finding: waste_infectious and
+ * waste_unclassified were missing).
+ */
 const SOURCE_FAMILY: Record<string, FamilyName> = {
   diesel: "fuel",
   gasoline: "fuel",
   lpg: "fuel",
   garden_fuel: "garden_fuel",
   waste: "waste",
-  waste_organic: "waste",
   waste_recyclable: "waste",
   waste_general: "waste",
+  waste_infectious: "waste",
   waste_chemical: "waste",
+  waste_unclassified: "waste",
   chemical: "chemical",
   electricity: "electricity",
 };
+
+/** Family-local kg evidence: known subtotal + NULL (factor-unavailable) presence. */
+interface FamilyKgEvidence {
+  /** Sum of non-NULL kg_co2e rows in this family — a known subtotal only. */
+  subtotal: number;
+  /** True when at least one family row had kg_co2e NULL (unknown, not zero). */
+  hasNull: boolean;
+  /** True when at least one family row carried a known kg value. */
+  hasKnown: boolean;
+}
+
+function familyKgEvidence(rollup: RollupSummary, family: FamilyName): FamilyKgEvidence {
+  let subtotal = 0;
+  let hasNull = false;
+  let hasKnown = false;
+  for (const row of rollup.rows) {
+    if (SOURCE_FAMILY[row.source] !== family) continue;
+    if (row.kg_co2e === null) {
+      hasNull = true;
+    } else {
+      hasKnown = true;
+      subtotal += row.kg_co2e;
+    }
+  }
+  return { subtotal, hasNull, hasKnown };
+}
 
 function unavailableFamily(family: FamilyName): FamilyStateView {
   return {
@@ -95,18 +141,18 @@ export function deriveFamilyStates(
 ): FamilyStateView[] {
   const states: FamilyStateView[] = [];
 
-  // Electricity: CONTRIBUTING when the rollup carries a known positive total
-  // (the D1 fixture models the real-world state: only electricity contributes;
-  // grandTotalKg is the known subtotal of that contribution).
-  const hasKnownKg = Number.isFinite(rollup.grandTotalKg) && rollup.grandTotalKg > 0;
-  if (hasKnownKg) {
+  // Electricity: CONTRIBUTING only on electricity-row evidence — the card's
+  // value is the family's known subtotal, never the rollup-wide grand total
+  // (001B: a waste-only contribution must not label electricity).
+  const electricityEvidence = familyKgEvidence(rollup, "electricity");
+  if (electricityEvidence.hasKnown && electricityEvidence.subtotal > 0) {
     states.push({
       family: "electricity",
       state: "CONTRIBUTING",
       badge: "LATEST",
-      valueLabel: String(rollup.grandTotalKg),
+      valueLabel: String(electricityEvidence.subtotal),
       contribution: "CONTRIBUTING",
-      knownOnlyTotal: rollup.hasUnavailableContribution === true,
+      knownOnlyTotal: electricityEvidence.hasNull,
     });
   } else {
     states.push(unavailableFamily("electricity"));
@@ -117,23 +163,24 @@ export function deriveFamilyStates(
     states.push(unavailableFamily(family));
   }
 
-  // Waste: carbon contribution unavailable unless waste sources carry kg;
-  // a segregation summary from garbage rows never fabricates carbon.
-  const wasteHasKg = rollup.rows.some(
-    (row) => row.kg_co2e !== null && SOURCE_FAMILY[row.source] === "waste",
-  );
+  // Waste: carbon contribution from waste-row evidence only — the card's
+  // value is the waste-family known subtotal (001B: never grandTotalKg); a
+  // segregation summary from garbage rows never fabricates carbon.
+  const wasteEvidence = familyKgEvidence(rollup, "waste");
   const wasteUnavailableContribution = rollup.unavailableSources.some(
     (source) => SOURCE_FAMILY[source] === "waste",
   );
-  const waste: FamilyStateView = wasteHasKg
-    ? {
-        family: "waste",
-        state: "CONTRIBUTING",
-        badge: "LATEST",
-        valueLabel: String(rollup.grandTotalKg),
-        contribution: "CONTRIBUTING",
-      }
-    : {
+  const waste: FamilyStateView =
+    wasteEvidence.hasKnown && wasteEvidence.subtotal > 0
+      ? {
+          family: "waste",
+          state: "CONTRIBUTING",
+          badge: "LATEST",
+          valueLabel: String(wasteEvidence.subtotal),
+          contribution: "CONTRIBUTING",
+          knownOnlyTotal: wasteEvidence.hasNull,
+        }
+      : {
         ...unavailableFamily("waste"),
         ...(wasteUnavailableContribution
           ? { contribution: "UNAVAILABLE" as const }
@@ -181,14 +228,24 @@ export function deriveTverReadiness(
   // Readiness-only: statuses describe whether documented inputs exist.
   // NO eligibility, status, credit estimate, or registration progress.
   void _garbage;
-  const hasKnownKg = Number.isFinite(rollup.grandTotalKg) && rollup.grandTotalKg > 0;
-  const factorStatus: TverReadinessItem["status"] = hasKnownKg
+  // Electricity documentation derives from electricity-row evidence, not the
+  // rollup-wide grand total (001B: a waste-only rollup documents nothing
+  // about electricity).
+  const electricityDocumented = familyKgEvidence(rollup, "electricity").hasKnown;
+  // Factor basis: a non-NULL kg_co2e row is direct evidence a factor was
+  // applied to real data → PARTIAL; with no such row anywhere → ABSENT.
+  // DOCUMENTED is never claimed by this derivation while any EXPECTED_SOURCES
+  // label lacks an applied-factor row in-window.
+  const anyFactorApplied = rollup.rows.some(
+    (row) => row.kg_co2e !== null && Number.isFinite(row.kg_co2e),
+  );
+  const factorStatus: TverReadinessItem["status"] = anyFactorApplied
     ? "PARTIAL"
     : "ABSENT";
   return [
     {
       input: "ข้อมูลการใช้ไฟฟ้า (electricity consumption)",
-      status: hasKnownKg ? "DOCUMENTED" : "ABSENT",
+      status: electricityDocumented ? "DOCUMENTED" : "ABSENT",
     },
     {
       input: "องค์ประกอบขยะตามหมวด (waste composition by category)",
