@@ -129,6 +129,46 @@ class ProviderAndRoutingTests(unittest.TestCase):
         self.assertEqual(result["reason"], "R3_CROSS_MODEL_ADMISSION_REQUIRED")
         self.assertEqual(result["dispatch_allowed"], False)
 
+    def test_hard_engineering_routes_to_gpt61_sol_proactive_mutation_lane(self):
+        result = runtime.select_route("hard_engineering")
+        self.assertEqual(result["model"], "GPT-6.1 Sol")
+        self.assertEqual(result["lane_kind"], "MUTATION")
+        self.assertEqual(result["provider_candidate"], "codex-cli")
+        self.assertEqual(result["route_state"], "ADMISSION_REQUIRED")
+        self.assertEqual(result["reason"], "HARD_ENGINEERING_ADMISSION_REQUIRED")
+        self.assertEqual(result["dispatch_allowed"], False)
+        self.assertTrue(runtime.route_fit("GPT-6.1 Sol", "hard_engineering", "MUTATION")["safe"])
+        self.assertFalse(runtime.route_fit("GPT-6.1 Sol", "hard_engineering", "READ_ONLY_CONSULT")["safe"])
+        self.assertEqual(
+            runtime.route_fit("GPT-6.1 Sol", "hard_engineering", "INDEPENDENT_REVIEW")["reason"],
+            "SOL_ROLE_LANE_MISMATCH",
+        )
+
+    def test_architecture_consult_routes_to_gpt61_sol_read_only_consult(self):
+        result = runtime.select_route("architecture_consult")
+        self.assertEqual(result["model"], "GPT-6.1 Sol")
+        self.assertEqual(result["lane_kind"], "READ_ONLY_CONSULT")
+        self.assertEqual(result["provider_candidate"], "codex-cli")
+        self.assertEqual(result["route_state"], "ADMISSION_REQUIRED")
+        self.assertEqual(result["reason"], "ARCHITECTURE_CONSULT_ADMISSION_REQUIRED")
+        self.assertEqual(result["dispatch_allowed"], False)
+        self.assertTrue(runtime.route_fit("GPT-6.1 Sol", "architecture_consult", "READ_ONLY_CONSULT")["safe"])
+        self.assertFalse(runtime.route_fit("GPT-6.1 Sol", "architecture_consult", "MUTATION")["safe"])
+
+    def test_new_categories_never_disrupt_existing_review_routes(self):
+        # The R3 review reason stays byte-identical; R2 still routes to GLM.
+        r3 = runtime.select_route("independent_review", review_risk_tier="R3")
+        self.assertEqual(r3["reason"], "R3_CROSS_MODEL_ADMISSION_REQUIRED")
+        r2 = runtime.select_route("independent_review")
+        self.assertEqual(r2["model"], "GLM-5.3 MAX")
+        # GLM keeps the engineering default; the new categories are Sol-only.
+        self.assertFalse(runtime.route_fit("GLM-5.3 MAX", "hard_engineering", "MUTATION")["safe"])
+        self.assertFalse(runtime.route_fit("GLM-5.3 Flash", "architecture_consult", "READ_ONLY_CONSULT")["safe"])
+        # Tier selection stays review-only.
+        with self.assertRaises(runtime.AutonomyFailure) as raised:
+            runtime.select_route("hard_engineering", review_risk_tier="R3")
+        self.assertEqual(raised.exception.reason, "REVIEW_TIER_ONLY_FOR_INDEPENDENT_REVIEW")
+
     def test_review_risk_tier_fails_closed_outside_independent_review(self):
         with self.assertRaises(runtime.AutonomyFailure) as raised:
             runtime.select_route("core_engineering", review_risk_tier="R3")
