@@ -5,6 +5,7 @@ import { useGarbageLogs } from "../lib/garbage";
 import {
   deriveFamilyStates,
   deriveTverReadiness,
+  READINESS_DOM_STATUS_UNAVAILABLE,
   type FamilyName,
   type TverReadinessItem,
 } from "../lib/sustainability/family-state";
@@ -180,7 +181,7 @@ export function SustainabilityPage() {
             {readiness.map((item) => (
               <li
                 key={item.input}
-                data-readiness-status={rollup.data ? item.status : "UNAVAILABLE"}
+                data-readiness-status={rollup.data ? item.status : READINESS_DOM_STATUS_UNAVAILABLE}
                 className="flex min-w-0 flex-wrap items-start justify-between gap-2 rounded-xl border border-aura-borderSubtle bg-aura-surface/40 p-4"
               >
                 <span className="min-w-0 flex-1 break-words text-sm leading-relaxed">{item.input}</span>
