@@ -39,7 +39,7 @@ PARKED_STATES = frozenset(("WAITING_EXTERNAL", "PARKED"))
 ACTIVE_REVIEW_STATUSES = frozenset(("REVIEWING", "REVIEW_REQUESTED", "RE-REVIEW_REQUESTED"))
 SUPPORTED_MODELS = {
     "gpt-6 luna max": {"orchestration", "routine_integration", "low_risk_analysis"},
-    "gpt-6.1 sol": {"independent_review"},
+    "gpt-6.1 sol": {"independent_review", "hard_engineering", "architecture_consult"},
     "glm-5.3 max": {"core_engineering", "security", "data_contract", "bounded_implementation", "independent_review"},
     "glm-5.3 flash": {"read_only_analysis", "low_risk_analysis"},
     "jev": {"read_only_advisory"},
@@ -55,6 +55,27 @@ ROUTE_DEFAULTS = {
     "low_risk_analysis": ("GLM-5.3 Flash", "LOW_RISK"),
     "independent_review": ("GLM-5.3 MAX", "INDEPENDENT_REVIEW"),
     "read_only_advisory": ("JEV", "READ_ONLY_ADVISORY"),
+    # ENV-ROUTE-ALIGN-001: runtime alignment with the owner routing policy
+    # (PR #112 SKILL.md; codex-proactive directive 2026-10-12). The route
+    # never dispatches; Role-B boundary conditions remain process-level.
+    "hard_engineering": ("GPT-6.1 Sol", "MUTATION"),
+    "architecture_consult": ("GPT-6.1 Sol", "READ_ONLY_CONSULT"),
+}
+
+# Per-category allowed lane kinds for the GPT-6.1 Sol proactive routes
+# (mirrors the SKILL.md boundary rows; review stays lane-locked).
+SOL_CATEGORY_LANES = {
+    "independent_review": frozenset({"INDEPENDENT_REVIEW"}),
+    "hard_engineering": frozenset({"MUTATION"}),
+    "architecture_consult": frozenset({"READ_ONLY_CONSULT"}),
+}
+
+# Category-specific admission reasons for the GPT-6.1 Sol routes — the R3
+# reason describes the deterministic review route only.
+SOL_CATEGORY_ADMISSION_REASONS = {
+    "independent_review": "R3_CROSS_MODEL_ADMISSION_REQUIRED",
+    "hard_engineering": "HARD_ENGINEERING_ADMISSION_REQUIRED",
+    "architecture_consult": "ARCHITECTURE_CONSULT_ADMISSION_REQUIRED",
 }
 
 
@@ -241,8 +262,14 @@ def route_fit(model: str, task_category: str, lane_kind: str) -> dict:
         return {"safe": False, "reason": "TASK_FIT_MISMATCH"}
     if model_key == "jev" and lane_kind != "READ_ONLY_ADVISORY":
         return {"safe": False, "reason": "JEV_READ_ONLY_ONLY"}
-    if model_key == "gpt-6.1 sol" and lane_kind != "INDEPENDENT_REVIEW":
-        return {"safe": False, "reason": "REVIEWER_ROLE_ONLY"}
+    if model_key == "gpt-6.1 sol":
+        allowed_lanes = SOL_CATEGORY_LANES.get(category)
+        if allowed_lanes is None or lane_kind not in allowed_lanes:
+            reason = (
+                "REVIEWER_ROLE_ONLY" if category == "independent_review"
+                else "SOL_ROLE_LANE_MISMATCH"
+            )
+            return {"safe": False, "reason": reason}
     if model_key == "glm-5.3 flash" and lane_kind not in ("READ_ONLY_ANALYSIS", "LOW_RISK"):
         return {"safe": False, "reason": "FLASH_READ_ONLY_OR_LOW_RISK_ONLY"}
     return {"safe": True, "reason": None}
@@ -260,6 +287,11 @@ def select_route(
     Owner routing policy (2026-10-07): ordinary R2 independent review defaults
     to a fresh GLM-5.3 MAX reviewer context; deterministic R3/critical review
     requires the GPT-6.1 Sol cross-model route (review_risk_tier="R3").
+    Owner codex-proactive directive (2026-10-12, aligned by
+    ENV-ROUTE-ALIGN-001): GPT-6.1 Sol at MAX is additionally routable for
+    hard_engineering (bounded implementation, lane MUTATION) and
+    architecture_consult (read-only design, lane READ_ONLY_CONSULT) —
+    admission-gated and never dispatched by this selector.
     """
     category = _nonempty(task_category, "task_category").casefold()
     selected = ROUTE_DEFAULTS.get(category)
@@ -297,7 +329,7 @@ def select_route(
         "route_state": "ADMISSION_REQUIRED" if requires_external_admission else "SELECTION_ONLY",
         "dispatch_allowed": False,
         "reason": (
-            "R3_CROSS_MODEL_ADMISSION_REQUIRED" if model == "GPT-6.1 Sol"
+            SOL_CATEGORY_ADMISSION_REASONS.get(category) if model == "GPT-6.1 Sol"
             else "LIVE_PROVIDER_ADMISSION_REQUIRED" if requires_external_admission
             else "DISPATCH_ADAPTER_NOT_CONFIGURED"
         ),

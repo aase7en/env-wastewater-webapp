@@ -31,3 +31,11 @@ receipts).
   D5 → D6.
 
 (append-only below this line)
+
+## Execution receipts
+
+- 2026-10-14 (transition merged): PR #129 merged as `cea86c4` (second parent = R3-APPROVED `76224c2`; 3-round trail: R1 CR 2xP2 → R2 CR 1xP2 → R3 APPROVED no-findings; verdicts issuecomment-6165690729 + 6165827039 + 6165917605; main CI test=success). Implementation branch feat/env-route-align-001 at base `cea86c4`.
+- 2026-10-14 (D2 RED, commit `1548087`): 3 truthful failures — hard_engineering + architecture_consult TASK_CATEGORY_UNSUPPORTED (errors) + non-disruption case (categories absent).
+- 2026-10-14 (D3 GLM): SUPPORTED_MODELS["gpt-6.1 sol"] += hard_engineering + architecture_consult; ROUTE_DEFAULTS += the two rows; SOL_CATEGORY_LANES per-category lane map (route_fit keeps REVIEWER_ROLE_ONLY for independent_review mismatches, SOL_ROLE_LANE_MISMATCH otherwise); SOL_CATEGORY_ADMISSION_REASONS category-specific reasons (R3 reason byte-identical); select_route docstring notes the 2026-10-12 directive.
+- 2026-10-14 (D4 battery): `uv run python -m unittest scripts.test_env_autonomy_runtime` → **41 tests OK** (38 + 3 new); CLI probes: `route --task-category hard_engineering` → GPT-6.1 Sol / MUTATION / codex-cli / ADMISSION_REQUIRED / HARD_ENGINEERING_ADMISSION_REQUIRED / dispatch_allowed false; `architecture_consult` → READ_ONLY_CONSULT / ARCHITECTURE_CONSULT_ADMISSION_REQUIRED / dispatch_allowed false (external_call_started false on both); guard regression `scripts.test_env_coordination_guard` → **344 tests OK**.
+- Next: D5 fresh-GLM review at the frozen head → D6 expected-head merge + closeout.
