@@ -61,3 +61,11 @@ unreleased = any non-CLOSED status with a registered worktree + branch.
   Next: R3 → expected-head merge → D2 RED → D3 → D4 → D5 → D6.
 
 (append-only below this line)
+
+## Execution receipts
+
+- 2026-10-15 (transition merged): PR #142 merged as `c3a23af` (second parent = R3-APPROVED `3e6582c`; R3 round 1 APPROVED + AUTHORIZATION_BASIS: SUFFICIENT, no findings, verdict 6176334451; main CI test=success). Implementation worktree env-stophook-20261015 / feat/env-defect-stophook-001 at base `c3a23af`.
+- 2026-10-15 (D2 RED, commit `c863811`): 4 truthful outcomes - the exact #94 reproduction FAILED (foreign worktree + closed ENV-AUTONOMY-001 + stubbed REMOTE_HEAD_MISMATCH currently BLOCKS instead of the neutral {}), matching-context regression, stop_hook_active variant, and _select_stop_claim predicate cases (module absent -> error).
+- 2026-10-15 (D3 GLM Track Z): `_select_stop_claim(policy, root, branch)` + `_current_branch(root)` (symbolic-ref, check=False; detached -> None) added before `_cmd_hook`; the hardcoded `claim_by_task("ENV-AUTONOMY-001")` in `_cmd_hook` replaced by the context-gated selection; foreign context -> `_emit({})` exit 0 (no verifier call, no reason/systemMessage/continue - never a continuation prompt). Two test-harness clarifications during D3: `_actual_context` stubbed in the helper (existing `_hook_patches` precedent); one pre-existing entrypoint fixture (`test_duplicate_posttool_receipt...`) updated to answer `symbolic-ref` with its claim's branch (its constant `_run_git` return made every context foreign; the test's duplicate-receipt substance unchanged); one D2 expectation corrected to the hook contract's actual semantics (decisions ride the JSON payload; `_emit` defaults to exit 0 - the block/neutral distinction is the payload).
+- 2026-10-15 (D4 battery): runtime suite **45/45 OK** (41 + 4 new); guard regression **344/344 OK**; `git diff --check` clean.
+- Next: D5 fresh-GLM review at the frozen head -> D6 expected-head merge + exact-main CI verify + closeout transition.

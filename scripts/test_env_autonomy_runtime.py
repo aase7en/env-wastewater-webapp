@@ -1541,13 +1541,17 @@ class AstraHardeningTests(unittest.TestCase):
                 "hook_event_name": "PostToolUse",
             })
             for delivery in (1, 2):
+                def fake_git(args, cwd=None, check=True, preserve_output=False):
+                    if args == ["symbolic-ref", "--quiet", "--short", "HEAD"]:
+                        return test_claim["branch"]
+                    return str(root)
                 with patch.object(runtime, "load_trusted_policy", return_value=(trusted, "")), \
                      patch.object(runtime, "_actual_context", return_value=actual), \
                      patch.object(runtime, "validate_lane_binding"), \
                      patch.object(runtime.guard, "evaluate_mutation",
                                   return_value=SimpleNamespace(safe_to_mutate=True, reason=None)), \
                      patch.object(runtime, "_mutation_links", return_value=[]), \
-                     patch.object(runtime, "_run_git", return_value=str(root)):
+                     patch.object(runtime, "_run_git", side_effect=fake_git):
                     captured = io.StringIO()
                     with patch.object(sys, "stdin", io.StringIO(event_json)):
                         with redirect_stdout(captured):
@@ -1668,9 +1672,15 @@ class StopHookContextTests(unittest.TestCase):
             raise AssertionError(f"unexpected git call: {args}")
 
         stdin = _io.StringIO(json.dumps(event if event is not None else {}))
+        actual = {
+            "repo": runtime.REPO_SLUG, "worktree": str(temp_dir),
+            "branch": branch, "head_sha": "b" * 40,
+            "claim_base_ancestor": True, "current_policy_ancestor": True,
+        }
         out = _io.StringIO()
         with patch.object(runtime, "load_trusted_policy", return_value=(trusted, "")), \
              patch.object(runtime, "_run_git", side_effect=fake_run_git), \
+             patch.object(runtime, "_actual_context", return_value=actual), \
              patch.object(runtime, "verify_published_checkpoint", side_effect=fake_verify), \
              patch.object(runtime.sys, "stdin", stdin):
             with contextlib.redirect_stdout(out):
@@ -1699,7 +1709,10 @@ class StopHookContextTests(unittest.TestCase):
             code, stdout, _ = self._run_hook(
                 temp_dir, policy(active), "feat/env-defect-stophook-001",
             )
-        self.assertEqual(code, 2)
+        # The hook contract carries decisions in the JSON payload; the
+        # matching-context checkpoint failure still BLOCKS (issue #94's
+        # enforcement preserved) while the foreign context above is {}.
+        self.assertEqual(code, 0)
         payload = json.loads(stdout)
         self.assertEqual(payload.get("decision"), "block")
         self.assertIn("REMOTE_HEAD_MISMATCH", payload.get("reason", ""))
