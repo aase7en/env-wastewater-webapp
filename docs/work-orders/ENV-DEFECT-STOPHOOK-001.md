@@ -1,6 +1,15 @@
 # ENV-DEFECT-STOPHOOK-001 — Stop-Hook Worktree-Context Defect, repo-side fix (Work Order)
 
-Status: CLAIMED (transition pending R3 review + merge)
+Status: DELIVERED / CLOSED 2026-10-15 - claim ENV-DEFECT-STOPHOOK-001-C1
+closed at generation 1. Transition PR #142 merged `c3a23af` (R3 APPROVED +
+AUTHORIZATION_BASIS: SUFFICIENT round 1); implementation PR #143 merged
+`07fb481` (second parent = D5-R5-APPROVED `b93391d`, verdict
+issuecomment-6180217775 - 5-round D5 by gpt-6-sol @ max, a recorded reviewer
+upgrade after the GLM proxy quota block); exact-main test SUCCESS. Battery:
+runtime 50/50 + guard 344/344 + diff-check clean. The issue-94 Stop defect
+is fixed; legacy-lookup audit + #101 typed-wait rule recorded as separate
+follow-up slices; user-state/A-Wiki hook parts remain owner-proposal-only.
+Receipts durable in docs/ai/handoffs/ENV-DEFECT-STOPHOOK-001-GLM.md.
 Task: `ENV-DEFECT-STOPHOOK-001` (repo-side remediation of GitHub issue #94,
 first defect)
 Claim: `ENV-DEFECT-STOPHOOK-001-C1` (generation 1)
