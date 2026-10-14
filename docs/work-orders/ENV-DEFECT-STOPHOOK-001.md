@@ -20,6 +20,14 @@ Review owner (this transition): deterministic R3 cross-model — Codex `gpt-6-so
 recorded in the handoff; designated fallback `gpt-5.6-sol`; GPT-6 Astra
 prohibited; never author-and-approve).
 
+POST-HOC NOTE (closure-time): the implementation D5 review was ALSO
+performed by Codex `gpt-6-sol` @ max - a RECORDED reviewer upgrade after
+the GLM proxy quota window blocked the planned fresh-GLM D5
+(never-downgrade; GLM authored this Track-Z slice, so author/reviewer
+independence held). The original "Codex reviews the transition only"
+plan was thereby superseded - see the handoff D5 trail (5 rounds, final
+APPROVED at `b93391d`, verdict issuecomment-6180217775).
+
 ## Authorization basis (R3-gated, stated plainly)
 
 GitHub issue #94 is an OPEN recorded defect. The issue itself states it "does
@@ -77,8 +85,23 @@ apparent user message the human did not type.
 
 - `~/.codex/hooks.json` user-state hook consolidation and the secondary
   A-Wiki root's own hooks are owner decisions (the issue records them as
-  trusted owner state). The WO deliverable includes a short proposal
-  section addressed to the owner; no edits to either location.
+  trusted owner state). No edits to either location were or will be made
+  by this slice. The promised proposal to the owner:
+
+  **PROPOSAL (for the owner's decision; nothing below is implemented):**
+  1. In the Codex user hook state, scope the A-Wiki repo-specific hook
+     entries to A-Wiki-rooted sessions instead of user-globally (they are
+     additive per OpenAI hook semantics and currently fire in ENV sessions
+     as recorded in issue #94 - 44 trusted/enabled A-Wiki entries
+     observed). The owner performs this in their Codex settings; the exact
+     mechanics depend on the hook-scoping features available to the owner.
+  2. The ENV project's own hooks stay as-is: after this slice's fix they
+     enforce only in a registered claim's own worktree and are neutral
+     (Stop) or fail closed elsewhere.
+  3. The A-Wiki-side dual-SessionStart behavior (git pull + wiki checks +
+     pharmacy DB build) is out of ENV scope - whether to scope, split, or
+     disable those in multi-root sessions is purely the owner's A-Wiki
+     decision.
 
 ## RED-first contract (D2)
 
