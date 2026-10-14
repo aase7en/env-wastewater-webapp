@@ -192,3 +192,67 @@ test("command center exposes the flow surface and all flow drill-down links are 
     await expect(link).toBeFocused();
   }
 });
+
+// ── ENV-VIS-STORY-001A: process-explanation step-through (Stage 1) ──
+
+test("process explanation notice and step controls are visible with 12 teaching steps", async ({ page }) => {
+  await installStaffSession(page);
+  await mockLatestReading(page);
+  await page.goto("/flow");
+
+  await expect(page.getByTestId("process-explanation-notice")).toBeVisible();
+  await expect(page.getByTestId("process-explanation-notice")).toContainText(
+    "ภาพอธิบายกระบวนการ ไม่ใช่สถานะปัจจุบัน",
+  );
+
+  const controls = page.getByTestId("process-explanation-controls");
+  await expect(controls).toBeVisible();
+  await expect(controls.getByRole("button", { name: "ขั้นถัดไป" })).toBeVisible();
+  await expect(controls.getByRole("button", { name: "ขั้นก่อนหน้า" })).toBeVisible();
+
+  const steps = page.locator('[data-testid="process-explanation-step"]');
+  await expect(steps).toHaveCount(12); // 8 SSoT stages + 4 confirmed branch cards
+});
+
+test("step-through advances one step at a time by button and keyboard", async ({ page }) => {
+  await installStaffSession(page);
+  await mockLatestReading(page);
+  await page.goto("/flow");
+
+  const steps = page.locator('[data-testid="process-explanation-step"]');
+  await expect(steps).toHaveCount(12);
+  await expect(steps.nth(0)).toHaveAttribute("data-active", "true");
+  await expect(steps.nth(1)).toHaveAttribute("data-active", "false");
+
+  await page.getByTestId("process-explanation-controls").getByRole("button", { name: "ขั้นถัดไป" }).click();
+  await expect(steps.nth(0)).toHaveAttribute("data-active", "false");
+  await expect(steps.nth(1)).toHaveAttribute("data-active", "true");
+
+  await page.getByTestId("process-explanation-controls").getByRole("button", { name: "ขั้นก่อนหน้า" }).focus();
+  await page.keyboard.press("ArrowRight");
+  await expect(steps.nth(2)).toHaveAttribute("data-active", "true");
+  await page.keyboard.press("ArrowLeft");
+  await expect(steps.nth(1)).toHaveAttribute("data-active", "true");
+});
+
+test("bypass and emergency stay static dashed exceptions, never teaching steps", async ({ page }) => {
+  await installStaffSession(page);
+  await mockLatestReading(page);
+  await page.goto("/flow");
+
+  const exceptions = page.locator('[data-exception="true"]');
+  await expect(exceptions).toHaveCount(2);
+  for (let i = 0; i < 2; i += 1) {
+    await expect(exceptions.nth(i)).not.toHaveAttribute("data-testid", "process-explanation-step");
+    const styles = await exceptions.nth(i).evaluate((el) => {
+      const computed = window.getComputedStyle(el);
+      return { animationName: computed.animationName, borderStyle: computed.borderStyle };
+    });
+    expect(styles.animationName).toBe("none");
+    expect(styles.borderStyle).toBe("dashed");
+  }
+  // The exception cards carry the Thai uncertainty note from the topology contract.
+  const exceptionText = await exceptions.allInnerTexts();
+  const joined = exceptionText.join("\n");
+  expect(joined).toContain("ยังไม่ยืนยันการเชื่อมต่อจริง");
+});
