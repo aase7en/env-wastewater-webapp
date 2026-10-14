@@ -1,6 +1,15 @@
 # ENV-DEFECT-STOPHOOK-001 — Stop-Hook Worktree-Context Defect, repo-side fix (Work Order)
 
-Status: CLAIMED (transition pending R3 review + merge)
+Status: DELIVERED / CLOSED 2026-10-15 - claim ENV-DEFECT-STOPHOOK-001-C1
+closed at generation 1. Transition PR #142 merged `c3a23af` (R3 APPROVED +
+AUTHORIZATION_BASIS: SUFFICIENT round 1); implementation PR #143 merged
+`07fb481` (second parent = D5-R5-APPROVED `b93391d`, verdict
+issuecomment-6180217775 - 5-round D5 by gpt-6-sol @ max, a recorded reviewer
+upgrade after the GLM proxy quota block); exact-main test SUCCESS. Battery:
+runtime 50/50 + guard 344/344 + diff-check clean. The issue-94 Stop defect
+is fixed; legacy-lookup audit + #101 typed-wait rule recorded as separate
+follow-up slices; user-state/A-Wiki hook parts remain owner-proposal-only.
+Receipts durable in docs/ai/handoffs/ENV-DEFECT-STOPHOOK-001-GLM.md.
 Task: `ENV-DEFECT-STOPHOOK-001` (repo-side remediation of GitHub issue #94,
 first defect)
 Claim: `ENV-DEFECT-STOPHOOK-001-C1` (generation 1)
@@ -10,6 +19,14 @@ Review owner (this transition): deterministic R3 cross-model — Codex `gpt-6-so
 @ max read-only (live per-review admission evidence = the R1 dispatch itself,
 recorded in the handoff; designated fallback `gpt-5.6-sol`; GPT-6 Astra
 prohibited; never author-and-approve).
+
+POST-HOC NOTE (closure-time): the implementation D5 review was ALSO
+performed by Codex `gpt-6-sol` @ max - a RECORDED reviewer upgrade after
+the GLM proxy quota window blocked the planned fresh-GLM D5
+(never-downgrade; GLM authored this Track-Z slice, so author/reviewer
+independence held). The original "Codex reviews the transition only"
+plan was thereby superseded - see the handoff D5 trail (5 rounds, final
+APPROVED at `b93391d`, verdict issuecomment-6180217775).
 
 ## Authorization basis (R3-gated, stated plainly)
 
@@ -68,8 +85,29 @@ apparent user message the human did not type.
 
 - `~/.codex/hooks.json` user-state hook consolidation and the secondary
   A-Wiki root's own hooks are owner decisions (the issue records them as
-  trusted owner state). The WO deliverable includes a short proposal
-  section addressed to the owner; no edits to either location.
+  trusted owner state). No edits to either location were or will be made
+  by this slice. The promised proposal to the owner:
+
+  **PROPOSAL (for the owner's decision; nothing below is implemented):**
+  1. In the Codex user hook state, scope the A-Wiki repo-specific hook
+     entries to A-Wiki-rooted sessions instead of user-globally. PRE-
+     CONTAINMENT, they were additive per OpenAI hook semantics and fired
+     in ENV sessions as recorded in issue #94 (44 trusted/enabled A-Wiki
+     entries observed); the issue's containment subsequently DISABLED all
+     44 A-Wiki entries AND the ENV entries, and no re-enable has occurred
+     (no verified re-enable receipt exists - this proposal is what the
+     owner would do INSTEAD of a flat re-enable). The owner performs any
+     change in their Codex settings; the exact mechanics depend on the
+     hook-scoping features available to the owner.
+  2. The ENV project's own hooks stay as-is: after this slice's fix, WHEN
+     (re-)ENABLED by the owner, they would enforce only in a registered
+     claim's own worktree and be neutral (Stop) or fail closed elsewhere;
+     they are currently DISABLED by the issue #94 containment and this
+     slice changes no enablement state.
+  3. The A-Wiki-side dual-SessionStart behavior (git pull + wiki checks +
+     pharmacy DB build) is out of ENV scope - whether to scope, split, or
+     disable those in multi-root sessions is purely the owner's A-Wiki
+     decision.
 
 ## RED-first contract (D2)
 
