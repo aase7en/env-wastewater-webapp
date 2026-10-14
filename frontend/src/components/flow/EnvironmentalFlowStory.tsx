@@ -3,6 +3,8 @@ import { AuraCard } from "../ui/AuraCard";
 import { MSymbol } from "../ui/MSymbol";
 import { PROCESS_EXPLANATION } from "../../lib/environmental-flow";
 import type { EnvironmentalFlowModel, EnvironmentalFlowQuantity } from "../../lib/environmental-flow";
+import { deriveScenarioState, type ScenarioDefinition, type ScenarioEdgeStateLabel, type ScenarioStageState, type ScenarioState } from "../../lib/process-scenario";
+import { PROCESS_SCENARIO_CATALOG } from "../../lib/process-scenarios";
 
 function quantityValue(quantity: EnvironmentalFlowQuantity) {
   return quantity.value === null ? "—" : String(quantity.value);
@@ -30,7 +32,19 @@ function QuantityEvidenceCard({
   );
 }
 
-function ProcessStage({ label, code, index, active }: { label: string; code: string; index: number; active: boolean }) {
+function ProcessStage({
+  label,
+  code,
+  index,
+  active,
+  scenarioProcess,
+}: {
+  label: string;
+  code: string;
+  index: number;
+  active: boolean;
+  scenarioProcess?: ScenarioStageState["scenarioProcess"];
+}) {
   return (
     <div className="flex shrink-0 items-center gap-2">
       {index > 0 ? <MSymbol name="arrow_forward" className="text-[20px] text-aura-textMuted" aria-hidden="true" /> : null}
@@ -43,12 +57,23 @@ function ProcessStage({ label, code, index, active }: { label: string; code: str
       >
         <p className="text-sm font-semibold text-aura-textMain font-thai">{label}</p>
         <p className="mt-1 text-[10px] text-aura-textMuted">{code}</p>
+        {scenarioProcess === "process-interrupted" ? (
+          <span
+            className="env-flow-story-scenario-marker env-flow-story-scenario-marker--interrupted font-thai"
+            data-testid="process-scenario-marker"
+            data-scenario-stage-id={code}
+            data-scenario-state={scenarioProcess}
+          >
+            สมมุติ: หยุดเติมอากาศ
+          </span>
+        ) : null}
       </div>
     </div>
   );
 }
 
 function BranchCard({
+  edgeId,
   title,
   route,
   detail,
@@ -56,7 +81,9 @@ function BranchCard({
   active,
   exception,
   exceptionNote,
+  scenarioState,
 }: {
+  edgeId: string;
   title: string;
   route: string;
   detail: string;
@@ -64,6 +91,7 @@ function BranchCard({
   active: boolean;
   exception: boolean;
   exceptionNote?: string;
+  scenarioState?: ScenarioEdgeStateLabel;
 }) {
   return (
     <div
@@ -82,6 +110,16 @@ function BranchCard({
           <p className="mt-2 text-xs text-aura-textMuted font-thai">{detail}</p>
         </div>
       </div>
+      {scenarioState === "active-path" || scenarioState === "interrupted" ? (
+        <span
+          className={`env-flow-story-scenario-marker font-thai ${scenarioState === "active-path" ? "env-flow-story-scenario-marker--active" : "env-flow-story-scenario-marker--interrupted"}`}
+          data-testid="process-scenario-marker"
+          data-scenario-edge-id={edgeId}
+          data-scenario-state={scenarioState}
+        >
+          {scenarioState === "active-path" ? "สมมุติ: เปิดใช้เส้นทาง" : "สมมุติ: เส้นทางหยุดชะงัก"}
+        </span>
+      ) : null}
       {exceptionNote ? <p className="env-flow-story-exception-note text-xs font-thai">{exceptionNote}</p> : null}
     </div>
   );
@@ -89,6 +127,9 @@ function BranchCard({
 
 export function EnvironmentalFlowStory({ model }: { model: EnvironmentalFlowModel }) {
   const [activeStep, setActiveStep] = useState(0);
+  const [selectedScenarioId, setSelectedScenarioId] = useState(PROCESS_SCENARIO_CATALOG[0]?.id ?? "");
+  const [scenarioSectionOpen, setScenarioSectionOpen] = useState(true);
+  const [appliedScenario, setAppliedScenario] = useState<{ definition: ScenarioDefinition; state: ScenarioState } | null>(null);
   const stageViewportRef = useRef<HTMLDivElement>(null);
   const branchCards = [
     {
@@ -215,6 +256,67 @@ export function EnvironmentalFlowStory({ model }: { model: EnvironmentalFlowMode
           </p>
         </div>
 
+        <details
+          className="env-flow-story-scenario-panel font-thai"
+          open={scenarioSectionOpen}
+          onToggle={(event) => setScenarioSectionOpen(event.currentTarget.open)}
+        >
+          <summary className="env-flow-story-scenario-summary">สถานการณ์สมมุติ</summary>
+          <div className="env-flow-story-scenario-content">
+            <label className="env-flow-story-scenario-label" htmlFor="flow-story-scenario-picker">
+              เลือกสถานการณ์สมมุติ
+            </label>
+            <select
+              id="flow-story-scenario-picker"
+              className="env-flow-story-scenario-picker"
+              data-testid="process-scenario-picker"
+              value={selectedScenarioId}
+              onChange={(event) => setSelectedScenarioId(event.target.value)}
+            >
+              {PROCESS_SCENARIO_CATALOG.map((scenario) => (
+                <option key={scenario.id} value={scenario.id}>{scenario.label}</option>
+              ))}
+            </select>
+            <div className="env-flow-story-scenario-actions">
+              <button
+                type="button"
+                className="env-flow-story-scenario-button"
+                data-testid="process-scenario-apply"
+                disabled={!selectedScenarioId}
+                onClick={() => {
+                  const definition = PROCESS_SCENARIO_CATALOG.find((scenario) => scenario.id === selectedScenarioId);
+                  if (definition) setAppliedScenario({ definition, state: deriveScenarioState(definition) });
+                }}
+              >
+                ใช้สถานการณ์สมมุติ
+              </button>
+              {appliedScenario ? (
+                <button
+                  type="button"
+                  className="env-flow-story-scenario-button"
+                  data-testid="process-scenario-clear"
+                  onClick={() => setAppliedScenario(null)}
+                >
+                  ล้างสถานการณ์
+                </button>
+              ) : null}
+            </div>
+          </div>
+        </details>
+
+        {appliedScenario ? (
+          <div className="env-flow-story-scenario-banner font-thai" data-testid="process-scenario-banner" role="status">
+            <p className="env-flow-story-scenario-banner-title">โหมดจำลอง (SIMULATED) — ไม่ใช่ข้อมูลจริง</p>
+            <p className="env-flow-story-scenario-banner-label">{appliedScenario.definition.label}</p>
+            <p className="env-flow-story-scenario-banner-id">รหัสสถานการณ์: {appliedScenario.state.scenarioId}</p>
+            <ul className="env-flow-story-scenario-assumptions">
+              {appliedScenario.definition.assumptions.map((assumption) => (
+                <li key={assumption}>{assumption}</li>
+              ))}
+            </ul>
+          </div>
+        ) : null}
+
         <div
           className="env-flow-story-controls font-thai"
           data-testid="process-explanation-controls"
@@ -275,7 +377,14 @@ export function EnvironmentalFlowStory({ model }: { model: EnvironmentalFlowMode
           >
             <div className="flex w-max min-w-full items-center gap-2">
               {PROCESS_EXPLANATION.stages.map((stage, index) => (
-                <ProcessStage key={stage.id} label={stage.label} code={stage.id} index={index} active={activeStep === index} />
+                <ProcessStage
+                  key={stage.id}
+                  label={stage.label}
+                  code={stage.id}
+                  index={index}
+                  active={activeStep === index}
+                  scenarioProcess={appliedScenario?.state.stages.find((candidate) => candidate.id === stage.id)?.scenarioProcess}
+                />
               ))}
             </div>
           </div>
@@ -292,6 +401,7 @@ export function EnvironmentalFlowStory({ model }: { model: EnvironmentalFlowMode
             return (
               <BranchCard
                 key={branch.edgeId}
+                edgeId={branch.edgeId}
                 title={branch.title}
                 route={branch.route}
                 detail={branch.detail}
@@ -299,6 +409,7 @@ export function EnvironmentalFlowStory({ model }: { model: EnvironmentalFlowMode
                 active={stepIndex === activeStep}
                 exception={edge?.kind === "exception"}
                 exceptionNote={edge?.kind === "exception" ? edge.note : undefined}
+                scenarioState={appliedScenario?.state.edges.find((candidate) => candidate.id === branch.edgeId)?.scenarioState}
               />
             );
           })}
