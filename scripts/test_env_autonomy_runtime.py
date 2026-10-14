@@ -15,6 +15,10 @@ from unittest.mock import patch
 
 sys.path.insert(0, str(Path(__file__).resolve().parent))
 
+import contextlib
+import io as _io
+import json
+
 import env_autonomy_runtime as runtime
 import env_coordination_guard as guard
 
@@ -1537,13 +1541,20 @@ class AstraHardeningTests(unittest.TestCase):
                 "hook_event_name": "PostToolUse",
             })
             for delivery in (1, 2):
+                def fake_git(args, cwd=None, check=True, preserve_output=False):
+                    if args == ["symbolic-ref", "--quiet", "--short", "HEAD"]:
+                        return test_claim["branch"]
+                    return str(root)
                 with patch.object(runtime, "load_trusted_policy", return_value=(trusted, "")), \
+                     patch.object(runtime.subprocess, "run",
+                                  return_value=SimpleNamespace(
+                                      returncode=0, stdout=test_claim["branch"])), \
                      patch.object(runtime, "_actual_context", return_value=actual), \
                      patch.object(runtime, "validate_lane_binding"), \
                      patch.object(runtime.guard, "evaluate_mutation",
                                   return_value=SimpleNamespace(safe_to_mutate=True, reason=None)), \
                      patch.object(runtime, "_mutation_links", return_value=[]), \
-                     patch.object(runtime, "_run_git", return_value=str(root)):
+                     patch.object(runtime, "_run_git", side_effect=fake_git):
                     captured = io.StringIO()
                     with patch.object(sys, "stdin", io.StringIO(event_json)):
                         with redirect_stdout(captured):
@@ -1637,6 +1648,271 @@ class AstraHardeningTests(unittest.TestCase):
                              texts[first["claim_id"]])
             with self.assertRaises(runtime.AutonomyFailure):
                 runtime._resolve_append_event_claim(trusted, "ENV-COORD-002")
+
+
+class StopHookContextTests(unittest.TestCase):
+    """ENV-DEFECT-STOPHOOK-001 — issue #94 repo-side fix (RED-first).
+
+    The Stop path must enforce ONLY the claim whose registered worktree and
+    branch match the executing context; closed claims (the hardcoded
+    ENV-AUTONOMY-001 among them) are ineligible, and a foreign context is a
+    NEUTRAL result — never a blocking continuation prompt.
+    """
+
+    def _run_hook(self, temp_dir, trusted, branch, event=None, verifier_result=None):
+        verifier_calls = []
+
+        def fake_verify(root, policy, claim):
+            verifier_calls.append(claim["claim_id"])
+            return verifier_result if verifier_result is not None else {
+                "ok": False, "publication_state": "PENDING_PUBLICATION",
+                "reason": "REMOTE_HEAD_MISMATCH",
+            }
+
+        def fake_run_git(args, cwd=None, check=True, preserve_output=False):
+            if args == ["rev-parse", "--git-dir"]:
+                return ".git"
+            if args == ["symbolic-ref", "--quiet", "--short", "HEAD"]:
+                return branch
+            raise AssertionError(f"unexpected git call: {args}")
+
+        stdin = _io.StringIO(json.dumps(event if event is not None else {}))
+        actual = {
+            "repo": runtime.REPO_SLUG, "worktree": str(temp_dir),
+            "branch": branch, "head_sha": "b" * 40,
+            "claim_base_ancestor": True, "current_policy_ancestor": True,
+        }
+        out = _io.StringIO()
+        branch_proc = SimpleNamespace(returncode=0, stdout=branch)
+        with patch.object(runtime, "load_trusted_policy", return_value=(trusted, "")), \
+             patch.object(runtime, "_run_git", side_effect=fake_run_git), \
+             patch.object(runtime.subprocess, "run", return_value=branch_proc), \
+             patch.object(runtime, "_actual_context", return_value=actual), \
+             patch.object(runtime, "verify_published_checkpoint", side_effect=fake_verify), \
+             patch.object(runtime.sys, "stdin", stdin):
+            with contextlib.redirect_stdout(out):
+                code = runtime._cmd_hook(SimpleNamespace(event="Stop", root=str(temp_dir)))
+        return code, out.getvalue(), verifier_calls
+
+    def test_issue94_reproduction_foreign_worktree_is_neutral(self):
+        closed = claim("ENV-AUTONOMY-001", "ENV-AUTONOMY-001-C1", "CLOSED",
+                       ["docs/ai/handoffs/ENV-AUTONOMY-001.md"])
+        closed.update({"worktree": "C:/wt/autonomy", "branch": "test/autonomy"})
+        with tempfile.TemporaryDirectory() as folder:
+            code, stdout, verifier_calls = self._run_hook(
+                Path(folder), policy(closed), "feat/some-other-lane",
+            )
+        self.assertEqual(code, 0)
+        self.assertEqual(json.loads(stdout), {})
+        self.assertEqual(verifier_calls, [])
+
+    def test_matching_context_failure_still_blocks(self):
+        with tempfile.TemporaryDirectory() as folder:
+            temp_dir = Path(folder)
+            active = claim("ENV-DEFECT-STOPHOOK-001", "ENV-DEFECT-STOPHOOK-001-C1", "CLAIMED",
+                           ["docs/ai/handoffs/ENV-DEFECT-STOPHOOK-001-GLM.md"])
+            active.update({"worktree": str(temp_dir).replace("\\", "/"),
+                           "branch": "feat/env-defect-stophook-001"})
+            code, stdout, _ = self._run_hook(
+                temp_dir, policy(active), "feat/env-defect-stophook-001",
+            )
+        # The hook contract carries decisions in the JSON payload; the
+        # matching-context checkpoint failure still BLOCKS (issue #94's
+        # enforcement preserved) while the foreign context above is {}.
+        self.assertEqual(code, 0)
+        payload = json.loads(stdout)
+        self.assertEqual(payload.get("decision"), "block")
+        self.assertIn("REMOTE_HEAD_MISMATCH", payload.get("reason", ""))
+
+    def test_matching_context_stop_hook_active_continues_once(self):
+        with tempfile.TemporaryDirectory() as folder:
+            temp_dir = Path(folder)
+            active = claim("ENV-DEFECT-STOPHOOK-001", "ENV-DEFECT-STOPHOOK-001-C1", "CLAIMED",
+                           ["docs/ai/handoffs/ENV-DEFECT-STOPHOOK-001-GLM.md"])
+            active.update({"worktree": str(temp_dir).replace("\\", "/"),
+                           "branch": "feat/env-defect-stophook-001"})
+            code, stdout, _ = self._run_hook(
+                temp_dir, policy(active), "feat/env-defect-stophook-001",
+                event={"stop_hook_active": True},
+            )
+        self.assertEqual(code, 0)
+        payload = json.loads(stdout)
+        self.assertEqual(payload.get("continue"), True)
+        self.assertIn("systemMessage", payload)
+
+    def test_select_stop_claim_predicate_cases(self):
+        with tempfile.TemporaryDirectory() as folder_a, tempfile.TemporaryDirectory() as folder_b:
+            root = Path(folder_a)
+            matching = claim("T-MATCH", "T-MATCH-C1", "CLAIMED", ["docs/ai/handoffs/T-MATCH.md"])
+            matching.update({"worktree": str(root).replace("\\", "/"), "branch": "feat/x"})
+            closed = claim("T-CLOSED", "T-CLOSED-C1", "CLOSED", ["docs/ai/handoffs/T-CLOSED.md"])
+            closed.update({"worktree": str(root).replace("\\", "/"), "branch": "feat/x"})
+
+            self.assertEqual(
+                runtime._select_stop_claim(policy(matching), root, "feat/x")["claim_id"],
+                "T-MATCH-C1",
+            )
+            self.assertIsNone(runtime._select_stop_claim(policy(closed), root, "feat/x"))
+            self.assertIsNone(runtime._select_stop_claim(policy(matching), root, "feat/other"))
+            self.assertIsNone(runtime._select_stop_claim(policy(matching), root, None))
+            self.assertIsNone(
+                runtime._select_stop_claim(policy(matching), Path(folder_b), "feat/x"),
+            )
+            other = claim("T-OTHER", "T-OTHER-C1", "CLAIMED", ["docs/ai/handoffs/T-OTHER.md"])
+            other.update({"worktree": str(root).replace("\\", "/"), "branch": "feat/x"})
+            with self.assertRaises(runtime.AutonomyFailure) as raised:
+                runtime._select_stop_claim(policy(matching, other), root, "feat/x")
+            self.assertIn("AMBIGUOUS", raised.exception.reason)
+
+    def test_foreign_pretooluse_still_runs_mutation_guard(self):
+        """D5 P1: only Stop is neutral — a foreign PreToolUse must reach
+        hook_pretool (the mutation guard), never a silent {} bypass."""
+        closed = claim("ENV-AUTONOMY-001", "ENV-AUTONOMY-001-C1", "CLOSED",
+                       ["docs/ai/handoffs/ENV-AUTONOMY-001.md"])
+        closed.update({"worktree": "C:/wt/autonomy", "branch": "test/autonomy"})
+        guard_calls = []
+
+        def fake_pretool(event, root):
+            guard_calls.append(event["tool_name"])
+            return {"permissionDecision": "deny", "reason": "MUTATION_BLOCKED"}
+
+        with tempfile.TemporaryDirectory() as folder:
+            temp_dir = Path(folder)
+            stdin = _io.StringIO(json.dumps({"tool_name": "Edit", "tool_input": {}}))
+            out = _io.StringIO()
+
+            def fake_run_git(args, cwd=None, check=True, preserve_output=False):
+                if args == ["rev-parse", "--git-dir"]:
+                    return ".git"
+                if args == ["symbolic-ref", "--quiet", "--short", "HEAD"]:
+                    return "feat/some-other-lane"
+                raise AssertionError(f"unexpected git call: {args}")
+
+            with patch.object(runtime, "load_trusted_policy",
+                              return_value=(policy(closed), "")), \
+                 patch.object(runtime.subprocess, "run",
+                              return_value=SimpleNamespace(returncode=0,
+                                                  stdout="feat/some-other-lane")), \
+                 patch.object(runtime, "_run_git", side_effect=fake_run_git), \
+                 patch.object(runtime, "hook_pretool", side_effect=fake_pretool), \
+                 patch.object(runtime.sys, "stdin", stdin):
+                with contextlib.redirect_stdout(out):
+                    code = runtime._cmd_hook(SimpleNamespace(
+                        event="PreToolUse", root=str(temp_dir),
+                    ))
+        self.assertEqual(code, 0)
+        self.assertEqual(guard_calls, ["Edit"])
+        payload = json.loads(out.getvalue())
+        self.assertEqual(payload["hookSpecificOutput"]["permissionDecision"], "deny")
+
+    def test_foreign_other_events_fail_closed(self):
+        """D5 P1: a foreign non-Stop/non-PreToolUse event fails closed via
+        the typed handler (systemMessage), never a neutral {}."""
+        closed = claim("ENV-AUTONOMY-001", "ENV-AUTONOMY-001-C1", "CLOSED",
+                       ["docs/ai/handoffs/ENV-AUTONOMY-001.md"])
+        closed.update({"worktree": "C:/wt/autonomy", "branch": "test/autonomy"})
+        with tempfile.TemporaryDirectory() as folder:
+            temp_dir = Path(folder)
+            code, stdout, _ = self._run_hook(
+                temp_dir, policy(closed), "feat/some-other-lane",
+            )
+            # _run_hook drives event="Stop"; use SessionStart directly here:
+            stdin = _io.StringIO(json.dumps({}))
+            out = _io.StringIO()
+
+            def fake_run_git(args, cwd=None, check=True, preserve_output=False):
+                if args == ["rev-parse", "--git-dir"]:
+                    return ".git"
+                if args == ["symbolic-ref", "--quiet", "--short", "HEAD"]:
+                    return "feat/some-other-lane"
+                raise AssertionError(f"unexpected git call: {args}")
+
+            with patch.object(runtime, "load_trusted_policy",
+                              return_value=(policy(closed), "")), \
+                 patch.object(runtime.subprocess, "run",
+                              return_value=SimpleNamespace(returncode=0,
+                                                  stdout="feat/some-other-lane")), \
+                 patch.object(runtime, "_run_git", side_effect=fake_run_git), \
+                 patch.object(runtime.sys, "stdin", stdin):
+                with contextlib.redirect_stdout(out):
+                    code = runtime._cmd_hook(SimpleNamespace(
+                        event="SessionStart", root=str(temp_dir),
+                    ))
+        payload = json.loads(out.getvalue())
+        self.assertIn("systemMessage", payload)
+        self.assertIn("NO_ELIGIBLE_CLAIM_CONTEXT", payload["systemMessage"])
+
+    def test_unresolvable_identity_fails_closed_even_for_stop(self):
+        """D5 P1: an eligible claim whose registered worktree cannot be
+        resolved is an identity FAILURE — the Stop event fails closed with
+        the typed reason, never a neutral {} (uncertainty is not foreign)."""
+        stale = claim("T-STALE", "T-STALE-C1", "CLAIMED", ["docs/ai/handoffs/T-STALE.md"])
+        stale.update({"worktree": "Z:/nonexistent/wt", "branch": "feat/x"})
+        with tempfile.TemporaryDirectory() as folder:
+            code, stdout, _ = self._run_hook(
+                Path(folder), policy(stale), "feat/x",
+            )
+        payload = json.loads(stdout)
+        self.assertEqual(payload.get("decision"), "block")
+        self.assertIn("CLAIM_IDENTITY_UNESTABLISHABLE", payload.get("reason", ""))
+
+
+    def test_branch_query_failure_fails_closed_even_with_matching_claim(self):
+        """D5 R2 P1: a symbolic-ref failure (exit != 0/1) is an identity
+        FAILURE — even with a matching active claim the Stop event fails
+        closed with the typed reason, never a neutral {}."""
+        with tempfile.TemporaryDirectory() as folder:
+            temp_dir = Path(folder)
+            active = claim("ENV-DEFECT-STOPHOOK-001", "ENV-DEFECT-STOPHOOK-001-C1", "CLAIMED",
+                           ["docs/ai/handoffs/ENV-DEFECT-STOPHOOK-001-GLM.md"])
+            active.update({"worktree": str(temp_dir).replace("\\", "/"),
+                           "branch": "feat/env-defect-stophook-001"})
+
+            class Proc:
+                returncode = 128
+                stdout = ""
+
+            with patch.object(runtime, "load_trusted_policy",
+                              return_value=(policy(active), "")), \
+                 patch.object(runtime.subprocess, "run", return_value=Proc()), \
+                 patch.object(runtime, "_run_git", return_value=".git"), \
+                 patch.object(runtime.sys, "stdin", _io.StringIO("{}")):
+                out = _io.StringIO()
+                with contextlib.redirect_stdout(out):
+                    code = runtime._cmd_hook(SimpleNamespace(
+                        event="Stop", root=str(temp_dir),
+                    ))
+        payload = json.loads(out.getvalue())
+        self.assertEqual(payload.get("decision"), "block")
+        self.assertIn("BRANCH_IDENTITY_FAILED", payload.get("reason", ""))
+
+    def test_detached_head_still_foreign(self):
+        """Exit 1 (the documented detached-HEAD code) stays a foreign
+        context: a Stop event with only closed claims remains neutral {}."""
+        class Proc:
+            returncode = 1
+            stdout = ""
+
+        closed = claim("ENV-AUTONOMY-001", "ENV-AUTONOMY-001-C1", "CLOSED",
+                       ["docs/ai/handoffs/ENV-AUTONOMY-001.md"])
+        closed.update({"worktree": "C:/wt/autonomy", "branch": "test/autonomy"})
+        with tempfile.TemporaryDirectory() as folder:
+            with patch.object(runtime, "load_trusted_policy",
+                              return_value=(policy(closed), "")), \
+                 patch.object(runtime.subprocess, "run",
+                              return_value=SimpleNamespace(returncode=0,
+                                                  stdout="feat/some-other-lane")), \
+                 patch.object(runtime.subprocess, "run", return_value=Proc()), \
+                 patch.object(runtime, "_run_git", return_value=".git"), \
+                 patch.object(runtime.sys, "stdin", _io.StringIO("{}")):
+                out = _io.StringIO()
+                with contextlib.redirect_stdout(out):
+                    code = runtime._cmd_hook(SimpleNamespace(
+                        event="Stop", root=str(Path(folder)),
+                    ))
+        self.assertEqual(code, 0)
+        self.assertEqual(json.loads(out.getvalue()), {})
+
 
 if __name__ == "__main__":
     unittest.main(verbosity=2)
