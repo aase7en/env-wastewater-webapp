@@ -78,3 +78,7 @@ Contract invariants (D2 RED pins): water/sludge/chemical edges never collapse
 edges (influent-entry, was-to-drying-beds) keep their existing quantity
 semantics BYTE-IDENTICAL; no readings/timestamps/rates/equipment states; no
 SIMULATED/LIVE/real-time vocabulary in the explanation contract.
+
+## Temporary shared-file ownership (D3b window)
+
+- 2026-10-14: `frontend/src/index.css` (shared stylesheet) + `frontend/src/components/flow/EnvironmentalFlowStory.tsx` are under the Codex D3b sole-writer window (GLM does not touch them until the window closes with the D3b commit).
