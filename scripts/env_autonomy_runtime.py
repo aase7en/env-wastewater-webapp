@@ -2454,16 +2454,26 @@ def _cmd_verify_checkpoint(args) -> int:
 def _current_branch(root: Path) -> Optional[str]:
     """The current branch of `root`, or None on a detached HEAD.
 
-    A broken Git context (not a repository / git unavailable) is an
-    identity FAILURE — the caller fails closed; it is never classified
-    as a detached (foreign) context.
+    A failed branch query (any exit other than 0 / the documented
+    detached-HEAD exit 1) is an identity FAILURE — the caller fails
+    closed; it is never classified as a detached (foreign) context.
     """
     _run_git(["rev-parse", "--git-dir"], root, check=True)
-    ref = _run_git(
-        ["symbolic-ref", "--quiet", "--short", "HEAD"], root, check=False,
+    proc = subprocess.run(
+        ["git", "symbolic-ref", "--quiet", "--short", "HEAD"],
+        cwd=root, capture_output=True, text=True,
+        encoding="utf-8", errors="replace", check=False,
+        env={**os.environ, "GIT_TERMINAL_PROMPT": "0"},
     )
-    ref = (ref or "").strip()
-    return ref or None
+    if proc.returncode == 0:
+        return proc.stdout.strip() or None
+    if proc.returncode == 1:
+        # git symbolic-ref exits 1 exactly when HEAD is not a symbolic
+        # ref (detached); -q prints nothing in that case.
+        return None
+    raise AutonomyFailure(
+        "BRANCH_IDENTITY_FAILED", f"symbolic-ref exit {proc.returncode}",
+    )
 
 
 def _select_stop_claim(policy, root: Path, branch: Optional[str]):

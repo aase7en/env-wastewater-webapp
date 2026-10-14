@@ -1546,6 +1546,9 @@ class AstraHardeningTests(unittest.TestCase):
                         return test_claim["branch"]
                     return str(root)
                 with patch.object(runtime, "load_trusted_policy", return_value=(trusted, "")), \
+                     patch.object(runtime.subprocess, "run",
+                                  return_value=SimpleNamespace(
+                                      returncode=0, stdout=test_claim["branch"])), \
                      patch.object(runtime, "_actual_context", return_value=actual), \
                      patch.object(runtime, "validate_lane_binding"), \
                      patch.object(runtime.guard, "evaluate_mutation",
@@ -1680,8 +1683,10 @@ class StopHookContextTests(unittest.TestCase):
             "claim_base_ancestor": True, "current_policy_ancestor": True,
         }
         out = _io.StringIO()
+        branch_proc = SimpleNamespace(returncode=0, stdout=branch)
         with patch.object(runtime, "load_trusted_policy", return_value=(trusted, "")), \
              patch.object(runtime, "_run_git", side_effect=fake_run_git), \
+             patch.object(runtime.subprocess, "run", return_value=branch_proc), \
              patch.object(runtime, "_actual_context", return_value=actual), \
              patch.object(runtime, "verify_published_checkpoint", side_effect=fake_verify), \
              patch.object(runtime.sys, "stdin", stdin):
@@ -1785,6 +1790,9 @@ class StopHookContextTests(unittest.TestCase):
 
             with patch.object(runtime, "load_trusted_policy",
                               return_value=(policy(closed), "")), \
+                 patch.object(runtime.subprocess, "run",
+                              return_value=SimpleNamespace(returncode=0,
+                                                  stdout="feat/some-other-lane")), \
                  patch.object(runtime, "_run_git", side_effect=fake_run_git), \
                  patch.object(runtime, "hook_pretool", side_effect=fake_pretool), \
                  patch.object(runtime.sys, "stdin", stdin):
@@ -1821,6 +1829,9 @@ class StopHookContextTests(unittest.TestCase):
 
             with patch.object(runtime, "load_trusted_policy",
                               return_value=(policy(closed), "")), \
+                 patch.object(runtime.subprocess, "run",
+                              return_value=SimpleNamespace(returncode=0,
+                                                  stdout="feat/some-other-lane")), \
                  patch.object(runtime, "_run_git", side_effect=fake_run_git), \
                  patch.object(runtime.sys, "stdin", stdin):
                 with contextlib.redirect_stdout(out):
@@ -1844,6 +1855,61 @@ class StopHookContextTests(unittest.TestCase):
         payload = json.loads(stdout)
         self.assertEqual(payload.get("decision"), "block")
         self.assertIn("CLAIM_IDENTITY_UNESTABLISHABLE", payload.get("reason", ""))
+
+
+    def test_branch_query_failure_fails_closed_even_with_matching_claim(self):
+        """D5 R2 P1: a symbolic-ref failure (exit != 0/1) is an identity
+        FAILURE — even with a matching active claim the Stop event fails
+        closed with the typed reason, never a neutral {}."""
+        with tempfile.TemporaryDirectory() as folder:
+            temp_dir = Path(folder)
+            active = claim("ENV-DEFECT-STOPHOOK-001", "ENV-DEFECT-STOPHOOK-001-C1", "CLAIMED",
+                           ["docs/ai/handoffs/ENV-DEFECT-STOPHOOK-001-GLM.md"])
+            active.update({"worktree": str(temp_dir).replace("\\", "/"),
+                           "branch": "feat/env-defect-stophook-001"})
+
+            class Proc:
+                returncode = 128
+                stdout = ""
+
+            with patch.object(runtime, "load_trusted_policy",
+                              return_value=(policy(active), "")), \
+                 patch.object(runtime.subprocess, "run", return_value=Proc()), \
+                 patch.object(runtime, "_run_git", return_value=".git"), \
+                 patch.object(runtime.sys, "stdin", _io.StringIO("{}")):                out = _io.StringIO()
+                with contextlib.redirect_stdout(out):
+                    code = runtime._cmd_hook(SimpleNamespace(
+                        event="Stop", root=str(temp_dir),
+                    ))
+        payload = json.loads(out.getvalue())
+        self.assertEqual(payload.get("decision"), "block")
+        self.assertIn("BRANCH_IDENTITY_FAILED", payload.get("reason", ""))
+
+    def test_detached_head_still_foreign(self):
+        """Exit 1 (the documented detached-HEAD code) stays a foreign
+        context: a Stop event with only closed claims remains neutral {}."""
+        class Proc:
+            returncode = 1
+            stdout = ""
+
+        closed = claim("ENV-AUTONOMY-001", "ENV-AUTONOMY-001-C1", "CLOSED",
+                       ["docs/ai/handoffs/ENV-AUTONOMY-001.md"])
+        closed.update({"worktree": "C:/wt/autonomy", "branch": "test/autonomy"})
+        with tempfile.TemporaryDirectory() as folder:
+            with patch.object(runtime, "load_trusted_policy",
+                              return_value=(policy(closed), "")), \
+                 patch.object(runtime.subprocess, "run",
+                              return_value=SimpleNamespace(returncode=0,
+                                                  stdout="feat/some-other-lane")), \
+                 patch.object(runtime.subprocess, "run", return_value=Proc()), \
+                 patch.object(runtime, "_run_git", return_value=".git"), \
+                 patch.object(runtime.sys, "stdin", _io.StringIO("{}")):                out = _io.StringIO()
+                with contextlib.redirect_stdout(out):
+                    code = runtime._cmd_hook(SimpleNamespace(
+                        event="Stop", root=str(Path(folder)),
+                    ))
+        self.assertEqual(code, 0)
+        self.assertEqual(json.loads(out.getvalue()), {})
 
 
 if __name__ == "__main__":
