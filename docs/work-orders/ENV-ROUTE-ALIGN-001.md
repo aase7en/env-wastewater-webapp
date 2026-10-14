@@ -58,16 +58,24 @@ it), `scripts/env_coordination_guard.py`, all frontend files, `data/**`,
   `hard_engineering→{MUTATION}`, `architecture_consult→{READ_ONLY_CONSULT}`.
   Mismatch reason `REVIEWER_ROLE_ONLY` is preserved for
   `independent_review`; the two new categories use `SOL_ROLE_LANE_MISMATCH`.
-- `select_route` unchanged (already routes GPT-6.1 Sol through
-  `requires_external_admission` → codex-cli candidate, ADMISSION_REQUIRED,
-  dispatch_allowed False). Docstring gains the 2026-10-12 proactive note.
+- `select_route`: the GPT-6.1 Sol admission **reason becomes category-specific**
+  (R3 R1 P2 finding — `R3_CROSS_MODEL_ADMISSION_REQUIRED` describes a review
+  route and must not label implementation/consultation routes):
+  `independent_review` → `R3_CROSS_MODEL_ADMISSION_REQUIRED` (UNCHANGED,
+  pinned by the existing test), `hard_engineering` →
+  `HARD_ENGINEERING_ADMISSION_REQUIRED`, `architecture_consult` →
+  `ARCHITECTURE_CONSULT_ADMISSION_REQUIRED`. Otherwise unchanged (already
+  routes GPT-6.1 Sol through `requires_external_admission` → codex-cli
+  candidate, ADMISSION_REQUIRED, dispatch_allowed False). Docstring gains
+  the 2026-10-12 proactive note.
 
 ## D-plan
 
 - **D2 (GLM):** RED-first tests — `select_route("hard_engineering")` /
   `select_route("architecture_consult")` (currently
   `TASK_CATEGORY_UNSUPPORTED`), per-category lane mismatches, CLI choices
-  extension, R2/R3 independent_review behavior unchanged.
+  extension, R2/R3 independent_review behavior unchanged, and the three
+  category-specific admission reasons (existing R3 reason byte-identical).
 - **D3 (GLM, Track Z):** implement the design above.
 - **D4 (GLM):** full pytest battery for
   `scripts/test_env_autonomy_runtime.py` +
