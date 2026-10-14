@@ -1,6 +1,14 @@
 # ENV-VIS-STORY-001B-VIEW — SIMULATED Scenario View (Work Order, C1 slice)
 
-Status: CLAIMED (transition pending R3 review + merge)
+Status: DELIVERED / CLOSED 2026-10-15 — claim ENV-VIS-STORY-001B-VIEW-C1
+closed at generation 1. Activation transition PR #138 merged `98a4c07`
+(R3-judged ACTIVATION_BASIS: SUFFICIENT on the resumed trail after the
+account-quota parking); implementation PR #139 merged `dfff610` (second
+parent = D5-R2-APPROVED `ae03b09`; verdict issuecomment-6174434078);
+exact-main test/E2E-smoke/Pages-deploy ALL SUCCESS; deployed markers
+verified in index-C17mfreH.js. Battery: vitest 415/415 + /flow e2e 16/16.
+The domain-owner numeric gate REMAINS UNPASSED. Receipts durable in
+docs/ai/handoffs/ENV-VIS-STORY-001B-VIEW-GLM.md.
 Task: `ENV-VIS-STORY-001B-VIEW` (the scenario VIEW slice of Stage 2, epic
 ENV-VIS-STORY-001 / Issue #110 — the production consumer of the
 ENV-VIS-STORY-001B-C1 contract delivered via PR #136)
