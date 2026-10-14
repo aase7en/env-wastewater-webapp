@@ -192,6 +192,67 @@ P003 should connect the completed Command Center with future Operations and Anal
 
 Twin work may run parallel to independent non-overlapping slices only after ownership graph review.
 
+### ENV-VIS-STORY-001 — Interactive Environmental Visual Storytelling (PLANNING / NOT CLAIMED)
+
+Owner-approved roadmap planning entry (Issue #110, 2026-10-08): connected to
+M4 Twin continuation and M3 Environmental Flows; **planning/backlog only — no
+implementation claim, release approval, or WIP override is granted by this
+entry.** Staged backlog (sequenced, not concurrent execution authority):
+
+- **Stage 1 — ENV-VIS-STORY-001A Animated Process Infographic (foundation):**
+  animate PROCESS EXPLANATION of the Activated Sludge process — structural
+  teaching motion only, NEVER current flow, measured speed, or live state;
+  bypass and emergency routes stay visibly uncertain (no active-flow
+  animation unless an approved simulation or observed state supports it).
+  Reuse CANDIDATES (mapping left to the 001A Work Order — these are distinct
+  surfaces, not one composition): the DOM `/flow` story
+  (`flow/EnvironmentalFlowStory.tsx`), the SVG Process diagram
+  (`pfd/ProcessFlowDiagram.tsx`), the Twin + P003 Spatial Status Callouts
+  (one aeration asset today — NOT a full-process surface), design tokens,
+  and stable process identifiers from the process-topology SSoT. 001A EXCLUDES
+  new Twin water-material/equipment motion unless DT-VIS-P002 is made an
+  explicit dependency (P002 owns water material, aggregate turbulence cue,
+  reduced-motion still state). Educational labels, not SIMULATED-data claims:
+  the semantics vocabulary stays reserved per Stage 2's simulation contract.
+- **Stage 2 — ENV-VIS-STORY-001B Interactive Scenario Simulation:** a
+  deterministic scenario model + isolated fixtures PRECEDE any visual effects;
+  physical/process validity + domain-owner approval before numeric effects or
+  water-quality projections; simulated values never blend into
+  LIVE/LATEST/HISTORICAL or operational writes; provenance/units/timestamps/
+  assumptions preserved; no uncontrolled background computation.
+- **Stage 3 — ENV-VIS-STORY-001C Code-to-Video export (OPTIONAL):**
+  deterministic MP4 production from the proven timeline/scene model (e.g.
+  Remotion/FFmpeg — tool choice is a decision, not a dependency); batch/
+  offline export preferred; no heavyweight render libs in the production web
+  bundle without budget proof; explicit scenario/source labels + timestamps +
+  captions + Thai legibility; safe handling of operational data — never
+  present a scenario as observed operation; verify render reproducibility,
+  aspect ratios, licensing, accessibility.
+
+**Dependencies (dependency review recorded 2026-10-14, sharpened by a
+read-only GPT-6 Sol Role A architecture critique):** DT-VIS-P001 ✓ merged;
+DT-VIS-P003 ✓ COMPLETE (`96b59fb`, PR #115/#116 — callouts + evidence panel
+for the aeration asset; a REUSE CANDIDATE, not a full-process composition
+surface); UX-FLOW-P001 ✓ CLOSED (truthful DOM `/flow` story); process-topology
+authority = `docs/ai/digital-twin/11-UTHAI-ACTIVATED-SLUDGE-PROCESS-KNOWLEDGE.md`
+(process explanation vs simulation distinction is explicit there);
+DT-VIS-P002 (aeration water/system motion language, BACKLOG) — complementary
+quality input for 2D stage-sequence motion, NOT a hard blocker for structural
+explanation; 001A excludes new in-tank water/equipment motion unless P002 is
+made an explicit dependency. Safeguards: SIMULATED explicit;
+unknown ≠ zero; latest ≠ live; no production writes; reduced-motion +
+non-WebGL DOM fallback; 360/390/430 mobile widths; exact-SHA review per
+risk floor. **Activation point: Stage 001A requires its own bounded design/
+contract Work Order + NEW claim transition that is R3 cross-model REVIEWED
+AND MERGED into `CURRENT-WORK` on main BEFORE any mutation** (per the
+coordination claim gate); that WO must pin Track F (visual/Codex) vs Track Z
+(logic/GLM) ownership, a single writer per shared file, and current cost
+routing. **Stage 3 export safety (from Issue #110, restated): exported clips
+carry explicit scenario/source labels, timestamps, captions and Thai
+legibility; operational data is handled safely — an MP4 must never present a
+scenario as an observed hospital operation; offline/batch export preferred.**
+Existing priorities are not pre-empted.
+
 ## M5 — External Environmental Intelligence
 
 ### ENV-INT-P001 - Source + provenance contract - CLOSED / MERGED

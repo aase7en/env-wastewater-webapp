@@ -29,6 +29,7 @@ flowchart TD
 
     T --> T1[Foundation + Aeration P001 merged]
     T --> T2[Future approved visual slices]
+    T --> T3[VIS-STORY-001 planning only - Issue 110]
 
     E --> E1[Source inventory / provenance contract]
     E --> E2[Hazard Map]
