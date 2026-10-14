@@ -1876,7 +1876,8 @@ class StopHookContextTests(unittest.TestCase):
                               return_value=(policy(active), "")), \
                  patch.object(runtime.subprocess, "run", return_value=Proc()), \
                  patch.object(runtime, "_run_git", return_value=".git"), \
-                 patch.object(runtime.sys, "stdin", _io.StringIO("{}")):                out = _io.StringIO()
+                 patch.object(runtime.sys, "stdin", _io.StringIO("{}")):
+                out = _io.StringIO()
                 with contextlib.redirect_stdout(out):
                     code = runtime._cmd_hook(SimpleNamespace(
                         event="Stop", root=str(temp_dir),
@@ -1903,7 +1904,8 @@ class StopHookContextTests(unittest.TestCase):
                                                   stdout="feat/some-other-lane")), \
                  patch.object(runtime.subprocess, "run", return_value=Proc()), \
                  patch.object(runtime, "_run_git", return_value=".git"), \
-                 patch.object(runtime.sys, "stdin", _io.StringIO("{}")):                out = _io.StringIO()
+                 patch.object(runtime.sys, "stdin", _io.StringIO("{}")):
+                out = _io.StringIO()
                 with contextlib.redirect_stdout(out):
                     code = runtime._cmd_hook(SimpleNamespace(
                         event="Stop", root=str(Path(folder)),
