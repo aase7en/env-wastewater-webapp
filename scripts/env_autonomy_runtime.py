@@ -2452,7 +2452,13 @@ def _cmd_verify_checkpoint(args) -> int:
 
 
 def _current_branch(root: Path) -> Optional[str]:
-    """The current branch of `root`, or None on a detached HEAD."""
+    """The current branch of `root`, or None on a detached HEAD.
+
+    A broken Git context (not a repository / git unavailable) is an
+    identity FAILURE — the caller fails closed; it is never classified
+    as a detached (foreign) context.
+    """
+    _run_git(["rev-parse", "--git-dir"], root, check=True)
     ref = _run_git(
         ["symbolic-ref", "--quiet", "--short", "HEAD"], root, check=False,
     )
@@ -2465,17 +2471,18 @@ def _select_stop_claim(policy, root: Path, branch: Optional[str]):
     worktree and branch match the executing context. Closed claims (the
     legacy hardcoded ENV-AUTONOMY-001 among them) are ineligible.
 
-    Returns the unique matching claim, None for a foreign context (no
-    eligible match — callers must treat this as NEUTRAL, never blocking),
-    and raises a typed AutonomyFailure when identity is ambiguous —
-    uncertainty is never classified as foreign. Path comparison resolves
-    both sides as existing paths (covering A:/ vs A:\\ forms and case) via
-    os.path.samefile; branch comparison is exact; HEAD equality stays
-    inside checkpoint verification, not this gate.
+    Returns the unique matching claim, or None for a foreign context (no
+    eligible match — a cleanly foreign context, never a masked identity
+    failure). Raises a typed AutonomyFailure when identity is ambiguous or
+    un-establishable — uncertainty is NEVER classified as foreign. Path
+    comparison resolves both sides as existing paths (covering A:/ vs
+    A:\\ forms and case) via os.path.samefile; branch comparison is exact;
+    HEAD equality stays inside checkpoint verification, not this gate.
     """
     if branch is None:
         return None
     matches = []
+    identity_failures = 0
     for candidate in policy.claims:
         if candidate.get("status") == "CLOSED":
             continue
@@ -2486,10 +2493,15 @@ def _select_stop_claim(policy, root: Path, branch: Optional[str]):
         try:
             registered = Path(registered_worktree)
             if not registered.exists() or not root.exists():
+                # A registered worktree that cannot be resolved is an
+                # identity problem, not proof of a foreign context — if it
+                # was the only candidate, the caller must fail closed.
+                identity_failures += 1
                 continue
             if not os.path.samefile(root, registered):
                 continue
         except OSError:
+            identity_failures += 1
             continue
         if branch != registered_branch:
             continue
@@ -2498,6 +2510,11 @@ def _select_stop_claim(policy, root: Path, branch: Optional[str]):
         raise AutonomyFailure(
             "AMBIGUOUS_CLAIM_CONTEXT",
             f"{len(matches)} unreleased claims match worktree {root} branch {branch}",
+        )
+    if not matches and identity_failures:
+        raise AutonomyFailure(
+            "CLAIM_IDENTITY_UNESTABLISHABLE",
+            f"{identity_failures} eligible claim worktrees could not be resolved for {root}",
         )
     return matches[0] if matches else None
 
@@ -2527,10 +2544,24 @@ def _cmd_hook(args) -> int:
             # Issue #94: this hook fires in a worktree/branch with no
             # eligible (unreleased, registered) claim — e.g. any lane
             # worktree while the legacy ENV-AUTONOMY-001 lookup pointed at
-            # a CLOSED claim. A foreign context is NEUTRAL: no checkpoint
-            # verification, no reason/systemMessage/continue, and never a
-            # blocking continuation prompt the human did not ask for.
-            return _emit({})
+            # a CLOSED claim. ONLY the Stop event is neutral (no checkpoint
+            # verification, no reason/systemMessage/continue — never a
+            # blocking continuation prompt the human did not ask for).
+            # The mutation guard stays ACTIVE in a foreign context, and
+            # every other event fails closed via NO_ELIGIBLE_CLAIM_CONTEXT.
+            if args.event == "Stop":
+                return _emit({})
+            if args.event == "PreToolUse":
+                result = hook_pretool(event, root)
+                return _emit({"hookSpecificOutput": {
+                    "hookEventName": "PreToolUse",
+                    "permissionDecision": result["permissionDecision"],
+                    "permissionDecisionReason": result.get("reason", "blocked"),
+                }})
+            raise AutonomyFailure(
+                "NO_ELIGIBLE_CLAIM_CONTEXT",
+                f"no unreleased claim is registered for worktree {root}",
+            )
         actual = _actual_context(root, claim)
         context = (
             f"ENV claim {claim['claim_id']} generation {claim['claim_generation']} holder {claim['execution_holder_id']}; "

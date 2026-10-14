@@ -1,0 +1,18 @@
+You are the D5 INDEPENDENT reviewer (Codex gpt-6-sol @ max, read-only, adversarial — a DEVIATION from the planned fresh-GLM D5, recorded honestly: the GLM proxy quota window is exhausted, so the ordinary reviewer is unavailable; you are the stronger admitted reviewer, cross-model vs the GLM Track-Z author who never used Codex for this implementation; never author-and-approve is preserved). Modify nothing. Verify HEAD first - must print 9dac22603b85aaa2509103c9da5bb6e8728e35e0.
+
+PR #143 implements claim ENV-DEFECT-STOPHOOK-001-C1 (issue #94 repo side; transition PR #142; WO docs/work-orders/ENV-DEFECT-STOPHOOK-001.md; D1 design table in docs/ai/handoffs/ENV-DEFECT-STOPHOOK-001-GLM.md). Diff vs origin/main = 2 commits (D2 RED c863811 + D3/receipts 9dac226).
+
+RUN THE BATTERY:
+1. `uv run python -m unittest scripts.test_env_autonomy_runtime` -> 45 OK; `uv run python -m unittest scripts.test_env_coordination_guard` -> 344 OK.
+
+ADVERSARIAL VERIFICATION (read the code; do not trust the PR text):
+2. Fix vs the frozen D1 table: _select_stop_claim = unique unreleased claim matching worktree (os.path.samefile over resolved existing paths) + exact branch; closed ineligible; ambiguous raises typed AutonomyFailure (fail CLOSED); branch None (detached) -> foreign; _cmd_hook foreign path returns _emit({}) BEFORE _actual_context and any verifier call (no continuation prompt - the #94 vector); the matching-context Stop branch byte-unchanged vs origin/main (diff the Stop code).
+3. Scope honesty: only the _cmd_hook selection changed in the runtime (two new helpers + one lookup replacement); the other legacy ENV-AUTONOMY-001 lookups (~874/1417/1553/1853/2221) remain untouched with the WO recording them as a follow-up audit; scripts/env_coordination_guard.py, .codex/**, ENV-ENGINEERING-LOOP.md, frontend, supabase untouched.
+4. Test-substance audit: the D2 reproduction genuinely drives _cmd_hook (stdin event + patched policy/_run_git/verifier with a call tracker; asserts {} + exit 0 + verifier NOT called); matching-context regressions pin decision:block and continue:true; predicate cases cover samefile path-forms, wrong/detached branch, different directory, closed-only, ambiguous; the pre-existing fixture edit (test_duplicate_posttool_receipt...) only adds a symbolic-ref answer to its git mock (duplicate-receipt substance intact); the exit-code expectation matches _emit's real contract (decisions ride the JSON payload; default exit 0).
+5. P1 risks: false-foreign (unique physical worktree + exact branch; ambiguity fails closed); mutation-path hooks unaffected in matching contexts; the invalid-input fallback unchanged.
+6. No secrets/PHI; receipts match SHAs/numbers; D2 RED recorded truthfully.
+
+OUTPUT FORMAT (strict):
+VERDICT: APPROVED | CHANGES_REQUIRED
+REVIEWED_SHA: <sha>
+Then numbered findings (P1/P2/P3 with evidence) or "No findings."
