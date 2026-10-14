@@ -29,6 +29,7 @@ const NAV: NavItem[] = [
   { to: "/trends", label: "แนวโน้ม", icon: "monitoring" },
   { to: "/carbon", label: "คาร์บอน", icon: "co2" },
   { to: "/carbon-rollup", label: "คาร์บอนรวม", icon: "insights" },
+  { to: "/sustainability", label: "ความยั่งยืน", icon: "recycling" },
   { to: "/sensors", label: "เซนเซอร์ Live", icon: "sensors" },
   { to: "/equipment", label: "อุปกรณ์", icon: "medical_services" },
   { to: "/reports", label: "เอกสาร", icon: "description" },
