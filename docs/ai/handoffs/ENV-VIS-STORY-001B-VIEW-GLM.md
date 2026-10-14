@@ -71,3 +71,22 @@ to the C1 fixtures); `__fixtures__/process-scenarios.ts` re-exports it.
   expected-head merge → D2 RED → D3a → D3b → D4 → D5 → D6.
 
 (append-only below this line)
+
+## Temporary shared-file ownership (D3b window) + R1 partial-review record
+
+- 2026-10-14 (pre-D3b, per the WO): `frontend/src/index.css` (shared
+  stylesheet) + `frontend/src/components/flow/EnvironmentalFlowStory.tsx`
+  are under the Codex D3b sole-writer window; GLM does not touch them until
+  the window closes with the D3b commit. (R3 R1 finding: this record was
+  promised by the WO but missing from the handoff - repaired in this commit.)
+- 2026-10-14 (R1 dispatch partial record): the gpt-6-sol @ max read-only
+  review at `7a90c96` ran 106,764 tokens and was CUT by a Codex account
+  usage limit ("try again at 11:27 PM") BEFORE emitting a formal verdict.
+  Substantive fragments that landed before the cut (recorded transparently,
+  NOT treated as approval): the reviewer's assessment that the sixth steer
+  fits the two reviewed precedents for this bounded qualitative view with
+  the numeric gate unpassed; that the reasoning does NOT extend to optional
+  export (001C) or numeric effects; and the index.css-record finding above.
+  Per the quota-boundary policy (boundaries can be stale - probe once),
+  the dispatch is retried once after the repair commit; if the limit
+  persists the claim parks at REVIEW_REQUESTED with this blocker recorded.
