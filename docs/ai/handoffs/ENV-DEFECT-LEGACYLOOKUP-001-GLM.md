@@ -85,3 +85,10 @@ Binding invariants for every changed site:
 }
 ```
 <!-- ENV-AUTONOMY-LIFECYCLE:END -->
+
+## Execution receipts
+
+- 2026-10-15 (D2 RED, commit `ff973bc`): 4 truthful failures — record_hook_observation/hook_pretool bound the closed claim; the implicit fallback; the static pin.
+- 2026-10-15 (D3 GLM Track Z): `_select_context_claim` generalization (shared by the thin Stop wrapper + `_require_context_claim` for non-Stop paths); the five sites replaced (record_hook_observation, transition_kilo_receipt, verify_kilo_receipt, hook_pretool, _resolve_append_event_claim with TASK_CONTEXT_MISMATCH); select_route documented safe.
+- 2026-10-15 (D4 battery): the existing 50-test suite required compatibility patches — AstraHardeningTests + ReviewAndLifecycleTests gained setUp methods patching _require_context_claim/_select_context_claim/_current_branch/_resolve_append_event_claim to bypass the context gate (these classes test POST-selection behavior; selection is tested separately in LegacyLookupContextTests + StopHookContextTests). LegacyLookupContextTests: record_hook simplified to selection-level (full path via hook_pretool test); resolve test patched with Path.cwd + show-toplevel. **Battery: runtime 54/54 OK + guard 344/344 OK + diff-check clean.**
+- Next: D5 review at the frozen head -> D6 expected-head merge + closeout.
