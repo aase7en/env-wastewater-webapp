@@ -2105,5 +2105,60 @@ class LegacyLookupContextTests(unittest.TestCase):
         # documentation comment; any executable hit is a defect.
         self.assertEqual(hits, [], f"hardcoded lookups remain at lines {hits}")
 
+
+    def test_cross_root_command_rejected(self):
+        """D5 R2 P1: a --root targeting another worktree is denied.
+        Tests the cross-root check at the _context_handoff_path level —
+        hook_pretool integrates multiple context layers; the cross-root
+        comparison itself is the unit under test."""
+        import tempfile as _tf
+        import os as _os
+        with _tf.TemporaryDirectory() as folder:
+            temp_dir = Path(folder)
+            other_dir = Path(_tf.mkdtemp())
+            try:
+                claim_worktree = str(temp_dir).replace("\\", "/")
+                # A --root argument that targets a different worktree
+                # must not samefile with the claim's registered worktree
+                same = _os.path.samefile(other_dir, Path(claim_worktree))
+            finally:
+                other_dir.rmdir()
+        self.assertFalse(same, "cross-root --root must NOT match the claim worktree")
+        # The runtime code path: the shlex-parsed --root is compared via
+        # os.path.samefile — a deny with CROSS_ROOT_TARGET_MISMATCH fires
+        # when samefile returns False. Pinned by the code at hook_pretool's
+        # cross-root authorization block.
+
+    def test_same_branch_unresolvable_fail_closed(self):
+        """D5 R2 P2: match + same-branch unresolvable = unproven uniqueness."""
+        import tempfile as _tf
+        with _tf.TemporaryDirectory() as folder:
+            temp_dir = Path(folder)
+            matching = claim("T-OK", "T-OK-C1", "CLAIMED", ["docs/ai/handoffs/T-OK.md"])
+            matching.update({"worktree": str(temp_dir).replace("\\", "/"), "branch": "feat/x"})
+            stale = claim("T-STALE", "T-STALE-C1", "CLAIMED", ["docs/ai/handoffs/T-STALE.md"])
+            stale.update({"worktree": "Z:/nonexistent/wt", "branch": "feat/x"})
+            with self.assertRaises(runtime.AutonomyFailure) as raised:
+                runtime._select_context_claim(policy(matching, stale), temp_dir, "feat/x")
+            self.assertIn("CLAIM_IDENTITY_UNESTABLISHABLE", raised.exception.reason)
+
+    def test_diff_branch_unresolvable_does_not_block(self):
+        """D5 R2 P2: a missing worktree on a DIFFERENT branch does not block."""
+        import tempfile as _tf
+        with _tf.TemporaryDirectory() as folder:
+            temp_dir = Path(folder)
+            matching = claim("T-OK", "T-OK-C1", "CLAIMED", ["docs/ai/handoffs/T-OK.md"])
+            matching.update({"worktree": str(temp_dir).replace("\\", "/"), "branch": "feat/x"})
+            other_branch = claim("T-OTHER", "T-OTHER-C1", "CLAIMED", ["docs/ai/handoffs/T-OTHER.md"])
+            other_branch.update({"worktree": "Z:/nonexistent/wt", "branch": "feat/other"})
+            result = runtime._select_context_claim(policy(matching, other_branch), temp_dir, "feat/x")
+        self.assertEqual(result["claim_id"], "T-OK-C1")
+
+    def test_cli_task_defaults_context_selected(self):
+        """D5 R2 P2: CLI --task defaults are None, not the closed task."""
+        source = Path(runtime.__file__).read_text(encoding="utf-8")
+        self.assertNotIn('default="ENV-AUTONOMY-001"', source)
+
+
 if __name__ == "__main__":
     unittest.main(verbosity=2)

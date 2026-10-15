@@ -1866,6 +1866,24 @@ def hook_pretool(event: dict, root: Path) -> dict:
         policy, _ = load_trusted_policy(root, refresh=True)
         root = Path(_run_git(["rev-parse", "--show-toplevel"], root)).resolve()
         claim = _require_context_claim(policy, root, _current_branch(root))
+        # D5 R2 P1: cross-worktree authorization — verify that any --root
+        # argument in the event command targets the selected claim worktree.
+        tool_input = event.get("tool_input") or {}
+        command = tool_input.get("command", "") if isinstance(tool_input, dict) else ""
+        if isinstance(command, str) and "--root" in command:
+            import shlex as _shlex
+            try:
+                cmd_tokens = _shlex.split(command)
+            except ValueError:
+                cmd_tokens = command.split()
+            for i, tok in enumerate(cmd_tokens):
+                if tok == "--root" and i + 1 < len(cmd_tokens):
+                    target_root = Path(cmd_tokens[i + 1]).resolve()
+                    claim_wt = Path(claim.get("worktree", "")).resolve()
+                    if not os.path.samefile(target_root, claim_wt):
+                        return {"permissionDecision": "deny",
+                                "reason": "CROSS_ROOT_TARGET_MISMATCH"}
+                    break
         actual = _actual_context(root, claim)
         root = Path(actual["worktree"]).resolve()
         session_id, turn_id, tool_use_id = (event.get(key) for key in ("session_id", "turn_id", "tool_use_id"))
@@ -2522,17 +2540,23 @@ def _select_context_claim(policy, root: Path, branch):
         registered_branch = candidate.get("branch")
         if not registered_worktree or not registered_branch:
             continue
+        # D5 R2 P2: identity failures are scoped to the SAME BRANCH only —
+        # a missing worktree on a DIFFERENT branch does not affect uniqueness
+        # for the executing branch.
+        same_branch = (branch == registered_branch)
         try:
             registered = Path(registered_worktree)
             if not registered.exists() or not root.exists():
-                identity_failures += 1
+                if same_branch:
+                    identity_failures += 1
                 continue
             if not os.path.samefile(root, registered):
                 continue
         except OSError:
-            identity_failures += 1
+            if same_branch:
+                identity_failures += 1
             continue
-        if branch != registered_branch:
+        if not same_branch:
             continue
         matches.append(candidate)
     if len(matches) > 1:
