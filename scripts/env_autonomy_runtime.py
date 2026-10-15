@@ -1866,13 +1866,15 @@ def hook_pretool(event: dict, root: Path) -> dict:
         policy, _ = load_trusted_policy(root, refresh=True)
         root = Path(_run_git(["rev-parse", "--show-toplevel"], root)).resolve()
         claim = _require_context_claim(policy, root, _current_branch(root))
-        # D5 R2 P1 / R3 P1: cross-worktree authorization — verify that EVERY
-        # --root argument in the event command targets the selected claim
-        # worktree. Handles both "--root VALUE" and "--root=VALUE" forms,
-        # and checks ALL occurrences (the CLI uses the last --root).
+        # D5 R2 P1 / R3 P1 / R4 P1: cross-worktree authorization — verify that
+        # EVERY --root argument in the event command targets the selected claim
+        # worktree. Handles "--root VALUE", "--root=VALUE", AND abbreviated
+        # prefixes ("--roo=...", "--ro=...") that argparse would have expanded
+        # (the parser now uses allow_abbrev=False; this scan is defense-in-depth
+        # for any other parsing path). Checks ALL occurrences.
         tool_input = event.get("tool_input") or {}
         command = tool_input.get("command", "") if isinstance(tool_input, dict) else ""
-        if isinstance(command, str) and "--root" in command:
+        if isinstance(command, str) and "--ro" in command:
             import shlex as _shlex
             try:
                 cmd_tokens = _shlex.split(command)
@@ -1883,11 +1885,17 @@ def hook_pretool(event: dict, root: Path) -> dict:
             while i < len(cmd_tokens):
                 tok = cmd_tokens[i]
                 target = None
-                if tok == "--root" and i + 1 < len(cmd_tokens):
+                # Detect --root (exact) and any prefix abbreviation --ro*
+                # that argparse would have expanded to --root
+                is_root_flag = (tok == "--root" or
+                                (tok.startswith("--ro") and not tok.startswith("--route")
+                                 and ("--root").startswith(tok.split("=")[0])
+                                 and len(tok.split("=")[0]) >= 4))
+                if is_root_flag and i + 1 < len(cmd_tokens) and "=" not in tok:
                     target = cmd_tokens[i + 1]
                     i += 2
-                elif tok.startswith("--root="):
-                    target = tok[len("--root="):]
+                elif is_root_flag and "=" in tok:
+                    target = tok.split("=", 1)[1]
                     i += 1
                 else:
                     i += 1
@@ -2751,7 +2759,7 @@ def _cmd_hook(args) -> int:
             return _emit({"continue": False, "stopReason": message, "systemMessage": message})
         return _emit({"systemMessage": message})
 def main(argv: Optional[list[str]] = None) -> int:
-    parser = argparse.ArgumentParser(description=__doc__)
+    parser = argparse.ArgumentParser(description=__doc__, allow_abbrev=False)
     sub = parser.add_subparsers(dest="command", required=True)
     status = sub.add_parser("status", help="inspect the trusted claim and actual repository binding")
     status.add_argument("--task", default=None, help="task_id (default: the context-selected claim)")

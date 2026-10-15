@@ -109,3 +109,7 @@ Binding invariants for every changed site:
 ## D5 R3 repairs
 
 - 2026-10-15: P1 — the cross-root check rewritten to a token-scan loop that handles BOTH `--root VALUE` and `--root=VALUE` forms and checks EVERY occurrence (the CLI uses the last; all must match the claim worktree). The regression test now pins all bypass forms (separate, equals-sign, multiple, mixed). Battery: **58/58 OK + guard 344/344 OK + diff-check clean.**
+
+## D5 R4 repairs
+
+- 2026-10-15: P1 — the CLI parser now uses `allow_abbrev=False` (blocking `--roo=` abbreviation at the source); the cross-root scan is defense-in-depth, matching any `--ro*` prefix that argparse would have expanded to `--root` (both VALUE and =VALUE forms; all occurrences). Battery: **58/58 OK + guard 344/344 OK + diff-check clean.**
