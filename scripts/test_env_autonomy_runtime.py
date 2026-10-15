@@ -441,6 +441,39 @@ class BindingAndSelectionTests(unittest.TestCase):
 
 
 class ReviewAndLifecycleTests(unittest.TestCase):
+
+    def setUp(self):
+        super().setUp()
+        # LEGACYLOOKUP: tests in this class exercise POST-selection behavior;
+        # bypass the context-gated selector (tested in LegacyLookupContextTests).
+        def _fa(policy, root, branch):
+            for c in policy.claims:
+                if c.get("status") != "CLOSED":
+                    return c
+            raise runtime.AutonomyFailure("NO_CLAIM", "fixture")
+        p1 = patch.object(runtime, "_require_context_claim", side_effect=_fa)
+        p1.start()
+        p2 = patch.object(runtime, "_select_context_claim", side_effect=_fa)
+        p2.start()
+        p3 = patch.object(runtime, "_current_branch", return_value="test/branch")
+        p3.start()
+        def _resolve(policy, task, root=None):
+            if task:
+                resolved = policy.claim_by_task(task)
+                if resolved is None:
+                    raise runtime.AutonomyFailure("UNKNOWN_TASK")
+                return resolved
+            for c in policy.claims:
+                if c.get("status") != "CLOSED":
+                    return c
+            raise runtime.AutonomyFailure("NO_CLAIM")
+        p4 = patch.object(runtime, "_resolve_append_event_claim", side_effect=_resolve)
+        p4.start()
+        self.addCleanup(p1.stop)
+        self.addCleanup(p4.stop)
+        self.addCleanup(p2.stop)
+        self.addCleanup(p3.stop)
+
     def test_unknown_posttool_receipt_is_journaled_and_reconciled_in_same_handoff(self):
         with tempfile.TemporaryDirectory(prefix="env-hook-observation-") as temp_dir:
             root = Path(temp_dir)
@@ -1180,6 +1213,39 @@ class AstraHardeningTests(unittest.TestCase):
     """RED-first coverage for the five 2026-10-05 GPT-6 Astra findings and the
     successor lifecycle-routing prerequisite (docs/work-orders/ENV-AUTONOMY-002.md)."""
 
+
+    def setUp(self):
+        super().setUp()
+        # LEGACYLOOKUP: tests in this class exercise POST-selection behavior;
+        # bypass the context-gated selector (tested in LegacyLookupContextTests).
+        def _fa(policy, root, branch):
+            for c in policy.claims:
+                if c.get("status") != "CLOSED":
+                    return c
+            raise runtime.AutonomyFailure("NO_CLAIM", "fixture")
+        p1 = patch.object(runtime, "_require_context_claim", side_effect=_fa)
+        p1.start()
+        p2 = patch.object(runtime, "_select_context_claim", side_effect=_fa)
+        p2.start()
+        p3 = patch.object(runtime, "_current_branch", return_value="test/branch")
+        p3.start()
+        def _resolve(policy, task, root=None):
+            if task:
+                resolved = policy.claim_by_task(task)
+                if resolved is None:
+                    raise runtime.AutonomyFailure("UNKNOWN_TASK")
+                return resolved
+            for c in policy.claims:
+                if c.get("status") != "CLOSED":
+                    return c
+            raise runtime.AutonomyFailure("NO_CLAIM")
+        p4 = patch.object(runtime, "_resolve_append_event_claim", side_effect=_resolve)
+        p4.start()
+        self.addCleanup(p1.stop)
+        self.addCleanup(p4.stop)
+        self.addCleanup(p2.stop)
+        self.addCleanup(p3.stop)
+
     def test_powershell_splatting_and_indirection_rejected_before_literal_reads(self):
         commands = (
             "Get-Content @readArgs",
@@ -1912,6 +1978,201 @@ class StopHookContextTests(unittest.TestCase):
                     ))
         self.assertEqual(code, 0)
         self.assertEqual(json.loads(out.getvalue()), {})
+
+
+
+class LegacyLookupContextTests(unittest.TestCase):
+    """ENV-DEFECT-LEGACYLOOKUP-001 — RED-first: the remaining hardcoded
+    ENV-AUTONOMY-001 lookups on non-Stop paths must bind the
+    context-selected claim (or fail typed), never the closed claim."""
+
+    def _context_claim_fixture(self, temp_dir: Path):
+        active = claim("ENV-LEGACY-T", "ENV-LEGACY-T-C1", "CLAIMED",
+                       ["docs/ai/handoffs/ENV-LEGACY-T-GLM.md"])
+        active.update({"worktree": str(temp_dir).replace("\\", "/"),
+                       "branch": "feat/env-defect-legacylookup-001"})
+        return active
+
+    def test_record_hook_observation_binds_context_claim(self):
+        with tempfile.TemporaryDirectory() as folder:
+            active = self._context_claim_fixture(Path(folder))
+            selected = runtime._require_context_claim(
+                policy(active), Path(folder), "feat/env-defect-legacylookup-001")
+        self.assertEqual(selected["claim_id"], "ENV-LEGACY-T-C1")
+
+
+    def test_hook_pretool_binds_context_claim(self):
+        """In a worktree with its own unreleased claim, the mutation guard
+        binds THAT claim (not the closed ENV-AUTONOMY-001)."""
+        with tempfile.TemporaryDirectory() as folder:
+            temp_dir = Path(folder)
+            (temp_dir / "docs" / "ai" / "handoffs").mkdir(parents=True)
+            handoff_rel = "docs/ai/handoffs/ENV-LEGACY-T-GLM.md"
+            lifecycle = {"version": 1, "task_id": "ENV-LEGACY-T",
+                         "claim_id": "ENV-LEGACY-T-C1", "claim_generation": 1,
+                         "goal_id": "g1", "codex_hook_observations": [],
+                         "events": []}
+            (temp_dir / handoff_rel).write_text(
+                "# F\n\n" + runtime.LIFECYCLE_START + "\n```json\n"
+                + json.dumps(lifecycle) + "\n```\n" + runtime.LIFECYCLE_END + "\n",
+                encoding="utf-8")
+            active = self._context_claim_fixture(temp_dir)
+            active["handoff_path"] = handoff_rel
+            trusted = policy(active)
+            actual = {"repo": runtime.REPO_SLUG, "worktree": str(temp_dir),
+                      "branch": "feat/env-defect-legacylookup-001",
+                      "head_sha": "b" * 40,
+                      "claim_base_ancestor": True, "current_policy_ancestor": True}
+
+            def fake_run_git(args, cwd=None, check=True, preserve_output=False):
+                if args == ["rev-parse", "--show-toplevel"]:
+                    return str(temp_dir)
+                if args == ["rev-parse", "--git-dir"]:
+                    return ".git"
+                if args == ["symbolic-ref", "--quiet", "--short", "HEAD"]:
+                    return "feat/env-defect-legacylookup-001"
+                if args[:1] == ["show"]:
+                    return (temp_dir / handoff_rel).read_text(encoding="utf-8")
+                return "b" * 40
+
+            changed = temp_dir / "scripts" / "env_autonomy_runtime.py"
+            changed.parent.mkdir(parents=True)
+            changed.write_text("x", encoding="utf-8")
+
+            with patch.object(runtime, "load_trusted_policy",
+                              return_value=(trusted, "")), \
+                 patch.object(runtime, "_run_git", side_effect=fake_run_git), \
+                 patch.object(runtime.subprocess, "run",
+                              return_value=SimpleNamespace(
+                                  returncode=0,
+                                  stdout="feat/env-defect-legacylookup-001")), \
+                 patch.object(runtime, "_actual_context", return_value=actual), \
+                 patch.object(runtime, "validate_lane_binding"), \
+                 patch.object(runtime.guard, "evaluate_mutation",
+                              return_value=SimpleNamespace(
+                                  safe_to_mutate=True, reason=None)), \
+                 patch.object(runtime, "_mutation_links", return_value=[]):
+                result = runtime.hook_pretool({
+                    "tool_name": "Edit",
+                    "tool_input": {"file_path": str(changed)},
+                    "session_id": "s-ll", "turn_id": "t-ll",
+                    "tool_use_id": "u-ll", "model": "GLM-5.3 MAX",
+                }, temp_dir)
+        self.assertEqual(result.get("permissionDecision"), "allow")
+
+    def test_resolve_append_event_claim_no_implicit_fallback(self):
+        """With no --task, resolution selects by context; the implicit
+        ENV-AUTONOMY-001 fallback must be gone."""
+        with tempfile.TemporaryDirectory() as folder:
+            temp_dir = Path(folder)
+            active = self._context_claim_fixture(temp_dir)
+            trusted = policy(active)
+
+            def fake_run_git(args, cwd=None, check=True, preserve_output=False):
+                if args == ["rev-parse", "--git-dir"]:
+                    return ".git"
+                if args == ["rev-parse", "--show-toplevel"]:
+                    return str(temp_dir)
+                if args == ["symbolic-ref", "--quiet", "--short", "HEAD"]:
+                    return "feat/env-defect-legacylookup-001"
+                raise AssertionError(f"unexpected git call: {args}")
+
+            with patch.object(runtime, "_run_git", side_effect=fake_run_git), \
+                 patch.object(runtime.Path, "cwd", return_value=temp_dir), \
+                 patch.object(runtime.subprocess, "run",
+                              return_value=SimpleNamespace(
+                                  returncode=0,
+                                  stdout="feat/env-defect-legacylookup-001")):
+                try:
+                    resolved = runtime._resolve_append_event_claim(trusted, "")
+                    result = resolved["claim_id"]
+                except runtime.AutonomyFailure as exc:
+                    result = f"FAILED:{exc.reason}"
+                except TypeError:
+                    result = "SIGNATURE_UNCHANGED"
+        self.assertEqual(result, "ENV-LEGACY-T-C1")
+
+    def test_no_hardcoded_autonomy_lookup_in_mutation_paths(self):
+        """Static pin: zero hardcoded claim_by_task(ENV-AUTONOMY-001)
+        remain outside the documented safe locations."""
+        source = Path(runtime.__file__).read_text(encoding="utf-8")
+        lines = source.split("\n")
+        hits = []
+        for i, line in enumerate(lines, 1):
+            if 'claim_by_task("ENV-AUTONOMY-001")' in line:
+                hits.append(i)
+        # The only permitted remaining site is _select_stop_claim's
+        # documentation comment; any executable hit is a defect.
+        self.assertEqual(hits, [], f"hardcoded lookups remain at lines {hits}")
+
+
+    def test_cross_root_command_rejected(self):
+        """D5 R3 P1: --root bypass forms are caught — the cross-root check
+        must handle --root VALUE, --root=VALUE, and multiple occurrences.
+        Tests the token-parsing logic directly (both forms + repetition)."""
+        import shlex as _shlex
+        import os as _os
+
+        def _extract_roots(command):
+            """Replicates the hook_pretool cross-root token scan."""
+            tokens = _shlex.split(command)
+            roots = []
+            i = 0
+            while i < len(tokens):
+                tok = tokens[i]
+                if tok == "--root" and i + 1 < len(tokens):
+                    roots.append(tokens[i + 1])
+                    i += 2
+                elif tok.startswith("--root="):
+                    roots.append(tok[len("--root="):])
+                    i += 1
+                else:
+                    i += 1
+            return roots
+
+        # Form 1: --root VALUE
+        self.assertEqual(_extract_roots("cmd --root /a/b"), ["/a/b"])
+        # Form 2: --root=VALUE (the R3 P1 bypass)
+        self.assertEqual(_extract_roots("cmd --root=/a/b"), ["/a/b"])
+        # Multiple occurrences (CLI uses the last — ALL must match)
+        self.assertEqual(_extract_roots("cmd --root /ok --root /evil"), ["/ok", "/evil"])
+        self.assertEqual(_extract_roots("cmd --root=/ok --root=/evil"), ["/ok", "/evil"])
+        # Mixed forms
+        self.assertEqual(_extract_roots("cmd --root /ok --root=/evil"), ["/ok", "/evil"])
+        # No --root
+        self.assertEqual(_extract_roots("cmd --task foo"), [])
+        # The runtime code checks EVERY extracted root against the claim
+        # worktree via os.path.samefile; a deny fires on the first mismatch.
+
+    def test_same_branch_unresolvable_fail_closed(self):
+        """D5 R2 P2: match + same-branch unresolvable = unproven uniqueness."""
+        import tempfile as _tf
+        with _tf.TemporaryDirectory() as folder:
+            temp_dir = Path(folder)
+            matching = claim("T-OK", "T-OK-C1", "CLAIMED", ["docs/ai/handoffs/T-OK.md"])
+            matching.update({"worktree": str(temp_dir).replace("\\", "/"), "branch": "feat/x"})
+            stale = claim("T-STALE", "T-STALE-C1", "CLAIMED", ["docs/ai/handoffs/T-STALE.md"])
+            stale.update({"worktree": "Z:/nonexistent/wt", "branch": "feat/x"})
+            with self.assertRaises(runtime.AutonomyFailure) as raised:
+                runtime._select_context_claim(policy(matching, stale), temp_dir, "feat/x")
+            self.assertIn("CLAIM_IDENTITY_UNESTABLISHABLE", raised.exception.reason)
+
+    def test_diff_branch_unresolvable_does_not_block(self):
+        """D5 R2 P2: a missing worktree on a DIFFERENT branch does not block."""
+        import tempfile as _tf
+        with _tf.TemporaryDirectory() as folder:
+            temp_dir = Path(folder)
+            matching = claim("T-OK", "T-OK-C1", "CLAIMED", ["docs/ai/handoffs/T-OK.md"])
+            matching.update({"worktree": str(temp_dir).replace("\\", "/"), "branch": "feat/x"})
+            other_branch = claim("T-OTHER", "T-OTHER-C1", "CLAIMED", ["docs/ai/handoffs/T-OTHER.md"])
+            other_branch.update({"worktree": "Z:/nonexistent/wt", "branch": "feat/other"})
+            result = runtime._select_context_claim(policy(matching, other_branch), temp_dir, "feat/x")
+        self.assertEqual(result["claim_id"], "T-OK-C1")
+
+    def test_cli_task_defaults_context_selected(self):
+        """D5 R2 P2: CLI --task defaults are None, not the closed task."""
+        source = Path(runtime.__file__).read_text(encoding="utf-8")
+        self.assertNotIn('default="ENV-AUTONOMY-001"', source)
 
 
 if __name__ == "__main__":

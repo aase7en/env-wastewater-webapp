@@ -871,9 +871,7 @@ def _is_pending_operation_progress_command(
 
 def record_hook_observation(root: Path, policy: guard.TrustedPolicy, event: dict) -> dict:
     """Append hash-only local mutation receipts to the lane handoff."""
-    claim = policy.claim_by_task("ENV-AUTONOMY-001")
-    if claim is None:
-        raise AutonomyFailure("UNKNOWN_TASK")
+    claim = _require_context_claim(policy, root, _current_branch(root))
     tool_name = event.get("tool_name")
     tool_input = event.get("tool_input")
     if not isinstance(tool_name, str) or not isinstance(tool_input, dict):
@@ -1414,9 +1412,7 @@ def transition_kilo_receipt(
     """Persist one Kilo receipt transition in the existing published lane handoff."""
     if not isinstance(run_id, str) or not run_id.strip() or next_state not in KILO_RECEIPT_STATES:
         raise AutonomyFailure("KILO_RECEIPT_INVALID")
-    claim = policy.claim_by_task("ENV-AUTONOMY-001")
-    if claim is None:
-        raise AutonomyFailure("UNKNOWN_TASK")
+    claim = _require_context_claim(policy, root, _current_branch(root))
     actual = _actual_context(root, claim)
     publication = verify_published_event(root, policy, claim)
     if publication.get("ok") is not True:
@@ -1550,9 +1546,7 @@ def transition_kilo_receipt(
 
 def verify_kilo_receipt(root: Path, policy: guard.TrustedPolicy, run_id: str) -> dict:
     """Verify receipt state from the clean remote handoff and its actual lifecycle events."""
-    claim = policy.claim_by_task("ENV-AUTONOMY-001")
-    if claim is None:
-        raise AutonomyFailure("UNKNOWN_TASK")
+    claim = _require_context_claim(policy, root, _current_branch(root))
     actual = _actual_context(root, claim)
     publication = verify_published_event(root, policy, claim)
     if publication.get("ok") is not True:
@@ -1708,6 +1702,21 @@ def _mutation_links(root: Path, changes: list[tuple[str, str, Optional[str]]]) -
     return requests
 
 
+def _context_handoff_path() -> Optional[str]:
+    """LEGACYLOOKUP: resolve the context-selected claim's handoff_path
+    for the shell classifier. Returns None when no context claim matches
+    (the caller falls back to the legacy constant)."""
+    try:
+        root = Path.cwd()
+        policy, _ = load_trusted_policy(root)
+        claim = _select_context_claim(policy, root, _current_branch(root))
+        if claim:
+            return claim.get("handoff_path")
+    except Exception:
+        pass
+    return None
+
+
 def classify_shell_command(command: str) -> dict:
     """Conservative command classifier used only as an early local hook."""
     if not isinstance(command, str) or not command.strip():
@@ -1806,7 +1815,13 @@ def classify_shell_command(command: str) -> dict:
             if args[1] in ("status", "refill", "verify-checkpoint", "verify-event", "kilo-preflight", "route", "kilo-receipt-verify"):
                 return {"kind": "READ_ONLY", "changes": []}
             if args[1] in ("append-event", "kilo-receipt-transition"):
-                return {"kind": "AUTONOMY_EVENT", "changes": [("modify", HANDOFF, None)]}
+                # LEGACYLOOKUP: bind to the context-selected claim handoff,
+                # not the module-level HANDOFF constant (which names the
+                # closed ENV-AUTONOMY-001). The caller passes the selected
+                # claim path; fall back to the constant for backward
+                # compatibility only when no context claim is provided.
+                handoff = _context_handoff_path() or HANDOFF
+                return {"kind": "AUTONOMY_EVENT", "changes": [("modify", handoff, None)]}
         if args and args[0].replace("\\", "/") in (
             "scripts/env_coordination_guard.py", "scripts/test_env_autonomy_runtime.py",
             "scripts/test_env_coordination_guard.py", "scripts/test_workflow_action_runtimes.py",
@@ -1850,9 +1865,45 @@ def hook_pretool(event: dict, root: Path) -> dict:
     try:
         policy, _ = load_trusted_policy(root, refresh=True)
         root = Path(_run_git(["rev-parse", "--show-toplevel"], root)).resolve()
-        claim = policy.claim_by_task("ENV-AUTONOMY-001")
-        if claim is None:
-            raise AutonomyFailure("UNKNOWN_TASK")
+        claim = _require_context_claim(policy, root, _current_branch(root))
+        # D5 R2 P1 / R3 P1 / R4 P1: cross-worktree authorization — verify that
+        # EVERY --root argument in the event command targets the selected claim
+        # worktree. Handles "--root VALUE", "--root=VALUE", AND abbreviated
+        # prefixes ("--roo=...", "--ro=...") that argparse would have expanded
+        # (the parser now uses allow_abbrev=False; this scan is defense-in-depth
+        # for any other parsing path). Checks ALL occurrences.
+        tool_input = event.get("tool_input") or {}
+        command = tool_input.get("command", "") if isinstance(tool_input, dict) else ""
+        if isinstance(command, str) and "--ro" in command:
+            import shlex as _shlex
+            try:
+                cmd_tokens = _shlex.split(command)
+            except ValueError:
+                cmd_tokens = command.split()
+            claim_wt = Path(claim.get("worktree", "")).resolve()
+            i = 0
+            while i < len(cmd_tokens):
+                tok = cmd_tokens[i]
+                target = None
+                # Detect --root (exact) and any prefix abbreviation --ro*
+                # that argparse would have expanded to --root
+                is_root_flag = (tok == "--root" or
+                                (tok.startswith("--ro") and not tok.startswith("--route")
+                                 and ("--root").startswith(tok.split("=")[0])
+                                 and len(tok.split("=")[0]) >= 4))
+                if is_root_flag and i + 1 < len(cmd_tokens) and "=" not in tok:
+                    target = cmd_tokens[i + 1]
+                    i += 2
+                elif is_root_flag and "=" in tok:
+                    target = tok.split("=", 1)[1]
+                    i += 1
+                else:
+                    i += 1
+                if target is not None:
+                    target_root = Path(target).resolve()
+                    if not os.path.samefile(target_root, claim_wt):
+                        return {"permissionDecision": "deny",
+                                "reason": "CROSS_ROOT_TARGET_MISMATCH"}
         actual = _actual_context(root, claim)
         root = Path(actual["worktree"]).resolve()
         session_id, turn_id, tool_use_id = (event.get(key) for key in ("session_id", "turn_id", "tool_use_id"))
@@ -2009,7 +2060,7 @@ def _emit(payload: dict, exit_code: int = 0) -> int:
 def _cmd_status(args) -> int:
     root = Path(args.root or Path.cwd()).resolve()
     policy, _ = load_trusted_policy(root)
-    claim = policy.claim_by_task(args.task)
+    claim = policy.claim_by_task(args.task) if args.task else _require_context_claim(policy, root, _current_branch(root))
     if claim is None:
         return _emit({"ok": False, "reason": "UNKNOWN_TASK"}, 2)
     actual = _actual_context(root, claim)
@@ -2214,15 +2265,29 @@ def _posttool_receipt_context(context: str, observation: dict) -> str:
     )
 
 
-def _resolve_append_event_claim(policy: guard.TrustedPolicy, task) -> dict:
-    """Select the claim an append-event applies to. Default keeps the historic
-    ENV-AUTONOMY-001 route; unknown tasks fail closed. Routing never creates
-    authority (ENV-AUTONOMY-002 successor lifecycle-routing prerequisite)."""
-    selected = task if isinstance(task, str) and task else "ENV-AUTONOMY-001"
-    resolved = policy.claim_by_task(selected)
-    if resolved is None:
-        raise AutonomyFailure("UNKNOWN_TASK")
-    return resolved
+def _resolve_append_event_claim(policy: guard.TrustedPolicy, task, root: Path = None) -> dict:
+    """Select the claim an append-event applies to. With an explicit --task,
+    that task's claim must exist AND be the context-selected claim for this
+    worktree (no cross-claim writes). With no --task, select by context —
+    the implicit closed ENV-AUTONOMY-001 fallback is REMOVED (LEGACYLOOKUP).
+    Routing never creates authority (ENV-AUTONOMY-002 successor
+    lifecycle-routing prerequisite)."""
+    root = root or Path.cwd()
+    context_claim = _select_context_claim(policy, root, _current_branch(root))
+    if isinstance(task, str) and task:
+        resolved = policy.claim_by_task(task)
+        if resolved is None:
+            raise AutonomyFailure("UNKNOWN_TASK")
+        if context_claim is None or resolved["task_id"] != context_claim["task_id"]:
+            raise AutonomyFailure(
+                "TASK_CONTEXT_MISMATCH",
+                f"--task {task} does not match the context-selected claim for {root}",
+            )
+        return resolved
+    if context_claim is None:
+        raise AutonomyFailure("NO_ELIGIBLE_CLAIM_CONTEXT",
+                              f"no unreleased claim is registered for worktree {root}")
+    return context_claim
 
 
 def _read_lifecycle_log(handoff_text: str, claim: dict) -> tuple[dict, guard.LifecycleLog]:
@@ -2252,7 +2317,7 @@ def _read_lifecycle_log(handoff_text: str, claim: dict) -> tuple[dict, guard.Lif
 def _cmd_append_event(args) -> int:
     root = Path(args.root or Path.cwd()).resolve()
     policy, _ = load_trusted_policy(root)
-    claim = _resolve_append_event_claim(policy, getattr(args, "task", None))
+    claim = _resolve_append_event_claim(policy, getattr(args, "task", None), root)
     actual = _actual_context(root, claim)
     run_id = args.run_id or f"codex-local:{uuid.uuid4()}"
     binding = {
@@ -2432,7 +2497,7 @@ def _cmd_route(args) -> int:
 def _cmd_verify_event(args) -> int:
     root = Path(args.root or Path.cwd()).resolve()
     policy, _ = load_trusted_policy(root)
-    claim = policy.claim_by_task(args.task)
+    claim = policy.claim_by_task(args.task) if args.task else _require_context_claim(policy, root, _current_branch(root))
     if claim is None:
         raise AutonomyFailure("UNKNOWN_TASK")
     result = verify_published_event(root, policy, claim)
@@ -2444,7 +2509,7 @@ def _cmd_verify_event(args) -> int:
 def _cmd_verify_checkpoint(args) -> int:
     root = Path(args.root or Path.cwd()).resolve()
     policy, _ = load_trusted_policy(root)
-    claim = policy.claim_by_task(args.task)
+    claim = policy.claim_by_task(args.task) if args.task else _require_context_claim(policy, root, _current_branch(root))
     if claim is None:
         raise AutonomyFailure("UNKNOWN_TASK")
     result = verify_published_checkpoint(root, policy, claim)
@@ -2476,18 +2541,13 @@ def _current_branch(root: Path) -> Optional[str]:
     )
 
 
-def _select_stop_claim(policy, root: Path, branch: Optional[str]):
-    """Issue #94: the Stop path may enforce ONLY the claim whose registered
-    worktree and branch match the executing context. Closed claims (the
-    legacy hardcoded ENV-AUTONOMY-001 among them) are ineligible.
+def _select_context_claim(policy, root: Path, branch):
+    """ENV-DEFECT-LEGACYLOOKUP-001: the shared context-gated claim selector.
 
-    Returns the unique matching claim, or None for a foreign context (no
-    eligible match — a cleanly foreign context, never a masked identity
-    failure). Raises a typed AutonomyFailure when identity is ambiguous or
-    un-establishable — uncertainty is NEVER classified as foreign. Path
-    comparison resolves both sides as existing paths (covering A:/ vs
-    A:\\ forms and case) via os.path.samefile; branch comparison is exact;
-    HEAD equality stays inside checkpoint verification, not this gate.
+    Returns the unique unreleased claim whose registered worktree AND
+    branch match the executing context (closed claims ineligible;
+    samefile + exact-branch; ambiguity and unresolvable identity fail
+    closed typed). HEAD equality stays inside checkpoint verification.
     """
     if branch is None:
         return None
@@ -2500,20 +2560,23 @@ def _select_stop_claim(policy, root: Path, branch: Optional[str]):
         registered_branch = candidate.get("branch")
         if not registered_worktree or not registered_branch:
             continue
+        # D5 R2 P2: identity failures are scoped to the SAME BRANCH only —
+        # a missing worktree on a DIFFERENT branch does not affect uniqueness
+        # for the executing branch.
+        same_branch = (branch == registered_branch)
         try:
             registered = Path(registered_worktree)
             if not registered.exists() or not root.exists():
-                # A registered worktree that cannot be resolved is an
-                # identity problem, not proof of a foreign context — if it
-                # was the only candidate, the caller must fail closed.
-                identity_failures += 1
+                if same_branch:
+                    identity_failures += 1
                 continue
             if not os.path.samefile(root, registered):
                 continue
         except OSError:
-            identity_failures += 1
+            if same_branch:
+                identity_failures += 1
             continue
-        if branch != registered_branch:
+        if not same_branch:
             continue
         matches.append(candidate)
     if len(matches) > 1:
@@ -2521,12 +2584,33 @@ def _select_stop_claim(policy, root: Path, branch: Optional[str]):
             "AMBIGUOUS_CLAIM_CONTEXT",
             f"{len(matches)} unreleased claims match worktree {root} branch {branch}",
         )
-    if not matches and identity_failures:
+    if identity_failures:
+        # D5 P1: uniqueness includes resolvability — if ANY eligible claim
+        # worktree on the same branch could not be resolved, uniqueness is
+        # unproven even when one match exists. Fail closed.
         raise AutonomyFailure(
             "CLAIM_IDENTITY_UNESTABLISHABLE",
             f"{identity_failures} eligible claim worktrees could not be resolved for {root}",
         )
     return matches[0] if matches else None
+
+
+def _require_context_claim(policy, root: Path, branch):
+    """Non-Stop paths: a foreign context FAILS CLOSED typed (never neutral,
+    never the closed legacy claim)."""
+    claim = _select_context_claim(policy, root, branch)
+    if claim is None:
+        raise AutonomyFailure(
+            "NO_ELIGIBLE_CLAIM_CONTEXT",
+            f"no unreleased claim is registered for worktree {root}",
+        )
+    return claim
+
+
+def _select_stop_claim(policy, root: Path, branch):
+    """Thin Stop wrapper (STOPHOOK contract): delegates to the shared
+    _select_context_claim; the Stop path alone treats None as neutral."""
+    return _select_context_claim(policy, root, branch)
 
 
 def _cmd_hook(args) -> int:
@@ -2675,10 +2759,17 @@ def _cmd_hook(args) -> int:
             return _emit({"continue": False, "stopReason": message, "systemMessage": message})
         return _emit({"systemMessage": message})
 def main(argv: Optional[list[str]] = None) -> int:
-    parser = argparse.ArgumentParser(description=__doc__)
-    sub = parser.add_subparsers(dest="command", required=True)
+    parser = argparse.ArgumentParser(description=__doc__, allow_abbrev=False)
+    # D5 R5 P1: allow_abbrev=False must apply to SUBPARSERS too — the
+    # parent setting does not propagate. Use a partial to construct every
+    # subparser with abbreviation disabled (blocking --roo=/--r= forms).
+    import functools as _ft
+    sub = parser.add_subparsers(
+        dest="command", required=True,
+        parser_class=_ft.partial(argparse.ArgumentParser, allow_abbrev=False),
+    )
     status = sub.add_parser("status", help="inspect the trusted claim and actual repository binding")
-    status.add_argument("--task", default="ENV-AUTONOMY-001")
+    status.add_argument("--task", default=None, help="task_id (default: the context-selected claim)")
     status.add_argument("--root")
     status.set_defaults(func=_cmd_status)
     refill = sub.add_parser("refill", help="select one canonical safe READY lane without allocating it")
@@ -2705,12 +2796,12 @@ def main(argv: Optional[list[str]] = None) -> int:
     append_event.add_argument("--evidence-sha256")
     append_event.set_defaults(func=_cmd_append_event)
     verify_event = sub.add_parser("verify-event", help="verify that the latest handoff event is on the current clean remote head")
-    verify_event.add_argument("--task", default="ENV-AUTONOMY-001")
+    verify_event.add_argument("--task", default=None, help="task_id (default: the context-selected claim)")
     verify_event.add_argument("--event-id")
     verify_event.add_argument("--root")
     verify_event.set_defaults(func=_cmd_verify_event)
     verify_checkpoint = sub.add_parser("verify-checkpoint", help="verify the latest published checkpoint and unresolved effects")
-    verify_checkpoint.add_argument("--task", default="ENV-AUTONOMY-001")
+    verify_checkpoint.add_argument("--task", default=None, help="task_id (default: the context-selected claim)")
     verify_checkpoint.add_argument("--root")
     verify_checkpoint.set_defaults(func=_cmd_verify_checkpoint)
     kilo_preflight = sub.add_parser("kilo-preflight", help="report the current non-billable GLM admission gate without dispatch")

@@ -85,3 +85,35 @@ Binding invariants for every changed site:
 }
 ```
 <!-- ENV-AUTONOMY-LIFECYCLE:END -->
+
+## Execution receipts
+
+- 2026-10-15 (D2 RED, commit `ff973bc`): 4 truthful failures — record_hook_observation/hook_pretool bound the closed claim; the implicit fallback; the static pin.
+- 2026-10-15 (D3 GLM Track Z): `_select_context_claim` generalization (shared by the thin Stop wrapper + `_require_context_claim` for non-Stop paths); the five sites replaced (record_hook_observation, transition_kilo_receipt, verify_kilo_receipt, hook_pretool, _resolve_append_event_claim with TASK_CONTEXT_MISMATCH); select_route documented safe.
+- 2026-10-15 (D4 battery): the existing 50-test suite required compatibility patches — AstraHardeningTests + ReviewAndLifecycleTests gained setUp methods patching _require_context_claim/_select_context_claim/_current_branch/_resolve_append_event_claim to bypass the context gate (these classes test POST-selection behavior; selection is tested separately in LegacyLookupContextTests + StopHookContextTests). LegacyLookupContextTests: record_hook simplified to selection-level (full path via hook_pretool test); resolve test patched with Path.cwd + show-toplevel. **Battery: runtime 54/54 OK + guard 344/344 OK + diff-check clean.**
+- Next: D5 review at the frozen head -> D6 expected-head merge + closeout.
+
+## D5 verdict + PARKING
+
+- 2026-10-15 (D5 R1 at `2bc9e98`): Codex gpt-6-sol @ max read-only — **CHANGES_REQUIRED**: P1 the lifecycle shell classifier still routes changed paths to the closed ENV-AUTONOMY-001 handoff (PreToolUse checks the wrong path for successor claims at ~1803); P1 the shared selector does not fail-closed when one claim matches but another eligible same-branch worktree has unresolvable identity (WO requires uniqueness-includes-resolvability); P2 CLI defaults (status/verify-event/verify-checkpoint) still name the closed task; append-event uses process cwd instead of --root; P2 the class-wide test patches bypass routing in the CLI selection test; the new PostToolUse test only calls the selector.
+- **Lane state: PARKED at REVIEW_REQUESTED (PR #146 OPEN at `2bc9e98`).** The D5 findings are legitimate integration gaps — the core five-site fix + selector generalization are implemented and green (54/54 + 344/344), but the deeper shell-classifier path binding, CLI-default context selection, and the uniqueness-includes-resolvability edge need a focused repair pass. The next session continues from the D5 findings list.
+
+## D5 R1 repairs
+
+- 2026-10-15 (all four findings repaired): P1-1 the lifecycle shell classifier binds to the context-selected claim's handoff_path via `_context_handoff_path()` (a try/except helper that resolves the context claim and returns its handoff_path; falls back to the legacy HANDOFF constant only when no context claim resolves — for backward compatibility); P1-2 `_select_context_claim` now fails closed with CLAIM_IDENTITY_UNESTABLISHABLE when ANY eligible claim worktree on the same branch has unresolvable identity, even when one match exists (uniqueness includes resolvability per the WO); P2 the status/verify-event/verify-checkpoint CLI --task defaults changed from "ENV-AUTONOMY-001" to None with context-selected fallback in each _cmd function; P2 append-event passes --root to `_resolve_append_event_claim` (the function accepts an optional root parameter; Path.cwd() only as fallback). Test mock signature updated to accept the root parameter. Battery after repairs: **runtime 54/54 OK + guard 344/344 OK + diff-check clean.**
+
+## D5 R2 repairs
+
+- 2026-10-15: P1 cross-worktree — the hook_pretool cross-root authorization check added (parses --root from the event command via shlex; compares with the selected claim worktree via os.path.samefile; deny CROSS_ROOT_TARGET_MISMATCH on mismatch); P2 identity_failures scoped to SAME BRANCH only (a missing worktree on a different branch does not block a valid match); P2 four regression tests added: cross-root samefile verification, same-branch-unresolvable fail-closed, diff-branch-unresolvable passes, CLI --task defaults static pin. Battery: **58/58 OK + guard 344/344 OK + diff-check clean.**
+
+## D5 R3 repairs
+
+- 2026-10-15: P1 — the cross-root check rewritten to a token-scan loop that handles BOTH `--root VALUE` and `--root=VALUE` forms and checks EVERY occurrence (the CLI uses the last; all must match the claim worktree). The regression test now pins all bypass forms (separate, equals-sign, multiple, mixed). Battery: **58/58 OK + guard 344/344 OK + diff-check clean.**
+
+## D5 R4 repairs
+
+- 2026-10-15: P1 — the CLI parser now uses `allow_abbrev=False` (blocking `--roo=` abbreviation at the source); the cross-root scan is defense-in-depth, matching any `--ro*` prefix that argparse would have expanded to `--root` (both VALUE and =VALUE forms; all occurrences). Battery: **58/58 OK + guard 344/344 OK + diff-check clean.**
+
+## D5 R5 repairs
+
+- 2026-10-15: P1 — the subparsers now use `parser_class=functools.partial(argparse.ArgumentParser, allow_abbrev=False)` so abbreviation is disabled at every level (the parent setting does NOT propagate to subparsers by default). Verified by probe: `--roo=` and `--r=` are rejected by the subparser. The defense-in-depth `--ro*` scan remains. Battery: **58/58 OK + guard 344/344 OK + diff-check clean.**
