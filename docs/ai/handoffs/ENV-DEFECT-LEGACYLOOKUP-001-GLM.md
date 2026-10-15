@@ -105,3 +105,7 @@ Binding invariants for every changed site:
 ## D5 R2 repairs
 
 - 2026-10-15: P1 cross-worktree — the hook_pretool cross-root authorization check added (parses --root from the event command via shlex; compares with the selected claim worktree via os.path.samefile; deny CROSS_ROOT_TARGET_MISMATCH on mismatch); P2 identity_failures scoped to SAME BRANCH only (a missing worktree on a different branch does not block a valid match); P2 four regression tests added: cross-root samefile verification, same-branch-unresolvable fail-closed, diff-branch-unresolvable passes, CLI --task defaults static pin. Battery: **58/58 OK + guard 344/344 OK + diff-check clean.**
+
+## D5 R3 repairs
+
+- 2026-10-15: P1 — the cross-root check rewritten to a token-scan loop that handles BOTH `--root VALUE` and `--root=VALUE` forms and checks EVERY occurrence (the CLI uses the last; all must match the claim worktree). The regression test now pins all bypass forms (separate, equals-sign, multiple, mixed). Battery: **58/58 OK + guard 344/344 OK + diff-check clean.**

@@ -1866,8 +1866,10 @@ def hook_pretool(event: dict, root: Path) -> dict:
         policy, _ = load_trusted_policy(root, refresh=True)
         root = Path(_run_git(["rev-parse", "--show-toplevel"], root)).resolve()
         claim = _require_context_claim(policy, root, _current_branch(root))
-        # D5 R2 P1: cross-worktree authorization — verify that any --root
-        # argument in the event command targets the selected claim worktree.
+        # D5 R2 P1 / R3 P1: cross-worktree authorization — verify that EVERY
+        # --root argument in the event command targets the selected claim
+        # worktree. Handles both "--root VALUE" and "--root=VALUE" forms,
+        # and checks ALL occurrences (the CLI uses the last --root).
         tool_input = event.get("tool_input") or {}
         command = tool_input.get("command", "") if isinstance(tool_input, dict) else ""
         if isinstance(command, str) and "--root" in command:
@@ -1876,14 +1878,24 @@ def hook_pretool(event: dict, root: Path) -> dict:
                 cmd_tokens = _shlex.split(command)
             except ValueError:
                 cmd_tokens = command.split()
-            for i, tok in enumerate(cmd_tokens):
+            claim_wt = Path(claim.get("worktree", "")).resolve()
+            i = 0
+            while i < len(cmd_tokens):
+                tok = cmd_tokens[i]
+                target = None
                 if tok == "--root" and i + 1 < len(cmd_tokens):
-                    target_root = Path(cmd_tokens[i + 1]).resolve()
-                    claim_wt = Path(claim.get("worktree", "")).resolve()
+                    target = cmd_tokens[i + 1]
+                    i += 2
+                elif tok.startswith("--root="):
+                    target = tok[len("--root="):]
+                    i += 1
+                else:
+                    i += 1
+                if target is not None:
+                    target_root = Path(target).resolve()
                     if not os.path.samefile(target_root, claim_wt):
                         return {"permissionDecision": "deny",
                                 "reason": "CROSS_ROOT_TARGET_MISMATCH"}
-                    break
         actual = _actual_context(root, claim)
         root = Path(actual["worktree"]).resolve()
         session_id, turn_id, tool_use_id = (event.get(key) for key in ("session_id", "turn_id", "tool_use_id"))
