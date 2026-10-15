@@ -117,3 +117,7 @@ Binding invariants for every changed site:
 ## D5 R5 repairs
 
 - 2026-10-15: P1 — the subparsers now use `parser_class=functools.partial(argparse.ArgumentParser, allow_abbrev=False)` so abbreviation is disabled at every level (the parent setting does NOT propagate to subparsers by default). Verified by probe: `--roo=` and `--r=` are rejected by the subparser. The defense-in-depth `--ro*` scan remains. Battery: **58/58 OK + guard 344/344 OK + diff-check clean.**
+
+## Closure receipts (D6)
+
+- D6 (2026-10-15): expected-head merge — **PR #146 merged as `9c0fda5`** (parents: `73a3637` + reviewed `7949127`; ancestry verified). Exact-main workflow: test SUCCESS. Closeout transition: registry CLOSED at generation 1, fence moved to `9c0fda5` + block sha256 `61e1d022...` (guard module), frontier bullet + coordination summary reconciled (ONE active claim remains: Building, deferred). Implementation worktree `env-legacylookup-20261015` preserved clean at `7949127` (fully merged). CLOSED confers no fresh mutation authority; the #101 typed-wait rule is a separate future slice.

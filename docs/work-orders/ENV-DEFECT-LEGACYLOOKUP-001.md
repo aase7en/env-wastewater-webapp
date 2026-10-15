@@ -1,6 +1,13 @@
 # ENV-DEFECT-LEGACYLOOKUP-001 — Legacy ENV-AUTONOMY-001 Lookup Audit (Work Order)
 
-Status: CLAIMED (transition pending R3 review + merge)
+Status: DELIVERED / CLOSED 2026-10-15 — claim ENV-DEFECT-LEGACYLOOKUP-001-C1
+closed at generation 1. Transition PR #145 merged `73a3637`; implementation
+PR #146 merged `9c0fda5` (second parent = D5-R6-APPROVED `7949127`; 6-round
+D5 by gpt-6-sol @ max — cross-model vs the GLM author; verdict
+issuecomment-6189166779); exact-main test SUCCESS. Battery: runtime 58/58 +
+guard 344/344. Zero hardcoded ENV-AUTONOMY-001 lookups remain in
+mutation-bearing paths. Receipts durable in
+docs/ai/handoffs/ENV-DEFECT-LEGACYLOOKUP-001-GLM.md.
 Task: `ENV-DEFECT-LEGACYLOOKUP-001` (the recorded follow-up audit from the
 ENV-DEFECT-STOPHOOK-001 closeout, PR #144 — the remaining hardcoded
 non-Stop-path claim lookups)
