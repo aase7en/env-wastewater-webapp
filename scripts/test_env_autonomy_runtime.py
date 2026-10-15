@@ -457,7 +457,7 @@ class ReviewAndLifecycleTests(unittest.TestCase):
         p2.start()
         p3 = patch.object(runtime, "_current_branch", return_value="test/branch")
         p3.start()
-        def _resolve(policy, task):
+        def _resolve(policy, task, root=None):
             if task:
                 resolved = policy.claim_by_task(task)
                 if resolved is None:
@@ -1229,7 +1229,7 @@ class AstraHardeningTests(unittest.TestCase):
         p2.start()
         p3 = patch.object(runtime, "_current_branch", return_value="test/branch")
         p3.start()
-        def _resolve(policy, task):
+        def _resolve(policy, task, root=None):
             if task:
                 resolved = policy.claim_by_task(task)
                 if resolved is None:
