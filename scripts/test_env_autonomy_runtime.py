@@ -1914,5 +1914,151 @@ class StopHookContextTests(unittest.TestCase):
         self.assertEqual(json.loads(out.getvalue()), {})
 
 
+
+class LegacyLookupContextTests(unittest.TestCase):
+    """ENV-DEFECT-LEGACYLOOKUP-001 — RED-first: the remaining hardcoded
+    ENV-AUTONOMY-001 lookups on non-Stop paths must bind the
+    context-selected claim (or fail typed), never the closed claim."""
+
+    def _context_claim_fixture(self, temp_dir: Path):
+        active = claim("ENV-LEGACY-T", "ENV-LEGACY-T-C1", "CLAIMED",
+                       ["docs/ai/handoffs/ENV-LEGACY-T-GLM.md"])
+        active.update({"worktree": str(temp_dir).replace("\\", "/"),
+                       "branch": "feat/env-defect-legacylookup-001"})
+        return active
+
+    def test_record_hook_observation_binds_context_claim(self):
+        with tempfile.TemporaryDirectory() as folder:
+            temp_dir = Path(folder)
+            active = self._context_claim_fixture(temp_dir)
+            trusted = policy(active)
+
+            def fake_run_git(args, cwd=None, check=True, preserve_output=False):
+                if args == ["rev-parse", "--git-dir"]:
+                    return ".git"
+                if args == ["symbolic-ref", "--quiet", "--short", "HEAD"]:
+                    return "feat/env-defect-legacylookup-001"
+                raise AssertionError(f"unexpected git call: {args}")
+
+            with patch.object(runtime, "load_trusted_policy",
+                              return_value=(trusted, "")), \
+                 patch.object(runtime, "_run_git", side_effect=fake_run_git), \
+                 patch.object(runtime.subprocess, "run",
+                              return_value=SimpleNamespace(
+                                  returncode=0,
+                                  stdout="feat/env-defect-legacylookup-001")):
+                try:
+                    result = runtime.record_hook_observation(
+                        temp_dir, trusted,
+                        {"tool_name": "Edit", "tool_input": {"file_path": "x"},
+                         "session_id": "s1", "turn_id": "t1",
+                         "tool_use_id": "u1", "model": "GLM-5.3 MAX"},
+                    )
+                    claim_used = result.get("claim_id", "")
+                except runtime.AutonomyFailure as exc:
+                    claim_used = f"FAILED:{exc.reason}"
+        self.assertEqual(claim_used, "ENV-LEGACY-T-C1")
+
+    def test_hook_pretool_binds_context_claim(self):
+        """In a worktree with its own unreleased claim, the mutation guard
+        binds THAT claim (not the closed ENV-AUTONOMY-001)."""
+        with tempfile.TemporaryDirectory() as folder:
+            temp_dir = Path(folder)
+            (temp_dir / "docs" / "ai" / "handoffs").mkdir(parents=True)
+            handoff_rel = "docs/ai/handoffs/ENV-LEGACY-T-GLM.md"
+            lifecycle = {"version": 1, "task_id": "ENV-LEGACY-T",
+                         "claim_id": "ENV-LEGACY-T-C1", "claim_generation": 1,
+                         "goal_id": "g1", "codex_hook_observations": [],
+                         "events": []}
+            (temp_dir / handoff_rel).write_text(
+                "# F\n\n" + runtime.LIFECYCLE_START + "\n```json\n"
+                + json.dumps(lifecycle) + "\n```\n" + runtime.LIFECYCLE_END + "\n",
+                encoding="utf-8")
+            active = self._context_claim_fixture(temp_dir)
+            active["handoff_path"] = handoff_rel
+            trusted = policy(active)
+            actual = {"repo": runtime.REPO_SLUG, "worktree": str(temp_dir),
+                      "branch": "feat/env-defect-legacylookup-001",
+                      "head_sha": "b" * 40,
+                      "claim_base_ancestor": True, "current_policy_ancestor": True}
+
+            def fake_run_git(args, cwd=None, check=True, preserve_output=False):
+                if args == ["rev-parse", "--show-toplevel"]:
+                    return str(temp_dir)
+                if args == ["rev-parse", "--git-dir"]:
+                    return ".git"
+                if args == ["symbolic-ref", "--quiet", "--short", "HEAD"]:
+                    return "feat/env-defect-legacylookup-001"
+                if args[:1] == ["show"]:
+                    return (temp_dir / handoff_rel).read_text(encoding="utf-8")
+                return "b" * 40
+
+            changed = temp_dir / "scripts" / "env_autonomy_runtime.py"
+            changed.parent.mkdir(parents=True)
+            changed.write_text("x", encoding="utf-8")
+
+            with patch.object(runtime, "load_trusted_policy",
+                              return_value=(trusted, "")), \
+                 patch.object(runtime, "_run_git", side_effect=fake_run_git), \
+                 patch.object(runtime.subprocess, "run",
+                              return_value=SimpleNamespace(
+                                  returncode=0,
+                                  stdout="feat/env-defect-legacylookup-001")), \
+                 patch.object(runtime, "_actual_context", return_value=actual), \
+                 patch.object(runtime, "validate_lane_binding"), \
+                 patch.object(runtime.guard, "evaluate_mutation",
+                              return_value=SimpleNamespace(
+                                  safe_to_mutate=True, reason=None)), \
+                 patch.object(runtime, "_mutation_links", return_value=[]):
+                result = runtime.hook_pretool({
+                    "tool_name": "Edit",
+                    "tool_input": {"file_path": str(changed)},
+                    "session_id": "s-ll", "turn_id": "t-ll",
+                    "tool_use_id": "u-ll", "model": "GLM-5.3 MAX",
+                }, temp_dir)
+        self.assertEqual(result.get("permissionDecision"), "allow")
+
+    def test_resolve_append_event_claim_no_implicit_fallback(self):
+        """With no --task, resolution selects by context; the implicit
+        ENV-AUTONOMY-001 fallback must be gone."""
+        with tempfile.TemporaryDirectory() as folder:
+            temp_dir = Path(folder)
+            active = self._context_claim_fixture(temp_dir)
+            trusted = policy(active)
+
+            def fake_run_git(args, cwd=None, check=True, preserve_output=False):
+                if args == ["rev-parse", "--git-dir"]:
+                    return ".git"
+                if args == ["symbolic-ref", "--quiet", "--short", "HEAD"]:
+                    return "feat/env-defect-legacylookup-001"
+                raise AssertionError(f"unexpected git call: {args}")
+
+            with patch.object(runtime, "_run_git", side_effect=fake_run_git), \
+                 patch.object(runtime.subprocess, "run",
+                              return_value=SimpleNamespace(
+                                  returncode=0,
+                                  stdout="feat/env-defect-legacylookup-001")):
+                try:
+                    resolved = runtime._resolve_append_event_claim(trusted, "")
+                    result = resolved["claim_id"]
+                except runtime.AutonomyFailure as exc:
+                    result = f"FAILED:{exc.reason}"
+                except TypeError:
+                    result = "SIGNATURE_UNCHANGED"
+        self.assertEqual(result, "ENV-LEGACY-T-C1")
+
+    def test_no_hardcoded_autonomy_lookup_in_mutation_paths(self):
+        """Static pin: zero hardcoded claim_by_task(ENV-AUTONOMY-001)
+        remain outside the documented safe locations."""
+        source = Path(runtime.__file__).read_text(encoding="utf-8")
+        lines = source.split("\n")
+        hits = []
+        for i, line in enumerate(lines, 1):
+            if 'claim_by_task("ENV-AUTONOMY-001")' in line:
+                hits.append(i)
+        # The only permitted remaining site is _select_stop_claim's
+        # documentation comment; any executable hit is a defect.
+        self.assertEqual(hits, [], f"hardcoded lookups remain at lines {hits}")
+
 if __name__ == "__main__":
     unittest.main(verbosity=2)
