@@ -2760,7 +2760,14 @@ def _cmd_hook(args) -> int:
         return _emit({"systemMessage": message})
 def main(argv: Optional[list[str]] = None) -> int:
     parser = argparse.ArgumentParser(description=__doc__, allow_abbrev=False)
-    sub = parser.add_subparsers(dest="command", required=True)
+    # D5 R5 P1: allow_abbrev=False must apply to SUBPARSERS too — the
+    # parent setting does not propagate. Use a partial to construct every
+    # subparser with abbreviation disabled (blocking --roo=/--r= forms).
+    import functools as _ft
+    sub = parser.add_subparsers(
+        dest="command", required=True,
+        parser_class=_ft.partial(argparse.ArgumentParser, allow_abbrev=False),
+    )
     status = sub.add_parser("status", help="inspect the trusted claim and actual repository binding")
     status.add_argument("--task", default=None, help="task_id (default: the context-selected claim)")
     status.add_argument("--root")

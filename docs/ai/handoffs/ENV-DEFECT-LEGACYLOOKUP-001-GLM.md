@@ -113,3 +113,7 @@ Binding invariants for every changed site:
 ## D5 R4 repairs
 
 - 2026-10-15: P1 — the CLI parser now uses `allow_abbrev=False` (blocking `--roo=` abbreviation at the source); the cross-root scan is defense-in-depth, matching any `--ro*` prefix that argparse would have expanded to `--root` (both VALUE and =VALUE forms; all occurrences). Battery: **58/58 OK + guard 344/344 OK + diff-check clean.**
+
+## D5 R5 repairs
+
+- 2026-10-15: P1 — the subparsers now use `parser_class=functools.partial(argparse.ArgumentParser, allow_abbrev=False)` so abbreviation is disabled at every level (the parent setting does NOT propagate to subparsers by default). Verified by probe: `--roo=` and `--r=` are rejected by the subparser. The defense-in-depth `--ro*` scan remains. Battery: **58/58 OK + guard 344/344 OK + diff-check clean.**
