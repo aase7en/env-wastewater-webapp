@@ -56,3 +56,30 @@ Binding invariants for every changed site:
   follow-up. Next: R3 → merge → D2 RED → D3 → D4 → D5 → D6.
 
 (append-only below this line)
+
+```json:lifecycle
+{
+  "version": 1,
+  "task_id": "ENV-DEFECT-LEGACYLOOKUP-001",
+  "claim_id": "ENV-DEFECT-LEGACYLOOKUP-001-C1",
+  "claim_generation": 1,
+  "goal_id": "goal-legacylookup-001",
+  "codex_hook_observations": [],
+  "events": [
+    {
+      "task_id": "ENV-DEFECT-LEGACYLOOKUP-001",
+      "claim_id": "ENV-DEFECT-LEGACYLOOKUP-001-C1",
+      "claim_generation": 1,
+      "goal_id": "goal-legacylookup-001",
+      "event_type": "GOAL_START",
+      "event_seq": 1,
+      "event_id": "legacylookup-goal-start",
+      "previous_event_id": "GENESIS",
+      "terminal_result": null,
+      "operation_id": null,
+      "operation_outcome": null,
+      "payload": null
+    }
+  ]
+}
+```

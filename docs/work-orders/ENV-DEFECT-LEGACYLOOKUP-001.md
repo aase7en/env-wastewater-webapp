@@ -34,7 +34,7 @@ tokens, read-only) incorporated in full.
 | Site | Function | Disposition |
 | --- | --- | --- |
 | ~874 | `record_hook_observation` (PostToolUse receipts) | USE the context-selected claim for the receipt, session admission, and `claim["handoff_path"]`; validate the binding before writing |
-| ~1417 | `record_kilo_receipt_transition` | Select the context claim; resolve `run_id` only within that claim's handoff |
+| ~1417 | `transition_kilo_receipt` | Select the context claim; resolve `run_id` only within that claim's handoff |
 | ~1553 | `verify_kilo_receipt` | Select the context claim and verify its published handoff; never reinterpret an older claim's receipt as a new claim's |
 | ~1853 | `hook_pretool` (mutation guard) | Select AFTER resolving the invoking git root + branch; bind AUTONOMY_EVENT changes to the selected claim's handoff; reject commands whose explicit --task/--root targets another context |
 | ~2221 | `_resolve_append_event_claim` | Remove the implicit closed-task fallback; with no --task, select by context; an explicit task must MATCH the selected claim before mutation |
