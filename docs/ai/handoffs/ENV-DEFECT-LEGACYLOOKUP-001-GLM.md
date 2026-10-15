@@ -57,7 +57,8 @@ Binding invariants for every changed site:
 
 (append-only below this line)
 
-```json:lifecycle
+<!-- ENV-AUTONOMY-LIFECYCLE:START -->
+```json
 {
   "version": 1,
   "task_id": "ENV-DEFECT-LEGACYLOOKUP-001",
@@ -83,3 +84,4 @@ Binding invariants for every changed site:
   ]
 }
 ```
+<!-- ENV-AUTONOMY-LIFECYCLE:END -->
