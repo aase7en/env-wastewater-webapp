@@ -1,0 +1,12 @@
+declare const __PREVIEW_SHA__: string;
+declare const __PREVIEW_BRANCH__: string;
+declare const __PREVIEW_BUILT__: string;
+import { database } from './client';
+const panel=document.createElement('details');
+panel.id='env-preview-controls';
+panel.innerHTML='<summary>🧪 ข้อมูลจำลอง · พรีวิว ENV</summary><p>ทดลองบันทึก แก้ไข และลบในเบราว์เซอร์นี้ได้ ข้อมูลไม่ส่งเข้าโรงพยาบาล</p><p>ชุดตัวอย่าง: น้ำเสีย 14 วัน<br>บริการ AI / ไฟล์ออนไลน์ / เซนเซอร์จริงไม่ทำงานในพรีวิว</p><p id="env-preview-version"></p><button type="button">คืนค่าข้อมูลจำลอง</button>';
+panel.querySelector('#env-preview-version')!.textContent=`โค้ด ${__PREVIEW_SHA__.slice(0,8)} · ${__PREVIEW_BRANCH__} · สร้าง ${new Date(__PREVIEW_BUILT__).toLocaleString('th-TH')}`;
+panel.querySelector('button')!.onclick=()=>{if(confirm('ล้างข้อมูลทดลองและคืนค่าชุดเริ่มต้น?')) {try { database.reset(); for (const key of Object.keys(localStorage)) { if (key.startsWith('draft:')) localStorage.removeItem(key); } location.reload(); } catch { alert('คืนค่าไม่สำเร็จ กรุณาตรวจสอบพื้นที่เก็บข้อมูลของเบราว์เซอร์'); }}};
+const style=document.createElement('style');
+style.textContent='#env-preview-controls{position:fixed;z-index:10000;left:12px;bottom:100px;max-width:min(340px,calc(100vw - 24px));box-sizing:border-box;border:1px solid #22d3ee;background:#082f49;color:#fff;border-radius:12px;padding:10px 14px;font:14px/1.6 sans-serif;box-shadow:0 4px 24px #0008}#env-preview-controls summary{cursor:pointer;min-height:24px}#env-preview-controls p{margin:8px 0;overflow-wrap:anywhere}#env-preview-controls button{min-height:44px;border:1px solid #67e8f9;border-radius:8px;background:#164e63;color:white;padding:8px 12px;cursor:pointer}';
+document.head.append(style);document.body.append(panel);
