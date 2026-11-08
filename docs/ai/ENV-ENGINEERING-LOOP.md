@@ -1,6 +1,6 @@
 # UTH[AI]-ENV — Goal-First Engineering Loop
 
-Last updated: 2026-09-05
+Last updated: 2026-11-08
 Status: BINDING ENGINEERING PROCESS SSoT
 
 ## 1. Core rule
@@ -517,6 +517,63 @@ Audit branch may fix docs/governance gaps. A production defect found by audit ge
 - visual work requires fabricated operational semantics;
 - CI is green on a different SHA than review target;
 - completing the slice would require an unapproved deferred lane.
+
+## 24A. Typed external waits — pause the loop, never poll it
+
+Origin: GitHub issue #101 (Zcode Goal `CronList` polling livelock after external
+Codex quota exhaustion, 2026-10-06: 56 `CronList` calls every ~22–27 s against an
+unchanged world while PR #100 sat CI-green awaiting an interrupted review) and the
+owner's 2026-10-07 queue-dedupe extension. This rule is binding for every agent,
+harness, goal loop, cron, or automation that works in this repository.
+
+When an external dependency — reviewer/provider quota, rate limit, availability
+window, human authorization gate, or any external system's own recovery clock —
+reports exhaustion or names a future retry boundary:
+
+1. **Classify, do not poll.** Classify the lane `WAITING_EXTERNAL_PROVIDER_RESET`
+   (or an equally typed external wait — never an untyped "keep trying"). External
+   exhaustion is a wait state, not an active work condition.
+2. **Record the wait, then end the iteration.** Persist in the lane's durable
+   record (claim/handoff/registry — not chat): the exact blocked task/claim, the
+   provider/model, a durable state fingerprint of what is awaited (e.g. exact PR
+   head SHA + CI state + review position), and the earliest valid retry trigger
+   (time boundary or material state change). Then end or pause the current Goal
+   iteration. During the wait the reasoning loop makes **no** `CronList`,
+   PR-status, CI-status, or other unchanged-state probes.
+3. **One wake per wait.** Schedule at most one wake, at or after the recorded
+   boundary — or an event-driven wake on a material durable state change. A
+   repeated unchanged blocker fingerprint must never consume successive model
+   iterations; sub-minute model-driven polling loops for external waits are
+   always a defect.
+4. **Timers are not reasoning work.** Never invoke the worker (reasoning) model
+   merely to poll a timer, cron list, or unchanged external state. Countdown and
+   probe duty belongs to the scheduler/watchdog layer, which fires the single
+   wake without spending a model turn.
+5. **Re-pin before retry.** When the wake fires, re-pin the exact PR head and CI
+   state and verify no valid review result was already produced before retrying.
+   If the head moved, review the new exact SHA (§18/§20/§21) — coverage of an
+   older SHA never carries forward.
+6. **Queue dedupe (2026-10-07 extension).** While a lane is in a typed external
+   wait:
+   - new recurring queue items (e.g. supervisor night-watch continuations) are
+     suppressed until the boundary or a material durable state change;
+   - at most one pending wake exists for the blocked lane;
+   - a response failure during the wait must not cause the scheduler to stack
+     additional identical continuations behind it;
+   - steer/attention affordances are surfaced only for a genuine human steering
+     decision, never as a side effect of duplicate automated queue entries;
+   - the dedupe key is lane/task + blocker fingerprint + next-valid-wake
+     boundary.
+7. **No destructive shortcuts.** Do not broad-kill the running harness, delete
+   session/cron storage, edit timer state directly, or repeatedly resume the
+   Goal to escape a wait; that loses execution identity and duplicates work.
+
+A typed wait sits outside the §25 linear progression: the lane parks, the single
+wake returns it to the progression at the boundary, and `CURRENT-WORK.md` (or the
+lane's own durable record per §3C/§17) carries the state. Waiting for applicable
+CI on the exact PR head (§20) is the legitimate scheduled form of this pattern —
+the same single-wake discipline applies; the defect is probing it from the
+reasoning loop.
 
 ## 25. Operating state progression
 
