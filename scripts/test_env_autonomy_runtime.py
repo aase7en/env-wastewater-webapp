@@ -114,7 +114,9 @@ class ProviderAndRoutingTests(unittest.TestCase):
         self.assertFalse(runtime.route_fit("GPT-6.1 Sol", "independent_review", "MUTATION")["safe"])
         self.assertEqual(runtime.select_route("core_engineering")["dispatch_allowed"], False)
         self.assertEqual(runtime.select_route("core_engineering")["route_state"], "ADMISSION_REQUIRED")
-        self.assertEqual(runtime.select_route("read_only_advisory")["route_state"], "UNAVAILABLE")
+        # ENV-FLEET-ROUTER-001: the JEV advisory route reports its recorded
+        # live state (TypeSafe-direct) instead of the stale UNAVAILABLE.
+        self.assertEqual(runtime.select_route("read_only_advisory")["route_state"], "LIVE")
 
     def test_independent_review_defaults_to_fresh_glm_r2_reviewer(self):
         result = runtime.select_route("independent_review")
@@ -210,6 +212,102 @@ class ProviderAndRoutingTests(unittest.TestCase):
         self.assertEqual(runtime.provider_admission(stale, now=now)["reason"], "PROVIDER_EVIDENCE_STALE")
         upstream_down = {**base, "upstream_model_status": "UNAVAILABLE"}
         self.assertEqual(runtime.provider_admission(upstream_down, now=now)["reason"], "UPSTREAM_MODEL_NOT_READY")
+
+
+class FleetRouter001LiveRouteTests(unittest.TestCase):
+    """ENV-FLEET-ROUTER-001 D2 RED-first assertions for the 2026-11-08
+    live-route/admission metadata: JEV via TypeSafe-direct, GPT-6.1 Terra
+    admission, and the owner delegated-decision policy record."""
+
+    def test_jev_route_reports_live_typesafe_direct_state(self):
+        result = runtime.select_route("read_only_advisory")
+        self.assertEqual(result["selected"], True)
+        self.assertEqual(result["model"], "JEV")
+        self.assertEqual(result["lane_kind"], "READ_ONLY_ADVISORY")
+        self.assertEqual(result["route_state"], "LIVE")
+        self.assertEqual(result["dispatch_allowed"], False)
+        self.assertEqual(result["provider_candidate"], "typesafe-direct")
+        self.assertEqual(result["endpoint"], "https://api.typesafe.ai/v1/systemone")
+        self.assertEqual(result["model_id"], "jev-1.14.0")
+        self.assertEqual(result["public_model_id"], "typesafe/jev-1.14")
+        self.assertEqual(
+            result["admission_evidence"], "FULL_DECISION_CONSULT_HTTP_200_2026-11-08"
+        )
+        self.assertEqual(result["boundary"], "STRICTLY_READ_ONLY_ADVISORY")
+        mirror = result["openrouter_mirror"]
+        self.assertEqual(mirror["endpoint"], "https://openrouter.ai/api/alpha/decisions")
+        self.assertEqual(mirror["state"], "KEY_INVALID")
+        self.assertIn("401", mirror["reason"])
+
+    def test_jev_route_fails_closed_without_live_evidence_flag(self):
+        result = runtime.select_route("read_only_advisory", jev_available=False)
+        self.assertEqual(result["route_state"], "UNAVAILABLE")
+        self.assertEqual(result["reason"], "NO_SUPPORTED_LIVE_JEV_ROUTE")
+        self.assertEqual(result["dispatch_allowed"], False)
+
+    def test_terra_admission_record_and_cross_model_fit(self):
+        self.assertEqual(
+            runtime.SUPPORTED_MODELS["gpt-6.1 terra"],
+            {"independent_review", "architecture_consult"},
+        )
+        admission = runtime.TERRA_ADMISSION
+        self.assertEqual(admission["model"], "GPT-6.1 Terra")
+        self.assertEqual(admission["model_id"], "gpt-6.1-terra")
+        self.assertEqual(admission["provider_candidate"], "codex-cli")
+        self.assertIn("codex exec -m gpt-6.1-terra", admission["dispatch_command"])
+        self.assertEqual(admission["route_state"], "ADMITTED")
+        self.assertEqual(
+            admission["admission_evidence"],
+            "FRESH_FINGERPRINT_SINGLE_PROBE_ADMISSION_OK_2026-11-08",
+        )
+        self.assertEqual(
+            admission["admission_session"], "01a1bc81-76c7-7543-b354-7814bc92e3bb"
+        )
+        self.assertEqual(admission["sol_entitlement_block"], "UNCHANGED")
+        self.assertIn("GPT-6 Astra", admission["prohibited_models"])
+        self.assertTrue(
+            runtime.route_fit("GPT-6.1 Terra", "independent_review", "INDEPENDENT_REVIEW")["safe"]
+        )
+        self.assertTrue(
+            runtime.route_fit("GPT-6.1 Terra", "architecture_consult", "READ_ONLY_CONSULT")["safe"]
+        )
+        self.assertFalse(runtime.route_fit("GPT-6.1 Terra", "core_engineering", "MUTATION")["safe"])
+        self.assertEqual(
+            runtime.route_fit("GPT-6.1 Terra", "independent_review", "MUTATION")["reason"],
+            "REVIEWER_ROLE_ONLY",
+        )
+        # Terra is an admitted candidate, never a routing default.
+        self.assertEqual(runtime.select_route("independent_review")["model"], "GLM-5.3 MAX")
+        self.assertEqual(
+            runtime.select_route("independent_review", review_risk_tier="R3")["model"],
+            "GPT-6.1 Sol",
+        )
+
+    def test_delegated_decision_policy_record_and_helper(self):
+        record = runtime.delegated_decision_policy()
+        self.assertEqual(record["policy"], "OWNER_DELEGATED_DECISION_2026-11-08")
+        self.assertEqual(record["mode"], "GOAL_MODE")
+        self.assertEqual(record["delegates"], ["JEV", "GPT-6.1 Terra"])
+        self.assertEqual(record["delegation"], "JOINT_UNANIMOUS")
+        self.assertEqual(
+            record["human_reserved"],
+            [
+                "DOMAIN_OWNER_NUMERIC_GATE_N1_N4",
+                "PERSONAL_HARNESS_STATE",
+                "REAL_DATA_OPERATIONS",
+            ],
+        )
+        self.assertEqual(
+            record["delegates_never_hold"],
+            ["MERGE_AUTHORITY", "REVIEW_ACCEPTANCE_AUTHORITY"],
+        )
+        self.assertIn(
+            "CONSERVATIVE_TOWARD_STANDING_SSOT_INSTRUCTION", record["split_resolution"]
+        )
+        record["delegates"].append("MUTATED")
+        self.assertEqual(
+            runtime.delegated_decision_policy()["delegates"], ["JEV", "GPT-6.1 Terra"]
+        )
 
 
 class BindingAndSelectionTests(unittest.TestCase):

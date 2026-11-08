@@ -40,6 +40,10 @@ ACTIVE_REVIEW_STATUSES = frozenset(("REVIEWING", "REVIEW_REQUESTED", "RE-REVIEW_
 SUPPORTED_MODELS = {
     "gpt-6 luna max": {"orchestration", "routine_integration", "low_risk_analysis"},
     "gpt-6.1 sol": {"independent_review", "hard_engineering", "architecture_consult"},
+    # ENV-FLEET-ROUTER-001: GPT-6.1 Terra admitted 2026-11-08 (Codex CLI
+    # probe; see TERRA_ADMISSION) as a cross-model reviewer/consult
+    # candidate — never a routing default.
+    "gpt-6.1 terra": {"independent_review", "architecture_consult"},
     "glm-5.3 max": {"core_engineering", "security", "data_contract", "bounded_implementation", "independent_review"},
     "glm-5.3 flash": {"read_only_analysis", "low_risk_analysis"},
     "jev": {"read_only_advisory"},
@@ -62,7 +66,8 @@ ROUTE_DEFAULTS = {
     "architecture_consult": ("GPT-6.1 Sol", "READ_ONLY_CONSULT"),
 }
 
-# Per-category allowed lane kinds for the GPT-6.1 Sol proactive routes
+# Per-category allowed lane kinds for the admitted Codex cross-model
+# routes (GPT-6.1 Sol; GPT-6.1 Terra reuses the same lane locks)
 # (mirrors the SKILL.md boundary rows; review stays lane-locked).
 SOL_CATEGORY_LANES = {
     "independent_review": frozenset({"INDEPENDENT_REVIEW"}),
@@ -77,6 +82,83 @@ SOL_CATEGORY_ADMISSION_REASONS = {
     "hard_engineering": "HARD_ENGINEERING_ADMISSION_REQUIRED",
     "architecture_consult": "ARCHITECTURE_CONSULT_ADMISSION_REQUIRED",
 }
+
+# ENV-FLEET-ROUTER-001 (2026-11-08): the JEV read-only advisory route is
+# LIVE via the TypeSafe direct endpoint — full decision consult HTTP 200,
+# model jev-1.14.0. The OpenRouter mirror endpoint exists but this
+# account's OPENROUTER_API_KEY is INVALID (401 "User not found." durable
+# receipts) and is never presented as a working route. Metadata only:
+# the route never dispatches and JEV stays strictly read-only advisory.
+JEV_LIVE_ROUTE = {
+    "provider_candidate": "typesafe-direct",
+    "endpoint": "https://api.typesafe.ai/v1/systemone",
+    "model_id": "jev-1.14.0",
+    "public_model_id": "typesafe/jev-1.14",
+    "auth": "BEARER_TYPESAFE_API_KEY",
+    "admission_evidence": "FULL_DECISION_CONSULT_HTTP_200_2026-11-08",
+    "admission_receipt": "docs/ai/handoffs/ENV-FLEET-ROUTER-001-GLM.md",
+    "openrouter_mirror": {
+        "endpoint": "https://openrouter.ai/api/alpha/decisions",
+        "state": "KEY_INVALID",
+        "reason": "OPENROUTER_API_KEY_INVALID_401_USER_NOT_FOUND",
+    },
+    "boundary": "STRICTLY_READ_ONLY_ADVISORY",
+}
+
+# ENV-FLEET-ROUTER-001 (2026-11-08): GPT-6.1 Terra admission record —
+# fresh-fingerprint single probe ADMISSION_OK via the ChatGPT-desktop
+# Codex CLI. Terra is eligible as a cross-model reviewer/consult
+# candidate only, never a routing default and never a dispatch
+# authorization. GPT-6 Astra stays prohibited; the gpt-6.1-sol
+# entitlement-block record is unchanged.
+TERRA_ADMISSION = {
+    "model": "GPT-6.1 Terra",
+    "model_id": "gpt-6.1-terra",
+    "provider_candidate": "codex-cli",
+    "dispatch_command": (
+        "/Applications/ChatGPT.app/Contents/Resources/codex-cli/CodexCLI.app/"
+        "Contents/MacOS/codex exec -m gpt-6.1-terra"
+    ),
+    "route_state": "ADMITTED",
+    "admission_evidence": "FRESH_FINGERPRINT_SINGLE_PROBE_ADMISSION_OK_2026-11-08",
+    "admission_session": "01a1bc81-76c7-7543-b354-7814bc92e3bb",
+    "admission_receipt": "docs/ai/handoffs/ENV-FLEET-ROUTER-001-GLM.md",
+    "eligible_categories": ("independent_review", "architecture_consult"),
+    "prohibited_models": ("GPT-6 Astra",),
+    "sol_entitlement_block": "UNCHANGED",
+}
+
+# ENV-FLEET-ROUTER-001: owner delegated-decision policy (2026-11-08,
+# Goal mode). Non-human decisions are delegated JOINTLY to JEV and
+# GPT-6.1 Terra. This record is routing metadata: it grants no claim,
+# dispatch, merge, or review-acceptance authority.
+DELEGATED_DECISION_POLICY = {
+    "policy": "OWNER_DELEGATED_DECISION_2026-11-08",
+    "mode": "GOAL_MODE",
+    "delegates": ("JEV", "GPT-6.1 Terra"),
+    "delegation": "JOINT_UNANIMOUS",
+    "delegated_scope": "NON_HUMAN_DECISIONS",
+    "human_reserved": (
+        "DOMAIN_OWNER_NUMERIC_GATE_N1_N4",
+        "PERSONAL_HARNESS_STATE",
+        "REAL_DATA_OPERATIONS",
+    ),
+    "delegates_never_hold": ("MERGE_AUTHORITY", "REVIEW_ACCEPTANCE_AUTHORITY"),
+    "split_resolution": (
+        "CONSERVATIVE_TOWARD_STANDING_SSOT_INSTRUCTION_WITH_BOTH_VOTES_RECORDED"
+    ),
+    "receipt": "docs/ai/handoffs/ENV-FLEET-ROUTER-001-GLM.md",
+}
+
+
+def delegated_decision_policy() -> dict:
+    """Queryable defensive copy of the owner delegated-decision policy."""
+    return {
+        **DELEGATED_DECISION_POLICY,
+        "delegates": list(DELEGATED_DECISION_POLICY["delegates"]),
+        "human_reserved": list(DELEGATED_DECISION_POLICY["human_reserved"]),
+        "delegates_never_hold": list(DELEGATED_DECISION_POLICY["delegates_never_hold"]),
+    }
 
 
 class AutonomyFailure(Exception):
@@ -262,7 +344,7 @@ def route_fit(model: str, task_category: str, lane_kind: str) -> dict:
         return {"safe": False, "reason": "TASK_FIT_MISMATCH"}
     if model_key == "jev" and lane_kind != "READ_ONLY_ADVISORY":
         return {"safe": False, "reason": "JEV_READ_ONLY_ONLY"}
-    if model_key == "gpt-6.1 sol":
+    if model_key in ("gpt-6.1 sol", "gpt-6.1 terra"):
         allowed_lanes = SOL_CATEGORY_LANES.get(category)
         if allowed_lanes is None or lane_kind not in allowed_lanes:
             reason = (
@@ -279,7 +361,7 @@ def select_route(
     task_category: str,
     lane_kind: Optional[str] = None,
     *,
-    jev_available: bool = False,
+    jev_available: bool = True,
     review_risk_tier: Optional[str] = None,
 ) -> dict:
     """Choose the default task-fit model without treating a label as live admission.
@@ -292,6 +374,10 @@ def select_route(
     hard_engineering (bounded implementation, lane MUTATION) and
     architecture_consult (read-only design, lane READ_ONLY_CONSULT) —
     admission-gated and never dispatched by this selector.
+    ENV-FLEET-ROUTER-001 (2026-11-08): the JEV read-only advisory route is
+    LIVE via TypeSafe-direct (admission receipts in the fleet-router
+    handoff); an explicit jev_available=False still fails closed to
+    UNAVAILABLE.
     """
     category = _nonempty(task_category, "task_category").casefold()
     selected = ROUTE_DEFAULTS.get(category)
@@ -310,11 +396,17 @@ def select_route(
     fit = route_fit(model, category, effective_lane)
     if not fit["safe"]:
         return {"selected": False, "model": model, "lane_kind": effective_lane, "reason": fit["reason"]}
-    if model == "JEV" and not jev_available:
+    if model == "JEV":
+        if not jev_available:
+            return {
+                "selected": True, "model": model, "lane_kind": effective_lane,
+                "route_state": "UNAVAILABLE", "dispatch_allowed": False,
+                "reason": "NO_SUPPORTED_LIVE_JEV_ROUTE",
+            }
         return {
             "selected": True, "model": model, "lane_kind": effective_lane,
-            "route_state": "UNAVAILABLE", "dispatch_allowed": False,
-            "reason": "NO_SUPPORTED_LIVE_JEV_ROUTE",
+            "route_state": "LIVE", "dispatch_allowed": False, "reason": None,
+            **JEV_LIVE_ROUTE,
         }
     requires_external_admission = model.startswith("GLM-") or model == "JEV" or model == "GPT-6.1 Sol"
     return {
