@@ -1,6 +1,6 @@
 # ENV-DEFECT-TYPEDWAIT-001 — Typed External-Wait Rule, #101 loop-doc slice (Work Order)
 
-Status: CLAIMED (transition merged as 3d269cd8) — D3 delivered, frozen head at REVIEW_REQUESTED. Task: `ENV-DEFECT-TYPEDWAIT-001` (the recorded follow-up from the ENV-DEFECT-LEGACYLOOKUP-001 closeout — GitHub issue #101's typed-external-wait rule). Claim: `ENV-DEFECT-TYPEDWAIT-001-C1` (generation 1). Base: claim base dcdf7dfcd5a42aadf6a0309174d46f68138f65b1; implementation branch feat/env-defect-typedwait-001 cut from 3d269cd8e9625aa51ad100b563553b3562c9c6cb (claim transition merge). Registered by: GLM-5.3 MAX coordinator (claim-transition author). Review owner (implementation PR): independent exact-SHA review — R2 default fresh GLM-5.3 MAX reviewer context per the owner routing policy 2026-10-07 (cross-model R3 unavailable in this execution session; recorded honestly in the handoff; GPT-6 Astra prohibited; never author-and-approve; never silent downgrade).
+Status: CLOSED — delivered via PR #149 (merged dd2a095); closeout transition pending. Task: `ENV-DEFECT-TYPEDWAIT-001` (the recorded follow-up from the ENV-DEFECT-LEGACYLOOKUP-001 closeout — GitHub issue #101's typed-external-wait rule). Claim: `ENV-DEFECT-TYPEDWAIT-001-C1` (generation 1). Base: claim base dcdf7dfcd5a42aadf6a0309174d46f68138f65b1; implementation branch feat/env-defect-typedwait-001 cut from 3d269cd8e9625aa51ad100b563553b3562c9c6cb (claim transition merge). Registered by: GLM-5.3 MAX coordinator (claim-transition author). Review owner (implementation PR): independent exact-SHA review — R2 default fresh GLM-5.3 MAX reviewer context per the owner routing policy 2026-10-07 (cross-model R3 unavailable in this execution session; recorded honestly in the handoff; GPT-6 Astra prohibited; never author-and-approve; never silent downgrade).
 
 ## Authorization basis (adversarially reviewed at the transition)
 
@@ -14,7 +14,7 @@ Owner extension (comment 2026-10-07T00:14:30Z): while the lane correctly showed 
 
 ## Deliverable design (D1) — §24A, frozen text
 
-Insertion point: `docs/ai/ENV-ENGINEERING-LOOP.md`, section `# F. STOP RULES` — new `## 24A. Typed external waits — pause the loop, never poll it`, placed between §24 (Stop/escalate when) and §25 (Operating state progression). Lettered insertion follows the §3A/§3B/§3C precedent; §25–§27 keep their numbers and every existing cross-reference ("engineering-loop §25", "§24–27") stays valid. Header `Last updated:` bumped to the delivery date. The frozen deliverable text is embedded verbatim in the "Frozen §24A record" section below; D3 copied it exactly.
+Insertion point: `docs/ai/ENV-ENGINEERING-LOOP.md`, section `# F. STOP RULES` — new `## 24A. Typed external waits — pause the loop, never poll it`, placed between §24 (Stop/escalate when) and §25 (Operating state progression). Lettered insertion follows the §3A/§3B/§3C precedent; §25–§27 keep their numbers and every existing cross-reference ("engineering-loop §25", "§24–27") stays valid. Header `Last updated:` bumped to the delivery date. The frozen deliverable is pinned by the delivered loop-doc text at the reviewed frozen head 1de3dfa495557619d167eb8a61b684ac5380ab5e (the §24A section as merged), with the coverage table below mapping every invariant clause to that delivered text.
 
 ### Invariant → clause coverage table (frozen)
 
@@ -38,11 +38,11 @@ Insertion point: `docs/ai/ENV-ENGINEERING-LOOP.md`, section `# F. STOP RULES` �
 
 ## Coverage-RED contract (D2)
 
-Docs-only RED = proven absence on the base, recorded in the handoff: at the claim base `dcdf7df`, `docs/ai/ENV-ENGINEERING-LOOP.md` contains zero occurrences of `WAITING_EXTERNAL_PROVIDER_RESET`, no external-wait/no-polling/single-wake/dedupe discipline anywhere in the doc, and no section references issue #101. D4 requires the post-change inverse: every row of the coverage table verifiably present in the delivered §24A (grep-able markers: the lane literal, `CronList`, "at most one", the dedupe-key phrase), insertion exactly between §24 and §25 with §25–§27 unrenumbered, header `Last updated:` bumped, `git diff --check` clean, and `git diff --name-only` exactly the three mutable files. No frontend E2E applies (§20 path-filtered; docs-only change).
+Docs-only RED = proven absence on the base, recorded in the handoff: the D2 greps ran at the branch tip `3d269cd8` (the loop doc was byte-identical to the claim base `dcdf7df` at that point — the claim transition touched only `docs/ai/CURRENT-WORK.md`), and `docs/ai/ENV-ENGINEERING-LOOP.md` contains zero occurrences of `WAITING_EXTERNAL_PROVIDER_RESET`, no external-wait/no-polling/single-wake/dedupe discipline anywhere in the doc, and no section references issue #101. D4 requires the post-change inverse: every row of the coverage table verifiably present in the delivered §24A (grep-able markers: the lane literal, `CronList`, "at most one", the dedupe-key phrase), insertion exactly between §24 and §25 with §25–§27 unrenumbered, header `Last updated:` bumped, `git diff --check` clean, and `git diff --name-only` exactly the three mutable files. No frontend E2E applies (§20 path-filtered; docs-only change).
 
 ## Frozen §24A record
 
-(The §24A text delivered into the loop doc is reproduced in this work order's git history at the D3 commit; it is byte-identical to the coverage-table clauses above.)
+The frozen deliverable text is pinned by the delivered loop doc itself: `## 24A. Typed external waits — pause the loop, never poll it` in `docs/ai/ENV-ENGINEERING-LOOP.md` at the reviewed frozen head `1de3dfa495557619d167eb8a61b684ac5380ab5e` (PR #149 head; byte-identical on main via the expected-head merge `dd2a095`). The coverage table above is the clause-by-clause map onto that delivered text and is the frozen design record. (An earlier revision pointed at "this work order's git history at the D3 commit" — circular, because the implementation branch carries a single commit and no pre-delivery WO revision exists in its history; replaced with the truthful pinning at closeout, review P2.)
 
 ## Scope (mutable, exactly)
 
