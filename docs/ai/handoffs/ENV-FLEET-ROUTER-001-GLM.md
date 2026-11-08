@@ -233,7 +233,8 @@ tokens used
 - Source file: `/tmp/jev-consult-2026-11-08.json`.
 
 ```json
-{"error":{"message":"User not found.","code":401}}```
+{"error":{"message":"User not found.","code":401}}
+```
 
 ### Receipt 4 — Terra OpenRouter-mirror consult attempt (key-invalid proof)
 
@@ -246,7 +247,8 @@ tokens used
 - Source file: `/tmp/terra-consult-2026-11-08.json`.
 
 ```json
-{"error":{"message":"User not found.","code":401}}```
+{"error":{"message":"User not found.","code":401}}
+```
 
 ## D4 — battery receipts
 
@@ -285,3 +287,42 @@ never silent downgrade). The AUTHORIZATION BASIS (owner 2026-11-08
 Goal-mode delegation instruction + the unanimous Jev/Terra D5
 `run_small_claim_now` decision) is an explicit adversarial check item —
 insufficient basis parks the claim unmerged.
+
+## D6 CLOSEOUT RECEIPT
+
+- D6 (2026-11-08): expected-head merge — **PR #152 merged as `a0cb6d0`**
+  (parents: claim-transition merge `3b5ab26` + reviewed frozen head
+  `301a621`; ancestry verified). Claim transition: PR #151 merged as
+  `3b5ab26` — R1 CHANGES_REQUIRED (1 P2: PR85 delegate split misrecorded
+  as unanimous; 2 P3: brace indentation, probe wording) repaired at
+  `3569109c`, then R2 fresh-GLM re-review APPROVED; verdicts in the PR
+  trail, review receipt `pull/151#issuecomment-6725960079`.
+  Implementation review: fresh GLM-5.3 MAX R2 at the exact frozen head
+  `301a621` — **APPROVED, no P1/P2; 1 non-blocking P3 repaired in this
+  closeout** (`pull/152#issuecomment-6726199168`), with the D2 truthful
+  RED reproduced by the reviewer in a detached worktree at `da09200`
+  (`FAILED (failures=2, errors=2)` with 58 passing, runtime untouched in
+  the test commit). Exact-main verification at `a0cb6d0`: runtime 62/62 +
+  guard 344/344 OK + `validate-registry` `ok:true` (17 claims, block
+  sha256 `8e1001a8…`).
+- Review-routing honesty: BOTH transitions (claim PR #151 and
+  implementation PR #152) were reviewed by a fresh GLM-5.3 MAX reviewer
+  context (R2 default per the owner routing policy 2026-10-07);
+  cross-model R3 was unused in this execution session even though
+  `gpt-6.1 terra` is now recorded admitted and eligible as cross-model
+  reviewer — stated plainly, never a silent downgrade.
+- Review finding repaired in this closeout (closeout branch
+  `docs/env-fleet-router-001-closeout`, base `a0cb6d0`): **P3** — the two
+  trailing code fences in the D3 receipts (Receipt 3, JEV
+  OpenRouter-mirror key-invalid proof; Receipt 4, Terra
+  OpenRouter-mirror key-invalid proof) had the closing ``` on the same
+  line as the JSON body, so neither fenced block closed; each closing
+  fence moved to its own line so both blocks now render as fenced JSON.
+- Closeout transition: registry CLOSED at generation 1; fence moved to
+  `a0cb6d0` + the base-state block sha256 `8e1001a8…` (guard module);
+  frontier bullet → delivered; one-next-safe-action summary reconciled
+  with the single active-proposed-claim wording removed (remaining
+  follow-ups unchanged: 001C DEFER delegate annotation, hooks DEFER
+  annotation, numeric split-recommendation annotation, Building
+  WAITING_EXTERNAL). Scope lock released at generation 1; CLOSED confers
+  no fresh mutation authority.
