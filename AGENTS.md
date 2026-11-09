@@ -128,4 +128,3 @@ On a fresh `/init` or resumed ENV agent session, keep the standard freshness + o
 3. `docs/ai/handoffs/ENV-WWTP-3D-V3-FUTURE.md` only when resuming this work;
 4. **always** `docs/ai/digital-twin/11-UTHAI-ACTIVATED-SLUDGE-PROCESS-KNOWLEDGE.md` before wastewater-flow or digital-twin process behavior edits.
 Do not copy the archive into `frontend/` or treat its tank volumes, pipes, bubbles, arrows, colors or pump states as validated/current operations. Use existing Twin + Process/Data and fresh `CURRENT-WORK` claim authority. This pointer does **not** grant implementation/mutation authority.
-
