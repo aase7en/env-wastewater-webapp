@@ -119,3 +119,13 @@ tracked there too.
 ## Shared prompt placement protocol
 
 When handing a prompt/instruction to the user for another AI agent, session, Goal, CLI, or UI surface, follow the canonical A-Wiki protocol at `aase7en/A-Wiki:docs/protocols/prompt-placement-protocol.md`. Before the prompt, state exact `PLACEMENT`, `MODE`, `PURPOSE`, whether it replaces/appends/interrupts/queues, and `WHEN TO SEND`. This placement contract does not change ENV task/claim/worktree/review authority, PHI boundaries, or the active Roadmap.
+
+## WWTP 3D V3 — archival prototype / `/init` routing
+
+On a fresh `/init` or resumed ENV agent session, keep the standard freshness + ownership gate above. For requests involving the future **animated 3D wastewater plant** read:
+1. `docs/ai/digital-twin/prototypes/wwtp-animated-v3/README.md` (source HTML archive, **not production**);
+2. `docs/ai/digital-twin/13-WWTP-3D-V3-FUTURE-ARCHITECTURE.md` and `docs/work-orders/ENV-WWTP-3D-V3-FUTURE.md` (future-only plan);
+3. `docs/ai/handoffs/ENV-WWTP-3D-V3-FUTURE.md` only when resuming this work;
+4. **always** `docs/ai/digital-twin/11-UTHAI-ACTIVATED-SLUDGE-PROCESS-KNOWLEDGE.md` before wastewater-flow or digital-twin process behavior edits.
+Do not copy the archive into `frontend/` or treat its tank volumes, pipes, bubbles, arrows, colors or pump states as validated/current operations. Use existing Twin + Process/Data and fresh `CURRENT-WORK` claim authority. This pointer does **not** grant implementation/mutation authority.
+

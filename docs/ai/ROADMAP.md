@@ -253,6 +253,13 @@ legibility; operational data is handled safely — an MP4 must never present a
 scenario as an observed hospital operation; offline/batch export preferred.**
 Existing priorities are not pre-empted.
 
+
+### ENV-WWTP-3D-V3-FUTURE — animated full-process plant reference (ARCHIVED PROTOTYPE / NOT CLAIMED)
+
+Owner request 2026-11-09: preserve the runnable HTML Three.js V3 concept with raised basin walls, navigable isometric scene, animated educational water/flow arrows, Thai hover labels and sectional clipping as an optional later React Three Fiber enhancement. Archive and limitations: `docs/ai/digital-twin/prototypes/wwtp-animated-v3/README.md`. Future architecture/acceptance: `docs/ai/digital-twin/13-WWTP-3D-V3-FUTURE-ARCHITECTURE.md`; future Work Order: `docs/work-orders/ENV-WWTP-3D-V3-FUTURE.md`; resumption: `docs/ai/handoffs/ENV-WWTP-3D-V3-FUTURE.md`.
+
+This is a **reference/backlog**, not a release/implementation claim. Integrate through existing Twin/Flow/P003 callouts; coordinate with P002 water-motion and ENV-VIS-STORY's separated process explanation/scenario contracts. As-built volume/elevation/route confirmation is pending: the process knowledge document records 50 and 15.42 m³ sketch annotations; older visual concepts mention different numbers. No operational telemetry, simulated values, automatic flow or per-equipment state can be inferred from visuals.
+
 ## M5 — External Environmental Intelligence
 
 ### ENV-INT-P001 - Source + provenance contract - CLOSED / MERGED
