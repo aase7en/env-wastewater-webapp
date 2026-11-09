@@ -9,7 +9,7 @@
 ## Source and scope
 
 See `docs/ai/digital-twin/prototypes/wwtp-animated-v3/README.md` for archived interactive V3 HTML and limitations, `13-WWTP-3D-V3-FUTURE-ARCHITECTURE.md` for design, and `docs/work-orders/ENV-WWTP-3D-V3-FUTURE.md` for the future contract.
-The previous React Three Fiber V3 ZIP remains a conversation prototype and is **not** imported into production or this archive. Any future port should be validated against current source and typing rather than treated as already integrated.
+The eight source files extracted from the earlier React Three Fiber V3 ZIP are now archived under `docs/ai/digital-twin/prototypes/wwtp-animated-v3/react-source/`. They are **not** imported into production or type-checked against the live ENV app; a future port must revalidate imports/types/dependencies and current design.
 
 ## Rehydrate without chat
 

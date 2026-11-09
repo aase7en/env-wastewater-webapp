@@ -9,7 +9,7 @@ Preserve the actual runnable interactive V3 HTML as a source artifact under `doc
 
 ## Current preservation scope
 
-- New reference-only HTML and README
+- New reference-only HTML, extracted React Three Fiber V3 source (eight files), and README
 - New `13-WWTP-3D-V3-FUTURE-ARCHITECTURE.md`
 - New lane handoff `docs/ai/handoffs/ENV-WWTP-3D-V3-FUTURE.md`
 - Discoverability updates only in `AGENTS.md` and `docs/ai/ROADMAP.md`

@@ -6,7 +6,7 @@
 ## 1. Scope and source hierarchy
 
 The requested experience is a clean high-angle isometric 3D model reflecting the user's plant sketch: influent/pump sump on the left, control building in the middle, aeration upper-right, secondary clarifier right-middle, sludge drying beds lower-center, chlorine contact/final discharge lower-right. Raised concrete parapets above ground, visible water, pipes, equipment and accessible Thai labels are desired.
-The archival concept is **not survey-grade BIM** and its coordinates/elevations/pipe diameters/volumes are provisional. Before building process behavior, consult:
+The archival concept (standalone HTML plus extracted `prototypes/wwtp-animated-v3/react-source/` source files) is **not survey-grade BIM** and its coordinates/elevations/pipe diameters/volumes are provisional. Before building process behavior, consult:
 - `docs/ai/digital-twin/11-UTHAI-ACTIVATED-SLUDGE-PROCESS-KNOWLEDGE.md` (user-confirmed topology);
 - `docs/ai/digital-twin/03-MICRO-STEP-BOARD.md` (P002 water motion backlog; P003 callouts completed);
 - `docs/ai/design/ENV-EXPERIENCE-MASTER-PLAN.md` and `ENV-PRODUCT-EXPERIENCE-GOAL.md`;
