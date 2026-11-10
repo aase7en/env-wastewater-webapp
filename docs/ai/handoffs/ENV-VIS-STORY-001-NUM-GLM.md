@@ -215,7 +215,7 @@ an effect computes ONLY when BOTH the declared spec status AND the input
 evidence status are `confirmed-by-owner` AND `period === "daily"` (the
 scenario evaluation period semantics). Fail-closed reasons: absent/null/
 non-finite base → `no-activity-base`; pending/unconfirmed (declaration or
-evidence) → `activity-base-unconfirmed`; period mismatch → 
+evidence) → `activity-base-unconfirmed`; period mismatch →
 `activity-base-period-mismatch`. The declared spec status type widened to
 `ScenarioActivityBaseStatus` (catalog stays `pending-owner-values`).
 Behavior today unchanged: the UI call site passes null (omitted
