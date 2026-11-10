@@ -287,3 +287,101 @@ Environment notes unchanged from D4 (same worktree; `frontend/.env`
 placeholder guard; battery via `npm install` resolution; chromium v1228).
 
 (append-only below this line)
+
+## D5-R2 REPAIR RECORD (cross-model review ROUND 2, appended 2026-11-10)
+
+The cross-model R2 verdict by **GPT-6.1 Terra (Codex CLI, session
+`01a1c4e8`)** CLOSED the original 5 findings and opened 3 NEW findings
+inside the D5 repair code itself, verdict CHANGES_REQUIRED. All three were
+repaired at the D5 head `727b2a667e67f0c67c55f62c83274fb55f6b6a18` with
+TDD discipline held (tests first; truthful RED recorded before
+implementation). Scope stayed exactly within the 11 mutable files (2
+touched: `process-scenario.ts`, `process-scenario.test.ts`).
+
+### Findings (quoted) → repairs (1:1)
+
+**R2-P2-1 — "evidence sourceId not validated: the
+ScenarioActivityBaseEvidence envelope carries sourceId but
+deriveScenarioSensitivities never checks it."** Repair: a new gate in
+`deriveScenarioSensitivities` — the evidence `sourceId` must be a
+non-empty string (runtime `typeof` guard, so a missing property also
+fails closed instead of crashing) AND strictly equal to the scenario
+spec's declared `activityBase.sourceId`; otherwise the spec omits with a
+new fail-closed reason `activity-base-source-mismatch` (reason union
+extended) + Thai note
+("แหล่งอ้างอิงของฐานกิจกรรมไม่ตรงกับแหล่งที่ประกาศในสถานการณ์ (sourceId) —
+ไม่แสดงผลกระทบ (ไม่แทนค่าศูนย์)"). Gate order: after `no-activity-base`,
+before `activity-base-unconfirmed` (evidence identity is checked before
+admission status). Tests: empty-string sourceId → omitted; mismatched
+sourceId (`"other-reference"` vs declared `"relay-duty-cycle-reference"`)
+→ omitted; the existing confirmed fixture (matching sourceId) → still
+computes (control).
+
+**R2-P2-2 — "factor metadata gate throws on missing/null properties:
+process-scenario.ts ~line 365 calls .trim() on factor.source/factor
+.version; a runtime input missing those properties (or null) throws
+TypeError instead of the fail-closed invalid-factor-metadata omission."**
+Repair: runtime type-guards run FIRST inside the same admission
+condition — `typeof factor.source === "string"` and
+`typeof factor.version === "string"` are required before the existing
+trim/emptiness/unit checks; anything else (property absent, null,
+non-string) omits with the existing `invalid-factor-metadata` reason, no
+throw. Tests: factor with `source` absent, `source` null, `version`
+absent, `version` null → all omitted `invalid-factor-metadata` with
+`expect(run).not.toThrow()` assertions plus a separate deterministic
+re-invocation for the result pins (the pure derivation is invoked twice
+by design — tsc-clean capture); malformed factors are never multiplied.
+
+**R2-P3-3 — "formatScenarioFactorVersion year regex over-matches: the
+\b-bounded year pattern also converts digits inside decimals and version
+identifiers (Terra reproduced: \"0.2022\" → \"0.2565 พ.ศ. (2022 ค.ศ.)\";
+\"v1.2022\" likewise)."** Repair: year conversion is now scoped to
+STANDALONE tokens via a split-token transform with explicit neighbor
+checks — a year-like token is converted only when it is NOT immediately
+preceded or followed by a letter, digit, underscore, or dot. Deliberately
+implemented WITHOUT regex lookbehind: Vite's default browser target
+includes Safari 16, and lookbehind requires Safari 16.4+ (the finding's
+"if any doubt" branch), so the transform keeps the formatting
+deterministic across every supported engine. Conversion behavior kept
+for legit tokens: `"2022"` standalone; `"2022-2024"` (BOTH years — the
+hyphen is not a blocking neighbor); `"ปี 2026"`. The input
+`factor.version` string is never mutated (display-only contract kept).
+Tests: `"0.2022"` unchanged; `"v1.2022"` unchanged; `"0.4750"`
+unchanged; `"2022-2024"` → both converted; standalone `"2022"` and
+`"ปี 2026"` → converted; selective-in-one-string case
+(`"v1.2022 (ปี 2022)"`); real-TGO-version regression (two years convert,
+`0.4750`/`0.0812` intact); input-never-mutated pin.
+
+### D5-R2 RED receipt (before implementation)
+
+Focused vitest `process-scenario.test.ts`: **10 failed / 53 passed
+(63)** — all 10 failures are exactly the new behavior-changing R2
+contracts (P2-1 ×2, P2-2 ×5, P3-3 ×3 — the Terra reproductions). The 6
+remaining new tests PASSED at RED and are recorded as behavior pins, not
+RED failures (P2-1 matching-source control; P3-3 `"0.4750"`, range
+conversion, standalone-year conversion, real-TGO regression,
+input-never-mutated — all pin behavior the D5 code already had). No e2e
+change required or made: the repairs are lib-gates only; the UI call
+path passes a null base and the N4 chip still renders nothing today
+(20/20 spec unchanged).
+
+### Battery after R2 repairs
+
+| Gate | Result |
+| --- | --- |
+| Focused vitest (process-scenario + environmental-flow) | **81/81** (65 + 16 new) |
+| FULL vitest | **463/463** (28 files; 447 + 16 new) |
+| `tsc -b` | clean (exit 0) |
+| lint (oxlint) | **0 errors**, 12 pre-existing warnings |
+| /flow Playwright FULL spec | **20/20** (unchanged) |
+| Guard suite | **344 passed** (450 subtests) |
+| Runtime suite | **62 passed** (32 subtests) |
+| `git diff --check` (bd5a941..HEAD and worktree) | clean |
+| Scope-exact | `git diff --name-only bd5a941..HEAD` = exactly the 11 mutable files; R2 repair commit touches 2 of them (+ this handoff append) |
+| `docs/ai/CURRENT-WORK.md` diff | **still empty (0 lines)** |
+
+Environment notes unchanged from D4/D5 (same worktree; `frontend/.env`
+placeholder guard; battery via `npm install` resolution; chromium v1228).
+Review routing unchanged: the implementing lane stops at
+REVIEW_REQUESTED — the R2 reviewer (or the owner) owns the next verdict
+and the D6 merge. NEVER merged by this lane.

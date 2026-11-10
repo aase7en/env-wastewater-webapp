@@ -155,7 +155,9 @@ export type ScenarioActivityBaseStatus = "confirmed-by-owner" | "pending-owner-v
  * D5 P2-3 — typed activity-base evidence envelope. A bare number is never an
  * acceptable base: provenance (source id), owner-admission status, and the
  * evaluation period must travel with the value. The period must match the
- * scenario evaluation semantics (per-day, "daily").
+ * scenario evaluation semantics (per-day, "daily"). R2 P2-1: the sourceId
+ * must be a non-empty string and strictly equal to the scenario spec's
+ * declared activityBase.sourceId at derivation time.
  */
 export interface ScenarioActivityBaseEvidence {
   sourceId: string;
@@ -239,12 +241,15 @@ export interface ScenarioSensitivityOmission {
   /**
    * Fail-closed reason: the sensitivity renders NOTHING, never zero.
    * D5 P2-2 adds `invalid-factor-metadata` (missing citation/version/unit);
-   * D5 P2-3 adds the activity-base evidence gates.
+   * D5 P2-3 adds the activity-base evidence gates; R2 P2-1 adds
+   * `activity-base-source-mismatch` (evidence sourceId must be a non-empty
+   * string strictly equal to the declared activity-base source).
    */
   reason:
     | "no-factor"
     | "invalid-factor-metadata"
     | "no-activity-base"
+    | "activity-base-source-mismatch"
     | "activity-base-unconfirmed"
     | "activity-base-period-mismatch";
   note: string;
@@ -280,17 +285,48 @@ export function formatScenarioNumber(value: number | null): string | null {
  * in a factor version identifier are rendered as พ.ศ. (CE + 543) while the
  * original CE digits stay inline in parentheses for traceability. The
  * contract expects CE-authored version strings (Thai พ.ศ. years must not be
- * embedded in version identifiers); quantity-like tokens (0.4750, GWP set
- * ids) never match the year pattern. The underlying factor.version string is
+ * embedded in version identifiers); the underlying factor.version string is
  * never mutated — formatting is display-only.
+ *
+ * R2 P3-3 — year-token scoping: ONLY STANDALONE year-like tokens convert.
+ * A token immediately preceded or followed by a word character or a dot is
+ * part of a quantity/version identifier (digits inside decimals like
+ * "0.2022"/"0.4750", dotted identifiers like "v1.2022") and must stay
+ * untouched. Hyphen-separated ranges ("2022-2024") still convert BOTH
+ * years, and space-separated tokens ("ปี 2026") convert. Implemented as a
+ * split-token transform with explicit neighbor checks instead of regex
+ * lookbehind: Vite's default browser target includes Safari 16, which does
+ * not support lookbehind (added in Safari 16.4) — the transform keeps the
+ * formatting deterministic across every supported engine.
  */
-const FACTOR_VERSION_CE_YEAR_PATTERN = /\b(1[6-9]\d{2}|2\d{3})\b/g;
+const FACTOR_VERSION_CE_YEAR_PATTERN = /(?:1[6-9]\d{2}|2\d{3})/g;
+/** Characters that make an adjacent year-like token NON-standalone. */
+const FACTOR_VERSION_YEAR_NEIGHBOR = /[A-Za-z0-9_.]/;
 
 export function formatScenarioFactorVersion(version: string): string {
-  return version.replace(FACTOR_VERSION_CE_YEAR_PATTERN, (ceToken) => {
-    const ce = Number.parseInt(ceToken, 10);
-    return `${ce + 543} พ.ศ. (${ceToken} ค.ศ.)`;
-  });
+  const segments: string[] = [];
+  let cursor = 0;
+  let match: RegExpExecArray | null;
+  while ((match = FACTOR_VERSION_CE_YEAR_PATTERN.exec(version)) !== null) {
+    const token = match[0];
+    const start = match.index;
+    const end = start + token.length;
+    const prevChar = start > 0 ? version[start - 1] : "";
+    const nextChar = end < version.length ? version[end] : "";
+    segments.push(version.slice(cursor, start));
+    if (
+      !FACTOR_VERSION_YEAR_NEIGHBOR.test(prevChar) &&
+      !FACTOR_VERSION_YEAR_NEIGHBOR.test(nextChar)
+    ) {
+      const ce = Number.parseInt(token, 10);
+      segments.push(`${ce + 543} พ.ศ. (${token} ค.ศ.)`);
+    } else {
+      segments.push(token);
+    }
+    cursor = end;
+  }
+  segments.push(version.slice(cursor));
+  return segments.join("");
 }
 
 /**
@@ -328,14 +364,18 @@ export function deriveScenarioWasDifference(
 
 /**
  * N4 — resource/emission sensitivities (owner-approved contingent
- * 2026-11-10; evidence-gated per D5 repairs). A sensitivity renders ONLY
- * where an owner-confirmed, per-day activity base AND a fully-cited
- * kgCO2e/kWh factor exist; otherwise it is OMITTED with a fail-closed
- * reason (render nothing, never zero). No factor = no effect. Gates, in
- * order: factor presence/kind/value (`no-factor`), factor citation
- * metadata (`invalid-factor-metadata`, D5 P2-2), base presence/finite
- * (`no-activity-base`), owner confirmation — both the DECLARED spec status
- * and the input evidence status must be confirmed-by-owner
+ * 2026-11-10; evidence-gated per D5 repairs + R2 repairs). A sensitivity
+ * renders ONLY where an owner-confirmed, per-day activity base from the
+ * DECLARED source AND a fully-cited kgCO2e/kWh factor exist; otherwise it
+ * is OMITTED with a fail-closed reason (render nothing, never zero). No
+ * factor = no effect. Gates, in order: factor presence/kind/value
+ * (`no-factor`), factor citation metadata with runtime type-guards
+ * (`invalid-factor-metadata`, D5 P2-2 + R2 P2-2), base presence/finite
+ * (`no-activity-base`), evidence source binding — the envelope sourceId
+ * must be a non-empty string strictly equal to the declared
+ * `activityBase.sourceId` (`activity-base-source-mismatch`, R2 P2-1),
+ * owner confirmation — both the DECLARED spec status and the input
+ * evidence status must be confirmed-by-owner
  * (`activity-base-unconfirmed`, D5 P2-3), and evaluation-period match
  * (`activity-base-period-mismatch`, D5 P2-3). A bare number is never an
  * acceptable base: the input must carry the typed evidence envelope.
@@ -359,10 +399,14 @@ export function deriveScenarioSensitivities(
       });
       continue;
     }
-    // D5 P2-2 — factor admission validation: a factor without a non-empty
-    // source, a non-empty version, and the declared sensitivity unit is not
-    // admissible evidence, even when a value is present.
+    // D5 P2-2 + R2 P2-2 — factor admission validation: a factor whose
+    // source/version metadata is missing, null, or empty at runtime is not
+    // admissible evidence, even when a value is present. Runtime type-guards
+    // run FIRST so a shape violation fails closed (omitted) instead of
+    // throwing TypeError on .trim().
     if (
+      typeof factor.source !== "string" ||
+      typeof factor.version !== "string" ||
       factor.source.trim().length === 0 ||
       factor.version.trim().length === 0 ||
       factor.unit !== "kgCO2e/kWh"
@@ -384,6 +428,24 @@ export function deriveScenarioSensitivities(
         label: spec.label,
         reason: "no-activity-base",
         note: "ยังไม่มีฐานกิจกรรม (รอแผ่นอ้างอิงรอบจ่ายไฟ relay จากเจ้าของ) — ไม่แสดงผลกระทบ (ไม่แทนค่าศูนย์)",
+      });
+      continue;
+    }
+    // R2 P2-1 — evidence source binding: the envelope sourceId must be a
+    // non-empty string AND strictly equal to the scenario spec's declared
+    // activityBase.sourceId. Evidence from any other source (or with a
+    // blank/runtime-missing sourceId) never computes.
+    if (
+      typeof base.sourceId !== "string" ||
+      base.sourceId.length === 0 ||
+      base.sourceId !== spec.activityBase.sourceId
+    ) {
+      omitted.push({
+        id: spec.id,
+        label: spec.label,
+        reason: "activity-base-source-mismatch",
+        note:
+          "แหล่งอ้างอิงของฐานกิจกรรมไม่ตรงกับแหล่งที่ประกาศในสถานการณ์ (sourceId) — ไม่แสดงผลกระทบ (ไม่แทนค่าศูนย์)",
       });
       continue;
     }
