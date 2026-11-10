@@ -385,3 +385,64 @@ placeholder guard; battery via `npm install` resolution; chromium v1228).
 Review routing unchanged: the implementing lane stops at
 REVIEW_REQUESTED — the R2 reviewer (or the owner) owns the next verdict
 and the D6 merge. NEVER merged by this lane.
+
+## D6 CLOSEOUT RECEIPT
+
+- D6 (2026-11-10): expected-head merge — **PR #158 merged as `fe96f7f`**
+  (parents: claim-transition merge `bd5a941` + reviewed frozen head
+  `f0c8f31`; ancestry verified). Claim transition: PR #157 merged as
+  `bd5a941`; review receipt
+  `pull/157#issuecomment-6763088901` (independent exact-SHA fresh-GLM
+  R2, 6/6 axes pass, AUTHORIZATION_BASIS SUFFICIENT).
+- Implementation review: **CROSS-MODEL D5 by GPT-6.1 Terra via Codex CLI
+  (read-only sandbox) — the first Terra review use.** R1 (session
+  `01a1c4d2`) CHANGES_REQUIRED — 3×P2 + 1×P3 (+ the P3-plus
+  Buddhist-Era note) → repaired at `727b2a6`; R2 (session `01a1c4e8`)
+  confirmed the original five closed and opened 3 NEW repair-code
+  findings (2×P2 + 1×P3) → repaired at `f0c8f31`; R3 **APPROVED, no new
+  findings**. D5 receipt:
+  `pull/158#issuecomment-6764901261`. Fresh-GLM independent mechanical
+  verification **6/6 PASS**, incl. full battery reproduction (vitest
+  447/447 then 463/463, `tsc` clean, lint clean, Playwright 20/20,
+  guard 344/344, runtime 62/62), scope-exact 11 files / no
+  zero-coercion, TGO citation pinned 0.5562 kgCO2e/kWh, RED evidence
+  truthful.
+- Review-routing honesty: GLM-5.3 MAX authored BOTH tracks this slice
+  (lib Track Z + view Track F) because no Codex implementation
+  admission occurred in this session — a recorded dispatch exception in
+  the claim's `review_owner` routing; the cross-model Terra D5 review
+  compensated it (reviewer = different model context from the author),
+  so **never author-and-approve held** end-to-end.
+- Battery at the final reviewed head `f0c8f31`: focused 81/81 + FULL
+  vitest 463/463 + `tsc -b` clean + lint 0 errors + /flow Playwright
+  20/20 + `git diff --check` clean + scope-exact 11 files + guard
+  344/344 + runtime 62/62.
+- Exact-main verification at `fe96f7f`: vitest 463/463 + guard + runtime
+  green (test run success); Pages deploy run **42798851370 SUCCESS**;
+  deployed live markers verified fresh from the live origin:
+  `assets/index-BNyH_ZMq.js` carries ผลกระทบเชิงตัวเลข (SIMULATED) +
+  `env-flow-story-scenario-numeric-title` + `data-scenario-numeric-id`
+  (`git log -S` proves the marker entered main only via PR #158);
+  `sw.js` 200.
+- Delivered per the owner numeric-gate decision 2026-11-10 (issue #110
+  issuecomment-6762633925): N3 excess-sludge WAS difference with the
+  owner recorded-value-precedence rule (recorded never overwritten;
+  unknown never zero); N4 sensitivity derivation gated on BOTH a
+  confirmed-by-owner typed activity-base evidence (sourceId-bound to
+  the declared relay reference, period-matched) AND a
+  citation-complete factor (TGO grid 0.5562 kgCO2e/kWh, data years
+  2022–2024, effective 2569, official-national-factor class; IPCC 2006
+  declared-null fallback) — no factor / no confirmed base renders
+  nothing, fail-closed; N1 NOT implemented (owner-rejected); N2
+  reference-sheet skeleton delivered at
+  `docs/ai/design/ENV-VIS-STORY-001-NUM-RELAY-DUTY-CYCLE-REFERENCE.md`
+  awaiting owner values (no N2 derivation code). All numeric displays
+  SIMULATED-labeled Thai with units; พ.ศ. user-facing years.
+- Closeout transition (branch `docs/env-visstory-001num-closeout`, base
+  `fe96f7f`): registry CLOSED at generation 1; fence moved to `fe96f7f`
+  + the base-state block sha256 `c900f11f…` (guard module); frontier
+  bullet → delivered; the ONE-active-claim wording removed → NO active
+  proposed claim; the numeric follow-up annotation updated to
+  OWNER-DECIDED numeric slice DELIVERED 2026-11-10 (PENDING OWNER INPUT
+  note stays); WO status → CLOSED. Scope lock released at generation 1;
+  CLOSED confers no fresh mutation authority.
