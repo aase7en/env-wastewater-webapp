@@ -44,7 +44,7 @@ export const PROCESS_SCENARIO_CATALOG: readonly ScenarioDefinition[] = [
     provenance: { source: "simulation", observedAt: null },
     assumptions: [
       "สมมุติการหยุดเติมอากาศเชิงกระบวนการเท่านั้น",
-      "ไม่อ้างผลเชิงเลขหรือคุณภาพน้ำใด ๆ (รอการอนุมัติของเจ้าของโดเมน)",
+      "ไม่อ้างผลเชิงเลขที่สังเกตได้จริงหรือคุณภาพน้ำใด ๆ — ค่าจำลอง (SIMULATED) ที่แสดง (ถ้ามี) ต้องมีฐานกิจกรรมและแฟกทอร์อ้างอิงที่เจ้าของยืนยันครบก่อน",
     ],
     edgeOverrides: {},
     stageOverrides: { aeration_tank: { aeration: "interrupted" } },
@@ -77,7 +77,7 @@ export const PROCESS_SCENARIO_CATALOG: readonly ScenarioDefinition[] = [
     provenance: { source: "simulation", observedAt: null },
     assumptions: [
       "สมมุติเงื่อนไขเน้นการทิ้งตะกอนส่วนเกินเชิงคุณภาพ",
-      "ไม่อ้างปริมาณหรืออัตราใด ๆ",
+      "ไม่อ้างปริมาณหรืออัตราที่สังเกตได้จริงใด ๆ — ค่าเชิงตัวเลขที่แสดง (ถ้ามี) เป็นค่าจำลอง (SIMULATED) ที่ระบุฐานสมมติชัดเจนเท่านั้น",
     ],
     edgeOverrides: { "was-to-drying-beds": "active-path" },
     numericEffects: {

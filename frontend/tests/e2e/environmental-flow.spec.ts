@@ -433,6 +433,34 @@ test("N3: numeric chip follows the recorded reading and never substitutes zero f
   expect(simulatedChip).toContain("1.5");
 });
 
+test("N3: a small nonzero difference keeps display precision and never renders as zero", async ({ page }) => {
+  await installStaffSession(page);
+  await mockLatestReading(page, {
+    id: "11111111-1111-1111-1111-111111111111",
+    reading_date: "2026-09-01",
+    water_used_total: 120.5,
+    wastewater_in: 82.25,
+    excess_sludge_removed: 1.4996,
+    wastewater_discharged: true,
+  });
+  await page.goto("/flow");
+  await page.getByTestId("process-scenario-picker").selectOption({ label: "การทิ้งตะกอนส่วนเกิน (WAS)" });
+  await page.getByTestId("process-scenario-apply").click();
+
+  // difference = proposed (1.5) − recorded (1.4996) = 0.0004 m³/วัน — a real
+  // nonzero value must keep its precision (never display-level "= 0").
+  const chip = page.getByTestId("process-scenario-numeric");
+  await expect(chip).toContainText("0.0004");
+  const chipText = await chip.innerText();
+  expect(chipText).not.toMatch(/=\s*0\s*m³\/วัน/);
+
+  // Banner truth precision (D5 P3-4): the assumption no longer flatly denies
+  // quantities while a SIMULATED numeric chip is on the same screen.
+  const bannerText = await page.getByTestId("process-scenario-banner").innerText();
+  expect(bannerText).not.toContain("ไม่อ้างปริมาณหรืออัตราใด ๆ");
+  expect(bannerText).toMatch(/SIMULATED|จำลอง|สมมุติ/);
+});
+
 test("N4: scenarios without a complete base+factor pair render no numeric chip", async ({ page }) => {
   await installStaffSession(page);
   await mockLatestReading(page);

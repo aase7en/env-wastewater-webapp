@@ -145,6 +145,26 @@ export interface ScenarioNumericEffects {
 }
 
 /**
+ * D5 P2-3 — owner-admissible activity-base statuses. An effect computes only
+ * from `confirmed-by-owner` evidence; `pending-owner-values` is the shipped
+ * declaration today and always derives to an omission.
+ */
+export type ScenarioActivityBaseStatus = "confirmed-by-owner" | "pending-owner-values";
+
+/**
+ * D5 P2-3 — typed activity-base evidence envelope. A bare number is never an
+ * acceptable base: provenance (source id), owner-admission status, and the
+ * evaluation period must travel with the value. The period must match the
+ * scenario evaluation semantics (per-day, "daily").
+ */
+export interface ScenarioActivityBaseEvidence {
+  sourceId: string;
+  status: ScenarioActivityBaseStatus;
+  period: "daily";
+  value: number;
+}
+
+/**
  * N4 spec: a sensitivity exists ONLY where both a scenario-specific
  * activity base AND a cited-versioned factor exist at derivation time.
  * The relay duty-cycle reference sheet (owner-filled) is the intended
@@ -158,7 +178,7 @@ export interface ScenarioSensitivitySpec {
   activityBase: {
     kind: "aeration-blower-runtime-kwh";
     sourceId: "relay-duty-cycle-reference";
-    status: "pending-owner-values";
+    status: ScenarioActivityBaseStatus;
   };
   formula: "activityBaseKwh × factorKgCo2ePerKwh";
 }
@@ -216,8 +236,17 @@ export interface ScenarioSensitivityEffect {
 export interface ScenarioSensitivityOmission {
   id: string;
   label: string;
-  /** Fail-closed reason: the sensitivity renders NOTHING, never zero. */
-  reason: "no-factor" | "no-activity-base";
+  /**
+   * Fail-closed reason: the sensitivity renders NOTHING, never zero.
+   * D5 P2-2 adds `invalid-factor-metadata` (missing citation/version/unit);
+   * D5 P2-3 adds the activity-base evidence gates.
+   */
+  reason:
+    | "no-factor"
+    | "invalid-factor-metadata"
+    | "no-activity-base"
+    | "activity-base-unconfirmed"
+    | "activity-base-period-mismatch";
   note: string;
 }
 
@@ -228,6 +257,40 @@ export interface ScenarioSensitivitiesResult {
 
 function finiteOrNull(value: number | null | undefined): number | null {
   return typeof value === "number" && Number.isFinite(value) ? value : null;
+}
+
+/**
+ * D5 P2-1 — honest numeric display. At the established 3-decimal display
+ * precision a genuinely nonzero value (e.g. 0.0004 m³/วัน) must NEVER
+ * collapse to a bare "0" (a display-level zero substitution, ห้ามแทนค่าศูนย์
+ * at display level): the precision escalates (extra decimals, compact
+ * scientific-ish form for extreme magnitudes) so the shown text stays true.
+ * Only an EXACT zero may display "0". Null/non-finite → null (render nothing).
+ */
+export function formatScenarioNumber(value: number | null): string | null {
+  if (value === null || !Number.isFinite(value)) return null;
+  if (value === 0) return "0";
+  const atDisplayPrecision = Number.parseFloat(value.toFixed(3));
+  if (atDisplayPrecision !== 0) return String(atDisplayPrecision);
+  return String(Number.parseFloat(value.toPrecision(12)));
+}
+
+/**
+ * D5 P3-plus — Buddhist-Era (พ.ศ.) factor-version display. User-facing years
+ * in a factor version identifier are rendered as พ.ศ. (CE + 543) while the
+ * original CE digits stay inline in parentheses for traceability. The
+ * contract expects CE-authored version strings (Thai พ.ศ. years must not be
+ * embedded in version identifiers); quantity-like tokens (0.4750, GWP set
+ * ids) never match the year pattern. The underlying factor.version string is
+ * never mutated — formatting is display-only.
+ */
+const FACTOR_VERSION_CE_YEAR_PATTERN = /\b(1[6-9]\d{2}|2\d{3})\b/g;
+
+export function formatScenarioFactorVersion(version: string): string {
+  return version.replace(FACTOR_VERSION_CE_YEAR_PATTERN, (ceToken) => {
+    const ce = Number.parseInt(ceToken, 10);
+    return `${ce + 543} พ.ศ. (${ceToken} ค.ศ.)`;
+  });
 }
 
 /**
@@ -265,13 +328,21 @@ export function deriveScenarioWasDifference(
 
 /**
  * N4 — resource/emission sensitivities (owner-approved contingent
- * 2026-11-10). A sensitivity renders ONLY where both a finite activity
- * base and a cited-versioned factor exist; otherwise it is OMITTED with a
- * fail-closed reason (render nothing, never zero). No factor = no effect.
+ * 2026-11-10; evidence-gated per D5 repairs). A sensitivity renders ONLY
+ * where an owner-confirmed, per-day activity base AND a fully-cited
+ * kgCO2e/kWh factor exist; otherwise it is OMITTED with a fail-closed
+ * reason (render nothing, never zero). No factor = no effect. Gates, in
+ * order: factor presence/kind/value (`no-factor`), factor citation
+ * metadata (`invalid-factor-metadata`, D5 P2-2), base presence/finite
+ * (`no-activity-base`), owner confirmation — both the DECLARED spec status
+ * and the input evidence status must be confirmed-by-owner
+ * (`activity-base-unconfirmed`, D5 P2-3), and evaluation-period match
+ * (`activity-base-period-mismatch`, D5 P2-3). A bare number is never an
+ * acceptable base: the input must carry the typed evidence envelope.
  */
 export function deriveScenarioSensitivities(
   definition: ScenarioDefinition,
-  inputs: { aerationBlowerRuntimeKwh?: number | null },
+  inputs: { aerationBlowerRuntimeKwh?: ScenarioActivityBaseEvidence | null },
   registry: readonly EmissionFactor[],
 ): ScenarioSensitivitiesResult {
   const rendered: ScenarioSensitivityEffect[] = [];
@@ -288,8 +359,26 @@ export function deriveScenarioSensitivities(
       });
       continue;
     }
-    const baseKwh = finiteOrNull(inputs.aerationBlowerRuntimeKwh);
-    if (baseKwh === null) {
+    // D5 P2-2 — factor admission validation: a factor without a non-empty
+    // source, a non-empty version, and the declared sensitivity unit is not
+    // admissible evidence, even when a value is present.
+    if (
+      factor.source.trim().length === 0 ||
+      factor.version.trim().length === 0 ||
+      factor.unit !== "kgCO2e/kWh"
+    ) {
+      omitted.push({
+        id: spec.id,
+        label: spec.label,
+        reason: "invalid-factor-metadata",
+        note:
+          "แฟกทอร์อ้างอิงไม่ครบข้อมูลกำกับ (แหล่งอ้างอิง/เวอร์ชัน/หน่วย kgCO2e/kWh) — ไม่แสดงผลกระทบ (ไม่แทนค่าศูนย์)",
+      });
+      continue;
+    }
+    // D5 P2-3 — typed activity-base evidence envelope (never a bare number).
+    const base = inputs.aerationBlowerRuntimeKwh ?? null;
+    if (!base || finiteOrNull(base.value) === null) {
       omitted.push({
         id: spec.id,
         label: spec.label,
@@ -298,6 +387,26 @@ export function deriveScenarioSensitivities(
       });
       continue;
     }
+    if (spec.activityBase.status !== "confirmed-by-owner" || base.status !== "confirmed-by-owner") {
+      omitted.push({
+        id: spec.id,
+        label: spec.label,
+        reason: "activity-base-unconfirmed",
+        note:
+          "ฐานกิจกรรมยังไม่ได้รับการยืนยันจากเจ้าของ (ทั้งประกาศและหลักฐานต้องเป็น confirmed-by-owner) — ไม่แสดงผลกระทบ (ไม่แทนค่าศูนย์)",
+      });
+      continue;
+    }
+    if (base.period !== "daily") {
+      omitted.push({
+        id: spec.id,
+        label: spec.label,
+        reason: "activity-base-period-mismatch",
+        note: "ฐานกิจกรรมไม่ตรงกับช่วงเวลาประเมินของสถานการณ์ (รายวัน) — ไม่แสดงผลกระทบ (ไม่แทนค่าศูนย์)",
+      });
+      continue;
+    }
+    const baseKwh = base.value as number;
     const factorValue = factor.value as number;
     rendered.push({
       kind: "electricity-grid-emission",

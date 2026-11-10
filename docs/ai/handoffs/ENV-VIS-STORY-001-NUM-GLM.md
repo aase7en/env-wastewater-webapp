@@ -170,4 +170,120 @@ battery ran via `npm install` resolution. Playwright chromium v1228
 4. Post-merge: exact-main CI (test = scripts suites; e2e + deploy-preview
    per PR #85 evidence include whatever checks appear) + deployed smoke.
 
+## D5 REPAIR RECORD (cross-model review repairs, appended 2026-11-10)
+
+These repairs followed the cross-model D5 review by **GPT-6.1 Terra (Codex
+CLI, session `01a1c4d2`, verdict `CHANGES_REQUIRED`)** at the frozen head
+`cd2f4b10ca580e1edfc9a0bad61db7a34e2b660f` — 3×P2 + 1×P3 + the P3-plus
+Buddhist-Era note. TDD discipline held: repair tests were added first and
+their truthful RED was recorded before implementation. Scope stayed exactly
+within the 11 mutable files (5 touched: `process-scenario.ts`,
+`process-scenarios.ts`, `EnvironmentalFlowStory.tsx`,
+`process-scenario.test.ts`, `environmental-flow.spec.ts`).
+
+### Findings → repairs (1:1)
+
+**P2-1 — display rounding (formatDelta ~lines 14/34).** Finding: a
+genuinely nonzero WAS difference (e.g. 0.0004 m³/วัน) rendered as
+"= 0 m³/วัน" after `toFixed(3)` — a display-level zero substitution.
+Repair: new pure exported `formatScenarioNumber(value)` in
+`process-scenario.ts` — 3-decimal display rounding for regular magnitudes,
+adaptive precision escalation for values that round to zero at display
+precision (extra decimals; compact scientific-ish form for extreme
+magnitudes, e.g. `1e-15`), `"0"` ONLY for an exact zero, null/non-finite →
+null (render nothing). The local `formatDelta` was removed; the WAS
+difference text AND the N4 chip value line (same display-zero hazard class,
+`parseFloat(value.toFixed(3))`) both render through it now.
+
+**P2-2 — factor admission validation (deriveScenarioSensitivities
+~line 280).** Finding: only id/kind/finite-value were checked; a factor
+with `source: ""`, `version: ""`, or a wrong unit would still be
+multiplied. Repair: admission gate after `no-factor` — non-empty trimmed
+`source`, non-empty trimmed `version`, and `unit === "kgCO2e/kWh"` (the
+declared sensitivity unit contract) required; otherwise the spec omits
+with fail-closed reason `invalid-factor-metadata` + Thai note (reason
+union extended). Tests: uncited (`source: ""`), versionless (`version:
+""`), wrong-unit (`tCO2/MWh`), whitespace-only source → all omitted,
+never computed; valid registry control still computes.
+
+**P2-3 — activity-base typed evidence (~lines 272/291).** Finding: the
+base `aerationBlowerRuntimeKwh` accepted any bare number without
+provenance. Repair: the accepted base is now a typed envelope
+`ScenarioActivityBaseEvidence { sourceId, status:
+"confirmed-by-owner" | "pending-owner-values", period: "daily", value }`;
+an effect computes ONLY when BOTH the declared spec status AND the input
+evidence status are `confirmed-by-owner` AND `period === "daily"` (the
+scenario evaluation period semantics). Fail-closed reasons: absent/null/
+non-finite base → `no-activity-base`; pending/unconfirmed (declaration or
+evidence) → `activity-base-unconfirmed`; period mismatch → 
+`activity-base-period-mismatch`. The declared spec status type widened to
+`ScenarioActivityBaseStatus` (catalog stays `pending-owner-values`).
+Behavior today unchanged: the UI call site passes null (omitted
+`no-activity-base`) and the relay reference literal declares
+`pending-owner-values` (stays omitted even against a confirmed input —
+declaration flips only through a reviewed slice). Tests: pending base →
+omitted; declared-pending + confirmed input → omitted; period mismatch →
+omitted; non-finite envelope value → omitted; confirmed fixture
+(declared + input confirmed) → computed.
+
+**P3-4 — banner contradiction (process-scenarios.ts ~line 78 +
+EnvironmentalFlowStory.tsx ~line 364).** Finding: the WAS scenario banner
+still said "ไม่อ้างปริมาณหรืออัตราใด ๆ" while numeric chips display
+simulated quantities on the same screen. Repair: reworded to the precise
+truth — "ไม่อ้างปริมาณหรืออัตราที่สังเกตได้จริงใด ๆ — ค่าเชิงตัวเลขที่แสดง
+(ถ้ามี) เป็นค่าจำลอง (SIMULATED) ที่ระบุฐานสมมติชัดเจนเท่านั้น" (no
+OBSERVED quantities/rates are claimed; clearly-labeled SIMULATED values
+may be shown; hypothetical wording style kept). The same contradiction
+class was applied to the second numeric-declaring scenario
+(loss-of-aeration), whose line also carried the stale parenthetical
+"(รอการอนุมัติของเจ้าของโดเมน)" — superseded by the 2026-11-10 owner
+gate. Verified NO test asserted either old string; new pins added (unit
+contract pins + e2e banner assertion).
+
+**P3-plus — Buddhist Era factor-version formatting
+(~EnvironmentalFlowStory.tsx line 486).** Finding note: when the N4 chip
+eventually renders a factor version year, format years user-facing as
+พ.ศ. while keeping the original version identifier intact for
+traceability. Repair: pure exported `formatScenarioFactorVersion(version)`
+— CE year tokens (1600–2999, word-bounded) render as "พ.ศ. (ค.ศ.)"
+inline (e.g. "2565 พ.ศ. (2022 ค.ศ.)"); quantity-like tokens (0.4750,
+GWP set ids) never match; the underlying `factor.version` string is
+never mutated (data-level traceability pinned by test). Wired into the
+currently-empty N4 chip version line so the path is correct when it
+activates. 5 unit tests.
+
+### D5-repair RED receipt (before implementation)
+
+Focused vitest `process-scenario.test.ts`: **22 failed / 43 passed** —
+all 22 failures are exactly the new D5-repair contracts (P2-1 ×7, P2-2
+×5, P2-3 ×3 failing, P3-4 ×2, P3-plus ×4, plus the fixture-based
+computed-path rewrite of the old bare-number test). Recorded truthfully:
+1 new P2-3 case (non-finite envelope value → `no-activity-base`) passed
+at RED because the old contract already rejected non-numeric inputs —
+it pins that behavior through the envelope path, not a RED failure.
+E2E note (recorded honestly): the new small-difference/banner case was
+NOT separately run at RED — at `cd2f4b1` it would fail by inspection
+(the chip rendered `toFixed(3)`-collapsed text and the banner carried
+the old string); repair tests were committed together with the fix per
+the repair slice, and the recorded RED receipt for this slice is the
+focused lib run above.
+
+### Battery after repairs (all at the new head)
+
+| Gate | Result |
+| --- | --- |
+| Focused vitest (process-scenario + environmental-flow) | **65/65** (42 + 23 new) |
+| FULL vitest | **447/447** (28 files; 424 + 23 new) |
+| `tsc -b` | clean (exit 0) |
+| lint (oxlint) | **0 errors**, 12 pre-existing warnings |
+| /flow Playwright FULL spec | **20/20** (19 + 1 new small-difference case) |
+| Guard suite | **344 passed** (OK) |
+| Runtime suite | **62 passed** (OK) |
+| `git diff --check` (bd5a941..HEAD and worktree) | clean |
+| Scope-exact | `git diff --name-only bd5a941..HEAD` = exactly the 11 mutable files; repair commit touches 5 of them |
+| `docs/ai/CURRENT-WORK.md` diff | **still empty (0 lines)** |
+
+Environment notes unchanged from D4 (same worktree; `frontend/.env`
+placeholder guard; battery via `npm install` resolution; chromium v1228).
+
 (append-only below this line)

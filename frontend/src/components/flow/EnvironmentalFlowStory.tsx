@@ -4,19 +4,16 @@ import { AuraCard } from "../ui/AuraCard";
 import { MSymbol } from "../ui/MSymbol";
 import { PROCESS_EXPLANATION } from "../../lib/environmental-flow";
 import type { EnvironmentalFlowModel, EnvironmentalFlowQuantity } from "../../lib/environmental-flow";
-import { deriveScenarioState, deriveScenarioSensitivities, deriveScenarioWasDifference, type ScenarioDefinition, type ScenarioEdgeStateLabel, type ScenarioStageState, type ScenarioState, type ScenarioWasDifferenceEffect } from "../../lib/process-scenario";
+import { deriveScenarioState, deriveScenarioSensitivities, deriveScenarioWasDifference, formatScenarioFactorVersion, formatScenarioNumber, type ScenarioDefinition, type ScenarioEdgeStateLabel, type ScenarioStageState, type ScenarioState, type ScenarioWasDifferenceEffect } from "../../lib/process-scenario";
 import { NUMERIC_EFFECT_EMISSION_FACTORS, PROCESS_SCENARIO_CATALOG } from "../../lib/process-scenarios";
 
 function quantityValue(quantity: EnvironmentalFlowQuantity) {
   return quantity.value === null ? "—" : String(quantity.value);
 }
 
-function formatDelta(value: number | null) {
-  return value === null ? null : String(parseFloat(value.toFixed(3)));
-}
-
 function ScenarioNumericChip({ effect }: { effect: ScenarioWasDifferenceEffect }) {
-  const differenceText = formatDelta(effect.difference);
+  // D5 P2-1: honest display — a nonzero difference never collapses to "0".
+  const differenceText = formatScenarioNumber(effect.difference);
   return (
     <div
       className={`env-flow-story-scenario-numeric font-thai ${effect.displayPrecedence === "simulated" ? "env-flow-story-scenario-numeric--simulated-only" : ""}`}
@@ -480,10 +477,10 @@ export function EnvironmentalFlowStory({ model }: { model: EnvironmentalFlowMode
               >
                 <p className="env-flow-story-scenario-numeric-title">{effect.label} — SIMULATED</p>
                 <p>
-                  {effect.baseKwh} kWh × {effect.factor.value} {effect.factor.unit} = {parseFloat(effect.value.toFixed(3))} {effect.unit}
+                  {effect.baseKwh} kWh × {effect.factor.value} {effect.factor.unit} = {formatScenarioNumber(effect.value)} {effect.unit}
                 </p>
                 <p>
-                  แฟกทอร์อ้างอิง: {effect.factor.source} ({effect.factor.version})
+                  แฟกทอร์อ้างอิง: {effect.factor.source} ({formatScenarioFactorVersion(effect.factor.version)})
                 </p>
                 <p>ขอบเขตการใช้: {effect.factor.applicability}</p>
                 <p className="env-flow-story-scenario-numeric-uncertainty">{effect.note}</p>
