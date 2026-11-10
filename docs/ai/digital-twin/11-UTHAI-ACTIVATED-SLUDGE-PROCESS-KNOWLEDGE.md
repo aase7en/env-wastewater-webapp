@@ -86,6 +86,8 @@ return sludge pipe
 Aeration Tank
 ```
 
+**Owner confirmation (2026-11-10, chat receipt — recorded verbatim in `docs/ai/design/ENV-VIS-STORY-001-NUM-RELAY-DUTY-CYCLE-REFERENCE.md`):** the two sludge pumps shown as `ras_pumps` are one shared physical set that also performs excess-sludge draining toward the drying beds (WAS function). There are no separate RAS vs WAS pumps. The sludge destination (return to aeration vs send to drying beds) is selected manually by opening/closing valves that redirect the sludge path. Valve position is not recorded in the system. The diagram's distinct `ras_line` / `was_line` edges therefore represent distinct flow paths driven by the same pump set, selected by manual valve state. Duty timer as of that date: 15 min run / 15 min stop; sludge pump 1 reported broken (current-status fact, belongs to daily operational log).
+
 This loop is important to the Activated Sludge process model. In UI/Digital Twin language it should be represented separately from the clarified-water outlet.
 
 Do not infer individual return-pump status unless a real data source exists.
