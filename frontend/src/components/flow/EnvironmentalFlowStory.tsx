@@ -1,13 +1,48 @@
 import { useEffect, useRef, useState } from "react";
+import type { ReactNode } from "react";
 import { AuraCard } from "../ui/AuraCard";
 import { MSymbol } from "../ui/MSymbol";
 import { PROCESS_EXPLANATION } from "../../lib/environmental-flow";
 import type { EnvironmentalFlowModel, EnvironmentalFlowQuantity } from "../../lib/environmental-flow";
-import { deriveScenarioState, type ScenarioDefinition, type ScenarioEdgeStateLabel, type ScenarioStageState, type ScenarioState } from "../../lib/process-scenario";
-import { PROCESS_SCENARIO_CATALOG } from "../../lib/process-scenarios";
+import { deriveScenarioState, deriveScenarioSensitivities, deriveScenarioWasDifference, formatScenarioFactorVersion, formatScenarioNumber, type ScenarioDefinition, type ScenarioEdgeStateLabel, type ScenarioStageState, type ScenarioState, type ScenarioWasDifferenceEffect } from "../../lib/process-scenario";
+import { NUMERIC_EFFECT_EMISSION_FACTORS, PROCESS_SCENARIO_CATALOG } from "../../lib/process-scenarios";
 
 function quantityValue(quantity: EnvironmentalFlowQuantity) {
   return quantity.value === null ? "—" : String(quantity.value);
+}
+
+function ScenarioNumericChip({ effect }: { effect: ScenarioWasDifferenceEffect }) {
+  // D5 P2-1: honest display — a nonzero difference never collapses to "0".
+  const differenceText = formatScenarioNumber(effect.difference);
+  return (
+    <div
+      className={`env-flow-story-scenario-numeric font-thai ${effect.displayPrecedence === "simulated" ? "env-flow-story-scenario-numeric--simulated-only" : ""}`}
+      data-testid="process-scenario-numeric"
+      data-scenario-numeric-kind={effect.kind}
+      data-scenario-precedence={effect.displayPrecedence}
+    >
+      <p className="env-flow-story-scenario-numeric-title">ผลกระทบเชิงตัวเลข (SIMULATED) — ไม่ใช่ข้อมูลจริง</p>
+      {effect.recorded ? (
+        <>
+          <p>
+            ค่าบันทึกจริง (แสดงก่อนค่าสมมุติ): {effect.recorded.value} {effect.recorded.unit}/วัน — ค่าบันทึกไม่ถูกเขียนทับ
+          </p>
+          <p>
+            ผลต่างสมมุติ: {effect.proposed.value} − {effect.recorded.value} = {differenceText} {effect.proposed.unit}
+          </p>
+        </>
+      ) : (
+        <>
+          <p>ไม่มีค่าบันทึกตะกอนส่วนเกินสำหรับขอบเขตนี้ — ระบบไม่แทนค่าศูนย์</p>
+          <p>
+            ค่าที่เสนอ (สมมุติ): {effect.proposed.value} {effect.proposed.unit} — ผลต่างคำนวณไม่ได้เพราะไม่มีค่าบันทึก
+          </p>
+        </>
+      )}
+      <p>ฐานสมมติ: {effect.proposed.note}</p>
+      <p className="env-flow-story-scenario-numeric-uncertainty">{effect.uncertaintyNote}</p>
+    </div>
+  );
 }
 
 function QuantityEvidenceCard({
@@ -82,6 +117,7 @@ function BranchCard({
   exception,
   exceptionNote,
   scenarioState,
+  numericChip,
 }: {
   edgeId: string;
   title: string;
@@ -92,6 +128,7 @@ function BranchCard({
   exception: boolean;
   exceptionNote?: string;
   scenarioState?: ScenarioEdgeStateLabel;
+  numericChip?: ReactNode;
 }) {
   return (
     <div
@@ -121,6 +158,7 @@ function BranchCard({
         </span>
       ) : null}
       {exceptionNote ? <p className="env-flow-story-exception-note text-xs font-thai">{exceptionNote}</p> : null}
+      {numericChip}
     </div>
   );
 }
@@ -199,6 +237,17 @@ export function EnvironmentalFlowStory({ model }: { model: EnvironmentalFlowMode
       : model.discharge.recorded === false
         ? "บันทึกว่าไม่ระบาย"
         : "ยังไม่ได้บันทึก / ไม่ทราบสถานะการระบาย";
+
+  // ENV-VIS-STORY-001-NUM: numeric effects derive ONLY while a scenario is
+  // applied. N3 (WAS difference) shows a SIMULATED chip on the WAS card;
+  // N4 sensitivities render only when both base+factor exist (omissions
+  // render NOTHING — never zero). N1 rejected; N2 deferred (no derivation).
+  const wasEffect = appliedScenario
+    ? deriveScenarioWasDifference(appliedScenario.definition, model.quantities.excessSludge.value)
+    : null;
+  const sensitivityResult = appliedScenario
+    ? deriveScenarioSensitivities(appliedScenario.definition, { aerationBlowerRuntimeKwh: null }, NUMERIC_EFFECT_EMISSION_FACTORS)
+    : { rendered: [], omitted: [] };
 
   return (
     <div className="min-w-0 space-y-5">
@@ -410,10 +459,35 @@ export function EnvironmentalFlowStory({ model }: { model: EnvironmentalFlowMode
                 exception={edge?.kind === "exception"}
                 exceptionNote={edge?.kind === "exception" ? edge.note : undefined}
                 scenarioState={appliedScenario?.state.edges.find((candidate) => candidate.id === branch.edgeId)?.scenarioState}
+                numericChip={branch.edgeId === "was-to-drying-beds" && wasEffect ? <ScenarioNumericChip effect={wasEffect} /> : undefined}
               />
             );
           })}
         </div>
+
+        {sensitivityResult.rendered.length > 0 ? (
+          <div className="min-w-0 space-y-2">
+            {sensitivityResult.rendered.map((effect) => (
+              <div
+                key={effect.id}
+                className="env-flow-story-scenario-numeric font-thai"
+                data-testid="process-scenario-numeric"
+                data-scenario-numeric-kind={effect.kind}
+                data-scenario-numeric-id={effect.id}
+              >
+                <p className="env-flow-story-scenario-numeric-title">{effect.label} — SIMULATED</p>
+                <p>
+                  {effect.baseKwh} kWh × {effect.factor.value} {effect.factor.unit} = {formatScenarioNumber(effect.value)} {effect.unit}
+                </p>
+                <p>
+                  แฟกทอร์อ้างอิง: {effect.factor.source} ({formatScenarioFactorVersion(effect.factor.version)})
+                </p>
+                <p>ขอบเขตการใช้: {effect.factor.applicability}</p>
+                <p className="env-flow-story-scenario-numeric-uncertainty">{effect.note}</p>
+              </div>
+            ))}
+          </div>
+        ) : null}
       </section>
     </div>
   );

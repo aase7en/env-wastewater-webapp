@@ -359,3 +359,119 @@ test("observed evidence stays unchanged and scenario UI carries no operational v
   const markerText = await page.getByTestId("process-scenario-marker").first().innerText();
   expect(markerText).not.toMatch(/LIVE|LATEST|HISTORICAL|\d+\.\d+/);
 });
+
+// ── ENV-VIS-STORY-001-NUM: simulated numeric effects N3 + N4 (RED-first) ──
+
+test("N3: WAS scenario shows a SIMULATED numeric chip with recorded-value precedence", async ({ page }) => {
+  await installStaffSession(page);
+  await mockLatestReading(page);
+  await page.goto("/flow");
+
+  await page.getByTestId("process-scenario-picker").selectOption({ label: "การทิ้งตะกอนส่วนเกิน (WAS)" });
+  await page.getByTestId("process-scenario-apply").click();
+
+  const chip = page.getByTestId("process-scenario-numeric");
+  await expect(chip).toHaveCount(1);
+  await expect(chip).toContainText("SIMULATED");
+  // Recorded evidence takes precedence in display and is never overwritten.
+  await expect(chip).toContainText("1.75");
+  await expect(chip).toContainText("ไม่ถูกเขียนทับ");
+  await expect(chip).toHaveAttribute("data-scenario-precedence", "recorded");
+  // Simulated difference = proposed (1.5) − recorded (1.75), with units.
+  await expect(chip).toContainText("-0.25");
+  await expect(chip).toContainText("m³/วัน");
+  // The assumption basis is visible in Thai.
+  await expect(chip).toContainText("ฐานสมมติ");
+  // The qualitative WAS marker still renders alongside.
+  await expect(page.locator('[data-scenario-edge-id="was-to-drying-beds"]')).toHaveCount(1);
+  // The evidence cards stay untouched by the scenario overlay.
+  await expect(page.getByTestId("flow-quantity-evidence")).toContainText("1.75");
+
+  await page.getByTestId("process-scenario-clear").click();
+  await expect(page.getByTestId("process-scenario-numeric")).toHaveCount(0);
+});
+
+test("N3: numeric chip follows the recorded reading and never substitutes zero for unknown", async ({ page }) => {
+  await installStaffSession(page);
+  await mockLatestReading(page, {
+    id: "11111111-1111-1111-1111-111111111111",
+    reading_date: "2026-09-01",
+    water_used_total: 120.5,
+    wastewater_in: 82.25,
+    excess_sludge_removed: 2.4,
+    wastewater_discharged: true,
+  });
+  await page.goto("/flow");
+  await page.getByTestId("process-scenario-picker").selectOption({ label: "การทิ้งตะกอนส่วนเกิน (WAS)" });
+  await page.getByTestId("process-scenario-apply").click();
+
+  // Recorded-precedence: the chip tracks the RECORDED reading (2.4, not 1.75).
+  const chip = page.getByTestId("process-scenario-numeric");
+  await expect(chip).toContainText("2.4");
+  await expect(chip).toContainText("-0.9");
+  await expect(chip).toHaveAttribute("data-scenario-precedence", "recorded");
+
+  // Unknown recorded: the difference is not computed and zero is never substituted.
+  await page.getByTestId("process-scenario-clear").click();
+  await mockLatestReading(page, {
+    id: "11111111-1111-1111-1111-111111111111",
+    reading_date: "2026-09-01",
+    water_used_total: null,
+    wastewater_in: null,
+    excess_sludge_removed: null,
+    wastewater_discharged: null,
+  });
+  await page.reload();
+  await page.getByTestId("process-scenario-picker").selectOption({ label: "การทิ้งตะกอนส่วนเกิน (WAS)" });
+  await page.getByTestId("process-scenario-apply").click();
+
+  await expect(page.getByTestId("process-scenario-numeric")).toHaveAttribute("data-scenario-precedence", "simulated");
+  const simulatedChip = await page.getByTestId("process-scenario-numeric").innerText();
+  expect(simulatedChip).toContain("ไม่แทนค่าศูนย์");
+  // No COMPUTED difference line when the recorded value is unknown.
+  expect(simulatedChip).not.toContain("ผลต่างสมมุติ:");
+  expect(simulatedChip).toContain("1.5");
+});
+
+test("N3: a small nonzero difference keeps display precision and never renders as zero", async ({ page }) => {
+  await installStaffSession(page);
+  await mockLatestReading(page, {
+    id: "11111111-1111-1111-1111-111111111111",
+    reading_date: "2026-09-01",
+    water_used_total: 120.5,
+    wastewater_in: 82.25,
+    excess_sludge_removed: 1.4996,
+    wastewater_discharged: true,
+  });
+  await page.goto("/flow");
+  await page.getByTestId("process-scenario-picker").selectOption({ label: "การทิ้งตะกอนส่วนเกิน (WAS)" });
+  await page.getByTestId("process-scenario-apply").click();
+
+  // difference = proposed (1.5) − recorded (1.4996) = 0.0004 m³/วัน — a real
+  // nonzero value must keep its precision (never display-level "= 0").
+  const chip = page.getByTestId("process-scenario-numeric");
+  await expect(chip).toContainText("0.0004");
+  const chipText = await chip.innerText();
+  expect(chipText).not.toMatch(/=\s*0\s*m³\/วัน/);
+
+  // Banner truth precision (D5 P3-4): the assumption no longer flatly denies
+  // quantities while a SIMULATED numeric chip is on the same screen.
+  const bannerText = await page.getByTestId("process-scenario-banner").innerText();
+  expect(bannerText).not.toContain("ไม่อ้างปริมาณหรืออัตราใด ๆ");
+  expect(bannerText).toMatch(/SIMULATED|จำลอง|สมมุติ/);
+});
+
+test("N4: scenarios without a complete base+factor pair render no numeric chip", async ({ page }) => {
+  await installStaffSession(page);
+  await mockLatestReading(page);
+  await page.goto("/flow");
+
+  for (const label of ["หยุดการเติมอากาศ (บ่อเติมอากาศ)", "หยุดส่งตะกอนไหลกลับ (RAS)", "หยุดจ่ายคลอรีน (สมมุติ)"]) {
+    await page.getByTestId("process-scenario-picker").selectOption({ label });
+    await page.getByTestId("process-scenario-apply").click();
+    await expect(page.getByTestId("process-scenario-banner")).toBeVisible();
+    await expect(page.getByTestId("process-scenario-numeric")).toHaveCount(0);
+    await page.getByTestId("process-scenario-clear").click();
+    await expect(page.getByTestId("process-scenario-banner")).toHaveCount(0);
+  }
+});

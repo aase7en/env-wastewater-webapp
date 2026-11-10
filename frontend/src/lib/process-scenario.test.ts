@@ -7,9 +7,17 @@ import type {
   ProcessExplanationStageId,
 } from "./environmental-flow";
 import {
+  deriveScenarioSensitivities,
   deriveScenarioState,
+  deriveScenarioWasDifference,
+  formatScenarioFactorVersion,
+  formatScenarioNumber,
+  type EmissionFactor,
+  type ScenarioActivityBaseEvidence,
   type ScenarioDefinition,
+  type ScenarioNumericEffects,
 } from "./process-scenario";
+import { NUMERIC_EFFECT_EMISSION_FACTORS } from "./process-scenarios";
 import { PROCESS_SCENARIOS } from "./__fixtures__/process-scenarios";
 
 /**
@@ -190,5 +198,606 @@ describe("ENV-VIS-STORY-001B-VIEW production catalog (RED-first)", () => {
         importPattern.test(fs.readFileSync(file, "utf8")),
     );
     expect(offenders).toEqual([]);
+  });
+});
+
+// ── ENV-VIS-STORY-001-NUM: simulated numeric effects N3 + N4 (RED-first) ──
+//
+// Owner numeric gate decision 2026-11-10 (issue #110): N3 (WAS difference,
+// simulated − recorded) APPROVED with the recorded-value-precedence rule;
+// N4 (resource/emission sensitivities) APPROVED contingent on cited-versioned
+// GHG-management factors; no factor = no effect (render nothing, not zero);
+// unknown stays unknown — ห้ามแทนค่าศูนย์. Everything here stays SIMULATED
+// and separate from the frozen qualitative ScenarioState contract above.
+
+function numericEffectsProbe(scenario: ScenarioDefinition): ScenarioNumericEffects | undefined {
+  return scenario.numericEffects;
+}
+
+const numericScenario = (id: string) => {
+  const found = PROCESS_SCENARIOS.find((scenario) => scenario.id === id);
+  expect(found).toBeDefined();
+  return found!;
+};
+
+/** D5 P2-3: typed activity-base evidence envelope (confirmed, per-day). */
+const confirmedDailyBase = (value: number): { aerationBlowerRuntimeKwh: ScenarioActivityBaseEvidence } => ({
+  aerationBlowerRuntimeKwh: {
+    sourceId: "relay-duty-cycle-reference",
+    status: "confirmed-by-owner",
+    period: "daily",
+    value,
+  },
+});
+
+/**
+ * D5 P2-3 fixture: the loss-of-aeration spec with its DECLARED base flipped
+ * to confirmed-by-owner (the shipped catalog stays pending → omitted).
+ */
+const confirmedAerationFixture = (): ScenarioDefinition => {
+  const base = numericScenario("loss-of-aeration");
+  const spec = base.numericEffects?.sensitivities?.[0];
+  expect(spec).toBeDefined();
+  return {
+    ...base,
+    numericEffects: {
+      sensitivities: [
+        {
+          ...spec!,
+          activityBase: { ...spec!.activityBase, status: "confirmed-by-owner" },
+        },
+      ],
+    },
+  };
+};
+
+describe("ENV-VIS-STORY-001-NUM — N3 WAS difference (RED-first)", () => {
+  it("declares a versioned simulated proposed volume on exactly the WAS scenario", () => {
+    const effects = numericEffectsProbe(numericScenario("excess-sludge-wasting"));
+    const proposed = effects?.wasDifference?.proposed;
+    expect(proposed?.value).toBe(1.5);
+    expect(proposed?.unit).toBe("m³/วัน");
+    expect(proposed?.assumptionClass).toBe("declared-model-assumption");
+    expect(proposed?.assumptionId).toBe("001-NUM-v1");
+    expect(proposed?.note).toMatch(/สมมุติ|สมมติ/);
+    expect(proposed?.note).toMatch(/ไม่ใช่ค่าบันทึก/);
+    for (const other of PROCESS_SCENARIOS.filter((s) => s.id !== "excess-sludge-wasting")) {
+      expect(numericEffectsProbe(other)?.wasDifference).toBeUndefined();
+    }
+  });
+
+  it("recorded precedence: recorded value kept separate, never overwritten, difference = proposed − recorded", () => {
+    const definition = numericScenario("excess-sludge-wasting");
+    const snapshot = JSON.stringify(definition);
+    const effect = deriveScenarioWasDifference(definition, 1.75);
+    expect(effect).toBeTruthy();
+    expect(effect?.recorded?.value).toBe(1.75);
+    expect(effect?.recorded?.field).toBe("excess_sludge_removed");
+    expect(effect?.recorded?.unit).toBe("m³");
+    expect(effect?.difference).toBeCloseTo(1.5 - 1.75, 6);
+    expect(effect?.displayPrecedence).toBe("recorded");
+    expect(effect?.formula).toMatch(/proposed/);
+    expect(effect?.provenance).toEqual({ source: "simulation", observedAt: null });
+    // The recorded evidence input is never mutated; the definition is untouched.
+    expect(JSON.stringify(definition)).toBe(snapshot);
+  });
+
+  it("unknown recorded never becomes zero: difference stays null, precedence falls to simulated", () => {
+    const definition = numericScenario("excess-sludge-wasting");
+    const effect = deriveScenarioWasDifference(definition, null);
+    expect(effect?.recorded).toBeNull();
+    expect(effect?.difference).toBeNull();
+    expect(effect?.displayPrecedence).toBe("simulated");
+    const serialized = JSON.stringify(effect);
+    // ห้ามแทนค่าศูนย์: neither side may be coerced to zero.
+    expect(serialized).not.toMatch(/"difference":\s*0[,}]/);
+    expect(serialized).not.toMatch(/"value":\s*0[,}]/);
+  });
+
+  it("no proposed declaration → no effect; derivation is deterministic, pure and never blends vocabulary", () => {
+    expect(deriveScenarioWasDifference(numericScenario("pump-sump-bypass-active"), 1.75)).toBeNull();
+    expect(deriveScenarioWasDifference(numericScenario("loss-of-aeration"), 1.75)).toBeNull();
+    const first = deriveScenarioWasDifference(numericScenario("excess-sludge-wasting"), 2.4);
+    const second = deriveScenarioWasDifference(numericScenario("excess-sludge-wasting"), 2.4);
+    expect(JSON.stringify(first)).toBe(JSON.stringify(second));
+    const serialized = JSON.stringify(first);
+    expect(serialized).toContain("simulation");
+    expect(serialized).not.toMatch(/"latest"|"live"|"historical"/i);
+    // Scenario-derived numeric output is not the operational model: it carries
+    // no observed-evidence fields (asOf/sourceType/discharge are model-only).
+    expect(serialized).not.toMatch(/asOf|sourceType|discharge/);
+  });
+});
+
+describe("ENV-VIS-STORY-001-NUM — N4 emission sensitivities (RED-first)", () => {
+  it("registry pins the cited-versioned TGO grid factor and the IPCC fallback class", () => {
+    const registry = NUMERIC_EFFECT_EMISSION_FACTORS;
+    const tgo = registry.find((factor) => factor.id === "tgo-grid-th-2022-2024");
+    expect(tgo?.kind).toBe("grid-electricity");
+    expect(tgo?.value).toBe(0.5562);
+    expect(tgo?.unit).toBe("kgCO2e/kWh");
+    expect(tgo?.source).toMatch(/TGO|อบก/);
+    expect(tgo?.version).toMatch(/2022\s*–\s*2024|2022-2024/);
+    expect(tgo?.uncertaintyClass).toBeTruthy();
+    expect((tgo?.applicability ?? "").length).toBeGreaterThan(10);
+    const ipcc = registry.find((factor) => factor.id === "ipcc-2006-vol5-ch6-fallback");
+    expect(ipcc?.kind).toBe("fallback-class");
+    // A declared fallback CLASS binds no value until an activity base exists.
+    expect(ipcc?.value).toBeNull();
+    expect(ipcc?.source).toMatch(/2006 IPCC Guidelines/);
+  });
+
+  it("loss-of-aeration declares an aeration-electricity sensitivity spec; other scenarios declare none", () => {
+    const spec = numericEffectsProbe(numericScenario("loss-of-aeration"))?.sensitivities?.[0];
+    expect(spec?.id).toBe("aeration-blower-electricity");
+    expect(spec?.factorId).toBe("tgo-grid-th-2022-2024");
+    expect(spec?.activityBase.kind).toBe("aeration-blower-runtime-kwh");
+    expect(spec?.activityBase.sourceId).toBe("relay-duty-cycle-reference");
+    expect(spec?.activityBase.status).toBe("pending-owner-values");
+    expect(spec?.formula).toMatch(/activityBaseKwh/);
+    for (const other of PROCESS_SCENARIOS.filter((s) => s.id !== "loss-of-aeration")) {
+      expect(numericEffectsProbe(other)?.sensitivities).toBeUndefined();
+    }
+  });
+
+  it("no activity base → omitted (never zero), rendered empty", () => {
+    const result = deriveScenarioSensitivities(
+      numericScenario("loss-of-aeration"),
+      { aerationBlowerRuntimeKwh: null },
+      NUMERIC_EFFECT_EMISSION_FACTORS,
+    );
+    expect(result.rendered).toEqual([]);
+    expect(result.omitted).toHaveLength(1);
+    expect(result.omitted[0]?.id).toBe("aeration-blower-electricity");
+    expect(result.omitted[0]?.reason).toBe("no-activity-base");
+    expect(JSON.stringify(result.omitted[0])).not.toMatch(/"value":\s*0[,}]/);
+  });
+
+  it("unknown factor id → omitted no-factor (fail closed)", () => {
+    const base = numericScenario("loss-of-aeration");
+    const bad = {
+      ...base,
+      numericEffects: {
+        sensitivities: [
+          {
+            id: "aeration-blower-electricity",
+            label: "ไฟฟ้าเครื่องเติมอากาศ (SIMULATED)",
+            factorId: "not-in-registry",
+            activityBase: { kind: "aeration-blower-runtime-kwh", sourceId: "relay-duty-cycle-reference", status: "pending-owner-values" },
+            formula: "activityBaseKwh × factorKgCo2ePerKwh",
+          },
+        ],
+      },
+    } as unknown as ScenarioDefinition;
+    const result = deriveScenarioSensitivities(bad, confirmedDailyBase(10), NUMERIC_EFFECT_EMISSION_FACTORS);
+    expect(result.rendered).toEqual([]);
+    expect(result.omitted).toHaveLength(1);
+    expect(result.omitted[0]?.reason).toBe("no-factor");
+  });
+
+  it("confirmed daily activity base + cited factor → rendered effect with formula, unit and full citation (fixture)", () => {
+    // Fixture: the shipped catalog declares the base pending-owner-values, so
+    // the computed path needs a fixture whose DECLARED base is confirmed too.
+    const definition = confirmedAerationFixture();
+    const result = deriveScenarioSensitivities(definition, confirmedDailyBase(10), NUMERIC_EFFECT_EMISSION_FACTORS);
+    expect(result.rendered).toHaveLength(1);
+    const effect = result.rendered[0];
+    expect(effect?.kind).toBe("electricity-grid-emission");
+    expect(effect?.id).toBe("aeration-blower-electricity");
+    expect(effect?.baseKwh).toBe(10);
+    expect(effect?.value).toBeCloseTo(10 * 0.5562, 6);
+    expect(effect?.unit).toBe("kgCO2e/วัน");
+    expect(effect?.formula).toMatch(/activityBaseKwh/);
+    expect(effect?.factor.id).toBe("tgo-grid-th-2022-2024");
+    expect(effect?.factor.version).toBeTruthy();
+    expect(effect?.factor.source).toBeTruthy();
+    expect(effect?.provenance).toEqual({ source: "simulation", observedAt: null });
+  });
+});
+
+// ── D5 REPAIRS (cross-model review, GPT-6.1 Terra, verdict CHANGES_REQUIRED) ──
+//
+// Findings → repairs are mapped 1:1 in the handoff D5 REPAIR RECORD:
+// P2-1 honest delta display, P2-2 factor admission validation, P2-3 typed
+// activity-base evidence envelope, P3-4 banner truth precision, P3-plus
+// Buddhist-Era factor-version formatting.
+
+describe("D5 P2-1 — formatScenarioNumber never renders a nonzero value as zero", () => {
+  it("exact zero is the only case that displays 0", () => {
+    expect(formatScenarioNumber(0)).toBe("0");
+    expect(formatScenarioNumber(-0)).toBe("0");
+  });
+
+  it("small positive difference keeps real precision (0.0004 → '0.0004', never '0')", () => {
+    expect(formatScenarioNumber(0.0004)).toBe("0.0004");
+    expect(formatScenarioNumber(0.0004)).not.toBe("0");
+  });
+
+  it("small negative difference keeps real precision (-0.0004 → '-0.0004', never '0'/'-0')", () => {
+    expect(formatScenarioNumber(-0.0004)).toBe("-0.0004");
+    expect(formatScenarioNumber(-0.0004)).not.toBe("0");
+    expect(formatScenarioNumber(-0.0004)).not.toBe("-0");
+  });
+
+  it("extremely small nonzero values fall to the compact scientific-ish form, never zero", () => {
+    expect(formatScenarioNumber(1e-15)).toBe("1e-15");
+    expect(formatScenarioNumber(-1e-15)).toBe("-1e-15");
+  });
+
+  it("regular magnitudes stay the established 3-decimal display rounding", () => {
+    expect(formatScenarioNumber(1.5)).toBe("1.5");
+    expect(formatScenarioNumber(-0.25)).toBe("-0.25");
+    expect(formatScenarioNumber(1.5 - 2.4)).toBe("-0.9");
+    expect(formatScenarioNumber(0.9299)).toBe("0.93");
+  });
+
+  it("null and non-finite values render nothing (no 'NaN', no '0')", () => {
+    expect(formatScenarioNumber(null)).toBeNull();
+    expect(formatScenarioNumber(Number.NaN)).toBeNull();
+    expect(formatScenarioNumber(Number.POSITIVE_INFINITY)).toBeNull();
+  });
+
+  it("a genuinely nonzero WAS difference survives display (integration through the derivation)", () => {
+    const effect = deriveScenarioWasDifference(numericScenario("excess-sludge-wasting"), 1.4996);
+    expect(effect?.difference).not.toBeNull();
+    expect(effect?.difference).not.toBe(0);
+    const displayed = formatScenarioNumber(effect?.difference ?? null);
+    expect(displayed).toBe("0.0004");
+    expect(displayed).not.toBe("0");
+    // The dishonest historical shape "= 0 m³/วัน" must be reconstructible-proof:
+    // the formatted text plus unit can never equal the bare-zero pattern.
+    expect(`${displayed} m³/วัน`.replace(/\s/g, "")).not.toBe("=0m³/วัน");
+  });
+});
+
+describe("D5 P2-2 — factor admission validation (fail closed on bad metadata)", () => {
+  const registryWith = (overrides: Partial<Record<"source" | "version" | "unit", string>>) =>
+    NUMERIC_EFFECT_EMISSION_FACTORS.map((factor) =>
+      factor.id === "tgo-grid-th-2022-2024" ? { ...factor, ...overrides } : factor,
+    );
+
+  const derive = (registry: Parameters<typeof deriveScenarioSensitivities>[2]) =>
+    deriveScenarioSensitivities(confirmedAerationFixture(), confirmedDailyBase(10), registry);
+
+  it("uncited factor (source: '') → omitted invalid-factor-metadata, never computed", () => {
+    const result = derive(registryWith({ source: "" }));
+    expect(result.rendered).toEqual([]);
+    expect(result.omitted).toHaveLength(1);
+    expect(result.omitted[0]?.reason).toBe("invalid-factor-metadata");
+    expect(result.omitted[0]?.note).toMatch(/ไม่แสดงผลกระทบ/);
+  });
+
+  it("versionless factor (version: '') → omitted invalid-factor-metadata, never computed", () => {
+    const result = derive(registryWith({ version: "" }));
+    expect(result.rendered).toEqual([]);
+    expect(result.omitted).toHaveLength(1);
+    expect(result.omitted[0]?.reason).toBe("invalid-factor-metadata");
+  });
+
+  it("wrong-unit factor (unit ≠ kgCO2e/kWh) → omitted invalid-factor-metadata, never computed", () => {
+    const result = derive(registryWith({ unit: "tCO2/MWh" }));
+    expect(result.rendered).toEqual([]);
+    expect(result.omitted).toHaveLength(1);
+    expect(result.omitted[0]?.reason).toBe("invalid-factor-metadata");
+  });
+
+  it("whitespace-only source/version is also rejected (trimmed check)", () => {
+    const result = derive(registryWith({ source: "   " }));
+    expect(result.rendered).toEqual([]);
+    expect(result.omitted[0]?.reason).toBe("invalid-factor-metadata");
+  });
+
+  it("a valid factor still passes admission (control)", () => {
+    const result = derive(registryWith({}));
+    expect(result.rendered).toHaveLength(1);
+    expect(result.omitted).toEqual([]);
+  });
+});
+
+describe("D5 P2-3 — typed activity-base evidence envelope (fail closed)", () => {
+  it("pending-owner-values base → omitted activity-base-unconfirmed, never computed", () => {
+    const definition = confirmedAerationFixture();
+    // Flip ONLY the input evidence back to pending; declaration stays confirmed.
+    const result = deriveScenarioSensitivities(definition, {
+      aerationBlowerRuntimeKwh: {
+        sourceId: "relay-duty-cycle-reference",
+        status: "pending-owner-values",
+        period: "daily",
+        value: 10,
+      },
+    }, NUMERIC_EFFECT_EMISSION_FACTORS);
+    expect(result.rendered).toEqual([]);
+    expect(result.omitted).toHaveLength(1);
+    expect(result.omitted[0]?.reason).toBe("activity-base-unconfirmed");
+    expect(result.omitted[0]?.note).toMatch(/ไม่แสดงผลกระทบ/);
+  });
+
+  it("a DECLARED pending base keeps the sensitivity omitted even with a confirmed input", () => {
+    // Today's production state: the shipped catalog declares pending, the UI
+    // passes null — and even a confirmed input must not activate a pending
+    // declaration (declaration must be flipped through a reviewed slice).
+    const result = deriveScenarioSensitivities(
+      numericScenario("loss-of-aeration"),
+      confirmedDailyBase(10),
+      NUMERIC_EFFECT_EMISSION_FACTORS,
+    );
+    expect(result.rendered).toEqual([]);
+    expect(result.omitted).toHaveLength(1);
+    expect(result.omitted[0]?.reason).toBe("activity-base-unconfirmed");
+  });
+
+  it("period mismatch (monthly envelope) → omitted activity-base-period-mismatch, never computed", () => {
+    const mismatched = {
+      sourceId: "relay-duty-cycle-reference",
+      status: "confirmed-by-owner",
+      period: "monthly",
+      value: 300,
+    } as unknown as ScenarioActivityBaseEvidence;
+    const result = deriveScenarioSensitivities(
+      confirmedAerationFixture(),
+      { aerationBlowerRuntimeKwh: mismatched },
+      NUMERIC_EFFECT_EMISSION_FACTORS,
+    );
+    expect(result.rendered).toEqual([]);
+    expect(result.omitted).toHaveLength(1);
+    expect(result.omitted[0]?.reason).toBe("activity-base-period-mismatch");
+  });
+
+  it("non-finite value inside a confirmed envelope → still omitted no-activity-base", () => {
+    const result = deriveScenarioSensitivities(confirmedAerationFixture(), {
+      aerationBlowerRuntimeKwh: {
+        sourceId: "relay-duty-cycle-reference",
+        status: "confirmed-by-owner",
+        period: "daily",
+        value: Number.NaN,
+      },
+    }, NUMERIC_EFFECT_EMISSION_FACTORS);
+    expect(result.rendered).toEqual([]);
+    expect(result.omitted[0]?.reason).toBe("no-activity-base");
+  });
+});
+
+describe("D5 P3-4 — banner truth precision (observed vs SIMULATED distinction)", () => {
+  it("no numeric-declaring scenario flatly denies quantities any more", () => {
+    for (const scenario of PROCESS_SCENARIOS) {
+      const declaresNumerics = scenario.numericEffects !== undefined;
+      const joined = scenario.assumptions.join(" | ");
+      if (declaresNumerics) {
+        expect(joined).not.toContain("ไม่อ้างปริมาณหรืออัตราใด ๆ");
+        expect(joined).not.toContain("ไม่อ้างผลเชิงเลขหรือคุณภาพน้ำใด ๆ");
+        // The precise truth: no OBSERVED quantities/rates are claimed, while
+        // clearly-labeled SIMULATED values may be shown.
+        expect(joined).toMatch(/จริง/);
+        expect(joined).toMatch(/SIMULATED|จำลอง|สมมุติ/);
+      }
+    }
+  });
+
+  it("the WAS scenario states the observed-vs-simulated distinction explicitly", () => {
+    const was = numericScenario("excess-sludge-wasting");
+    const joined = was.assumptions.join(" | ");
+    expect(joined).toMatch(/ไม่อ้างปริมาณ.*จริง/);
+    expect(joined).toMatch(/SIMULATED|จำลอง|สมมุติ/);
+    expect(joined).not.toContain("ไม่อ้างปริมาณหรืออัตราใด ๆ");
+  });
+});
+
+describe("D5 P3-plus — Buddhist-Era factor-version formatting (พ.ศ. display, CE traceability)", () => {
+  it("converts CE year tokens to พ.ศ. while keeping the original CE digits inline", () => {
+    const formatted = formatScenarioFactorVersion("grid mix ปีข้อมูล 2022–2024");
+    expect(formatted).toContain("2565 พ.ศ. (2022 ค.ศ.)");
+    expect(formatted).toContain("2567 พ.ศ. (2024 ค.ศ.)");
+    // Traceability: the original identifier digits stay present in the output.
+    expect(formatted).toContain("2022");
+    expect(formatted).toContain("2024");
+  });
+
+  it("never touches quantities or non-year tokens (Scope parts, GWP set, class ids)", () => {
+    const formatted = formatScenarioFactorVersion(
+      "grid mix ปีข้อมูล 2022–2024 (Scope 2 = 0.4750 + Scope 3 upstream = 0.0812 kgCO2e/kWh; GWP คู่ขนาน IPCC AR5)",
+    );
+    expect(formatted).toContain("0.4750");
+    expect(formatted).toContain("0.0812");
+    expect(formatted).toContain("IPCC AR5");
+    expect(formatted).not.toContain("5562 พ.ศ.");
+    expect(formatted).not.toContain("4750 พ.ศ.");
+  });
+
+  it("handles the IPCC fallback version year (2006 → 2549 พ.ศ.)", () => {
+    const formatted = formatScenarioFactorVersion("2006 IPCC Guidelines (same basis as BUR4)");
+    expect(formatted).toContain("2549 พ.ศ. (2006 ค.ศ.)");
+    expect(formatted).toContain("IPCC Guidelines");
+  });
+
+  it("a version string without CE years returns unchanged", () => {
+    const raw = "ฉบับคงที่ ไม่มีปี ค.ศ.";
+    expect(formatScenarioFactorVersion(raw)).toBe(raw);
+  });
+
+  it("the registry keeps the raw CE version identifiers untouched (data-level traceability)", () => {
+    const tgo = NUMERIC_EFFECT_EMISSION_FACTORS.find((factor) => factor.id === "tgo-grid-th-2022-2024");
+    expect(tgo?.version).toContain("2022–2024");
+    expect(tgo?.version).not.toContain("พ.ศ.");
+  });
+});
+
+// ── D5-R2 REPAIRS (cross-model review ROUND 2, GPT-6.1 Terra, session 01a1c4e8) ──
+//
+// The R2 verdict CLOSED the original 5 findings and opened 3 new ones
+// inside the repair code itself, mapped 1:1 in the handoff D5-R2 REPAIR
+// RECORD: R2-P2-1 evidence sourceId binding, R2-P2-2 metadata type-guards
+// (fail closed, not TypeError), R2-P3-3 standalone year-token scoping.
+
+describe("D5-R2 P2-1 — evidence sourceId must be non-empty AND match the declared source", () => {
+  const deriveWithEvidence = (evidence: ScenarioActivityBaseEvidence) =>
+    deriveScenarioSensitivities(
+      confirmedAerationFixture(),
+      { aerationBlowerRuntimeKwh: evidence },
+      NUMERIC_EFFECT_EMISSION_FACTORS,
+    );
+
+  it("empty-string sourceId → omitted activity-base-source-mismatch, never computed", () => {
+    const result = deriveWithEvidence({
+      sourceId: "",
+      status: "confirmed-by-owner",
+      period: "daily",
+      value: 10,
+    });
+    expect(result.rendered).toEqual([]);
+    expect(result.omitted).toHaveLength(1);
+    expect(result.omitted[0]?.reason).toBe("activity-base-source-mismatch");
+    expect(result.omitted[0]?.note).toMatch(/ไม่แสดงผลกระทบ/);
+    expect(JSON.stringify(result.omitted[0])).not.toMatch(/"value":\s*0[,}]/);
+  });
+
+  it("mismatched sourceId ('other-reference' vs declared 'relay-duty-cycle-reference') → omitted, never computed", () => {
+    const result = deriveWithEvidence({
+      sourceId: "other-reference",
+      status: "confirmed-by-owner",
+      period: "daily",
+      value: 10,
+    });
+    expect(result.rendered).toEqual([]);
+    expect(result.omitted).toHaveLength(1);
+    expect(result.omitted[0]?.reason).toBe("activity-base-source-mismatch");
+    expect(result.omitted[0]?.id).toBe("aeration-blower-electricity");
+  });
+
+  it("the confirmed fixture with the MATCHING declared sourceId still computes (control)", () => {
+    const result = deriveWithEvidence(confirmedDailyBase(10).aerationBlowerRuntimeKwh);
+    expect(result.omitted).toEqual([]);
+    expect(result.rendered).toHaveLength(1);
+    expect(result.rendered[0]?.baseKwh).toBe(10);
+    expect(result.rendered[0]?.value).toBeCloseTo(10 * 0.5562, 6);
+  });
+});
+
+describe("D5-R2 P2-2 — missing/null factor metadata fails closed WITHOUT throwing", () => {
+  const rawTgo = (): Record<string, unknown> => {
+    const tgo = NUMERIC_EFFECT_EMISSION_FACTORS.find((factor) => factor.id === "tgo-grid-th-2022-2024");
+    expect(tgo).toBeDefined();
+    return { ...(tgo as unknown as Record<string, unknown>) };
+  };
+
+  const deriveRaw = (raw: Record<string, unknown>) =>
+    deriveScenarioSensitivities(
+      confirmedAerationFixture(),
+      confirmedDailyBase(10),
+      NUMERIC_EFFECT_EMISSION_FACTORS.map((factor) =>
+        factor.id === "tgo-grid-th-2022-2024" ? (raw as unknown as EmissionFactor) : factor,
+      ),
+    );
+
+  it("source property ABSENT (undefined) → omitted invalid-factor-metadata, no TypeError", () => {
+    const raw = rawTgo();
+    delete raw.source;
+    const run = () => deriveRaw(raw);
+    expect(run).not.toThrow();
+    const result = run();
+    expect(result.rendered).toEqual([]);
+    expect(result.omitted).toHaveLength(1);
+    expect(result.omitted[0]?.reason).toBe("invalid-factor-metadata");
+  });
+
+  it("source null → omitted invalid-factor-metadata, no TypeError", () => {
+    const raw = rawTgo();
+    raw.source = null;
+    const run = () => deriveRaw(raw);
+    expect(run).not.toThrow();
+    const result = run();
+    expect(result.rendered).toEqual([]);
+    expect(result.omitted).toHaveLength(1);
+    expect(result.omitted[0]?.reason).toBe("invalid-factor-metadata");
+  });
+
+  it("version property ABSENT (undefined) → omitted invalid-factor-metadata, no TypeError", () => {
+    const raw = rawTgo();
+    delete raw.version;
+    const run = () => deriveRaw(raw);
+    expect(run).not.toThrow();
+    const result = run();
+    expect(result.rendered).toEqual([]);
+    expect(result.omitted).toHaveLength(1);
+    expect(result.omitted[0]?.reason).toBe("invalid-factor-metadata");
+  });
+
+  it("version null → omitted invalid-factor-metadata, no TypeError", () => {
+    const raw = rawTgo();
+    raw.version = null;
+    const run = () => deriveRaw(raw);
+    expect(run).not.toThrow();
+    const result = run();
+    expect(result.rendered).toEqual([]);
+    expect(result.omitted).toHaveLength(1);
+    expect(result.omitted[0]?.reason).toBe("invalid-factor-metadata");
+  });
+
+  it("the malformed factor is never multiplied (rendered stays empty in every case)", () => {
+    for (const raw of [
+      (() => {
+        const r = rawTgo();
+        delete r.source;
+        return r;
+      })(),
+      (() => {
+        const r = rawTgo();
+        delete r.version;
+        return r;
+      })(),
+    ]) {
+      const result = deriveRaw(raw);
+      expect(result.rendered).toEqual([]);
+    }
+  });
+});
+
+describe("D5-R2 P3-3 — year-token conversion is scoped to STANDALONE tokens only", () => {
+  it("digits inside decimals are NOT converted ('0.2022' unchanged — Terra reproduction)", () => {
+    expect(formatScenarioFactorVersion("0.2022")).toBe("0.2022");
+    expect(formatScenarioFactorVersion("0.2022")).not.toContain("พ.ศ.");
+  });
+
+  it("digits inside dotted version identifiers are NOT converted ('v1.2022' unchanged)", () => {
+    expect(formatScenarioFactorVersion("v1.2022")).toBe("v1.2022");
+  });
+
+  it("quantity-like decimals stay untouched ('0.4750' unchanged)", () => {
+    expect(formatScenarioFactorVersion("0.4750")).toBe("0.4750");
+  });
+
+  it("hyphen-separated year RANGES still convert BOTH years ('2022-2024')", () => {
+    expect(formatScenarioFactorVersion("2022-2024")).toBe(
+      "2565 พ.ศ. (2022 ค.ศ.)-2567 พ.ศ. (2024 ค.ศ.)",
+    );
+  });
+
+  it("standalone year tokens still convert ('2022'; 'ปี 2026')", () => {
+    expect(formatScenarioFactorVersion("2022")).toBe("2565 พ.ศ. (2022 ค.ศ.)");
+    expect(formatScenarioFactorVersion("ปี 2026")).toBe("ปี 2569 พ.ศ. (2026 ค.ศ.)");
+  });
+
+  it("selective in one string: dotted identifier untouched, standalone year converted", () => {
+    const formatted = formatScenarioFactorVersion("v1.2022 (ปี 2022)");
+    expect(formatted).toContain("v1.2022");
+    expect(formatted).toContain("ปี 2565 พ.ศ. (2022 ค.ศ.)");
+    expect(formatted).not.toContain("v1.2565");
+  });
+
+  it("the real TGO version converts its two years while embedded decimals stay intact (regression)", () => {
+    const tgo = NUMERIC_EFFECT_EMISSION_FACTORS.find((factor) => factor.id === "tgo-grid-th-2022-2024");
+    const version = tgo?.version ?? "";
+    const formatted = formatScenarioFactorVersion(version);
+    expect(formatted).toContain("2565 พ.ศ. (2022 ค.ศ.)");
+    expect(formatted).toContain("2567 พ.ศ. (2024 ค.ศ.)");
+    expect(formatted).toContain("0.4750");
+    expect(formatted).toContain("0.0812");
+    expect(formatted).not.toContain("0.2565");
+  });
+
+  it("the input version string itself is NEVER mutated (display-only contract)", () => {
+    const raw = "v1.2022 (ปี 2022)";
+    const formatted = formatScenarioFactorVersion(raw);
+    expect(raw).toBe("v1.2022 (ปี 2022)");
+    expect(formatted).not.toBe(raw);
   });
 });
