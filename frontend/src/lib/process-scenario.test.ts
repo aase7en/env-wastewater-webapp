@@ -192,3 +192,260 @@ describe("ENV-VIS-STORY-001B-VIEW production catalog (RED-first)", () => {
     expect(offenders).toEqual([]);
   });
 });
+
+// ── ENV-VIS-STORY-001-NUM: simulated numeric effects N3 + N4 (RED-first) ──
+//
+// Owner numeric gate decision 2026-11-10 (issue #110): N3 (WAS difference,
+// simulated − recorded) APPROVED with the recorded-value-precedence rule;
+// N4 (resource/emission sensitivities) APPROVED contingent on cited-versioned
+// GHG-management factors; no factor = no effect (render nothing, not zero);
+// unknown stays unknown — ห้ามแทนค่าศูนย์. Everything here stays SIMULATED
+// and separate from the frozen qualitative ScenarioState contract above.
+
+interface NumProposedVolume {
+  value: number;
+  unit: string;
+  assumptionClass: string;
+  assumptionId: string;
+  note: string;
+}
+
+interface NumEffectsProbe {
+  wasDifference?: { proposed: NumProposedVolume };
+  sensitivities?: Array<{
+    id: string;
+    label: string;
+    factorId: string;
+    activityBase: { kind: string; sourceId: string; status: string };
+    formula: string;
+  }>;
+}
+
+function numericEffectsProbe(scenario: ScenarioDefinition): NumEffectsProbe | undefined {
+  return (scenario as ScenarioDefinition & { numericEffects?: NumEffectsProbe }).numericEffects;
+}
+
+interface NumFactorProbe {
+  id: string;
+  kind: string;
+  value: number | null;
+  unit: string | null;
+  source: string;
+  version: string;
+  uncertaintyClass: string;
+  applicability: string;
+}
+
+interface NumWasEffectProbe {
+  kind: string;
+  provenance: { source: string; observedAt: null };
+  proposed: NumProposedVolume;
+  recorded: { field: string; value: number | null; unit: string } | null;
+  difference: number | null;
+  displayPrecedence: "recorded" | "simulated";
+  formula: string;
+}
+
+interface NumSensitivityResultProbe {
+  rendered: Array<{
+    kind: string;
+    id: string;
+    value: number;
+    unit: string;
+    baseKwh: number;
+    factor: NumFactorProbe;
+    formula: string;
+    provenance: { source: string; observedAt: null };
+  }>;
+  omitted: Array<{ id: string; reason: string }>;
+}
+
+type WasDeriveFn = (
+  definition: ScenarioDefinition,
+  recorded: number | null,
+) => NumWasEffectProbe | null;
+
+type SensitivityDeriveFn = (
+  definition: ScenarioDefinition,
+  inputs: { aerationBlowerRuntimeKwh?: number | null },
+  registry: readonly NumFactorProbe[],
+) => NumSensitivityResultProbe;
+
+async function loadNumericModule(): Promise<Record<string, unknown>> {
+  return (await import("./process-scenario")) as unknown as Record<string, unknown>;
+}
+
+async function loadCatalogModule(): Promise<Record<string, unknown>> {
+  return (await import("./process-scenarios")) as unknown as Record<string, unknown>;
+}
+
+const numericScenario = (id: string) => {
+  const found = PROCESS_SCENARIOS.find((scenario) => scenario.id === id);
+  expect(found).toBeDefined();
+  return found!;
+};
+
+describe("ENV-VIS-STORY-001-NUM — N3 WAS difference (RED-first)", () => {
+  it("declares a versioned simulated proposed volume on exactly the WAS scenario", () => {
+    const effects = numericEffectsProbe(numericScenario("excess-sludge-wasting"));
+    const proposed = effects?.wasDifference?.proposed;
+    expect(proposed?.value).toBe(1.5);
+    expect(proposed?.unit).toBe("m³/วัน");
+    expect(proposed?.assumptionClass).toBe("declared-model-assumption");
+    expect(proposed?.assumptionId).toBe("001-NUM-v1");
+    expect(proposed?.note).toMatch(/สมมุติ|สมมติ/);
+    expect(proposed?.note).toMatch(/ไม่ใช่ค่าบันทึก/);
+    for (const other of PROCESS_SCENARIOS.filter((s) => s.id !== "excess-sludge-wasting")) {
+      expect(numericEffectsProbe(other)?.wasDifference).toBeUndefined();
+    }
+  });
+
+  it("recorded precedence: recorded value kept separate, never overwritten, difference = proposed − recorded", async () => {
+    const mod = await loadNumericModule();
+    const derive = mod.deriveScenarioWasDifference as WasDeriveFn | undefined;
+    const definition = numericScenario("excess-sludge-wasting");
+    const snapshot = JSON.stringify(definition);
+    const effect = derive?.(definition, 1.75);
+    expect(effect).toBeTruthy();
+    expect(effect?.recorded?.value).toBe(1.75);
+    expect(effect?.recorded?.field).toBe("excess_sludge_removed");
+    expect(effect?.recorded?.unit).toBe("m³");
+    expect(effect?.difference).toBeCloseTo(1.5 - 1.75, 6);
+    expect(effect?.displayPrecedence).toBe("recorded");
+    expect(effect?.formula).toMatch(/proposed/);
+    expect(effect?.provenance).toEqual({ source: "simulation", observedAt: null });
+    // The recorded evidence input is never mutated; the definition is untouched.
+    expect(JSON.stringify(definition)).toBe(snapshot);
+  });
+
+  it("unknown recorded never becomes zero: difference stays null, precedence falls to simulated", async () => {
+    const mod = await loadNumericModule();
+    const derive = mod.deriveScenarioWasDifference as WasDeriveFn | undefined;
+    const definition = numericScenario("excess-sludge-wasting");
+    const effect = derive?.(definition, null);
+    expect(effect?.recorded).toBeNull();
+    expect(effect?.difference).toBeNull();
+    expect(effect?.displayPrecedence).toBe("simulated");
+    const serialized = JSON.stringify(effect);
+    // ห้ามแทนค่าศูนย์: neither side may be coerced to zero.
+    expect(serialized).not.toMatch(/"difference":\s*0[,}]/);
+    expect(serialized).not.toMatch(/"value":\s*0[,}]/);
+  });
+
+  it("no proposed declaration → no effect; derivation is deterministic, pure and never blends vocabulary", async () => {
+    const mod = await loadNumericModule();
+    const derive = mod.deriveScenarioWasDifference as WasDeriveFn | undefined;
+    expect(derive?.(numericScenario("pump-sump-bypass-active"), 1.75)).toBeNull();
+    expect(derive?.(numericScenario("loss-of-aeration"), 1.75)).toBeNull();
+    const first = derive?.(numericScenario("excess-sludge-wasting"), 2.4);
+    const second = derive?.(numericScenario("excess-sludge-wasting"), 2.4);
+    expect(JSON.stringify(first)).toBe(JSON.stringify(second));
+    const serialized = JSON.stringify(first);
+    expect(serialized).toContain("simulation");
+    expect(serialized).not.toMatch(/"latest"|"live"|"historical"/i);
+    // Scenario-derived numeric output is not the operational model: it carries
+    // no observed-evidence fields (asOf/sourceType/discharge are model-only).
+    expect(serialized).not.toMatch(/asOf|sourceType|discharge/);
+  });
+});
+
+describe("ENV-VIS-STORY-001-NUM — N4 emission sensitivities (RED-first)", () => {
+  it("registry pins the cited-versioned TGO grid factor and the IPCC fallback class", async () => {
+    const mod = await loadCatalogModule();
+    const registry = mod.NUMERIC_EFFECT_EMISSION_FACTORS as readonly NumFactorProbe[] | undefined;
+    expect(registry).toBeDefined();
+    const tgo = registry?.find((factor) => factor.id === "tgo-grid-th-2022-2024");
+    expect(tgo?.kind).toBe("grid-electricity");
+    expect(tgo?.value).toBe(0.5562);
+    expect(tgo?.unit).toBe("kgCO2e/kWh");
+    expect(tgo?.source).toMatch(/TGO|อบก/);
+    expect(tgo?.version).toMatch(/2022\s*–\s*2024|2022-2024/);
+    expect(tgo?.uncertaintyClass).toBeTruthy();
+    expect((tgo?.applicability ?? "").length).toBeGreaterThan(10);
+    const ipcc = registry?.find((factor) => factor.id === "ipcc-2006-vol5-ch6-fallback");
+    expect(ipcc?.kind).toBe("fallback-class");
+    // A declared fallback CLASS binds no value until an activity base exists.
+    expect(ipcc?.value).toBeNull();
+    expect(ipcc?.source).toMatch(/2006 IPCC Guidelines/);
+  });
+
+  it("loss-of-aeration declares an aeration-electricity sensitivity spec; other scenarios declare none", () => {
+    const spec = numericEffectsProbe(numericScenario("loss-of-aeration"))?.sensitivities?.[0];
+    expect(spec?.id).toBe("aeration-blower-electricity");
+    expect(spec?.factorId).toBe("tgo-grid-th-2022-2024");
+    expect(spec?.activityBase.kind).toBe("aeration-blower-runtime-kwh");
+    expect(spec?.activityBase.sourceId).toBe("relay-duty-cycle-reference");
+    expect(spec?.activityBase.status).toBe("pending-owner-values");
+    expect(spec?.formula).toMatch(/activityBaseKwh/);
+    for (const other of PROCESS_SCENARIOS.filter((s) => s.id !== "loss-of-aeration")) {
+      expect(numericEffectsProbe(other)?.sensitivities).toBeUndefined();
+    }
+  });
+
+  it("no activity base → omitted (never zero), rendered empty", async () => {
+    const mod = await loadNumericModule();
+    const catalog = await loadCatalogModule();
+    const derive = mod.deriveScenarioSensitivities as SensitivityDeriveFn | undefined;
+    const registry = catalog.NUMERIC_EFFECT_EMISSION_FACTORS as readonly NumFactorProbe[];
+    const result = derive?.(
+      numericScenario("loss-of-aeration"),
+      { aerationBlowerRuntimeKwh: null },
+      registry,
+    );
+    expect(result?.rendered).toEqual([]);
+    expect(result?.omitted).toHaveLength(1);
+    expect(result?.omitted[0]?.id).toBe("aeration-blower-electricity");
+    expect(result?.omitted[0]?.reason).toBe("no-activity-base");
+    expect(JSON.stringify(result?.omitted[0])).not.toMatch(/"value":\s*0[,}]/);
+  });
+
+  it("unknown factor id → omitted no-factor (fail closed)", async () => {
+    const mod = await loadNumericModule();
+    const catalog = await loadCatalogModule();
+    const derive = mod.deriveScenarioSensitivities as SensitivityDeriveFn | undefined;
+    const registry = catalog.NUMERIC_EFFECT_EMISSION_FACTORS as readonly NumFactorProbe[];
+    const base = numericScenario("loss-of-aeration");
+    const bad = {
+      ...base,
+      numericEffects: {
+        sensitivities: [
+          {
+            id: "aeration-blower-electricity",
+            label: "ไฟฟ้าเครื่องเติมอากาศ (SIMULATED)",
+            factorId: "not-in-registry",
+            activityBase: { kind: "aeration-blower-runtime-kwh", sourceId: "relay-duty-cycle-reference", status: "pending-owner-values" },
+            formula: "activityBaseKwh × factorKgCo2ePerKwh",
+          },
+        ],
+      },
+    } as unknown as ScenarioDefinition;
+    const result = derive?.(bad, { aerationBlowerRuntimeKwh: 10 }, registry);
+    expect(result?.rendered).toEqual([]);
+    expect(result?.omitted).toHaveLength(1);
+    expect(result?.omitted[0]?.reason).toBe("no-factor");
+  });
+
+  it("both base and factor → rendered effect with formula, unit and full citation", async () => {
+    const mod = await loadNumericModule();
+    const catalog = await loadCatalogModule();
+    const derive = mod.deriveScenarioSensitivities as SensitivityDeriveFn | undefined;
+    const registry = catalog.NUMERIC_EFFECT_EMISSION_FACTORS as readonly NumFactorProbe[];
+    const result = derive?.(
+      numericScenario("loss-of-aeration"),
+      { aerationBlowerRuntimeKwh: 10 },
+      registry,
+    );
+    expect(result?.rendered).toHaveLength(1);
+    const effect = result?.rendered[0];
+    expect(effect?.kind).toBe("electricity-grid-emission");
+    expect(effect?.id).toBe("aeration-blower-electricity");
+    expect(effect?.baseKwh).toBe(10);
+    expect(effect?.value).toBeCloseTo(10 * 0.5562, 6);
+    expect(effect?.unit).toBe("kgCO2e/วัน");
+    expect(effect?.formula).toMatch(/activityBaseKwh/);
+    expect(effect?.factor.id).toBe("tgo-grid-th-2022-2024");
+    expect(effect?.factor.version).toBeTruthy();
+    expect(effect?.factor.source).toBeTruthy();
+    expect(effect?.provenance).toEqual({ source: "simulation", observedAt: null });
+  });
+});
