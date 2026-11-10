@@ -1,7 +1,7 @@
 # ENV-VIS-STORY-001-NUM — Simulated Numeric Effects N3+N4 (Work Order, C1 slice)
 
-Status: REVIEW_REQUESTED 2026-11-10 — implementation head frozen; the
-implementing lane never merges. Claim `ENV-VIS-STORY-001-NUM-C1`
+Status: CLOSED — delivered via PR #158 (merged fe96f7f); closeout
+transition pending. Claim `ENV-VIS-STORY-001-NUM-C1`
 (generation 1); base `bd5a9414fe696237154af0fa1a5b529258dfdc2b` (main at
 claim transition, merged via PR #157). Branch `feat/env-visstory-001-num`
 in registered worktree `env-visstory-001num`. Receipts durable in
