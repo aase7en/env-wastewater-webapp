@@ -428,7 +428,8 @@ test("N3: numeric chip follows the recorded reading and never substitutes zero f
   await expect(page.getByTestId("process-scenario-numeric")).toHaveAttribute("data-scenario-precedence", "simulated");
   const simulatedChip = await page.getByTestId("process-scenario-numeric").innerText();
   expect(simulatedChip).toContain("ไม่แทนค่าศูนย์");
-  expect(simulatedChip).not.toContain("ผลต่าง");
+  // No COMPUTED difference line when the recorded value is unknown.
+  expect(simulatedChip).not.toContain("ผลต่างสมมุติ:");
   expect(simulatedChip).toContain("1.5");
 });
 

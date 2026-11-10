@@ -8,8 +8,12 @@ import type {
 } from "./environmental-flow";
 import {
   deriveScenarioState,
+  deriveScenarioSensitivities,
+  deriveScenarioWasDifference,
   type ScenarioDefinition,
+  type ScenarioNumericEffects,
 } from "./process-scenario";
+import { NUMERIC_EFFECT_EMISSION_FACTORS } from "./process-scenarios";
 import { PROCESS_SCENARIOS } from "./__fixtures__/process-scenarios";
 
 /**
@@ -202,81 +206,8 @@ describe("ENV-VIS-STORY-001B-VIEW production catalog (RED-first)", () => {
 // unknown stays unknown — ห้ามแทนค่าศูนย์. Everything here stays SIMULATED
 // and separate from the frozen qualitative ScenarioState contract above.
 
-interface NumProposedVolume {
-  value: number;
-  unit: string;
-  assumptionClass: string;
-  assumptionId: string;
-  note: string;
-}
-
-interface NumEffectsProbe {
-  wasDifference?: { proposed: NumProposedVolume };
-  sensitivities?: Array<{
-    id: string;
-    label: string;
-    factorId: string;
-    activityBase: { kind: string; sourceId: string; status: string };
-    formula: string;
-  }>;
-}
-
-function numericEffectsProbe(scenario: ScenarioDefinition): NumEffectsProbe | undefined {
-  return (scenario as ScenarioDefinition & { numericEffects?: NumEffectsProbe }).numericEffects;
-}
-
-interface NumFactorProbe {
-  id: string;
-  kind: string;
-  value: number | null;
-  unit: string | null;
-  source: string;
-  version: string;
-  uncertaintyClass: string;
-  applicability: string;
-}
-
-interface NumWasEffectProbe {
-  kind: string;
-  provenance: { source: string; observedAt: null };
-  proposed: NumProposedVolume;
-  recorded: { field: string; value: number | null; unit: string } | null;
-  difference: number | null;
-  displayPrecedence: "recorded" | "simulated";
-  formula: string;
-}
-
-interface NumSensitivityResultProbe {
-  rendered: Array<{
-    kind: string;
-    id: string;
-    value: number;
-    unit: string;
-    baseKwh: number;
-    factor: NumFactorProbe;
-    formula: string;
-    provenance: { source: string; observedAt: null };
-  }>;
-  omitted: Array<{ id: string; reason: string }>;
-}
-
-type WasDeriveFn = (
-  definition: ScenarioDefinition,
-  recorded: number | null,
-) => NumWasEffectProbe | null;
-
-type SensitivityDeriveFn = (
-  definition: ScenarioDefinition,
-  inputs: { aerationBlowerRuntimeKwh?: number | null },
-  registry: readonly NumFactorProbe[],
-) => NumSensitivityResultProbe;
-
-async function loadNumericModule(): Promise<Record<string, unknown>> {
-  return (await import("./process-scenario")) as unknown as Record<string, unknown>;
-}
-
-async function loadCatalogModule(): Promise<Record<string, unknown>> {
-  return (await import("./process-scenarios")) as unknown as Record<string, unknown>;
+function numericEffectsProbe(scenario: ScenarioDefinition): ScenarioNumericEffects | undefined {
+  return scenario.numericEffects;
 }
 
 const numericScenario = (id: string) => {
@@ -300,12 +231,10 @@ describe("ENV-VIS-STORY-001-NUM — N3 WAS difference (RED-first)", () => {
     }
   });
 
-  it("recorded precedence: recorded value kept separate, never overwritten, difference = proposed − recorded", async () => {
-    const mod = await loadNumericModule();
-    const derive = mod.deriveScenarioWasDifference as WasDeriveFn | undefined;
+  it("recorded precedence: recorded value kept separate, never overwritten, difference = proposed − recorded", () => {
     const definition = numericScenario("excess-sludge-wasting");
     const snapshot = JSON.stringify(definition);
-    const effect = derive?.(definition, 1.75);
+    const effect = deriveScenarioWasDifference(definition, 1.75);
     expect(effect).toBeTruthy();
     expect(effect?.recorded?.value).toBe(1.75);
     expect(effect?.recorded?.field).toBe("excess_sludge_removed");
@@ -318,11 +247,9 @@ describe("ENV-VIS-STORY-001-NUM — N3 WAS difference (RED-first)", () => {
     expect(JSON.stringify(definition)).toBe(snapshot);
   });
 
-  it("unknown recorded never becomes zero: difference stays null, precedence falls to simulated", async () => {
-    const mod = await loadNumericModule();
-    const derive = mod.deriveScenarioWasDifference as WasDeriveFn | undefined;
+  it("unknown recorded never becomes zero: difference stays null, precedence falls to simulated", () => {
     const definition = numericScenario("excess-sludge-wasting");
-    const effect = derive?.(definition, null);
+    const effect = deriveScenarioWasDifference(definition, null);
     expect(effect?.recorded).toBeNull();
     expect(effect?.difference).toBeNull();
     expect(effect?.displayPrecedence).toBe("simulated");
@@ -332,13 +259,11 @@ describe("ENV-VIS-STORY-001-NUM — N3 WAS difference (RED-first)", () => {
     expect(serialized).not.toMatch(/"value":\s*0[,}]/);
   });
 
-  it("no proposed declaration → no effect; derivation is deterministic, pure and never blends vocabulary", async () => {
-    const mod = await loadNumericModule();
-    const derive = mod.deriveScenarioWasDifference as WasDeriveFn | undefined;
-    expect(derive?.(numericScenario("pump-sump-bypass-active"), 1.75)).toBeNull();
-    expect(derive?.(numericScenario("loss-of-aeration"), 1.75)).toBeNull();
-    const first = derive?.(numericScenario("excess-sludge-wasting"), 2.4);
-    const second = derive?.(numericScenario("excess-sludge-wasting"), 2.4);
+  it("no proposed declaration → no effect; derivation is deterministic, pure and never blends vocabulary", () => {
+    expect(deriveScenarioWasDifference(numericScenario("pump-sump-bypass-active"), 1.75)).toBeNull();
+    expect(deriveScenarioWasDifference(numericScenario("loss-of-aeration"), 1.75)).toBeNull();
+    const first = deriveScenarioWasDifference(numericScenario("excess-sludge-wasting"), 2.4);
+    const second = deriveScenarioWasDifference(numericScenario("excess-sludge-wasting"), 2.4);
     expect(JSON.stringify(first)).toBe(JSON.stringify(second));
     const serialized = JSON.stringify(first);
     expect(serialized).toContain("simulation");
@@ -350,11 +275,9 @@ describe("ENV-VIS-STORY-001-NUM — N3 WAS difference (RED-first)", () => {
 });
 
 describe("ENV-VIS-STORY-001-NUM — N4 emission sensitivities (RED-first)", () => {
-  it("registry pins the cited-versioned TGO grid factor and the IPCC fallback class", async () => {
-    const mod = await loadCatalogModule();
-    const registry = mod.NUMERIC_EFFECT_EMISSION_FACTORS as readonly NumFactorProbe[] | undefined;
-    expect(registry).toBeDefined();
-    const tgo = registry?.find((factor) => factor.id === "tgo-grid-th-2022-2024");
+  it("registry pins the cited-versioned TGO grid factor and the IPCC fallback class", () => {
+    const registry = NUMERIC_EFFECT_EMISSION_FACTORS;
+    const tgo = registry.find((factor) => factor.id === "tgo-grid-th-2022-2024");
     expect(tgo?.kind).toBe("grid-electricity");
     expect(tgo?.value).toBe(0.5562);
     expect(tgo?.unit).toBe("kgCO2e/kWh");
@@ -362,7 +285,7 @@ describe("ENV-VIS-STORY-001-NUM — N4 emission sensitivities (RED-first)", () =
     expect(tgo?.version).toMatch(/2022\s*–\s*2024|2022-2024/);
     expect(tgo?.uncertaintyClass).toBeTruthy();
     expect((tgo?.applicability ?? "").length).toBeGreaterThan(10);
-    const ipcc = registry?.find((factor) => factor.id === "ipcc-2006-vol5-ch6-fallback");
+    const ipcc = registry.find((factor) => factor.id === "ipcc-2006-vol5-ch6-fallback");
     expect(ipcc?.kind).toBe("fallback-class");
     // A declared fallback CLASS binds no value until an activity base exists.
     expect(ipcc?.value).toBeNull();
@@ -382,28 +305,20 @@ describe("ENV-VIS-STORY-001-NUM — N4 emission sensitivities (RED-first)", () =
     }
   });
 
-  it("no activity base → omitted (never zero), rendered empty", async () => {
-    const mod = await loadNumericModule();
-    const catalog = await loadCatalogModule();
-    const derive = mod.deriveScenarioSensitivities as SensitivityDeriveFn | undefined;
-    const registry = catalog.NUMERIC_EFFECT_EMISSION_FACTORS as readonly NumFactorProbe[];
-    const result = derive?.(
+  it("no activity base → omitted (never zero), rendered empty", () => {
+    const result = deriveScenarioSensitivities(
       numericScenario("loss-of-aeration"),
       { aerationBlowerRuntimeKwh: null },
-      registry,
+      NUMERIC_EFFECT_EMISSION_FACTORS,
     );
-    expect(result?.rendered).toEqual([]);
-    expect(result?.omitted).toHaveLength(1);
-    expect(result?.omitted[0]?.id).toBe("aeration-blower-electricity");
-    expect(result?.omitted[0]?.reason).toBe("no-activity-base");
-    expect(JSON.stringify(result?.omitted[0])).not.toMatch(/"value":\s*0[,}]/);
+    expect(result.rendered).toEqual([]);
+    expect(result.omitted).toHaveLength(1);
+    expect(result.omitted[0]?.id).toBe("aeration-blower-electricity");
+    expect(result.omitted[0]?.reason).toBe("no-activity-base");
+    expect(JSON.stringify(result.omitted[0])).not.toMatch(/"value":\s*0[,}]/);
   });
 
-  it("unknown factor id → omitted no-factor (fail closed)", async () => {
-    const mod = await loadNumericModule();
-    const catalog = await loadCatalogModule();
-    const derive = mod.deriveScenarioSensitivities as SensitivityDeriveFn | undefined;
-    const registry = catalog.NUMERIC_EFFECT_EMISSION_FACTORS as readonly NumFactorProbe[];
+  it("unknown factor id → omitted no-factor (fail closed)", () => {
     const base = numericScenario("loss-of-aeration");
     const bad = {
       ...base,
@@ -419,24 +334,20 @@ describe("ENV-VIS-STORY-001-NUM — N4 emission sensitivities (RED-first)", () =
         ],
       },
     } as unknown as ScenarioDefinition;
-    const result = derive?.(bad, { aerationBlowerRuntimeKwh: 10 }, registry);
-    expect(result?.rendered).toEqual([]);
-    expect(result?.omitted).toHaveLength(1);
-    expect(result?.omitted[0]?.reason).toBe("no-factor");
+    const result = deriveScenarioSensitivities(bad, { aerationBlowerRuntimeKwh: 10 }, NUMERIC_EFFECT_EMISSION_FACTORS);
+    expect(result.rendered).toEqual([]);
+    expect(result.omitted).toHaveLength(1);
+    expect(result.omitted[0]?.reason).toBe("no-factor");
   });
 
-  it("both base and factor → rendered effect with formula, unit and full citation", async () => {
-    const mod = await loadNumericModule();
-    const catalog = await loadCatalogModule();
-    const derive = mod.deriveScenarioSensitivities as SensitivityDeriveFn | undefined;
-    const registry = catalog.NUMERIC_EFFECT_EMISSION_FACTORS as readonly NumFactorProbe[];
-    const result = derive?.(
+  it("both base and factor → rendered effect with formula, unit and full citation", () => {
+    const result = deriveScenarioSensitivities(
       numericScenario("loss-of-aeration"),
       { aerationBlowerRuntimeKwh: 10 },
-      registry,
+      NUMERIC_EFFECT_EMISSION_FACTORS,
     );
-    expect(result?.rendered).toHaveLength(1);
-    const effect = result?.rendered[0];
+    expect(result.rendered).toHaveLength(1);
+    const effect = result.rendered[0];
     expect(effect?.kind).toBe("electricity-grid-emission");
     expect(effect?.id).toBe("aeration-blower-electricity");
     expect(effect?.baseKwh).toBe(10);

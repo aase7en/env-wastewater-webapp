@@ -45,7 +45,7 @@ export function FlowDiagramPage() {
           </h1>
         </div>
         <p className="max-w-4xl text-sm text-aura-textMuted font-thai">
-          แสดงหลักฐานจากบันทึกรายวันล่าสุดร่วมกับโครงสร้าง Activated Sludge ที่ยืนยันแล้ว — เป็น latest evidence ไม่ใช่สถานะ Live
+          แสดงหลักฐานจากบันทึกรายวันล่าสุดร่วมกับโครงสร้าง Activated Sludge ที่ยืนยันแล้ว — เป็น latest evidence ไม่ใช่สถานะ Live · ผลกระทบเชิงตัวเลขภายใต้สถานการณ์สมมุติ (SIMULATED) แสดงเฉพาะเมื่อกดใช้สถานการณ์ และไม่ใช่ข้อมูลจริง
         </p>
         <div className="flex flex-wrap gap-2 text-xs text-aura-textMuted font-thai">
           <span className="rounded-full border border-aura-borderSubtle px-3 py-1.5">
