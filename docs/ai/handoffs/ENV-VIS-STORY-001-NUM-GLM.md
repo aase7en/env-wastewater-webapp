@@ -446,3 +446,382 @@ and the D6 merge. NEVER merged by this lane.
   OWNER-DECIDED numeric slice DELIVERED 2026-11-10 (PENDING OWNER INPUT
   note stays); WO status → CLOSED. Scope lock released at generation 1;
   CLOSED confers no fresh mutation authority.
+
+## D1 CONSULT RECORD — N2 activation (claim `ENV-VIS-STORY-001-NUM-C2`, appended 11 พ.ย. 2569 / 2026-11-11)
+
+Delegated consults per the WO
+`docs/work-orders/ENV-VIS-STORY-001-NUM-N2-ACTIVATION.md`: **Jev**
+(jev-advisory MCP, typesafe, jev-1.13.0 — read-only advisory) and **Terra**
+(GPT-6.1 via Codex CLI, session `01a1cb35-2abb-7f42-97aa-f543339e13f2`,
+read-only sandbox). Receipts generated at `/tmp/jev-n2-d1-receipt-2026-11-11.{json,txt}`
+and `/tmp/terra-n2-d1-receipt-2026-11-11.txt`; ALL THREE copied verbatim
+below. Delegates have NO merge/review authority — the decision is binding
+per the owner's delegated-decision policy for D1 design only; approval
+authority remains the owner decision (issue #110) + the frozen packet.
+
+### Binding D1 decision (implemented in this slice)
+
+1. **Exposure window = the FULL scenario/incident window.** NEVER × duty
+   fraction 0.5, NEVER quantized to 15-min slots (Terra: duty arithmetic is
+   the dishonest direction given the morning manual hold + unknown
+   cycles/day; Jev Q2 rated the duty-fraction formulation in the 4–5
+   honesty-risk band).
+2. **Volume exposed (m³) = same-day recorded influent × (window hours
+   within that day / 24)** — uniform-inflow assumption stated in the UI.
+   Midnight-crossing windows split per calendar day and show only the
+   completed total; if ANY needed day's recorded inflow is missing → OMIT
+   the chip entirely (never zero, never a fallback to other days).
+3. **Scope: aeration-stop + RAS-stop ONLY.** Chlorine-stop N2 stays omitted
+   (condition-driven on free chlorine — no fixed window exists).
+4. **Chip = short inline label "ปริมาตรที่สัมผัส (SIMULATED)"** + tooltip
+   detail (verbatim Thai mandated text, incl. "ค่าตั้งเวลา 15/15 เป็นข้อมูล
+   อ้างอิงที่เจ้าของยืนยัน (10 พ.ย. 2569) ใช้เป็นที่มาของสถานการณ์
+   ไม่ได้คูณในสูตร"). RAS chip must NOT claim sludge or return-flow volume —
+   exposure volume only (the chip carries no sludge vocabulary at all; the
+   no-claim disclaimer lives on the RAS banner).
+5. **Evidence admission mirrors the N3/N4 envelope pattern**: status
+   `confirmed-by-owner`, sourceId `relay-duty-cycle-reference`, owner
+   confirmation 2026-11-10 (พ.ศ. 2569 in any user-facing date),
+   provenance = owner-determined relay settings used as scenario BASIS
+   (reference), NOT as an arithmetic factor.
+6. **Honesty rules**: unknown ≠ 0; "SIMULATED" vocabulary always; never
+   "live"; `deriveScenarioState` byte-frozen and untouched.
+
+Assumed incident windows (declared-model-assumption, versioned, NOT
+owner-specified — same replacement path as the N3 proposed volume):
+aeration-stop 8 h (08:00–16:00), RAS-stop 6 h (09:00–15:00), anchored on
+the latest recorded reading date (`model.asOf`).
+
+### JEV receipt (txt) — verbatim
+
+```text
+JEV D1 DECISION CONSULT RECEIPT — 2026-11-11
+N2 volume exposed (SIMULATED chip) — claim ENV-VIS-STORY-001-NUM-C2, /flow visual story
+Tool: jev-advisory MCP | provider typesafe | model jev-1.13.0 | ADVISORY ONLY, never mutation/review authority
+Read-only task; no repo files touched; no secrets involved.
+
+=== SHARED STATE CONTEXT (verbatim, sent with every call) ===
+STATE: ENV hospital-wastewater webapp, /flow visual story. Claim ENV-VIS-STORY-001-NUM-C2 activates N2 "ปริมาตรที่สัมผัสระหว่างช่วงเหตุการณ์ (volume exposed)" as a SIMULATED numeric chip. Frozen formula class: volume exposed = recorded influent volume × assumed exposure window. Scenarios in scope: aeration-stop (หยุดเติมอากาศ) and RAS-pump-stop (หยุด RAS) ONLY. Chlorine-stop omitted (chlorinators are condition-driven on free chlorine, no fixed timer). Owner-confirmed relay basis (10 พ.ย. 2569, provenance=owner-determined): aerators 1/2 alternate 15 min run / 15 min stop, with morning manual hold (machine left running); ras_pumps 15/15 — same physical pump set also drains sludge to drying beds via manual valve selection (valve state not recorded); cycles/day UNKNOWN; all values vary by situation; daily operational logs record only normal/abnormal booleans, never runtime minutes. Honesty rules: unknown ≠ 0, SIMULATED label mandatory, values must be presented as nominal timer basis, not measured truth.
+
+=== ADAPTATION HISTORY (noul families unreachable from this client) ===
+{"attempt":1,"family":"escalation_decision","primitive":"noul","question":"Q1 with lettered A-D enumeration, context STATE","error":"{\"ok\": false, \"error_kind\": \"REQUEST_CONTRACT_INVALID\", \"message\": \"noul requests must not declare options\", \"authoritative_for_action\": false}"}
+{"attempt":2,"family":"escalation_decision","primitive":"noul","question":"Q4 yes/no phrasing, context STATE","error":"{\"ok\": false, \"error_kind\": \"REQUEST_CONTRACT_INVALID\", \"message\": \"noul requests must not declare options\", \"authoritative_for_action\": false}"}
+{"attempt":3,"family":"escalation_decision","primitive":"noul","question":"T1 lettered / T2 prose comparative / T3 fully open question, context STATE","error":"{\"ok\": false, \"error_kind\": \"REQUEST_CONTRACT_INVALID\", \"message\": \"noul requests must not declare options\", \"authoritative_for_action\": false}"}
+{"attempt":4,"family":"escalation_decision + evidence_relevance","primitive":"noul","question":"T3 open question with no context / prose-rewritten context / evidence_relevance no context","error":"{\"ok\": false, \"error_kind\": \"REQUEST_CONTRACT_INVALID\", \"message\": \"noul requests must not declare options\", \"authoritative_for_action\": false}"}
+{"note":"task_classification with the original lettered Q1 text SUCCEEDED (primitive choice, fixed classes bugfix/feature/docs/review, answer 'review', confidence 0.48) — proving only the task_classification family is callable from this client; all final calls use it with an explicit class→option legend."}
+
+=== CALLS (one per question; Q2 split per formulation) ===
+
+--------------------------------------------------
+CALL: Q1_exposure_window_semantics
+REQUEST: family=task_classification risk=medium
+QUESTION:
+You are answering a design decision consult (question Q1). Map the fixed output classes onto the consult options: bugfix stands for consult option A, meaning exposure window = scenario window × duty fraction 0.5 (arithmetic from the 15/15 relay basis), with volume = recorded daily inflow × (exposure/24h); feature stands for consult option B, meaning the full scenario window with no duty fraction; docs stands for consult option C, meaning cumulative nominal on-time within the window (quantized 15-min slots); review stands for consult option D, meaning another formulation (specified precisely in the reasoning). Choose the class that stands for the exposure-window semantics you recommend for the SIMULATED "volume exposed" chip.
+RESPONSE:
+"{\"ok\": true, \"provider\": \"typesafe\", \"model\": \"jev-1.13.0\", \"family\": \"task_classification\", \"primitive\": \"choice\", \"answer\": \"review\", \"confidence\": 0.52, \"probabilities\": {\"bugfix\": 0.08, \"feature\": 0.13, \"docs\": 0.15, \"review\": 0.64}, \"input_usage\": 866, \"output_usage\": 46, \"latency_ms\": 452.41374988108873, \"error\": null, \"authoritative_for_action\": false, \"advisory_notice\": \"ADVISORY ONLY. Escalate to frontier reasoning on any error, low confidence, or high risk. Never use as mutation/review authority.\"}"
+
+--------------------------------------------------
+CALL: Q2a_honesty_risk_duty_fraction_A
+REQUEST: family=task_classification risk=high
+QUESTION:
+You are answering a design decision consult (question Q2, part 1 of 3). Map the fixed output classes onto honesty-risk scores where 1 = least misleading and 5 = most misleading: bugfix stands for score 1, feature stands for score 2, docs stands for score 3, review stands for score 4-5. Rate the honesty risk (how misleading the number could be to hospital operators) of this specific formulation of the SIMULATED "volume exposed" chip: option A, the duty-fraction formulation — scenario window × duty fraction 0.5 (arithmetic from 15/15), volume = recorded daily inflow × (exposure/24h).
+RESPONSE:
+"{\"ok\": true, \"provider\": \"typesafe\", \"model\": \"jev-1.13.0\", \"family\": \"task_classification\", \"primitive\": \"choice\", \"answer\": \"review\", \"confidence\": 0.95, \"probabilities\": {\"bugfix\": 0.0, \"feature\": 0.02, \"docs\": 0.02, \"review\": 0.96}, \"input_usage\": 859, \"output_usage\": 46, \"latency_ms\": 304.97995810583234, \"error\": null, \"authoritative_for_action\": false, \"advisory_notice\": \"ADVISORY ONLY. Escalate to frontier reasoning on any error, low confidence, or high risk. Never use as mutation/review authority.\"}"
+
+--------------------------------------------------
+CALL: Q2b_honesty_risk_full_window_B
+REQUEST: family=task_classification risk=high
+QUESTION:
+You are answering a design decision consult (question Q2, part 2 of 3). Map the fixed output classes onto honesty-risk scores where 1 = least misleading and 5 = most misleading: bugfix stands for score 1, feature stands for score 2, docs stands for score 3, review stands for score 4-5. Rate the honesty risk (how misleading the number could be to hospital operators) of this specific formulation of the SIMULATED "volume exposed" chip: option B, the full-window formulation — full scenario window, no duty fraction.
+RESPONSE:
+"{\"ok\": true, \"provider\": \"typesafe\", \"model\": \"jev-1.13.0\", \"family\": \"task_classification\", \"primitive\": \"choice\", \"answer\": \"review\", \"confidence\": 0.96, \"probabilities\": {\"bugfix\": 0.0, \"feature\": 0.02, \"docs\": 0.01, \"review\": 0.97}, \"input_usage\": 828, \"output_usage\": 46, \"latency_ms\": 377.69929179921746, \"error\": null, \"authoritative_for_action\": false, \"advisory_notice\": \"ADVISORY ONLY. Escalate to frontier reasoning on any error, low confidence, or high risk. Never use as mutation/review authority.\"}"
+
+--------------------------------------------------
+CALL: Q2c_honesty_risk_cumulative_ontime_C
+REQUEST: family=task_classification risk=high
+QUESTION:
+You are answering a design decision consult (question Q2, part 3 of 3). Map the fixed output classes onto honesty-risk scores where 1 = least misleading and 5 = most misleading: bugfix stands for score 1, feature stands for score 2, docs stands for score 3, review stands for score 4-5. Rate the honesty risk (how misleading the number could be to hospital operators) of this specific formulation of the SIMULATED "volume exposed" chip: option C, the cumulative-on-time formulation — cumulative nominal on-time within the window (quantized 15-min slots).
+RESPONSE:
+"{\"ok\": true, \"provider\": \"typesafe\", \"model\": \"jev-1.13.0\", \"family\": \"task_classification\", \"primitive\": \"choice\", \"answer\": \"review\", \"confidence\": 0.93, \"probabilities\": {\"bugfix\": 0.0, \"feature\": 0.03, \"docs\": 0.02, \"review\": 0.95}, \"input_usage\": 837, \"output_usage\": 46, \"latency_ms\": 307.4191249907017, \"error\": null, \"authoritative_for_action\": false, \"advisory_notice\": \"ADVISORY ONLY. Escalate to frontier reasoning on any error, low confidence, or high risk. Never use as mutation/review authority.\"}"
+
+--------------------------------------------------
+CALL: Q3_inflow_basis
+REQUEST: family=task_classification risk=medium
+QUESTION:
+You are answering a design decision consult (question Q3). Map the fixed output classes onto the consult options: bugfix stands for consult option A, meaning use the latest recorded daily inflow as the inflow basis; feature stands for consult option B, meaning use only the same-day-as-scenario recorded value, omitting the chip if absent; docs stands for consult option C, meaning use the median of the last 7 recorded days; review stands for abstain or another inflow basis. Choose the class that stands for the inflow basis you recommend for the SIMULATED "volume exposed" chip (volume exposed = recorded influent volume × assumed exposure window).
+RESPONSE:
+"{\"ok\": true, \"provider\": \"typesafe\", \"model\": \"jev-1.13.0\", \"family\": \"task_classification\", \"primitive\": \"choice\", \"answer\": \"review\", \"confidence\": 0.49, \"probabilities\": {\"bugfix\": 0.01, \"feature\": 0.26, \"docs\": 0.11, \"review\": 0.62}, \"input_usage\": 847, \"output_usage\": 46, \"latency_ms\": 315.0789998471737, \"error\": null, \"authoritative_for_action\": false, \"advisory_notice\": \"ADVISORY ONLY. Escalate to frontier reasoning on any error, low confidence, or high risk. Never use as mutation/review authority.\"}"
+
+--------------------------------------------------
+CALL: Q4_chlorine_stop_omission
+REQUEST: family=task_classification risk=medium
+QUESTION:
+You are answering a design decision consult (question Q4). Map the fixed output classes onto the consult answers: bugfix stands for YES, chlorine-stop N2 stays omitted from the volume-exposed chip; feature stands for NO, chlorine-stop should be included; docs stands for undecided pending more evidence; review stands for another position. Grounds to weigh: chlorinators are condition-driven on free chlorine with no fixed timer, while the chip's frozen formula class (volume exposed = recorded influent volume × assumed exposure window) requires an assumed exposure window; scenarios in scope are aeration-stop and RAS-pump-stop ONLY. Choose the class that stands for the position you recommend.
+RESPONSE:
+"{\"ok\": true, \"provider\": \"typesafe\", \"model\": \"jev-1.13.0\", \"family\": \"task_classification\", \"primitive\": \"choice\", \"answer\": \"bugfix\", \"confidence\": 0.31, \"probabilities\": {\"bugfix\": 0.48, \"feature\": 0.01, \"docs\": 0.09, \"review\": 0.42}, \"input_usage\": 849, \"output_usage\": 47, \"latency_ms\": 285.028874874115, \"error\": null, \"authoritative_for_action\": false, \"advisory_notice\": \"ADVISORY ONLY. Escalate to frontier reasoning on any error, low confidence, or high risk. Never use as mutation/review authority.\"}"
+
+--------------------------------------------------
+CALL: Q5_chip_label
+REQUEST: family=task_classification risk=medium
+QUESTION:
+You are answering a design decision consult (question Q5). Map the fixed output classes onto the consult options: bugfix stands for consult option A, the full inline label "ปริมาตรที่สัมผัส (SIMULATED · ตามค่าตั้งเวลา 15/15 · ค่าจริงไม่คงที่)"; feature stands for consult option B, a short label plus a tooltip carrying the basis detail; docs stands for consult option C, another presentation; review stands for abstain. Choose the class that stands for the chip-label presentation you recommend, given the honesty rules that the SIMULATED label is mandatory and values must read as a nominal timer basis, not measured truth.
+RESPONSE:
+"{\"ok\": true, \"provider\": \"typesafe\", \"model\": \"jev-1.13.0\", \"family\": \"task_classification\", \"primitive\": \"choice\", \"answer\": \"feature\", \"confidence\": 0.15, \"probabilities\": {\"bugfix\": 0.08, \"feature\": 0.36, \"docs\": 0.24, \"review\": 0.32}, \"input_usage\": 879, \"output_usage\": 46, \"latency_ms\": 397.4216249771416, \"error\": null, \"authoritative_for_action\": false, \"advisory_notice\": \"ADVISORY ONLY. Escalate to frontier reasoning on any error, low confidence, or high risk. Never use as mutation/review authority.\"}"
+
+--------------------------------------------------
+CALL: Q6_integrity_concerns
+REQUEST: family=task_classification risk=high
+QUESTION:
+You are answering a design decision consult (question Q6, integrity concerns for the SIMULATED "volume exposed" chip). Map the fixed output classes onto candidate integrity-concern areas derived from the brief: bugfix stands for the concern that duty-fraction 0.5 arithmetic will be misread by operators as measured truth rather than a nominal timer basis; feature stands for the concern that the shared pump set also drains sludge to drying beds via manual valve selection (valve state not recorded), so pump-on time does not guarantee influent exposure; docs stands for the concern that cycles/day is UNKNOWN and the morning manual hold (machine left running) breaks the 15/15 nominal relay basis; review stands for the concern that chip labeling/presentation could fail the honesty rules (unknown ≠ 0, SIMULATED label mandatory, nominal timer basis not measured truth). Rank which area is the single most serious integrity concern by choosing its class.
+RESPONSE:
+"{\"ok\": true, \"provider\": \"typesafe\", \"model\": \"jev-1.13.0\", \"family\": \"task_classification\", \"primitive\": \"choice\", \"answer\": \"review\", \"confidence\": 0.97, \"probabilities\": {\"bugfix\": 0.0, \"feature\": 0.01, \"docs\": 0.01, \"review\": 0.98}, \"input_usage\": 907, \"output_usage\": 46, \"latency_ms\": 314.9673747830093, \"error\": null, \"authoritative_for_action\": false, \"advisory_notice\": \"ADVISORY ONLY. Escalate to frontier reasoning on any error, low confidence, or high risk. Never use as mutation/review authority.\"}"
+```
+
+### JEV receipt (json) — verbatim
+
+```json
+{
+  "meta": {
+    "tool": "jev-advisory (MCP, via Kilo Code Mode execute runtime)",
+    "provider": "typesafe",
+    "model": "jev-1.13.0",
+    "consult": "D1 delegated AI decision consult — N2 volume exposed SIMULATED chip, claim ENV-VIS-STORY-001-NUM-C2, /flow visual story",
+    "generated_at": "2026-11-11",
+    "working_dir": "/Volumes/MAC_WORK/DevWorkspace/Github/env-wastewater-webapp",
+    "read_only": true,
+    "secrets_involved": false,
+    "adaptation": [
+      {
+        "attempt": 1,
+        "family": "escalation_decision",
+        "primitive": "noul",
+        "question": "Q1 with lettered A-D enumeration, context STATE",
+        "error": "{\"ok\": false, \"error_kind\": \"REQUEST_CONTRACT_INVALID\", \"message\": \"noul requests must not declare options\", \"authoritative_for_action\": false}"
+      },
+      {
+        "attempt": 2,
+        "family": "escalation_decision",
+        "primitive": "noul",
+        "question": "Q4 yes/no phrasing, context STATE",
+        "error": "{\"ok\": false, \"error_kind\": \"REQUEST_CONTRACT_INVALID\", \"message\": \"noul requests must not declare options\", \"authoritative_for_action\": false}"
+      },
+      {
+        "attempt": 3,
+        "family": "escalation_decision",
+        "primitive": "noul",
+        "question": "T1 lettered / T2 prose comparative / T3 fully open question, context STATE",
+        "error": "{\"ok\": false, \"error_kind\": \"REQUEST_CONTRACT_INVALID\", \"message\": \"noul requests must not declare options\", \"authoritative_for_action\": false}"
+      },
+      {
+        "attempt": 4,
+        "family": "escalation_decision + evidence_relevance",
+        "primitive": "noul",
+        "question": "T3 open question with no context / prose-rewritten context / evidence_relevance no context",
+        "error": "{\"ok\": false, \"error_kind\": \"REQUEST_CONTRACT_INVALID\", \"message\": \"noul requests must not declare options\", \"authoritative_for_action\": false}"
+      },
+      {
+        "note": "task_classification with the original lettered Q1 text SUCCEEDED (primitive choice, fixed classes bugfix/feature/docs/review, answer 'review', confidence 0.48) — proving only the task_classification family is callable from this client; all final calls use it with an explicit class→option legend."
+      }
+    ]
+  },
+  "calls": [
+    {
+      "id": "Q1_exposure_window_semantics",
+      "request": {
+        "family": "task_classification",
+        "question": "You are answering a design decision consult (question Q1). Map the fixed output classes onto the consult options: bugfix stands for consult option A, meaning exposure window = scenario window × duty fraction 0.5 (arithmetic from the 15/15 relay basis), with volume = recorded daily inflow × (exposure/24h); feature stands for consult option B, meaning the full scenario window with no duty fraction; docs stands for consult option C, meaning cumulative nominal on-time within the window (quantized 15-min slots); review stands for consult option D, meaning another formulation (specified precisely in the reasoning). Choose the class that stands for the exposure-window semantics you recommend for the SIMULATED \"volume exposed\" chip.",
+        "context": "STATE: ENV hospital-wastewater webapp, /flow visual story. Claim ENV-VIS-STORY-001-NUM-C2 activates N2 \"ปริมาตรที่สัมผัสระหว่างช่วงเหตุการณ์ (volume exposed)\" as a SIMULATED numeric chip. Frozen formula class: volume exposed = recorded influent volume × assumed exposure window. Scenarios in scope: aeration-stop (หยุดเติมอากาศ) and RAS-pump-stop (หยุด RAS) ONLY. Chlorine-stop omitted (chlorinators are condition-driven on free chlorine, no fixed timer). Owner-confirmed relay basis (10 พ.ย. 2569, provenance=owner-determined): aerators 1/2 alternate 15 min run / 15 min stop, with morning manual hold (machine left running); ras_pumps 15/15 — same physical pump set also drains sludge to drying beds via manual valve selection (valve state not recorded); cycles/day UNKNOWN; all values vary by situation; daily operational logs record only normal/abnormal booleans, never runtime minutes. Honesty rules: unknown ≠ 0, SIMULATED label mandatory, values must be presented as nominal timer basis, not measured truth.",
+        "risk": "medium"
+      },
+      "response": "{\"ok\": true, \"provider\": \"typesafe\", \"model\": \"jev-1.13.0\", \"family\": \"task_classification\", \"primitive\": \"choice\", \"answer\": \"review\", \"confidence\": 0.52, \"probabilities\": {\"bugfix\": 0.08, \"feature\": 0.13, \"docs\": 0.15, \"review\": 0.64}, \"input_usage\": 866, \"output_usage\": 46, \"latency_ms\": 452.41374988108873, \"error\": null, \"authoritative_for_action\": false, \"advisory_notice\": \"ADVISORY ONLY. Escalate to frontier reasoning on any error, low confidence, or high risk. Never use as mutation/review authority.\"}"
+    },
+    {
+      "id": "Q2a_honesty_risk_duty_fraction_A",
+      "request": {
+        "family": "task_classification",
+        "question": "You are answering a design decision consult (question Q2, part 1 of 3). Map the fixed output classes onto honesty-risk scores where 1 = least misleading and 5 = most misleading: bugfix stands for score 1, feature stands for score 2, docs stands for score 3, review stands for score 4-5. Rate the honesty risk (how misleading the number could be to hospital operators) of this specific formulation of the SIMULATED \"volume exposed\" chip: option A, the duty-fraction formulation — scenario window × duty fraction 0.5 (arithmetic from 15/15), volume = recorded daily inflow × (exposure/24h).",
+        "context": "STATE: ENV hospital-wastewater webapp, /flow visual story. Claim ENV-VIS-STORY-001-NUM-C2 activates N2 \"ปริมาตรที่สัมผัสระหว่างช่วงเหตุการณ์ (volume exposed)\" as a SIMULATED numeric chip. Frozen formula class: volume exposed = recorded influent volume × assumed exposure window. Scenarios in scope: aeration-stop (หยุดเติมอากาศ) and RAS-pump-stop (หยุด RAS) ONLY. Chlorine-stop omitted (chlorinators are condition-driven on free chlorine, no fixed timer). Owner-confirmed relay basis (10 พ.ย. 2569, provenance=owner-determined): aerators 1/2 alternate 15 min run / 15 min stop, with morning manual hold (machine left running); ras_pumps 15/15 — same physical pump set also drains sludge to drying beds via manual valve selection (valve state not recorded); cycles/day UNKNOWN; all values vary by situation; daily operational logs record only normal/abnormal booleans, never runtime minutes. Honesty rules: unknown ≠ 0, SIMULATED label mandatory, values must be presented as nominal timer basis, not measured truth.",
+        "risk": "high"
+      },
+      "response": "{\"ok\": true, \"provider\": \"typesafe\", \"model\": \"jev-1.13.0\", \"family\": \"task_classification\", \"primitive\": \"choice\", \"answer\": \"review\", \"confidence\": 0.95, \"probabilities\": {\"bugfix\": 0.0, \"feature\": 0.02, \"docs\": 0.02, \"review\": 0.96}, \"input_usage\": 859, \"output_usage\": 46, \"latency_ms\": 304.97995810583234, \"error\": null, \"authoritative_for_action\": false, \"advisory_notice\": \"ADVISORY ONLY. Escalate to frontier reasoning on any error, low confidence, or high risk. Never use as mutation/review authority.\"}"
+    },
+    {
+      "id": "Q2b_honesty_risk_full_window_B",
+      "request": {
+        "family": "task_classification",
+        "question": "You are answering a design decision consult (question Q2, part 2 of 3). Map the fixed output classes onto honesty-risk scores where 1 = least misleading and 5 = most misleading: bugfix stands for score 1, feature stands for score 2, docs stands for score 3, review stands for score 4-5. Rate the honesty risk (how misleading the number could be to hospital operators) of this specific formulation of the SIMULATED \"volume exposed\" chip: option B, the full-window formulation — full scenario window, no duty fraction.",
+        "context": "STATE: ENV hospital-wastewater webapp, /flow visual story. Claim ENV-VIS-STORY-001-NUM-C2 activates N2 \"ปริมาตรที่สัมผัสระหว่างช่วงเหตุการณ์ (volume exposed)\" as a SIMULATED numeric chip. Frozen formula class: volume exposed = recorded influent volume × assumed exposure window. Scenarios in scope: aeration-stop (หยุดเติมอากาศ) and RAS-pump-stop (หยุด RAS) ONLY. Chlorine-stop omitted (chlorinators are condition-driven on free chlorine, no fixed timer). Owner-confirmed relay basis (10 พ.ย. 2569, provenance=owner-determined): aerators 1/2 alternate 15 min run / 15 min stop, with morning manual hold (machine left running); ras_pumps 15/15 — same physical pump set also drains sludge to drying beds via manual valve selection (valve state not recorded); cycles/day UNKNOWN; all values vary by situation; daily operational logs record only normal/abnormal booleans, never runtime minutes. Honesty rules: unknown ≠ 0, SIMULATED label mandatory, values must be presented as nominal timer basis, not measured truth.",
+        "risk": "high"
+      },
+      "response": "{\"ok\": true, \"provider\": \"typesafe\", \"model\": \"jev-1.13.0\", \"family\": \"task_classification\", \"primitive\": \"choice\", \"answer\": \"review\", \"confidence\": 0.96, \"probabilities\": {\"bugfix\": 0.0, \"feature\": 0.02, \"docs\": 0.01, \"review\": 0.97}, \"input_usage\": 828, \"output_usage\": 46, \"latency_ms\": 377.69929179921746, \"error\": null, \"authoritative_for_action\": false, \"advisory_notice\": \"ADVISORY ONLY. Escalate to frontier reasoning on any error, low confidence, or high risk. Never use as mutation/review authority.\"}"
+    },
+    {
+      "id": "Q2c_honesty_risk_cumulative_ontime_C",
+      "request": {
+        "family": "task_classification",
+        "question": "You are answering a design decision consult (question Q2, part 3 of 3). Map the fixed output classes onto honesty-risk scores where 1 = least misleading and 5 = most misleading: bugfix stands for score 1, feature stands for score 2, docs stands for score 3, review stands for score 4-5. Rate the honesty risk (how misleading the number could be to hospital operators) of this specific formulation of the SIMULATED \"volume exposed\" chip: option C, the cumulative-on-time formulation — cumulative nominal on-time within the window (quantized 15-min slots).",
+        "context": "STATE: ENV hospital-wastewater webapp, /flow visual story. Claim ENV-VIS-STORY-001-NUM-C2 activates N2 \"ปริมาตรที่สัมผัสระหว่างช่วงเหตุการณ์ (volume exposed)\" as a SIMULATED numeric chip. Frozen formula class: volume exposed = recorded influent volume × assumed exposure window. Scenarios in scope: aeration-stop (หยุดเติมอากาศ) and RAS-pump-stop (หยุด RAS) ONLY. Chlorine-stop omitted (chlorinators are condition-driven on free chlorine, no fixed timer). Owner-confirmed relay basis (10 พ.ย. 2569, provenance=owner-determined): aerators 1/2 alternate 15 min run / 15 min stop, with morning manual hold (machine left running); ras_pumps 15/15 — same physical pump set also drains sludge to drying beds via manual valve selection (valve state not recorded); cycles/day UNKNOWN; all values vary by situation; daily operational logs record only normal/abnormal booleans, never runtime minutes. Honesty rules: unknown ≠ 0, SIMULATED label mandatory, values must be presented as nominal timer basis, not measured truth.",
+        "risk": "high"
+      },
+      "response": "{\"ok\": true, \"provider\": \"typesafe\", \"model\": \"jev-1.13.0\", \"family\": \"task_classification\", \"primitive\": \"choice\", \"answer\": \"review\", \"confidence\": 0.93, \"probabilities\": {\"bugfix\": 0.0, \"feature\": 0.03, \"docs\": 0.02, \"review\": 0.95}, \"input_usage\": 837, \"output_usage\": 46, \"latency_ms\": 307.4191249907017, \"error\": null, \"authoritative_for_action\": false, \"advisory_notice\": \"ADVISORY ONLY. Escalate to frontier reasoning on any error, low confidence, or high risk. Never use as mutation/review authority.\"}"
+    },
+    {
+      "id": "Q3_inflow_basis",
+      "request": {
+        "family": "task_classification",
+        "question": "You are answering a design decision consult (question Q3). Map the fixed output classes onto the consult options: bugfix stands for consult option A, meaning use the latest recorded daily inflow as the inflow basis; feature stands for consult option B, meaning use only the same-day-as-scenario recorded value, omitting the chip if absent; docs stands for consult option C, meaning use the median of the last 7 recorded days; review stands for abstain or another inflow basis. Choose the class that stands for the inflow basis you recommend for the SIMULATED \"volume exposed\" chip (volume exposed = recorded influent volume × assumed exposure window).",
+        "context": "STATE: ENV hospital-wastewater webapp, /flow visual story. Claim ENV-VIS-STORY-001-NUM-C2 activates N2 \"ปริมาตรที่สัมผัสระหว่างช่วงเหตุการณ์ (volume exposed)\" as a SIMULATED numeric chip. Frozen formula class: volume exposed = recorded influent volume × assumed exposure window. Scenarios in scope: aeration-stop (หยุดเติมอากาศ) and RAS-pump-stop (หยุด RAS) ONLY. Chlorine-stop omitted (chlorinators are condition-driven on free chlorine, no fixed timer). Owner-confirmed relay basis (10 พ.ย. 2569, provenance=owner-determined): aerators 1/2 alternate 15 min run / 15 min stop, with morning manual hold (machine left running); ras_pumps 15/15 — same physical pump set also drains sludge to drying beds via manual valve selection (valve state not recorded); cycles/day UNKNOWN; all values vary by situation; daily operational logs record only normal/abnormal booleans, never runtime minutes. Honesty rules: unknown ≠ 0, SIMULATED label mandatory, values must be presented as nominal timer basis, not measured truth.",
+        "risk": "medium"
+      },
+      "response": "{\"ok\": true, \"provider\": \"typesafe\", \"model\": \"jev-1.13.0\", \"family\": \"task_classification\", \"primitive\": \"choice\", \"answer\": \"review\", \"confidence\": 0.49, \"probabilities\": {\"bugfix\": 0.01, \"feature\": 0.26, \"docs\": 0.11, \"review\": 0.62}, \"input_usage\": 847, \"output_usage\": 46, \"latency_ms\": 315.0789998471737, \"error\": null, \"authoritative_for_action\": false, \"advisory_notice\": \"ADVISORY ONLY. Escalate to frontier reasoning on any error, low confidence, or high risk. Never use as mutation/review authority.\"}"
+    },
+    {
+      "id": "Q4_chlorine_stop_omission",
+      "request": {
+        "family": "task_classification",
+        "question": "You are answering a design decision consult (question Q4). Map the fixed output classes onto the consult answers: bugfix stands for YES, chlorine-stop N2 stays omitted from the volume-exposed chip; feature stands for NO, chlorine-stop should be included; docs stands for undecided pending more evidence; review stands for another position. Grounds to weigh: chlorinators are condition-driven on free chlorine with no fixed timer, while the chip's frozen formula class (volume exposed = recorded influent volume × assumed exposure window) requires an assumed exposure window; scenarios in scope are aeration-stop and RAS-pump-stop ONLY. Choose the class that stands for the position you recommend.",
+        "context": "STATE: ENV hospital-wastewater webapp, /flow visual story. Claim ENV-VIS-STORY-001-NUM-C2 activates N2 \"ปริมาตรที่สัมผัสระหว่างช่วงเหตุการณ์ (volume exposed)\" as a SIMULATED numeric chip. Frozen formula class: volume exposed = recorded influent volume × assumed exposure window. Scenarios in scope: aeration-stop (หยุดเติมอากาศ) and RAS-pump-stop (หยุด RAS) ONLY. Chlorine-stop omitted (chlorinators are condition-driven on free chlorine, no fixed timer). Owner-confirmed relay basis (10 พ.ย. 2569, provenance=owner-determined): aerators 1/2 alternate 15 min run / 15 min stop, with morning manual hold (machine left running); ras_pumps 15/15 — same physical pump set also drains sludge to drying beds via manual valve selection (valve state not recorded); cycles/day UNKNOWN; all values vary by situation; daily operational logs record only normal/abnormal booleans, never runtime minutes. Honesty rules: unknown ≠ 0, SIMULATED label mandatory, values must be presented as nominal timer basis, not measured truth.",
+        "risk": "medium"
+      },
+      "response": "{\"ok\": true, \"provider\": \"typesafe\", \"model\": \"jev-1.13.0\", \"family\": \"task_classification\", \"primitive\": \"choice\", \"answer\": \"bugfix\", \"confidence\": 0.31, \"probabilities\": {\"bugfix\": 0.48, \"feature\": 0.01, \"docs\": 0.09, \"review\": 0.42}, \"input_usage\": 849, \"output_usage\": 47, \"latency_ms\": 285.028874874115, \"error\": null, \"authoritative_for_action\": false, \"advisory_notice\": \"ADVISORY ONLY. Escalate to frontier reasoning on any error, low confidence, or high risk. Never use as mutation/review authority.\"}"
+    },
+    {
+      "id": "Q5_chip_label",
+      "request": {
+        "family": "task_classification",
+        "question": "You are answering a design decision consult (question Q5). Map the fixed output classes onto the consult options: bugfix stands for consult option A, the full inline label \"ปริมาตรที่สัมผัส (SIMULATED · ตามค่าตั้งเวลา 15/15 · ค่าจริงไม่คงที่)\"; feature stands for consult option B, a short label plus a tooltip carrying the basis detail; docs stands for consult option C, another presentation; review stands for abstain. Choose the class that stands for the chip-label presentation you recommend, given the honesty rules that the SIMULATED label is mandatory and values must read as a nominal timer basis, not measured truth.",
+        "context": "STATE: ENV hospital-wastewater webapp, /flow visual story. Claim ENV-VIS-STORY-001-NUM-C2 activates N2 \"ปริมาตรที่สัมผัสระหว่างช่วงเหตุการณ์ (volume exposed)\" as a SIMULATED numeric chip. Frozen formula class: volume exposed = recorded influent volume × assumed exposure window. Scenarios in scope: aeration-stop (หยุดเติมอากาศ) and RAS-pump-stop (หยุด RAS) ONLY. Chlorine-stop omitted (chlorinators are condition-driven on free chlorine, no fixed timer). Owner-confirmed relay basis (10 พ.ย. 2569, provenance=owner-determined): aerators 1/2 alternate 15 min run / 15 min stop, with morning manual hold (machine left running); ras_pumps 15/15 — same physical pump set also drains sludge to drying beds via manual valve selection (valve state not recorded); cycles/day UNKNOWN; all values vary by situation; daily operational logs record only normal/abnormal booleans, never runtime minutes. Honesty rules: unknown ≠ 0, SIMULATED label mandatory, values must be presented as nominal timer basis, not measured truth.",
+        "risk": "medium"
+      },
+      "response": "{\"ok\": true, \"provider\": \"typesafe\", \"model\": \"jev-1.13.0\", \"family\": \"task_classification\", \"primitive\": \"choice\", \"answer\": \"feature\", \"confidence\": 0.15, \"probabilities\": {\"bugfix\": 0.08, \"feature\": 0.36, \"docs\": 0.24, \"review\": 0.32}, \"input_usage\": 879, \"output_usage\": 46, \"latency_ms\": 397.4216249771416, \"error\": null, \"authoritative_for_action\": false, \"advisory_notice\": \"ADVISORY ONLY. Escalate to frontier reasoning on any error, low confidence, or high risk. Never use as mutation/review authority.\"}"
+    },
+    {
+      "id": "Q6_integrity_concerns",
+      "request": {
+        "family": "task_classification",
+        "question": "You are answering a design decision consult (question Q6, integrity concerns for the SIMULATED \"volume exposed\" chip). Map the fixed output classes onto candidate integrity-concern areas derived from the brief: bugfix stands for the concern that duty-fraction 0.5 arithmetic will be misread by operators as measured truth rather than a nominal timer basis; feature stands for the concern that the shared pump set also drains sludge to drying beds via manual valve selection (valve state not recorded), so pump-on time does not guarantee influent exposure; docs stands for the concern that cycles/day is UNKNOWN and the morning manual hold (machine left running) breaks the 15/15 nominal relay basis; review stands for the concern that chip labeling/presentation could fail the honesty rules (unknown ≠ 0, SIMULATED label mandatory, nominal timer basis not measured truth). Rank which area is the single most serious integrity concern by choosing its class.",
+        "context": "STATE: ENV hospital-wastewater webapp, /flow visual story. Claim ENV-VIS-STORY-001-NUM-C2 activates N2 \"ปริมาตรที่สัมผัสระหว่างช่วงเหตุการณ์ (volume exposed)\" as a SIMULATED numeric chip. Frozen formula class: volume exposed = recorded influent volume × assumed exposure window. Scenarios in scope: aeration-stop (หยุดเติมอากาศ) and RAS-pump-stop (หยุด RAS) ONLY. Chlorine-stop omitted (chlorinators are condition-driven on free chlorine, no fixed timer). Owner-confirmed relay basis (10 พ.ย. 2569, provenance=owner-determined): aerators 1/2 alternate 15 min run / 15 min stop, with morning manual hold (machine left running); ras_pumps 15/15 — same physical pump set also drains sludge to drying beds via manual valve selection (valve state not recorded); cycles/day UNKNOWN; all values vary by situation; daily operational logs record only normal/abnormal booleans, never runtime minutes. Honesty rules: unknown ≠ 0, SIMULATED label mandatory, values must be presented as nominal timer basis, not measured truth.",
+        "risk": "high"
+      },
+      "response": "{\"ok\": true, \"provider\": \"typesafe\", \"model\": \"jev-1.13.0\", \"family\": \"task_classification\", \"primitive\": \"choice\", \"answer\": \"review\", \"confidence\": 0.97, \"probabilities\": {\"bugfix\": 0.0, \"feature\": 0.01, \"docs\": 0.01, \"review\": 0.98}, \"input_usage\": 907, \"output_usage\": 46, \"latency_ms\": 314.9673747830093, \"error\": null, \"authoritative_for_action\": false, \"advisory_notice\": \"ADVISORY ONLY. Escalate to frontier reasoning on any error, low confidence, or high risk. Never use as mutation/review authority.\"}"
+    }
+  ]
+}
+```
+
+### TERRA receipt (txt) — verbatim
+
+```text
+=== ENV N2 D1 consult receipt (GPT-6.1 Terra) ===
+timestamp_utc_start: 2026-11-11T15:23:41Z
+command: /Applications/ChatGPT.app/Contents/Resources/codex-cli/CodexCLI.app/Contents/MacOS/codex exec --sandbox read-only -m gpt-6.1-terra "Read /tmp/terra-n2-d1-brief-2026-11-11.md and answer per its instructions"
+--- stdout+stderr verbatim ---
+Reading additional input from stdin...
+OpenAI Codex v0.166.0-alpha.5.1
+--------
+workdir: /Volumes/MAC_WORK/DevWorkspace/Github/env-wastewater-webapp
+model: gpt-6.1-terra
+provider: openai
+approval: never
+sandbox: read-only
+reasoning effort: low
+reasoning summaries: none
+session id: 01a1cb35-2abb-7f42-97aa-f543339e13f2
+--------
+user
+Read /tmp/terra-n2-d1-brief-2026-11-11.md and answer per its instructions — answer ALL questions (Q1, Q2A/Q2B/Q2C, Q3, Q4, Q5, Q6) in the exact plain-text structure the brief specifies
+hook: SessionStart
+hook: SessionStart Completed
+hook: UserPromptSubmit
+hook: UserPromptSubmit Completed
+codex
+Poppy Javis จะอ่าน brief และตรวจหลักฐานที่จำเป็นตามขอบเขตก่อนตอบทุกข้อในรูปแบบที่กำหนดครับ Oh! Shit My Boss
+hook: PreToolUse
+hook: PreToolUse
+hook: PreToolUse Completed
+hook: PreToolUse Completed
+exec
+/bin/zsh -lc 'cat /tmp/terra-n2-d1-brief-2026-11-11.md' in /Volumes/MAC_WORK/DevWorkspace/Github/env-wastewater-webapp
+ succeeded in 0ms:
+You are consulted as an independent decision delegate for a hospital-wastewater webapp (ENV, Uthai Hospital). Decision: how to define the "assumed exposure window" for the N2 effect class "ปริมาตรที่สัมผัสระหว่างช่วงเหตุการณ์ (volume exposed)" shown as a SIMULATED numeric chip in the /flow visual story. Frozen formula class: volume exposed = recorded influent volume × assumed exposure window. Scope: aeration-stop (หยุดเติมอากาศ) and RAS-pump-stop (หยุด RAS) scenarios ONLY; chlorine-stop omitted (condition-driven on free chlorine, no fixed timer). Owner-confirmed relay basis (2026-11-10, provenance=owner-determined): aerators 1/2 alternate 15 min run / 15 min stop, with morning manual hold (left running); ras_pumps 15/15 — the same physical pump set also drains sludge to drying beds via manual valve selection (valve state not recorded); cycles/day UNKNOWN; values vary by situation; daily logs record only normal/abnormal booleans. Honesty rules: unknown ≠ 0; SIMULATED label mandatory; presentation as nominal timer basis, not measured truth.
+ANSWER ALL QUESTIONS in this exact structure (plain text):
+Q1=<A|B|C|D> exposure-window semantics: A) scenario window × duty fraction 0.5 (arithmetic from 15/15), volume = recorded daily inflow × (exposure/24h); B) full scenario window, no duty fraction; C) cumulative nominal on-time within window (quantized 15-min slots); D) other — specify precisely in one sentence
+Q2A=<1-5> Q2B=<1-5> Q2C=<1-5> honesty-risk (1=least misleading) for A/B/C
+Q3=<A|B|C> inflow basis: A) latest recorded daily inflow; B) same-day-as-scenario recorded value only, omit chip if absent; C) median of last 7 recorded days
+Q4=<yes|no> + one-line reason: chlorine-stop N2 stays omitted?
+Q5=<A|B|C> chip label: A) "ปริมาตรที่สัมผัส (SIMULATED · ตามค่าตั้งเวลา 15/15 · ค่าจริงไม่คงที่)"; B) short label + tooltip with basis detail; C) other
+Q6= up to 5 bullets: integrity concerns or better formulation
+hook: PostToolUse
+hook: PostToolUse Completed
+codex
+Q1=B
+Q2A=4 Q2B=2 Q2C=5
+Q3=B
+Q4=yes — การหยุดคลอรีนขึ้นกับค่า free chlorine จึงไม่มีช่วงเวลาคงที่ที่ใช้แทนได้อย่างซื่อสัตย์
+Q5=B
+Q6=
+- คำนวณปริมาตรโดยประมาณ = ปริมาณน้ำเข้าแต่ละวันที่บันทึก × ระยะเวลาของสถานการณ์ที่อยู่ในวันนั้น ÷ 24 ชั่วโมง โดยสมมติว่าอัตราน้ำเข้าเฉลี่ยสม่ำเสมอตลอดวัน
+- แสดง SIMULATED และอธิบายว่าเป็นค่าประมาณตามระยะเวลาสถานการณ์ ไม่ใช่ปริมาตรที่วัดได้; เวลา 15/15 เป็นเพียงค่าตั้งเวลาอ้างอิง ไม่ยืนยันเวลาหยุดจริง
+- ไม่ใช้ duty fraction 0.5 หรือแบ่งเป็นช่วงละ 15 นาทีเพื่ออนุมานเวลาหยุดจริง เพราะมีการ hold ด้วยมือและจำนวนรอบต่อวันไม่ทราบ
+- สำหรับ RAS สถานะวาล์วไม่ได้บันทึก จึงระบุไม่ได้ว่าปั๊มกำลังส่งตะกอนกลับหรือระบายไปลานตาก; ปริมาตรนี้ไม่ใช่ปริมาตร RAS หรือปริมาตรตะกอน
+- หากไม่มีปริมาณน้ำเข้าของวันนั้นหรือไม่ทราบระยะเวลาสถานการณ์ ให้งดแสดงตัวเลขแทนการใส่ศูนย์; หากเหตุการณ์ข้ามวัน ให้คำนวณแยกแต่ละวันและแสดงผลรวมเฉพาะเมื่อข้อมูลครบ
+hook: Stop
+hook: Stop Completed
+tokens used
+18,613
+Q1=B
+Q2A=4 Q2B=2 Q2C=5
+Q3=B
+Q4=yes — การหยุดคลอรีนขึ้นกับค่า free chlorine จึงไม่มีช่วงเวลาคงที่ที่ใช้แทนได้อย่างซื่อสัตย์
+Q5=B
+Q6=
+- คำนวณปริมาตรโดยประมาณ = ปริมาณน้ำเข้าแต่ละวันที่บันทึก × ระยะเวลาของสถานการณ์ที่อยู่ในวันนั้น ÷ 24 ชั่วโมง โดยสมมติว่าอัตราน้ำเข้าเฉลี่ยสม่ำเสมอตลอดวัน
+- แสดง SIMULATED และอธิบายว่าเป็นค่าประมาณตามระยะเวลาสถานการณ์ ไม่ใช่ปริมาตรที่วัดได้; เวลา 15/15 เป็นเพียงค่าตั้งเวลาอ้างอิง ไม่ยืนยันเวลาหยุดจริง
+- ไม่ใช้ duty fraction 0.5 หรือแบ่งเป็นช่วงละ 15 นาทีเพื่ออนุมานเวลาหยุดจริง เพราะมีการ hold ด้วยมือและจำนวนรอบต่อวันไม่ทราบ
+- สำหรับ RAS สถานะวาล์วไม่ได้บันทึก จึงระบุไม่ได้ว่าปั๊มกำลังส่งตะกอนกลับหรือระบายไปลานตาก; ปริมาตรนี้ไม่ใช่ปริมาตร RAS หรือปริมาตรตะกอน
+- หากไม่มีปริมาณน้ำเข้าของวันนั้นหรือไม่ทราบระยะเวลาสถานการณ์ ให้งดแสดงตัวเลขแทนการใส่ศูนย์; หากเหตุการณ์ข้ามวัน ให้คำนวณแยกแต่ละวันและแสดงผลรวมเฉพาะเมื่อข้อมูลครบ
+--- metadata ---
+timestamp_utc_end: 2026-11-11T15:24:01Z
+exit_code: 0
+latency_seconds: 20
+```
+
+(append-only below this line)
+
+## D5 REPAIR — PR #161 review P2s (appended 11 พ.ย. 2569)
+
+Cross-model D5 review by **GPT-6.1 Terra (Codex CLI)** on exact commit
+`2253fcc` — receipt `pull/161#issuecomment-6801260024` — verdict
+CHANGES_REQUIRED with 2×P2 (both communication/completeness of displayed
+text; the reviewer confirmed the D1 math itself — FULL window, no 0.5
+multiplier, no 15-min quantization, omission fail-closed — is correct).
+Repaired per Terra's authorized minimal repair, on top of `2253fcc`, as
+the single commit carrying this note ("fix(n2): mirror ÷24 proration +
+WO truth-constraints in chip text/tests (D5 P2 repairs)"; final head SHA
+reported in the review request — a note cannot contain its own commit
+SHA). Scope stayed within the 7 mutable files (3 touched: the story
+component, the /flow e2e spec, this handoff). NO merge, NO approval —
+returns to REVIEW_REQUESTED for the next review round.
+
+### Finding → repair (1:1)
+
+**P2-1 — chip formula text omitted the ÷24 proration.** The chip said
+"ชั่วโมง × ปริมาตรน้ำเข้าที่บันทึก" while the lib computes
+`recordedM3 * (part.hours / 24)` per day. Repair (UI text only — no lib
+change): both formula lines now read
+"ปริมาตรน้ำเข้าที่บันทึก × (ชั่วโมงเหตุการณ์ในวันนั้น ÷ 24)
+สมมติการไหลสม่ำเสมอตลอดวัน". E2e gained an exact-substring assertion for
+the corrected formula wording (plus "สมมติการไหลสม่ำเสมอตลอดวัน"
+replacing the shorter stale assertion).
+
+**P2-2 — WO truth-constraints (:76, :84) not mirrored in UI/tests.**
+(a) The chip shows 15/15, so a 50% duty figure is implied: the tooltip
+now states "สัดส่วน duty 50% มาจากการคำนวณ 15/(15+15) ไม่ใช่ค่าที่เจ้าของ
+ระบุตรง และไม่มีการนำ 50% ไปคูณในสูตร" (declared-owner-values +
+arithmetic-inference), and the verbatim disclaimer
+"ค่าตั้งเวลา 15/15 เป็นข้อมูลอ้างอิง ไม่ได้คูณในสูตร" is asserted
+exact-text in the e2e. (b) "รอบ/วันไม่ทราบ (ค่าจริงไม่คงที่)" added to
+the tooltip disclaimer, exact-text asserted in the e2e. All four new
+disclaimer assertions target the aeration chip (same tooltip paragraph
+renders for RAS). D1 invariants untouched: no duty multiplication, no
+quantization, omission paths and SIMULATED labeling unchanged.

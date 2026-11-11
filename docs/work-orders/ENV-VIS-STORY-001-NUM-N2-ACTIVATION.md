@@ -1,11 +1,13 @@
 # ENV-VIS-STORY-001-NUM-N2-ACTIVATION — เปิดใช้ N2 ปริมาตรที่สัมผัสระหว่างช่วงเหตุการณ์ (Work Order, C2 slice)
 
-สถานะ: **CLAIMED** — ผูกกับ claim transition PR นี้ (claim
-`ENV-VIS-STORY-001-NUM-C2` generation 1; base
-`1908cea2a2abcae0cc52df63967b0fcc94c22766` = main ณ วัน transition)
+สถานะ: **IMPLEMENTATION DELIVERED — REVIEW_REQUESTED** (อัปเดต 11 พ.ย. 2569) —
+claim `ENV-VIS-STORY-001-NUM-C2` generation 1; สาขา implementation
+`feat/env-visstory-001num-n2` ตั้งจาก main @ `75b2014`
+(`75b201454475d5e812abe1e2ca442ef0d33e9e51`); lane หยุดที่ REVIEW_REQUESTED —
+ผู้รีวิวอิสระเป็นผู้อนุมัติและ merge เสมอ (ห้าม implementer merge ตัวเอง)
 วันที่: 11 พฤศจิกายน 2569 (2026-11-11)
-สาขา: `docs/env-visstory-001num-n2-claim` ใน worktree ที่จดทะเบียน
-`env-visstory-001num-n2` ใบเสร็จถาวรอยู่ใน
+สาขา claim เดิม (transition): `docs/env-visstory-001num-n2-claim` ใน worktree
+ที่จดทะเบียน `env-visstory-001num-n2`; ใบเสร็จถาวรอยู่ใน
 `docs/ai/handoffs/ENV-VIS-STORY-001-NUM-GLM.md`
 Task: `ENV-VIS-STORY-001-NUM-N2` (task row ใหม่สำหรับ slice เปิดใช้ N2 —
 schema ของ registry ห้าม task_id ซ้ำกับ task `ENV-VIS-STORY-001-NUM` ที่ยัง
@@ -128,6 +130,49 @@ verbatim ลง handoff ของ lane นี้) — คำถาม consult: s
   จึง PREFERRED cross-model; fresh-GLM R2 เป็น floor; GPT-6 Astra ห้าม;
   never author-and-approve; never silent downgrade) — **ห้าม implementer
   merge ตัวเอง; lane หยุดที่ REVIEW_REQUESTED เสมอ**
+
+## D-phase log (บันทึก 11 พ.ย. 2569)
+
+- **D1 (done 11 พ.ย. 2569)**: delegated consults Jev (jev-advisory MCP,
+  jev-1.13.0) + Terra (GPT-6.1 ผ่าน Codex CLI, session `01a1cb35`) — receipts
+  `/tmp/jev-n2-d1-receipt-2026-11-11.{json,txt}` + `/tmp/terra-n2-d1-receipt-2026-11-11.txt`,
+  คัดลอก verbatim ถาวรใน handoff ของ lane นี้แล้ว **Binding decision**: window =
+  กรอบเวลาเหตุการณ์เต็ม (ห้าม × duty 0.5 / ห้าม quantize 15 นาที); volume =
+  ปริมาตรน้ำเข้าบันทึกของวันเดียวกัน × (ชั่วโมงในวัน / 24) สมมติการไหลสม่ำเสมอ;
+  ข้ามเที่ยงคืน → แบ่งรายวัน แสดงผลรวมที่เสร็จสมบูรณ์; วันใดขาดบันทึก → omit
+  ทั้ง chip; chlorine-stop ยัง omitted; chip = "ปริมาตรที่สัมผัส (SIMULATED)" +
+  tooltip ตามข้อความกำกับ (15/15 เป็นที่มาอ้างอิง ไม่คูณในสูตร); RAS chip
+  ห้ามอ้างปริมาตรตะกอน/ไหลกลับ; evidence envelope ตามแบบ N3/N4
+  (confirmed-by-owner + sourceId `relay-duty-cycle-reference` + วันยืนยัน
+  10 พ.ย. 2569 → แสดงผู้ใช้เป็น พ.ศ. 2569) เป็นข้อมูลอ้างอิงที่มาของสถานการณ์
+  เท่านั้น ไม่ใช่ตัวคูณ
+- **D2 RED (commit `63d7443`, base `75b2014`)**: focused vitest
+  (process-scenario + environmental-flow): **13 failed / 81 passed (94)** —
+  truthful failures ทั้ง 13 (3 declaration probes + 10 function-absent
+  probes); e2e /flow: **1 failed / 1 passed** (presence case ล้มเหลวจริง — chip
+  ยังไม่มี; omission case ผ่านแบบ vacuous ณ RED เพื่อ pin วินัย fail-closed
+  ให้รอดผ่านการ implement — บันทึกตามจริง ไม่อ้างเป็น RED failure); `tsc -b`
+  clean ณ commit RED (probes ผ่าน unknown cast / dynamic import ไม่มี
+  @ts-expect-error)
+- **D3 (commit `48b09dd`)**: `deriveScenarioExposedVolume` pure function +
+  types ใน `process-scenario.ts`; declaration เฉพาะ aeration-stop (8 ชม.
+  08:00–16:00) + RAS-stop (6 ชม. 09:00–15:00) เป็น declared-model-assumption
+  versioned; chip wiring ใน `EnvironmentalFlowStory.tsx` (SIMULATED label ไทย,
+  tooltip ครบ, หน่วยทุกเลข); mechanics repairs ตามจริง: probe `/duty/i` ครอบคลุม
+  เกิน (ชน sourceId `relay-duty-cycle-reference` ที่ถูกต้อง) → กระชับเป็น
+  `/dutyFraction|"0\.5"/` (assertion ก่อน-หลัง semantic เดิม: ห้ามมี artifact
+  duty-fraction); RAS ที่เพิ่งประกาศ numeric ต้องมีข้อความ truth-precision
+  ตามคลาส D5 P3-4 บน banner; chip ไม่มีคำศัพท์ตะกอนเลย (disclaimer
+  ไม่อ้างปริมาตรตะกอนอยู่บน banner); สลับ dynamic-import probes → typed
+  static imports ตามแบบ C1
+- **D4 battery (head สุดท้ายของสาขา)**: FULL vitest **476/476** (28 files;
+  463 เดิม + 13 ใหม่); `tsc -b` clean; lint (oxlint) **0 errors**, 12
+  pre-existing warnings; Playwright /flow **21/21** (20 เดิม + 1 ใหม่ —
+  presence/absence ครบ 3 สถานการณ์ + omission); guard **344 passed**; runtime
+  **62 passed**; `git diff --check` clean; scope-exact ตรงรายการไฟล์ที่ claim;
+  ไม่มีไฟล์ forbidden ถูกแตะ (`docs/ai/CURRENT-WORK.md` diff = 0 lines)
+- **D5 (ต่อไป)**: cross-model review ตาม routing ของ C1 — หยุดที่
+  REVIEW_REQUESTED; ห้าม implementer merge ตัวเอง
 
 ## Scope (mutable, exactly — ตรงกับ registry claim entry, one-writer)
 

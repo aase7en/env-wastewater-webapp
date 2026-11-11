@@ -461,17 +461,109 @@ test("N3: a small nonzero difference keeps display precision and never renders a
   expect(bannerText).toMatch(/SIMULATED|จำลอง|สมมุติ/);
 });
 
-test("N4: scenarios without a complete base+factor pair render no numeric chip", async ({ page }) => {
+// ENV-VIS-STORY-001-NUM-C2: the N2 volume-exposed chip changes the N4-era
+// expectation — aeration-stop and RAS-stop now render an exposed-volume
+// SIMULATED chip when the recorded influent exists (binding D1 decision);
+// chlorine-stop still renders NOTHING (no fixed window exists).
+
+test("N2: aeration-stop and RAS-stop show the volume-exposed SIMULATED chip; chlorine-stop renders none", async ({ page }) => {
   await installStaffSession(page);
   await mockLatestReading(page);
   await page.goto("/flow");
 
-  for (const label of ["หยุดการเติมอากาศ (บ่อเติมอากาศ)", "หยุดส่งตะกอนไหลกลับ (RAS)", "หยุดจ่ายคลอรีน (สมมุติ)"]) {
-    await page.getByTestId("process-scenario-picker").selectOption({ label });
-    await page.getByTestId("process-scenario-apply").click();
-    await expect(page.getByTestId("process-scenario-banner")).toBeVisible();
-    await expect(page.getByTestId("process-scenario-numeric")).toHaveCount(0);
-    await page.getByTestId("process-scenario-clear").click();
-    await expect(page.getByTestId("process-scenario-banner")).toHaveCount(0);
-  }
+  // ── aeration-stop (หยุดเติมอากาศ): 82.25 m³ × 8 h / 24 = 27.417 m³ ──
+  await page.getByTestId("process-scenario-picker").selectOption({ label: "หยุดการเติมอากาศ (บ่อเติมอากาศ)" });
+  await page.getByTestId("process-scenario-apply").click();
+  await expect(page.getByTestId("process-scenario-banner")).toBeVisible();
+
+  const aerationChip = page.getByTestId("process-scenario-numeric");
+  await expect(aerationChip).toHaveCount(1);
+  await expect(aerationChip).toHaveAttribute("data-scenario-numeric-kind", "exposed-volume");
+  await expect(aerationChip).toContainText("ปริมาตรที่สัมผัส (SIMULATED)");
+  await expect(aerationChip).toContainText("27.417");
+  await expect(aerationChip).toContainText("m³");
+  // Binding D1 tooltip: the 15/15 relay values are the owner-confirmed
+  // scenario BASIS (10 พ.ย. 2569), never multiplied into the formula.
+  await expect(aerationChip).toContainText("15/15");
+  await expect(aerationChip).toContainText("10 พ.ย. 2569");
+  await expect(aerationChip).toContainText("ไม่ได้คูณในสูตร");
+  // D5 P2 repair (PR #161 review): the displayed formula states the per-day
+  // ÷24 proration explicitly — the lib computes recordedM3 * (hours / 24).
+  await expect(aerationChip).toContainText("ปริมาตรน้ำเข้าที่บันทึก × (ชั่วโมงเหตุการณ์ในวันนั้น ÷ 24) สมมติการไหลสม่ำเสมอตลอดวัน");
+  // WO truth-constraints (ENV-VIS-STORY-001-NUM-N2-ACTIVATION.md :76/:84):
+  // the 50% duty figure is an arithmetic inference the owner never stated,
+  // and cycles/day is unknown.
+  await expect(aerationChip).toContainText("ค่าตั้งเวลา 15/15 เป็นข้อมูลอ้างอิง ไม่ได้คูณในสูตร");
+  await expect(aerationChip).toContainText("มาจากการคำนวณ 15/(15+15) ไม่ใช่ค่าที่เจ้าของระบุตรง");
+  await expect(aerationChip).toContainText("ไม่มีการนำ 50% ไปคูณในสูตร");
+  await expect(aerationChip).toContainText("รอบ/วันไม่ทราบ (ค่าจริงไม่คงที่)");
+  await expect(aerationChip).toContainText("สมมติการไหลสม่ำเสมอตลอดวัน");
+  const aerationText = await aerationChip.innerText();
+  expect(aerationText).not.toMatch(/ตะกอน/);
+
+  await page.getByTestId("process-scenario-clear").click();
+  await expect(page.getByTestId("process-scenario-numeric")).toHaveCount(0);
+
+  // ── RAS-stop (หยุด RAS): 82.25 m³ × 6 h / 24 = 20.563 m³ — exposure
+  // volume ONLY; the chip must NOT claim sludge or return-flow volume. ──
+  await page.getByTestId("process-scenario-picker").selectOption({ label: "หยุดส่งตะกอนไหลกลับ (RAS)" });
+  await page.getByTestId("process-scenario-apply").click();
+  await expect(page.getByTestId("process-scenario-banner")).toBeVisible();
+
+  const rasChip = page.getByTestId("process-scenario-numeric");
+  await expect(rasChip).toHaveCount(1);
+  await expect(rasChip).toHaveAttribute("data-scenario-numeric-kind", "exposed-volume");
+  await expect(rasChip).toContainText("ปริมาตรที่สัมผัส (SIMULATED)");
+  await expect(rasChip).toContainText("20.563");
+  await expect(rasChip).toContainText("m³");
+  const rasText = await rasChip.innerText();
+  expect(rasText).not.toMatch(/ตะกอน/);
+  expect(rasText).not.toMatch(/ปริมาตรตะกอน|ปริมาตรส่งกลับ|return-flow volume/i);
+
+  await page.getByTestId("process-scenario-clear").click();
+  await expect(page.getByTestId("process-scenario-numeric")).toHaveCount(0);
+
+  // ── chlorine-stop (หยุดจ่ายคลอรีน): N2 stays omitted — no fixed window. ──
+  await page.getByTestId("process-scenario-picker").selectOption({ label: "หยุดจ่ายคลอรีน (สมมุติ)" });
+  await page.getByTestId("process-scenario-apply").click();
+  await expect(page.getByTestId("process-scenario-banner")).toBeVisible();
+  await expect(page.getByTestId("process-scenario-numeric")).toHaveCount(0);
+  await expect(page.getByText("ปริมาตรที่สัมผัส")).toHaveCount(0);
+});
+
+test("N2: the volume-exposed chip omits entirely when the recorded influent or its date is missing (never zero)", async ({ page }) => {
+  await installStaffSession(page);
+  await mockLatestReading(page, {
+    id: "11111111-1111-1111-1111-111111111111",
+    reading_date: "2026-09-01",
+    water_used_total: 120.5,
+    wastewater_in: null,
+    excess_sludge_removed: 1.75,
+    wastewater_discharged: true,
+  });
+  await page.goto("/flow");
+  await page.getByTestId("process-scenario-picker").selectOption({ label: "หยุดการเติมอากาศ (บ่อเติมอากาศ)" });
+  await page.getByTestId("process-scenario-apply").click();
+  await expect(page.getByTestId("process-scenario-banner")).toBeVisible();
+
+  // Missing recorded influent → OMIT the chip entirely (never render 0).
+  await expect(page.getByTestId("process-scenario-numeric")).toHaveCount(0);
+  await expect(page.getByText("ปริมาตรที่สัมผัส")).toHaveCount(0);
+
+  // Missing reading date (no incident anchor) → omit even with a value.
+  await page.getByTestId("process-scenario-clear").click();
+  await mockLatestReading(page, {
+    id: "11111111-1111-1111-1111-111111111111",
+    reading_date: null,
+    water_used_total: 120.5,
+    wastewater_in: 82.25,
+    excess_sludge_removed: 1.75,
+    wastewater_discharged: true,
+  });
+  await page.reload();
+  await page.getByTestId("process-scenario-picker").selectOption({ label: "หยุดการเติมอากาศ (บ่อเติมอากาศ)" });
+  await page.getByTestId("process-scenario-apply").click();
+  await expect(page.getByTestId("process-scenario-banner")).toBeVisible();
+  await expect(page.getByTestId("process-scenario-numeric")).toHaveCount(0);
+  await expect(page.getByText("ปริมาตรที่สัมผัส")).toHaveCount(0);
 });
