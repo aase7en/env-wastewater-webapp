@@ -1,9 +1,12 @@
 # DT-VIS-P002 — ภาษาการเคลื่อนไหวผิวน้ำบ่อเติมอากาศ (Work Order — bounded first slice)
 
-สถานะ: **CLAIMED** — ผูกกับ claim transition PR นี้ (claim `DT-VIS-P002-C1`
+สถานะ: **IMPLEMENTED — REVIEW_REQUESTED** (implementation branch
+`feat/dt-vis-p002` จาก main `92a0f01` ใน worktree ที่จดทะเบียน; PR เปิดรอ
+รีวิวอิสระ — lane ผู้ implement ห้าม merge; ดู in/checkpoint ทั้งหมดใน
+`docs/ai/handoffs/DT-VIS-P002-CODEX.md`) claim `DT-VIS-P002-C1`
 generation 1; base `35516047a10a59cfaa5ff609a21ce8172190c447` = main ณ วัน
-transition) วันที่: 12 พฤศจิกายน 2569 (2026-11-12)
-สาขา: `docs/dt-vis-p002-claim` ใน worktree ที่จดทะเบียน
+transition วันที่: 12 พฤศจิกายน 2569 (2026-11-12)
+สาขา transition: `docs/dt-vis-p002-claim` ใน worktree ที่จดทะเบียน
 `/Volumes/MAC_WORK/DevWorkspace/Github/_worktrees/env-dtvis-p002-20261112`
 ใบเสร็จถาวรอยู่ใน `docs/ai/handoffs/DT-VIS-P002-CODEX.md`
 Task: `DT-VIS-P002` (task row ใหม่ — ตรวจความซ้ำของ task_id กับทะเบียนผ่าน

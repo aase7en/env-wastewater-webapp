@@ -627,3 +627,153 @@ source: /tmp/jev-nextlane2-consult-2026-11-12.json
   "escalation_flag": "LOW confidence on q1_next_lane_corrected=0.25 and q3_risk_A=0.39; per the provider's own advisory_notice, frontier reasoning / project decision authority should arbitrate. Q1 probabilities are effectively a near-tie between D STOP (0.44) and A (0.30)."
 }
 ```
+
+## D2 — RED-first test contract landed (2026-11-12)
+
+- `frontend/tests/e2e/dt-vis-p002.spec.ts` (7 tests, new file) written by GLM
+  (Track-Z) BEFORE any implementation, pinning the D1 water-surface motion
+  contract: pure derivation `deriveWaterMotionState(aeratorRunning,
+  reducedMotion)` (exhaustive truth table: `active` / `active-still` /
+  `stopped-still` / `unknown-still`), shell attribute `data-water-motion`,
+  DOM truth chip `twin-water-motion-status` with exact Thai texts
+  (ผิวน้ำ: เติมอากาศกำลังทำงาน / เติมอากาศทำงาน (หยุดภาพเคลื่อนไหว) /
+  เติมอากาศหยุดทำงาน / ไม่ทราบสถานะการเติมอากาศ), motion-only-when-validated
+  evidence, truthful vocabulary (no LIVE/sensor claims), mobile 390 chip
+  containment, and an import-allowlist guard (no new data paths).
+- Honest reachability note: validated `aeratorRunning=false` is unreachable
+  through existing UI data paths (dashboard adapter maps aeratorRunning to
+  unavailable; the only scenario surface is AERATION_DEMO_OVERRIDES with
+  `true`), so the false case is pinned through the pure-derivation import,
+  not through an invented test data path.
+- RED verified at `92a0f01` (pre-implementation): **6 failed / 1 passed** —
+  `TypeError: deriveWaterMotionState is not a function` (export absent),
+  `data-water-motion` attribute null in all three UI states, chip
+  `twin-water-motion-status` element not found (two tests). The 1 pass is the
+  import-allowlist guard, which pins the CURRENT import surface by design
+  (regression guard, truthful pass). Full failing run preserved at
+  /tmp/p002-d2-red-run-2026-11-12.txt (ephemeral; the counts and failure
+  reasons above are the durable record).
+- RED committed as `641f29b` — `test(twin): D2 RED — P002 water-surface
+  expectations failing`.
+- Next: D3 gated dispatch (admission probe → gpt-6-sol @ max under the Role B
+  single-writer window).
+
+## D3 — Codex admission probe + implementation dispatch (2026-11-12)
+
+- **Admission probe ADMITTED** (one probe for this lane's fingerprint; Role B
+  policy — never dispatch an unadmitted implementer, never silent fallback).
+  Verbatim probe receipt (source /tmp/p002-admission-probe-2026-11-12.txt,
+  ephemeral; durable copy below):
+
+```text
+OpenAI Codex v0.166.0-alpha.5.1
+--------
+workdir: /Volumes/MAC_WORK/DevWorkspace/Github/env-wastewater-webapp
+model: gpt-6-sol
+provider: openai
+approval: never
+sandbox: read-only
+reasoning effort: low
+reasoning summaries: none
+session id: 01a1cc7a-c8b9-71f0-858a-3ee9bd54a66c
+--------
+user
+admission probe: reply OK
+codex
+OK
+tokens used
+18,139
+```
+
+  (hook lines elided for brevity in this durable copy; full file incl. hooks
+  was: SessionStart/UserPromptSubmit/PreToolUse/Stop pairs, exit=0.)
+
+- **Dispatch** (implementation-appropriate sandbox, NOT the read-only probe
+  policy): `codex exec --sandbox workspace-write --skip-git-repo-check
+  -m gpt-6-sol -c model_reasoning_effort=max` run from the registered lane
+  worktree with the bounded brief /tmp/p002-d3-brief-2026-11-12.md (edit ONLY
+  WastewaterTwin.tsx + TwinCanvas.tsx; implement the pinned contract; pass
+  the D2 tests without editing tests; no new imports; honesty constraints;
+  leave changes uncommitted).
+- Dispatch header (verbatim): workdir = the registered lane worktree;
+  model `gpt-6-sol`; provider openai; approval never; sandbox
+  `workspace-write [workdir, /tmp, $TMPDIR]`; reasoning effort `max`;
+  **session id `01a1cc7b-9290-7de3-89db-bb982486c3ac`**; tokens used
+  **134,274**; EXIT=0. Full raw log (340 KB incl. reasoning stream) at
+  /tmp/p002-d3-dispatch-2026-11-12.txt (ephemeral); the durable record is the
+  header above + Codex's verbatim final report below.
+
+```text
+Oh! Shit My Boss, Poppy Javis แก้เฉพาะสองไฟล์ตาม brief และยังไม่ commit ครับ
+
+| ไฟล์ | สิ่งที่เปลี่ยน |
+|---|---|
+| WastewaterTwin.tsx | เพิ่มฟังก์ชันสถานะตาม truth table, คลื่นผิวน้ำเฉพาะ `active` และ diffuser ring |
+| TwinCanvas.tsx | เพิ่ม `data-water-motion` และ chip ภาษาไทยครบ 4 สถานะ โดยคง `data-aerator-running` เดิม |
+
+| การตรวจ | ผล |
+|---|---|
+| Truth table / twin unit tests / import allowlist | 6/6, 7/7, 2/2 ผ่าน |
+| `npx tsc -b` / `npm run lint` / `git diff --check` | ผ่าน; lint ไม่มี error ใหม่ |
+| Playwright ทั้งสองคำสั่ง | **ยังยืนยันผลไม่ได้**: sandbox ปฏิเสธการเปิด dev server (`EPERM ::1:5173`) และ Chromium |
+```
+
+  (workspace-write sandbox denies binding port 5173 and launching Chromium —
+  expected; the E2E verification therefore belongs to D4.)
+
+- Codex left changes UNCOMMITTED in the worktree (per the P003 D3→D4
+  precedent); scope verified exact: only the two claimed Twin files modified.
+
+## D3 → D4 — ownership transfer (2026-11-12)
+
+- The Codex D3 temporary sole-writer window ENDS at this entry. GLM-5.3 MAX
+  resumed mutation of the claim's mutable scope for D4 integration at commit
+  time. A fresh independent GLM context still owns D5 review; the
+  implementation author does not approve or merge it. The lane stops at
+  REVIEW_REQUESTED.
+
+## D4 — GLM integration battery GREEN (2026-11-12)
+
+- Integration review of the Codex diff: contract-faithful (truth table
+  exhaustive; chip texts exact; `data-aerator-running` preserved; Aura
+  tokens; Thai labels; ripple derives from time-phase only with CONSTANT
+  amplitude — no process formulas, no real-speed/flow claims; diffuser ring
+  keeps still states reading as a treatment basin, never an ornamental pond;
+  import surface unchanged).
+- GLM integration edits (both within claimed files):
+  1. `frameloop="demand"` for ALL still states (`waterMotion === "active"`
+     is the only "always" state) — stillness made genuine and deterministic,
+     zero wasted GPU work, and unknown/stopped states can never animate.
+  2. The D2 spec's motion/stillness evidence was switched from canvas PNG
+     byte comparison (flaky: late canvas resize after ready + compression
+     churn) to an in-page WebGL draw-call counter patched via
+     `addInitScript` on the app's own `data-twin-renderer-canvas` marker:
+     still states ≤10 draws over a 600ms window (settled demand = no frames
+     drawn at all), active >100 draws (continuous render loop). Assertions'
+     intent unchanged; the still/motion phenomenon is pinned by the render
+     loop mechanism itself, which is deterministic under load.
+- Full battery at final head `6e2fab0` (branch `feat/dt-vis-p002`, base
+  `92a0f01` = origin/main):
+  - `npx tsc -b` — clean (exit 0)
+  - `npm run lint` (oxlint) — 0 errors / 12 pre-existing warnings (baseline)
+  - `npx vitest run` — **28 files / 476 tests passed**
+  - `npx playwright test --project=chromium --workers=1` (CI-equivalent
+    profile) — **197/197 passed** incl. dt-vis-p002 7/7, digital-twin 6/6,
+    digital-twin-visual 5/5, dt-vis-p003 7/7. Log:
+    /tmp/p002-d4-playwright-full-w1-2026-11-12.txt (ephemeral).
+  - Note recorded honestly: under full-default parallelism (workers=N on
+    this machine) three UNRELATED mobile-overflow specs (building-repair,
+    safety-mobile, chemical-mobile "settled overflow") flaked under load and
+    passed 17/17 in isolation; the P002 still test flaked under the same
+    load BEFORE the draw-counter instrumentation and is stable after it.
+    workers=1 (the CI config) is green 197/197.
+  - `python3 scripts/test_env_coordination_guard.py` — **344/344 OK**
+  - `python3 scripts/test_env_autonomy_runtime.py` — **62/62 OK**
+  - `git diff --check` — clean
+  - Scope-exact: `git diff main --stat` = exactly
+    `WastewaterTwin.tsx` + `TwinCanvas.tsx` + `dt-vis-p002.spec.ts`
+    (CURRENT-WORK.md untouched; no forbidden file touched)
+- Commits on `feat/dt-vis-p002`: `641f29b` (D2 RED) → `6e2fab0` (D3+D4).
+- Next: D5 fresh-GLM cross-model review at the pushed head (Codex authored
+  the implementation; never author-and-approve). The lane STOPS at
+  REVIEW_REQUESTED — merge belongs to the authorized reviewer.
