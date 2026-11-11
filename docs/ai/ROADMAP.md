@@ -1,6 +1,6 @@
 # UTH[AI]-ENV — Unified Roadmap
 
-Last updated: 2026-09-10
+Last updated: 2026-11-12
 Status: PROJECT ROADMAP SSoT
 
 ## Goal
@@ -259,7 +259,7 @@ Existing priorities are not pre-empted.
 
 `ENV-INT-PROVENANCE-001` R2 exact head `ffbb740f6a5dd4ebf174150b130db11bc83625bc` was independently reviewed APPROVED and merged by expected-head guard as `b6256616216bc0b657fbcf15ff9a5dabde0f321a`; exact-main test/E2E/Pages succeeded. Canonical core now keeps availability, freshness and provenance orthogonal; fails closed on schema/value/time contradictions; and contains no provider/network/UI logic.
 
-Next provider implementation must remain source-contract gated. The safe GLM long-horizon candidate is `ENV-INT-GISTDA-CORE-001`: fixture-driven adapter/normalization only, consuming the merged core, with no UI/public redistribution and no real-network CI. Public GISTDA display/redistribution remains gated by D1 license posture; hospital point queries remain gated by authoritative coordinates; heat/flood semantics remain RESEARCH_REQUIRED.
+`ENV-INT-GISTDA-CORE-001` — DELIVERED via PR #80 (merged 2026-09-16 as `bf26cb52`, ancestor of main): deterministic GISTDA PM2.5 adapter core at `frontend/src/lib/env-int/gistda/` — fixture-driven, fail-closed, no UI, no network; WO reconciled 2026-10-14. License posture remains UNVERIFIED and public display/redistribution stays gated; hospital point queries stay gated by authoritative coordinates; heat/flood semantics remain RESEARCH_REQUIRED. The next M5 candidate is the ENV-HAZARD-001 initial bounded slice, which remains gated by the GISTDA license posture decision (D1) and authoritative hospital coordinates; any further provider implementation must remain source-contract gated.
 
 Before map production work:
 
