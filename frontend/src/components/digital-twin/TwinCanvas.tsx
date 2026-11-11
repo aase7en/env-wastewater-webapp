@@ -21,7 +21,7 @@ import {
 } from "../../lib/twin/types";
 import { AuraCard } from "../ui/AuraCard";
 import { Button } from "../ui/Button";
-import { WastewaterTwin } from "./WastewaterTwin";
+import { deriveWaterMotionState, WastewaterTwin } from "./WastewaterTwin";
 import { TwinRendererFallback } from "./TwinRendererBoundary";
 
 function SceneReadySignal({ onReady }: { onReady: () => void }) {
@@ -65,6 +65,13 @@ function sourceText(source: TwinMetricSource, mode: TwinMode): string {
   return "ไม่มีข้อมูล";
 }
 
+const WATER_MOTION_LABELS: Record<ReturnType<typeof deriveWaterMotionState>, string> = {
+  active: "ผิวน้ำ: เติมอากาศกำลังทำงาน",
+  "active-still": "ผิวน้ำ: เติมอากาศทำงาน (หยุดภาพเคลื่อนไหว)",
+  "stopped-still": "ผิวน้ำ: เติมอากาศหยุดทำงาน",
+  "unknown-still": "ผิวน้ำ: ไม่ทราบสถานะการเติมอากาศ",
+};
+
 export function TwinCanvas({
   row,
   historicalRow,
@@ -100,6 +107,7 @@ export function TwinCanvas({
     [mode, simulationOverrides, sourceRow],
   );
   const tank: AerationTankTwinAsset = twinState.assets[AERATION_TANK_ID];
+  const waterMotion = deriveWaterMotionState(tank.aeratorRunning.value, reducedMotion);
   const selected = selectedAssetId === AERATION_TANK_ID;
   const selectionColor = threeColorFromRgbToken("--aura-cyan");
 
@@ -175,11 +183,12 @@ export function TwinCanvas({
         data-testid="twin-canvas-shell"
         data-reduced-motion={reducedMotion}
         data-aerator-running={tank.aeratorRunning.value ?? "unknown"}
+        data-water-motion={waterMotion}
       >
         <Canvas
           aria-hidden="true"
           fallback={<span>ไม่สามารถแสดงมุมมอง 3D ได้</span>}
-          frameloop={reducedMotion ? "demand" : "always"}
+          frameloop={waterMotion === "active" ? "always" : "demand"}
           camera={{ position: [6.6, 5.1, 7.2], fov: 38 }}
           dpr={[1, 1.5]}
           gl={async (defaultProps) => {
@@ -210,6 +219,7 @@ export function TwinCanvas({
             asset={tank}
             selected={selected || focusedAssetId === AERATION_TANK_ID}
             reducedMotion={reducedMotion}
+            waterMotion={waterMotion}
             theme={theme}
             selectionColor={selectionColor}
             onSelectAsset={selectAsset}
@@ -242,6 +252,12 @@ export function TwinCanvas({
             ระดับน้ำ: ไม่มีข้อมูล
           </span>
         ) : null}
+        <span
+          data-testid="twin-water-motion-status"
+          className="absolute right-3 top-3 max-w-[85%] rounded-lg bg-aura-bg/80 px-2 py-1 text-right text-xs text-aura-textMuted font-thai backdrop-blur"
+        >
+          {WATER_MOTION_LABELS[waterMotion]}
+        </span>
       </div>
 
       {selected ? (

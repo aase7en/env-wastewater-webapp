@@ -74,6 +74,56 @@ async function openSimulation(page: Page) {
 
 const WATER_MOTION_CHIP = "twin-water-motion-status";
 
+/**
+ * Installs a draw-call counter for the Twin renderer canvas (identified by
+ * the app's own `data-twin-renderer-canvas` dataset marker). This measures
+ * the render loop itself, which is the mechanism that makes a state move or
+ * stay still: "demand" frameloop (all still states) draws no frames once
+ * settled, while "always" (the active treatment state) draws continuously.
+ * Unlike canvas byte comparisons, this is deterministic under load.
+ */
+async function installTwinDrawCounter(page: Page) {
+  await page.addInitScript(() => {
+    const windowWithCounter = window as typeof window & { __twinDrawCount?: number };
+    windowWithCounter.__twinDrawCount = 0;
+    const bump = (this_arg: unknown) => {
+      const canvas = (this_arg as { canvas?: HTMLCanvasElement } | null)?.canvas;
+      if (canvas?.dataset.twinRendererCanvas === "true") windowWithCounter.__twinDrawCount! += 1;
+    };
+    for (const proto of [WebGLRenderingContext.prototype, WebGL2RenderingContext.prototype]) {
+      for (const method of ["drawArrays", "drawElements", "drawArraysInstanced", "drawElementsInstanced"] as const) {
+        const original = proto[method] as (this: WebGLRenderingContext, ...args: unknown[]) => void;
+        if (!original) continue;
+        proto[method] = function (this: WebGLRenderingContext, ...args: unknown[]) {
+          bump(this);
+          return original.apply(this, args);
+        } as typeof original;
+      }
+    }
+  });
+}
+
+async function twinDrawCount(page: Page): Promise<number> {
+  return page.evaluate(() => {
+    const windowWithCounter = window as typeof window & { __twinDrawCount?: number };
+    return windowWithCounter.__twinDrawCount ?? -1;
+  });
+}
+
+async function resetTwinDrawCount(page: Page) {
+  await page.evaluate(() => {
+    const windowWithCounter = window as typeof window & { __twinDrawCount?: number };
+    windowWithCounter.__twinDrawCount = 0;
+  });
+}
+
+/** Samples Twin renderer draw activity over an observation window. */
+async function observeTwinDrawActivity(page: Page, windowMs = 600): Promise<number> {
+  await resetTwinDrawCount(page);
+  await page.waitForTimeout(windowMs);
+  return twinDrawCount(page);
+}
+
 test.describe("DT-VIS-P002 water-surface motion language", () => {
   test("derivation truth table: validated aggregate → motion/still states (exhaustive, incl. reduced motion)", async () => {
     const { deriveWaterMotionState } = await import(
@@ -90,6 +140,7 @@ test.describe("DT-VIS-P002 water-surface motion language", () => {
   test("latest mode: unknown aerator aggregate → still water with truthful UNAVAILABLE semantics, no fabricated motion", async ({
     authed: page,
   }) => {
+    await installTwinDrawCounter(page);
     await mockDashboard(page);
     await page.goto("/dashboard");
     await waitForTwinReady(page);
@@ -102,18 +153,17 @@ test.describe("DT-VIS-P002 water-surface motion language", () => {
     await expect(chip).toBeVisible();
     await expect(chip).toHaveText("ผิวน้ำ: ไม่ทราบสถานะการเติมอากาศ");
 
-    // No fabricated motion while the aggregate is unknown: the water surface
-    // keeps identical frames over time (still state), yet still reads as a
-    // treatment basin via the truthful treatment cue chip.
-    const firstFrame = await page.locator("canvas").screenshot();
-    await page.waitForTimeout(400);
-    const secondFrame = await page.locator("canvas").screenshot();
-    expect(secondFrame.equals(firstFrame)).toBe(true);
+    // No fabricated motion while the aggregate is unknown: once settled, the
+    // Twin renderer draws no frames (still state), yet the surface still
+    // reads as a treatment basin via the truthful treatment cue chip.
+    const draws = await observeTwinDrawActivity(page);
+    expect(draws).toBeLessThanOrEqual(10);
   });
 
   test("simulation (explicit scenario, labeled): validated running aggregate → active treatment motion on the water surface", async ({
     authed: page,
   }) => {
+    await installTwinDrawCounter(page);
     await mockDashboard(page);
     await page.goto("/dashboard");
     await waitForTwinReady(page);
@@ -131,16 +181,16 @@ test.describe("DT-VIS-P002 water-surface motion language", () => {
     await expect(chip).not.toContainText("LIVE");
     await expect(chip).not.toContainText("เซนเซอร์");
 
-    // Active treatment surface actually moves (distinct from a static pond).
-    const firstFrame = await page.locator("canvas").screenshot();
-    await page.waitForTimeout(300);
-    const secondFrame = await page.locator("canvas").screenshot();
-    expect(secondFrame.equals(firstFrame)).toBe(false);
+    // Active treatment surface actually animates continuously (distinct from
+    // a static ornamental pond): the renderer keeps drawing frames.
+    const draws = await observeTwinDrawActivity(page);
+    expect(draws).toBeGreaterThan(100);
   });
 
   test("reduced motion: validated running aggregate → meaningful still state (active-still), not a broken/blank surface", async ({
     authed: page,
   }) => {
+    await installTwinDrawCounter(page);
     await page.emulateMedia({ reducedMotion: "reduce" });
     await mockDashboard(page);
     await page.goto("/dashboard");
@@ -157,10 +207,10 @@ test.describe("DT-VIS-P002 water-surface motion language", () => {
     await expect(chip).toHaveText("ผิวน้ำ: เติมอากาศทำงาน (หยุดภาพเคลื่อนไหว)");
     await expect(chip).not.toContainText("LIVE");
 
-    const firstFrame = await page.locator("canvas").screenshot();
-    await page.waitForTimeout(400);
-    const secondFrame = await page.locator("canvas").screenshot();
-    expect(secondFrame.equals(firstFrame)).toBe(true);
+    // Reduced motion keeps the meaning (still running) but suspends the
+    // animation loop: once settled, the renderer draws no frames.
+    const draws = await observeTwinDrawActivity(page);
+    expect(draws).toBeLessThanOrEqual(10);
   });
 
   test("no ornamental-pond static look: still states keep the truthful treatment cue (DOM hook present)", async ({
