@@ -3,10 +3,21 @@ import { useFrame } from "@react-three/fiber";
 import * as THREE from "three";
 import type { AerationTankTwinAsset, TwinAssetId } from "../../lib/twin/types";
 
+// oxlint-disable-next-line react/only-export-components -- The P002 contract imports this pure derivation from the scene module.
+export function deriveWaterMotionState(
+  aeratorRunning: boolean | null,
+  reducedMotion: boolean,
+): "active" | "active-still" | "stopped-still" | "unknown-still" {
+  if (aeratorRunning === null) return "unknown-still";
+  if (aeratorRunning === false) return "stopped-still";
+  return reducedMotion ? "active-still" : "active";
+}
+
 interface WastewaterTwinProps {
   asset: AerationTankTwinAsset;
   selected: boolean;
   reducedMotion: boolean;
+  waterMotion: ReturnType<typeof deriveWaterMotionState>;
   theme: "light" | "dark";
   selectionColor: string;
   onSelectAsset: (assetId: TwinAssetId) => void;
@@ -58,6 +69,33 @@ function BubbleField({ reducedMotion }: { reducedMotion: boolean }) {
       <sphereGeometry args={[1, 8, 8]} />
       <meshBasicMaterial color="#dffcff" transparent opacity={0.72} />
     </instancedMesh>
+  );
+}
+
+function WaterSurface({ color, active }: { color: string; active: boolean }) {
+  const meshRef = useRef<THREE.Mesh<THREE.PlaneGeometry>>(null);
+
+  useFrame(({ clock }) => {
+    if (!active || !meshRef.current) return;
+
+    const geometry = meshRef.current.geometry;
+    const positions = geometry.attributes.position as THREE.BufferAttribute;
+    const phase = clock.getElapsedTime() * 1.2;
+    // Fixed, illustrative agitation; the phase and amplitude encode no real flow or speed.
+    for (let index = 0; index < positions.count; index += 1) {
+      const x = positions.getX(index);
+      const y = positions.getY(index);
+      positions.setZ(index, 0.032 * Math.sin(x * 3.6 + phase) * Math.cos(y * 4.2 - phase * 0.7));
+    }
+    positions.needsUpdate = true;
+    geometry.computeVertexNormals();
+  });
+
+  return (
+    <mesh ref={meshRef} rotation={[-Math.PI / 2, 0, 0]}>
+      <planeGeometry args={[4.24, 2.96, 24, 16]} />
+      <meshStandardMaterial color={color} roughness={0.4} metalness={0.02} />
+    </mesh>
   );
 }
 
@@ -155,6 +193,7 @@ export function WastewaterTwin({
   asset,
   selected,
   reducedMotion,
+  waterMotion,
   theme,
   selectionColor,
   onSelectAsset,
@@ -230,16 +269,19 @@ export function WastewaterTwin({
               <boxGeometry args={[4.28, waterHeight, 3.0]} />
               <meshStandardMaterial color={waterColor} roughness={0.5} transparent opacity={0.72} />
             </mesh>
-            <mesh position={[0, 0.22 + waterHeight, 0]} rotation={[-Math.PI / 2, 0, 0]}>
-              <planeGeometry args={[4.24, 2.96, 1, 1]} />
-              <meshStandardMaterial color={waterColor} roughness={0.4} metalness={0.02} />
-            </mesh>
+            <group position={[0, 0.22 + waterHeight, 0]}>
+              <WaterSurface color={waterColor} active={waterMotion === "active"} />
+            </group>
           </group>
         ) : null}
 
         <mesh position={[0, 0.28, 0]}>
           <cylinderGeometry args={[0.74, 0.74, 0.14, 24]} />
           <meshStandardMaterial color={theme === "dark" ? "#24474d" : "#78908b"} roughness={0.72} />
+        </mesh>
+        <mesh position={[0, 0.37, 0]} rotation={[-Math.PI / 2, 0, 0]}>
+          <torusGeometry args={[0.58, 0.055, 8, 36]} />
+          <meshStandardMaterial color={theme === "dark" ? "#4a8791" : "#527e79"} roughness={0.7} />
         </mesh>
 
         {asset.aeratorRunning.value === true ? <BubbleField reducedMotion={reducedMotion} /> : null}
