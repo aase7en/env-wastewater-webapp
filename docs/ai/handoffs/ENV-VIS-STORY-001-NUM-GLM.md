@@ -787,3 +787,41 @@ latency_seconds: 20
 ```
 
 (append-only below this line)
+
+## D5 REPAIR — PR #161 review P2s (appended 11 พ.ย. 2569)
+
+Cross-model D5 review by **GPT-6.1 Terra (Codex CLI)** on exact commit
+`2253fcc` — receipt `pull/161#issuecomment-6801260024` — verdict
+CHANGES_REQUIRED with 2×P2 (both communication/completeness of displayed
+text; the reviewer confirmed the D1 math itself — FULL window, no 0.5
+multiplier, no 15-min quantization, omission fail-closed — is correct).
+Repaired per Terra's authorized minimal repair, on top of `2253fcc`, as
+the single commit carrying this note ("fix(n2): mirror ÷24 proration +
+WO truth-constraints in chip text/tests (D5 P2 repairs)"; final head SHA
+reported in the review request — a note cannot contain its own commit
+SHA). Scope stayed within the 7 mutable files (3 touched: the story
+component, the /flow e2e spec, this handoff). NO merge, NO approval —
+returns to REVIEW_REQUESTED for the next review round.
+
+### Finding → repair (1:1)
+
+**P2-1 — chip formula text omitted the ÷24 proration.** The chip said
+"ชั่วโมง × ปริมาตรน้ำเข้าที่บันทึก" while the lib computes
+`recordedM3 * (part.hours / 24)` per day. Repair (UI text only — no lib
+change): both formula lines now read
+"ปริมาตรน้ำเข้าที่บันทึก × (ชั่วโมงเหตุการณ์ในวันนั้น ÷ 24)
+สมมติการไหลสม่ำเสมอตลอดวัน". E2e gained an exact-substring assertion for
+the corrected formula wording (plus "สมมติการไหลสม่ำเสมอตลอดวัน"
+replacing the shorter stale assertion).
+
+**P2-2 — WO truth-constraints (:76, :84) not mirrored in UI/tests.**
+(a) The chip shows 15/15, so a 50% duty figure is implied: the tooltip
+now states "สัดส่วน duty 50% มาจากการคำนวณ 15/(15+15) ไม่ใช่ค่าที่เจ้าของ
+ระบุตรง และไม่มีการนำ 50% ไปคูณในสูตร" (declared-owner-values +
+arithmetic-inference), and the verbatim disclaimer
+"ค่าตั้งเวลา 15/15 เป็นข้อมูลอ้างอิง ไม่ได้คูณในสูตร" is asserted
+exact-text in the e2e. (b) "รอบ/วันไม่ทราบ (ค่าจริงไม่คงที่)" added to
+the tooltip disclaimer, exact-text asserted in the e2e. All four new
+disclaimer assertions target the aeration chip (same tooltip paragraph
+renders for RAS). D1 invariants untouched: no duty multiplication, no
+quantization, omission paths and SIMULATED labeling unchanged.

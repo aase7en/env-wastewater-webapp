@@ -487,7 +487,17 @@ test("N2: aeration-stop and RAS-stop show the volume-exposed SIMULATED chip; chl
   await expect(aerationChip).toContainText("15/15");
   await expect(aerationChip).toContainText("10 พ.ย. 2569");
   await expect(aerationChip).toContainText("ไม่ได้คูณในสูตร");
-  await expect(aerationChip).toContainText("สมมติการไหลสม่ำเสมอ");
+  // D5 P2 repair (PR #161 review): the displayed formula states the per-day
+  // ÷24 proration explicitly — the lib computes recordedM3 * (hours / 24).
+  await expect(aerationChip).toContainText("ปริมาตรน้ำเข้าที่บันทึก × (ชั่วโมงเหตุการณ์ในวันนั้น ÷ 24) สมมติการไหลสม่ำเสมอตลอดวัน");
+  // WO truth-constraints (ENV-VIS-STORY-001-NUM-N2-ACTIVATION.md :76/:84):
+  // the 50% duty figure is an arithmetic inference the owner never stated,
+  // and cycles/day is unknown.
+  await expect(aerationChip).toContainText("ค่าตั้งเวลา 15/15 เป็นข้อมูลอ้างอิง ไม่ได้คูณในสูตร");
+  await expect(aerationChip).toContainText("มาจากการคำนวณ 15/(15+15) ไม่ใช่ค่าที่เจ้าของระบุตรง");
+  await expect(aerationChip).toContainText("ไม่มีการนำ 50% ไปคูณในสูตร");
+  await expect(aerationChip).toContainText("รอบ/วันไม่ทราบ (ค่าจริงไม่คงที่)");
+  await expect(aerationChip).toContainText("สมมติการไหลสม่ำเสมอตลอดวัน");
   const aerationText = await aerationChip.innerText();
   expect(aerationText).not.toMatch(/ตะกอน/);
 

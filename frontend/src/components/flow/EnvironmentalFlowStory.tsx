@@ -487,10 +487,10 @@ export function EnvironmentalFlowStory({ model }: { model: EnvironmentalFlowMode
           >
             <p className="env-flow-story-scenario-numeric-title">ปริมาตรที่สัมผัส (SIMULATED)</p>
             <p>
-              {formatScenarioNumber(exposedVolumeEffect.volumeM3)} {exposedVolumeEffect.unit} — ประมาณจากกรอบเวลาเหตุการณ์สมมุติ {exposedVolumeEffect.window.durationHours} ชั่วโมง × ปริมาตรน้ำเข้าที่บันทึกของวันเดียวกัน
+              {formatScenarioNumber(exposedVolumeEffect.volumeM3)} {exposedVolumeEffect.unit} — ประมาณจากปริมาตรน้ำเข้าที่บันทึก × (ชั่วโมงเหตุการณ์ในวันนั้น ÷ 24) สมมติการไหลสม่ำเสมอตลอดวัน (กรอบเวลาเหตุการณ์สมมุติ {exposedVolumeEffect.window.durationHours} ชั่วโมง)
             </p>
             <p>
-              ประมาณการจากความยาวเหตุการณ์ × ปริมาตรน้ำเข้าที่บันทึกของวันเดียวกัน (สมมติการไหลสม่ำเสมอ) · ค่าตั้งเวลา 15/15 เป็นข้อมูลอ้างอิงที่เจ้าของยืนยัน (10 พ.ย. 2569) ใช้เป็นที่มาของสถานการณ์ ไม่ได้คูณในสูตร · ค่าจริงไม่คงที่ (ช่วงเช้าเปิดค้าง manual / สลับเครื่อง / วาล์วเลือกทางน้ำ)
+              ประมาณการจากปริมาตรน้ำเข้าที่บันทึก × (ชั่วโมงเหตุการณ์ในวันนั้น ÷ 24) สมมติการไหลสม่ำเสมอตลอดวัน · ค่าตั้งเวลา 15/15 เป็นข้อมูลอ้างอิง ไม่ได้คูณในสูตร (เจ้าของยืนยัน 10 พ.ย. 2569 ใช้เป็นที่มาของสถานการณ์) · สัดส่วน duty 50% มาจากการคำนวณ 15/(15+15) ไม่ใช่ค่าที่เจ้าของระบุตรง และไม่มีการนำ 50% ไปคูณในสูตร · รอบ/วันไม่ทราบ (ค่าจริงไม่คงที่) · ช่วงเช้าเปิดค้าง manual / สลับเครื่อง / วาล์วเลือกทางน้ำ
             </p>
             <p>ฐานสมมติกรอบเวลา: {exposedVolumeEffect.window.note}</p>
             <p className="env-flow-story-scenario-numeric-uncertainty">{exposedVolumeEffect.uncertaintyNote}</p>
