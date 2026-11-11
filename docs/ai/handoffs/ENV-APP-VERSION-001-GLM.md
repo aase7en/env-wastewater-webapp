@@ -112,14 +112,239 @@ sections, per-phase evidence, durable receipts).
   (single-writer window; BLOCKED park on provider admission error) →
   D4 battery → freeze the exact head → stop at REVIEW_REQUESTED.
 
-## D1 — Joint delegated consult on the version scheme
+## D1 — Joint delegated consult on the version scheme (RUN 2026-11-12 — BINDING)
 
-PENDING — not yet run at transition authoring. When run, paste BOTH
-receipts (Jev via jev-advisory MCP; Terra via Codex CLI read-only) here
-verbatim, byte-for-byte, with model/session metadata, per the
-ENV-FLEET-ROUTER-001 / DT-VIS-P002 receipt pattern. The scheme decision is
-BINDING for D2+ (SemVer vs date-based/CalVer; chip placement; tag prefix;
-first-release number; changelog granularity).
+Joint consult executed 2026-11-11T23:45–23:48 UTC (12 พฤศจิกายน 2569 ICT)
+before D2, per the transition routing. Both receipts below are copied
+VERBATIM, byte-for-byte, from the durable capture files:
+
+- Jev: `/tmp/jev-version-d1-2026-11-12.txt` (+ machine-readable twin
+  `/tmp/jev-version-d1-2026-11-12.json`, same responses) — jev-advisory MCP,
+  provider typesafe, model jev-1.13.0, READ-ONLY, authoritative_for_action
+  = false on every response (advisory voice).
+- Terra: `/tmp/terra-version-d1-receipt-2026-11-12.txt` — Codex CLI
+  `gpt-6.1-terra`, sandbox read-only, session
+  `01a1cd00-54d0-7240-a092-8ccc8e9108c5`, 18,371 tokens, exit 0.
+
+RESOLVED DECISION (coordinator, per the delegated-decision policy: Jev is
+advisory-only and returned low-confidence/high-drift classes on Q1/Q2 —
+Terra's structured answers carry the joint resolution; the coordinator
+records the binding outcome here):
+
+1. **Scheme**: SemVer `vMAJOR.MINOR.PATCH` (Terra Q1=A).
+2. **First release**: `v1.0.0` marks the CURRENT complete feature set as the
+   stable baseline (Terra Q2=A).
+3. **Chip placement**: small persistent element in the app-shell footer
+   corner, visible on every screen (Terra Q3=A).
+4. **Changelog granularity**: one entry per merged user-visible release
+   (Terra Q4=A); docs-only/internal merges ship without a version bump and
+   without a tag (Terra Q6) — the chip keeps the previous number.
+5. **Tag discipline**: ค.ศ. in tags/metadata (tooling compatibility), พ.ศ.
+   only in UI/CHANGELOG; release date fixed in Asia/Bangkok; bump criteria
+   MAJOR/MINOR/PATCH documented in the CHANGELOG header; tag is created
+   AFTER merge + deploy verification and must point at the deployed SHA
+   (Terra Q5=3, Q6).
+6. **Enforcement**: `scripts/check_release_version.py` checks
+   package.json ↔ injected constant ↔ (optional `--tag`) release tag. No CI
+   workflow changes (forbidden scope; Terra's CI suggestion is recorded as a
+   future option, NOT implemented in this claim).
+
+--- RECEIPT 1/2 — Jev (jev-advisory MCP) verbatim ---
+
+```text
+==============================================================================
+JEV ADVISORY RECEIPT — ENV-APP-VERSION-001-C1 / D1 (app versioning decisions)
+Tool: jev-advisory MCP | provider: typesafe | model: jev-1.13.0
+Captured (UTC): 2026-11-11T23:47:09Z – 2026-11-11T23:47:12Z
+Mode: READ-ONLY consult; no repository mutations performed.
+
+CONTRACT LIMITATIONS (disclosed):
+  1. Fixed output classes (bugfix/feature/docs/review for task_classification;
+     CODE_FAILURE/TEST_FAILURE/TRANSPORT_FAILURE/RATE_LIMITED/AUTH_FAILURE for
+     failure_classification). The `options` parameter is ignored by the provider;
+     real options were encoded as class→option legends verbatim in each question.
+  2. primitive=score was NOT honored on failure_classification — provider returned
+     primitive=choice (failure classes). No numeric 1-5 score obtainable for Q5.
+  3. noul primitive known-broken; intentionally not used.
+  4. Advisory only: authoritative_for_action=false on every response.
+     Jev is one of two delegated voices (joint with Terra); coordinator resolves.
+==============================================================================
+--- consult Q1-version-scheme ---
+requested_at (UTC): 2026-11-11T23:47:09.973Z
+REQUEST (verbatim):
+{
+  "family": "task_classification",
+  "primitive": "choice",
+  "risk": "medium",
+  "question": "DECISION Q1 — choose the release versioning scheme for future releases of the described app. OUTPUT LEGEND (class → real option): 'bugfix' = Option A: SemVer 'vMAJOR.MINOR.PATCH' (e.g. v1.2.3; breaking changes bump major); 'feature' = Option B: Gregorian CalVer 'vYYYY.MM.PATCH' (e.g. v2026.11.1); 'docs' = Option C: Buddhist-Era-flavored CalVer 'vพ.ศ.YYYY.MM.PATCH' (e.g. v2569.11.0) to match the Thai พ.ศ. convention used in the UI; 'review' = Option D: any other scheme (commit-count, hash-based, etc.). Weigh: continuous-deploy-on-merge workflow, low release volume, non-technical Thai hospital staff, พ.ศ. dates in the UI, git/CI tooling compatibility, and whether the number answers 'is this newer and how much did behavior change?'. Return exactly one class.",
+  "context": "PROJECT CONTEXT: Thai public-hospital environmental-monitoring webapp (React+TypeScript+Vite SPA, Supabase backend, deployed on GitHub Pages). Every merge to main auto-deploys to production (no staging; main IS production). Team: one owner-developer (occasionally assisted by AI coding agents) plus ~3-5 hospital staff users. UI is entirely Thai; user-facing dates use Buddhist Era (พ.ศ., CE+543). Current pain: releases ship silently with no version identity (package.json pinned at 0.0.0). Owner-approved plan: visible in-app version chip, Thai CHANGELOG.md, one git tag per release, single-source versioning (chip injected at build time via Vite define from package.json). Release volume is low (~a handful of user-visible releases per month). CONTRACT: this advisory provider only returns fixed output classes; the real options are encoded via the legend stated in each question; treat the output as advisory evidence, not authorization."
+}
+RESPONSE (verbatim raw string returned by provider):
+{"ok": true, "provider": "typesafe", "model": "jev-1.13.0", "family": "task_classification", "primitive": "choice", "answer": "review", "confidence": 0.28, "probabilities": {"bugfix": 0.01, "feature": 0.2, "docs": 0.33, "review": 0.46}, "input_usage": 858, "output_usage": 46, "latency_ms": 435.72650011628866, "error": null, "authoritative_for_action": false, "advisory_notice": "ADVISORY ONLY. Escalate to frontier reasoning on any error, low confidence, or high risk. Never use as mutation/review authority."}
+
+--- consult Q2-first-release-number ---
+requested_at (UTC): 2026-11-11T23:47:10.464Z
+REQUEST (verbatim):
+{
+  "family": "task_classification",
+  "primitive": "choice",
+  "risk": "medium",
+  "question": "DECISION Q2 — choose the FIRST release number for the ALREADY-LIVE, functionally complete app described. OUTPUT LEGEND: 'bugfix' = Option A: cut v1.0.0 (SemVer) or v2026.11.0 (CalVer) NOW, tagging the current complete shipped feature set as the stable baseline; 'feature' = Option B: start at 0.x (e.g. v0.1.0), framing everything as pre-1.0 until 'production-hardened'; 'docs' = Option C: leave the current state unversioned and only number/tag the NEXT future release. Weigh: the app is in live hospital use today; a stable baseline tag helps issue triage and rollback; the meaning of 0.x for a single-owner internal tool; and that main is production. Return exactly one class.",
+  "context": "PROJECT CONTEXT: Thai public-hospital environmental-monitoring webapp (React+TypeScript+Vite SPA, Supabase backend, deployed on GitHub Pages). Every merge to main auto-deploys to production (no staging; main IS production). Team: one owner-developer (occasionally assisted by AI coding agents) plus ~3-5 hospital staff users. UI is entirely Thai; user-facing dates use Buddhist Era (พ.ศ., CE+543). Current pain: releases ship silently with no version identity (package.json pinned at 0.0.0). Owner-approved plan: visible in-app version chip, Thai CHANGELOG.md, one git tag per release, single-source versioning (chip injected at build time via Vite define from package.json). Release volume is low (~a handful of user-visible releases per month). CONTRACT: this advisory provider only returns fixed output classes; the real options are encoded via the legend stated in each question; treat the output as advisory evidence, not authorization."
+}
+RESPONSE (verbatim raw string returned by provider):
+{"ok": true, "provider": "typesafe", "model": "jev-1.13.0", "family": "task_classification", "primitive": "choice", "answer": "review", "confidence": 0.28, "probabilities": {"bugfix": 0.12, "feature": 0.16, "docs": 0.26, "review": 0.46}, "input_usage": 807, "output_usage": 46, "latency_ms": 299.1074579767883, "error": null, "authoritative_for_action": false, "advisory_notice": "ADVISORY ONLY. Escalate to frontier reasoning on any error, low confidence, or high risk. Never use as mutation/review authority."}
+
+--- consult Q3-chip-placement ---
+requested_at (UTC): 2026-11-11T23:47:10.772Z
+REQUEST (verbatim):
+{
+  "family": "task_classification",
+  "primitive": "choice",
+  "risk": "low",
+  "question": "DECISION Q3 — choose the placement of the version chip (small text like 'v1.2.3') in the app shell of the described Thai hospital app. OUTPUT LEGEND: 'bugfix' = Option A: small persistent text in the app-shell footer corner, visible on every screen; 'feature' = Option B: shown only inside a menu/settings/about panel (cleaner UI, hidden by default); 'docs' = Option C: small text in the navigation header corner on all screens. Weigh: staff must be able to read back their version when reporting issues by phone/LINE; users are non-technical hospital staff; the dashboard-heavy Thai UI wants minimal chrome; a single owner maintains it. Return exactly one class.",
+  "context": "PROJECT CONTEXT: Thai public-hospital environmental-monitoring webapp (React+TypeScript+Vite SPA, Supabase backend, deployed on GitHub Pages). Every merge to main auto-deploys to production (no staging; main IS production). Team: one owner-developer (occasionally assisted by AI coding agents) plus ~3-5 hospital staff users. UI is entirely Thai; user-facing dates use Buddhist Era (พ.ศ., CE+543). Current pain: releases ship silently with no version identity (package.json pinned at 0.0.0). Owner-approved plan: visible in-app version chip, Thai CHANGELOG.md, one git tag per release, single-source versioning (chip injected at build time via Vite define from package.json). Release volume is low (~a handful of user-visible releases per month). CONTRACT: this advisory provider only returns fixed output classes; the real options are encoded via the legend stated in each question; treat the output as advisory evidence, not authorization."
+}
+RESPONSE (verbatim raw string returned by provider):
+{"ok": true, "provider": "typesafe", "model": "jev-1.13.0", "family": "task_classification", "primitive": "choice", "answer": "feature", "confidence": 0.52, "probabilities": {"bugfix": 0.03, "feature": 0.64, "docs": 0.04, "review": 0.29}, "input_usage": 775, "output_usage": 46, "latency_ms": 298.0407499708235, "error": null, "authoritative_for_action": false, "advisory_notice": "ADVISORY ONLY. Escalate to frontier reasoning on any error, low confidence, or high risk. Never use as mutation/review authority."}
+
+--- consult Q4-changelog-granularity ---
+requested_at (UTC): 2026-11-11T23:47:11.087Z
+REQUEST (verbatim):
+{
+  "family": "task_classification",
+  "primitive": "choice",
+  "risk": "low",
+  "question": "DECISION Q4 — choose the granularity of the Thai-language CHANGELOG.md (written by the owner; PR links optional). OUTPUT LEGEND: 'bugfix' = Option A: one entry per merged user-visible release (Thai summary + PR/commit links), appended per release; 'feature' = Option B: monthly rollup — one combined entry per calendar month; 'docs' = Option C: major milestones only (rare entries, e.g. v1.0 or big features). Weigh: ~a handful of releases per month; staff rarely read changelogs but hospital auditors/regulators may want traceability; owner time is scarce; per-release git tags already anchor each release. Return exactly one class.",
+  "context": "PROJECT CONTEXT: Thai public-hospital environmental-monitoring webapp (React+TypeScript+Vite SPA, Supabase backend, deployed on GitHub Pages). Every merge to main auto-deploys to production (no staging; main IS production). Team: one owner-developer (occasionally assisted by AI coding agents) plus ~3-5 hospital staff users. UI is entirely Thai; user-facing dates use Buddhist Era (พ.ศ., CE+543). Current pain: releases ship silently with no version identity (package.json pinned at 0.0.0). Owner-approved plan: visible in-app version chip, Thai CHANGELOG.md, one git tag per release, single-source versioning (chip injected at build time via Vite define from package.json). Release volume is low (~a handful of user-visible releases per month). CONTRACT: this advisory provider only returns fixed output classes; the real options are encoded via the legend stated in each question; treat the output as advisory evidence, not authorization."
+}
+RESPONSE (verbatim raw string returned by provider):
+{"ok": true, "provider": "typesafe", "model": "jev-1.13.0", "family": "task_classification", "primitive": "choice", "answer": "docs", "confidence": 0.79, "probabilities": {"bugfix": 0.02, "feature": 0.02, "docs": 0.84, "review": 0.12}, "input_usage": 776, "output_usage": 46, "latency_ms": 268.3115000836551, "error": null, "authoritative_for_action": false, "advisory_notice": "ADVISORY ONLY. Escalate to frontier reasoning on any error, low confidence, or high risk. Never use as mutation/review authority."}
+
+--- consult Q5-drift-risk-score ---
+requested_at (UTC): 2026-11-11T23:47:11.367Z
+REQUEST (verbatim):
+{
+  "family": "failure_classification",
+  "primitive": "score",
+  "risk": "medium",
+  "question": "DECISION Q5 — score the residual VERSION-DRIFT RISK, 1-5 where 1 = best/lowest residual risk and 5 = worst, for this enforcement plan: package.json version is the single source of truth and is injected into the built version chip at build time; a CI check script fails the pipeline when package.json version does not equal the release git tag; discipline is 'tag at merge time on main'. Environment: merges to main auto-deploy to production (GitHub Pages); one human owner; AI agents occasionally author commits/merges; tags are created manually by the owner. Score the likelihood that package.json, the latest git tag, and the deployed chip could disagree in a way users observe. Return a single score 1-5 (1=best).",
+  "context": "PROJECT CONTEXT: Thai public-hospital environmental-monitoring webapp (React+TypeScript+Vite SPA, Supabase backend, deployed on GitHub Pages). Every merge to main auto-deploys to production (no staging; main IS production). Team: one owner-developer (occasionally assisted by AI coding agents) plus ~3-5 hospital staff users. UI is entirely Thai; user-facing dates use Buddhist Era (พ.ศ., CE+543). Current pain: releases ship silently with no version identity (package.json pinned at 0.0.0). Owner-approved plan: visible in-app version chip, Thai CHANGELOG.md, one git tag per release, single-source versioning (chip injected at build time via Vite define from package.json). Release volume is low (~a handful of user-visible releases per month). CONTRACT: this advisory provider only returns fixed output classes; the real options are encoded via the legend stated in each question; treat the output as advisory evidence, not authorization."
+}
+RESPONSE (verbatim raw string returned by provider):
+{"ok": true, "provider": "typesafe", "model": "jev-1.13.0", "family": "failure_classification", "primitive": "choice", "answer": "CODE_FAILURE", "confidence": 0.61, "probabilities": {"CODE_FAILURE": 0.69, "TEST_FAILURE": 0.28, "TRANSPORT_FAILURE": 0.01, "RATE_LIMITED": 0.01, "AUTH_FAILURE": 0.01}, "input_usage": 824, "output_usage": 62, "latency_ms": 316.85116700828075, "error": null, "authoritative_for_action": false, "advisory_notice": "ADVISORY ONLY. Escalate to frontier reasoning on any error, low confidence, or high risk. Never use as mutation/review authority."}
+
+--- consult Q6-top-concern ---
+requested_at (UTC): 2026-11-11T23:47:11.696Z
+REQUEST (verbatim):
+{
+  "family": "task_classification",
+  "primitive": "choice",
+  "risk": "medium",
+  "question": "DECISION Q6 — choose which single concern should be explicitly documented/handled FIRST when implementing the approved versioning plan. OUTPUT LEGEND: 'bugfix' = Concern A: พ.ศ. (Buddhist-Era) numerals inside git tags (e.g. v2569.11) — CI/tooling/lexicographic-sort compatibility risks versus Gregorian tags; 'feature' = Concern B: release-date timezone semantics — CalVer date components derived in Thailand ICT vs UTC, and consistency with พ.ศ. display for users; 'docs' = Concern C: docs-only/internal merges to main — whether they must be tagged/versioned or may ship silently without a release number; 'review' = Concern D: multi-source drift (package.json vs git tag vs deployed chip) persisting despite the CI check script. Return exactly one class.",
+  "context": "PROJECT CONTEXT: Thai public-hospital environmental-monitoring webapp (React+TypeScript+Vite SPA, Supabase backend, deployed on GitHub Pages). Every merge to main auto-deploys to production (no staging; main IS production). Team: one owner-developer (occasionally assisted by AI coding agents) plus ~3-5 hospital staff users. UI is entirely Thai; user-facing dates use Buddhist Era (พ.ศ., CE+543). Current pain: releases ship silently with no version identity (package.json pinned at 0.0.0). Owner-approved plan: visible in-app version chip, Thai CHANGELOG.md, one git tag per release, single-source versioning (chip injected at build time via Vite define from package.json). Release volume is low (~a handful of user-visible releases per month). CONTRACT: this advisory provider only returns fixed output classes; the real options are encoded via the legend stated in each question; treat the output as advisory evidence, not authorization."
+}
+RESPONSE (verbatim raw string returned by provider):
+{"ok": true, "provider": "typesafe", "model": "jev-1.13.0", "family": "task_classification", "primitive": "choice", "answer": "feature", "confidence": 0.23, "probabilities": {"bugfix": 0.01, "feature": 0.42, "docs": 0.19, "review": 0.38}, "input_usage": 807, "output_usage": 46, "latency_ms": 396.679624915123, "error": null, "authoritative_for_action": false, "advisory_notice": "ADVISORY ONLY. Escalate to frontier reasoning on any error, low confidence, or high risk. Never use as mutation/review authority."}
+
+```
+
+--- RECEIPT 2/2 — Terra (Codex CLI read-only) verbatim ---
+
+```text
+Reading additional input from stdin...
+OpenAI Codex v0.166.0-alpha.5.1
+--------
+workdir: /Volumes/MAC_WORK/DevWorkspace/Github/env-wastewater-webapp
+model: gpt-6.1-terra
+provider: openai
+approval: never
+sandbox: read-only
+reasoning effort: low
+reasoning summaries: none
+session id: 01a1cd00-54d0-7240-a092-8ccc8e9108c5
+--------
+user
+Read /tmp/terra-version-d1-brief-2026-11-12.md and answer all questions in its exact output structure.
+hook: SessionStart
+hook: SessionStart Completed
+hook: UserPromptSubmit
+hook: UserPromptSubmit Completed
+codex
+Poppy Javis จะอ่าน brief และตรวจหลักฐานที่จำเป็นตามขอบเขตของคำถาม แล้วตอบ Oh! Shit My Boss ตามโครงสร้างที่ระบุในไฟล์ครับ
+hook: PreToolUse
+hook: PreToolUse
+hook: PreToolUse Completed
+hook: PreToolUse Completed
+exec
+/bin/zsh -lc 'cat /tmp/terra-version-d1-brief-2026-11-12.md' in /Volumes/MAC_WORK/DevWorkspace/Github/env-wastewater-webapp
+ succeeded in 0ms:
+# Delegated decision brief — D1 (claim ENV-APP-VERSION-001-C1), ENV project
+
+You are an independent decision delegate for a Thai hospital environmental webapp (React+TS+Vite, Supabase, GitHub Pages auto-deploy on every merge to main; NO staging — main is production; single owner + ~3-5 staff; Thai UI; user-facing dates use พ.ศ. Buddhist Era).
+
+Problem: every merge ships silently with no version number (package.json stuck 0.0.0). The owner approved: visible version chip in the app, CHANGELOG.md (Thai), git tags per release, single-source version via build-time injection (Vite define reading package.json).
+
+Decide the scheme.
+
+ANSWER ALL in this exact structure:
+Q1=<A|B|C|D> version scheme: A) SemVer vMAJOR.MINOR.PATCH; B) CalVer vYYYY.MM.PATCH (Gregorian); C) CalVer พ.ศ.-style v2569.11; D) other — one sentence
+Q2=<A|B|C> first release: A) mark the CURRENT complete feature set as v1.0.0 (or v2026.11) now; B) start at 0.x pre-release framing; C) number only the next future release
+Q3=<A|B|C> chip placement: A) persistent small footer corner of app shell; B) menu/about area only; C) nav header corner — one sentence
+Q4=<A|B|C> changelog granularity: A) one entry per merged user-visible release (Thai + PR links); B) monthly rollup; C) major milestones only
+Q5=<1-5> risk (1=lowest) of version drift between package.json / git tag / built chip — and is a check script + tag-at-merge discipline sufficient? one sentence
+Q6= up to 5 bullets: concerns (consider พ.ศ. in tags, release-date timezone, whether docs-only merges get versions)
+
+hook: PostToolUse
+hook: PostToolUse Completed
+codex
+Q1=A — Poppy Javis แนะนำ SemVer `vMAJOR.MINOR.PATCH` เพราะสื่อระดับการเปลี่ยนแปลงได้ชัดและใช้ร่วมกับเครื่องมือ Git ได้ทั่วไป
+
+Q2=A
+
+Q3=A — แสดง chip ขนาดเล็กที่มุม footer ของ app shell เพื่อให้ Oh! Shit My Boss และเจ้าหน้าที่ตรวจสอบเวอร์ชันได้สะดวกโดยไม่รบกวนการใช้งาน
+
+Q4=A
+
+Q5=3 — check script และวินัยติด tag ช่วยลดความเสี่ยงได้ แต่ควรบังคับตรวจใน CI และยืนยันว่า tag ตรงกับ commit ที่ deploy จริงด้วย
+
+Q6=
+- ใช้ ค.ศ. ใน tag และ metadata เพื่อความเข้ากันได้กับเครื่องมือ ส่วนวันที่ที่แสดงใน UI และ changelog ใช้ พ.ศ.
+- กำหนดวัน release ตามเวลา `Asia/Bangkok` ให้ตรงกันใน changelog และขั้นตอนปล่อยเวอร์ชัน
+- merge ที่มีแต่เอกสารไม่จำเป็นต้องเพิ่มเวอร์ชันหรือสร้าง tag แต่ต้องระบุว่าการ deploy จาก merge นั้นยังใช้เวอร์ชันเดิม
+- กำหนดเกณฑ์เพิ่ม MAJOR, MINOR และ PATCH ให้ทีมใช้ตรงกัน โดยบันทึกเวอร์ชันใน `package.json` ก่อน merge
+- เนื่องจาก merge เข้า main deploy ขึ้น production ทันที ควรตรวจเวอร์ชันใน CI ก่อน merge และตรวจ chip หลัง deploy ก่อนติด tag ให้ commit นั้น
+hook: Stop
+hook: Stop Completed
+tokens used
+18,371
+Q1=A — Poppy Javis แนะนำ SemVer `vMAJOR.MINOR.PATCH` เพราะสื่อระดับการเปลี่ยนแปลงได้ชัดและใช้ร่วมกับเครื่องมือ Git ได้ทั่วไป
+
+Q2=A
+
+Q3=A — แสดง chip ขนาดเล็กที่มุม footer ของ app shell เพื่อให้ Oh! Shit My Boss และเจ้าหน้าที่ตรวจสอบเวอร์ชันได้สะดวกโดยไม่รบกวนการใช้งาน
+
+Q4=A
+
+Q5=3 — check script และวินัยติด tag ช่วยลดความเสี่ยงได้ แต่ควรบังคับตรวจใน CI และยืนยันว่า tag ตรงกับ commit ที่ deploy จริงด้วย
+
+Q6=
+- ใช้ ค.ศ. ใน tag และ metadata เพื่อความเข้ากันได้กับเครื่องมือ ส่วนวันที่ที่แสดงใน UI และ changelog ใช้ พ.ศ.
+- กำหนดวัน release ตามเวลา `Asia/Bangkok` ให้ตรงกันใน changelog และขั้นตอนปล่อยเวอร์ชัน
+- merge ที่มีแต่เอกสารไม่จำเป็นต้องเพิ่มเวอร์ชันหรือสร้าง tag แต่ต้องระบุว่าการ deploy จาก merge นั้นยังใช้เวอร์ชันเดิม
+- กำหนดเกณฑ์เพิ่ม MAJOR, MINOR และ PATCH ให้ทีมใช้ตรงกัน โดยบันทึกเวอร์ชันใน `package.json` ก่อน merge
+- เนื่องจาก merge เข้า main deploy ขึ้น production ทันที ควรตรวจเวอร์ชันใน CI ก่อน merge และตรวจ chip หลัง deploy ก่อนติด tag ให้ commit นั้น
+
+=== RECEIPT METADATA ===
+command: codex exec --sandbox read-only -m gpt-6.1-terra "Read /tmp/terra-version-d1-brief-2026-11-12.md and answer all questions in its exact output structure."
+started: 2026-11-11T23:45:12Z
+finished: 2026-11-11T23:45:31Z
+exit code: 0
+latency: 19s
+```
+
+The `/tmp` capture files are ephemeral; these fenced copies are the durable
+receipts of record for this claim.
 
 ## Checkpoints
 
