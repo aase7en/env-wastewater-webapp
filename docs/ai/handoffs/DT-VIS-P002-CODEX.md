@@ -777,3 +777,111 @@ Oh! Shit My Boss, Poppy Javis แก้เฉพาะสองไฟล์ต�
 - Next: D5 fresh-GLM cross-model review at the pushed head (Codex authored
   the implementation; never author-and-approve). The lane STOPS at
   REVIEW_REQUESTED — merge belongs to the authorized reviewer.
+
+## D6 CLOSEOUT RECEIPT
+
+- D6 (2026-11-12 / 12 พฤศจิกายน 2569): expected-head merge — **PR #165
+  merged as `85b0dd3`** (parents: claim-transition merge `92a0f01` +
+  reviewed frozen head `9d008a9`; ancestry verified from origin/main).
+  Claim transition: PR #164 merged as `92a0f01`; R2 review receipt
+  `pull/164#issuecomment-6806631973` (fresh-GLM adversarial exact-SHA
+  R2, no P1/P2, 2×P3 non-blocking); merge execution record
+  `pull/164#issuecomment-6806648664`. CI-queue note (honest): the
+  merge-execution record pinned head `fcc7133` at review time with run
+  43095159515 still QUEUED; the run was re-triggered via the empty
+  commit `4231ee6` ("ci: re-trigger stuck queued run"), which became
+  the actual merged PR head (ancestor of `92a0f01`, verified) after
+  all checks re-verified complete and passing — never merging red.
+- Implementation chain: `641f29b` D2 RED (focused spec **6 failed /
+  1 passed** — the passing test is the import-allowlist guard pinning
+  the unchanged baseline import surface, pass by design, truthfully
+  disclosed in the spec header and D2/D4 above) → `6e2fab0` D3 Codex
+  CLI `gpt-6-sol` @ `model_reasoning_effort=max` (admission probe
+  session `01a1cc7a…` read-only, "admission probe: reply OK"; dispatch
+  session `01a1cc7b-9290-7de3-89db-bb982486c3ac`, `--sandbox
+  workspace-write`, 134,274 tokens, EXIT=0) + D4 GLM integration
+  (`frameloop="demand"` still states; draw-call counter replacing the
+  flaky PNG byte comparison) → `9d008a9` docs (WO status
+  IMPLEMENTED-REVIEW_REQUESTED + D2/D3/D4 receipts).
+- Review chain: **D5 fresh-GLM cross-model review APPROVED** at the
+  exact head `9d008a9`, receipt `pull/165#issuecomment-6808188610` —
+  zero required findings, all 8 adversarial checklist items verified
+  independently; RED reproduced exactly (6 failed / 1 passed at
+  `641f29b` in an isolated temp worktree); battery independently
+  rerun: FULL vitest **476/476** (28 files) · tsc exit 0 · oxlint
+  0 errors · Playwright FULL **197/197** (`--workers=1`, incl.
+  dt-vis-p002 7/7) · guard **344/344** · runtime **62/62** · diff-stat
+  vs base `92a0f01` = 5 files, +524/−9, scope-exact; CI green at head
+  (run 43106027660). Merge execution receipt:
+  `pull/165#issuecomment-6808209914` (expected-head discipline held:
+  `9d008a9` second parent verified post-merge).
+- Exact-main verification at `85b0dd3`: Pages deploy run
+  **43109156615 SUCCESS**; deployed live markers verified fresh from
+  the live origin (`assets/TwinCanvas-DgDAfTpd.js`, HTTP 200):
+  `data-water-motion` + `twin-water-motion-status` + the four-state
+  Thai chip vocabulary ผิวน้ำ: เติมอากาศกำลังทำงาน /
+  เติมอากาศทำงาน (หยุดภาพเคลื่อนไหว) / เติมอากาศหยุดทำงาน /
+  ไม่ทราบสถานะการเติมอากาศ + `active-still` / `stopped-still` /
+  `unknown-still`.
+- D0 corrected-input joint delegated consult (2026-11-12), receipts
+  verbatim in the D0 section above: Terra chose A=DT-VIS-P002 (Q1=A,
+  readiness-risk 2/5) with Q4=B bounded first slice; Jev answered STOP
+  with LOW confidence 0.25 (near-tie D=0.44 vs A=0.30) while rating A
+  the highest-value eligible lane — recorded honestly as a
+  LOW-confidence near-tie advisory, not consent; arbitration resolved
+  by the roadmap critical-path rule + the owner's standing
+  continuation instruction (delegates advisory only, no merge/review
+  authority).
+- P3 reconciliations (recorded here per the claim-PR merge-trail
+  carry-forward "reconcile at next transition"):
+  1. **Claim-PR R2 P3 — handoff pointer imprecision (D0 slice line):**
+     the D0 aggregate-anchor pointer "`aeratorRunning:
+     TwinMetric<boolean>` in `frontend/src/lib/twin/types.ts:40`"
+     conflated the raw telemetry field with the generic. Corrected
+     pointers, verified live at `85b0dd3`: the raw telemetry field
+     `aeratorRunning: boolean | null` sits inside
+     `AerationTankTelemetryValues` at `types.ts:40`; the
+     `TwinMetric<T>` generic is declared at `types.ts:27`; the
+     `TwinMetric<boolean>` materialization for the aeration asset is
+     at `dashboard-adapter.ts:56`. The substantive claim (validated
+     aggregate boolean metric on `asset:aeration-tank-1`) was and
+     remains correct; this D6 note is the reconciliation.
+  2. **Implementation-PR D5 informational P3 ×2 (no action required,
+     carried per merge receipt `pull/165#issuecomment-6808209914`):**
+     (a) OrbitControls damping-inertia truncation nit — for a
+     non-reduced-motion user in a still state, pointer-release damping
+     inertia truncates under `frameloop="demand"` since no continuous
+     frames drive the decay; consistent with the stillness intent,
+     not a stale-rendering bug. (b) Playwright draw-call counter
+     threshold headroom (≤10 / >100 over 600ms) is CI-profile-safe
+     (`--workers=1`) but has less margin under non-CI parallel load —
+     the D4 note above already discloses the workers=N flake history
+     and the method swap from flaky PNG byte comparison.
+- Micro-step board closeout (this transition):
+  `docs/ai/digital-twin/03-MICRO-STEP-BOARD.md` DT-VIS-P002 entry
+  updated — first bounded slice (water-surface motion) DELIVERED
+  2026-11-12 via `DT-VIS-P002-C1` (PR #165 `85b0dd3`); **system-level
+  motion cues remain BACKLOG for a successor claim** (NOT
+  full-COMPLETE — recorded precisely, unlike the P001/P003
+  COMPLETE-with-lineage entries which record fully delivered items).
+- Honesty notes: (1) the merge executor's post-merge ff-only branch
+  step slipped during the local sync after the PR #165 merge and was
+  immediately repaired with verification — origin/main parents
+  (`92a0f01` + `9d008a9`) re-verified exact, guard 344/344 +
+  validate-registry ok:true + Pages deploy run 43109156615 all
+  re-verified green at `85b0dd3`; the slip left no trace on the
+  merged history (main's parents are exact). (2) The D2 "1 passed" is
+  the by-design import-allowlist test, disclosed, never claimed as a
+  RED failure. (3) The CI-queue re-trigger (empty commit `4231ee6`)
+  is disclosed above.
+- Closeout transition (branch `docs/dt-vis-p002-closeout`, base
+  `85b0dd3`): registry C1 CLOSED at generation 1; fence moved to
+  `85b0dd3` + the block sha256 at that base
+  `b897e7eed145867afa33e4bb199dd89b512333b9c5a774f6b87c8382ae466fc1`
+  (guard module `registry_hash` method, exact block text at
+  `85b0dd3`); frontier bullet + one-next-action bullet updated (NO
+  active claim; P002 system-level cues = DEFERRED successor needing a
+  NEW claim; remaining = Building WAITING_EXTERNAL + owner-manual
+  reminders #155/#156). Scope lock released at generation 1; CLOSED
+  confers no fresh mutation authority. The implementing lane stops at
+  REVIEW_REQUESTED — NEVER merged by this lane.

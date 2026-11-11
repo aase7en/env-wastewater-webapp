@@ -81,7 +81,7 @@ Use `WAITING_FOR_INPUT` when a task specifically requires user-provided referenc
 
 ### DT-VIS-P002 — Aeration water and system-level motion language
 
-- Status: BACKLOG
+- Status: BACKLOG — first bounded slice (water-surface motion) DELIVERED 2026-11-12 via `DT-VIS-P002-C1`: PR #165 merged as `85b0dd3` (second parent = D5-APPROVED reviewed head `9d008a9`; fresh-GLM D5 APPROVED with an independently reproduced battery — vitest 476/476 + Playwright 197/197 + guard 344/344 + runtime 62/62 + RED reproduced at `641f29b` — verdict issuecomment-6808188610; merge receipt issuecomment-6808209914); exact-main Pages deploy run 43109156615 SUCCESS at `85b0dd3` with the live water-motion markers verified fresh on `assets/TwinCanvas-DgDAfTpd.js` (`data-water-motion`, `twin-water-motion-status`, the four-state Thai chip vocabulary, `active-still`/`stopped-still`/`unknown-still`); full D0→D6 trail in `docs/ai/handoffs/DT-VIS-P002-CODEX.md`. **System-level cues remain BACKLOG for a successor claim — NOT full-COMPLETE.**
 - Owner: Codex
 - Dependency: DT-VIS-P001 approved
 - Scope: water material, aggregate aeration/turbulence cue, and reduced-motion still state
