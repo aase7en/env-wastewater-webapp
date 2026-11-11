@@ -7,6 +7,7 @@ import type {
   ProcessExplanationStageId,
 } from "./environmental-flow";
 import {
+  deriveScenarioExposedVolume,
   deriveScenarioSensitivities,
   deriveScenarioState,
   deriveScenarioWasDifference,
@@ -15,6 +16,7 @@ import {
   type EmissionFactor,
   type ScenarioActivityBaseEvidence,
   type ScenarioDefinition,
+  type ScenarioExposedVolumeEvidence,
   type ScenarioNumericEffects,
 } from "./process-scenario";
 import { NUMERIC_EFFECT_EMISSION_FACTORS } from "./process-scenarios";
@@ -825,23 +827,10 @@ describe("D5-R2 P3-3 — year-token conversion is scoped to STANDALONE tokens on
 // (6) honesty: unknown ≠ 0, SIMULATED always, never live,
 //     deriveScenarioState untouched.
 
-/** RED-probe: the derivation arrives in D3; typed static import lands then. */
-type N2Derive = (
-  definition: ScenarioDefinition,
-  incidentDate: string | null,
-  recordedInflowByDay: readonly { date: string; value: number | null }[],
-) => unknown;
+/** D3 mechanics: the RED dynamic-import probe is now the typed static import. */
+const derive = deriveScenarioExposedVolume;
 
-const loadN2 = async (): Promise<{ deriveScenarioExposedVolume?: N2Derive }> => {
-  const mod = (await import("./process-scenario")) as unknown as Record<string, unknown>;
-  return { deriveScenarioExposedVolume: mod.deriveScenarioExposedVolume as N2Derive | undefined };
-};
-
-/** Unknown-record probe so the RED commit stays tsc-clean (no new types yet). */
-const exposedDeclarationOf = (id: string): Record<string, unknown> | undefined =>
-  (numericEffectsProbe(numericScenario(id)) as Record<string, unknown> | undefined)?.exposedVolume as
-    | Record<string, unknown>
-    | undefined;
+const exposedDeclarationOf = (id: string) => numericEffectsProbe(numericScenario(id))?.exposedVolume;
 
 const N2_SCOPE_IDS = ["loss-of-aeration", "ras-interruption"] as const;
 const N2_OUT_OF_SCOPE_IDS = [
@@ -856,38 +845,36 @@ const N2_OUT_OF_SCOPE_IDS = [
  * (20:00 → 04:00 next day) — used to pin the per-day split, the completed
  * total, and the omit-when-any-day-missing rule from D1 point 2.
  */
-const crossDayRasFixture = (): ScenarioDefinition =>
-  ({
-    ...numericScenario("ras-interruption"),
-    numericEffects: {
-      exposedVolume: {
-        assumedIncidentWindow: {
-          startHourLocal: 20,
-          durationHours: 8,
-          assumptionClass: "declared-model-assumption",
-          assumptionId: "test-n2-crossday-v1",
-          note: "กรอบเวลาเหตุการณ์สมมุติสำหรับทดสอบการแบ่งข้ามเที่ยงคืน — ไม่ใช่ค่าบันทึกจริง ไม่ใช่ค่าที่เจ้าของกำหนด",
-        },
-        evidence: {
-          sourceId: "relay-duty-cycle-reference",
-          status: "confirmed-by-owner",
-          confirmedOn: "2026-11-10",
-          role: "scenario-basis-reference",
-        },
+const crossDayRasFixture = (): ScenarioDefinition => ({
+  ...numericScenario("ras-interruption"),
+  numericEffects: {
+    exposedVolume: {
+      assumedIncidentWindow: {
+        startHourLocal: 20,
+        durationHours: 8,
+        assumptionClass: "declared-model-assumption",
+        assumptionId: "test-n2-crossday-v1",
+        note: "กรอบเวลาเหตุการณ์สมมุติสำหรับทดสอบการแบ่งข้ามเที่ยงคืน — ไม่ใช่ค่าบันทึกจริง ไม่ใช่ค่าที่เจ้าของกำหนด",
+      },
+      evidence: {
+        sourceId: "relay-duty-cycle-reference",
+        status: "confirmed-by-owner",
+        confirmedOn: "2026-11-10",
+        role: "scenario-basis-reference",
       },
     },
-  }) as unknown as ScenarioDefinition;
+  },
+});
 
 describe("ENV-VIS-STORY-001-NUM-C2 — N2 volume exposed declarations (RED-first)", () => {
   it("declares exposedVolume on exactly aeration-stop and ras-interruption with the owner-confirmed relay-basis envelope", () => {
     for (const id of N2_SCOPE_IDS) {
       const declaration = exposedDeclarationOf(id);
       expect(declaration).toBeDefined();
-      const evidence = declaration?.evidence as Record<string, unknown> | undefined;
-      expect(evidence?.sourceId).toBe("relay-duty-cycle-reference");
-      expect(evidence?.status).toBe("confirmed-by-owner");
-      expect(evidence?.confirmedOn).toBe("2026-11-10");
-      expect(evidence?.role).toBe("scenario-basis-reference");
+      expect(declaration?.evidence.sourceId).toBe("relay-duty-cycle-reference");
+      expect(declaration?.evidence.status).toBe("confirmed-by-owner");
+      expect(declaration?.evidence.confirmedOn).toBe("2026-11-10");
+      expect(declaration?.evidence.role).toBe("scenario-basis-reference");
     }
     for (const id of N2_OUT_OF_SCOPE_IDS) {
       expect(exposedDeclarationOf(id)).toBeUndefined();
@@ -896,81 +883,70 @@ describe("ENV-VIS-STORY-001-NUM-C2 — N2 volume exposed declarations (RED-first
 
   it("declares the assumed incident window as a versioned declared-model-assumption (relay 15/15 values never enter as arithmetic inputs)", () => {
     for (const id of N2_SCOPE_IDS) {
-      const declaration = exposedDeclarationOf(id);
-      const window = declaration?.assumedIncidentWindow as Record<string, unknown> | undefined;
+      const window = exposedDeclarationOf(id)?.assumedIncidentWindow;
       expect(window?.assumptionClass).toBe("declared-model-assumption");
       expect(typeof window?.assumptionId).toBe("string");
-      expect((window?.assumptionId as string).length).toBeGreaterThan(0);
+      expect(window?.assumptionId.length).toBeGreaterThan(0);
       expect(window?.note).toMatch(/สมมุติ|สมมติ/);
       expect(window?.note).toMatch(/ไม่ใช่ค่าบันทึก/);
       expect(Number(window?.startHourLocal)).toBeGreaterThanOrEqual(0);
       expect(Number(window?.startHourLocal)).toBeLessThan(24);
       expect(Number(window?.durationHours)).toBeGreaterThan(0);
-      const serialized = JSON.stringify(declaration);
+      const serialized = JSON.stringify(window);
       expect(serialized).not.toContain("0.5");
       expect(serialized).not.toContain('"15"');
     }
   });
 
   it("the assumed window duration is the FULL incident window (positive hours, never a duty-fraction product)", () => {
-    const aerationWindow = exposedDeclarationOf("loss-of-aeration")?.assumedIncidentWindow as Record<string, unknown> | undefined;
-    const rasWindow = exposedDeclarationOf("ras-interruption")?.assumedIncidentWindow as Record<string, unknown> | undefined;
-    expect(Number(aerationWindow?.durationHours)).toBe(8);
-    expect(Number(rasWindow?.durationHours)).toBe(6);
-    expect(Number(aerationWindow?.durationHours)).not.toBe(4);
-    expect(Number(aerationWindow?.durationHours) * 2).not.toBe(Number(aerationWindow?.durationHours));
+    const aerationWindow = exposedDeclarationOf("loss-of-aeration")?.assumedIncidentWindow;
+    const rasWindow = exposedDeclarationOf("ras-interruption")?.assumedIncidentWindow;
+    expect(aerationWindow?.durationHours).toBe(8);
+    expect(rasWindow?.durationHours).toBe(6);
+    expect(aerationWindow?.durationHours).not.toBe(4);
+    expect((aerationWindow?.durationHours ?? 0) * 2).not.toBe(aerationWindow?.durationHours);
   });
 });
 
 describe("ENV-VIS-STORY-001-NUM-C2 — deriveScenarioExposedVolume (RED-first)", () => {
-  it("computes same-day volume = recorded influent × full window hours / 24 with per-day basis", async () => {
-    const n2 = await loadN2();
-    expect(typeof n2.deriveScenarioExposedVolume).toBe("function");
-    const derive = n2.deriveScenarioExposedVolume!;
+  it("computes same-day volume = recorded influent × full window hours / 24 with per-day basis", () => {
     const effect = derive(
       numericScenario("loss-of-aeration"),
       "2026-11-10",
       [{ date: "2026-11-10", value: 82.25 }],
-    ) as Record<string, unknown> | null;
+    );
     expect(effect).not.toBeNull();
     expect(effect?.kind).toBe("exposed-volume");
     expect(effect?.scenarioId).toBe("loss-of-aeration");
     expect(effect?.incidentDate).toBe("2026-11-10");
     expect(effect?.unit).toBe("m³");
-    expect(Number(effect?.volumeM3)).toBeCloseTo(82.25 * (8 / 24), 6);
-    const window = effect?.window as Record<string, unknown> | undefined;
-    expect(Number(window?.durationHours)).toBe(8);
-    const basis = effect?.inflowBasis as Array<Record<string, unknown>>;
-    expect(basis).toHaveLength(1);
-    expect(basis[0]?.date).toBe("2026-11-10");
-    expect(Number(basis[0]?.recordedM3)).toBe(82.25);
-    expect(Number(basis[0]?.windowHoursInDay)).toBe(8);
+    expect(effect?.volumeM3).toBeCloseTo(82.25 * (8 / 24), 6);
+    expect(effect?.window.durationHours).toBe(8);
+    expect(effect?.inflowBasis).toHaveLength(1);
+    expect(effect?.inflowBasis[0]?.date).toBe("2026-11-10");
+    expect(effect?.inflowBasis[0]?.recordedM3).toBe(82.25);
+    expect(effect?.inflowBasis[0]?.windowHoursInDay).toBe(8);
     expect(effect?.formula).toMatch(/24/);
     expect(effect?.provenance).toEqual({ source: "simulation", observedAt: null });
   });
 
-  it("no-duty-fraction invariant: volume reflects the FULL window, never halved by the 15/15 duty split", async () => {
-    const n2 = await loadN2();
-    expect(typeof n2.deriveScenarioExposedVolume).toBe("function");
-    const derive = n2.deriveScenarioExposedVolume!;
+  it("no-duty-fraction invariant: volume reflects the FULL window, never halved by the 15/15 duty split", () => {
     const effect = derive(
       numericScenario("loss-of-aeration"),
       "2026-11-10",
       [{ date: "2026-11-10", value: 82.25 }],
-    ) as Record<string, unknown> | null;
-    const volume = Number(effect?.volumeM3);
-    expect(Number((effect?.window as Record<string, unknown>)?.durationHours)).toBe(8);
-    expect(volume).toBeCloseTo(82.25 * (8 / 24), 6);
-    expect(volume).not.toBeCloseTo(82.25 * (8 / 24) * 0.5, 6);
-    expect(volume).not.toBeCloseTo(82.25 * (4 / 24), 6);
+    );
+    expect(effect?.window.durationHours).toBe(8);
+    expect(effect?.volumeM3).toBeCloseTo(82.25 * (8 / 24), 6);
+    expect(effect?.volumeM3).not.toBeCloseTo(82.25 * (8 / 24) * 0.5, 6);
+    expect(effect?.volumeM3).not.toBeCloseTo(82.25 * (4 / 24), 6);
+    // No duty-fraction ARITHMETIC artifact in the effect (the legitimate
+    // sourceId "relay-duty-cycle-reference" is exempt from this probe).
     const serialized = JSON.stringify(effect);
-    expect(serialized).not.toMatch(/duty/i);
+    expect(serialized).not.toMatch(/dutyFraction|"0\.5"/);
   });
 
-  it("splits a midnight-crossing window per day and reports only the completed total", async () => {
-    const n2 = await loadN2();
-    expect(typeof n2.deriveScenarioExposedVolume).toBe("function");
-    const derive = n2.deriveScenarioExposedVolume!;
+  it("splits a midnight-crossing window per day and reports only the completed total", () => {
     const effect = derive(
       crossDayRasFixture(),
       "2026-11-10",
@@ -978,23 +954,19 @@ describe("ENV-VIS-STORY-001-NUM-C2 — deriveScenarioExposedVolume (RED-first)",
         { date: "2026-11-10", value: 60 },
         { date: "2026-11-11", value: 30 },
       ],
-    ) as Record<string, unknown> | null;
+    );
     expect(effect).not.toBeNull();
     // 20:00→24:00 = 4 h on day 1; 00:00→04:00 = 4 h on day 2 — completed total only.
-    expect(Number(effect?.volumeM3)).toBeCloseTo(60 * (4 / 24) + 30 * (4 / 24), 6);
-    const basis = effect?.inflowBasis as Array<Record<string, unknown>>;
-    expect(basis.map((day) => day.date)).toEqual(["2026-11-10", "2026-11-11"]);
-    expect(Number(basis[0]?.windowHoursInDay)).toBe(4);
-    expect(Number(basis[1]?.windowHoursInDay)).toBe(4);
-    expect(Number(basis[0]?.recordedM3)).toBe(60);
-    expect(Number(basis[1]?.recordedM3)).toBe(30);
+    expect(effect?.volumeM3).toBeCloseTo(60 * (4 / 24) + 30 * (4 / 24), 6);
+    expect(effect?.inflowBasis.map((day) => day.date)).toEqual(["2026-11-10", "2026-11-11"]);
+    expect(effect?.inflowBasis[0]?.windowHoursInDay).toBe(4);
+    expect(effect?.inflowBasis[1]?.windowHoursInDay).toBe(4);
+    expect(effect?.inflowBasis[0]?.recordedM3).toBe(60);
+    expect(effect?.inflowBasis[1]?.recordedM3).toBe(30);
     expect(typeof effect?.volumeM3).toBe("number");
   });
 
-  it("omits entirely when any needed day's recorded inflow is missing (never zero, no fallback to other days)", async () => {
-    const n2 = await loadN2();
-    expect(typeof n2.deriveScenarioExposedVolume).toBe("function");
-    const derive = n2.deriveScenarioExposedVolume!;
+  it("omits entirely when any needed day's recorded inflow is missing (never zero, no fallback to other days)", () => {
     // Next day absent from the evidence map → omit.
     expect(derive(crossDayRasFixture(), "2026-11-10", [{ date: "2026-11-10", value: 60 }])).toBeNull();
     // Next day present but NOT recorded (null) → omit.
@@ -1020,10 +992,7 @@ describe("ENV-VIS-STORY-001-NUM-C2 — deriveScenarioExposedVolume (RED-first)",
     ).toBeNull();
   });
 
-  it("omits when the incident date is absent or malformed (no anchor → no chip)", async () => {
-    const n2 = await loadN2();
-    expect(typeof n2.deriveScenarioExposedVolume).toBe("function");
-    const derive = n2.deriveScenarioExposedVolume!;
+  it("omits when the incident date is absent or malformed (no anchor → no chip)", () => {
     const evidence = [{ date: "2026-11-10", value: 82.25 }];
     expect(derive(numericScenario("loss-of-aeration"), null, evidence)).toBeNull();
     expect(derive(numericScenario("loss-of-aeration"), "", evidence)).toBeNull();
@@ -1031,10 +1000,7 @@ describe("ENV-VIS-STORY-001-NUM-C2 — deriveScenarioExposedVolume (RED-first)",
     expect(derive(numericScenario("loss-of-aeration"), "10-11-2026", evidence)).toBeNull();
   });
 
-  it("chlorine-stop and every non-declaring scenario derive no exposed volume (fail closed)", async () => {
-    const n2 = await loadN2();
-    expect(typeof n2.deriveScenarioExposedVolume).toBe("function");
-    const derive = n2.deriveScenarioExposedVolume!;
+  it("chlorine-stop and every non-declaring scenario derive no exposed volume (fail closed)", () => {
     const evidence = [{ date: "2026-11-10", value: 82.25 }];
     for (const id of N2_OUT_OF_SCOPE_IDS) {
       expect(derive(numericScenario(id), "2026-11-10", evidence)).toBeNull();
@@ -1045,53 +1011,45 @@ describe("ENV-VIS-STORY-001-NUM-C2 — deriveScenarioExposedVolume (RED-first)",
     expect(serialized).toBe("[null,null,null,null]");
   });
 
-  it("a declaration whose evidence envelope is not owner-confirmed derives no exposed volume (fail closed)", async () => {
-    const n2 = await loadN2();
-    expect(typeof n2.deriveScenarioExposedVolume).toBe("function");
-    const derive = n2.deriveScenarioExposedVolume!;
-    const unconfirmed = JSON.parse(JSON.stringify(numericScenario("loss-of-aeration"))) as Record<string, unknown>;
-    ((unconfirmed.numericEffects as Record<string, unknown>).exposedVolume as Record<string, unknown>).evidence =
-      { sourceId: "relay-duty-cycle-reference", status: "pending-owner-values", confirmedOn: "2026-11-10", role: "scenario-basis-reference" };
-    expect(
-      derive(unconfirmed as unknown as ScenarioDefinition, "2026-11-10", [
-        { date: "2026-11-10", value: 82.25 },
-      ]),
-    ).toBeNull();
-    const wrongSource = JSON.parse(JSON.stringify(numericScenario("loss-of-aeration"))) as Record<string, unknown>;
-    ((wrongSource.numericEffects as Record<string, unknown>).exposedVolume as Record<string, unknown>).evidence =
-      { sourceId: "other-reference", status: "confirmed-by-owner", confirmedOn: "2026-11-10", role: "scenario-basis-reference" };
-    expect(
-      derive(wrongSource as unknown as ScenarioDefinition, "2026-11-10", [
-        { date: "2026-11-10", value: 82.25 },
-      ]),
-    ).toBeNull();
+  it("a declaration whose evidence envelope is not owner-confirmed derives no exposed volume (fail closed)", () => {
+    const catalogDeclaration = exposedDeclarationOf("loss-of-aeration");
+    expect(catalogDeclaration).toBeDefined();
+    const withEvidence = (evidence: ScenarioExposedVolumeEvidence): ScenarioDefinition => ({
+      ...numericScenario("loss-of-aeration"),
+      numericEffects: {
+        exposedVolume: { ...catalogDeclaration!, evidence },
+      },
+    });
+    const pendingEvidence = withEvidence({
+      ...catalogDeclaration!.evidence,
+      status: "pending-owner-values",
+    });
+    expect(derive(pendingEvidence, "2026-11-10", [{ date: "2026-11-10", value: 82.25 }])).toBeNull();
+    const wrongSourceEvidence = withEvidence({
+      ...catalogDeclaration!.evidence,
+      sourceId: "other-reference",
+    } as unknown as ScenarioExposedVolumeEvidence);
+    expect(derive(wrongSourceEvidence, "2026-11-10", [{ date: "2026-11-10", value: 82.25 }])).toBeNull();
   });
 
-  it("a recorded ZERO inflow yields a genuine computed zero (never substituted for unknown — missing inflow omits)", async () => {
-    const n2 = await loadN2();
-    expect(typeof n2.deriveScenarioExposedVolume).toBe("function");
-    const derive = n2.deriveScenarioExposedVolume!;
+  it("a recorded ZERO inflow yields a genuine computed zero (never substituted for unknown — missing inflow omits)", () => {
     const effect = derive(
       numericScenario("loss-of-aeration"),
       "2026-11-10",
       [{ date: "2026-11-10", value: 0 }],
-    ) as Record<string, unknown> | null;
+    );
     expect(effect).not.toBeNull();
-    expect(Number(effect?.volumeM3)).toBe(0);
-    const basis = effect?.inflowBasis as Array<Record<string, unknown>>;
-    expect(Number(basis[0]?.recordedM3)).toBe(0);
+    expect(effect?.volumeM3).toBe(0);
+    expect(effect?.inflowBasis[0]?.recordedM3).toBe(0);
   });
 
-  it("derivation is pure and deterministic; inputs are never mutated; no live/latest vocabulary", async () => {
-    const n2 = await loadN2();
-    expect(typeof n2.deriveScenarioExposedVolume).toBe("function");
-    const derive = n2.deriveScenarioExposedVolume!;
+  it("derivation is pure and deterministic; inputs are never mutated; no live/latest vocabulary", () => {
     const definition = numericScenario("loss-of-aeration");
     const definitionSnapshot = JSON.stringify(definition);
     const evidence = [{ date: "2026-11-10", value: 82.25 }];
     const evidenceSnapshot = JSON.stringify(evidence);
-    const first = derive(definition, "2026-11-10", evidence) as Record<string, unknown> | null;
-    const second = derive(definition, "2026-11-10", evidence) as Record<string, unknown> | null;
+    const first = derive(definition, "2026-11-10", evidence);
+    const second = derive(definition, "2026-11-10", evidence);
     expect(JSON.stringify(first)).toBe(JSON.stringify(second));
     expect(JSON.stringify(evidence)).toBe(evidenceSnapshot);
     expect(JSON.stringify(definition)).toBe(definitionSnapshot);
@@ -1101,21 +1059,17 @@ describe("ENV-VIS-STORY-001-NUM-C2 — deriveScenarioExposedVolume (RED-first)",
     expect(serialized).not.toMatch(/asOf|sourceType|discharge/);
   });
 
-  it("the effect carries the evidence envelope and a Thai SIMULATED uncertainty note", async () => {
-    const n2 = await loadN2();
-    expect(typeof n2.deriveScenarioExposedVolume).toBe("function");
-    const derive = n2.deriveScenarioExposedVolume!;
+  it("the effect carries the evidence envelope and a Thai SIMULATED uncertainty note", () => {
     const effect = derive(
       numericScenario("loss-of-aeration"),
       "2026-11-10",
       [{ date: "2026-11-10", value: 82.25 }],
-    ) as Record<string, unknown> | null;
-    const evidence = effect?.evidence as Record<string, unknown> | undefined;
-    expect(evidence?.sourceId).toBe("relay-duty-cycle-reference");
-    expect(evidence?.status).toBe("confirmed-by-owner");
-    expect(evidence?.confirmedOn).toBe("2026-11-10");
-    expect(evidence?.role).toBe("scenario-basis-reference");
-    const uncertaintyNote = String(effect?.uncertaintyNote);
+    );
+    expect(effect?.evidence.sourceId).toBe("relay-duty-cycle-reference");
+    expect(effect?.evidence.status).toBe("confirmed-by-owner");
+    expect(effect?.evidence.confirmedOn).toBe("2026-11-10");
+    expect(effect?.evidence.role).toBe("scenario-basis-reference");
+    const uncertaintyNote = effect?.uncertaintyNote ?? "";
     expect(uncertaintyNote).toMatch(/SIMULATED|จำลอง|สมมุติ/);
     expect(uncertaintyNote).toMatch(/ไม่ใช่ปริมาตรที่วัดได้|ไม่ใช่ข้อมูลจริง/);
     expect(uncertaintyNote).toMatch(/สม่ำเสมอ|สมมติการไหล|ไหลสม่ำเสมอ/);

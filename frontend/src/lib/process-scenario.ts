@@ -10,7 +10,9 @@ import {
 
 /**
  * ENV-VIS-STORY-001B-C1 — deterministic process-scenario contract (Stage 2),
- * extended by ENV-VIS-STORY-001-NUM (owner numeric gate N3+N4 2026-11-10).
+ * extended by ENV-VIS-STORY-001-NUM (owner numeric gate N3+N4 2026-11-10)
+ * and ENV-VIS-STORY-001-NUM-C2 (N2 volume exposed, binding D1 consult
+ * decision 2026-11-11).
  *
  * The QUALITATIVE contract (deriveScenarioState) stays frozen: no numeric
  * effects, no water-quality values, no units, no observed timestamps in its
@@ -18,12 +20,13 @@ import {
  * separate typed outputs bound to the owner-approved packet tier-2 rules:
  * SIMULATED-labeled, unit-explicit, assumption-basis-stated, never blended
  * into LIVE/LATEST/HISTORICAL or operational writes, and never substituting
- * zero for unknown (ห้ามแทนค่าศูนย์). N1 is rejected; N2 stays deferred
- * pending the owner's relay duty-cycle reference sheet. Both derivation
- * entry points are synchronous and pure — no clock, randomness, I/O, or
- * background computation. A hypothetical activation of the bypass/emergency
- * paths NEVER resolves their as-built `needs_confirmation` tie-in (SSoT
- * modeling rules 3–5).
+ * zero for unknown (ห้ามแทนค่าศูนย์). N1 is rejected; N2 activates ONLY for
+ * the aeration-stop and RAS-stop scenarios on the owner-confirmed relay
+ * reference basis (chlorine-stop stays omitted — no fixed window exists).
+ * All derivation entry points are synchronous and pure — no clock,
+ * randomness, I/O, or background computation. A hypothetical activation of
+ * the bypass/emergency paths NEVER resolves their as-built
+ * `needs_confirmation` tie-in (SSoT modeling rules 3–5).
  */
 
 export type ScenarioEdgeCondition = "active-path" | "interrupted";
@@ -117,14 +120,15 @@ export function deriveScenarioState(definition: ScenarioDefinition): ScenarioSta
 
 /**
  * ENV-VIS-STORY-001-NUM — simulated numeric effects (owner numeric gate
- * N3+N4 decision 2026-11-10, recorded on issue #110; packet tier-2
- * MODEL-ASSUMPTION-BOUND). Separate from the frozen qualitative contract
- * above: deriveScenarioState never carries numbers. Every output is
- * SIMULATED, typed, unit-explicit, never blended into observed evidence,
- * and NEVER substitutes zero for unknown (ห้ามแทนค่าศูนย์). N1 is rejected
- * and N2 stays deferred pending the owner's relay duty-cycle reference —
- * neither has a derivation here. Synchronous and pure like the contract
- * above: no clock, randomness, or I/O.
+ * N3+N4 decision 2026-11-10, recorded on issue #110; N2 volume exposed
+ * activated by claim ENV-VIS-STORY-001-NUM-C2 on the binding D1 consult
+ * decision 2026-11-11; packet tier-2 MODEL-ASSUMPTION-BOUND). Separate from
+ * the frozen qualitative contract above: deriveScenarioState never carries
+ * numbers. Every output is SIMULATED, typed, unit-explicit, never blended
+ * into observed evidence, and NEVER substitutes zero for unknown
+ * (ห้ามแทนค่าศูนย์). N1 is rejected and has no derivation here.
+ * Synchronous and pure like the contract above: no clock, randomness,
+ * or I/O.
  */
 
 /** Declared model-assumption input (the only N3 assumption class shipped). */
@@ -142,6 +146,12 @@ export interface ScenarioAssumedVolume {
 export interface ScenarioNumericEffects {
   wasDifference?: { proposed: ScenarioAssumedVolume };
   sensitivities?: Array<ScenarioSensitivitySpec>;
+  /**
+   * ENV-VIS-STORY-001-NUM-C2 — N2 volume exposed (ปริมาตรที่สัมผัส).
+   * Declared ONLY on the aeration-stop and RAS-stop scenarios; chlorine-stop
+   * declares none (condition-driven free chlorine — no fixed window exists).
+   */
+  exposedVolume?: ScenarioExposedVolumeDeclaration;
 }
 
 /**
@@ -486,4 +496,196 @@ export function deriveScenarioSensitivities(
   }
 
   return { rendered, omitted };
+}
+
+// ── ENV-VIS-STORY-001-NUM-C2 — N2 volume exposed (ปริมาตรที่สัมผัส) ──
+//
+// Binding D1 decision (delegated consults Jev + Terra 2026-11-11, receipts
+// recorded verbatim in docs/ai/handoffs/ENV-VIS-STORY-001-NUM-GLM.md):
+// the exposure window is the FULL scenario/incident window — duty fraction
+// arithmetic from the 15/15 relay values and 15-minute slot quantization are
+// the DISHONEST direction (morning manual hold, unknown cycles/day) and are
+// never applied; volume = same-day recorded influent × (window hours within
+// that day / 24) under a stated uniform-inflow assumption; a midnight-
+// crossing window splits per calendar day and reports only the completed
+// total; ANY needed day's recorded inflow missing → the chip OMITS entirely
+// (never zero, never a fallback to other days); scope = aeration-stop +
+// RAS-stop only (chlorine-stop stays omitted — condition-driven free
+// chlorine has no fixed window); the relay duty-cycle reference is the
+// owner-confirmed scenario BASIS (reference), never an arithmetic factor.
+
+/**
+ * The declared assumed incident window — a versioned declared model
+ * assumption (same class as the N3 proposed volume), NOT recorded data and
+ * NOT owner-specified. The relay 15/15 values never enter this structure:
+ * no duty fraction, no slot quantization.
+ */
+export interface ScenarioAssumedIncidentWindow {
+  /** Local hour of day the hypothetical incident starts (0 ≤ h < 24). */
+  startHourLocal: number;
+  /** FULL incident duration in hours — never duty-adjusted. */
+  durationHours: number;
+  assumptionClass: "declared-model-assumption";
+  /** Versioned assumption id — replace only through a reviewed slice. */
+  assumptionId: string;
+  /** Thai basis note shown to the user (SIMULATED labeling is mandatory). */
+  note: string;
+}
+
+/**
+ * Owner-confirmed relay-basis evidence envelope (mirrors the N3/N4 pattern):
+ * the owner-determined relay settings are admitted as the SCENARIO BASIS
+ * (reference) for the hypothetical incident, never as an arithmetic factor.
+ * confirmedOn is the owner confirmation date (CE, ISO); user-facing
+ * rendering must be พ.ศ. (2569).
+ */
+export interface ScenarioExposedVolumeEvidence {
+  sourceId: "relay-duty-cycle-reference";
+  status: ScenarioActivityBaseStatus;
+  confirmedOn: "2026-11-10";
+  role: "scenario-basis-reference";
+}
+
+export interface ScenarioExposedVolumeDeclaration {
+  assumedIncidentWindow: ScenarioAssumedIncidentWindow;
+  evidence: ScenarioExposedVolumeEvidence;
+}
+
+/** One day of recorded influent evidence (`wastewater_in`, m³ per day). */
+export interface ScenarioRecordedInflowDay {
+  /** Calendar day (ISO "YYYY-MM-DD"). */
+  date: string;
+  /** Recorded value; null = not recorded (the day's chip basis omits). */
+  value: number | null;
+}
+
+export interface ScenarioExposedVolumeEffect {
+  kind: "exposed-volume";
+  scenarioId: string;
+  provenance: ScenarioProvenance;
+  window: ScenarioAssumedIncidentWindow;
+  /** ISO "YYYY-MM-DD" anchor day of the hypothetical incident. */
+  incidentDate: string;
+  /** Per-day contributions of the (possibly midnight-crossing) window. */
+  inflowBasis: Array<{ date: string; recordedM3: number; windowHoursInDay: number }>;
+  /** Completed total across all window days (m³). */
+  volumeM3: number;
+  unit: "m³";
+  formula: "Σ recordedInflowM3(day) × (windowHoursInDay / 24)";
+  evidence: ScenarioExposedVolumeEvidence;
+  uncertaintyNote: string;
+}
+
+const ISO_DAY_PATTERN = /^\d{4}-\d{2}-\d{2}$/;
+/** Fail-closed upper bound on a declared window (a leap year of hours). */
+const MAX_WINDOW_HOURS = 8784;
+
+function isoDayOffset(date: string, offsetDays: number): string | null {
+  if (!ISO_DAY_PATTERN.test(date)) return null;
+  const parsed = new Date(`${date}T00:00:00Z`);
+  if (Number.isNaN(parsed.getTime())) return null;
+  parsed.setUTCDate(parsed.getUTCDate() + offsetDays);
+  return parsed.toISOString().slice(0, 10);
+}
+
+/** Split [startHour, startHour + duration) into per-day hour parts. */
+function windowDayParts(
+  startHourLocal: number,
+  durationHours: number,
+): Array<{ dayOffset: number; hours: number }> {
+  const parts: Array<{ dayOffset: number; hours: number }> = [];
+  const firstDayHours = Math.max(0, Math.min(24 - startHourLocal, durationHours));
+  if (firstDayHours > 0) parts.push({ dayOffset: 0, hours: firstDayHours });
+  let remaining = durationHours - firstDayHours;
+  let dayOffset = 1;
+  while (remaining > Number.EPSILON) {
+    const hours = Math.min(24, remaining);
+    parts.push({ dayOffset, hours });
+    remaining -= hours;
+    dayOffset += 1;
+  }
+  return parts;
+}
+
+function exposedEvidenceAdmissible(evidence: ScenarioExposedVolumeEvidence | undefined): boolean {
+  return (
+    evidence !== undefined &&
+    evidence.sourceId === "relay-duty-cycle-reference" &&
+    evidence.status === "confirmed-by-owner" &&
+    evidence.confirmedOn === "2026-11-10" &&
+    evidence.role === "scenario-basis-reference"
+  );
+}
+
+/**
+ * N2 — volume exposed during the hypothetical incident window
+ * (ENV-VIS-STORY-001-NUM-C2, binding D1 decision 2026-11-11). Renders ONLY
+ * where the scenario declares the exposed-volume effect, the evidence
+ * envelope is the owner-confirmed relay reference (scenario basis only),
+ * the incident day anchor is a valid ISO date, and EVERY day the window
+ * touches carries a finite recorded influent value — otherwise it is OMITTED
+ * with null (render nothing, never zero, never a fallback to other days).
+ * The exposure window is the FULL declared incident duration — the duty
+ * fraction from the 15/15 relay values is deliberately NOT applied, and no
+ * 15-minute slot quantization occurs. A midnight-crossing window contributes
+ * per calendar day and only the completed total is reported. A RECORDED
+ * zero inflow is data, not unknown: it computes a genuine 0 (substitution
+ * never happens because missing values omit instead). Synchronous and pure.
+ */
+export function deriveScenarioExposedVolume(
+  definition: ScenarioDefinition,
+  incidentDate: string | null,
+  recordedInflowByDay: readonly ScenarioRecordedInflowDay[],
+): ScenarioExposedVolumeEffect | null {
+  const declaration = definition.numericEffects?.exposedVolume;
+  if (!declaration || !exposedEvidenceAdmissible(declaration.evidence)) return null;
+
+  const window = declaration.assumedIncidentWindow;
+  if (
+    !window ||
+    window.assumptionClass !== "declared-model-assumption" ||
+    typeof window.assumptionId !== "string" ||
+    window.assumptionId.length === 0 ||
+    !Number.isFinite(window.startHourLocal) ||
+    window.startHourLocal < 0 ||
+    window.startHourLocal >= 24 ||
+    !Number.isFinite(window.durationHours) ||
+    window.durationHours <= 0 ||
+    window.durationHours > MAX_WINDOW_HOURS
+  ) {
+    return null;
+  }
+
+  if (typeof incidentDate !== "string" || isoDayOffset(incidentDate, 0) === null) return null;
+
+  const inflowByDay = new Map(
+    recordedInflowByDay.map((day) => [day.date, typeof day.value === "number" ? day.value : null]),
+  );
+  const inflowBasis: Array<{ date: string; recordedM3: number; windowHoursInDay: number }> = [];
+  let volumeM3 = 0;
+  for (const part of windowDayParts(window.startHourLocal, window.durationHours)) {
+    const date = isoDayOffset(incidentDate, part.dayOffset);
+    if (date === null) return null;
+    const recordedM3 = finiteOrNull(inflowByDay.get(date) ?? null);
+    // D1 omission rule: ANY needed day missing/null/non-finite → omit the
+    // chip entirely. Never zero, never a fallback to another day's record.
+    if (recordedM3 === null) return null;
+    inflowBasis.push({ date, recordedM3, windowHoursInDay: part.hours });
+    volumeM3 += recordedM3 * (part.hours / 24);
+  }
+
+  return {
+    kind: "exposed-volume",
+    scenarioId: definition.id,
+    provenance: { source: "simulation", observedAt: null },
+    window,
+    incidentDate,
+    inflowBasis,
+    volumeM3,
+    unit: "m³",
+    formula: "Σ recordedInflowM3(day) × (windowHoursInDay / 24)",
+    evidence: declaration.evidence,
+    uncertaintyNote:
+      "ความไม่แน่นอน: สูง — ค่าประมาณจากสมมติฐานแบบจำลอง (SIMULATED) จากความยาวเหตุการณ์สมมุติ × ปริมาตรน้ำเข้าที่บันทึก (สมมติการไหลสม่ำเสมอ) ไม่ใช่ปริมาตรที่วัดได้ ไม่ใช่ข้อมูลจริง และไม่ใช่การคาดการณ์คุณภาพน้ำ ห้ามใช้ตีความการดำเนินงานจริง",
+  };
 }

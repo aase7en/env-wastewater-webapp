@@ -4,7 +4,7 @@ import { AuraCard } from "../ui/AuraCard";
 import { MSymbol } from "../ui/MSymbol";
 import { PROCESS_EXPLANATION } from "../../lib/environmental-flow";
 import type { EnvironmentalFlowModel, EnvironmentalFlowQuantity } from "../../lib/environmental-flow";
-import { deriveScenarioState, deriveScenarioSensitivities, deriveScenarioWasDifference, formatScenarioFactorVersion, formatScenarioNumber, type ScenarioDefinition, type ScenarioEdgeStateLabel, type ScenarioStageState, type ScenarioState, type ScenarioWasDifferenceEffect } from "../../lib/process-scenario";
+import { deriveScenarioExposedVolume, deriveScenarioSensitivities, deriveScenarioState, deriveScenarioWasDifference, formatScenarioFactorVersion, formatScenarioNumber, type ScenarioDefinition, type ScenarioEdgeStateLabel, type ScenarioStageState, type ScenarioState, type ScenarioWasDifferenceEffect } from "../../lib/process-scenario";
 import { NUMERIC_EFFECT_EMISSION_FACTORS, PROCESS_SCENARIO_CATALOG } from "../../lib/process-scenarios";
 
 function quantityValue(quantity: EnvironmentalFlowQuantity) {
@@ -241,13 +241,27 @@ export function EnvironmentalFlowStory({ model }: { model: EnvironmentalFlowMode
   // ENV-VIS-STORY-001-NUM: numeric effects derive ONLY while a scenario is
   // applied. N3 (WAS difference) shows a SIMULATED chip on the WAS card;
   // N4 sensitivities render only when both base+factor exist (omissions
-  // render NOTHING — never zero). N1 rejected; N2 deferred (no derivation).
+  // render NOTHING — never zero). N1 rejected. N2 (ENV-VIS-STORY-001-NUM-C2,
+  // binding D1 decision 2026-11-11): volume exposed for aeration-stop and
+  // RAS-stop only — the FULL declared incident window (never duty-adjusted),
+  // same-day recorded influent basis, chip OMITS when any needed day's
+  // recorded inflow (or the incident anchor date) is missing. Chlorine-stop
+  // declares no N2 effect.
   const wasEffect = appliedScenario
     ? deriveScenarioWasDifference(appliedScenario.definition, model.quantities.excessSludge.value)
     : null;
   const sensitivityResult = appliedScenario
     ? deriveScenarioSensitivities(appliedScenario.definition, { aerationBlowerRuntimeKwh: null }, NUMERIC_EFFECT_EMISSION_FACTORS)
     : { rendered: [], omitted: [] };
+  const exposedVolumeEffect = appliedScenario
+    ? deriveScenarioExposedVolume(
+        appliedScenario.definition,
+        model.asOf,
+        model.asOf === null || model.quantities.influent.value === null
+          ? []
+          : [{ date: model.asOf, value: model.quantities.influent.value }],
+      )
+    : null;
 
   return (
     <div className="min-w-0 space-y-5">
@@ -464,6 +478,24 @@ export function EnvironmentalFlowStory({ model }: { model: EnvironmentalFlowMode
             );
           })}
         </div>
+
+        {exposedVolumeEffect ? (
+          <div
+            className="env-flow-story-scenario-numeric font-thai"
+            data-testid="process-scenario-numeric"
+            data-scenario-numeric-kind={exposedVolumeEffect.kind}
+          >
+            <p className="env-flow-story-scenario-numeric-title">ปริมาตรที่สัมผัส (SIMULATED)</p>
+            <p>
+              {formatScenarioNumber(exposedVolumeEffect.volumeM3)} {exposedVolumeEffect.unit} — ประมาณจากกรอบเวลาเหตุการณ์สมมุติ {exposedVolumeEffect.window.durationHours} ชั่วโมง × ปริมาตรน้ำเข้าที่บันทึกของวันเดียวกัน
+            </p>
+            <p>
+              ประมาณการจากความยาวเหตุการณ์ × ปริมาตรน้ำเข้าที่บันทึกของวันเดียวกัน (สมมติการไหลสม่ำเสมอ) · ค่าตั้งเวลา 15/15 เป็นข้อมูลอ้างอิงที่เจ้าของยืนยัน (10 พ.ย. 2569) ใช้เป็นที่มาของสถานการณ์ ไม่ได้คูณในสูตร · ค่าจริงไม่คงที่ (ช่วงเช้าเปิดค้าง manual / สลับเครื่อง / วาล์วเลือกทางน้ำ)
+            </p>
+            <p>ฐานสมมติกรอบเวลา: {exposedVolumeEffect.window.note}</p>
+            <p className="env-flow-story-scenario-numeric-uncertainty">{exposedVolumeEffect.uncertaintyNote}</p>
+          </div>
+        ) : null}
 
         {sensitivityResult.rendered.length > 0 ? (
           <div className="min-w-0 space-y-2">

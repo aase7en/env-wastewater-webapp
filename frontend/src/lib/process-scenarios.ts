@@ -13,8 +13,15 @@ import type {
  * NUMERIC-EFFECT declarations (ENV-VIS-STORY-001-NUM, owner gate N3+N4
  * decision 2026-11-10 on issue #110) live in `numericEffects` and derive
  * ONLY through `deriveScenarioWasDifference` / `deriveScenarioSensitivities`
- * as SIMULATED outputs. N1 is rejected and N2 stays deferred (relay
- * duty-cycle reference pending owner values), so neither appears here.
+ * / `deriveScenarioExposedVolume` as SIMULATED outputs. N1 is rejected, so
+ * it never appears here. N2 (volume exposed) activates per claim
+ * ENV-VIS-STORY-001-NUM-C2 on the binding D1 consult decision 2026-11-11:
+ * declared ONLY on the aeration-stop and RAS-stop scenarios, whose assumed
+ * incident windows are versioned declared-model-assumptions on the
+ * owner-confirmed relay reference basis (scenario basis only — never an
+ * arithmetic factor). Chlorine-stop declares NO exposed-volume effect: the
+ * chlorinators are condition-driven on free chlorine with no fixed timer,
+ * so no honest exposure window exists (omission, never zero).
  * Every label uses explicit hypothetical (สมมุติ) wording.
  */
 export const PROCESS_SCENARIO_CATALOG: readonly ScenarioDefinition[] = [
@@ -49,6 +56,22 @@ export const PROCESS_SCENARIO_CATALOG: readonly ScenarioDefinition[] = [
     edgeOverrides: {},
     stageOverrides: { aeration_tank: { aeration: "interrupted" } },
     numericEffects: {
+      exposedVolume: {
+        assumedIncidentWindow: {
+          startHourLocal: 8,
+          durationHours: 8,
+          assumptionClass: "declared-model-assumption",
+          assumptionId: "001-NUM-N2-window-aer-v1",
+          note:
+            "กรอบเวลาเหตุการณ์สมมุติ 8 ชั่วโมง (08:00–16:00 ของวันที่บันทึกอ้างอิง) เพื่อสาธิตสูตรปริมาตรที่สัมผัส — ไม่ใช่ค่าบันทึกจริง ไม่ใช่ค่าที่เจ้าของกำหนด และต้องไม่ใช้ตีความการดำเนินงานจริง",
+        },
+        evidence: {
+          sourceId: "relay-duty-cycle-reference",
+          status: "confirmed-by-owner",
+          confirmedOn: "2026-11-10",
+          role: "scenario-basis-reference",
+        },
+      },
       sensitivities: [
         {
           id: "aeration-blower-electricity",
@@ -68,8 +91,29 @@ export const PROCESS_SCENARIO_CATALOG: readonly ScenarioDefinition[] = [
     id: "ras-interruption",
     label: "หยุดส่งตะกอนไหลกลับ (RAS)",
     provenance: { source: "simulation", observedAt: null },
-    assumptions: ["สมมุติการหยุดลูป RAS ในโหมดจำลองเท่านั้น"],
+    assumptions: [
+      "สมมุติการหยุดลูป RAS ในโหมดจำลองเท่านั้น",
+      "ไม่อ้างปริมาณตะกอนหรืออัตราไหลกลับที่สังเกตได้จริงใด ๆ — ค่าเชิงตัวเลขที่แสดง (ถ้ามี) เป็นค่าจำลอง (SIMULATED) ที่ระบุฐานสมมติชัดเจนเท่านั้น และปริมาตรที่สัมผัส (ถ้าแสดง) ไม่ใช่ปริมาตรตะกอนหรือปริมาตรไหลกลับ",
+    ],
     edgeOverrides: { "ras-return": "interrupted" },
+    numericEffects: {
+      exposedVolume: {
+        assumedIncidentWindow: {
+          startHourLocal: 9,
+          durationHours: 6,
+          assumptionClass: "declared-model-assumption",
+          assumptionId: "001-NUM-N2-window-ras-v1",
+          note:
+            "กรอบเวลาเหตุการณ์สมมุติ 6 ชั่วโมง (09:00–15:00 ของวันที่บันทึกอ้างอิง) เพื่อสาธิตสูตรปริมาตรที่สัมผัส — ไม่ใช่ค่าบันทึกจริง ไม่ใช่ค่าที่เจ้าของกำหนด และต้องไม่ใช้ตีความการดำเนินงานจริง",
+        },
+        evidence: {
+          sourceId: "relay-duty-cycle-reference",
+          status: "confirmed-by-owner",
+          confirmedOn: "2026-11-10",
+          role: "scenario-basis-reference",
+        },
+      },
+    },
   },
   {
     id: "excess-sludge-wasting",
