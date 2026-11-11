@@ -825,3 +825,73 @@ the tooltip disclaimer, exact-text asserted in the e2e. All four new
 disclaimer assertions target the aeration chip (same tooltip paragraph
 renders for RAS). D1 invariants untouched: no duty multiplication, no
 quantization, omission paths and SIMULATED labeling unchanged.
+
+## D6 CLOSEOUT RECEIPT
+
+- D6 (2026-11-12 / 12 พฤศจิกายน 2569): expected-head merge — **PR #161
+  merged as `c02378d`** (parents: claim-transition merge `75b2014` +
+  reviewed frozen head `9d65fc4`; ancestry verified). Claim transition:
+  PR #160 merged as `75b2014`; R2 review receipt
+  `pull/160#issuecomment-6782528329` (independent exact-SHA fresh-GLM
+  R2, AUTHORIZATION_BASIS SUFFICIENT); merge execution record
+  `pull/160#issuecomment-6782540008`.
+- Review chain: **CROSS-MODEL D5 by GPT-6.1 Terra via Codex CLI
+  (read-only sandbox).** R1 on exact head `2253fcc` CHANGES_REQUIRED —
+  2×P2 (chip formula text omitted the ÷24 proration; WO
+  truth-constraints not mirrored in UI/tests; the reviewer explicitly
+  confirmed the D1 math itself — full window, no 0.5 multiplier, no
+  quantization, fail-closed omission — is correct), receipt
+  `pull/161#issuecomment-6801260024` → repaired at `9d65fc4` (chip text
+  + e2e assertions only, no lib change) → Terra re-review round 2
+  **APPROVED** at `9d65fc4`, receipt
+  `pull/161#issuecomment-6802099438`. Fresh-GLM R2 floor **APPROVED**
+  at the exact head `9d65fc4` with an independently executed battery
+  rerun, receipt `pull/161#issuecomment-6802283460`. Merge execution
+  record: `pull/161#issuecomment-6802310822`.
+- Battery summary (final reviewed head `9d65fc4`, R2-executed): FULL
+  vitest **476/476** (28 files) · /flow Playwright **21/21** · guard
+  **344/344** · runtime **62/62** · RED independently reproduced at
+  `63d7443` in an isolated temp worktree (focused 13 failed / 81
+  passed — exact match with the D2 receipt; e2e 1 failed / 20 passed)
+  · commit order verified (`63d7443` RED → `48b09dd` feat →
+  `2253fcc` docs → `9d65fc4` repairs).
+- Exact-main verification at `c02378d`: Pages deploy run
+  **43065869889 SUCCESS**; deployed live markers verified fresh from
+  the live origin: `assets/index-B8GEkVBp.js` carries
+  ปริมาตรที่สัมผัส + ชั่วโมงเหตุการณ์ในวันนั้น ÷ 24.
+- D1 delegated consults (2026-11-11), receipts verbatim in the D1
+  section above: Jev via the jev-advisory MCP (TypeSafe, jev-1.13.0,
+  read-only advisory) + Terra via Codex CLI (read-only, session
+  `01a1cb35-2abb-7f42-97aa-f543339e13f2`). Binding decision: full-window
+  exposure (Q1=B — no duty-fraction multiplication, no 15-min
+  quantization), same-day inflow only (Q3=B, omit the chip when the
+  same-day inflow is absent), chlorine-stop omitted (Q4=yes), short
+  label + tooltip (Q5=B). Advisory to D1 design only — approval
+  authority remained the owner decision + the frozen packet.
+- Delivered scope: N2 volume exposed (SIMULATED chip) for aeration-stop
+  + RAS-stop ONLY on the existing /flow numeric-chip machinery;
+  chlorine-stop MANDATORY-OMITTED (renders nothing, never zero); duty
+  fraction 15/(15+15) = 50% labeled ARITHMETIC INFERENCE in the
+  tooltip, never multiplied into the formula; cycles/day UNKNOWN never
+  filled; valve state unrecorded; ห้ามแทนค่าศูนย์ (never substitute
+  zero); unknown ≠ 0; SIMULATED-labeled; พ.ศ. user-facing years.
+- Honesty notes: (1) smoke CI had a disclosed transient and passed on
+  the rerun — final state green at run 43059875918 (8m6s), disclosed in
+  the R2 review §6 (`pull/161#issuecomment-6802283460`); the first
+  smoke run (43053802434 at `2253fcc`) was cancelled/superseded by the
+  repair push. (2) The RED e2e omission test passes vacuously at RED
+  exactly as disclosed (pin-not-RED, explicitly not claimed as a RED
+  failure — same honest pattern as C1, R2 §5).
+- Closeout transition (branch `docs/env-visstory-001num-n2-closeout`,
+  base `c02378d`): registry C2 CLOSED at generation 1; fence moved to
+  `c02378d` + the base-state block sha256 `bf362b9494db4390…463bf968`
+  (guard module `registry_hash` method, exact block text at
+  `c02378d`); frontier bullet → delivered; one-next-action bullet →
+  NO active proposed claim, with the stale "N2 pending owner relay
+  duty-cycle values — PENDING OWNER INPUT" ledger sentences reconciled
+  (values OWNER-SUPPLIED on main via `b18e515` + `1908cea` and
+  consumed by PR #161) and the epic frontier updated (next per epic
+  #110 = the optional 001C deferred lane, pending separate
+  authorization). Scope lock released at generation 1; CLOSED confers
+  no fresh mutation authority. The implementing lane stops at
+  REVIEW_REQUESTED — NEVER merged by this lane.
