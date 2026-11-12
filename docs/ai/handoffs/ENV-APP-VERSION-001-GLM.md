@@ -455,3 +455,136 @@ fresh-GLM independent review at the exact frozen head (Terra eligible as
 cross-model reviewer per precedent; GPT-6 Astra prohibited). First release
 (tag `v1.0.0` + CHANGELOG entry confirmation) happens AFTER merge + deploy
 verification, with the tag pointing at the deployed merge SHA.
+
+## D6 — CLOSEOUT RECEIPT (2026-11-12)
+
+Claim `ENV-APP-VERSION-001-C1` → **CLOSED** by the docs-only closeout
+transition (this receipt's PR). Every receipt below was re-verified LIVE
+(gh/git/HTTP) by the closeout lane immediately before writing — not copied
+from chat memory.
+
+### Full delivery chain (all receipts verified live 2026-11-12)
+
+1. **Claim transition** — PR **#167** merged as `ebdfcee42d115dc7f2a1925cfec7a0a16ea533d9`
+   (state MERGED, mergedAt 2026-11-11T23:43:08Z; reviewed head `4ff5c72`;
+   R2 independent APPROVED `issuecomment-6809927489`, no P1/P2).
+2. **D1 joint delegated consult** — BINDING decision recorded in this
+   handoff's D1 section with verbatim Jev + Terra receipts
+   (`/tmp/jev-version-d1-2026-11-12.json/.txt` + `/tmp/terra-version-d1-receipt-2026-11-12.txt`
+   at consult time): **SemVer**, first release **v1.0.0** now,
+   `frontend/package.json` = single version source injected via **Vite
+   define**, version chip in the shell header with a tap-through
+   latest-release summary, **Thai CHANGELOG** with an entry per
+   user-visible release (docs-only merges = no bump), git tag pushed
+   **post-deploy at the deployed merge SHA**.
+3. **D2 RED** — commit `b9fcd4f`, truthful failures recorded: 4 failed e2e,
+   1 fail-to-collect vitest suite (`Cannot find module './version'`),
+   ModuleNotFoundError checker test.
+4. **D3a Track-Z (GLM)** — commit `dc8c456`: package.json `1.0.0`, vite
+   define, `version.ts`, `check_release_version.py` + checker test,
+   `CHANGELOG.md` (Thai, พ.ศ.), README refresh.
+5. **D3b Track-F chip slice (Codex CLI `gpt-6-sol` @
+   `model_reasoning_effort=max`)** — commit `6721c73`: `VersionChip.tsx` +
+   the single `AppShell.tsx` wiring point ONLY (sessions `01a1cd13…` /
+   `01a1cd14…`, 120,647 tokens).
+6. **D4 battery at freeze** — vitest FULL 485 passed / 1 designed skip;
+   `tsc -b` clean; lint clean; Playwright FULL **201/201**; guard
+   **344/344**; runtime **62/62**; checker regression **26/26**;
+   `git diff --check` clean.
+7. **D5 fresh-GLM independent review** — **APPROVED**,
+   `issuecomment-6811013033`, at exact head `88f43dd`: battery
+   independently reproduced there, and the D2 RED independently reproduced
+   at `b9fcd4f` in an isolated checkout. 2 informational P3s (below).
+8. **Implementation merge** — PR **#168** merged as
+   `5bca60879172adcff8551b541d43cbce8dd04612` (parents `ebdfcee` +
+   `88f43dd` = the D5-APPROVED head as second parent; expected-head
+   discipline held; merge execution receipt `issuecomment-6811042530`).
+9. **Deploy** — Pages run **43130219328 SUCCESS** for `5bca608`
+   (https://github.com/aase7en/env-wastewater-webapp/actions/runs/43130219328).
+10. **Live release evidence** — live asset `assets/index-COZIsap4.js`
+    fetched fresh (HTTP 200) carries ALL chip markers: `app-version-chip`,
+    `app-version-summary`, aria label `ข้อมูลเวอร์ชันแอป`, fallback
+    `ยังไม่มีข้อมูล release`, version constant `1.0.0`, CHANGELOG heading
+    `## v1.0.0 — 12 พฤศจิกายน พ.ศ. 2569`.
+11. **Tag** — annotated tag `v1.0.0` (tag object `a78b7814`) dereferences
+    (`^{}`) to `5bca608` and is pushed (`git ls-remote` confirms both
+    `refs/tags/v1.0.0` and the peeled object) — the D1 binding
+    "tag at the deployed merge SHA" held exactly.
+12. **Checker** — `python3 scripts/check_release_version.py --tag v1.0.0`
+    → `RELEASE VERSION CHECK: OK (v1.0.0; CHANGELOG entry v1.0.0)`,
+    exit 0.
+13. **Closeout** — registry fence updated
+    (`expected_policy_revision = 5bca60879172adcff8551b541d43cbce8dd04612`,
+    `expected_registry_hash = 1123c740d9efe6e8ed31a7e6073d6ceed4a0857e4a9ac68551385b3880251b0b`
+    = guard-computed sha256 of the registry block AT `5bca608`); C1 →
+    CLOSED; programmatic JSON diff vs `5bca608` = exactly 1 of 21 claims
+    changed.
+
+### D5 informational P3s — reconciled as recorded follow-ups
+
+Both P3s were judged non-blocking by D5 and are carried as explicit
+follow-ups (NOT silently dropped, NOT silently fixed):
+
+- **P3-1: `scripts/check_release_version.py` vSemVer false-positive
+  mode** — the checker's version-string comparison can accept a
+  `v`-prefixed semver-shaped string outside the real SemVer grammar
+  (false-positive acceptance mode). Not a release-blocking defect
+  (v1.0.0 itself checks correctly, exit 0; a malformed tag fails closed
+  via the negative path); a future hardening slice may tighten the
+  grammar via its own reviewed claim. No change made in this closeout.
+- **P3-2: mobile-360 no dock-overlap pin** — there is no regression test
+  pinning that the version chip does not overlap the ModuleDock at a 360px
+  viewport. Live inspection showed no overlap at freeze/deploy time; the
+  pin belongs with future shell-layout test work (a separate lane), not a
+  docs-only closeout. No change made in this closeout.
+
+### Honesty notes (implementation deviations, exactly as recorded)
+
+1. **D2 spec adjustment + attributed coordinator test-bug fix** — during
+   D2 one RED assertion was adjusted to a legitimate fixed-position
+   assertion (identical RED counts before/after), and Codex flagged a
+   coordinator-authored over-anchored panel assertion verbatim WITHOUT
+   touching the test; the coordinator fixed it in the same commit WITH
+   attribution. Both recorded at the time; D5 independently re-verified
+   the RED reproduction and judged all three recorded deviations
+   acceptable.
+2. **Local `.env` restore for e2e was never committed** — the dev profile
+   e2e run needed a local `.env`, restored locally only. Verified at this
+   closeout: `git show 5bca608` diff contains **no `.env`** (grep count 0);
+   `.env` remains gitignored and outside every committed diff of the lane.
+3. **Codex sandbox could not run Playwright** — the D3b Track-F sandbox
+   denied dev-server bind + Chromium MachPort; the coordinating lane ran
+   the e2e gate unsandboxed (4/4 at D3b time, then the FULL 201/201 D4
+   battery) and recorded the limitation verbatim in the Codex section
+   above. D5's own independent 201/201 rerun supersedes any doubt.
+
+### ขั้นตอนบัมป์เวอร์ชันครั้งหน้า (release process, Thai — binding per D1)
+
+เมื่อจะเปิดตัว **release ที่ผู้ใช้เห็นการเปลี่ยนแปลง** (user-visible) ใหม่:
+
+1. แก้ `version` ใน `frontend/package.json` เป็นเวอร์ชันถัดไปตาม SemVer —
+   เพิ่ม **PATCH** เมื่อแก้บั๊กที่ผู้ใช้เห็น, เพิ่ม **MINOR** เมื่อเพิ่ม
+   ฟีเจอร์ใหม่ที่ผู้ใช้เห็น (ระบบนี้ไม่มี pre-1.0 แล้ว; MAJOR เฉพาะ
+   breaking change ที่ต้องมีการตัดสินใจของเจ้าของก่อน)
+2. เพิ่มหัวข้อใหม่บนสุดของ `CHANGELOG.md` รูปแบบ
+   `## v<MAJOR>.<MINOR>.<PATCH> — <วันที่ พ.ศ.>`
+   (พ.ศ. = ค.ศ. + 543 เช่น 2569 สำหรับ 2026) พร้อมสรุปการเปลี่ยนแปลง
+   ภาษาไทยแบบผู้ใช้ ไม่ใช่ commit log
+3. รัน gate ก่อนขอรีวิว: `npm run test` (FULL vitest) + `tsc -b` + lint +
+   Playwright FULL + `python3 scripts/test_check_release_version.py` (26/26)
+   + `python3 scripts/check_release_version.py` (ต้อง OK จับคู่
+   package.json ↔ CHANGELOG) + guard 344/344 + runtime 62/62
+4. ขอ D5 fresh-GLM รีวิวที่ exact head ตามปกติ — **implementing lane ห้าม
+   merge เอง**; merge ด้วย expected-head discipline เหมือน PR #168
+5. **หลัง merge**: รอ Pages deploy สำเร็จที่ merge SHA นั้น → ตรวจ live
+   asset ว่ามี version marker ใหม่จริง → แล้วจึง push annotated tag
+   `v<X.Y.Z>` ที่ **ชี้ merge SHA ที่ deploy แล้ว** (ไม่ใช่ PR head ก่อน
+   merge) ตามแบบ v1.0.0 → `git ls-remote` ยืนยัน →
+   `check_release_version.py --tag v<X.Y.Z>` ต้อง exit 0
+6. **docs-only merge** (แก้เอกสาร/registry ล้วน) = ห้ามบัมป์เวอร์ชัน
+   ห้ามเพิ่ม CHANGELOG ห้าม tag — ระบบนี้ออกแบบให้ chip คงแสดง
+   release ล่าสุดที่ผู้ใช้เห็นจริง
+
+ห้ามแตะ `frontend/src/lib/version.ts` เป็น source ความจริงเอง —
+ความจริงคือ `package.json` เท่านั้น; `version.ts` อ่านอย่างเดียว, และ
+checker script คือผู้เฝ้าความสอดคล้อง 3 จุด (package.json ↔ CHANGELOG ↔ tag)
