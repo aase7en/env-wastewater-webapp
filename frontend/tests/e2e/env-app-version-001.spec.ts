@@ -43,7 +43,7 @@ test.describe("ENV-APP-VERSION-001 — app version chip", () => {
     await chip.click();
     const panel = page.getByTestId("app-version-summary");
     await expect(panel).toBeVisible();
-    await expect(panel).toContainText(/^v\d+\.\d+\.\d+$/);
+    await expect(panel).toContainText(/v\d+\.\d+\.\d+/);
     await expect(panel).toContainText("พ.ศ.");
     await expect(
       panel.getByRole("link", { name: /CHANGELOG/i }),
