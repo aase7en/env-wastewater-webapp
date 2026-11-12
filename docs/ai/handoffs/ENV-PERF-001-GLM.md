@@ -449,3 +449,13 @@ D6 (PR-ref placeholder "PR นี้" in the CHANGELOG to be fixed at merge time
 D5 fresh-GLM independent review at exact head `9b102a3` (+ docs commit),
 independent battery rerun when available, then authorized merge; D6 release
 (bump already staged; tag post-deploy).
+
+### D4-addendum — battery re-run at the true final head `146144c`
+
+After the docs commit (WO status + this handoff), the FULL battery was
+re-run at the exact pushed head `146144c` with identical results: vitest
+31 files / 493 passed | 1 skipped; tsc clean; oxlint 0 errors (10
+pre-existing warnings); Playwright FULL workers=1 **206 passed / 0 failed**;
+guard 344 OK; runtime 62 OK; release checker OK (v1.0.1); `git diff --check`
+clean; `git diff origin/main --stat` = **17 files** (15 code/test + WO +
+this handoff; CURRENT-WORK.md untouched).
