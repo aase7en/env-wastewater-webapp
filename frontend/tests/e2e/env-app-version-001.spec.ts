@@ -25,11 +25,14 @@ test.describe("ENV-APP-VERSION-001 — app version chip", () => {
     expect(box).not.toBeNull();
     expect(box!.width).toBeGreaterThanOrEqual(44);
     expect(box!.height).toBeGreaterThanOrEqual(44);
-    // Footer corner: anchored below the main content area.
-    const main = page.locator("main");
-    const mainBox = await main.boundingBox();
-    expect(mainBox).not.toBeNull();
-    expect(box!.y).toBeGreaterThan(mainBox!.y + mainBox!.height - 5);
+    // Footer corner: pinned to the bottom band of the viewport (persistent,
+    // every screen) and horizontally at a corner (the center bottom is the
+    // floating ModuleDock's territory).
+    const vp = page.viewportSize()!;
+    expect(box!.y + box!.height).toBeGreaterThanOrEqual(vp.height - 24);
+    const nearLeft = box!.x <= vp.width * 0.25;
+    const nearRight = box!.x + box!.width >= vp.width * 0.75;
+    expect(nearLeft || nearRight).toBe(true);
   });
 
   test("activating the chip reveals the latest-release summary (พ.ศ. date + CHANGELOG pointer)", async ({
