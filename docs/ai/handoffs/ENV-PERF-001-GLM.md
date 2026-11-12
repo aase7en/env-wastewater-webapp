@@ -213,3 +213,382 @@ Method: grep ซอร์สโค้ด + อ่าน schema snapshot + `vite 
 
 (appended per phase as work proceeds; each checkpoint carries exact SHAs and
 truthful failure/pass records)
+
+## D2 — RED-first (commit `ea49d59`, on top of implementation base `4b4a482`)
+
+Tests added (behavior-only; bundle-size expectation is NOT a D2 test):
+
+- `frontend/src/lib/use-sensor-feed.test.ts` (ใหม่) — 4 tests: single-query
+  seeding, `.in("sensor_id", ids)` + newest-first shape, per-sensor
+  grouping/cap at the limit, combined limit = ids.length × per-sensor limit.
+  RED record (focused run `vitest run src/lib/use-sensor-feed.test.ts
+  src/lib/create-reading-rpc.test.ts`, base behavior): **2 files failed,
+  8 tests failed / 0 passed** — the use-sensor-feed failures surfaced as
+  `TypeError: fetchSensorFeedData is not a function` (module-level seeding
+  function not yet extracted; dynamic-import call sites failed per test).
+- `frontend/src/lib/create-reading-rpc.test.ts` (ใหม่) — 4 tests: exactly one
+  `rpc("fn_create_reading")` + zero direct table writes, full payload inside
+  `p_payload` (incl. abnormal_cause + electricity), RPC failure PROPAGATES
+  (no swallow), returns the RPC row. RED: all 4 failed (rpcCalls 0 ≠ 1,
+  fromCalls 3 ≠ [], no rejection, row id mismatch).
+- `frontend/tests/e2e/env-perf-001.spec.ts` (ใหม่) — 5 tests, RED record
+  (`npx playwright test env-perf-001.spec.ts --workers=1`):
+  **3 failed / 2 passed**
+  - FAILED (intended RED pins): form navigate-without-delay (`toHaveURL
+    /\/readings/` — URL stuck on /form: the legacy 900 ms setTimeout frozen
+    under `page.clock.pauseAt`), equipment React-Query cache hit (2 equipment
+    fetches across SPA remount vs 1 expected), lazy-route chunk (DailyFormPage
+    module already fetched at boot — eager import).
+  - PASSED (kept honestly as already-green pins): immediate disabled pending
+    state during the in-flight save (no fake clock; real 800 ms in-flight
+    window), AIAdmin providers/scopes render (port-safety guard).
+
+Test-infra note (disclosed): the D2-committed spec used
+`pauseAt(new Date())` before navigation; during D3 this was found to freeze
+React's commit of lazy-resolved routes (Suspense skeleton never resolves) and
+was moved to AFTER initial render, then later hardened to pause at a fixed
+future instant (the running fake clock passes a captured `new Date()` under
+FULL-battery load — "Cannot fast-forward to the past"). RED failure modes
+were unchanged and RE-VERIFIED at D3: with the D2-era 900 ms DailyFormPage
+restored (`git checkout ea49d59 -- src/pages/DailyFormPage.tsx`), the test
+fails exactly at `toHaveURL /\/readings/`; with the new code it passes.
+
+## D3 — implementation (commits `ba2b42c` perf + `9b102a3` test-boundary update)
+
+All five items implemented at head `9b102a3` (branch `feat/env-perf-001`):
+
+1. **App.tsx** — all 24 eager page imports → existing lazy+PageSkeleton
+   Suspense pattern (Suspense inside RequireAuth for gated routes, same as
+   the pre-existing chart/admin pattern). Route paths/RequireAuth structure
+   untouched. `tsc -b` clean, oxlint 0 errors.
+2. **use-sensor-feed.ts** — seeding body extracted module-level as
+   `fetchSensorFeedData(limit)` (alerts-unread pattern, node-env testable);
+   ONE `.in("sensor_id", ids).order("taken_at", {ascending:false})
+   .limit(ids.length * limit)` query + client-side grouping capped per
+   sensor; realtime incremental-cache effect untouched. Known trade-off
+   documented in-code (hot-sensor crowding of the combined window —
+   negligible at <10 sensors).
+3. **supabase-queries.ts createReading** — now ONE
+   `supabase.rpc("fn_create_reading", { p_payload })` call; failures throw.
+   Migration `supabase/migrations/20261112000001_fn_create_reading.sql`
+   (house style per OAUTH-3: core gate-check + public-schema function,
+   SECURITY DEFINER, `SET search_path = core, public`, fail-closed
+   `core.fn_is_staff_or_admin()` gate with ERRCODE 42501, COMMENT ON
+   FUNCTION, GRANT EXECUTE TO authenticated, returns the created reading row
+   as jsonb; step-3 repair_request failure propagates by transaction
+   semantics). Rollback SQL per WO:
+   `DROP FUNCTION IF EXISTS public.fn_create_reading(jsonb);`
+4. **DailyFormPage** — both 900 ms `setTimeout(..., 900)` delays removed;
+   `toast.success(...)` (cross-page ToastProvider) + immediate
+   `navigate("/readings")` on success; await semantics kept (no optimistic
+   insert); error banner path unchanged. Pending feedback = existing
+   `Button loading={submitting}` (disabled + spinner), pinned by e2e.
+5. **EquipmentPage** — `useEquipment()` hook + `useQuery(["repair-requests"])`
+   (cache centralized; error toast path preserved); **AIAdminPage** — no
+   shared hook existed and `hooks.ts` is outside this claim's mutable scope,
+   so the hook lives in-page (`useAiAdminData`, hooks.ts conventions
+   `{ data, loading, error, refresh }`); scope toggle patches the query cache
+   in place (same instant feedback as the old local setState).
+   **PNGs** — `icon-512.png` + `logo-aura.png` (byte-identical twins at base,
+   md5 decd5ede…) compressed **405,585 → 38,779 bytes each (−90.4%)**,
+   dimensions preserved 512×512, via PIL 12.2.0 FASTOCTREE 256-color palette
+   quantization. **FIDELITY RECEIPT CORRECTED PER D5 (issuecomment-6825964444)**:
+   the original metrics below were FALSE — independent RGBA re-measurement of
+   the shipped bytes (base `4b4a482` vs head, 512×512) gives **mean abs delta
+   1.66/255, p99 14, max single-pixel channel delta 45/255; alpha NOT exact —
+   123,281/262,144 pixels (47%) have alpha drift, max alpha delta 12/255; 93%
+   of pixels changed**. Honest claim: near-lossless, NOT lossless — max channel
+   delta ≤45/255 (~18% of a channel's range on isolated pixels), drift
+   concentrated in soft glow/edge antialiasing; visual impact judged low but
+   nonzero (the shipped file's measured mean 1.66 exactly matches the value the
+   original text attributed to the rejected dithered variant — the original
+   receipt described a different file than the one shipped). Files kept as-is
+   (38,779 B each; no re-compression). Tooling honesty: pngquant not installed;
+   sips cannot palette-quantize; ffmpeg palettegen/paletteuse EVALUATED AND
+   REJECTED (109,337 B output, alpha p99 delta 255 — corrupted glow edges).
+
+### Migration preflight (READ-ONLY, verbatim)
+
+Script: `/tmp/kilo/preflight_fn_create_reading.py` (one-off, read-only,
+Management API `/database/query` — same path as
+`scripts/introspect_schema_api.py`). Output:
+
+```
+[1] fn_create_reading existing definitions: []
+[2] role gate fn_is_staff_or_admin: [{'nspname': 'core', 'proname': 'fn_is_staff_or_admin'}]
+[3] fixed electricity meter present: [{'id': 'b6be4c99-c83a-43f7-b765-72286cc78bd0'}]
+[4] triggers on wastewater.reading:
+    - trg_audit_log: CREATE TRIGGER trg_audit_log AFTER INSERT OR DELETE OR UPDATE ON wastewater.reading FOR EACH ROW EXECUTE FUNCTION core.fn_audit_log()
+    - trg_persist_threshold_alerts: CREATE TRIGGER trg_persist_threshold_alerts AFTER INSERT ON wastewater.reading FOR EACH ROW EXECUTE FUNCTION wastewater.fn_persist_threshold_alerts()
+[5] migration statements OUTSIDE function body: ['CREATE OR REPLACE FUNCTION public.fn_create_reading(p_payload jsonb)', 'RETURNS jsonb', 'LANGUAGE plpgsql', 'SECURITY DEFINER', 'SET search_path = core, public', 'AS $$', '$$;', 'COMMENT ON FUNCTION public.fn_create_reading(jsonb) IS', "'ENV-PERF-001 (2026-11-12) — atomic daily-reading create: carbon.reading (when electricity present) + wastewater.reading + core.repair_request (when abnormal_cause set) in ONE transaction, returning the created reading row as jsonb. SECURITY DEFINER, gated on core.fn_is_staff_or_admin() (fail-closed, same role gate as the transactional RLS policies). Replaces the 3 sequential client-side inserts whose repair_request failures were swallowed.';", 'GRANT EXECUTE ON FUNCTION public.fn_create_reading(jsonb) TO authenticated;']
+    data-mutation statements outside body: NONE
+PREFLIGHT_RESULT: OK
+```
+
+Conclusion: no name collision; role gate exists; fixed meter exists;
+statement-level analysis = only CREATE OR REPLACE FUNCTION / COMMENT ON
+FUNCTION / GRANT EXECUTE outside the `$$` body — **zero data-mutation
+statements** (the INSERTs live inside the function body and run only when
+the RPC is later called by gated staff code). RLS untouched.
+
+### Migration apply (verbatim output)
+
+`python3 scripts/apply_migration_api.py supabase/migrations/20261112000001_fn_create_reading.sql`:
+
+```
+20261112000001_fn_create_reading.sql: 3 statement(s)
+  [1/3] OK: CREATE OR REPLACE FUNCTION public.fn_create_reading(p_payload jsonb)
+  [2/3] OK: COMMENT ON FUNCTION public.fn_create_reading(jsonb) IS
+  [3/3] OK: GRANT EXECUTE ON FUNCTION public.fn_create_reading(jsonb) TO authenticated;
+
+Done: 3 OK, 0 FAIL
+```
+
+### Post-apply verification (read-only, verbatim)
+
+```
+function row: [{'schema': 'public', 'name': 'fn_create_reading', 'security_definer': True, 'config': ['search_path=core, public'], 'args': 'p_payload jsonb'}]
+proacl: [{'proacl': '{=X/postgres,postgres=X/postgres,anon=X/postgres,authenticated=X/postgres,service_role=X/postgres}'}]
+```
+
+SECURITY DEFINER + pinned search_path confirmed live; EXECUTE posture
+identical to the existing OAUTH-3 RPCs (gate enforced inside the body,
+fail-closed for anon/pending). NO row data was written at any point.
+
+### D3 deviations + honest findings
+
+1. **`frontend/tests/e2e/daily-form-mobile.spec.ts` modified — OUTSIDE the
+   claimed file list (disclosed for reviewer approval).** The two
+   ENV-MOBILE-001B/D create-save pins captured the OLD client-side boundary
+   (POST `/rest/v1/reading` + separate `/rest/v1/repair_request` POST).
+   Item 3's authorized contract change (atomic RPC) makes those captures
+   impossible — the battery cannot be green without moving the capture to
+   the rpc endpoint. Test intent preserved (validation-before-write, value
+   preservation, repair payload integrity now asserted INSIDE `p_payload`,
+   first-failure announce + retry). No other spec touches the save boundary
+   (building-repair/operations only mock unrelated GETs).
+2. **Audit premise correction (live introspection)**: the audit said
+   `id/reported_by/location defaults มาจาก DB trigger`
+   (supabase-queries.ts:187-193 comment era) — live `pg_trigger` shows NO
+   BEFORE INSERT defaults trigger on wastewater.reading (only trg_audit_log
+   + trg_persist_threshold_alerts, both AFTER INSERT/UPDATE/DELETE). The RPC
+   therefore passes `reported_by`/`location_id` through from the payload
+   (NULL from the form) — byte-equivalent to what the old PostgREST insert
+   did — and the audit/threshold triggers fire identically inside the RPC.
+   No behavior change; premise recorded honestly.
+3. **Drive token resolution**: `scripts/_env.py`'s resolution chain did not
+   find `secrets/env-wastewater-webapp.env` (its candidate roots don't
+   include this machine's CloudStorage mount). The file was located at
+   `/Users/aase7en/Library/CloudStorage/GoogleDrive-aase7en@sunday-estate.com/My Drive/A-Wiki-Data/secrets/env-wastewater-webapp.env`
+   and supplied via the chain's FIRST-priority mechanism
+   `A_WIKI_DRIVE_PATH` (process-env handoff to `load_secret`) — no script
+   changes, token never printed/committed.
+4. **PNG tooling**: sips/pngquant unavailable as listed; PIL (macOS-present
+   python3) used per the WO's fidelity constraint with metrics above; ffmpeg
+   variant evaluated and rejected with evidence.
+5. D2 test files were refined during D3 (clock mechanics + capture moves) —
+   disclosed in the D2 section; RED failure modes unchanged and re-verified.
+6. e2e hygiene: every spec that saves now mocks the rpc endpoint; no e2e
+   test writes to real data (fake JWT → PostgREST 401 if ever unmocked).
+
+## D4 — battery at frozen head `9b102a3` (branch `feat/env-perf-001`)
+
+### Main bundle BEFORE/AFTER (`vite build`, measured, not asserted)
+
+| | raw | gzip |
+|---|---|---|
+| BEFORE @ base `4b4a482` (`index-DvjOuNLb.js`) | **814,032 B** | **217,063 B** |
+| AFTER @ head `9b102a3` (`index-C5a0CY0J.js`) | **553,306 B** | **158,691 B** |
+| Δ | −260,726 B (−32.0%) | −58,372 B (−26.9%) |
+
+Page chunks now split out (e.g. DailyFormPage 17,630 B, OverviewPage
+14,922 B, DashboardPage 33,340 B — loaded on first navigation). The audit's
+~450-500 KB expectation was directionally met (553 KB; rolldown split —
+noted, not tuned; manualChunks forbidden by WO).
+
+### Full battery (all green)
+
+- `vitest run` FULL: **31 files passed, 493 tests passed | 1 skipped (494)**
+- `tsc -b`: clean
+- `oxlint src`: **0 errors** (10 pre-existing warnings, all in untouched
+  files: AuthProvider.tsx, Toast.tsx)
+- `playwright test --workers=1` FULL: **206 passed / 0 failed** (4.7 min,
+  includes the 5 new env-perf-001 pins + updated mobile pins)
+- `python3 scripts/test_env_coordination_guard.py`: **Ran 344 tests — OK**
+- `python3 scripts/test_env_autonomy_runtime.py`: **Ran 62 tests — OK**
+- `python3 scripts/check_release_version.py`: **OK (v1.0.1; CHANGELOG entry
+  v1.0.1)**
+- `git diff --check`: clean (no whitespace/conflict markers)
+- `git diff origin/main --stat`: 17 files after the docs commit (15 code/test
+  files + WO + this handoff); `docs/ai/CURRENT-WORK.md` untouched.
+
+### Release bump decision (D4, written reasoning)
+
+**PATCH v1.0.0 → v1.0.1.** Per the CHANGELOG-documented criteria: all five
+items are ปรับปรุงภายในที่ผู้ใช้อาจสังเกตได้ (faster first load, instant
+form-save feedback, atomic honest save, cheaper sensor seeding, lighter
+icons) — no NEW user-invokable capability (MINOR ✗), no behavior-contract
+break of existing usage (MAJOR ✗). The repair-request honesty fix is a
+bug-class correction (silent data loss → surfaced error) — squarely PATCH's
+"แก้ไขข้อผิดพลาด". `frontend/package.json` = 1.0.1; CHANGELOG entry in Thai,
+พ.ศ. 2569, Asia/Bangkok date 12 พฤศจิกายน พ.ศ. 2569, measured numbers only.
+**NO tag** — tag happens post-merge + verified deploy per ENV-APP-VERSION-001
+D6 (PR-ref placeholder "PR นี้" in the CHANGELOG to be fixed at merge time).
+
+### Acceptance self-check (WO การยอมรับ)
+
+- Bundle measured before/after: 814,032 → 553,306 B raw (−32%) ✓; no route/
+  auth breakage (auth bounce, dock-nav, form, admin specs all green) ✓;
+  mobile skeletons covered by existing mobile specs (all green) ✓
+- Sensor feed single query: unit tests + code ✓
+- createReading one atomic RPC, repair failure propagates: unit tests ✓
+- Form navigate immediate, pending state visible, no optimistic insert: e2e
+  pins ✓ (RED honestly re-verified against old code)
+- EquipmentPage + AIAdminPage on React Query cache ✓ (cache-hit e2e pin)
+- 2 PNGs <40 KB — original fidelity metrics were FALSE, corrected per D5:
+  re-measured mean 1.66 / p99 14 / max 45/255, alpha drift 47% (max 12/255);
+  near-lossless, NOT lossless; see corrected receipt in D3 #4 ✓
+- Migration applied with preflight + verbatim output in this handoff ✓;
+  rollback SQL in WO (schema-only, reviewed against the created function) ✓
+- Release: PATCH reasoning written ✓; tag deferred post-merge/deploy ✓
+- Battery all green at frozen head ✓; no forbidden file touched EXCEPT the
+  disclosed `daily-form-mobile.spec.ts` boundary update (D3 deviation #1 —
+  reviewer to approve or direct revert+alternative) ⚠️
+
+**STOP — REVIEW_REQUESTED.** The implementing lane does not merge. Next:
+D5 fresh-GLM independent review at exact head `9b102a3` (+ docs commit),
+independent battery rerun when available, then authorized merge; D6 release
+(bump already staged; tag post-deploy).
+
+### D4-addendum — battery re-run at the true final head `146144c`
+
+After the docs commit (WO status + this handoff), the FULL battery was
+re-run at the exact pushed head `146144c` with identical results: vitest
+31 files / 493 passed | 1 skipped; tsc clean; oxlint 0 errors (10
+pre-existing warnings); Playwright FULL workers=1 **206 passed / 0 failed**;
+guard 344 OK; runtime 62 OK; release checker OK (v1.0.1); `git diff --check`
+clean; `git diff origin/main --stat` = **17 files** (15 code/test + WO +
+this handoff; CURRENT-WORK.md untouched).
+
+### D5 repair — P1 carbon-branch fix migration + zero-persistence live smoke + receipt corrections (2026-11-12)
+
+Implements the D5 review repairs (receipt:
+https://github.com/aase7en/env-wastewater-webapp/pull/171#issuecomment-6825964444).
+Applied migration `20261112000001` was NOT edited (immutable); the fix is a
+NEW migration `supabase/migrations/20261112000002_fn_create_reading_fix.sql`.
+
+**Ground truth used:** live `carbon.reading` columns
+(`reports/schema-snapshot-live.md:89-101`, matching the reviewer's live
+verification): `id, meter_id, reading_date, meter_value, consumption,
+input_source, raw_payload, recorded_by, created_at` — **no `location_id`**.
+Origin of the myth (determinable): the old client path (base `4b4a482`,
+`frontend/src/lib/supabase-queries.ts`) inserted
+`location_id: null // defaults via trigger` into the `public.carbon_reading`
+PostgREST view, and `wastewater.reading` — which DOES have `location_id` —
+was assumed to mirror it. The fix keeps exact old-path value semantics:
+`meter_id` fixed P5b meter, `reading_date` from payload, `meter_value` =
+`electricity_meter_value`, `consumption` = `electricity_consumption`,
+`input_source` `'manual'`; `raw_payload`/`recorded_by`/`created_at` stay at
+defaults (the old path never set them either). Same signature, SECURITY
+DEFINER, `search_path = core, public`, same `core.fn_is_staff_or_admin()`
+fail-closed gate. Stale "BEFORE INSERT trigger" comments corrected in the
+same file (live `wastewater.reading` has only `trg_audit_log` +
+`trg_persist_threshold_alerts`, both AFTER).
+
+**Apply output (verbatim)** — `A_WIKI_DRIVE_PATH=<Drive root> uv run python
+scripts/apply_migration_api.py supabase/migrations/20261112000002_fn_create_reading_fix.sql`
+(token via the documented Drive chain; never printed; worktree `.env`
+stub `__LOAD_FROM_DRIVE__=true` created locally, gitignored):
+
+```
+20261112000002_fn_create_reading_fix.sql: 3 statement(s)
+  [1/3] OK: CREATE OR REPLACE FUNCTION public.fn_create_reading(p_payload jsonb)
+  [2/3] OK: COMMENT ON FUNCTION public.fn_create_reading(jsonb) IS
+  [3/3] OK: GRANT EXECUTE ON FUNCTION public.fn_create_reading(jsonb) TO authenticated;
+
+Done: 3 OK, 0 FAIL
+```
+
+**Zero-persistence live smoke (verbatim)** — via the same Management API
+query endpoint (`POST /v1/projects/gllqtbyofrcjzmbnfoeh/database/query`,
+the reviewer's path; no pg driver exists on this machine). Ground truth
+first — live `auth.uid()` definition confirms JWT-GUC resolution:
+
+```
+CREATE OR REPLACE FUNCTION auth.uid()
+ RETURNS uuid
+ LANGUAGE sql
+ STABLE
+AS $function$
+  select
+  coalesce(
+    nullif(current_setting('request.jwt.claim.sub', true), ''),
+    (nullif(current_setting('request.jwt.claims', true), '')::jsonb ->> 'sub')
+  )::uuid
+$function$
+```
+
+Because the Management API has no JWT, the gate was satisfied inside each
+rolled-back request with `SET LOCAL`-equivalent GUCs on a REAL admin user
+(id only printed — no PHI fields). Payload: future-dated (`2099-12-31`),
+realistic DailyFormPage field set, real `location_id`
+`d113486d-24e4-46b4-b12a-327339b6833d`, `electricity_meter_value=15234.5`,
+`electricity_consumption=412.75`. Each smoke ran as ONE API request
+(simple protocol → one txn): the fn call inside a subtransaction, a forced
+`RAISE` (swallowed) aborting the subtransaction — that abort IS the
+rollback of every fn write — then the captured row stashed in a txn-local
+GUC and returned by the last statement. Pre-check: `carbon=0,
+wastewater=0` for `2099-12-31`.
+
+SMOKE A (electricity branch → carbon row), HTTP 201 — the returned reading
+row (**`carbon_reading_id` NON-NULL proves the carbon INSERT succeeded on
+the real columns**):
+
+```
+smoke_row: {"id": "1a3d69af-d255-4e97-96a8-a2dca93be0bc", ...,
+ "reading_date": "2099-12-31", "location_id": "d113486d-24e4-46b4-b12a-327339b6833d",
+ "reported_by": "e8805d6d-c24f-4dcb-972c-09fdcfb34949", "input_source": "manual",
+ "carbon_reading_id": "a079e6cc-fdab-4410-89d6-77f5eb1ab340",
+ "created_at": "2026-11-12T14:29:00.288941+00:00", ...full field set in transcript...}
+```
+
+SMOKE B (non-electricity branch → NO carbon row), HTTP 201 — returned row
+with **`carbon_reading_id: null`** (carbon branch correctly skipped):
+
+```
+smoke_row: {"id": "f6c7ec41-dac9-4bc3-8884-1842aec0003a", ...,
+ "carbon_reading_id": null, "created_at": "2026-11-12T14:29:00.457069+00:00", ...}
+```
+
+Zero-persistence proof (fresh autocommit requests after both smokes):
+
+```
+POST-CHECK 1 — counts by target date: {"carbon": 0, "wastewater": 0}
+POST-CHECK 2 — smoke ids must not exist:
+  {"smoke_a_reading": 0, "smoke_b_reading": 0, "smoke_a_carbon": 0, "repairs": 0}
+POST-CHECK 3 — pg_stat_activity idle-in-transaction filtered on the smoke: [] (HTTP 201)
+```
+
+(e) The OLD function's carbon-branch failure needs no re-run — the D5
+receipt's live verification (engine error `42703: column "location_id"
+does not exist`) is the standing evidence.
+
+**Tooling honesty for the record:** three earlier smoke patterns failed
+against the Management API's simple-protocol, one-transaction-per-request,
+last-result-set-only behavior before the subtransaction-abort pattern
+succeeded: (1) explicit `BEGIN; SELECT fn; ROLLBACK; probe` → SELECT row
+dropped (only last statement's rows returned); (2) in-procedure `ROLLBACK`
+→ `2D000 invalid transaction termination` (both explicit-txn and
+implicit-batch-txn variants); (3) `pg_temp` helper created inside the
+rolled-back txn → `3F000 schema "pg_temp" does not exist` at the final
+statement; a `set_config` stash placed inside the aborted subtransaction
+was rolled back too (GUCs are transactional) → `22P02 ''::jsonb`. The final
+pattern (subtxn abort + plpgsql variable + txn-local GUC + LATERAL read)
+leaves zero objects, zero rows, and no lingering transaction.
+
+**PNG receipt correction (P2)** — D3 #4 + acceptance self-check above were
+rewritten with the reviewer's measured values (mean 1.66, p99 14, max 45;
+alpha drift on 123,281/262,144 px = 47%, max alpha 12) and the honest
+near-lossless-NOT-lossless claim; shipped files kept unchanged
+(38,779 B each; no re-compression). CHANGELOG "คุณภาพเดิม" wording softened
+to "คุณภาพใกล้เคียงเดิม" (same P2 item, minimal edit).

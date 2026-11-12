@@ -45,6 +45,63 @@ interface SensorFeedData {
 }
 
 /**
+ * Seed the feed: active sensor list + the most recent `limit` samples per
+ * sensor.
+ *
+ * ENV-PERF-001 (2026-11-12): this used to fire ONE query per sensor
+ * (Promise.all over sensors — N+1 HTTP requests on first load). It is now a
+ * single `.in("sensor_id", ids)` query, newest-first over the whole set with
+ * the combined limit scaled by sensor count, grouped client-side and capped
+ * per sensor. The existing (sensor_id, taken_at DESC) index
+ * `idx_sensor_reading_sensor_time` already serves this shape (snapshot:883)
+ * — no new index. Extracted module-level so node-env tests can drive it
+ * (alerts-unread pattern); the realtime incremental-cache path below is
+ * unchanged.
+ *
+ * Known trade-off (honest note): with one sensor dominating the newest
+ * rows, the combined limit can under-fill the other sensors' windows before
+ * grouping; at this project's scale (<10 sensors, 50/sensor window) that is
+ * negligible, and the realtime INSERT path keeps appending as before.
+ */
+export async function fetchSensorFeedData(limit = 50): Promise<SensorFeedData> {
+  // 1) Load sensor master list (active only).
+  const { data: sensorRows, error: e1 } = await supabase
+    .from("sensor")
+    .select("id, code, parameter_code, label_th, unit, is_active")
+    .eq("is_active", true)
+    .order("code");
+  if (e1) throw new Error(e1.message);
+
+  const sensors = sensorRows ?? [];
+  const ids = sensors.map((s) => s.id);
+  const map = new Map<string, SensorSample[]>();
+
+  // 2) ONE query seeds every sensor's recent samples (last N each).
+  if (ids.length > 0) {
+    const { data: recent, error: e2 } = await supabase
+      .from("sensor_reading")
+      .select("id, sensor_id, taken_at, value")
+      .in("sensor_id", ids)
+      .order("taken_at", { ascending: false })
+      .limit(ids.length * limit);
+    if (e2) throw new Error(e2.message);
+    // Rows arrive newest-first globally, so per-sensor order stays
+    // newest-first; cap each list at the per-sensor window.
+    for (const row of recent ?? []) {
+      const list = map.get(row.sensor_id) ?? [];
+      if (list.length < limit) list.push(row);
+      map.set(row.sensor_id, list);
+    }
+  }
+  // Every sensor gets a list (empty when it has no rows) — same shape the
+  // prior per-sensor queries produced.
+  for (const s of sensors) {
+    if (!map.has(s.id)) map.set(s.id, []);
+  }
+  return { sensors, samplesBySensor: map };
+}
+
+/**
  * @param limit  Max samples kept per sensor (rolling window).
  */
 // EQ-5.1 fix: queryKey has a runtime param (limit), so useMemo is the right
@@ -59,30 +116,7 @@ export function useSensorFeed(limit = 50): SensorFeedState & { refresh: () => vo
 
   const q = useQuery<SensorFeedData>({
     queryKey,
-    queryFn: async () => {
-      // 1) Load sensor master list (active only).
-      const { data: sensorRows, error: e1 } = await supabase
-        .from("sensor")
-        .select("id, code, parameter_code, label_th, unit, is_active")
-        .eq("is_active", true)
-        .order("code");
-      if (e1) throw new Error(e1.message);
-
-      // 2) Seed each sensor's recent samples (last N).
-      const map = new Map<string, SensorSample[]>();
-      await Promise.all(
-        (sensorRows ?? []).map(async (s) => {
-          const { data: recent } = await supabase
-            .from("sensor_reading")
-            .select("id, sensor_id, taken_at, value")
-            .eq("sensor_id", s.id)
-            .order("taken_at", { ascending: false })
-            .limit(limit);
-          map.set(s.id, recent ?? []);
-        })
-      );
-      return { sensors: sensorRows ?? [], samplesBySensor: map };
-    },
+    queryFn: () => fetchSensorFeedData(limit),
   });
 
   // 3) Subscribe to INSERT events on sensor_reading. The subscription is

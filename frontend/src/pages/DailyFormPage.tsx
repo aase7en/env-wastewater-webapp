@@ -13,6 +13,7 @@ import { Skeleton } from "../components/ui/Skeleton";
 import { Field, Input, NumberInput, Textarea } from "../components/ui/Input";
 import { Toggle } from "../components/ui/Toggle";
 import { useCreateReading, useDeleteReading, useEquipment, useReading, useUpdateReading } from "../lib/hooks";
+import { useToast } from "../components/ui/Toast";
 import { checkThresholds } from "../lib/types";
 import type { ReadingCreate } from "../lib/types";
 import { cn } from "../lib/utils";
@@ -101,6 +102,7 @@ export function DailyFormPage() {
   const { id } = useParams<{ id?: string }>();
   const isEdit = !!id;
   const navigate = useNavigate();
+  const toast = useToast();
 
   const [form, setForm] = useState<FormState>(emptyForm);
   const [banner, setBanner] = useState<{ kind: "success" | "error" | "warning"; msg: string } | null>(null);
@@ -222,16 +224,21 @@ export function DailyFormPage() {
     if (isEdit && id) {
       const { data, error } = await updateMut.mutate(id, payload);
       if (data) {
-        setBanner({ kind: "success", msg: "อัปเดตรายการสำเร็จ" });
-        setTimeout(() => navigate("/readings"), 900);
+        // ENV-PERF-001: navigate immediately — the 900ms setTimeout delay is
+        // gone. Success feedback travels across the navigation via the
+        // portal-based ToastProvider (kept await semantics: no optimistic
+        // insert; id/reported_by come back from the saved DB row — server
+        // truth, no client invention).
+        toast.success("อัปเดตรายการสำเร็จ");
+        navigate("/readings");
       } else {
         showApiError(error ?? "อัปเดตไม่สำเร็จ");
       }
     } else {
       const { data, error } = await createMut.mutate(payload);
       if (data) {
-        setBanner({ kind: "success", msg: "บันทึกรายการสำเร็จ" });
-        setTimeout(() => navigate("/readings"), 900);
+        toast.success("บันทึกรายการสำเร็จ");
+        navigate("/readings");
       } else {
         showApiError(error ?? "บันทึกไม่สำเร็จ");
       }
