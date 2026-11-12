@@ -348,5 +348,107 @@ receipts of record for this claim.
 
 ## Checkpoints
 
-(appended per phase as work proceeds; each checkpoint carries exact SHAs and
-truthful failure/pass records)
+(each checkpoint carries exact SHAs and truthful failure/pass records)
+
+### D2 — RED-first tests (commit `b9fcd4f` + spec adjustment `0306a93`)
+
+Truthful RED evidence, all four gates failing because the implementation is
+absent (chip/version lib/checker not yet written):
+
+- `frontend/src/lib/version.test.ts` — vitest: **1 test file failed to
+  collect** (`Cannot find module './version'`), 0 tests ran.
+- `frontend/tests/e2e/env-app-version-001.spec.ts` — Playwright chromium,
+  workers=1, dev profile: **4 failed / 0 passed** (chip absent). Recorded
+  twice: once before and once after a coordinator-only spec adjustment
+  (`0306a93`) that replaced an over-strict footer-corner assertion (chip top
+  below `main`'s box) with a viewport-corner band pin (bottom edge within
+  24px of viewport bottom + horizontally at a corner) — failing counts
+  identical (4/0), cause identical (chip absent).
+- `scripts/test_check_release_version.py` — exit 1,
+  `ModuleNotFoundError: No module named 'check_release_version'` (0 checks
+  passed).
+
+Environment note: the fresh lane worktree lacked the gitignored
+`frontend/.env`; the app boot-throws without it (no page render), so the
+lane copied the owner's local `frontend/.env` from the main checkout into
+the worktree (local-only, gitignored, never committed — verified
+`git check-ignore`). Dev-server e2e runs in this worktree require it.
+
+### D3a — GLM Track-Z implementation (commit `dc8c456`)
+
+`frontend/package.json` version 0.0.0 → **1.0.0**; `frontend/vite.config.ts`
+injects `__APP_VERSION__` via Vite `define` (read from package.json at config
+load — dev + build); `frontend/src/lib/version.ts` single read point
+(APP_VERSION null-when-unset honesty, SemVer parse/format, พ.ศ. conversion,
+latest-release summary parsed from CHANGELOG.md bundled via `?raw` at build
+time); `scripts/check_release_version.py` + its D2 test now green
+(**26/26**; checker OK v1.0.0 ↔ CHANGELOG v1.0.0; `--tag v1.0.0` exit 0,
+`--tag v0.9.0` exit 1); vitest version.test.ts **9 passed / 1 skipped**
+(the skip is the define-dependent drift pin — define is absent inside
+vitest by design; the equivalent package.json ↔ CHANGELOG gate runs in the
+python checker); `tsc -b` clean. e2e intentionally still RED at this commit
+(D3b pending). CHANGELOG.md (Thai, ผู้ใช้, พ.ศ.) + README refresh per
+deliverable B (page list verified against `frontend/src/App.tsx` routes at
+this base; P10.x wording removed; A-Wiki/data-raw/secrets/Python sections
+kept with commands re-verified present).
+
+### D3b — Codex Track-F bounded dispatch (commit `6721c73`)
+
+Role B single-writer window, per the DT-VIS-P002-CODEX dispatch pattern:
+
+- **Admission probe ADMITTED** (one read-only probe for this lane):
+  `codex exec --sandbox read-only -m gpt-6-sol "admission probe: reply OK"`,
+  Codex CLI v0.166.0-alpha.5.1, provider openai, session id
+  `01a1cd13-e807-7982-9be2-49b515fca0b4`, 13,552 tokens, reply `OK`,
+  exit 0. Receipt: `/tmp/appversion-admission-probe-2026-11-12.txt`
+  (ephemeral; header facts recorded here).
+- **Dispatch**: `codex exec --sandbox workspace-write --skip-git-repo-check
+  -m gpt-6-sol -c model_reasoning_effort=max "Read
+  /tmp/appversion-d3b-brief-2026-11-12.md and implement exactly what it
+  specifies."` from this worktree. Session id
+  `01a1cd14-cb98-7de1-9b9d-bc80879fb1dc`, sandbox `workspace-write
+  [workdir, /tmp, $TMPDIR]`, reasoning effort `max`, **120,647 tokens**,
+  exit 0. Raw log: `/tmp/appversion-d3b-dispatch-2026-11-12.txt` (ephemeral;
+  header + final report facts recorded here).
+- **Bounded output verified by the coordinator's diff**: Codex touched
+  EXACTLY the two allowed files — `VersionChip.tsx` (new, 55 lines) and
+  `AppShell.tsx` (+1 import, +1 `<VersionChip />` element; `git diff --stat`
+  = 2 insertions). Changes left uncommitted per brief; coordinator
+  committed as `6721c73`.
+- **Codex self-report (honest limitation)**: it could NOT run Playwright
+  inside its sandbox (dev-server bind + Chromium MachPort denied); it also
+  flagged a coordinator test bug verbatim (over-anchored panel assertion)
+  WITHOUT touching the test — fixed by the coordinator in the same commit
+  with attribution. The coordinating lane ran the gate unsandboxed:
+  **e2e 4/4 passed** (dev profile, workers=1). Codex's own in-sandbox
+  verifications that did run: `tsc -b` clean, oxlint clean,
+  `npm run build` OK, python checker OK.
+
+### D4 — Full battery at frozen head (HEAD at battery time: `6721c73`)
+
+- vitest FULL: **29 files, 485 passed / 1 skipped / 0 failed** (skip = the
+  define-dependent drift pin, enforced instead by the python checker).
+- `tsc -b`: clean (exit 0). `oxlint` (full): exit 0 — warnings only, all
+  pre-existing files, none in the lane's files.
+- Playwright FULL (chromium, workers=1, dev profile): **201 passed / 0
+  failed** (2.9m; includes the 4 new chip tests).
+- `python3 scripts/test_env_coordination_guard.py`: **344/344 OK**.
+- `python3 scripts/test_env_autonomy_runtime.py`: **62/62 OK**.
+- `python3 scripts/test_check_release_version.py`: **26/26**;
+  `python3 scripts/check_release_version.py` → OK (v1.0.0 ↔ CHANGELOG
+  v1.0.0); `--tag v1.0.0` → OK.
+- `git diff --check`: clean (no whitespace errors).
+- Scope audit: `git diff main --name-only` = exactly the 12 claimed files
+  (CHANGELOG.md, README.md, handoff, package.json, AppShell.tsx,
+  VersionChip.tsx, version.test.ts, version.ts, e2e spec, vite.config.ts,
+  checker + checker test). `docs/ai/CURRENT-WORK.md` untouched. No
+  forbidden file touched; no CI workflow touched.
+
+### Status
+
+**REVIEW_REQUESTED** — implementation PR opened (URL/number in the WO
+status header); the implementing lane never merges its own PR. D5 =
+fresh-GLM independent review at the exact frozen head (Terra eligible as
+cross-model reviewer per precedent; GPT-6 Astra prohibited). First release
+(tag `v1.0.0` + CHANGELOG entry confirmation) happens AFTER merge + deploy
+verification, with the tag pointing at the deployed merge SHA.
