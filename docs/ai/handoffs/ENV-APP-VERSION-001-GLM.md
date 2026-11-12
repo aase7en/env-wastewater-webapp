@@ -446,8 +446,11 @@ Role B single-writer window, per the DT-VIS-P002-CODEX dispatch pattern:
 
 ### Status
 
-**REVIEW_REQUESTED** — implementation PR opened (URL/number in the WO
-status header); the implementing lane never merges its own PR. D5 =
+**REVIEW_REQUESTED** — implementation PR **#168**
+(https://github.com/aase7en/env-wastewater-webapp/pull/168) opened; the
+implementing lane never merges its own PR. Final docs commit on the PR
+fixed the CHANGELOG v1.0.0 reference from "PR นี้" to PR #168 per the D1
+binding (the PR number matched the binding's prediction). D5 =
 fresh-GLM independent review at the exact frozen head (Terra eligible as
 cross-model reviewer per precedent; GPT-6 Astra prohibited). First release
 (tag `v1.0.0` + CHANGELOG entry confirmation) happens AFTER merge + deploy

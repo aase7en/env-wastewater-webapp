@@ -8,7 +8,9 @@
 D1 consult เสร็จสิ้น (receipts verbatim ใน handoff หมวด D1 — binding:
 SemVer vMAJOR.MINOR.PATCH, release แรก v1.0.0, chip มุม footer,
 per-release changelog); D2 RED + D3a + D3b + D4 battery เสร็จ
-(หลักฐานต่อ phase ใน handoff หมวด Checkpoints); tag `v1.0.0` **ยังไม่ตั้ง**
+(หลักฐานต่อ phase ใน handoff หมวด Checkpoints); implementation PR:
+**#168** https://github.com/aase7en/env-wastewater-webapp/pull/168 (head
+`738f3d3` + หมายเหตุ CHANGELOG PR-ref fix-up); tag `v1.0.0` **ยังไม่ตั้ง**
 — จะตั้งหลัง merge + ตรวจ deploy แล้วเท่านั้น (ต้องชี้ SHA ที่ deploy จริง)
 (transition base เดิม: `6ad9aa76049aa3c2e8418cdb5a32c2a1a92359cd`, สาขา
 transition `docs/env-appversion-001-claim`, worktree ที่จดทะเบียน

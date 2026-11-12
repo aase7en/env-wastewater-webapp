@@ -38,4 +38,5 @@
 - **Operations board** — กระดานรวมสิ่งที่ต้องเฝ้าระวัง
 - **การเข้าสู่ระบบ** — Supabase Auth + สิทธิ์เข้าถึงรายแถว (RLS)
 
-การเปลี่ยนแปลงชุดนี้ (ระบบเวอร์ชัน + README): PR นี้
+การเปลี่ยนแปลงชุดนี้ (ระบบเวอร์ชัน + README): PR #168
+(https://github.com/aase7en/env-wastewater-webapp/pull/168)
