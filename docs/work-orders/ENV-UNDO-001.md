@@ -1,18 +1,20 @@
 # ENV-UNDO-001 — ลบรายการบันทึกรายวันแบบย้อนกลับได้ 10 วินาที → v1.1.0 (Work Order)
 
-สถานะ: **CLAIMED — transition PR เปิดรอรีวิวอิสระ (STOP ที่ REVIEW_REQUESTED —
-ห้าม merge โดย implementer เสมอ)** claim `ENV-UNDO-001-C1` generation 1;
-implementation base = merge SHA ของ transition PR นี้ (pin ที่ D2 หลัง merge;
-base ของ transition เองคือ `fb124ac627a287247b95310d63d252d5e5d9d7ea` =
-origin/main ณ ช่วงเขียน transition = merge SHA ของ PR #175 closeout ซึ่ง
-ตรวจแล้วว่า fetched/clean/ff — ค่า "last known 2e6f011" ในใบสั่งงานเป็น
-merge SHA ของ PR #172 ที่ล้าสม ณ เวลาเขียน จดไว้ตรงมา); สาขา implementation
-`feat/env-undo-001` (ตั้งเมื่อเริ่ม D2) ใน worktree ที่จดทะเบียน
+สถานะ: **IMPLEMENTED — implementation PR เปิดรอรีวิวอิสระ (STOP ที่
+REVIEW_REQUESTED — ห้าม merge โดย implementer เสมอ)** claim
+`ENV-UNDO-001-C1` generation 1; implementation base = `5ea4f71f20d940521606737d22ea27fd17fda283`
+(merge SHA ของ transition PR #176 — ตรวจ fetched/clean/ff ก่อนเริ่ม D2);
+สาขา `feat/env-undo-001` ใน worktree
 `/Volumes/MAC_WORK/DevWorkspace/Github/_worktrees/env-undo-001-20261112`;
-ใบเสร็จถาวรอยู่ใน `docs/ai/handoffs/ENV-UNDO-001-GLM.md`
-Task: `ENV-UNDO-001` (task row ใหม่ — ตรวจความซ้ำของ task_id กับทะเบียน
-23 แถว ณ base แล้ว **ไม่มี** `ENV-UNDO*` ก่อนหน้า ไม่มี
-OWNERSHIP_CONFLICT; claim id คือ `ENV-UNDO-001-C1`)
+commits: `3036f2f` (D2 RED) → `6acd22b` (D3 implement) → `2f118ba`
+(lint hygiene) → `20e3449` (release v1.1.0 — bump + CHANGELOG ไทย พ.ศ.);
+หัวข้อล่าสุดตอนเขียน = `20e3449`; ใบเสร็จถาวร D2/D3/D4 อยู่ใน
+`docs/ai/handoffs/ENV-UNDO-001-GLM.md` รวมการตัดสิน semantics เรื่อง
+**page unload/reload กลางหน้าต่าง = ยกเลิกการลบ (record คงอยู่ —
+honest-conservative)** ตามที่ WO กำหนดให้เลือก; Task: `ENV-UNDO-001`
+(task row ใหม่ — ตรวจความซ้ำของ task_id กับทะเบียน 23 แถว ณ base แล้ว
+**ไม่มี** `ENV-UNDO*` ก่อนหน้า ไม่มี OWNERSHIP_CONFLICT; claim id คือ
+`ENV-UNDO-001-C1`)
 
 ## เป้าหมาย — ฟีเจอร์เดียว ไม่มีอื่นใดเพิ่ม (no silent scope expansion)
 

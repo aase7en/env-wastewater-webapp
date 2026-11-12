@@ -147,10 +147,200 @@ the transition record, frozen by the reviewed transition PR).
   AIAdminPage conditional-claim precedent); CURRENT-WORK.md must not be
   touched by the implementation PR.
 
-## D2 — RED (to be appended by the implementing lane)
+## D2 — RED (appended by the implementing lane, 2026-11-12)
 
-## D3 — Implementation (to be appended by the implementing lane)
+Branch `feat/env-undo-001` cut at base `5ea4f71f20d940521606737d22ea27fd17fda283`
+(= origin/main tip at start, merge SHA of transition PR #176; verified
+fetched, clean, ff before authoring). RED commit: **`3036f2f`**
+("test(undo): D2 RED — ENV-UNDO-001 expectations failing") — tests only,
+no app-code change.
 
-## D4 — Battery (to be appended by the implementing lane)
+Truthful RED counts against the UNMODIFIED base:
+
+- `frontend/src/components/ui/Toast.test.tsx` — vitest focused run:
+  **1 file failed / 10 tests failed / 0 passed**. Failure mode: the
+  exported seams under test (`ToastCard`, `resolveToastDurationMs`,
+  `runToastAction`) do not exist at base — every test fails on the missing
+  exports (element-type error inside `renderToStaticMarkup`), i.e. the RED
+  is the absence of the feature's testable API, not a mock artifact.
+- `frontend/tests/e2e/env-undo-001.spec.ts` — Playwright focused run
+  (`--workers=1`): **6 failed / 0 passed** (cases a–f). Verified failure
+  points are the base-behavior divergences, in order: (a,b,c,e,f) no
+  "ลบแล้ว"/"ย้อนกลับ" toast exists (base hard-deletes immediately behind
+  `window.confirm` + navigates); (d) base error path stays on the form
+  page (`toHaveURL(/\/readings/)` fails) because the immediate DELETE
+  rejects into the page banner — no deferred semantics, no error toast, no
+  return-to-list.
+
+Environment-constrained split (honest, recorded): the house vitest config
+is `environment: "node"` with NO DOM library in the dependency tree (no
+jsdom/happy-dom anywhere in package-lock.json; adding one would change
+`package-lock.json`, which is outside the claim's mutable scope), so the
+literal "toast renders action button; action click fires callback" is
+covered as: (render) SSR-safe `ToastCard` markup assertions in vitest;
+(click contract) pure `runToastAction` sequencing unit + the REAL
+in-browser click-through in e2e cases (b)/(f). No RED is claimed for a
+capability the node environment cannot observe.
+
+Environment receipts for this D2 (recorded because they gate the runs):
+- `frontend/node_modules` absent in the lane worktree; `npm ci` FAILED on
+  a PRE-EXISTING lock drift ("Missing: typescript@5.9.3 from lock file" —
+  lock out of sync with `package.json` at base, not caused by this lane).
+  Worked around with `npm install --no-save` — `package.json` and
+  `package-lock.json` both left byte-identical (verified via
+  `git status --porcelain`).
+- `frontend/.env` is gitignored and absent in the worktree; copied from
+  the main checkout (`/Volumes/MAC_WORK/DevWorkspace/Github/
+  env-wastewater-webapp/frontend/.env`) so the dev server boots. Contents
+  never printed; no tracked-file change (`?? frontend/.env` never appears
+  because .env is gitignored — verified by status).
+
+## D3 — Implementation (appended by the implementing lane, 2026-11-12)
+
+Commits: **`6acd22b`** ("feat(undo): 10-second undo window for daily
+record delete (ENV-UNDO-001)") + **`2f118ba`** (spec lint hygiene:
+`authed` → `authed: _authed`, the house fixture convention from
+daily-form-dirty.spec.ts) + **`20e3449`** (release: `frontend/package.json`
+1.0.2 → 1.1.0 + Thai พ.ศ. CHANGELOG entry; CHANGELOG "PR #XXX" placeholder
+to be fixed in a follow-up push immediately after PR creation, per the
+dispatch instruction — the PR cannot know its own number at authoring
+time).
+
+Files changed vs base (exactly the claimed set; `git diff --name-only
+5ea4f71..20e3449`):
+
+- `frontend/src/pages/DailyFormPage.tsx` — delete flow rework
+- `frontend/src/components/ui/Toast.tsx` — minimal extension
+- `frontend/src/components/ui/Toast.test.tsx` — new (claimed new file)
+- `frontend/tests/e2e/env-undo-001.spec.ts` — new (claimed new file)
+- `frontend/package.json` — version bump only (diff verified version-line
+  only)
+- `CHANGELOG.md` — new v1.1.0 entry, Thai, พ.ศ. (12 พฤศจิกายน พ.ศ. 2569)
+
+**Conditional claims `frontend/src/lib/hooks.ts` and
+`frontend/src/lib/supabase-queries.ts` were NOT needed and are NOT
+touched** (verified in the scope diff above). Rationale: the deferred flow
+calls `deleteReading` directly (`import { deleteReading as deleteReadingQ }
+from "../lib/supabase-queries"`), so the ad-hoc `useDeleteReading` wrapper
+was dropped from the page (the wrapper stays exported in hooks.ts for any
+future caller); `deleteReading` itself was already the exact primitive the
+expiry timer needs (PERF conditional-claim precedent recorded truthfully:
+not used → untouched).
+
+Design as implemented (binding bounds respected):
+
+1. **Deferred DELETE + pure-cache undo** (`DailyFormPage.tsx` module scope):
+   confirm (text honestly updated to
+   "ยืนยันการลบรายการนี้? ย้อนกลับได้ภายใน 10 วินาที" — the old
+   "การกระทำนี้ย้อนกลับไม่ได้" would be false messaging under the new
+   flow) → `captureAndHideReadings()` snapshots every affected
+   `["readings", limit]` / `["dashboard", days]` cache entry (only entries
+   actually containing the row — untouched entries are NOT snapshotted so
+   restore cannot clobber newer refetches) + removes `["reading", id]`,
+   then filters the row from the lists → `navigate("/readings")` →
+   `scheduleDeferredDelete()` arms a module-scope `setTimeout(10_000)` →
+   toast `toast("success", "ลบแล้ว", { action: { label: "ย้อนกลับ", ... },
+   durationMs: 10_000, countdown: true })`. Undo = clear timer + remove map
+   entry + `restoreReadingsSnapshots()` writes the snapshots back — no
+   server round-trip (WO case b pins zero restore-attributable fetch).
+   Expiry fires `deleteReadingQ(id)` exactly once; on success
+   `removeQueries(["reading", id])` + invalidate readings/dashboard (list
+   reconciles to server truth); on failure invalidate reading/readings/
+   dashboard + error toast
+   "ลบไม่สำเร็จ — ยังไม่ได้ลบจากระบบ รายการจะปรากฏอีกครั้ง" — the refetch
+   returns the record visibly (WO case d). NO soft-delete column, NO
+   supabase/** change, NO D1 consult needed (no genuine fork — bounds
+   decided).
+2. **Unload/reload mid-window semantics (dispatch-required decision,
+   honest-conservative option chosen)**: the pending timer lives in module
+   JS state; a full page unload/reload (or closed tab) destroys it, so the
+   DELETE never fires and the record simply stays. This is the conservative
+   outcome the dispatch prefers ("deferred means a closed browser cancels
+   the delete") and is documented in the confirm-text/toast contract
+   rather than disclosed per-toast (kept simple per dispatch: documented
+   here + in the WO status, no extra UI).
+3. **Navigation survival**: pending state is module-scope (NOT component
+   scope), so the window survives navigating away from the form page;
+   ToastProvider is app-level (`App.tsx:128`, forbidden file, untouched)
+   and the toast functions captured by the timer closure are
+   useCallback-stable provider callbacks. App.tsx and all route gating
+   untouched.
+4. **Rapid deletes / no cross-talk**: one `Map<id, PendingDelete>` —
+   per-id entry, per-id timer, per-id toast; the provider stacks cards 1:1
+   from its entries array (queue capability verified for real before D3:
+   `toasts.map` render + Date.now()+Math.random() ids cannot collide).
+   Same-id re-confirm inside the window keeps the ORIGINAL pending entry
+   (single DELETE on expiry). Undo restore filters rows whose ids are
+   still in `pendingDeletes` — restoring record A must not resurrect
+   still-pending record B (e2e case (f) caught exactly this bug at GREEN
+   and it was fixed before freeze).
+5. **Toast minimal extension (23 consumers verified backward-compatible)**:
+   `grep -rln "useToast()"` = **23 files**, matching the WO's consumer
+   list; convenience wrappers and the `(kind, message)` call shape are
+   unchanged; `resolveToastDurationMs` keeps the legacy 4s/6s defaults and
+   `durationMs` is opt-in (pinned by tests). `ToastCard` is extracted as an
+   SSR-safe presentational card (no portal/document access) with identical
+   legacy markup when no options are passed; provider renders one card per
+   entry. Countdown is a text span (`aria-hidden`, SR users get
+   toast+button without 10chatty announcements). Undo button: ≥44px via
+   house tokens `min-h-[var(--touch-min)] min-w-[var(--touch-min)]`
+   (--touch-min = 44px, styles/spacing.css:40), visible focus ring,
+   Thai labels, no new motion (existing `.toast-in` + existing
+   reduced-motion rules apply).
+6. **Known transient (documented, not fixed)**: while record A is pending,
+   any readings-list refetch (e.g. triggered by record B's expiry
+   invalidate) returns server truth, which still contains A — A may
+   briefly reappear until its own expiry resolves it. This is honest
+   (A really is still on the server during its window) and self-healing;
+   the primary flow (undo before any expiry, as in e2e (f)) never sees it.
+7. **New lint warnings, deliberate**: oxlint stays **0 errors**; two NEW
+   `react(only-export-components)` warnings in Toast.tsx come from the two
+   exported test seams (`resolveToastDurationMs`, `runToastAction`) — the
+   node-env vitest constraint makes an extra constants-file the only
+   alternative, and no new file is in the claimed scope. Recorded as a
+   trade-off for the reviewer; a follow-up lane may move them if desired.
+
+GREEN evidence at D3: vitest Toast suite 10/10; e2e env-undo-001 6/6;
+tsc -b clean; adjacent daily-form suites (dirty + mobile) 12/12 (WO
+boundary check — delete button pins intact); FULL vitest 32 files / 503
+passed / 1 designed skip (= baseline 493 + 10 new, 0 regressions).
+
+## D4 — Battery (appended by the implementing lane, 2026-11-12)
+
+Frozen head: **`20e3449`** (branch `feat/env-undo-001`, working tree
+clean). All receipts re-run at this exact head, 2026-11-12. After the
+receipts commit, two docs-only commits landed (`6c37773` receipts, then
+the CHANGELOG PR-ref fix `f696105`); the full battery was **re-run
+identical at `f696105`** (last code-bearing head — vitest 32/503+1skip,
+tsc clean, oxlint exit 0, Playwright FULL 213/213, guard 344/344, runtime
+62/62, checker OK v1.1.0, `git diff --check` clean, tree clean). The only
+commit after `f696105` is this docs line — no code bytes change after the
+verified head. Per-facet receipts at `20e3449`/`f696105`:
+
+1. vitest FULL (`npm test`): **32 files passed / 503 tests passed /
+   1 designed skip** (skip is the pre-existing designed skip; 503 =
+   493 baseline + 10 new).
+2. `tsc -b`: clean.
+3. oxlint: **exit 0**; 18 warnings total — 3 in Toast.tsx (1 pre-existing
+   class at base from the `useToast` hook export + 2 new, see D3 §7),
+   15 in files untouched by this lane (AuthProvider, csv-import.test,
+   import-engine, CarbonPage, SensorsPage, TrendsPage, env-perf-001.spec).
+4. Playwright FULL `--workers=1`: **213/213 passed** (4.9 min) —
+   207 baseline + 6 new env-undo-001 cases (clock-controlled, all six
+   WO categories a–f).
+5. guard: `python3 scripts/test_env_coordination_guard.py` →
+   **Ran 344 tests — OK** (344/344).
+6. runtime: `python3 scripts/test_env_autonomy_runtime.py` →
+   **Ran 62 tests — OK** (62/62).
+7. release checker: `python3 scripts/check_release_version.py --tag
+   v1.1.0` → **OK (v1.1.0; CHANGELOG entry v1.1.0)**, exit 0.
+8. `git diff --check`: clean (no whitespace errors).
+9. Scope gate: `git diff --name-only 5ea4f71..20e3449` = exactly the 6
+   files listed in D3; **CURRENT-WORK.md untouched**; hooks.ts +
+   supabase-queries.ts untouched (conditional claims honestly unused);
+   no forbidden file in the diff.
+
+STOP — REVIEW_REQUESTED. The implementing lane does not merge; D5
+independent review is appended by/for the reviewer at this exact head.
 
 ## D5 — Independent review (to be appended by the implementing lane)
