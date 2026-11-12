@@ -132,7 +132,7 @@ async function deleteFromEditPage(page: Page, rowText: string, id: RegExp) {
 }
 
 test.describe("ENV-UNDO-001 deferred delete + undo", () => {
-  test("(a) confirm deletes defer the server DELETE inside the 10s window", async ({ page, authed }) => {
+  test("(a) confirm deletes defer the server DELETE inside the 10s window", async ({ page, authed: _authed }) => {
     await page.clock.install();
     const state = await installUndoMocks(page);
 
@@ -145,7 +145,7 @@ test.describe("ENV-UNDO-001 deferred delete + undo", () => {
     expect(state.deleteCalls).toHaveLength(0);
   });
 
-  test("(b) undo restores the row from cache with no restore-attributable fetch", async ({ page, authed }) => {
+  test("(b) undo restores the row from cache with no restore-attributable fetch", async ({ page, authed: _authed }) => {
     await page.clock.install();
     const state = await installUndoMocks(page);
 
@@ -168,7 +168,7 @@ test.describe("ENV-UNDO-001 deferred delete + undo", () => {
     await expect(rowA).toBeVisible();
   });
 
-  test("(c) window expiry fires the DELETE exactly once and reconciles the list", async ({ page, authed }) => {
+  test("(c) window expiry fires the DELETE exactly once and reconciles the list", async ({ page, authed: _authed }) => {
     await page.clock.install();
     const state = await installUndoMocks(page);
 
@@ -184,7 +184,7 @@ test.describe("ENV-UNDO-001 deferred delete + undo", () => {
     await expect(rowA).toBeHidden();
   });
 
-  test("(d) failing deferred DELETE shows an error toast and the record returns", async ({ page, authed }) => {
+  test("(d) failing deferred DELETE shows an error toast and the record returns", async ({ page, authed: _authed }) => {
     await page.clock.install();
     const state = await installUndoMocks(page);
     state.deleteShouldFail = true;
@@ -201,7 +201,7 @@ test.describe("ENV-UNDO-001 deferred delete + undo", () => {
     await expect(rowA).toBeVisible();
   });
 
-  test("(e) toast carries Thai labels and a ≥44px undo tap target", async ({ page, authed }) => {
+  test("(e) toast carries Thai labels and a ≥44px undo tap target", async ({ page, authed: _authed }) => {
     await page.clock.install();
     await installUndoMocks(page);
 
@@ -222,7 +222,7 @@ test.describe("ENV-UNDO-001 deferred delete + undo", () => {
     expect(box!.width).toBeGreaterThanOrEqual(44);
   });
 
-  test("(f) rapid double delete keeps independent toasts + timers (no cross-talk)", async ({ page, authed }) => {
+  test("(f) rapid double delete keeps independent toasts + timers (no cross-talk)", async ({ page, authed: _authed }) => {
     await page.clock.install();
     const state = await installUndoMocks(page);
 
