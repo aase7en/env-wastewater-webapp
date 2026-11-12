@@ -6,30 +6,85 @@ import { ErrorBoundary } from "./components/ErrorBoundary";
 import { ToastProvider } from "./components/ui/Toast";
 import { PageSkeleton } from "./components/ui/Skeleton";
 import { AppShell } from "./components/layout/AppShell";
-import { DashboardPage } from "./pages/DashboardPage";
-import { DailyFormPage } from "./pages/DailyFormPage";
-import { ReadingsListPage } from "./pages/ReadingsListPage";
-import { AuthPage } from "./pages/AuthPage";
-import { AuthCallback } from "./pages/AuthCallback";
-import { PendingApprovalPage } from "./pages/PendingApprovalPage";
-import { NotFoundPage } from "./pages/NotFoundPage";
-import { ReportsPage } from "./pages/ReportsPage";
-import { EquipmentPage } from "./pages/EquipmentPage";
-import { OverviewPage } from "./pages/OverviewPage";
-import { FlowDiagramPage } from "./pages/FlowDiagramPage";
-import { BulkImportPage } from "./pages/BulkImportPage";
-import { WaterSupplyPage } from "./pages/WaterSupplyPage";
-import { GarbagePage } from "./pages/GarbagePage";
-import { FuelPage } from "./pages/FuelPage";
-import { GardenPage } from "./pages/GardenPage";
-import { BuildingPage } from "./pages/BuildingPage";
-import { SafetyPage } from "./pages/SafetyPage";
-import { FoodPage } from "./pages/FoodPage";
-import { ChemicalPage } from "./pages/ChemicalPage";
-import { RegulationsPage } from "./pages/RegulationsPage";
-import { PDFDesignerPage } from "./pages/PDFDesignerPage";
-import { AttachmentsPage } from "./pages/AttachmentsPage";
-import { OperationsPage } from "./pages/OperationsPage";
+
+// ENV-PERF-001 (2026-11-12): every page now lazy-loads behind the SAME
+// lazy+PageSkeleton pattern the chart/admin pages always used. Previously
+// only 10 pages were lazy and the other 24 eager imports pulled all page
+// code into the main bundle (~808KB first visit). Routing + RequireAuth
+// structure is untouched; each route just gains a Suspense/PageSkeleton
+// fallback for its first navigation.
+const DashboardPage = lazy(() =>
+  import("./pages/DashboardPage").then((m) => ({ default: m.DashboardPage })),
+);
+const DailyFormPage = lazy(() =>
+  import("./pages/DailyFormPage").then((m) => ({ default: m.DailyFormPage })),
+);
+const ReadingsListPage = lazy(() =>
+  import("./pages/ReadingsListPage").then((m) => ({ default: m.ReadingsListPage })),
+);
+const AuthPage = lazy(() =>
+  import("./pages/AuthPage").then((m) => ({ default: m.AuthPage })),
+);
+const AuthCallback = lazy(() =>
+  import("./pages/AuthCallback").then((m) => ({ default: m.AuthCallback })),
+);
+const PendingApprovalPage = lazy(() =>
+  import("./pages/PendingApprovalPage").then((m) => ({ default: m.PendingApprovalPage })),
+);
+const NotFoundPage = lazy(() =>
+  import("./pages/NotFoundPage").then((m) => ({ default: m.NotFoundPage })),
+);
+const ReportsPage = lazy(() =>
+  import("./pages/ReportsPage").then((m) => ({ default: m.ReportsPage })),
+);
+const EquipmentPage = lazy(() =>
+  import("./pages/EquipmentPage").then((m) => ({ default: m.EquipmentPage })),
+);
+const OverviewPage = lazy(() =>
+  import("./pages/OverviewPage").then((m) => ({ default: m.OverviewPage })),
+);
+const FlowDiagramPage = lazy(() =>
+  import("./pages/FlowDiagramPage").then((m) => ({ default: m.FlowDiagramPage })),
+);
+const BulkImportPage = lazy(() =>
+  import("./pages/BulkImportPage").then((m) => ({ default: m.BulkImportPage })),
+);
+const WaterSupplyPage = lazy(() =>
+  import("./pages/WaterSupplyPage").then((m) => ({ default: m.WaterSupplyPage })),
+);
+const GarbagePage = lazy(() =>
+  import("./pages/GarbagePage").then((m) => ({ default: m.GarbagePage })),
+);
+const FuelPage = lazy(() =>
+  import("./pages/FuelPage").then((m) => ({ default: m.FuelPage })),
+);
+const GardenPage = lazy(() =>
+  import("./pages/GardenPage").then((m) => ({ default: m.GardenPage })),
+);
+const BuildingPage = lazy(() =>
+  import("./pages/BuildingPage").then((m) => ({ default: m.BuildingPage })),
+);
+const SafetyPage = lazy(() =>
+  import("./pages/SafetyPage").then((m) => ({ default: m.SafetyPage })),
+);
+const FoodPage = lazy(() =>
+  import("./pages/FoodPage").then((m) => ({ default: m.FoodPage })),
+);
+const ChemicalPage = lazy(() =>
+  import("./pages/ChemicalPage").then((m) => ({ default: m.ChemicalPage })),
+);
+const RegulationsPage = lazy(() =>
+  import("./pages/RegulationsPage").then((m) => ({ default: m.RegulationsPage })),
+);
+const PDFDesignerPage = lazy(() =>
+  import("./pages/PDFDesignerPage").then((m) => ({ default: m.PDFDesignerPage })),
+);
+const AttachmentsPage = lazy(() =>
+  import("./pages/AttachmentsPage").then((m) => ({ default: m.AttachmentsPage })),
+);
+const OperationsPage = lazy(() =>
+  import("./pages/OperationsPage").then((m) => ({ default: m.OperationsPage })),
+);
 const WaterWatchPage = lazy(() =>
   import("./pages/WaterWatchPage").then((m) => ({ default: m.WaterWatchPage })),
 );
@@ -75,9 +130,15 @@ export default function App() {
         <AuthProvider>
           <Routes>
             {/* Public: login + OAuth callback */}
-            <Route path="/login" element={<AuthPage />} />
-          <Route path="/auth/callback" element={<AuthCallback />} />
-          <Route path="/pending-approval" element={<PendingApprovalPage />} />
+            <Route path="/login" element={<Suspense fallback={<PageSkeleton />}>
+            <AuthPage />
+          </Suspense>} />
+          <Route path="/auth/callback" element={<Suspense fallback={<PageSkeleton />}>
+            <AuthCallback />
+          </Suspense>} />
+          <Route path="/pending-approval" element={<Suspense fallback={<PageSkeleton />}>
+            <PendingApprovalPage />
+          </Suspense>} />
           {/* ENV-WATER-WATCH-001 — public, simulated visual slice.
               No RequireAuth: this surface is designed for hospital display
               and future public situational communication. */}
@@ -106,7 +167,9 @@ export default function App() {
                     path="/"
                     element={
                       <RequireAuth>
-                        <OverviewPage />
+                        <Suspense fallback={<PageSkeleton />}>
+            <OverviewPage />
+          </Suspense>
                       </RequireAuth>
                     }
                   />
@@ -114,7 +177,9 @@ export default function App() {
                     path="/dashboard"
                     element={
                       <RequireAuth>
-                        <DashboardPage />
+                        <Suspense fallback={<PageSkeleton />}>
+            <DashboardPage />
+          </Suspense>
                       </RequireAuth>
                     }
                   />
@@ -122,7 +187,9 @@ export default function App() {
                     path="/flow"
                     element={
                       <RequireAuth>
-                        <FlowDiagramPage />
+                        <Suspense fallback={<PageSkeleton />}>
+            <FlowDiagramPage />
+          </Suspense>
                       </RequireAuth>
                     }
                   />
@@ -130,7 +197,9 @@ export default function App() {
                     path="/form"
                     element={
                       <RequireAuth>
-                        <DailyFormPage />
+                        <Suspense fallback={<PageSkeleton />}>
+            <DailyFormPage />
+          </Suspense>
                       </RequireAuth>
                     }
                   />
@@ -138,7 +207,9 @@ export default function App() {
                     path="/form/:id"
                     element={
                       <RequireAuth>
-                        <DailyFormPage />
+                        <Suspense fallback={<PageSkeleton />}>
+            <DailyFormPage />
+          </Suspense>
                       </RequireAuth>
                     }
                   />
@@ -146,7 +217,9 @@ export default function App() {
                     path="/readings"
                     element={
                       <RequireAuth>
-                        <ReadingsListPage />
+                        <Suspense fallback={<PageSkeleton />}>
+            <ReadingsListPage />
+          </Suspense>
                       </RequireAuth>
                     }
                   />
@@ -154,7 +227,9 @@ export default function App() {
                     path="/reports"
                     element={
                       <RequireAuth>
-                        <ReportsPage />
+                        <Suspense fallback={<PageSkeleton />}>
+            <ReportsPage />
+          </Suspense>
                       </RequireAuth>
                     }
                   />
@@ -162,7 +237,9 @@ export default function App() {
                     path="/operations"
                     element={
                       <RequireAuth>
-                        <OperationsPage />
+                        <Suspense fallback={<PageSkeleton />}>
+            <OperationsPage />
+          </Suspense>
                       </RequireAuth>
                     }
                   />
@@ -170,7 +247,9 @@ export default function App() {
                     path="/equipment"
                     element={
                       <RequireAuth>
-                        <EquipmentPage />
+                        <Suspense fallback={<PageSkeleton />}>
+            <EquipmentPage />
+          </Suspense>
                       </RequireAuth>
                     }
                   />
@@ -198,20 +277,40 @@ export default function App() {
                     path="/import"
                     element={
                       <RequireAuth requireAdmin>
-                        <BulkImportPage />
+                        <Suspense fallback={<PageSkeleton />}>
+            <BulkImportPage />
+          </Suspense>
                       </RequireAuth>
                     }
                   />
                   {/* v2 multi-domain modules (Wave 3 -a skeletons) */}
-                  <Route path="/water-supply" element={<RequireAuth><WaterSupplyPage /></RequireAuth>} />
-                  <Route path="/garbage" element={<RequireAuth><GarbagePage /></RequireAuth>} />
-                  <Route path="/fuel" element={<RequireAuth><FuelPage /></RequireAuth>} />
-                  <Route path="/garden" element={<RequireAuth><GardenPage /></RequireAuth>} />
-                  <Route path="/building" element={<RequireAuth><BuildingPage /></RequireAuth>} />
-                  <Route path="/safety" element={<RequireAuth><SafetyPage /></RequireAuth>} />
-                  <Route path="/food" element={<RequireAuth><FoodPage /></RequireAuth>} />
-                  <Route path="/chemical" element={<RequireAuth><ChemicalPage /></RequireAuth>} />
-                  <Route path="/regulations" element={<RequireAuth><RegulationsPage /></RequireAuth>} />
+                  <Route path="/water-supply" element={<RequireAuth><Suspense fallback={<PageSkeleton />}>
+            <WaterSupplyPage />
+          </Suspense></RequireAuth>} />
+                  <Route path="/garbage" element={<RequireAuth><Suspense fallback={<PageSkeleton />}>
+            <GarbagePage />
+          </Suspense></RequireAuth>} />
+                  <Route path="/fuel" element={<RequireAuth><Suspense fallback={<PageSkeleton />}>
+            <FuelPage />
+          </Suspense></RequireAuth>} />
+                  <Route path="/garden" element={<RequireAuth><Suspense fallback={<PageSkeleton />}>
+            <GardenPage />
+          </Suspense></RequireAuth>} />
+                  <Route path="/building" element={<RequireAuth><Suspense fallback={<PageSkeleton />}>
+            <BuildingPage />
+          </Suspense></RequireAuth>} />
+                  <Route path="/safety" element={<RequireAuth><Suspense fallback={<PageSkeleton />}>
+            <SafetyPage />
+          </Suspense></RequireAuth>} />
+                  <Route path="/food" element={<RequireAuth><Suspense fallback={<PageSkeleton />}>
+            <FoodPage />
+          </Suspense></RequireAuth>} />
+                  <Route path="/chemical" element={<RequireAuth><Suspense fallback={<PageSkeleton />}>
+            <ChemicalPage />
+          </Suspense></RequireAuth>} />
+                  <Route path="/regulations" element={<RequireAuth><Suspense fallback={<PageSkeleton />}>
+            <RegulationsPage />
+          </Suspense></RequireAuth>} />
                   <Route path="/carbon-rollup" element={<RequireAuth><Suspense fallback={<PageSkeleton />}><CarbonRollupPage /></Suspense></RequireAuth>} />
                   <Route path="/sustainability" element={<RequireAuth><Suspense fallback={<PageSkeleton />}><SustainabilityPage /></Suspense></RequireAuth>} />
                   <Route
@@ -265,9 +364,15 @@ export default function App() {
                       </RequireAuth>
                     }
                   />
-                  <Route path="/pdf-designer" element={<RequireAuth requireAdmin><PDFDesignerPage /></RequireAuth>} />
-                  <Route path="/attachments" element={<RequireAuth><AttachmentsPage /></RequireAuth>} />
-                  <Route path="*" element={<NotFoundPage />} />
+                  <Route path="/pdf-designer" element={<RequireAuth requireAdmin><Suspense fallback={<PageSkeleton />}>
+            <PDFDesignerPage />
+          </Suspense></RequireAuth>} />
+                  <Route path="/attachments" element={<RequireAuth><Suspense fallback={<PageSkeleton />}>
+            <AttachmentsPage />
+          </Suspense></RequireAuth>} />
+                  <Route path="*" element={<Suspense fallback={<PageSkeleton />}>
+            <NotFoundPage />
+          </Suspense>} />
                 </Routes>
               </AppShell>
             }

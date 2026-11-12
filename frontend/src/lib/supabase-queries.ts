@@ -186,64 +186,26 @@ export async function fetchPersonnel(): Promise<PersonnelOut[]> {
 
 /** Create a new reading. Replaces /api/readings POST.
  *
- * Reported_by + location_id are filled by a BEFORE INSERT trigger or by
- * default to the current user / WWTP-1. abnormal_cause (when
- * system_operating=false, SPEC §6) is split off: if present, this helper
- * also inserts a core.repair_request row in the same call sequence.
+ * ENV-PERF-001 (2026-11-12): the old client-side sequence — (1) insert
+ * carbon_reading when electricity present, (2) insert reading, (3) insert
+ * repair_request when abnormal — is now ONE atomic Postgres RPC
+ * (`fn_create_reading(p_payload jsonb)`, migration
+ * supabase/migrations/20261112000001_fn_create_reading.sql). The same
+ * "logical transaction" the old comment intended is now enforced
+ * server-side, and a failing repair_request step REJECTS here instead of
+ * being swallowed with console.warn (honesty fix).
+ *
+ * Reported_by + location_id are still filled by the BEFORE INSERT trigger
+ * inside the RPC (same trigger PostgREST inserts hit); abnormal_cause /
+ * electricity_consumption / electricity_meter_value travel inside the
+ * payload and are split off server-side.
  */
 export async function createReading(payload: ReadingCreate): Promise<ReadingDetail> {
-  // Strip abnormal_cause — it's not a column on wastewater.reading; it seeds
-  // a repair_request row in the same logical transaction.
-  const { abnormal_cause, electricity_consumption, electricity_meter_value, ...readingCols } = payload;
-
-  // 1. Insert the carbon.reading row first (if electricity data present).
-  let carbonReadingId: string | null = null;
-  if (electricity_meter_value !== null && electricity_meter_value !== undefined && electricity_meter_value !== "") {
-    const { data: carbon, error: carbonErr } = await supabase
-      .from("carbon_reading") // PostgREST exposes tables as snake_case singular by convention
-      .insert({
-        meter_id: "b6be4c99-c83a-43f7-b765-72286cc78bd0", // P5b fixed meter
-        reading_date: readingCols.reading_date,
-        meter_value: electricity_meter_value,
-        consumption: electricity_consumption,
-        location_id: null, // defaults via trigger
-        input_source: "manual",
-      })
-      .select("id")
-      .single();
-    if (carbonErr) throw new Error(`carbon insert failed: ${carbonErr.message}`);
-    carbonReadingId = carbon.id;
-  }
-
-  // 2. Insert wastewater.reading.
-  const insertPayload = {
-    ...readingCols,
-    carbon_reading_id: carbonReadingId,
-    input_source: "manual",
-  };
-  const { data: reading, error: readingErr } = await supabase
-    .from("reading")
-    .insert(insertPayload)
-    .select("*")
-    .single();
-  if (readingErr) throw new Error(readingErr.message);
-
-  // 3. If abnormal_cause provided, seed a repair_request in the same flow.
-  if (abnormal_cause && String(abnormal_cause).trim()) {
-    // repair_request has no `reported_date` column — `created_at` defaults
-    // to now() server-side. Don't send phantom field (silently swallowed).
-    const { error: repairErr } = await supabase.from("repair_request").insert({
-      reading_id: reading.id,
-      cause: abnormal_cause,
-      status: "open",
-    });
-    if (repairErr) {
-      // Don't fail the whole create — the reading succeeded; log and continue.
-      console.warn("repair_request insert failed:", repairErr.message);
-    }
-  }
-
-  return reading as ReadingDetail;
+  const { data, error } = await supabase.rpc("fn_create_reading", {
+    p_payload: payload as unknown as Record<string, unknown>,
+  });
+  if (error) throw new Error(error.message);
+  return data as ReadingDetail;
 }
 
 export async function updateReading(id: string, payload: ReadingUpdate): Promise<ReadingDetail> {

@@ -23,15 +23,17 @@ test.describe("ENV-PERF-001", () => {
     page,
     authed,
   }) => {
-    // Fake clock, PAUSED before navigation: the legacy 900ms setTimeout can
-    // never fire, so only an immediate navigate() satisfies the URL
-    // assertion. (install() alone keeps real time flowing; pauseAt freezes.)
+    // Fake clock installed up front, but PAUSED only after the lazy page has
+    // fully rendered — pausing during initial load would freeze React's
+    // commit of the lazy-resolved route (the Suspense skeleton never
+    // resolves). Once paused, the legacy 900ms setTimeout (scheduled by the
+    // submit itself) can never fire, so only an immediate navigate()
+    // satisfies the URL assertion.
     // React Query's own notification batching also runs on setTimeout, so
-    // this test deliberately asserts ONLY the direct setState → banner →
+    // this test deliberately asserts ONLY the direct setState → toast →
     // navigate path, not the RQ-driven pending render (covered by the
     // dedicated pending-state test below without a fake clock).
     await page.clock.install();
-    await page.clock.pauseAt(new Date());
 
     const READING_ROW = {
       id: "11111111-2222-3333-4444-555555555555",
@@ -60,6 +62,10 @@ test.describe("ENV-PERF-001", () => {
     await page.goto("/form");
     const saveButton = page.getByRole("button", { name: "บันทึก", exact: true });
     await expect(saveButton).toBeVisible();
+
+    // Freeze time only from here on — the submit's 900ms legacy timer would
+    // be scheduled while paused and never fire.
+    await page.clock.pauseAt(new Date());
 
     await saveButton.click();
     await expect(page.getByText("บันทึกรายการสำเร็จ")).toBeVisible();

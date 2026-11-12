@@ -1,5 +1,6 @@
-import { useEffect, useState } from "react";
+import { useEffect } from "react";
 import { Link } from "react-router-dom";
+import { useQuery } from "@tanstack/react-query";
 import { AuraCard } from "../components/ui/AuraCard";
 import { Button } from "../components/ui/Button";
 import { Chip, type ChipTone } from "../components/ui/Chip";
@@ -8,17 +9,10 @@ import { MSymbol } from "../components/ui/MSymbol";
 import { Skeleton } from "../components/ui/Skeleton";
 import { StatusBadge } from "../components/pfd/StatusBadge";
 import { supabase } from "../lib/supabase";
+import { useEquipment } from "../lib/hooks";
 import { useToast } from "../components/ui/Toast";
 import { thaiDate } from "../lib/utils";
 import { cn } from "../lib/utils";
-
-interface EquipmentRow {
-  id: string;
-  code: string;
-  name_th: string; // aliased from DB column `name` at query time
-  location_id: string | null;
-  is_active: boolean;
-}
 
 interface RepairRow {
   id: string;
@@ -50,43 +44,37 @@ function repairBadge(status: RepairRow["status"]): {
   }
 }
 
+/** ENV-PERF-001: recent repair requests now ride the shared React Query
+ * cache (queryKey ["repair-requests"]) instead of a per-mount
+ * useState+useEffect fetch; equipment comes from the existing useEquipment()
+ * hook — one cache for every page that reads these tables. */
+async function fetchRecentRepairs(): Promise<RepairRow[]> {
+  const { data, error } = await supabase
+    .from("repair_request")
+    .select("id, equipment_id, cause, status, created_at, resolved_at")
+    .order("created_at", { ascending: false })
+    .limit(50);
+  if (error) throw new Error(error.message);
+  return (data ?? []) as RepairRow[];
+}
+
 export function EquipmentPage() {
   const toast = useToast();
-  const [equipment, setEquipment] = useState<EquipmentRow[]>([]);
-  const [repairs, setRepairs] = useState<RepairRow[]>([]);
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState<string | null>(null);
+  const { data: equipment, loading, error: equipmentError } = useEquipment();
+  const repairsQ = useQuery({
+    queryKey: ["repair-requests"] as const,
+    queryFn: fetchRecentRepairs,
+  });
+  const repairs = repairsQ.data ?? [];
 
-  const load = async () => {
-    setLoading(true);
-    setError(null);
-    try {
-      const [eqResp, repResp] = await Promise.all([
-        supabase
-          .from("equipment")
-          .select("id, code, name_th:name, location_id, is_active")
-          .order("code"),
-        supabase
-          .from("repair_request")
-          .select("id, equipment_id, cause, status, created_at, resolved_at")
-          .order("created_at", { ascending: false })
-          .limit(50),
-      ]);
-      if (eqResp.error) throw eqResp.error;
-      if (repResp.error) throw repResp.error;
-      setEquipment(eqResp.data ?? []);
-      setRepairs(repResp.data ?? []);
-    } catch (e) {
-      setError(e instanceof Error ? e.message : String(e));
-      toast.error("โหลดข้อมูลอุปกรณ์ไม่สำเร็จ");
-    } finally {
-      setLoading(false);
-    }
-  };
-
+  const error = equipmentError ?? repairsQ.error?.message ?? null;
+  // Keep the user-visible toast on load failure (same message as the old
+  // manual-fetch path).
   useEffect(() => {
-    void load();
-  }, []);
+    if (error) toast.error("โหลดข้อมูลอุปกรณ์ไม่สำเร็จ");
+  }, [error, toast]);
+
+  const loadingAll = loading || repairsQ.isLoading;
 
   // Index repairs by equipment_id for quick lookup
   const openRepairsByEquip = new Map<string, RepairRow[]>();
@@ -123,7 +111,7 @@ export function EquipmentPage() {
         </AuraCard>
       )}
 
-      {loading ? (
+      {loadingAll ? (
         <div className="space-y-3">
           {Array.from({ length: 5 }).map((_, i) => (
             <Skeleton key={i} className="h-16" />
@@ -181,7 +169,7 @@ export function EquipmentPage() {
       )}
 
       {/* Recent repair requests (all statuses) */}
-      {!loading && repairs.length > 0 && (
+      {!loadingAll && repairs.length > 0 && (
         <AuraCard className="p-0 overflow-hidden">
           <h2 className="font-display font-semibold text-aura-textMain p-4 border-b border-aura-borderSubtle font-thai">
             ใบแจ้งซ่อมล่าสุด ({repairs.length})

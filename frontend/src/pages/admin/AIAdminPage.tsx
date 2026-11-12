@@ -3,8 +3,16 @@
  * Admin-only route /admin/ai.
  *
  * Combines provider CRUD with ai_scope patient_safe flag toggle.
+ *
+ * ENV-PERF-001 (2026-11-12): ported the manual useState+useEffect+Promise.all
+ * fetch to React Query. There is no shared hook for this admin data yet, so
+ * the hook lives here following the hooks.ts conventions ({ data, loading,
+ * error, refresh }) until it earns a lib/ home. After-mutation refresh calls
+ * the same query; the scope toggle patches the cache in place (same instant
+ * UI the old local setState gave).
  */
-import { useState, useEffect, useCallback } from "react";
+import { useEffect, useState } from "react";
+import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { useToast } from "../../components/ui/Toast";
 import { AuraCard } from "../../components/ui/AuraCard";
 import { Button } from "../../components/ui/Button";
@@ -24,29 +32,46 @@ interface AiScopeRow {
   is_enabled: boolean;
 }
 
+interface AiAdminData {
+  providers: AiProviderFull[];
+  scopes: AiScopeRow[];
+}
+
+const AI_ADMIN_QUERY_KEY = ["admin-ai-config"] as const;
+
+async function fetchAiAdminData(): Promise<AiAdminData> {
+  const [p, s] = await Promise.all([
+    fetchAdminProviders(),
+    supabase.from("ai_scope").select("id, view_name, description, patient_safe, is_enabled").order("view_name"),
+  ]);
+  if (s.error) throw new Error(s.error.message);
+  return { providers: p, scopes: (s.data ?? []) as AiScopeRow[] };
+}
+
+/** hooks.ts-convention hook shape: { data, loading, error, refresh }. */
+function useAiAdminData() {
+  const q = useQuery({
+    queryKey: AI_ADMIN_QUERY_KEY,
+    queryFn: fetchAiAdminData,
+  });
+  return {
+    data: q.data ?? null,
+    loading: q.isLoading,
+    error: q.error?.message ?? null,
+    refresh: () => q.refetch(),
+  };
+}
+
 export function AIAdminPage() {
   const { toast } = useToast();
-  const [providers, setProviders] = useState<AiProviderFull[]>([]);
-  const [scopes, setScopes] = useState<AiScopeRow[]>([]);
-  const [loading, setLoading] = useState(true);
+  const qc = useQueryClient();
+  const { data, loading, error, refresh } = useAiAdminData();
+  const providers = data?.providers ?? [];
+  const scopes = data?.scopes ?? [];
 
-  const refresh = useCallback(async () => {
-    setLoading(true);
-    try {
-      const [p, s] = await Promise.all([
-        fetchAdminProviders(),
-        supabase.from("ai_scope").select("id, view_name, description, patient_safe, is_enabled").order("view_name"),
-      ]);
-      setProviders(p);
-      setScopes((s.data ?? []) as AiScopeRow[]);
-    } catch (e) {
-      toast("error", (e as Error).message);
-    } finally {
-      setLoading(false);
-    }
-  }, [toast]);
-
-  useEffect(() => { refresh(); }, [refresh]);
+  useEffect(() => {
+    if (error) toast("error", error);
+  }, [error, toast]);
 
   const blank: AiProviderFull = {
     id: "", name: "", base_url: "", model: "", model_id: null,
@@ -86,7 +111,16 @@ export function AIAdminPage() {
         .update({ [field]: value })
         .eq("id", s.id);
       if (error) throw new Error(error.message);
-      setScopes((prev) => prev.map((r) => r.id === s.id ? { ...r, [field]: value } : r));
+      // Patch the shared cache in place — same instant feedback the old
+      // local setScopes gave, now visible to any other consumer of the key.
+      qc.setQueryData<AiAdminData>(AI_ADMIN_QUERY_KEY, (prev) =>
+        prev
+          ? {
+              ...prev,
+              scopes: prev.scopes.map((r) => (r.id === s.id ? { ...r, [field]: value } : r)),
+            }
+          : prev,
+      );
     } catch (e) {
       toast("error", (e as Error).message);
     }
