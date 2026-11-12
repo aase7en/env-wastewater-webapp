@@ -123,6 +123,47 @@ def main() -> int:
     check("tag without v prefix rejected", tag_matches("1.0.0", "1.0.0"), False)
     check("tag not semver rejected", tag_matches("1.0.0", "v2569.11"), False)
 
+    # --- vSemVer hardening: exact tag↔version equality (ENV-MAINT-001) ------
+    # Full-string equality after normalization: the only normalization is
+    # stripping one LEADING LOWERCASE 'v'; longer/shorter versions never
+    # prefix-match, uppercase 'V' is never stripped, and whitespace is never
+    # silently normalized away (exact-match เดิม คงเดิม).
+    check("v1.0.10 does NOT match version 1.0.1 (no prefix match)", tag_matches("1.0.1", "v1.0.10"), False)
+    check("v1.0.1 does NOT match version 1.0.10", tag_matches("1.0.10", "v1.0.1"), False)
+    check("uppercase V1.0.1 NOT accepted (strip is case-sensitive)", tag_matches("1.0.1", "V1.0.1"), False)
+    check("leading-whitespace tag NOT accepted (no silent normalization)", tag_matches("1.0.1", " v1.0.1"), False)
+    check("trailing-whitespace tag NOT accepted", tag_matches("1.0.1", "v1.0.1 "), False)
+    check("newline-suffixed tag NOT accepted", tag_matches("1.0.1", "v1.0.1\n"), False)
+    check("double v-prefix rejected", tag_matches("1.0.1", "vv1.0.1"), False)
+    check("bare v rejected", tag_matches("1.0.1", "v"), False)
+    check("exact tag still matches", tag_matches("1.0.2", "v1.0.2"), True)
+
+    # --- vSemVer hardening: hardcoded-literal scan boundaries ---------------
+    with tempfile.TemporaryDirectory() as td:
+        src = Path(td) / "src"
+        src.mkdir()
+        (src / "url_like.ts").write_text(
+            'const assetUrl = "https://cdn.example.com/v1.2.3/lib.js";\n',
+            encoding="utf-8",
+        )
+        violations = find_hardcoded_versions(src)
+        check(
+            "benign vSemVer inside an asset URL path is NOT flagged",
+            [str(v.relative_to(src)) for v in violations],
+            [],
+        )
+    with tempfile.TemporaryDirectory() as td:
+        src = Path(td) / "src"
+        src.mkdir()
+        (src / "still_bad.ts").write_text('const label = "v1.0.10";\n', encoding="utf-8")
+        (src / "also_bad.ts").write_text("const s = 'v10.20.30';\n", encoding="utf-8")
+        violations = find_hardcoded_versions(src)
+        check(
+            "standalone vSemVer literals still flagged (v1.0.10 read as full token)",
+            sorted(str(v.relative_to(src)) for v in violations),
+            ["also_bad.ts", "still_bad.ts"],
+        )
+
     print()
     print(f"check_release_version regression: {PASS} passed, {FAIL} failed")
     return 1 if FAIL else 0
