@@ -6,6 +6,7 @@ import { NotificationBell } from "../ui/NotificationBell";
 import { PendingUsersBell } from "../ui/PendingUsersBell";
 import { ThemeToggle } from "../ui/ThemeToggle";
 import { ModuleDock } from "./ModuleDock";
+import { VersionChip } from "./VersionChip";
 import { cn } from "../../lib/utils";
 
 // Nav per the design/ suite sidebar (Material Symbols names taken from the
@@ -165,6 +166,7 @@ export function AppShell({ children }: { children: ReactNode }) {
       </main>
 
       <ModuleDock nav={NAV} isAdmin={isAdmin} role={appUser?.role ?? null} />
+      <VersionChip />
     </div>
   );
 }

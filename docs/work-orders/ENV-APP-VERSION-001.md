@@ -1,11 +1,20 @@
 # ENV-APP-VERSION-001 — ระบบเลขเวอร์ชัน release + ปรับปรุง README (Work Order)
 
-สถานะ: **PROPOSED — CLAIMED (transition PR เปิดรอรีวิวอิสระ)** claim
-`ENV-APP-VERSION-001-C1` generation 1; base
-`6ad9aa76049aa3c2e8418cdb5a32c2a1a92359cd` = main ณ วัน transition วันที่:
-12 พฤศจิกายน 2569 (2026-11-12) สาขา transition:
-`docs/env-appversion-001-claim` ใน worktree ที่จดทะเบียน
-`/Volumes/MAC_WORK/DevWorkspace/Github/_worktrees/env-appversion-001-20261112`
+สถานะ: **IMPLEMENTATION COMPLETE — REVIEW_REQUESTED (implementation PR
+เปิดรอรีวิวอิสระ D5; lane ไม่ merge เอง)** claim
+`ENV-APP-VERSION-001-C1` generation 1; implementation branch
+`feat/env-appversion-001` ตัดจาก main @
+`ebdfcee42d115dc7f2a1925cfec7a0a16ea533d9` (transition PR #167 merged);
+D1 consult เสร็จสิ้น (receipts verbatim ใน handoff หมวด D1 — binding:
+SemVer vMAJOR.MINOR.PATCH, release แรก v1.0.0, chip มุม footer,
+per-release changelog); D2 RED + D3a + D3b + D4 battery เสร็จ
+(หลักฐานต่อ phase ใน handoff หมวด Checkpoints); implementation PR:
+**#168** https://github.com/aase7en/env-wastewater-webapp/pull/168 (head
+`738f3d3` + หมายเหตุ CHANGELOG PR-ref fix-up); tag `v1.0.0` **ยังไม่ตั้ง**
+— จะตั้งหลัง merge + ตรวจ deploy แล้วเท่านั้น (ต้องชี้ SHA ที่ deploy จริง)
+(transition base เดิม: `6ad9aa76049aa3c2e8418cdb5a32c2a1a92359cd`, สาขา
+transition `docs/env-appversion-001-claim`, worktree ที่จดทะเบียน
+`/Volumes/MAC_WORK/DevWorkspace/Github/_worktrees/env-appversion-001-20261112`)
 ใบเสร็จถาวรอยู่ใน `docs/ai/handoffs/ENV-APP-VERSION-001-GLM.md`
 Task: `ENV-APP-VERSION-001` (task row ใหม่ — ตรวจความซ้ำของ task_id กับ
 ทะเบียนผ่าน guard แล้ว ไม่มี OWNERSHIP_CONFLICT; claim id คือ

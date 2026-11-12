@@ -1,5 +1,6 @@
 import { defineConfig } from 'vite'
 import react from '@vitejs/plugin-react'
+import { readFileSync } from 'node:fs'
 import path from 'path'
 
 // https://vite.dev/config/
@@ -14,8 +15,20 @@ import path from 'path'
 // Vite reads this from GH_PAGES_BASE in CI; defaults to '/' for dev.
 const base = process.env.GH_PAGES_BASE || '/'
 
+// ENV-APP-VERSION-001: the package.json "version" field is the ONLY source
+// of the app version (D1 binding: SemVer vMAJOR.MINOR.PATCH). It is injected
+// into the bundle as __APP_VERSION__ (dev + build) and read exclusively via
+// src/lib/version.ts — never hardcode the number anywhere else; consistency
+// is guarded by scripts/check_release_version.py at the repo root.
+const packageJson = JSON.parse(
+  readFileSync(path.resolve(__dirname, './package.json'), 'utf-8'),
+) as { version?: string }
+
 export default defineConfig({
   base,
+  define: {
+    __APP_VERSION__: JSON.stringify(packageJson.version ?? ''),
+  },
   plugins: [react()],
   resolve: {
     alias: {
