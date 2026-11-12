@@ -195,8 +195,10 @@ export async function fetchPersonnel(): Promise<PersonnelOut[]> {
  * server-side, and a failing repair_request step REJECTS here instead of
  * being swallowed with console.warn (honesty fix).
  *
- * Reported_by + location_id are still filled by the BEFORE INSERT trigger
- * inside the RPC (same trigger PostgREST inserts hit); abnormal_cause /
+ * Reported_by + location_id have NO default and NO BEFORE INSERT trigger
+ * (live wastewater.reading has only trg_audit_log + trg_persist_threshold_alerts,
+ * both AFTER) — they stay NULL when the payload omits them, same as the old
+ * PostgREST path; abnormal_cause /
  * electricity_consumption / electricity_meter_value travel inside the
  * payload and are split off server-side.
  */

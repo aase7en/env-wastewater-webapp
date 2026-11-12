@@ -227,7 +227,8 @@ export function DailyFormPage() {
         // ENV-PERF-001: navigate immediately — the 900ms setTimeout delay is
         // gone. Success feedback travels across the navigation via the
         // portal-based ToastProvider (kept await semantics: no optimistic
-        // insert; id/reported_by stay DB-trigger truth).
+        // insert; id/reported_by come back from the saved DB row — server
+        // truth, no client invention).
         toast.success("อัปเดตรายการสำเร็จ");
         navigate("/readings");
       } else {

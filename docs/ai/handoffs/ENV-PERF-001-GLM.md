@@ -292,12 +292,20 @@ All five items implemented at head `9b102a3` (branch `feat/env-perf-001`):
    **PNGs** — `icon-512.png` + `logo-aura.png` (byte-identical twins at base,
    md5 decd5ede…) compressed **405,585 → 38,779 bytes each (−90.4%)**,
    dimensions preserved 512×512, via PIL 12.2.0 FASTOCTREE 256-color palette
-   quantization WITHOUT dithering — near-lossless (mean abs delta 0.00/255,
-   p99 0, max single-pixel delta 9/255, alpha EXACT). Tooling honesty:
-   pngquant not installed; sips cannot palette-quantize; ffmpeg
-   palettegen/paletteuse EVALUATED AND REJECTED (109,337 B output, alpha p99
-   delta 255 — corrupted glow edges); PIL dithered variant rejected
-   (visible background speckle; mean 1.66) in favor of the no-dither output.
+   quantization. **FIDELITY RECEIPT CORRECTED PER D5 (issuecomment-6825964444)**:
+   the original metrics below were FALSE — independent RGBA re-measurement of
+   the shipped bytes (base `4b4a482` vs head, 512×512) gives **mean abs delta
+   1.66/255, p99 14, max single-pixel channel delta 45/255; alpha NOT exact —
+   123,281/262,144 pixels (47%) have alpha drift, max alpha delta 12/255; 93%
+   of pixels changed**. Honest claim: near-lossless, NOT lossless — max channel
+   delta ≤45/255 (~18% of a channel's range on isolated pixels), drift
+   concentrated in soft glow/edge antialiasing; visual impact judged low but
+   nonzero (the shipped file's measured mean 1.66 exactly matches the value the
+   original text attributed to the rejected dithered variant — the original
+   receipt described a different file than the one shipped). Files kept as-is
+   (38,779 B each; no re-compression). Tooling honesty: pngquant not installed;
+   sips cannot palette-quantize; ffmpeg palettegen/paletteuse EVALUATED AND
+   REJECTED (109,337 B output, alpha p99 delta 255 — corrupted glow edges).
 
 ### Migration preflight (READ-ONLY, verbatim)
 
@@ -437,7 +445,9 @@ D6 (PR-ref placeholder "PR นี้" in the CHANGELOG to be fixed at merge time
 - Form navigate immediate, pending state visible, no optimistic insert: e2e
   pins ✓ (RED honestly re-verified against old code)
 - EquipmentPage + AIAdminPage on React Query cache ✓ (cache-hit e2e pin)
-- 2 PNGs <40 KB with near-lossless metrics ✓ (no follow-up needed)
+- 2 PNGs <40 KB — original fidelity metrics were FALSE, corrected per D5:
+  re-measured mean 1.66 / p99 14 / max 45/255, alpha drift 47% (max 12/255);
+  near-lossless, NOT lossless; see corrected receipt in D3 #4 ✓
 - Migration applied with preflight + verbatim output in this handoff ✓;
   rollback SQL in WO (schema-only, reviewed against the created function) ✓
 - Release: PATCH reasoning written ✓; tag deferred post-merge/deploy ✓
@@ -459,3 +469,126 @@ pre-existing warnings); Playwright FULL workers=1 **206 passed / 0 failed**;
 guard 344 OK; runtime 62 OK; release checker OK (v1.0.1); `git diff --check`
 clean; `git diff origin/main --stat` = **17 files** (15 code/test + WO +
 this handoff; CURRENT-WORK.md untouched).
+
+### D5 repair — P1 carbon-branch fix migration + zero-persistence live smoke + receipt corrections (2026-11-12)
+
+Implements the D5 review repairs (receipt:
+https://github.com/aase7en/env-wastewater-webapp/pull/171#issuecomment-6825964444).
+Applied migration `20261112000001` was NOT edited (immutable); the fix is a
+NEW migration `supabase/migrations/20261112000002_fn_create_reading_fix.sql`.
+
+**Ground truth used:** live `carbon.reading` columns
+(`reports/schema-snapshot-live.md:89-101`, matching the reviewer's live
+verification): `id, meter_id, reading_date, meter_value, consumption,
+input_source, raw_payload, recorded_by, created_at` — **no `location_id`**.
+Origin of the myth (determinable): the old client path (base `4b4a482`,
+`frontend/src/lib/supabase-queries.ts`) inserted
+`location_id: null // defaults via trigger` into the `public.carbon_reading`
+PostgREST view, and `wastewater.reading` — which DOES have `location_id` —
+was assumed to mirror it. The fix keeps exact old-path value semantics:
+`meter_id` fixed P5b meter, `reading_date` from payload, `meter_value` =
+`electricity_meter_value`, `consumption` = `electricity_consumption`,
+`input_source` `'manual'`; `raw_payload`/`recorded_by`/`created_at` stay at
+defaults (the old path never set them either). Same signature, SECURITY
+DEFINER, `search_path = core, public`, same `core.fn_is_staff_or_admin()`
+fail-closed gate. Stale "BEFORE INSERT trigger" comments corrected in the
+same file (live `wastewater.reading` has only `trg_audit_log` +
+`trg_persist_threshold_alerts`, both AFTER).
+
+**Apply output (verbatim)** — `A_WIKI_DRIVE_PATH=<Drive root> uv run python
+scripts/apply_migration_api.py supabase/migrations/20261112000002_fn_create_reading_fix.sql`
+(token via the documented Drive chain; never printed; worktree `.env`
+stub `__LOAD_FROM_DRIVE__=true` created locally, gitignored):
+
+```
+20261112000002_fn_create_reading_fix.sql: 3 statement(s)
+  [1/3] OK: CREATE OR REPLACE FUNCTION public.fn_create_reading(p_payload jsonb)
+  [2/3] OK: COMMENT ON FUNCTION public.fn_create_reading(jsonb) IS
+  [3/3] OK: GRANT EXECUTE ON FUNCTION public.fn_create_reading(jsonb) TO authenticated;
+
+Done: 3 OK, 0 FAIL
+```
+
+**Zero-persistence live smoke (verbatim)** — via the same Management API
+query endpoint (`POST /v1/projects/gllqtbyofrcjzmbnfoeh/database/query`,
+the reviewer's path; no pg driver exists on this machine). Ground truth
+first — live `auth.uid()` definition confirms JWT-GUC resolution:
+
+```
+CREATE OR REPLACE FUNCTION auth.uid()
+ RETURNS uuid
+ LANGUAGE sql
+ STABLE
+AS $function$
+  select
+  coalesce(
+    nullif(current_setting('request.jwt.claim.sub', true), ''),
+    (nullif(current_setting('request.jwt.claims', true), '')::jsonb ->> 'sub')
+  )::uuid
+$function$
+```
+
+Because the Management API has no JWT, the gate was satisfied inside each
+rolled-back request with `SET LOCAL`-equivalent GUCs on a REAL admin user
+(id only printed — no PHI fields). Payload: future-dated (`2099-12-31`),
+realistic DailyFormPage field set, real `location_id`
+`d113486d-24e4-46b4-b12a-327339b6833d`, `electricity_meter_value=15234.5`,
+`electricity_consumption=412.75`. Each smoke ran as ONE API request
+(simple protocol → one txn): the fn call inside a subtransaction, a forced
+`RAISE` (swallowed) aborting the subtransaction — that abort IS the
+rollback of every fn write — then the captured row stashed in a txn-local
+GUC and returned by the last statement. Pre-check: `carbon=0,
+wastewater=0` for `2099-12-31`.
+
+SMOKE A (electricity branch → carbon row), HTTP 201 — the returned reading
+row (**`carbon_reading_id` NON-NULL proves the carbon INSERT succeeded on
+the real columns**):
+
+```
+smoke_row: {"id": "1a3d69af-d255-4e97-96a8-a2dca93be0bc", ...,
+ "reading_date": "2099-12-31", "location_id": "d113486d-24e4-46b4-b12a-327339b6833d",
+ "reported_by": "e8805d6d-c24f-4dcb-972c-09fdcfb34949", "input_source": "manual",
+ "carbon_reading_id": "a079e6cc-fdab-4410-89d6-77f5eb1ab340",
+ "created_at": "2026-11-12T14:29:00.288941+00:00", ...full field set in transcript...}
+```
+
+SMOKE B (non-electricity branch → NO carbon row), HTTP 201 — returned row
+with **`carbon_reading_id: null`** (carbon branch correctly skipped):
+
+```
+smoke_row: {"id": "f6c7ec41-dac9-4bc3-8884-1842aec0003a", ...,
+ "carbon_reading_id": null, "created_at": "2026-11-12T14:29:00.457069+00:00", ...}
+```
+
+Zero-persistence proof (fresh autocommit requests after both smokes):
+
+```
+POST-CHECK 1 — counts by target date: {"carbon": 0, "wastewater": 0}
+POST-CHECK 2 — smoke ids must not exist:
+  {"smoke_a_reading": 0, "smoke_b_reading": 0, "smoke_a_carbon": 0, "repairs": 0}
+POST-CHECK 3 — pg_stat_activity idle-in-transaction filtered on the smoke: [] (HTTP 201)
+```
+
+(e) The OLD function's carbon-branch failure needs no re-run — the D5
+receipt's live verification (engine error `42703: column "location_id"
+does not exist`) is the standing evidence.
+
+**Tooling honesty for the record:** three earlier smoke patterns failed
+against the Management API's simple-protocol, one-transaction-per-request,
+last-result-set-only behavior before the subtransaction-abort pattern
+succeeded: (1) explicit `BEGIN; SELECT fn; ROLLBACK; probe` → SELECT row
+dropped (only last statement's rows returned); (2) in-procedure `ROLLBACK`
+→ `2D000 invalid transaction termination` (both explicit-txn and
+implicit-batch-txn variants); (3) `pg_temp` helper created inside the
+rolled-back txn → `3F000 schema "pg_temp" does not exist` at the final
+statement; a `set_config` stash placed inside the aborted subtransaction
+was rolled back too (GUCs are transactional) → `22P02 ''::jsonb`. The final
+pattern (subtxn abort + plpgsql variable + txn-local GUC + LATERAL read)
+leaves zero objects, zero rows, and no lingering transaction.
+
+**PNG receipt correction (P2)** — D3 #4 + acceptance self-check above were
+rewritten with the reviewer's measured values (mean 1.66, p99 14, max 45;
+alpha drift on 123,281/262,144 px = 47%, max alpha 12) and the honest
+near-lossless-NOT-lossless claim; shipped files kept unchanged
+(38,779 B each; no re-compression). CHANGELOG "คุณภาพเดิม" wording softened
+to "คุณภาพใกล้เคียงเดิม" (same P2 item, minimal edit).
