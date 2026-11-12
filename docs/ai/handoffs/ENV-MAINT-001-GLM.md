@@ -507,3 +507,164 @@ Q5=
 (D2/D3/D4/D5/D6 receipts are appended below by the implementing lane —
 nothing above this line may be rewritten without a new reviewed
 transition.)
+
+## D2 — RED-first receipts (12 พฤศจิกายน 2569 / 2026-11-12)
+
+Commit `8bfd170` on `feat/env-maint-001` (base
+`16db009d319a0afdcff4e368b3d8395ded58c4f1` = merge SHA of transition PR
+#173), tests only — the checker implementation was untouched at this
+commit. Outcomes recorded truthfully per item:
+
+1. **Dock-overlap pin — PIN-NOT-RED (honest record).** The new e2e case
+   ("mobile 360/390/430: the chip never overlaps the bottom ModuleDock",
+   `env-app-version-001.spec.ts`) PASSES at base — a correct new guard
+   case may legitimately be green immediately (ENV-VIS-STORY-001-NUM e2e
+   pin precedent), so this is recorded as a guard pin, not a RED.
+   **D2 measurement finding (verbatim):** the dock `<nav>`
+   (`getByRole("navigation", { name: "โมดูล" })`) is a horizontally
+   scrollable strip whose CONTAINER box intersects the chip rect at all
+   three widths — 360px: chip `{"x":8,"y":688,"width":48.75,"height":44}`
+   vs nav `{"x":48,"y":556,"width":264,"height":152}` (a ~8.75×20 px
+   transparent padding-zone sliver; identical container-intersection
+   pattern at 390 and 430) — while ZERO dock control (slot link) boxes
+   intersect the chip at any width (first pill at x=104 vs chip right
+   edge 56.75) and the chip's center hit-test resolves to the chip itself
+   at all three widths. The WO's naive container-box reading would
+   therefore produce a permanently red test against a design the D5 P3
+   itself described as "corner-band design keeps them apart in practice"
+   (verified TRUE for the visible/interactive dock). Deviation recorded:
+   the pin guards chip↔dock-control separation + chip tap-target
+   integrity (occlusion hit-test), which is the protective intent of the
+   P3; the container-box finding is recorded here and in the spec comment
+   so a reviewer can re-derive it. Components remain untouched.
+2. **Checker regression — 1 TRUTHFUL RED + 10 pins (honest split).**
+   11 new cases in `scripts/test_check_release_version.py` (26 at base →
+   37). Against the UNMODIFIED base checker:
+   `python3 scripts/test_check_release_version.py` → **36 passed,
+   1 failed, exit 1**. The truthful RED: a benign vSemVer inside an asset
+   URL path (`https://cdn.example.com/v1.2.3/lib.js`) IS flagged by the
+   boundary-only scan (`\bv\d+\.\d+\.\d+\b` — the WO's citation dropped a
+   component; the file's actual base regex is three-component
+   boundary-only) — precisely the false-positive mode the D5 P3
+   recorded. The 9 tag-match cases (v1.0.10-vs-1.0.1, v1.0.1-vs-1.0.10,
+   V1.0.1 uppercase, leading/trailing/newline whitespace, double-v, bare
+   `v`, exact-match positive) all PASS at base — the base `tag ==
+   f"v{version}"` comparison is ALREADY full-string exact (no prefix
+   logic exists to fix) — so they are kept as regression pins per the
+   dispatch's explicit honesty provision ("if current logic is already
+   exact, record honestly and keep the cases as regression pins"), plus
+   1 standalone-literal pin.
+3. **Garbage flake hardening — no RED by nature (WO-recorded).** Item 3
+   is hardening of a recorded one-off load-flake, not a behavior change;
+   no truthful RED exists or is claimed. Receipt at D3/D4.
+
+## D3 — implementation receipts (12 พฤศจิกายน 2569 / 2026-11-12)
+
+Commit `7785194` — diff exactly: `scripts/check_release_version.py`,
+`frontend/tests/e2e/garbage-mobile.spec.ts`, `frontend/package.json`,
+`CHANGELOG.md`.
+
+1. **Checker (resolves the D2 RED):** `HARDCODED_RE` now
+   `(?<![\w/.\-])v\d+\.\d+\.\d+(?![\w.\-])` — full three-component form
+   whose token must STAND ALONE (lookarounds reject path/package-embedded
+   tokens such as asset-URL segments or `lib-v1.2.3` package refs) while
+   quoted standalone version literals stay flagged — no false-negative
+   opened for the pattern this guard exists for; semantics documented in
+   the module docstring per the WO's mechanism clause. `tag_matches`
+   factored through a new `normalize_release_tag` (the sole permitted
+   normalization: strip ONE leading lowercase `v`; uppercase `V` never
+   stripped; whitespace never normalized) with the lowercase `v` prefix
+   mandatory — observable behavior byte-identical to base, now explicit
+   and unit-pinned. Post-fix suite: **37/37 passed, exit 0**.
+   **Honesty note (self-caught defect before commit):** the first
+   `tag_matches` draft (`normalize(tag) == version` without requiring the
+   prefix) made bare `1.0.0` wrongly match and would have broken the
+   base case "tag without v prefix rejected" (a false-negative direction)
+   — caught during self-review against the existing suite and fixed to
+   require the prefix before any commit.
+2. **Garbage settle (item 3):** the `:186` test now settles
+   deterministically on the rendered form shell after `goto`
+   (`await expect(field FIELDS[0]).toBeVisible()` + save button visible —
+   the house pattern of waiting on a rendered page element, e.g.
+   `fuel-mobile.spec.ts:100`) instead of racing the first fill; the
+   duplicate `save` declaration was consolidated (moved above the fills).
+   **No assertion weakened; no production Garbage file touched.**
+3. **Release bookkeeping (owner-directed PATCH v1.0.2):**
+   `frontend/package.json` version `1.0.1` → `1.0.2`; `CHANGELOG.md` new
+   topmost entry `## v1.0.2 — 12 พฤศจิกายน พ.ศ. 2569` (Thai, พ.ศ.-only)
+   with the honest reasoning line: all items are internal test/script/
+   docs work which the PATCH criteria alone would not force to bump —
+   v1.0.2 is the owner-ordered version marker for this maintenance
+   bundle. PR ref recorded as placeholder `PR #XXX` in this commit and
+   fixed to the real PR number immediately after `gh pr create` (same
+   lane, small follow-up commit). **NO tag** — tag only after merge +
+   Pages deploy verification at the deployed merge SHA (D6, release
+   process of `ENV-APP-VERSION-001-GLM.md`).
+4. **WO status** moved to `IN PROGRESS — D4 เสร็จ, implementation PR
+   เปิดรอรีวิวอิสระ (STOP ที่ REVIEW_REQUESTED)` with implementation
+   base/branch recorded (docs commit below).
+
+## D4 — full battery at frozen head `7785194` (12 พฤศจิกายน 2569)
+
+- **vitest FULL:** 31 test files, **493 passed / 1 skipped** (designed
+  skipIf), exit 0.
+- **`tsc -b`:** clean, exit 0.
+- **lint (`oxlint`):** exit 0, 16 warnings — all pre-existing, in files
+  outside this lane's diff (`AuthProvider.tsx`, `csv-import.test.ts`,
+  `Toast.tsx`); zero errors.
+- **Playwright FULL `--workers=1` (chromium):** **207/207 passed**
+  (206 at the PERF-lane freeze + this lane's 1 new pin), 4.7m, exit 0.
+- **Flake check (item 3), `garbage-mobile.spec.ts` 3× consecutive
+  workers=1:** fully-captured batch = **3 × 9 passed, exit 0 each**
+  (`:186` "save error preserves values and retry…" = test #6 passed in
+  every run), plus one additional standalone verification run 9/9 —
+  **4 consecutive clean full runs captured**. Honesty note: a FIRST
+  3× batch was also executed but its run-3 summary line was truncated
+  by the capture method (only `tail -1` kept, printing `8 passed` —
+  attribution impossible); that batch is DISQUALIFIED from this receipt
+  rather than claimed either way; the re-run batch above is the receipt.
+- **Checker regression:** `test_check_release_version.py` **37/37,
+  exit 0** (26 base + 11 new).
+- **`check_release_version.py`:** `RELEASE VERSION CHECK: OK
+  (v1.0.2; CHANGELOG entry v1.0.2)`, exit 0; spot checks live-verified:
+  `--tag v1.0.2` → exit 0; `--tag v1.0.10` → correctly REJECTED exit 1.
+- **Guard:** `test_env_coordination_guard.py` — **Ran 344 tests, OK**
+  (344/344).
+- **Runtime:** `test_env_autonomy_runtime.py` — **Ran 62 tests, OK**
+  (62/62).
+- **`git diff --check`:** clean, exit 0.
+- **Scope:** diff vs base `16db009` = exactly the claimed files —
+  `frontend/tests/e2e/env-app-version-001.spec.ts`,
+  `frontend/tests/e2e/garbage-mobile.spec.ts`,
+  `scripts/check_release_version.py`,
+  `scripts/test_check_release_version.py`, `CHANGELOG.md`,
+  `frontend/package.json`, plus this WO/handoff docs commit = **8 claimed
+  files, nothing else**; `docs/ai/CURRENT-WORK.md` diff vs base EMPTY
+  (forbidden file untouched); forbidden paths (`frontend/src/**`,
+  `.github/**`, other e2e specs, other scripts) untouched.
+
+### D4 environment + process honesty notes
+
+1. **Worktree bootstrap:** plain `npm ci` fails on this machine
+   (npm 10.9.8 reports `Missing: typescript@5.9.3 from lock file` — a
+   peer-resolution artifact against the committed lock; the lock itself
+   contains `node_modules/typescript@6.0.3` matching package.json
+   `~6.0.2`). Installed with `npm ci --legacy-peer-deps` (736 packages);
+   `git diff` on `frontend/package-lock.json` + `frontend/package.json`
+   verified EMPTY after install — the committed lock was never touched.
+2. **Gitignored env:** this fresh worktree lacked `frontend/.env`
+   (gitignored, required for the app to boot); copied locally from the
+   canonical checkout, never printed, never committed (house precedent:
+   PERF lane's gitignored worktree env stub). `git check-ignore` verified.
+3. **Committer identity** auto-configured (`Aase7en
+   <aase7en@Aase7ens-MacBook-Pro.local>`) — same as prior lane commits.
+4. **D2 commit message amended BEFORE push** (`b691bf0` → `8bfd170`) to
+   correct the base-regex description in the receipt (the WO's
+   two-component citation vs the file's actual three-component base
+   regex) — unpushed commit owned solely by this lane, no other writer.
+
+## D5 — independent review
+
+PENDING — this lane STOPS at REVIEW_REQUESTED; the implementer never
+merges its own PR. Fresh-GLM review at the exact head per claim
+convention; Terra-via-Codex eligible as cross-model reviewer.

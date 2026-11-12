@@ -1,13 +1,12 @@
 # ENV-MAINT-001 — Post-v1.0.1 P3 maintenance bundle → v1.0.2, then WAITING_REAL_FEEDBACK (Work Order)
 
-สถานะ: **CLAIMED — docs-only transition PR เปิดรอรีวิวอิสระ (STOP ที่
-REVIEW_REQUESTED — ห้าม merge โดย implementer เสมอ)** claim
-`ENV-MAINT-001-C1` generation 1; transition branch `docs/env-maint-001-claim`
-ใน worktree ที่จดทะเบียน
+สถานะ: **IN PROGRESS — D4 เสร็จ, implementation PR เปิดรอรีวิวอิสระ
+(STOP ที่ REVIEW_REQUESTED — ห้าม merge โดย implementer เสมอ)** claim
+`ENV-MAINT-001-C1` generation 1; implementation base
+`16db009d319a0afdcff4e368b3d8395ded58c4f1` = merge SHA ของ transition PR
+#173 (main หลัง transition รีวิวแล้ว merge 12 พฤศจิกายน 2569); สาขา
+implementation `feat/env-maint-001` ใน worktree ที่จดทะเบียน
 `/Volumes/MAC_WORK/DevWorkspace/Github/_worktrees/env-maint-001-20261112`;
-transition base `2e6f01197959cb85b42939e00c53ee1e63c36c2d` (= origin/main
-ณ การเขียน transition = merge SHA ของ PR #172); สาขา implementation จะเปิด
-จาก merge SHA ของ transition PR นี้หลังรีวิวแล้ว merge
 ใบเสร็จถาวรอยู่ใน `docs/ai/handoffs/ENV-MAINT-001-GLM.md` (in-brief ของ
 consult ทั้งสองฝ่ายฝัง VERBATIM เป็นหลักฐาน D0-EVIDENCE; checkpoints
 D2/D3/D4/D5 ต่อท้าย)
