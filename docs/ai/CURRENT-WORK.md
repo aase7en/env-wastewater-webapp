@@ -38,8 +38,8 @@ exact-SHA independent review and merge into `main`.
   "coordination_registry": {
     "version": 1,
     "enforcement_mode": "BOOTSTRAP_CONTROL",
-    "expected_policy_revision": "9d2fa1f5956c732efaedd71d7bcfebb6bed32884",
-    "expected_registry_hash": "b78b2d47cbbe3c96f69dc01c9189cbc6567ee0ffe10701264b100b81db317114",
+    "expected_policy_revision": "2e6f01197959cb85b42939e00c53ee1e63c36c2d",
+    "expected_registry_hash": "0f54ed7669aec0f9234482c4eed477f332d6db77221f3e204dcab87f315cdd03",
     "claims": [
       {
         "task_id": "ENV-COORD-002",
@@ -1114,6 +1114,64 @@ exact-SHA independent review and merge into `main`.
         ],
         "last_checkpoint_pointer": "docs/ai/handoffs/ENV-PERF-001-GLM.md",
         "one_next_safe_action": "CLOSED 2026-11-12 (closure effective when this closeout transition merges): implementation merged via PR #171 as 9d2fa1f5956c732efaedd71d7bcfebb6bed32884 (second parent = D5-R2-APPROVED reviewed head 87c1351; parents 4b4a482 + 87c1351, expected-head discipline held; merge execution receipt issuecomment-6827044975). Claim transition PR #170 merged as 4b4a482 (R2 APPROVED receipt issuecomment-6823465658 at reviewed head 99aada3, zero P1/P2). Full delivery chain: D2 RED ea49d59 (truthful failures recorded: 8 failed vitest across use-sensor-feed + create-reading-rpc; 3 failed / 2 passed e2e with the already-green pins kept honestly) -> D3 GLM Track-Z implementation ba2b42c (lazy 24 eager imports via the existing lazy+PageSkeleton pattern; single .in(sensor_id) query preserving the realtime incremental cache; atomic fn_create_reading RPC replacing the 3-sequential-insert path with honest step-3 failure surfacing; schema-only migration 20261112000001_fn_create_reading.sql applied to ENV_DB via scripts/apply_migration_api.py with zero-data-mutation preflight + WO-documented rollback; 900ms form-save navigate delay removed keeping await semantics with immediate pending state; EquipmentPage + AIAdminPage ported to React Query hooks; icon-512.png + logo-aura.png compressed 405,585 -> 38,779 bytes each) + 9b102a3 (e2e save-boundary captures moved to the atomic RPC + clock-pin robustness) -> D4 GLM battery at frozen head 9b102a3 and re-run identical at final head 146144c: vitest FULL 31 files / 493 passed / 1 designed skip, tsc clean, lint 0 errors, Playwright FULL 206/206 --workers=1, guard 344/344, runtime 62/62, checker OK v1.0.1 -> D5 fresh-GLM independent review: R1 CHANGES_REQUIRED issuecomment-6825964444 at 46ba44b with live-DB read-only verification (P1 carbon branch referenced nonexistent location_id - 42703 live-proven; P2 PNG fidelity receipt materially false - shipped-file metrics matched the rejected dithered variant; P3 CHANGELOG placeholder + gzip figure; P3 stale BEFORE-INSERT-trigger comments) -> repairs 87c1351: fix migration 20261112000002_fn_create_reading_fix.sql with the real carbon columns meter_id/reading_date/meter_value/consumption/input_source (20261112000001 unedited; fix applied to ENV_DB via Management API 3/3 OK, schema-only, no row writes, RLS untouched, rollback SQL in the WO; production fn_create_reading live and smoke-proven), zero-persistence rollback smoke proving BOTH branches (electricity payload -> returned row with non-null carbon_reading_id; non-electricity -> carbon_reading_id null; date counts carbon:0 wastewater:0 and all smoke ids re-queried = 0), honest PNG receipt rewritten from the shipped bytes (mean 1.66 / p99 14 / max 45 per 255; alpha drift 47% max 12 - near-lossless NOT lossless), CHANGELOG + trigger-comment fixes -> R2 APPROVED issuecomment-6826987935 with the battery independently reproduced at 87c1351 (vitest 31 files 493 passed / 1 skip, tsc clean, lint clean, Playwright FULL 206/206, guard 344/344, runtime 62/62, checker OK v1.0.1, CI green). Scope ruling: daily-form-mobile.spec.ts (out-of-list boundary update) judged acceptable-with-record by D5 R1. Release v1.0.1 is LIVE and verified: Pages deploy run 43242380409 SUCCESS at 9d2fa1f; live asset assets/index-DTVMUUjJ.js (HTTP 200 fresh fetch) carries version 1.0.1 + the version chip markers, 553,430 B raw vs 814,032 B before = -32.0% main bundle; annotated tag v1.0.1 (tag object ec41f8b0) dereferences to 9d2fa1f and is pushed (git ls-remote confirmed refs/tags/v1.0.1 + peeled); scripts/check_release_version.py --tag v1.0.1 exit 0. PATCH bump per the CHANGELOG-documented criteria (perf/improvements, no new features) with the reasoning recorded in the handoff D4. Honesty notes recorded in the D6 handoff receipt: D5 R1 P2 was an originally false fidelity receipt (rejected-variant numbers shipped as the receipt) - corrected, lesson recorded that receipts must be generated from the shipped artifact; the audit's BEFORE-INSERT-trigger premise was wrong and was corrected in-repo (live triggers AFTER-only); the worktree .env stub (__LOAD_FROM_DRIVE__=true) was created locally for the Drive-token chain and stays gitignored - never committed; a load-flake in garbage-mobile.spec.ts:186 was observed once during D5 (passes isolated and on rerun - environmental, not a regression). The frontier is now EMPTY of active claims: the release process delivered by ENV-APP-VERSION-001 is OPERATIONAL and v1.0.1 shipped through it end-to-end; remaining recorded follow-ups are ENV-BUILDING-REPAIR-001-C1 (WAITING_EXTERNAL on real Building usage), owner-manual issues #155/#156, and the 2 informational P3s from the versioning lane (checker vSemVer false-positive mode; mobile-360 dock-overlap pin); no perf follow-ups remain recorded - all five Top-5 items delivered; no closed lane confers execution authority - any new work requires a NEW reviewed claim transition."
+      },
+      {
+        "task_id": "ENV-MAINT-001",
+        "claim_id": "ENV-MAINT-001-C1",
+        "claim_generation": 1,
+        "status": "CLAIMED",
+        "owner_role": "product_implementation",
+        "agent_model": "GLM-5.3 MAX (Track-Z for ALL four items - e2e pins + checker script/tests only; no UI component changes, the version chip itself is untouched, only its test coverage)",
+        "execution_holder_id": "kilo-env-maint-001-g1-primary",
+        "worktree": "/Volumes/MAC_WORK/DevWorkspace/Github/_worktrees/env-maint-001-20261112",
+        "branch": "docs/env-maint-001-claim",
+        "base_sha": "2e6f01197959cb85b42939e00c53ee1e63c36c2d",
+        "mutable_scope": [
+          "frontend/tests/e2e/env-app-version-001.spec.ts",
+          "frontend/tests/e2e/garbage-mobile.spec.ts",
+          "scripts/check_release_version.py",
+          "scripts/test_check_release_version.py",
+          "CHANGELOG.md",
+          "frontend/package.json",
+          "docs/work-orders/ENV-MAINT-001.md",
+          "docs/ai/handoffs/ENV-MAINT-001-GLM.md",
+          "docs/ai/CURRENT-WORK.md"
+        ],
+        "forbidden_scope": [
+          "frontend/src/**",
+          "frontend/vite.config.ts",
+          "frontend/public/**",
+          "frontend/tests/e2e/daily-form-mobile.spec.ts",
+          "frontend/tests/e2e/water-watch.spec.ts",
+          "supabase/**",
+          ".github/**",
+          ".env",
+          "data/**",
+          "README.md",
+          "docs/ai/ROADMAP.md",
+          "docs/ai/HANDOFF.md",
+          "docs/ai/design/**",
+          "docs/ai/digital-twin/11-UTHAI-ACTIVATED-SLUDGE-PROCESS-KNOWLEDGE.md",
+          "AGENTS.md",
+          "scripts/env_coordination_guard.py",
+          "scripts/test_env_coordination_guard.py",
+          "scripts/env_autonomy_runtime.py",
+          "scripts/test_env_autonomy_runtime.py"
+        ],
+        "work_order_path": "docs/work-orders/ENV-MAINT-001.md",
+        "handoff_path": "docs/ai/handoffs/ENV-MAINT-001-GLM.md",
+        "review_owner": "Claim transition: independent exact-SHA review per the owner routing policy - R2 floor: fresh GLM-5.3 MAX reviewer context; cross-model R3/D5 where admission allows (GPT-6.1 Terra admitted 2026-11-08 via Codex CLI and eligible as cross-model reviewer; GPT-6 Astra prohibited); never author-and-approve; never silent downgrade. Implementation PR: fresh-GLM independent review at the exact frozen head with an independently executed battery rerun where possible (Terra eligible as the cross-model reviewer per the DT-VIS-P003/N2/P002 precedent). The AUTHORIZATION BASIS (the owner standing Goal-mode instruction 2026-11-12 + the joint delegated consult nextlane3 2026-11-12 with Terra Q1=D STOP and Jev's weak LOW-confidence Q1=A near-tie honestly disclosed + the B-then-D synthesis - receipts VERBATIM in docs/ai/handoffs/ENV-MAINT-001-GLM.md D0-EVIDENCE) is an explicit adversarial check item - insufficient basis parks the claim unmerged",
+        "dependencies": [
+          "Joint delegated consult nextlane3 2026-11-12 (third round of the 2026-11-12 lane-selection series): Terra via Codex CLI read-only chose Q1=D STOP (รอรับ feedback จากการใช้งานจริงของทีมโรงพยาบาลก่อน; Q2=4; Q3A=2 Q3B=2 Q3C=4; Q4=A2; Q5 = collect short staff feedback on Building/Twin-motion/v1.0.1-speed first, fix blocking problems before a new lane); Jev via jev-advisory MCP (pinned jev-1.13.0, authoritative_for_action:false on every response) decoded Q1=A as a weak LOW-confidence vote (conf 0.41/0.39) with D (STOP) a close runner-up (0.41/0.42) - disclosed NOT decision-grade alone - plus Q4=A1 (conf 0.76) and the local (non-Jev) note that B is lowest-regret (local risk estimate B=1/5); SYNTHESIS = B-then-D: run the maintenance bundle first (this lane), then the frontier becomes WAITING_REAL_FEEDBACK - receipts copied VERBATIM into docs/ai/handoffs/ENV-MAINT-001-GLM.md D0-EVIDENCE (jev-nextlane3-consult-2026-11-12.json + .txt, terra-nextlane3-receipt-2026-11-12.txt; byte-verified under the stated fence-extraction rule)",
+          "All four items are RECORDED follow-ups, nothing more (no silent scope expansion): (1) version-chip mobile dock-overlap e2e pin + (2) checker vSemVer false-positive mode are the 2 informational P3s of the ENV-APP-VERSION-001-C1 D5 APPROVED verdict issuecomment-6811013033 (the mobile-360 e2e asserts containment but not chip-ModuleDock non-overlap; the hardcoded-literal scan would false-positive on benign vSemVer-bearing strings) - also named in the PR #169 closeout registry record; (3) garbage-mobile.spec.ts:186 load-flake observed once in the PERF lane D5 R1 FULL run 1, passes 9/9 isolated + rerun (environmental note, docs/ai/handoffs/ENV-PERF-001-GLM.md :653 and :730-733); (4) CURRENT-WORK.md narrative-bullet drift ~line 1148 (still CLAIMED-text for the CLOSED ENV-PERF-001), flagged by the #172 reviewer as P3, byte-identical since base 2e6f0119",
+          "CURRENT-WORK.md discipline: the file may only be edited via a reviewed claim transition - the item-4 fix is scheduled inside THIS lane's closeout transition (docs-only, re-reviewed), NEVER in the implementation PR; the same closeout records the post-lane frontier WAITING_REAL_FEEDBACK (collect staff feedback on Building usage / Twin water-motion / v1.0.1 speed / v1.0.2 fixes before choosing the next product lane)",
+          "Owner standing Goal-mode instruction (ต่อ, 2026-11-12): continue the loop - RED-first, full battery, independent review, implementer never merges",
+          "task_id uniqueness checked against the registry: 0 prior ENV-MAINT* occurrences, no OWNERSHIP_CONFLICT; the only non-CLOSED record ENV-BUILDING-REPAIR-001-C1 (WAITING_EXTERNAL deferral) holds no overlapping path - its migrations, Building/repair libs+pages, import-adapters, sw.js, BulkImportPage and e2e spec stay explicitly forbidden here",
+          "Release discipline: PATCH v1.0.2 owner-directed per the authorization basis (honest note recorded in the WO: the four items are test/script/docs-internal with no user-visible delta, so the CHANGELOG PATCH row alone would not force a bump - v1.0.2 is the owner-directed version marker for the maintenance bundle; reasoning finalized at D4); CHANGELOG entry Thai พ.ศ.; tag only AFTER Pages deploy verification at the deployed merge SHA per the release process docs/ai/handoffs/ENV-APP-VERSION-001-GLM.md D6 (check_release_version.py --tag v1.0.2 exit 0); docs-only merges never bump - this transition PR is docs-only",
+          "Truth constraints: unknown != 0 (ห้ามแทนค่าศูนย์); latest != live; no assertion weakening in the flake hardening; checker hardening introduces no false-negative for genuine violations and keeps exact-match --tag semantics; no PHI; no real writes in tests; no component/page/lib/CI changes"
+        ],
+        "last_checkpoint_pointer": "docs/ai/handoffs/ENV-MAINT-001-GLM.md",
+        "one_next_safe_action": "From the registered worktree /Volumes/MAC_WORK/DevWorkspace/Github/_worktrees/env-maint-001-20261112 (branch docs/env-maint-001-claim, base 2e6f0119): D2 GLM Track-Z RED-first kept to TESTABLE behavior only (the new dock-overlap e2e pin at 360/390/430 and the new checker regression cases fail truthfully and are recorded; item 3 is flake hardening with no RED - stated honestly; item 4 is closeout-scheduled docs - not touched at D2) -> D3 GLM Track-Z implementation (add the dock-overlap assertions to env-app-version-001.spec.ts using the existing ModuleDock navigation locator; harden check_release_version.py version-matching so v1.0.10-vs-1.0.1 prefix/boundary and benign vSemVer-bearing strings cannot false-positive while exact-match --tag semantics hold and no false-negative is introduced; add robust wait/settle to garbage-mobile.spec.ts:186 per existing deterministic patterns with NO assertion weakening and NO garbage production files; NO component/page/lib changes anywhere - the chip itself is untouched) -> D4 GLM battery at frozen head (vitest FULL + tsc + lint + Playwright FULL --workers=1 incl. a repeated-run flake check on garbage-mobile with the run count recorded + guard 344/344 + runtime 62/62 + checker normal mode incl. the new cases + git diff --check) -> freeze the exact head -> D5 fresh-GLM independent review -> STOP at REVIEW_REQUESTED - the implementing lane never merges its own PR; release PATCH v1.0.2 owner-directed, executed only AFTER merge + deploy verification (bump + Thai พ.ศ. CHANGELOG entry + annotated tag at the deployed merge SHA + check_release_version.py --tag v1.0.2 exit 0); closeout transition (docs-only, re-reviewed) then fixes the ~line 1148 narrative bullet and records the frontier WAITING_REAL_FEEDBACK - NEVER in the implementation PR"
       }
     ]
   }
