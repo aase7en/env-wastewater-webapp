@@ -592,3 +592,158 @@ alpha drift on 123,281/262,144 px = 47%, max alpha 12) and the honest
 near-lossless-NOT-lossless claim; shipped files kept unchanged
 (38,779 B each; no re-compression). CHANGELOG "คุณภาพเดิม" wording softened
 to "คุณภาพใกล้เคียงเดิม" (same P2 item, minimal edit).
+
+## D6 — CLOSEOUT RECEIPT (2026-11-12)
+
+Claim `ENV-PERF-001-C1` → **CLOSED** by the docs-only closeout transition
+(this receipt's PR). Every receipt below was re-verified LIVE (gh/git/HTTP)
+by the closeout lane immediately before writing — not copied from chat
+memory.
+
+### Full delivery chain (all receipts verified live 2026-11-12)
+
+1. **Claim transition** — PR **#170** merged as
+   `4b4a4820e1ba39317bd8e873d58b694220d7faa3` (state MERGED, mergedAt
+   2026-11-12T12:21:52Z; reviewed head
+   `99aada38d8c1d57ebb72bce6a3fba3d8f8c1717d`; R2 independent APPROVED
+   `issuecomment-6823465658` at that exact head vs base `3875bc68`, zero
+   P1/P2, reviewer not the author).
+2. **D2 RED** — commit `ea49d59`, truthful failures recorded: focused
+   vitest run = **2 files failed / 8 tests failed / 0 passed**
+   (use-sensor-feed: `TypeError: fetchSensorFeedData is not a function`;
+   create-reading-rpc: rpcCalls 0 ≠ 1, fromCalls 3 ≠ [], no rejection, row
+   id mismatch); env-perf-001 e2e = **3 failed / 2 passed** (form navigate
+   stuck on /form under the frozen 900 ms setTimeout, 2 equipment fetches
+   vs 1 expected, DailyFormPage already fetched at boot; the 2 already-green
+   pins kept honestly). RED failure modes re-verified at D3 against the
+   restored D2-era `DailyFormPage.tsx`.
+3. **D3 Track-Z (GLM)** — commits `ba2b42c` (perf: lazy 24 eager imports
+   via the existing lazy+PageSkeleton pattern; single `.in("sensor_id",
+   ids)` sensor query preserving the realtime incremental cache; atomic
+   `fn_create_reading` RPC replacing the 3-sequential-insert path with
+   honest step-3 failure surfacing; schema-only migration
+   `20261112000001_fn_create_reading.sql` applied to ENV_DB via
+   `scripts/apply_migration_api.py` with zero-data-mutation preflight;
+   900 ms form-save navigate delay removed keeping await semantics with an
+   immediate pending state; EquipmentPage + AIAdminPage ported to React
+   Query hooks; icon-512.png + logo-aura.png compressed 405,585 → 38,779
+   bytes each) + `9b102a3` (e2e save-boundary captures moved to the atomic
+   RPC + clock-pin robustness).
+4. **D4 battery** — at frozen head `9b102a3`, re-run identical at final
+   head `146144c`: vitest FULL **31 files / 493 passed / 1 designed skip**;
+   `tsc -b` clean; oxlint **0 errors** (10 pre-existing warnings in
+   untouched files); Playwright FULL `--workers=1` **206/206** (4.7 min);
+   guard **344/344**; runtime **62/62**; release checker **OK (v1.0.1)**;
+   `git diff --check` clean. Main bundle measured 814,032 B → 553,306 B raw
+   (−32.0%) at D4 (gzip 217,063 B → 158,691 B).
+5. **D5 fresh-GLM independent review, R1** — **CHANGES_REQUIRED**,
+   `issuecomment-6825964444`, at exact head `46ba44b` with live-DB
+   read-only migration verification (pg_get_functiondef vs file
+   byte-for-byte; live schema cross-checked): **P1** carbon branch
+   referenced nonexistent `location_id` (42703 live-proven — atomic save
+   with electricity data could never execute); **P2** PNG fidelity receipt
+   **materially false** (independent measurement of the shipped bytes: mean
+   1.66 / p99 14 / max 45 per 255, alpha NOT exact — 47% of pixels drifted,
+   max alpha delta 12; the shipped metrics match the **rejected** dithered
+   variant, i.e. the receipt described a different file than shipped);
+   **P3** CHANGELOG placeholder + gzip figure; **P3** stale
+   "BEFORE INSERT trigger" comments contradicting the live DB. Scope
+   ruling: `daily-form-mobile.spec.ts` (out-of-list boundary update) =
+   **acceptable-with-record**. Environmental note recorded: one
+   `garbage-mobile.spec.ts:186` load-flake in R1's run 1 — passes isolated
+   and in rerun (not a regression).
+6. **D5 repairs** — single commit `87c1351` on `46ba44b` (diff = exactly 5
+   disclosed files):
+   - Fix migration `supabase/migrations/20261112000002_fn_create_reading_fix.sql`
+     with the real carbon columns `meter_id, reading_date, meter_value,
+     consumption, input_source` (defaults for `raw_payload`/`recorded_by`/
+     `created_at` — same as the old PostgREST path); `20261112000001`
+     **unedited**; applied to ENV_DB via Management API **3/3 OK**,
+     schema-only, no row writes, RLS untouched, rollback SQL in the WO;
+     production `fn_create_reading` live.
+   - **Zero-persistence rollback smoke proving BOTH branches**: electricity
+     payload → returned row with **non-null `carbon_reading_id`**;
+     non-electricity → `carbon_reading_id: null`; date counts
+     `carbon:0, wastewater:0`; all smoke ids re-queried = 0 (including
+     repairs); `pg_stat_activity` idle-in-transaction empty. Under the old
+     defect the 42703 would have aborted the whole atomic call — a returned
+     row with non-null `carbon_reading_id` is direct proof the fixed carbon
+     branch executes on the live DB.
+   - **Honest PNG receipt** rewritten from the shipped bytes (mean 1.66 /
+     p99 14 / max 45/255; alpha drift 47%, max 12/255) with
+     "near-lossless, NOT lossless" wording; D3 #4 + acceptance self-check
+     corrected; CHANGELOG softened to
+     "คุณภาพใกล้เคียงเดิม (ต่างกันสูงสุด 45/255 ต่อช่องสี)".
+   - CHANGELOG placeholder + corrected gzip figures; trigger-comment fixes
+     in `supabase-queries.ts` (AFTER-only triggers named) and
+     `DailyFormPage.tsx` (server truth); stale "BEFORE INSERT trigger"
+     premise corrected in-repo (live: only `trg_audit_log` +
+     `trg_persist_threshold_alerts`, both AFTER).
+7. **D5 R2 re-review** — ✅ **APPROVED**, `issuecomment-6826987935`, at
+   exact head `87c1351e430edc65bc09ce5a325c483bce3afcd5`: R1 findings all
+   resolved, zero P1/P2 open, with the battery **independently reproduced**
+   there (vitest 31 files 493 passed / 1 skip; tsc clean; lint clean;
+   Playwright FULL 206/206; guard 344/344; runtime 62/62; checker OK
+   v1.0.1; CI green at `87c1351`; repair diff scope = exactly the 5
+   disclosed files; scope total `main...87c1351` = 18 files).
+8. **Implementation merge** — PR **#171** merged as
+   `9d2fa1f5956c732efaedd71d7bcfebb6bed32884` (parents `4b4a482` +
+   `87c1351` = the D5-R2-APPROVED head as second parent; expected-head
+   discipline held; merge execution receipt `issuecomment-6827044975`).
+9. **Deploy** — Pages run **43242380409 SUCCESS** for `9d2fa1f`
+   (https://github.com/aase7en/env-wastewater-webapp/actions/runs/43242380409).
+10. **Live release evidence** — live asset `assets/index-DTVMUUjJ.js`
+    fetched fresh (HTTP 200, **553,430 B raw** — vs 814,032 B before =
+    **−32.0%**) carries version `1.0.1` + the version chip markers.
+11. **Tag** — annotated tag `v1.0.1` (tag object `ec41f8b0`) dereferences
+    (`^{}`) to `9d2fa1f` and is pushed (`git ls-remote` confirms both
+    `refs/tags/v1.0.1` and the peeled object) — tag at the deployed merge
+    SHA, per the release process.
+12. **Checker** — `python3 scripts/check_release_version.py --tag v1.0.1` →
+    `RELEASE VERSION CHECK: OK (v1.0.1; CHANGELOG entry v1.0.1)`, exit 0.
+13. **Closeout** — registry fence updated
+    (`expected_policy_revision = 9d2fa1f5956c732efaedd71d7bcfebb6bed32884`,
+    `expected_registry_hash = b78b2d47cbbe3c96f69dc01c9189cbc6567ee0ffe10701264b100b81db317114`
+    = guard-computed sha256 of the registry block AT `9d2fa1f`); C1 →
+    CLOSED; programmatic JSON diff vs `9d2fa1f` = exactly 1 of 22 claims
+    changed.
+
+### Honesty notes (exactly as recorded — carried into the closeout)
+
+1. **D5 R1 P2 was an originally false fidelity receipt** — the D3 handoff
+   shipped rejected-variant numbers as the fidelity receipt (the shipped
+   files' measured metrics matched the rejected dithered candidate, not the
+   claimed near-zero-delta variant). Corrected at `87c1351` with measured
+   values from the shipped bytes. **Lesson recorded: receipts must be
+   generated from the shipped artifact, never from an intended/rejected
+   variant's measurement.**
+2. **The audit's BEFORE-INSERT-trigger premise was wrong** — the D0 audit
+   and early handoff text described a BEFORE INSERT trigger on the reading
+   path; live verification (and R1) showed the live triggers are
+   AFTER-only (`trg_audit_log` + `trg_persist_threshold_alerts`). Corrected
+   in-repo at `87c1351` (migration comments, `supabase-queries.ts`,
+   `DailyFormPage.tsx`).
+3. **Worktree `.env` stub** — the migration-apply step needed the Drive
+   token chain; a worktree `.env` stub (`__LOAD_FROM_DRIVE__=true`) was
+   created locally and is gitignored — never committed (no `.env` in any
+   lane diff; R1/R2 verified the scope totals).
+4. **`garbage-mobile.spec.ts:186` load-flake** — observed once in D5 R1's
+   FULL run 1; passes 9/9 isolated and on rerun (environmental, not a
+   regression; no garbage files touched by this PR). Recorded, no change
+   made.
+5. **Scope ruling carried** — `daily-form-mobile.spec.ts` (out-of-list
+   file) was judged **acceptable-with-record** by D5 R1 (boundary update
+   required by the D3 behavior change); recorded here and in the registry
+   receipt, per the ruling.
+
+### Frontier after this closeout
+
+NO active claim remains — the frontier is EMPTY. The release process
+delivered by ENV-APP-VERSION-001 is OPERATIONAL and v1.0.1 shipped through
+it end-to-end (PATCH per the documented criteria; docs-only merges never
+bump). Remaining recorded follow-ups: `ENV-BUILDING-REPAIR-001-C1`
+(WAITING_EXTERNAL on real Building usage), owner-manual issues #155/#156,
+and the 2 informational P3s from the versioning lane (checker vSemVer
+false-positive mode; mobile-360 no dock-overlap pin). No perf follow-ups
+recorded — all five Top-5 items delivered. No closed lane confers execution
+authority — any new work requires a NEW reviewed claim transition.
