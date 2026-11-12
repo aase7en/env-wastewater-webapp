@@ -1,13 +1,14 @@
 # ENV-PERF-001 — Top-5 performance slice: lazy routes, N+1 fix, atomic reading RPC, form-save UX, consistency sweep (Work Order)
 
-สถานะ: **PROPOSED — CLAIMED (transition PR เปิดรอรีวิวอิสระ)** claim
-`ENV-PERF-001-C1` generation 1; base
-`3875bc68b5bdfae8ee4c232a8bc47a33280c94d0` = main ณ วัน transition วันที่:
-12 พฤศจิกายน 2569 (2026-11-12) สาขา transition:
-`docs/env-perf-001-claim` ใน worktree ที่จดทะเบียน
+สถานะ: **IN PROGRESS — D4 เสร็จ, implementation PR เปิดรอรีวิวอิสระ
+(STOP ที่ REVIEW_REQUESTED — ห้าม merge โดย implementer)** claim
+`ENV-PERF-001-C1` generation 1; implementation base
+`4b4a4820e1ba39317bd8e873d58b694220d7faa3` = merge SHA ของ transition PR
+#170 (main หลัง transition รีวิวแล้ว merge 12 พฤศจิกายน 2569); สาขา implementation:
+`feat/env-perf-001` ใน worktree ที่จดทะเบียน
 `/Volumes/MAC_WORK/DevWorkspace/Github/_worktrees/env-perf-001-20261112`
 ใบเสร็จถาวรอยู่ใน `docs/ai/handoffs/ENV-PERF-001-GLM.md` (รายงาน audit
-ฝัง VERBATIM เป็นหลักฐาน D0)
+ฝัง VERBATIM เป็นหลักฐาน D0; checkpoints D2/D3/D4 ต่อท้าย)
 Task: `ENV-PERF-001` (task row ใหม่ — ตรวจความซ้ำของ task_id กับทะเบียนแล้ว
 ไม่มี OWNERSHIP_CONFLICT; claim id คือ `ENV-PERF-001-C1`)
 
