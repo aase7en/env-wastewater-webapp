@@ -6,11 +6,16 @@ single source = frontend/package.json "version"):
   1. package.json version parses as plain SemVer
   2. the first (latest) CHANGELOG.md entry version == package.json version
   3. no hardcoded `vX.Y.Z` literals in frontend/src outside *.test.ts(x)
-     fixtures (CHANGELOG-facing fixtures are exempt)
+     fixtures (CHANGELOG-facing fixtures are exempt); the scan matches only
+     STANDALONE vSemVer tokens — a token embedded in a longer path/package
+     reference (e.g. an asset URL segment) is benign and not flagged
   4. frontend/src/lib/version.ts reads the injected __APP_VERSION__ define
      rather than any literal
   5. --tag mode (run when cutting a release): the given tag name must equal
-     v<package.json version>
+     v<package.json version> — full-string equality after normalization
+     (the only normalization is stripping ONE leading lowercase 'v';
+     uppercase 'V' is not stripped; whitespace is never normalized away;
+     no prefix matching, e.g. v1.0.10 never matches version 1.0.1)
 
 Usage:
   python3 scripts/check_release_version.py
@@ -29,8 +34,15 @@ from dataclasses import dataclass
 from pathlib import Path
 
 SEMVER_RE = re.compile(r"^(\d+)\.(\d+)\.(\d+)$")
-# v-prefixed SemVer literal inside source code (the display/tag form).
-HARDCODED_RE = re.compile(r"\bv\d+\.\d+\.\d+\b")
+# Standalone v-prefixed SemVer literal (the display/tag form). ENV-MAINT-001
+# hardening: full three-component form, and the lookarounds require the
+# token to stand alone — not embedded in a longer path/package reference
+# (preceded by a word char, '/', '.' or '-', or followed by a word char,
+# '.' or '-'). A URL segment like cdn.example.com/v1.2.3/lib.js or a
+# package ref like lib-v1.2.3 is benign; a quoted "v1.2.3" literal is a
+# hardcoded version and must stay flagged (no false-negative for the
+# version-literal pattern this guard exists for).
+HARDCODED_RE = re.compile(r"(?<![\w/.\-])v\d+\.\d+\.\d+(?![\w.\-])")
 CHANGELOG_HEADING_RE = re.compile(r"^##\s+v(\d+\.\d+\.\d+)\s+—\s+(.+)$", re.MULTILINE)
 TEST_FILE_RE = re.compile(r"\.test\.tsx?$")
 VERSION_TS_RE = "__APP_VERSION__"
@@ -101,9 +113,20 @@ def find_hardcoded_versions(src_dir: Path) -> list[Path]:
     return violations
 
 
+def normalize_release_tag(tag: str) -> str:
+    """Sole permitted tag normalization (ENV-MAINT-001): strip ONE leading
+    lowercase 'v'. Case-sensitive by design — 'V1.0.1' is not normalized;
+    whitespace is never normalized away; everything else passes through."""
+    return tag[1:] if tag.startswith("v") else tag
+
+
 def tag_matches(version: str, tag: str) -> bool:
-    """--tag mode: tag must be exactly v<version> (ค.ศ./SemVer, never พ.ศ.)."""
-    return tag == f"v{version}"
+    """--tag mode: tag must be exactly v<version> (ค.ศ./SemVer, never พ.ศ.).
+
+    Full-string equality after normalization — no prefix matching, so
+    v1.0.10 never matches version 1.0.1 and vice versa; the lowercase
+    'v' prefix is mandatory (bare '1.0.1' is still rejected)."""
+    return tag.startswith("v") and normalize_release_tag(tag) == version
 
 
 def main(argv: list[str] | None = None) -> int:
