@@ -209,6 +209,13 @@ test.describe("ENV-UNDO-001 deferred delete + undo", () => {
     await expect(page.getByText("ลบแล้ว")).toBeVisible();
     const undo = page.getByRole("button", { name: "ย้อนกลับ" });
     await expect(undo).toBeVisible();
+    // Pin the ≥44px contract on the computed layout tokens (animation-
+    // independent), then verify the settled border box. The toast entrance
+    // animates scale(0.98→1) over 300ms, so an immediate boundingBox read
+    // measures a mid-animation frame (43.12px) — not a real violation.
+    await expect(undo).toHaveCSS("min-height", "44px");
+    await expect(undo).toHaveCSS("min-width", "44px");
+    await page.waitForTimeout(350);
     const box = await undo.boundingBox();
     expect(box).not.toBeNull();
     expect(box!.height).toBeGreaterThanOrEqual(44);

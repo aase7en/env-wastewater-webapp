@@ -1,5 +1,6 @@
 import { type FormEvent, useEffect, useMemo, useRef, useState } from "react";
 import { useNavigate, useParams } from "react-router-dom";
+import { useQueryClient, type QueryClient } from "@tanstack/react-query";
 import {
   INITIAL_GATE,
   markDirty,
@@ -12,8 +13,9 @@ import { Button } from "../components/ui/Button";
 import { Skeleton } from "../components/ui/Skeleton";
 import { Field, Input, NumberInput, Textarea } from "../components/ui/Input";
 import { Toggle } from "../components/ui/Toggle";
-import { useCreateReading, useDeleteReading, useEquipment, useReading, useUpdateReading } from "../lib/hooks";
-import { useToast } from "../components/ui/Toast";
+import { useCreateReading, useEquipment, useReading, useUpdateReading } from "../lib/hooks";
+import { deleteReading as deleteReadingQ } from "../lib/supabase-queries";
+import { useToast, type ToastContextValue } from "../components/ui/Toast";
 import { checkThresholds } from "../lib/types";
 import type { ReadingCreate } from "../lib/types";
 import { cn } from "../lib/utils";
@@ -98,6 +100,109 @@ const EQUIPMENT_CHECKS: { key: keyof FormState; code: string }[] = [
   { key: "chlorine_pump2_running", code: "chlorine_pump2" },
 ];
 
+// ─── ENV-UNDO-001: deferred delete + 10-second undo window ──────────────
+// The server DELETE is deferred until a 10-second undo window expires;
+// undo cancels the pending timer and restores the captured React Query
+// cache snapshots (NO server round-trip — the row was never deleted, so
+// restore is trivially correct and needs no refetch). The storage semantic
+// stays a hard delete; only the CALL is deferred. State lives at module
+// scope (NOT component scope) so the window survives navigating away from
+// the form page — ToastProvider is app-level and the timers intentionally
+// outlive the unmounted component. Known semantics (recorded in the WO +
+// handoff): a full page unload/reload mid-window drops the pending timer,
+// so the record simply stays — honest and conservative (a closed browser
+// cancels the delete; no data loss either way).
+const UNDO_WINDOW_MS = 10_000;
+
+interface PendingDelete {
+  id: string;
+  timerId: ReturnType<typeof setTimeout>;
+  readingDetail: unknown;
+  listSnapshots: Array<{ key: readonly unknown[]; data: unknown }>;
+  toast: ToastContextValue;
+}
+
+type ReadingCacheRow = { id?: string | null };
+
+const pendingDeletes = new Map<string, PendingDelete>();
+
+/** Hide `id` from every cached readings/dashboard view, snapshotting each
+ *  affected cache entry first so undo can restore exactly what the user
+ *  saw. Keys without the row are left untouched (their snapshots would
+ *  clobber newer background refetches on restore). */
+function captureAndHideReadings(qc: QueryClient, id: string): Omit<PendingDelete, "timerId" | "id" | "toast"> {
+  const readingDetail = qc.getQueryData(["reading", id]);
+  const listSnapshots: Array<{ key: readonly unknown[]; data: unknown }> = [];
+  for (const q of qc.getQueryCache().getAll()) {
+    const key = q.queryKey;
+    if (key[0] !== "readings" && key[0] !== "dashboard") continue;
+    const data = qc.getQueryData(key) as unknown;
+    if (Array.isArray(data)) {
+      const rows = data as ReadingCacheRow[];
+      if (!rows.some((r) => r?.id === id)) continue;
+      listSnapshots.push({ key, data });
+      qc.setQueryData(key, rows.filter((r) => r?.id !== id));
+    } else if (data && typeof data === "object" && Array.isArray((data as { items?: unknown }).items)) {
+      const shaped = data as { items: ReadingCacheRow[] };
+      if (!shaped.items.some((r) => r?.id === id)) continue;
+      listSnapshots.push({ key, data });
+      qc.setQueryData(key, { ...shaped, items: shaped.items.filter((r) => r?.id !== id) });
+    }
+  }
+  qc.removeQueries({ queryKey: ["reading", id] });
+  return { readingDetail, listSnapshots };
+}
+
+/** Undo path: put back exactly what was hidden. Pure cache writes — no
+ *  server round-trip by design (the deletion was deferred, so the row is
+ *  still on the server and the snapshots ARE the truth the user saw).
+ *  Snapshot rows for OTHER still-pending deletes stay hidden — restoring
+ *  this entry must not resurrect rows whose own undo windows are live. */
+function restoreReadingsSnapshots(qc: QueryClient, entry: PendingDelete): void {
+  if (entry.readingDetail !== undefined) qc.setQueryData(["reading", entry.id], entry.readingDetail);
+  if (entry.listSnapshots.length > 0) {
+    const pendingIds = new Set(Array.from(pendingDeletes.keys(), String));
+    const keep = (r: ReadingCacheRow) => !pendingIds.has(String(r?.id));
+    for (const s of entry.listSnapshots) {
+      const data = s.data as unknown;
+      if (Array.isArray(data)) {
+        qc.setQueryData(s.key, (data as ReadingCacheRow[]).filter(keep));
+      } else if (data && typeof data === "object") {
+        const shaped = data as { items: ReadingCacheRow[] };
+        qc.setQueryData(s.key, { ...shaped, items: shaped.items.filter(keep) });
+      }
+    }
+  } else {
+    // Cold-entry edge (list cache absent at confirm — e.g. direct URL into
+    // the edit form): heal from server truth instead of inventing rows.
+    void qc.invalidateQueries({ queryKey: ["readings"] });
+    void qc.invalidateQueries({ queryKey: ["dashboard"] });
+  }
+}
+
+function scheduleDeferredDelete(entry: Omit<PendingDelete, "timerId">, qc: QueryClient): void {
+  // Same-id re-confirm inside the window keeps the original pending entry
+  // (its undo toast is still live; the delete fires once).
+  if (pendingDeletes.has(entry.id)) return;
+  const timerId = setTimeout(async () => {
+    pendingDeletes.delete(entry.id);
+    try {
+      await deleteReadingQ(entry.id);
+      qc.removeQueries({ queryKey: ["reading", entry.id] });
+      void qc.invalidateQueries({ queryKey: ["readings"] });
+      void qc.invalidateQueries({ queryKey: ["dashboard"] });
+    } catch {
+      // Honest failure — never silent loss on either side: surface the
+      // error and refetch so the record visibly returns from server truth.
+      void qc.invalidateQueries({ queryKey: ["reading", entry.id] });
+      void qc.invalidateQueries({ queryKey: ["readings"] });
+      void qc.invalidateQueries({ queryKey: ["dashboard"] });
+      entry.toast.error("ลบไม่สำเร็จ — ยังไม่ได้ลบจากระบบ รายการจะปรากฏอีกครั้ง");
+    }
+  }, UNDO_WINDOW_MS);
+  pendingDeletes.set(entry.id, { ...entry, timerId });
+}
+
 export function DailyFormPage() {
   const { id } = useParams<{ id?: string }>();
   const isEdit = !!id;
@@ -115,7 +220,7 @@ export function DailyFormPage() {
   const { data: equipment } = useEquipment();
   const createMut = useCreateReading();
   const updateMut = useUpdateReading();
-  const deleteMut = useDeleteReading();
+  const queryClient = useQueryClient();
 
   // ModuleDock renders its modal scrim outside this page. Keep the form actions
   // above the dock during normal use, but demote + inert them whenever that
@@ -245,16 +350,32 @@ export function DailyFormPage() {
     }
   };
 
-  const onDelete = async () => {
+  const onDelete = () => {
     if (!id) return;
-    if (!window.confirm("ยืนยันการลบรายการนี้? การกระทำนี้ย้อนกลับไม่ได้")) return;
-    // WO-STAB-001: deleteReading returns Promise<void>, so the mutate tuple
-    // is {data: null, error: null} on SUCCESS — a truthy-data check always
-    // failed and showed "ลบไม่สำเร็จ" + blocked the redirect even though
-    // the row was actually deleted. Success must be judged by !error.
-    const { error } = await deleteMut.mutate(id);
-    if (!error) navigate("/readings");
-    else setBanner({ kind: "error", msg: error });
+    if (!window.confirm("ยืนยันการลบรายการนี้? ย้อนกลับได้ภายใน 10 วินาที")) return;
+    // ENV-UNDO-001: deferred delete — hide the row optimistically (cache
+    // snapshots captured for undo), show the 10s "ย้อนกลับ" toast, and fire
+    // the real DELETE only when the window expires. Undo is a pure cache
+    // restore: the row was never deleted server-side. (The old flow's
+    // WO-STAB-001 !error judgment lived here; the deferred outcome is now
+    // judged on expiry inside scheduleDeferredDelete instead.)
+    const snapshots = captureAndHideReadings(queryClient, id);
+    navigate("/readings");
+    scheduleDeferredDelete({ id, toast, ...snapshots }, queryClient);
+    toast.toast("success", "ลบแล้ว", {
+      action: {
+        label: "ย้อนกลับ",
+        onAction: () => {
+          const entry = pendingDeletes.get(id);
+          if (!entry) return;
+          clearTimeout(entry.timerId);
+          pendingDeletes.delete(id);
+          restoreReadingsSnapshots(queryClient, entry);
+        },
+      },
+      durationMs: UNDO_WINDOW_MS,
+      countdown: true,
+    });
   };
 
   if (loadingExisting) {
@@ -492,7 +613,7 @@ export function DailyFormPage() {
           ยกเลิก
         </Button>
         {isEdit && (
-          <Button type="button" variant="danger" size="lg" onClick={onDelete} loading={deleteMut.loading} className="ml-auto">
+          <Button type="button" variant="danger" size="lg" onClick={onDelete} className="ml-auto">
             <MSymbol name="delete" className="text-[18px]" /> ลบ
           </Button>
         )}

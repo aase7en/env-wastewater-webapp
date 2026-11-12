@@ -1,5 +1,5 @@
 import { renderToStaticMarkup } from "react-dom/server";
-import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
+import { describe, expect, it, vi } from "vitest";
 import {
   resolveToastDurationMs,
   runToastAction,
