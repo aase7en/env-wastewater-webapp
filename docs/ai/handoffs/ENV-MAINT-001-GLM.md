@@ -668,3 +668,146 @@ Commit `7785194` — diff exactly: `scripts/check_release_version.py`,
 PENDING — this lane STOPS at REVIEW_REQUESTED; the implementer never
 merges its own PR. Fresh-GLM review at the exact head per claim
 convention; Terra-via-Codex eligible as cross-model reviewer.
+
+## D6 — CLOSEOUT RECEIPT (2026-11-12)
+
+Appended by the closeout transition (docs-only, re-reviewed). The D5
+"PENDING" placeholder above was written pre-review; the outcome below
+supersedes it. This closeout STOPS at REVIEW_REQUESTED — the transition
+lane never merges its own PR.
+
+### D5 outcome (receipt verified live 2026-11-12)
+
+**APPROVED, zero P1/P2** — fresh-GLM independent review at the exact
+head `55b85f8d306b12952ce89357a22871a5bb40cb70` (base main @ `16db009`),
+receipt:
+https://github.com/aase7en/env-wastewater-webapp/pull/174#issuecomment-6830116560.
+The reviewer re-ran the full battery independently (vitest FULL 493
+passed / 1 designed skip, tsc clean, oxlint 0 errors, Playwright FULL
+207/207 workers=1, guard 344/344, runtime 62/62, checker regression
+37/37, `git diff --check` clean) and re-derived the two honest D2
+findings: (a) a raw-Playwright dock probe confirming the nav CONTAINER
+intersects the chip only via a benign transparent padding sliver
+(~10.5×20 px, vs D2's ~8.75×20 — same pattern, sub-2px font-state
+variance) while 0/8 dock control boxes intersect and the chip-center
+hit-test resolves to the chip at 360/390/430; (b) the old-checker RED
+reproduced exactly (36 passed / 1 failed) against
+`git show 16db009:scripts/check_release_version.py` with the NEW tests.
+All 3 recorded deviations judged acceptable (see Honesty notes).
+
+### Full delivery chain (all receipts verified live 2026-11-12)
+
+- **Claim transition PR #173 merged as `16db009d319a0afdcff4e368b3d8395ded58c4f1`**
+  (parents `2e6f011` + `76ee5cb`, expected-head discipline held; R2
+  APPROVED issuecomment-6828694965 at reviewed head `76ee5cb`, zero
+  P1/P2).
+- **D2 RED-first `8bfd170`** (tests only, checker untouched at that
+  commit): item 1 = **PIN-NOT-RED, honestly recorded** (dock-overlap e2e
+  pin at 360/390/430 passes at base — the container-box reading in the
+  WO would be permanently red against the benign transparent padding
+  design, so the pin guards chip↔dock-control separation + tap-target
+  integrity, the protective intent of the versioning-lane P3; the
+  container-box finding recorded in the spec comment + D2 receipt);
+  item 2 = **1 truthful RED** (unmodified base checker: 36 passed / 1
+  failed, exit 1 — the benign asset-URL vSemVer
+  `cdn.example.com/v1.2.3/lib.js` flagged by the old boundary-only scan)
+  + 9 tag-match regression pins (base `==` was already full-string
+  exact, kept per the dispatch honesty provision) + 1 standalone-literal
+  pin (26 → 37 cases); item 3 = no-RED-by-nature (flake hardening,
+  WO-recorded).
+- **D3 `7785194`**: checker `HARDCODED_RE` → standalone-token
+  three-component form with lookarounds + `normalize_release_tag` (ONE
+  leading lowercase `v` strip mandatory; `V` and whitespace never
+  normalized) — observable behavior byte-identical, 37/37; garbage
+  `:186` settles on the rendered form shell (no assertion weakened, no
+  production garbage file); owner-directed PATCH v1.0.2 bookkeeping
+  (package.json 1.0.1 → 1.0.2 + Thai พ.ศ. CHANGELOG entry with the
+  honest no-user-visible-delta reasoning; PR ref placeholder fixed in
+  `55b85f8` immediately after `gh pr create`).
+- **D4 battery at frozen head `7785194`** (re-run identical at final
+  head): vitest FULL 31 files **493 passed / 1 designed skip**; tsc -b
+  clean; oxlint 0 errors (16 pre-existing warnings); Playwright FULL
+  chromium **207/207** `--workers=1`; garbage-mobile **3× consecutive
+  9/9** (plus a 4th standalone 9/9; the FIRST 3× batch DISQUALIFIED —
+  capture truncation made run-3 attribution impossible, the re-run is
+  the receipt); checker regression **37/37**; `--tag v1.0.2` OK exit 0,
+  `--tag v1.0.10` correctly REJECTED exit 1; guard **344/344**; runtime
+  **62/62**; `git diff --check` clean; scope = exactly the 8 claimed
+  files, CURRENT-WORK.md diff EMPTY.
+- **Implementation PR #174 merged as `b4cfd4d59763b392795e23e5ea7a4b3b983f605a`**
+  (second parent = D5-APPROVED reviewed head `55b85f8`; parents
+  `16db009` + `55b85f8`; merge-executor trail:
+  https://github.com/aase7en/env-wastewater-webapp/pull/174#issuecomment-6830155921).
+
+### Release v1.0.2 — live verification
+
+- Owner-directed PATCH (reasoning recorded at D4 + CHANGELOG: the four
+  items are internal test/script/docs work the PATCH criteria alone
+  would not force to bump — v1.0.2 is the owner-ordered version marker
+  for this maintenance bundle).
+- Pages deploy run **43264188641 SUCCESS** @ `b4cfd4d`.
+- Live asset `assets/index-CyyAcYj7.js` (HTTP 200 fresh fetch,
+  555,702 B) carries version **1.0.2** + the version chip markers incl.
+  the Thai CHANGELOG heading `v1.0.2 — 12 พฤศจิกายน พ.ศ. 2569`.
+- Annotated tag **`v1.0.2`** (tag object `10beac69`) dereferences to
+  `b4cfd4d` (not the PR head) and is pushed (ls-remote confirmed).
+- `check_release_version.py --tag v1.0.2` → exit 0 (re-verified live by
+  the closeout lane).
+
+### Item-4 closeout (CURRENT-WORK.md drift fix, this transition)
+
+The `ENV-PERF-001` narrative bullet (~line 1148 at base `2e6f0119`;
+line ~1206 at closeout base `b4cfd4d`) still read
+`CLAIMED (C1, this transition)` although the lane is CLOSED (PR #171
+merged, closeout PR #172 merged) — the #172 reviewer's P3,
+byte-identical since base. Corrected here minimally: header now
+`CLOSED (C1 — delivered via PR #171 …; closeout PR #172 merged 2e6f011;
+registry record + docs/ai/handoffs/ENV-PERF-001-GLM.md D6 hold the
+receipts — stale-CLAIMED header corrected by the ENV-MAINT-001-C1
+closeout per WO item 4)`. The same transition records the frontier (see
+below). The `ENV-APP-VERSION-001` narrative bullet (~line 1205) also
+still reads `CLAIMED` while its registry record is CLOSED (PR #169
+closeout rewrote the registry, not the bullet) — same drift class but
+NOT this item; left untouched, recorded here as a residual observation
+for a future docs-only transition.
+
+### Frontier after this closeout
+
+**NO active claim + WAITING_REAL_FEEDBACK** — the next product lane is
+chosen only after real-world staff feedback arrives on:
+1. Building module real usage (unlocks the
+   `ENV-BUILDING-REPAIR-001-C1` D9b/Gate-2 path),
+2. Twin water-motion first impressions,
+3. v1.0.1 speed improvements in daily use,
+4. any v1.0.x friction.
+
+Per the joint delegated consult 2026-11-12 synthesis **B-then-D**:
+Terra (Codex CLI, read-only) Q1=D STOP (รอรับ feedback จากการใช้งานจริง
+ของทีมโรงพยาบาลก่อน); Jev (jev-advisory MCP, jev-1.13.0,
+authoritative_for_action:false) Q1 decoded A as a weak LOW-confidence
+near-tie (0.41/0.39 vs D at 0.41/0.42) disclosed NOT decision-grade
+alone, with the local (non-Jev) note that B is lowest-regret (1/5).
+Standing owner-manual reminders **#155** (re-enable ENV hooks) and
+**#156** (OPENROUTER_API_KEY renewal) remain OPEN and are not
+agent-actionable; `ENV-BUILDING-REPAIR-001-C1` stays WAITING_EXTERNAL.
+Scope lock released at generation 1; CLOSED confers no fresh mutation
+authority.
+
+### Honesty notes (carried into the closeout, exactly as recorded)
+
+1. `npm ci --legacy-peer-deps` was a **local worktree-only** bootstrap
+   necessity (peer-resolution artifact); `frontend/package-lock.json`
+   was byte-untouched — D5 verified the lock absent from the diff.
+2. `frontend/.env` was a **gitignored local copy** in the fresh worktree
+   (never printed, never committed; `git check-ignore` verified).
+3. The **D2 commit message was amended BEFORE push** (`b691bf0` →
+   `8bfd170`) to correct the base-regex description — unpushed lane
+   commit, no other writer.
+4. Residual observations (NOT silently fixed, outside this closeout's
+   2-file scope): the WO `docs/work-orders/ENV-MAINT-001.md` status on
+   main still carries the pre-merge REVIEW_REQUESTED-era text, and the
+   `ENV-APP-VERSION-001` narrative bullet noted above still reads
+   CLAIMED — both are records for future docs-only transitions, not
+   part of the authorized item-4 fix.
+
+— END OF LANE (closeout transition stops at REVIEW_REQUESTED) —
