@@ -308,7 +308,14 @@ passed / 1 designed skip (= baseline 493 + 10 new, 0 regressions).
 ## D4 — Battery (appended by the implementing lane, 2026-11-12)
 
 Frozen head: **`20e3449`** (branch `feat/env-undo-001`, working tree
-clean). All receipts re-run at this exact head, 2026-11-12:
+clean). All receipts re-run at this exact head, 2026-11-12. After the
+receipts commit, two docs-only commits landed (`6c37773` receipts, then
+the CHANGELOG PR-ref fix `f696105`); the full battery was **re-run
+identical at `f696105`** (last code-bearing head — vitest 32/503+1skip,
+tsc clean, oxlint exit 0, Playwright FULL 213/213, guard 344/344, runtime
+62/62, checker OK v1.1.0, `git diff --check` clean, tree clean). The only
+commit after `f696105` is this docs line — no code bytes change after the
+verified head. Per-facet receipts at `20e3449`/`f696105`:
 
 1. vitest FULL (`npm test`): **32 files passed / 503 tests passed /
    1 designed skip** (skip is the pre-existing designed skip; 503 =
