@@ -189,6 +189,13 @@ test.describe("ENV-MOBILE-006 Garbage mobile regression", () => {
     await mockDependencies(page, { failPostOnce: true, posts });
     await page.setViewportSize(PHONE_430);
     await page.goto("/garbage");
+    // ENV-MAINT-001 item 3: the PERF lane recorded a one-off load-flake at
+    // this test (PERF handoff honesty note 4). Settle deterministically on
+    // the rendered form shell — house pattern (fuel-mobile waits on a
+    // rendered page element after goto) — instead of racing the first fill.
+    const save = content(page).getByRole("button", { name: SAVE, exact: true });
+    await expect(field(page, FIELDS[0][0])).toBeVisible();
+    await expect(save).toBeVisible();
 
     await field(page, FIELDS[0][0]).fill("2026-08-31");
     await field(page, FIELDS[1][0]).selectOption("infectious");
@@ -213,7 +220,6 @@ test.describe("ENV-MOBILE-006 Garbage mobile regression", () => {
       note: "synthetic retry evidence",
     } satisfies GarbageInput;
 
-    const save = content(page).getByRole("button", { name: SAVE, exact: true });
     await save.click();
     await expect(page.getByRole("status").filter({ hasText: "E2E garbage save failure" })).toBeVisible();
     await expect(field(page, FIELDS[2][0])).toHaveValue("12.5");
