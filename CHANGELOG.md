@@ -37,7 +37,7 @@
 เพิ่มเลขเวอร์ชัน — v1.0.2 เป็น version marker ที่เจ้าของโครงการสั่งไว้
 สำหรับชุดบำรุงรักษานี้อย่างชัดเจน
 
-การเปลี่ยนแปลงชุดนี้: PR #XXX
+การเปลี่ยนแปลงชุดนี้: PR #174
 (ENV-MAINT-001 — dock-overlap pin, exact version-tag matching, flake hardening)
 
 ## v1.0.1 — 12 พฤศจิกายน พ.ศ. 2569
