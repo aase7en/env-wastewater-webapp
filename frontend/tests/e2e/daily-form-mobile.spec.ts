@@ -35,12 +35,12 @@ const VISUAL_DIR = "test-results/env-mobile-001b-visual";
 
 type Box = { x: number; y: number; width: number; height: number };
 
-interface RepairCapture {
+interface SaveCapture {
   url: string;
   body: string;
 }
 
-async function mockDailyFormDependencies(page: Page, repairRequests?: RepairCapture[]) {
+async function mockDailyFormDependencies(page: Page, saveCaptures?: SaveCapture[]) {
   await page.route("**/rest/v1/equipment**", async (route) => {
     await route.fulfill({ status: 200, contentType: "application/json", body: "[]" });
   });
@@ -54,15 +54,25 @@ async function mockDailyFormDependencies(page: Page, repairRequests?: RepairCapt
   });
 
   await page.route("**/rest/v1/repair_request**", async (route) => {
-    // Capture the real boundary invocation (ENV-MOBILE-001B) instead of
-    // merely replying to it.
-    if (repairRequests && route.request().method() === "POST") {
-      repairRequests.push({ url: route.request().url(), body: route.request().postData() ?? "" });
-    }
     await route.fulfill({
       status: 201,
       contentType: "application/json",
       body: JSON.stringify({ id: "22222222-3333-4444-5555-666666666666", status: "open" }),
+    });
+  });
+
+  // ENV-PERF-001: the create-save boundary is now the atomic RPC (the old
+  // 3 sequential inserts happen inside fn_create_reading). Capture the real
+  // invocation instead of merely replying to it — p_payload carries the
+  // whole form payload including abnormal_cause.
+  await page.route("**/rest/v1/rpc/fn_create_reading**", async (route) => {
+    if (saveCaptures && route.request().method() === "POST") {
+      saveCaptures.push({ url: route.request().url(), body: route.request().postData() ?? "" });
+    }
+    await route.fulfill({
+      status: 200,
+      contentType: "application/json",
+      body: JSON.stringify({ id: "11111111-2222-3333-4444-555555555555", status: "created" }),
     });
   });
 
@@ -140,28 +150,8 @@ test.describe("ENV-MOBILE-001 daily form on phone", () => {
   });
 
   test("phone workflow preserves values, validates abnormal cause, and can save", async ({ authed: page }) => {
-    const repairRequests: RepairCapture[] = [];
-    await mockDailyFormDependencies(page, repairRequests);
-
-    let postedBody = "";
-    await page.route("**/rest/v1/reading**", async (route) => {
-      if (route.request().method() !== "POST") {
-        await route.fallback();
-        return;
-      }
-      postedBody = route.request().postData() ?? "";
-      await route.fulfill({
-        status: 201,
-        contentType: "application/json",
-        body: JSON.stringify({
-          id: "11111111-2222-3333-4444-555555555555",
-          reading_date: "2026-08-27",
-          system_operating: false,
-          do_aeration: 2.5,
-          free_chlorine: 1.0,
-        }),
-      });
-    });
+    const saveCaptures: SaveCapture[] = [];
+    await mockDailyFormDependencies(page, saveCaptures);
 
     await page.goto("/form");
 
@@ -170,7 +160,7 @@ test.describe("ENV-MOBILE-001 daily form on phone", () => {
     await page.locator('label:has-text("ระบบทำงานปกติ")').click();
     await page.getByRole("button", { name: "บันทึก", exact: true }).click();
     await expect(page.getByText("กรุณาระบุสาเหตุที่ระบบผิดปกติ")).toBeVisible();
-    expect(postedBody).toBe("");
+    expect(saveCaptures).toHaveLength(0);
 
     await page.locator("#abnormal_cause").fill("ทดสอบปั๊มหยุดทำงาน");
 
@@ -201,22 +191,19 @@ test.describe("ENV-MOBILE-001 daily form on phone", () => {
 
     await submit.click();
     await expect(page.getByText("บันทึกรายการสำเร็จ")).toBeVisible();
-    const posted = JSON.parse(postedBody) as Record<string, unknown>;
-    expect(posted.do_aeration).toBe("2.5");
-    expect(posted.free_chlorine).toBe("1.0");
-    expect(posted.system_operating).toBe(false);
 
-    // ENV-MOBILE-001B: an abnormal cause must actually invoke the existing
-    // repair-request boundary in the same save flow — captured request, not
-    // just a mocked response.
-    expect(repairRequests).toHaveLength(1);
-    expect(repairRequests[0].url).toContain("/rest/v1/repair_request");
-    const repairPayload = JSON.parse(repairRequests[0].body) as Record<string, unknown>;
-    expect(repairPayload).toEqual({
-      reading_id: "11111111-2222-3333-4444-555555555555",
-      cause: "ทดสอบปั๊มหยุดทำงาน",
-      status: "open",
-    });
+    // ENV-MOBILE-001B (ENV-PERF-001 contract): an abnormal cause must ride
+    // the atomic save boundary — one captured rpc POST whose p_payload
+    // carries both the reading fields and the abnormal_cause (the repair
+    // request is created server-side inside the same transaction, so the
+    // old separate /rest/v1/repair_request POST no longer exists).
+    expect(saveCaptures).toHaveLength(1);
+    expect(saveCaptures[0]!.url).toContain("/rest/v1/rpc/fn_create_reading");
+    const saveBody = JSON.parse(saveCaptures[0]!.body) as { p_payload: Record<string, unknown> };
+    expect(saveBody.p_payload.do_aeration).toBe("2.5");
+    expect(saveBody.p_payload.free_chlorine).toBe("1.0");
+    expect(saveBody.p_payload.system_operating).toBe(false);
+    expect(saveBody.p_payload.abnormal_cause).toBe("ทดสอบปั๊มหยุดทำงาน");
   });
 
   test("430 px phone keeps one-column density, no overflow, and reachable final field and actions", async ({ authed: page }) => {
@@ -371,11 +358,9 @@ test.describe("ENV-MOBILE-001 daily form on phone", () => {
     await mockDailyFormDependencies(page);
 
     const postBodies: string[] = [];
-    await page.route("**/rest/v1/reading**", async (route) => {
-      if (route.request().method() !== "POST") {
-        await route.fallback();
-        return;
-      }
+    // ENV-PERF-001: the create-save boundary is the atomic rpc POST.
+    await page.unroute("**/rest/v1/rpc/fn_create_reading**");
+    await page.route("**/rest/v1/rpc/fn_create_reading**", async (route) => {
       postBodies.push(route.request().postData() ?? "");
       if (postBodies.length === 1) {
         // Deterministic first-request failure (PostgREST error shape).
@@ -387,7 +372,7 @@ test.describe("ENV-MOBILE-001 daily form on phone", () => {
         return;
       }
       await route.fulfill({
-        status: 201,
+        status: 200,
         contentType: "application/json",
         body: JSON.stringify({
           id: "11111111-2222-3333-4444-555555555555",
@@ -466,9 +451,9 @@ test.describe("ENV-MOBILE-001 daily form on phone", () => {
     await expect(page.getByText("บันทึกรายการสำเร็จ")).toBeVisible();
 
     expect(postBodies).toHaveLength(2);
-    const retryPayload = JSON.parse(postBodies[1]) as Record<string, unknown>;
-    expect(retryPayload.do_aeration).toBe("2.5");
-    expect(retryPayload.free_chlorine).toBe("1.0");
+    const retryPayload = JSON.parse(postBodies[1] ?? "{}") as { p_payload: Record<string, unknown> };
+    expect(retryPayload.p_payload.do_aeration).toBe("2.5");
+    expect(retryPayload.p_payload.free_chlorine).toBe("1.0");
   });
 
   test("edit mode at phone width keeps update/cancel/delete usable, non-overlapping, and clear of the final field", async ({ authed: page }) => {

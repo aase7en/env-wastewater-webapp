@@ -64,8 +64,10 @@ test.describe("ENV-PERF-001", () => {
     await expect(saveButton).toBeVisible();
 
     // Freeze time only from here on — the submit's 900ms legacy timer would
-    // be scheduled while paused and never fire.
-    await page.clock.pauseAt(new Date());
+    // be scheduled while paused and never fire. pauseAt only fast-forwards
+    // (never backward), so pause at a fixed future instant; the jump is far
+    // inside the fake session's 1h validity window.
+    await page.clock.pauseAt(new Date(Date.now() + 60_000));
 
     await saveButton.click();
     await expect(page.getByText("บันทึกรายการสำเร็จ")).toBeVisible();
