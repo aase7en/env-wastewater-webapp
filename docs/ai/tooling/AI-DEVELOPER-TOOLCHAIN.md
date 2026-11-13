@@ -1,6 +1,6 @@
 # AI Developer Toolchain — UTH[AI]-ENV
 
-Last updated: 2026-08-22
+Last updated: 2026-11-13
 
 ## Goal
 
@@ -12,8 +12,11 @@ This file is the source of truth for planned/connected AI developer tools. Clien
 
 | Tool | Purpose | Status | Cost / auth note |
 |---|---|---|---|
-| Serena / SunDay workers | local repo intelligence, scoped edits, tests | ACTIVE | existing local tooling |
-| Git / GitHub | source control, PRs, CI evidence | ACTIVE | existing repo workflow |
+| SundayMCP (macOS, SunDayRemoteMCP) | verified local filesystem, Git/worktree, shell, tests, runtime, semantic tools | PRIMARY on macOS; verify real connection/capabilities | existing OS-matched MCP interface; connector visibility is not readiness |
+| SundayMCP Windows (SunDayRemoteMCP) | same scoped capabilities on verified Windows device | PRIMARY on Windows; verify real connection/capabilities | do not route Windows paths to macOS |
+| Git / GitHub | local version control plus authoritative remote PRs/reviews/CI/exact SHA | ACTIVE | remote evidence from GitHub; current claim/review gates still apply |
+| Remote Desktop Commander (RDC) | matching-device file/terminal recovery for missing SundayMCP capability | SECONDARY / RECOVERY ONLY | verify device identity; not a startup dependency |
+| SunDay-Worker 1–5 / Serena | preserved historical compatibility or explicitly authorized recovery only | LEGACY — NOT AUTO-DISPATCHED | never restart, rebind or recreate retired infrastructure by default |
 | Playwright CLI | deterministic browser regression | ACTIVE | repository dependency/tooling |
 | Vitest | unit tests | ACTIVE | repository dependency/tooling |
 | Context7 MCP | current library/API documentation for agents | CONFIGURED FOR CODEX | basic remote use can work without API key; rate limits may apply |

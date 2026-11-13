@@ -1,6 +1,6 @@
 # ENV-SUNDAYMCP-ROUTING-001 — SundayMCP-first Repository Instruction Migration
 
-Status: CLAIM_TRANSITION_PROPOSED. Implementation is NOT authorized until the independently reviewed control transition merges to authoritative main.
+Status: CLAIM_ACCEPTED / IMPLEMENTED_AWAITING_INDEPENDENT_REVIEW. Claim transition PR #179 independently APPROVED at exact head `b320e806b025de9fd7acfe8a0c7ed3c5ec072352`, CI `scripts`/`notify` passed and merged to authoritative `main` as `8dd0c5ce031ecd39b553f340c376ad5b2ebc1d57`. Implementation remains separately gated by actual repository ownership/scope/SAFE_TO_MUTATE, evidence and independent review.
 Owner authorization: explicit project-owner request on 2026-11-13 to perform repository synchronization after ChatGPT Project Instructions and Sources were updated (owner-reported, not directly verified).
 Repository: aase7en/env-wastewater-webapp
 Proposed claim: ENV-SUNDAYMCP-ROUTING-001-C1, generation 1

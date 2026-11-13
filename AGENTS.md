@@ -44,6 +44,15 @@ The Experience Master Plan remains mandatory for product/visual work, but it is 
 
 **Context rule:** read the smallest authoritative slice that proves the next decision/action. Expand context only when a dependency, conflict, risk, or missing fact requires it.
 
+## Local machine execution — current SundayMCP-first routing
+
+- On **macOS**, use the OS-matched **SundayMCP** (SunDayRemoteMCP macOS instance) first for verified local files, Git/worktrees, shell, tests, runtime and semantic code navigation, as supported.
+- On **Windows**, use **SundayMCP Windows** (SunDayRemoteMCP Windows instance) first for the same verified capabilities. Never route a Windows path to a macOS device merely because it is online.
+- Use **GitHub** directly as authoritative remote branch/PR/diff/review/CI/exact-SHA evidence; local Git and ChatGPT Project Sources are not substitutes for current remote truth.
+- **Remote Desktop Commander (RDC)** is a verified-device **secondary/recovery fallback** only if the matching SundayMCP connector is unavailable, degraded or lacks the needed capability. Do not start RDC as a normal prerequisite.
+- **SunDay-Worker 1–5 and Serena are legacy**: do not automatically start, dispatch, bind Active Projects or recreate retired worker infrastructure. Retain their historical records; exceptional compatibility/recovery requires explicit accepted authorization.
+- Verify real connector readiness (`REGISTERED → PROCESS_STARTED → CONNECTED → TOOLS_AVAILABLE → REAL_TOOL_CALL_VERIFIED`, where observable), device identity, repository and capability before relying on it. **CONNECTED != SAFE_TO_MUTATE**: the repository's current claim, ownership, worktree, security, review and release gates remain binding regardless of execution interface.
+
 ## Binding rules for every agent
 
 These apply to **any** agent working in this repo, regardless of which tool

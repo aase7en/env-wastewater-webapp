@@ -1,6 +1,6 @@
 # UTH[AI]-ENV — Experience & Visual Intelligence Master Plan
 
-Last updated: 2026-09-10
+Last updated: 2026-11-13
 Status: DESIGN SOURCE OF TRUTH
 
 ## 1. Purpose
@@ -381,10 +381,12 @@ If this master plan and an active work order appear to conflict, do not silently
 - does not invent visual/data semantics beyond the work order;
 - stops at review gates defined in repo docs.
 
-### Serena / SunDay workers
+### Machine execution interface — SundayMCP-first (current)
 
-- repo intelligence, scoped edits, diagnostics, tests, and review support;
-- avoid same-file collisions with another active writer.
+- use the verified **SundayMCP** macOS instance for macOS local repo intelligence, bounded edits, Git/tests, diagnostics and review support; use **SundayMCP Windows** for Windows work;
+- use **GitHub** for remote PR, review, CI and exact-SHA evidence; use verified-device **RDC only as secondary/recovery fallback** when the matching SundayMCP instance cannot provide a required capability;
+- **SunDay-Worker 1–5 and Serena are legacy** and must not be auto-dispatched, activated, rebound or recreated; preserve historical evidence;
+- require a real connector/device/repository verification and the existing Work Order, claim, one-writer, security, accessibility and review gates before any mutable visual work.
 
 ## 12. Implementation Gate
 
