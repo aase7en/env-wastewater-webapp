@@ -1,6 +1,6 @@
 # ENV-SUNDAYMCP-ROUTING-001 — Implementation Handoff
 
-Status: REVIEW_REQUESTED — docs-only implementation complete with local deterministic checks PASS; fresh independent exact-SHA review and hosted CI remain required before authorized merge.
+Status: IMPLEMENTATION_MERGED_VERIFIED / CLAIM_C1_REMAINS_CLAIMED_PENDING_QUIESCENCE_ATTESTATION. The active routing migration is on remote main; §4.2B ownership release is not yet authorized.
 Task / claim: ENV-SUNDAYMCP-ROUTING-001 / ENV-SUNDAYMCP-ROUTING-001-C1, generation 1
 Executor: GPT-6 integration via verified macOS SundayMCP; one authoring lane; no legacy Worker/Serena dispatch.
 Repository: aase7en/env-wastewater-webapp
@@ -33,7 +33,7 @@ Claim-transition branch: docs/env-sundaymcp-routing-001-claim (separate from thi
 
 - Targeted docs-only grep/schema checks: PASS for all four active routing documents; canonical OS tools, GitHub, verified RDC fallback, LEGACY states verified; table column format PASS and dated historical Codex note preserved.
 - Guard regression at implementation candidate: `python3 -m pytest scripts/test_env_coordination_guard.py -q` PASS — 344 tests / 450 subtests. `git diff --check` PASS.
-- Frozen candidate SHA: use actual local Git and verify remote PR head after pushing (never self-reference SHA inside its own commit). Remote PR, hosted CI, independent review, authorized merge: PENDING.
+- Exact implementation candidate `394f3b35ee3f0fea756eca3e275f7ee8b691011f`; PR #180 independent GLM reviewer APPROVED at exact SHA (issuecomment-6850356749, zero P1/P2), hosted scripts/notify PASS; expected-head merge commit `43be7e6f67fc556a05ccaefb4b66ebf949506808`, verified from GitHub main. Post-main scripts PASS; notify SKIPPED, not claimed as PASS.
 - No frontend E2E warranted for docs-only change; no production/live verification requested.
 - Never assume ChatGPT Project Instructions/Sources were updated merely because repository instructions are changed; owner reported manual updates separately.
 
@@ -45,4 +45,11 @@ Claim-transition branch: docs/env-sundaymcp-routing-001-claim (separate from thi
 
 ## One next safe action
 
-Freeze this exact docs-only candidate, push branch and open implementation PR; request independent exact-SHA review and applicable CI; integrate only after gate approval. Never self-approve, self-merge or widen scope.
+Maintain the existing claim C1 scope lock. Obtain a valid §4.2B Quiescence Attestation (claim identity, generation, holder, latest lifecycle evidence, admissions high-water mark, active_admissions=0 and resolved effects) or an explicit owner-approved risk/exception resolution before proposing any CLOSED claim transition. No auto-release.
+
+## Post-merge reconciliation — 2026-11-13
+
+- GitHub main `43be7e6f67fc556a05ccaefb4b66ebf949506808` verified from remote; repository AGENTS.md, Operating Map, Toolchain and Experience Master Plan all read directly from this SHA and show consistent SundayMCP-first routing.
+- Both PR #179 and PR #180 MERGED after separate GLM independent exact-SHA reviews and hosted CI; no production/runtime configuration or historical handoffs changed. Recorded primary evidence is PR #179 issuecomment-6850141600 and PR #180 issuecomment-6850356749.
+- Current C1 claim remains CLAIMED in `docs/ai/CURRENT-WORK.md`; do not write a competing registry or silently release it. Repo's §4.2B requires stronger quiescence evidence than available tool snapshots. SundayMCP lane list empty, terminal session list empty, implementation worktree clean; admission high-water mark and active_admissions were NOT exposed. Separate old READ-ONLY transition-worktree execution `exec-mwetct9n-p5v48v8x` remained PENDING_SCOPE/no PID/cancel requested, not evidence of mutation success or formal quiescence.
+- No active implementation mutation or pending code PR remains for routing docs. This handoff records verification and the exact remaining governance blocker for a fresh agent. Project-level ChatGPT UI updates remain owner-reported, not tool-verified.

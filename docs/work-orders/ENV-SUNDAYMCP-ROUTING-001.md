@@ -1,11 +1,11 @@
 # ENV-SUNDAYMCP-ROUTING-001 — SundayMCP-first Repository Instruction Migration
 
-Status: CLAIM_ACCEPTED / IMPLEMENTED_AWAITING_INDEPENDENT_REVIEW. Claim transition PR #179 independently APPROVED at exact head `b320e806b025de9fd7acfe8a0c7ed3c5ec072352`, CI `scripts`/`notify` passed and merged to authoritative `main` as `8dd0c5ce031ecd39b553f340c376ad5b2ebc1d57`. Implementation remains separately gated by actual repository ownership/scope/SAFE_TO_MUTATE, evidence and independent review.
+Status: IMPLEMENTATION_MERGED_AND_VERIFIED / CLAIM_RELEASE_PENDING_QUIESCENCE_ATTESTATION. Claim transition PR #179 independently APPROVED at exact head `b320e806b025de9fd7acfe8a0c7ed3c5ec072352`, CI `scripts`/`notify` passed and merged to authoritative `main` as `8dd0c5ce031ecd39b553f340c376ad5b2ebc1d57`. Implementation remains separately gated by actual repository ownership/scope/SAFE_TO_MUTATE, evidence and independent review.
 Owner authorization: explicit project-owner request on 2026-11-13 to perform repository synchronization after ChatGPT Project Instructions and Sources were updated (owner-reported, not directly verified).
 Repository: aase7en/env-wastewater-webapp
-Proposed claim: ENV-SUNDAYMCP-ROUTING-001-C1, generation 1
+Accepted claim: ENV-SUNDAYMCP-ROUTING-001-C1, generation 1 (CLAIMED on main pending release gate)
 Transition base: f60316ceff7459caebc7b18d112b0976dec32890; revalidate before merge.
-Implementation branch: docs/env-sundaymcp-routing-001 (create only after accepted transition merge).
+Implementation branch: docs/env-sundaymcp-routing-001 (PR #180 independently reviewed and merged).
 Implementation worktree: /Volumes/MAC_WORK/DevWorkspace/Github/_worktrees/env-sundaymcp-routing-001-impl-20261113
 
 ## Objective
@@ -49,3 +49,13 @@ Surgically align ACTIVE repository instructions to SundayMCP-first routing. Pres
 ## One next safe action
 
 Obtain independent exact-SHA review of the claim-transition PR; after owner-authorized merge, create implementation branch/worktree and edit only the four ACTIVE routing documents listed above.
+
+## Post-merge verified facts — 2026-11-13
+
+- Claim-transition PR #179 merged at 8dd0c5ce031ecd39b553f340c376ad5b2ebc1d57; independent GLM R2 review receipt issuecomment-6850141600.
+- Active-instructions implementation PR #180 exact reviewed head 394f3b35ee3f0fea756eca3e275f7ee8b691011f merged at 43be7e6f67fc556a05ccaefb4b66ebf949506808; fresh independent GLM review APPROVED (zero P1/P2), receipt issuecomment-6850356749.
+- Remote main confirmed 43be7e6f. All four routing files independently read from remote main contain correct macOS/Windows SundayMCP PRIMARY, GitHub authority, RDC fallback and Legacy no-auto-dispatch semantics. No production/DB/schema/PHI/environmental data changed.
+- Implementation candidate 344 guard tests / 450 subtests PASS, routing assertions PASS, diff-check PASS; PR #180 hosted scripts/notify PASS. Merged-main scripts PASS, notify SKIPPED (not a pass); docs-only frontend E2E not applicable.
+- Repository instruction migration is VERIFIED on main. Owner-reported separate ChatGPT Project settings/Sources update was NOT independently UI-verified by this task.
+- Claim C1 remains CLAIMED because §4.2B quiescence attestation cannot be proven from the available SundayMCP mutation admission telemetry. No active SundayMCP lanes or terminal sessions were observed and the implementation worktree is clean, but admission sequence high-water mark/active_admissions=0 evidence is not exposed. An old read-only dispatch on the distinct claim-transition worktree is still PENDING_SCOPE/no PID/cancel requested. Do NOT treat no processes/clean git as proof of the formal transfer barrier.
+- Scope must NOT be released or reassigned automatically. Before a CLOSED transition, obtain valid §4.2B attestation or an explicitly authorized risk-acceptance/recovery decision under current governance, with independent exact-SHA review and current-main OCC revalidation. No claims about forced release or completion of governance closeout.
