@@ -48,7 +48,7 @@ Surgically align ACTIVE repository instructions to SundayMCP-first routing. Pres
 
 ## One next safe action
 
-Obtain independent exact-SHA review of the claim-transition PR; after owner-authorized merge, create implementation branch/worktree and edit only the four ACTIVE routing documents listed above.
+Implementation is already merged and verified on authoritative `main@43be7e6f67fc556a05ccaefb4b66ebf949506808`. Preserve the existing `ENV-SUNDAYMCP-ROUTING-001-C1` scope lock. Obtain an actual §4.2B Quiescence Attestation (identity/generation/holder/lifecycle/admission high-water mark/active_admissions=0/resolved effects), or a separately recorded explicit owner-authorized risk/exception resolution under the accepted governance, before proposing and independently reviewing a `CLOSED` control transition. Do not auto-release merely because CI and clean Git state are proven.
 
 ## Post-merge verified facts — 2026-11-13
 
