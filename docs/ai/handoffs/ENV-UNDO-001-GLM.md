@@ -482,7 +482,7 @@ generation 1; CLOSED confers no fresh mutation authority.
 
 The stale `ENV-APP-VERSION-001 / CLAIMED` frontier bullet header is fixed
 header-only to CLOSED with PR refs (#168 `5bca608` second parent `88f43dd`;
-closeout #169 `ebdfcee`) per the `ENV-UNDO-001-C1` dependency follow-up —
+closeout #169 `3875bc68b5bdfae8ee4c232a8bc47a33280c94d0`) per the `ENV-UNDO-001-C1` dependency follow-up —
 the same repair class as the PERF bullet fix in the ENV-MAINT-001-C1
 closeout PR #175. Fence for this transition:
 `expected_policy_revision = 64764f9f92c56951f324b49910cf0c06493603b0`,
