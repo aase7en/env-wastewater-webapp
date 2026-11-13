@@ -1,6 +1,6 @@
 # UTH[AI]-ENV — Project Operating Map
 
-Last updated: 2026-09-05
+Last updated: 2026-11-13
 Status: PROJECT OPERATING SSoT INDEX
 
 ## Purpose
@@ -175,7 +175,10 @@ Chat/model memory may point to these files, but must never replace them.
 - **GPT / architecture reviewer** — goal, product architecture, IA/UX, work-order boundaries, cross-domain semantics, graph decisions, independent review, merge decision.
 - **GLM / Core Engineering** — data/application contracts, Supabase/RLS/query/cache correctness, business logic, security/privacy boundaries, deterministic tests.
 - **Codex / Visual Engineering** — approved UI/responsive/interaction/3D implementation and visual evidence.
-- **SunDay workers / Serena** — repository intelligence, bounded edits, tests, diagnostics, support; one writer per file.
+- **SundayMCP (macOS) / SundayMCP Windows** — OS-matched primary machine execution interface for verified local repo intelligence, bounded edits, Git, tests, runtime/diagnostics and semantic navigation; one writer per claimed file.
+- **GitHub** — authoritative remote branch, PR, diff, review, CI and exact-SHA/merge evidence.
+- **Remote Desktop Commander (RDC)** — verified-device secondary/recovery fallback only when the matching SundayMCP instance fails or lacks a required capability.
+- **SunDay-Worker 1–5 / Serena** — legacy historical/compatibility only; no automatic activation, dispatch or infrastructure restart. Repository ownership and SAFE_TO_MUTATE gates apply to every executor.
 
 The detailed precedence and escalation rules remain in `docs/agent-handoff/AI_COLLABORATION_PROTOCOL.md`.
 
