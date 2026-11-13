@@ -344,3 +344,149 @@ STOP — REVIEW_REQUESTED. The implementing lane does not merge; D5
 independent review is appended by/for the reviewer at this exact head.
 
 ## D5 — Independent review (to be appended by the implementing lane)
+
+## D6 — CLOSEOUT RECEIPT (appended by the closeout transition lane, 2026-11-13)
+
+This section is the durable closeout record for claim `ENV-UNDO-001-C1`
+(generation 1). The registry transition is docs-only and authored on branch
+`docs/env-undo-001-closeout` off main @ `64764f9f92c56951f324b49910cf0c06493603b0`;
+the implementing lane never merges — **STOP at REVIEW_REQUESTED**.
+
+### Full delivery chain (receipts verified live by the closeout lane)
+
+- **Claim transition PR #176** merged as `5ea4f71f20d940521606737d22ea27fd17fda283`
+  (merge commit `5ea4f71`; parents `fb124ac` + `1e0fbfb`; head
+  `1e0fbfb7e6a58e22dcf1a6745f356c0240153808`; mergedAt 2026-11-12T21:48:10Z).
+  R2 APPROVED receipt issuecomment-6836835368 (fresh independent
+  review-and-merge executor context, zero P1/P2) with **2 recorded P3s**:
+  1. route-level auth-gating wording — `/form` routes are `RequireAuth`-gated
+     **without** `requireAdmin`, so durable docs read as route-level auth
+     gating (DB-level delete policy for `reading` not in tracked migrations);
+  2. toast-consumer list says 10 while **23 files** import `useToast` at
+     base — the 100% byte-compatibility bound covers all of them regardless.
+- **D2 RED `3036f2f`** ("test(undo): D2 RED — ENV-UNDO-001 expectations
+  failing") — truthful failures against the UNMODIFIED base behavior:
+  vitest `Toast.test.tsx` **10 failed / 0 passed** (each failing on the
+  missing exported seams — RED is the feature's absence, not a mock
+  artifact) and e2e `env-undo-001.spec.ts` **6 failed / 0 passed** across
+  WO categories (a)–(f), clock-controlled. Both counts reproduced exactly
+  by D5 in an isolated checkout at `3036f2f`.
+- **D3 `6acd22b`** ("feat(undo): 10-second undo window for daily record
+  delete (ENV-UNDO-001)") — deferred-DELETE window: confirm text promises
+  10 s → optimistic per-key snapshot hide → toast with action button and
+  10 s countdown; `deleteReadingQ` fires only inside `setTimeout(10_000)`;
+  undo = `clearTimeout` + snapshot restore, zero fetch; expiry deletes
+  exactly once; deferred-DELETE failure → Thai error toast + invalidate so
+  the record visibly returns (never silent loss of either outcome);
+  cross-talk keep-filter so undoing A cannot resurrect still-pending B —
+  **caught by e2e case (f)**; Toast extension backward-compatible (23
+  `useToast` consumers keep byte-identical legacy behavior; action button
+  ≥ 44px focusable, Thai label, `aria-hidden` countdown).
+- **D4 battery** at the frozen head, reproduced identical by D5 at
+  `8b29d36`: vitest FULL 32 files **503 passed / 1 designed skip**, `tsc -b`
+  clean, oxlint 0 errors (18 warnings: 2 new test-seam exports disclosed as
+  deliberate + 16 pre-existing), Playwright FULL **213/213** `--workers=1`,
+  guard **344/344**, runtime **62/62**, release checker OK v1.1.0 exit 0,
+  `git diff --check` clean, scope = exactly the 8 claimed files with
+  CURRENT-WORK.md diff EMPTY.
+- **D5 fresh-GLM independent review — VERDICT: APPROVED** at exact head
+  `8b29d368e5c7067ff5fb811fdccb638951ce8749` (receipt issuecomment-6838284688;
+  zero P1/P2; **4 informational P3s** listed below; all 9 adversarial
+  checklist items independently reproduced from the reviewer's own
+  checkouts). The PR description's plan to fill the handoff D5 section was
+  superseded by the reviewer's self-contained issuecomment receipt + the WO
+  D5 record; this D6 keeps the pointer durable.
+- **Implementation PR #177** merged as
+  `64764f9f92c56951f324b49910cf0c06493603b0` (second parent = D5-APPROVED
+  reviewed head `8b29d36`; parents `5ea4f71` + `8b29d36`, expected-head
+  discipline held; merge-executor trail issuecomment-6838319926;
+  mergedAt 2026-11-12T23:00:32Z).
+
+### Release v1.1.0 — LIVE and verified
+
+- Pages deploy run **43325064280 SUCCESS** @ `64764f9`.
+- Live asset `assets/index-g2DPM_0q.js` (HTTP 200 fresh fetch) carries
+  version `1.1.0` (2 occurrences) + `app-version-chip` marker + the Thai
+  undo promise `ย้อนกลับได้ภายใน 10 วินาที` + `ย้อนกลับ` ×6.
+- Annotated tag `v1.1.0` (tag object `b55975e688b3bd1fcf3851304a93845fd1e64bb3`)
+  dereferences to `64764f9` and is pushed (ls-remote confirmed:
+  `refs/tags/v1.1.0` + peeled `^{}` both verified).
+- `python3 scripts/check_release_version.py --tag v1.1.0` → **OK
+  (v1.1.0; CHANGELOG entry v1.1.0)**, exit 0 — re-verified by the closeout
+  lane at `64764f9` (2026-11-13).
+- Closeout-lane guard re-verification at `64764f9`:
+  `python3 scripts/test_env_coordination_guard.py` → **Ran 344 tests — OK**.
+
+### Honest notes recorded for D6
+
+1. **Unload/reload mid-window semantics** — the module-scope timer is
+   destroyed on full unload/reload, so the pending delete is canceled and
+   the record stays. Conservative direction (no data loss possible; worst
+   case is the record remains and can be deleted again); documented in the
+   WO + handoff §2 + code comment; judged acceptable by D5 §4. The confirm
+   text's 10 s promise can be silently broken only in the safe direction.
+2. **SSR-seam test split** — vitest runs in `node` env with no
+   jsdom/happy-dom dependency (no DOM library in packages entries; lock
+   untouched); real-browser click-through covered by e2e (b)/(f). The two
+   resulting test-seam lint warnings are disclosed as deliberate.
+3. **`npm --no-save` local workaround** — `package-lock.json` byte-identical
+   to base (absent from the PR #177 diff); the pre-existing lock drift
+   (typescript@5.9.3) predates this lane.
+4. **Refetch-during-pending transient** — `setQueryData` refreshes
+   `dataUpdatedAt` and the global staleTime (30 s) gates
+   refetchOnWindowFocus/Mount/Reconnect, so nothing automatically resurrects
+   the hidden row mid-window; only an explicit invalidation (e.g. another
+   create/update within 10 s) can transiently re-show it; self-healing at
+   expiry; documented and D5-verified.
+5. **`hooks.ts` + `supabase-queries.ts` claimed-but-unused honest
+   conditionals** — both were conditionally claimed; neither was needed, so
+   both stayed untouched (`useDeleteReading` is now an unreferenced harmless
+   export); D5 verified the untouched state.
+
+### P3 follow-up list (informational — no code change required for closure)
+
+1. **Union-merge suggestion for the double-undo oldest-first list
+   transient** — `restoreReadingsSnapshots` (DailyFormPage.tsx:157-172)
+   wholesale-snapshot overwrite can drop the first-restored row from the
+   list view until the next staleTime-gated refetch when undoing A then B
+   oldest-first; server truth never affected; self-heals; suggested future
+   repair = union-merge the own row instead of whole-snapshot overwrite.
+   **Priority follow-up named by the closeout instruction.**
+2. Unload/reload mid-window confirm-text polish candidate (a one-line
+   "ปิดเบราว์เซอร์ = ยกเลิกการลบ" note).
+3. Handoff jsdom-wording nit (this file's earlier "no jsdom/happy-dom
+   anywhere in package-lock.json" is imprecise — the strings appear in
+   vitest's peerDependencies metadata inside the lock; the substantive
+   claim — no DOM library as an installed dependency/packages entry — is
+   TRUE and independently verified).
+4. Same-id re-confirm inside the window spawns a second "ลบแล้ว" toast
+   wired to the same pending entry; after one undo the other toast's button
+   is a silent no-op until expiry.
+
+Plus the 2 PR #176 R2 recorded P3s above (route-level auth-gating wording;
+10-vs-23 toast consumers).
+
+### Frontier after this closeout merges
+
+NO active claim; **WAITING_REAL_FEEDBACK** resumes — the next product lane
+is chosen only after real-world staff feedback arrives on (1) Building
+module real usage (unlocks the `ENV-BUILDING-REPAIR-001-C1` D9b/Gate-2
+path), (2) Twin water-motion first impressions, (3) v1.0.1 speed
+improvements in daily use, (4) any v1.0.x friction, and now (5) the v1.1.0
+10-second undo UX in daily delete flows. Owner-manual reminders #155
+(re-enable ENV hooks) + #156 (OPENROUTER_API_KEY renewal) remain OPEN;
+`ENV-BUILDING-REPAIR-001-C1` stays WAITING_EXTERNAL. Scope lock released at
+generation 1; CLOSED confers no fresh mutation authority.
+
+### Narrative hygiene recorded in this closeout
+
+The stale `ENV-APP-VERSION-001 / CLAIMED` frontier bullet header is fixed
+header-only to CLOSED with PR refs (#168 `5bca608` second parent `88f43dd`;
+closeout #169 `3875bc68b5bdfae8ee4c232a8bc47a33280c94d0`) per the `ENV-UNDO-001-C1` dependency follow-up —
+the same repair class as the PERF bullet fix in the ENV-MAINT-001-C1
+closeout PR #175. Fence for this transition:
+`expected_policy_revision = 64764f9f92c56951f324b49910cf0c06493603b0`,
+`expected_registry_hash = 1e44ffb45c69b44ad1b457c455a086cee7fd900a29e9012be8c34be6762c39b5`
+(registry block AT base, guard method — verified to reproduce the PR #176
+fence convention: the same method on the block at `fb124ac` yields
+`feacaf1a…`, the value PR #176 wrote).
