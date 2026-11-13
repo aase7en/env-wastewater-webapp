@@ -38,8 +38,8 @@ exact-SHA independent review and merge into `main`.
   "coordination_registry": {
     "version": 1,
     "enforcement_mode": "BOOTSTRAP_CONTROL",
-    "expected_policy_revision": "64764f9f92c56951f324b49910cf0c06493603b0",
-    "expected_registry_hash": "1e44ffb45c69b44ad1b457c455a086cee7fd900a29e9012be8c34be6762c39b5",
+    "expected_policy_revision": "f60316ceff7459caebc7b18d112b0976dec32890",
+    "expected_registry_hash": "5a07061ae6a88dd3b021c39e119ae87344067104fb4641d8efe4ed2d46deb923",
     "claims": [
       {
         "task_id": "ENV-COORD-002",
@@ -1241,6 +1241,47 @@ exact-SHA independent review and merge into `main`.
         ],
         "last_checkpoint_pointer": "docs/ai/handoffs/ENV-UNDO-001-GLM.md",
         "one_next_safe_action": "CLOSED 2026-11-12 (closure effective when this closeout transition merges): implementation merged via PR #177 as 64764f9f92c56951f324b49910cf0c06493603b0 (second parent = D5-APPROVED reviewed head 8b29d368e5c7067ff5fb811fdccb638951ce8749; parents 5ea4f71 + 8b29d36, expected-head discipline held; merge-executor trail issuecomment-6838319926). Claim transition PR #176 merged as 5ea4f71f20d940521606737d22ea27fd17fda283 (R2 APPROVED receipt issuecomment-6836835368 at reviewed head 1e0fbfb, zero P1/P2; 2 recorded P3s: route-level auth-gating wording - /form routes are RequireAuth-gated without requireAdmin so durable docs read as route-level auth gating; toast-consumer list says 10 while 23 files import useToast at base - the 100 percent byte-compatibility bound covers all of them regardless). Full delivery chain: D2 RED 3036f2f (truthful failures against the UNMODIFIED base behavior: vitest Toast.test.tsx 10 failed / 0 passed - each failing on the missing exported seams, RED is the feature's absence not a mock artifact - and e2e env-undo-001.spec.ts 6 failed / 0 passed across WO categories a-f, clock-controlled; both counts reproduced exactly by D5 in an isolated checkout at 3036f2f) -> D3 6acd22b (deferred-DELETE window: confirm text promises 10 s -> optimistic per-key snapshot hide of readings/dashboard keys -> toast with action button and 10 s countdown; deleteReadingQ fires ONLY inside the setTimeout(10_000) callback; undo = clearTimeout + snapshot restore, zero fetch; expiry deletes exactly once; deferred-DELETE failure -> Thai error toast + invalidate so the record visibly returns - never silent loss of either outcome; cross-talk keep-filter so undoing A cannot resurrect still-pending B - caught by e2e case (f); Toast extension backward-compatible - 23 useToast consumers keep byte-identical legacy behavior, action button >= 44px focusable with Thai label and aria-hidden countdown) -> D4 battery at the frozen head, reproduced identical by D5 at 8b29d36: vitest FULL 32 files 503 passed / 1 designed skip, tsc -b clean, oxlint 0 errors (18 warnings: 2 new test-seam exports disclosed as deliberate + 16 pre-existing), Playwright FULL 213/213 --workers=1, guard 344/344, runtime 62/62, release checker OK v1.1.0 exit 0, git diff --check clean, scope exactly the 8 claimed files with CURRENT-WORK.md diff EMPTY -> D5 fresh-GLM independent review APPROVED issuecomment-6838284688 at exact head 8b29d36 (zero P1/P2; 4 informational P3s recorded as follow-ups below; all 3 disclosed deviations judged acceptable: SSR-safe seam split without jsdom with the lock byte-untouched, npm --no-save local workaround with package-lock byte-identical, refetch-during-pending transient self-healing and documented). Release v1.1.0 LIVE and verified: Pages deploy run 43325064280 SUCCESS @ 64764f9; live asset assets/index-g2DPM_0q.js (HTTP 200 fresh fetch) carries version 1.1.0 + the app-version-chip markers + the Thai undo promise and action label (ย้อนกลับ x6 occurrences); annotated tag v1.1.0 (tag object b55975e6) dereferences to 64764f9 and is pushed (ls-remote confirmed); check_release_version.py --tag v1.1.0 exit 0 (re-verified at this closeout). Honest notes for D6 (docs/ai/handoffs/ENV-UNDO-001-GLM.md D6): unload/reload mid-window destroys the module-state timer so the pending delete cancels and the record stays - conservative direction (no data loss possible), documented in WO + handoff + code comment; SSR-seam test split runs vitest in node with no jsdom/happy-dom dependency, real-browser click-through covered by e2e; npm --no-save was a local-only install workaround leaving package-lock byte-identical to base; refetch-during-pending transient can re-show a hidden row only via an explicit invalidation within the 10 s window and self-heals at expiry; hooks.ts + supabase-queries.ts were claimed conditionally and honestly left untouched (useDeleteReading now an unreferenced harmless export). Recorded P3 follow-ups (informational, no code change required for this closure): (1) union-merge repair candidate for the double-undo oldest-first transient list inconsistency - restoreReadingsSnapshots wholesale-snapshot overwrite can drop the first-restored row from the list view until the next staleTime-gated refetch (server truth never affected; suggested future repair = union-merge the own row instead of whole-snapshot overwrite); (2) unload-mid-window confirm-text polish candidate (a one-line browser-close cancels-the-delete note); (3) handoff jsdom-wording nit (the substantive no-DOM-library claim is TRUE, independently verified); (4) same-id re-confirm inside the window spawns a second toast wired to the same pending entry whose button is a silent no-op after one undo. Narrative hygiene recorded in this closeout (authorized by the ENV-UNDO-001-C1 dependency follow-up, same repair class as the PERF bullet fix in the ENV-MAINT-001-C1 closeout PR #175): the stale ENV-APP-VERSION-001 frontier bullet header fixed header-only to CLOSED with PR refs. Frontier after this closeout merges: NO active claim + WAITING_REAL_FEEDBACK resumes - the next product lane is chosen only after real-world staff feedback arrives on (1) Building module real usage (unlocks the D9b/Gate-2 path), (2) Twin water-motion first impressions, (3) v1.0.1 speed improvements in daily use, (4) any v1.0.x friction, and now (5) v1.1.0 undo UX in daily delete flows; owner-manual reminders #155 (re-enable ENV hooks) + #156 (OPENROUTER_API_KEY renewal) remain OPEN; ENV-BUILDING-REPAIR-001-C1 stays WAITING_EXTERNAL. Scope lock released at generation 1; CLOSED confers no fresh mutation authority."
+      },
+      {
+        "task_id": "ENV-SUNDAYMCP-ROUTING-001",
+        "claim_id": "ENV-SUNDAYMCP-ROUTING-001-C1",
+        "claim_generation": 1,
+        "status": "CLAIMED",
+        "owner_role": "env_project_supervisor",
+        "agent_model": "GPT-6 (architecture integration) via verified SundayMCP macOS",
+        "execution_holder_id": "sundaymcp-mac-env-sundaymcp-routing-001-c1",
+        "worktree": "/Volumes/MAC_WORK/DevWorkspace/Github/_worktrees/env-sundaymcp-routing-001-impl-20261113",
+        "branch": "docs/env-sundaymcp-routing-001",
+        "base_sha": "f60316ceff7459caebc7b18d112b0976dec32890",
+        "mutable_scope": [
+          "AGENTS.md",
+          "docs/ai/PROJECT-OPERATING-MAP.md",
+          "docs/ai/tooling/AI-DEVELOPER-TOOLCHAIN.md",
+          "docs/ai/design/ENV-EXPERIENCE-MASTER-PLAN.md",
+          "docs/work-orders/ENV-SUNDAYMCP-ROUTING-001.md",
+          "docs/ai/handoffs/ENV-SUNDAYMCP-ROUTING-001.md"
+        ],
+        "forbidden_scope": [
+          "docs/ai/CURRENT-WORK.md",
+          "docs/ai/HANDOFF.md",
+          "docs/ai/architecture/ENV-COORDINATION-GUARD.md",
+          "scripts/**",
+          ".github/**",
+          "frontend/**",
+          "supabase/**",
+          "data/**",
+          ".env"
+        ],
+        "work_order_path": "docs/work-orders/ENV-SUNDAYMCP-ROUTING-001.md",
+        "handoff_path": "docs/ai/handoffs/ENV-SUNDAYMCP-ROUTING-001.md",
+        "review_owner": "Fresh independent reviewer (not implementation author), exact-SHA approval required; owner-authorized merge",
+        "dependencies": [
+          "Owner explicit 2026-11-13 docs-only SundayMCP-first repository migration request",
+          "Claim transition reviewed independently and merged to main before implementation mutation",
+          "BOOTSTRAP_CONTROL docs-routing exception with explicit owner direction; no production dispatch or server-policy change; disjoint from deferred ENV-BUILDING-REPAIR-001"
+        ],
+        "last_checkpoint_pointer": "docs/work-orders/ENV-SUNDAYMCP-ROUTING-001.md",
+        "one_next_safe_action": "AFTER independently reviewed exact-SHA claim transition and explicit human-authorized merge: verify authoritative main claim gen 1, create isolated docs/env-sundaymcp-routing-001 implementation worktree at transition merge SHA, edit only four bounded routing documents; exact-SHA review/CI and authorized merge; preserve historical and untracked state."
       }
     ]
   }
