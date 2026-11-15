@@ -2,8 +2,10 @@
 
 **Lane:** AppSheet parity program Phase 1, lane P1.1 — schema parity for the
 daily wastewater reading table + personnel enums.
-**Status:** CLAIMED (claim transition `docs/env-parity-p1-001-claim`; authority
-begins only after the reviewed transition merges to `main`).
+**Status:** IMPLEMENTATION DELIVERED — REVIEW_REQUESTED (implementing branch
+`feat/env-parity-p1-001`; D2 RED + D3 apply/post-verify + D4 battery receipts
+in `docs/ai/handoffs/ENV-PARITY-P1-001-GLM.md`; the implementer stops here —
+the authorized reviewer owns approval and merge).
 **Routing:** Track-Z (GLM lane — lib logic, SQL, schema, tests, CI-free battery).
 No Track F work exists in this lane (schema-only, no visual surface).
 **Plan reference:** `docs/ai/APPSHEET-PARITY-PLAN.md` §6 Phase 1 lane table row
