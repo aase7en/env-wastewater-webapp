@@ -3,10 +3,14 @@
 **Lane:** AppSheet parity program Phase 1, lane P1.3 — Critical flags 2-day
 streak (DO/Cl/TDS/pH) → seed `wastewater.threshold` (incl. SV30 >450/<150,
 น้ำเข้า >70) + fire `threshold_alert`.
-**Status:** IMPLEMENTATION DELIVERED — REVIEW_REQUESTED (implementing branch
-`feat/env-parity-p1-003`; D2 RED + D3 preflight/apply/post-verify + D4
-battery receipts in `docs/ai/handoffs/ENV-PARITY-P1-003-GLM.md`; the
-implementer stops here — the authorized reviewer owns approval and merge).
+**Status:** DELIVERED — CLOSED. Implementation merged via PR #187 as
+`83b2ba05d7690d1113459418bfff98a3754b80d0` (second parent = D5-APPROVED
+reviewed head `75154f066b178ea020e828ea93940cf61ba84623`; D5 fresh-GLM
+APPROVED issuecomment-6896630544; merge receipt issuecomment-6896649004;
+claim transition PR #186 merged as `a65125ecfa3338a0c37102e62337d9b41bbcdddc`
+with R2 APPROVED issuecomment-6896073250; registry closed by the docs-only
+closeout PR off main @ `83b2ba0`). Full D2/D3/D4/D5/D6 receipts in
+`docs/ai/handoffs/ENV-PARITY-P1-003-GLM.md`.
 **Routing:** Track-Z (GLM lane — SQL migration, view/function logic, tests,
 battery). No Track F work exists in this lane (DB logic + seeds + tests only,
 no visual surface).
@@ -177,8 +181,11 @@ This lane:
 
 ### 3.1 Migration file — ONE file
 
-`supabase/migrations/20261116000000_parity_p1_003.sql` (house timestamp
-naming; sorts after `20261115120000_parity_p1_001.sql`). Precedent verified:
+`supabase/migrations/20261115130000_parity_p1_003.sql` (house timestamp
+naming; sorts after `20261115120000_parity_p1_001.sql`). Filename
+reconciled to the delivered name by the closeout (the claim-time literal
+`20261115130000` vs this WO's earlier `20261116000000` spelling — D5 P3,
+P1.001 precedent; deviation 1 in the handoff). Precedent verified:
 house convention keeps view/function definitions INSIDE migrations
 (`fn_check_thresholds` in `20260718000000_p12_frontend_views.sql`,
 `fn_persist_threshold_alerts` in `20260718000001_p17_threshold_alerts.sql`) —
@@ -265,7 +272,7 @@ Run GREEN in D4 after apply.
 
 - Apply to ENV_DB (`gllqtbyofrcjzmbnfoeh`, ap-southeast-1) ONLY via
   `uv run python scripts/apply_migration_api.py
-  supabase/migrations/20261116000000_parity_p1_003.sql`; record the
+  supabase/migrations/20261115130000_parity_p1_003.sql`; record the
   statement-by-statement receipt verbatim in the handoff.
 - Rollback SQL (documented in the migration header AND the handoff):
   `DELETE FROM wastewater.threshold WHERE (parameter_code, effective_from) IN
@@ -314,7 +321,7 @@ transition itself lives on `docs/env-parity-p1-003-claim`).
 
 ## 5. Mutable scope (claim-bound)
 
-- `supabase/migrations/20261116000000_parity_p1_003.sql` (new)
+- `supabase/migrations/20261115130000_parity_p1_003.sql` (new)
 - `scripts/test_parity_p1_003_thresholds.py` (new)
 - `docs/work-orders/ENV-PARITY-P1-003.md` (this file)
 - `docs/ai/handoffs/ENV-PARITY-P1-003-GLM.md` (new)

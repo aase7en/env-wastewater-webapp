@@ -484,3 +484,213 @@ belong to the closeout convention). No `frontend/**`, no CI, no
    verified at the flag level via `fn_critical_flags` probes (same code
    path the trigger consumes). Full 9-branch alert coverage follows from
    the shared function; noted for the reviewer.
+
+## D6 — CLOSEOUT RECEIPT (only by a separate reviewed closeout transition)
+
+Recorded by the closeout transition `docs/env-parity-p1-003-closeout` off
+`origin/main @ 83b2ba05d7690d1113459418bfff98a3754b80d0` (the implementation
+merge SHA; clean, fetched, ff-verified — local main fast-forwarded
+a65125e → 83b2ba0, `git status` clean except the pre-existing untracked
+`_worktrees/` which is not this transition's file). Fence:
+`expected_policy_revision = 83b2ba05d7690d1113459418bfff98a3754b80d0`;
+`expected_registry_hash = be292731ac54847f6e8ad54bc3288c272bb119a0bd198ff417f60c333970d943`
+(guard `registry_hash` of the registry block AT `83b2ba0` —
+`validate-registry` on the clean checkout at that SHA =
+`{"claims": 27, "ok": true, "registry_hash": "be292731…"}`, same guard method
+as the PR #166/#169/#185 closeout convention; empirically cross-checked — the
+same method at the prior base `d153983` reproduces the prior fence
+`d6b62e09…` byte-exactly). Claim `ENV-PARITY-P1-003-C1`: CLAIMED → CLOSED;
+claim-by-claim JSON-diff vs `83b2ba0` = exactly 1 of 27 claims changed;
+changed files = exactly 3 (`docs/ai/CURRENT-WORK.md`, this WO, this handoff).
+Merge execution followed the D5 receipt's expected-head discipline (below).
+
+### Full chain (each receipt verified live 2026-11-15 before writing)
+
+1. **Claim transition** — PR #186 MERGED as
+   `a65125ecfa3338a0c37102e62337d9b41bbcdddc` (head
+   `011b6b7cec77403e32be694e6e8b369059079802`, base `main @ 912db2e`;
+   mergedAt 2026-11-15T14:26:54Z); independent R2 **APPROVED** (zero P1/P2)
+   receipt issuecomment-6896073250 — fence byte-exact verified incl. the
+   empirical method cross-check at prior base `d153983`; JSON-diff vs base
+   = added exactly `ENV-PARITY-P1-003-C1`, other 26 byte-identical;
+   threshold spot-checks vs reference §3.3/§9 verbatim all PASS.
+2. **Merge execution with expected-head discipline** — pre-merge review-trail
+   comment issuecomment-6896649004 pinned: D5 APPROVED receipt
+   issuecomment-6896630544, expected head
+   `75154f066b178ea020e828ea93940cf61ba84623`, merge policy (merge commit,
+   no squash, expected head = second parent), P3s carried to closeout.
+   Gates re-verified immediately before merge: PR OPEN, head == expected,
+   MERGEABLE/CLEAN, checks notify + scripts green (run 43726938953).
+   `gh pr merge 187 --merge` (branch kept); merge SHA
+   `83b2ba05d7690d1113459418bfff98a3754b80d0` with parents EXACTLY
+   `(a65125ecfa3338a0c37102e62337d9b41bbcdddc`,
+   `75154f066b178ea020e828ea93940cf61ba84623`) — verified from
+   `git log --format=%P` on origin/main post-merge; local main updated
+   ff-only; merge stat = exactly 4 claimed files (migration + test + WO +
+   handoff).
+3. **D2 RED** — `c9403f7` (test file byte-identical at RED and final head —
+   0-line diff, verified by D5's isolated checkout). Truthful RED recorded
+   in D2 above: 6 failed / 1 passed (the 1 pass = the legacy
+   `fn_check_thresholds` byte-identical guard — a guard, not a RED target;
+   code-consistent decomposition re-verified by D5: 1 missing-seeds + 4
+   missing-object/fixture + 1 canary gate = 6 failed). Post-RED durable
+   state re-verified: `wastewater.reading` = 907, `wastewater.threshold`
+   = 0, `wastewater.threshold_alert` = 0 — ZERO durable writes (the
+   canary-gated fixture batch was never sent pre-apply). The real pre-apply
+   DB state is not re-runnable post-apply; D5 judged the RED record
+   code-consistent and truthful, never presented as a live replay.
+4. **D3 migration + apply (live)** —
+   `supabase/migrations/20261115130000_parity_p1_003.sql` applied to ENV_DB
+   via `scripts/apply_migration_api.py`: **19 OK / 0 FAIL** (8 guarded
+   `INSERT … SELECT … WHERE NOT EXISTS` seeds + 3 `CREATE OR REPLACE
+   FUNCTION` + 4 `COMMENT ON` + view pair + trigger pair; verbatim receipt
+   in D3 above). ENV_DB gate proof: `PROJECT_REF = gllqtbyofrcjzmbnfoeh`
+   hardcoded (`scripts/apply_migration_api.py:29`) + row-count artifact
+   `wastewater.reading` = 907 / `core.personnel` = 9 matching
+   `reports/schema-snapshot-live.md`. Preflight ×7 in D3 (ENV_DB gate,
+   live threshold state = 0 rows, history-bound effective_from evidence,
+   name-collision check, pre-trigger inventory, reference-data-only grep,
+   split_sql 19-statement dry-run).
+   **`effective_from` re-pin (deviation 2, honest):** live
+   `MIN(reading_date)` = **2024-01-09** (range 2024-01-09 .. 2026-07-04,
+   907 rows). The WO §3.1 candidate literal `DATE '2026-01-01'` fails the
+   WO's own binding rule `effective_from ≤ MIN(reading_date)`, so the
+   migration pins `effective_from = DATE '2024-01-09'` = live MIN so the
+   seeded config covers all 907 historical rows; NEVER `CURRENT_DATE`.
+   All 8 live seed rows carry `effective_from = 2024-01-09` (D3 post-verify
+   + D5 independently re-probed exact values: do1/do2 NULL/1, do3 NULL/1.5,
+   free_chlorine 0.5/1, ph 5/9, tds2 1000/NULL, sv30 150/450,
+   wastewater_in 70/NULL).
+5. **D3 post-verify (live)** — all 8 seed rows exact; view over the 907
+   rows: `critical_do1`×37, `critical_free_chlorine_low`×158,
+   `immediate_sv30`×30, `immediate_wastewater_in`×81, `critical_tds2`×0
+   (TDS-2 >1000 never recorded — honest zero, independently re-probed by
+   D5 with an exact match); trigger inventory EXACTLY `trg_audit_log` +
+   `trg_persist_threshold_alerts` (legacy, untouched) +
+   `trg_persist_parity_alerts` (new); legacy `fn_check_thresholds(uuid)`
+   `pg_get_functiondef` byte-identical to the pinned P12 capture
+   (whitespace-normalized; D5 re-ran the guard GREEN); existing surface
+   untouched: 907 readings, 0 pre-existing alert rows deleted.
+6. **D4 battery** at frozen head `75154f066b178ea020e828ea93940cf61ba84623`
+   — vitest FULL 32 files **503 passed | 1 skipped** (designed skipIf);
+   `tsc -b` clean; lint 0 errors (18 pre-existing warnings, same set as
+   P1.001); Playwright FULL workers=1 **213 passed**; guard **344/344**
+   (+450 subtests); runtime **62/62** (+32 subtests); threshold test GREEN
+   **4 passed / 33 subtests** (zero durable writes — rolled-back fixture
+   transaction); checker `OK (v1.1.0)` no-bump OK (no version bump — no
+   user-facing UI change, reasoning recorded in D4); `git diff --check`
+   clean.
+7. **D5** — fresh-GLM independent review at exact head `75154f0` (base
+   `a65125e`): **APPROVED — zero P1/P2; 2 non-blocking P3 + 2
+   informational** (issuecomment-6896630544, 2026-11-15T15:10:26Z), with
+   its own live read-only DB re-verification (seeds exact, trigger
+   inventory, view-flag counts exact match incl. the honest
+   `critical_tds2`×0) and an independently re-run battery matching D4
+   item-for-item (vitest 503/1skip, tsc, lint 0E/18W, Playwright 213,
+   guard 344+450, runtime 62+32, threshold 4/33, checker v1.1.0,
+   diff-check clean, CI green notify+scripts). RED truthfulness judged
+   CONSISTENT via the code-consistent decomposition (not re-executable
+   live post-apply — disclosed, never presented as a replay).
+   **Dual-layer alert semantics (D5-verified, intended + documented):**
+   the legacy branch set (do-avg <2.0, free_chlorine <0.5, pH 6.5–8.5 —
+   original FastAPI-port values) and the new parity branch set (immediate
+   sv30/wastewater_in + the 7 critical-streak flags) run as PARALLEL rule
+   classes (parallel check function + SECOND AFTER INSERT trigger
+   `trg_persist_parity_alerts`; legacy `fn_check_thresholds` + its trigger
+   untouched, byte-identical). A reading matching BOTH classes therefore
+   produces two alert rows of DIFFERENT rules (e.g. `free_chlorine=0.2`
+   fires legacy `free_chlorine` AND parity `critical_free_chlorine_low`
+   when the 2-day streak holds; pH=4.2 analogous) — this is the
+   WO §2.3-permitted "extend, don't replace" shape chosen so the legacy
+   function stays byte-identical and its alerts fire exactly once; no
+   double-fire of any SINGLE rule class; documented in the migration
+   header + handoff deviation 3; fixture-asserted
+   (`legacy_free_chlorine=True` alongside the parity branches). Removing
+   or reconciling the overlapping legacy branches = a separate owner
+   decision (WO §2.1 item 3). `ON CONFLICT DO NOTHING` is inert (only PK
+   unique), same as the legacy P17 shape, harmless.
+8. **Deploy** — correctly skipped: the Pages deploy paths filter requires
+   `frontend/**` changes and this lane changed none. Post-merge main ran
+   only the `test` workflow — SUCCESS at `83b2ba0`
+   (2026-11-15T15:12:13Z). No deploy, no version bump, no CHANGELOG entry
+   — all three per the recorded reasoning.
+
+### Session-interruption honesty note
+
+No session interruption occurred in this lane (contrast P1.001): D2 → D5
+ran in one continuous delivery session and the merge + closeout followed in
+a separate executor session that re-verified everything live from the repo +
+PR trail before writing (fence recompute, parent SHAs, comment IDs, merge
+timestamps, guard/validate batteries). Nothing was reconstructed from
+memory alone; every receipt above was re-derived from durable evidence.
+
+### P3 ledger (parity follow-ups — carried, NOT auto-fixed)
+
+- **P3-1 (D5) — RECONCILED by this closeout.** The WO cited the claim-time
+  filename `20261116000000_parity_p1_003.sql` while the delivered/applied
+  file is `20261115130000_parity_p1_003.sql` (the dispatch instruction's
+  explicit name won at delivery — deviation 1; P1.001 precedent; sorts
+  after `20261115120000_parity_p1_001.sql`). Fixed in this transition's WO
+  edit at §3.1 (with an inline reconciliation note), §3.4 (apply command),
+  and §5 (mutable scope) — exactly the three sites D5 named. The registry
+  `mutable_scope` array and the frontier bullet body intentionally KEEP the
+  claim-time spelling as historical record of what was claimed (same
+  convention as P1.001's CLOSED record); the delivered name is recorded in
+  the CLOSED receipts (this D6, the registry `one_next_safe_action`, the
+  frontier narrative).
+- **P3-2 (D5) — CARRIED, required before any second-location onboarding.**
+  The parity streak alert branches (migration lines 326–359) interpolate
+  `r.<col>` WITHOUT the `IS NOT NULL` guard the legacy branches all use.
+  Unreachable today — live probe: 907 rows, 1 distinct location, 0 NULL
+  locations, 0 duplicate-date groups (`UNIQUE(location_id, reading_date)`
+  is NULLs-distinct, so same-date duplicates are structurally possible
+  across locations). If a second location is ever onboarded, a
+  sibling-triggered streak with a NULL own-value would produce a NULL
+  message → `threshold_alert.message` NOT NULL violation → the reading
+  INSERT would fail (and an in-bounds own-value would be misattributed in
+  the message). D5's recommendation stands: per-branch NULL guard or
+  probe-value message, as a small follow-up claim before/with any
+  multi-location rollout. NOT auto-fixed here (this closeout is docs-only).
+
+### Parity follow-up ledger (durable, for the next lanes)
+
+1. **Parity-branch NULL-guard (P3-2 above)** — per-branch `IS NOT NULL`
+   guard or probe-value message in `fn_persist_parity_alerts` paths;
+   REQUIRED before any second-location onboarding; needs its own reviewed
+   slice (docs-only closeouts cannot touch SQL).
+2. **VALIDATE CONSTRAINT ×3 (P1.001 carry)** — owner data decision on the 9
+   out-of-enum legacy rows (`core.personnel.position` ×3, `status`
+   `active`×6; `chlorine_mix_ratio` all 907 in-enum), then the owner-gated
+   VALIDATE. Unchanged from the P1.001 D6 ledger.
+3. **P1.2 constants (owner question batch pending)** — ×34/×12 meter
+   factors + ×3.7 / ÷10 water-supply constants stay gated on owner
+   confirmation per plan §8 risk row 3 (ค่าคงที่โดเมนยังตรวจไม่ได้จาก
+   snapshot); no P1.2/P1.5 lane starts until the owner answers.
+4. **P1.4 (next UNGATED lane)** — form parity + the >2.5 free-chlorine
+   format rule UI (plan §6 row P1.4); needs its own NEW reviewed claim
+   transition.
+5. **Legacy/parity alert-class overlap** — the legacy hardcoded branches
+   (do-avg <2.0, Cl <0.5, pH 6.5–8.5) overlap the parity seeds by intent
+   (extend, don't replace); reconciling/removing them is an owner decision
+   whenever taken (WO §2.1 item 3; D5 duplicate-alert analysis).
+6. **Phase 4 (P4.1–P4.4)** — HUMAN_AUTHORIZATION_REQUIRED (plan §5.3/§8
+   risk row 4); no claim starts before explicit owner decisions. P4 owner
+   decisions OPEN. Standing: owner-manual issues #155/#156 remain OPEN and
+   are not agent-actionable; `ENV-BUILDING-REPAIR-001-C1` D9b stays
+   WAITING_EXTERNAL.
+
+### Closeout verification battery (at this branch's head)
+
+- guard: **344 passed + 450 subtests** (exit 0)
+- runtime battery: **62 passed + 32 subtests** (exit 0)
+- `validate-registry --file docs/ai/CURRENT-WORK.md --policy-revision 83b2ba0`:
+  `{"claims": 27, "ok": true, "registry_hash": "95d363ff…"}` with
+  `ENV-PARITY-P1-003-C1` **CLOSED** (the hash differs from the fence
+  `be292731…` because the fence pins the registry block AT the base SHA
+  with C1 CLAIMED — the closeout intentionally changes that block; the
+  reviewer verifies the fence by recomputing at `83b2ba0`)
+- claim-by-claim JSON-diff vs `83b2ba0`: **exactly 1 of 27 claims changed**
+  (`ENV-PARITY-P1-003-C1`), other 26 byte-identical
+- `git diff --stat` vs `83b2ba0`: **exactly 3 files** (CURRENT-WORK.md,
+  `docs/work-orders/ENV-PARITY-P1-003.md`, this handoff)
+- `git diff --check`: clean
