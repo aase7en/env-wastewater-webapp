@@ -5,8 +5,14 @@ configuration system (effective-dated `core.equipment_spec`) + SQL views
 สายมิเตอร์ (meter chain: LAG เมื่อวาน/สูบ 1-2, delta ไฟ, คำนวณสูบ
 spec-driven, AVG 4 วัน, คลอรีนน้ำที่ใช้จริง) with the honest-correction
 rules (delta≤0 → NULL + boundary flag; never global-MAX; never 0).
-**Status:** PROPOSED — CLAIMED (this docs-only transition binds the lane;
-implementation ships in a separate PR after this transition merges).
+**Status:** IMPLEMENTATION DELIVERED — REVIEW_REQUESTED (2026-11-15;
+migration `20261115140000_parity_p1_002.sql` applied to ENV_DB 11 OK/0 FAIL
+with preflight + post-verify receipts; D2 RED-first test GREEN post-apply;
+D4 battery green at the frozen implementation head). Implementation PR
+awaits D5 independent review — implementer never merges; full D2/D3/D4
+receipts in `docs/ai/handoffs/ENV-PARITY-P1-002-GLM.md`. (Claim transition:
+PROPOSED — CLAIMED; this docs-only transition bound the lane; the
+implementation ships in a separate PR per the transition.)
 **Routing:** Track-Z (GLM lane — SQL migration, table/enum/seeds, view
 logic, tests, battery). No Track F work exists in this lane (DB only, no
 visual surface; the admin UI for spec edits is explicitly deferred to the
@@ -186,6 +192,25 @@ verbatim fact above or a plan §4.1 disposition):
    scope"). This transition's instruction excludes it; it is recorded as
    a named follow-up in the handoff D0 so the gap is visible, NOT silently
    dropped and NOT silently added.
+   **ADDENDUM (2026-11-15, implementation lane — closes the P1.3
+   deferral):** the R2 transition-review adjudication (verdict
+   issuecomment-6899667463 §5) ruled the delivery obligation REAL and
+   OPEN, to land "via a named successor claim (or a reviewed addendum at
+   the P1.2 implementation closeout)". The claim instruction delivered
+   exactly that reviewed addendum: the continuous
+   `chlorine_streak_count` (gaps-and-islands) ships in
+   `wastewater.v_reading_meter_chain` in this lane's migration —
+   **this closes the P1.3 deferral**. Binding streak semantics per the
+   addendum: streak = consecutive calendar days with recorded usage
+   (predicate `chlorine_used_real IS NOT NULL`); a calendar gap or a NULL
+   usage value resets to 0; the first day of a streak = 1. Translation
+   note (recorded, never silently reconciled): the AppSheet
+   `Chlorine_StreakCount` (reference doc 12 ~line 1421) counts days with
+   Free Chlorine < 0.5 since the last day ≥ 0.5; the addendum's
+   recorded-usage continuity streak is a DIFFERENT counter and binds.
+   The unknown ≠ zero rule holds for the VALUE (usage stays NULL on
+   unknown days); the streak counter is a defined derived state whose
+   reset value 0 the addendum binds explicitly.
 
 ### 2.3 D1 binding design decision (2026-11-15)
 
@@ -492,3 +517,54 @@ P1.4+), and everything else not listed in §5.
    recorded.
 4. D5 fresh-GLM review recorded; PR stopped at REVIEW_REQUESTED;
    implementer did not merge.
+
+## 9. D-phase log (implementation lane, appended 2026-11-15)
+
+Full receipts verbatim in `docs/ai/handoffs/ENV-PARITY-P1-002-GLM.md`
+(D2/D3/D4 sections; nothing before D2 rewritten). Summary:
+
+- **D2 RED (pre-apply, truthful):** `scripts/test_parity_p1_002_meter_chain.py`
+  → **4 failed / 3 passed** — group 1 (enum/table shape, seeds), group 2
+  (view) and group 3 (fixture semantics, gated by the parse-safe canary —
+  batch never sent) failed naming the missing objects; group 4 regression
+  guards (`v_reading_with_computed` byte-pin, P1.3 critical-flags columns,
+  no-new-grants-on-existing) passed GREEN pre-apply as designed.
+- **D3 preflight:** ENV_DB gate artifact (PROJECT_REF
+  `gllqtbyofrcjzmbnfoeh`; `wastewater.reading` = 907 rows, `core.personnel`
+  = 9); `MIN(reading_date) = 2024-01-09` (range to 2026-07-04) — NO drift,
+  the pinned `valid_from` stands; electric-meter identity ESTABLISHED
+  (exactly ONE `carbon.meter` row — `ระบบบ่อบำบัดน้ำเสีย`,
+  source electricity, unit kWh; 907/907 rows link via `carbon_reading_id`,
+  all resolving to that one meter, 0 NULL meter_values); name-collision
+  check clean; reference-data-only grep clean (no
+  UPDATE/DELETE/TRUNCATE/DROP TABLE/GRANT/POLICY on existing objects).
+- **D3 apply:** `scripts/apply_migration_api.py` → **11 OK / 0 FAIL**
+  (CREATE TYPE → CREATE TABLE → RLS ENABLE → COMMENT → 4 guarded seeds →
+  DROP VIEW IF EXISTS → CREATE VIEW → COMMENT). Post-apply: 4 seed rows
+  exact; view spans exactly the 907 reading rows; spot rows verified
+  (2024-01-10: 1.0 h × 34 = 34 m³, 0.8 h × 12 = 9.6 m³, delta_kwh 5,
+  derived 43.6, avg 43.6, streak 2; 2024-01-09 first row: NULLs +
+  boundary flag with three no-previous reasons). The delta guard caught
+  **32 genuine pump meter-reset rows** in the real history
+  (`meter_boundary_flag` TRUE, delta ≤ 0 → NULL, never 0/negative);
+  `spec_missing_rows = 0`; `delta_kwh` resolved for 906/907 (first row
+  honestly NULL); max `chlorine_streak_count` = 484 days (gaps-and-islands
+  over real data); reading count unchanged (907).
+- **D3 test GREEN post-apply:** 7 passed, 12 subtests. Test-authoring
+  corrections recorded honestly (no assertion weakening — see handoff D2
+  for the RED→GREEN failure-set mapping): constraint-def pins re-captured
+  from the live `pg_get_constraintdef` rendered form (enum casts);
+  the unknown-ratio fixture case uses a NULL ratio (the P1.001
+  `ck_wastewater_reading_chlorine_mix_ratio_enum` confines the column to
+  {1:2,1:4,1:9}+NULL — discovery recorded); fixture LAG chains
+  re-anchored across the real-row date span.
+- **D4 battery at the frozen head:** vitest FULL 503 passed / 1 skipped
+  (32 files); `tsc -b` clean; oxlint 0 errors (18 pre-existing warnings);
+  Playwright FULL chromium workers=1 **213 passed**; guard **344/344**
+  (+450 subtests); runtime **62/62**; meter-chain test GREEN;
+  `git diff --check` clean. **No version bump** — DB config + views only,
+  no user-facing UI surface added or changed (the new view has no frontend
+  consumer in this lane; CHANGELOG criteria require no release entry;
+  checker stays at v1.1.0). Diff vs main ⊆ the 4 claimed files (migration,
+  test, this WO, the handoff); `docs/ai/CURRENT-WORK.md` untouched
+  (registry status transitions follow the closeout convention).
