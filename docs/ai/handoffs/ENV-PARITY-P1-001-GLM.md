@@ -335,6 +335,139 @@ belong to the closeout convention). No `frontend/**`, no CI, no
 4. **Token via process-env injection** — see D3 gate item 2.
 5. **Post-interruption resume** — see D3 resume note (no double-apply).
 
-## D5 — (to be appended: reviewer verdict + receipt)
+## D5 — reviewer verdict recorded at the implementation PR (receipts in D6)
+
+Per house convention the fresh-GLM independent review posts to the PR review
+trail, not this file; the verdict, its independently reproduced battery, and
+the receipt pointers are folded into the closeout receipt (D6 below).
 
 ## D6 — CLOSEOUT RECEIPT (only by a separate reviewed closeout transition)
+
+Recorded by the closeout transition `docs/env-parity-p1-001-closeout` off
+`origin/main @ d15398343ecc6c749acc5ef801107287771d1ff7` (the implementation
+merge SHA; clean, fetched, ff-verified). Fence:
+`expected_policy_revision = d15398343ecc6c749acc5ef801107287771d1ff7`;
+`expected_registry_hash = d6b62e0959185b2ae06bba2925b0a3298ecc66bef68a8c6988186a606f94d6d8`
+(guard `registry_hash` of the registry block AT `d153983` —
+`validate-registry` on the clean checkout =
+`{"claims": 26, "ok": true, "registry_hash": "d6b62e09…"}`, same method as the
+PR #166/#169 closeout convention). Claim `ENV-PARITY-P1-001-C1`:
+CLAIMED → CLOSED; claim-by-claim JSON-diff vs `d153983` = exactly 1 of 26
+claims changed; changed files = exactly 3 (`docs/ai/CURRENT-WORK.md`, this
+WO, this handoff).
+
+### Full chain (each receipt verified live 2026-11-15 before writing)
+
+1. **Claim transition** — PR #183 MERGED as
+   `aeda44108882e0dda2f55134c62a610b2da5fbd3` (head
+   `e3348ed873c098e30c846f26d4453c5ed8912e78`, base `main @ 1b00390`;
+   mergedAt 2026-11-15T06:25:33Z); independent R2 **APPROVED** receipt
+   issuecomment-6890337150.
+2. **Implementation** — PR #184 MERGED as
+   `d15398343ecc6c749acc5ef801107287771d1ff7` (head = second parent =
+   `9ac2b08ea7f46fb7bcc68ad48e4a469bc6c6c1d7`, the D5-APPROVED reviewed head;
+   base `aeda441`; mergedAt 2026-11-15T13:56:26Z); local merge commit
+   `Merge: aeda441 9ac2b08` verified.
+3. **D2 RED** — `d19698c` (test file byte-identical at RED and final head,
+   verified by D5 via `git diff`). Truthful RED recorded in D2 above:
+   13 failed / 3 passed / 14 subtests passed (3 constraint + 10 column
+   SUBFAILED — exactly the missing parity surface). Reproduced by D5 at an
+   isolated `d19698c` detached checkout via a **disclosed structural
+   simulation** (existing source-of-truth surface served live, parity surface
+   forced absent = the pre-apply shape): 13 failed / 3 passed / 14 subtests,
+   subTest-for-subTest identical. The real pre-apply DB state is not
+   re-runnable post-apply — the method is disclosed honestly, never presented
+   as a live pre-apply replay.
+4. **D3 migration + apply** —
+   `supabase/migrations/20261115120000_parity_p1_001.sql` applied to ENV_DB
+   via `scripts/apply_migration_api.py`: **13 OK / 0 FAIL** (10
+   `ADD COLUMN IF NOT EXISTS` + 3 `DO $$` constraint guards; verbatim receipt
+   in D3 above). ENV_DB gate proof: `PROJECT_REF = gllqtbyofrcjzmbnfoeh`
+   hardcoded (`scripts/apply_migration_api.py:29`) + row-count artifact
+   `wastewater.reading` = 907 / `core.personnel` = 9 matching
+   `reports/schema-snapshot-live.md`. Preflight receipts in D3 (live-object
+   check, name-collision check, legacy DISTINCT evidence, zero-DML grep, NOT
+   VALID semantics note).
+5. **D3 post-verify** — 3 `ck_%` constraints present with
+   `convalidated = false` (NOT VALID); 10 `*_status` columns `text`,
+   `is_nullable = YES`, NO default; 907/9 rows unchanged.
+6. **D4 battery** at frozen head `9ac2b08` — vitest FULL 32 files
+   **503 passed | 1 skipped** (designed skipIf); `tsc -b` clean; oxlint
+   0 errors (18 pre-existing warnings); Playwright FULL workers=1 **213
+   passed**; guard **344/344** (+450 subtests); runtime **62/62**; schema
+   test GREEN **3 passed / 27 subtests**; checker v1.1.0 OK (no version
+   bump — schema-only, reasoning recorded in D4); `git diff --check` clean.
+7. **D5** — fresh-GLM independent review at exact head `9ac2b08` (base
+   `aeda441`): **APPROVED — zero P1/P2; 2 informational P3**
+   (issuecomment-6895358402, 2026-11-15T13:55:10Z), with its own live
+   read-only DB re-verification (907/9 rows; 3 `ck_%` constraints
+   `convalidated=false`) and an independently re-run battery matching D4
+   item-for-item; all 5 recorded deviations judged ACCEPTABLE (filename,
+   "13 CHECKs" conflation, test-pin correction, token via process-env,
+   post-interruption resume). Merge-executor review trail:
+   issuecomment-6895379195.
+8. **Deploy** — correctly skipped: the Pages deploy paths filter requires
+   `frontend/**` changes and this lane changed none (schema-only + docs +
+   tests). No deploy, no version bump, no CHANGELOG entry — all three per the
+   recorded reasoning.
+
+### Session-interruption honesty note
+
+The delivering session was interrupted mid-run by an API-key expiry (after
+the apply + post-verify, before the PR). The resume reconstructed state from
+this handoff + the live DB and **re-verified the live DB BEFORE any apply
+attempt** (all 3 constraints already `convalidated = false`, all 10 columns
+present, 907 rows) → apply NOT re-run, no double-apply (the DDL is idempotent
+regardless). All receipts were written fresh post-resume; the same apply
+path/Drive-secret source was reused read-only for introspection during the
+gap. Recorded in D3 ("Post-interruption resume note") and independently
+judged acceptable by D5 (deviation 5).
+
+### P3 ledger (parity follow-ups — carried, NOT auto-fixed)
+
+- **P3-1 (D5) — RECONCILED by this closeout.** The WO spelled the claim-time
+  filename `20261115000001_parity_p1_001.sql` while the delivered file is
+  `20261115120000_parity_p1_001.sql`. Fixed in this transition's WO edit at
+  §3.1 and §5 (as named by the instruction/D5); a third identical stale
+  pointer at §3.4 (the apply command) was found during the same docs-only
+  pass and reconciled with them — recorded as a minor deviation (fixing it
+  avoids leaving a half-reconciled WO; same stale-pointer class, same file).
+- **P3-2 (D5) — CARRIED, owner-gated.** `VALIDATE CONSTRAINT` on all 3 enum
+  CHECKs requires an explicit owner data decision first. Precise legacy
+  evidence (D3 preflight item 5, re-confirmed by D5's live probe):
+  `core.personnel.position` — 3 rows OUTSIDE the enum
+  (`ผู้ช่วยช่างทั่วไป`×1, `พนักงานช่วยเหลือคนไข้`×1, `พนักงานเปล`×1);
+  `core.personnel.status` — 6 rows OUTSIDE the enum (`active`×6);
+  `wastewater.reading.chlorine_mix_ratio` — all 907 rows in-enum
+  (`1:4`×678, `1:9`×199, `1:2`×30). Rows stay visible and uncoerced
+  (NOT VALID keeps them readable; unknown ≠ 0). NOT auto-fixed here.
+
+### Parity follow-up ledger (durable, for the next lanes)
+
+1. **VALIDATE CONSTRAINT ×3** — owner data decision on the 9 out-of-enum
+   legacy rows above (P3-2), then the owner-gated VALIDATE.
+2. **P1.2 constants** — `×34`/`×12` (and the other plan §8 risk-row-3
+   constants `×3.7`, `÷10`, `0.4999`) stay unverified-from-snapshot: owner/
+   worksite confirmation precedes any merge that uses them.
+3. **P1.2 lane** — SQL views สายมิเตอร์ (`wastewater.v_reading_*`): LAG-based
+   yesterday-meter/meter chain, `delta≤0 → NULL` (never zero —
+   ห้ามแทนค่าศูนย์), คำนวณสูบ as config, AVG 4 วัน, chlorine streak — needs
+   its own NEW reviewed claim transition.
+4. **Phase 4 (P4.1–P4.4)** — HUMAN_AUTHORIZATION_REQUIRED (plan §5.3/§8 risk
+   row 4); no claim starts before explicit owner decisions. P4 owner
+   decisions OPEN.
+5. **Standing owner-manual reminders** — issues #155/#156 remain OPEN and are
+   not agent-actionable; `ENV-BUILDING-REPAIR-001-C1` D9b stays
+   WAITING_EXTERNAL.
+
+### Closeout verification battery (at this branch's head)
+
+- guard: **344 passed + 450 subtests** (exit 0)
+- runtime battery: **62 passed + 32 subtests**
+- `validate-registry --file docs/ai/CURRENT-WORK.md`:
+  `{"claims": 26, "ok": true}` with `ENV-PARITY-P1-001-C1` **CLOSED**
+- claim-by-claim JSON-diff vs `d153983`: **exactly 1 of 26 claims changed**
+  (`ENV-PARITY-P1-001-C1`), other 25 byte-identical
+- `git diff --stat` vs `d153983`: **exactly 3 files** (CURRENT-WORK.md,
+  `docs/work-orders/ENV-PARITY-P1-001.md`, this handoff)
+- `git diff --check`: clean
