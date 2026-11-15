@@ -3,9 +3,10 @@
 **Lane:** AppSheet parity program Phase 1, lane P1.3 — Critical flags 2-day
 streak (DO/Cl/TDS/pH) → seed `wastewater.threshold` (incl. SV30 >450/<150,
 น้ำเข้า >70) + fire `threshold_alert`.
-**Status:** CLAIMED — claim transition authored; implementation has NOT
-started. This WO binds the lane; D-phase receipts append to
-`docs/ai/handoffs/ENV-PARITY-P1-003-GLM.md`.
+**Status:** IMPLEMENTATION DELIVERED — REVIEW_REQUESTED (implementing branch
+`feat/env-parity-p1-003`; D2 RED + D3 preflight/apply/post-verify + D4
+battery receipts in `docs/ai/handoffs/ENV-PARITY-P1-003-GLM.md`; the
+implementer stops here — the authorized reviewer owns approval and merge).
 **Routing:** Track-Z (GLM lane — SQL migration, view/function logic, tests,
 battery). No Track F work exists in this lane (DB logic + seeds + tests only,
 no visual surface).
