@@ -5,14 +5,18 @@ configuration system (effective-dated `core.equipment_spec`) + SQL views
 สายมิเตอร์ (meter chain: LAG เมื่อวาน/สูบ 1-2, delta ไฟ, คำนวณสูบ
 spec-driven, AVG 4 วัน, คลอรีนน้ำที่ใช้จริง) with the honest-correction
 rules (delta≤0 → NULL + boundary flag; never global-MAX; never 0).
-**Status:** IMPLEMENTATION DELIVERED — REVIEW_REQUESTED (2026-11-15;
-migration `20261115140000_parity_p1_002.sql` applied to ENV_DB 11 OK/0 FAIL
-with preflight + post-verify receipts; D2 RED-first test GREEN post-apply;
-D4 battery green at the frozen implementation head). Implementation PR
-awaits D5 independent review — implementer never merges; full D2/D3/D4
-receipts in `docs/ai/handoffs/ENV-PARITY-P1-002-GLM.md`. (Claim transition:
-PROPOSED — CLAIMED; this docs-only transition bound the lane; the
-implementation ships in a separate PR per the transition.)
+**Status:** DELIVERED — CLOSED. Implementation merged via PR #190 as
+`85ddf75eb4eec5070abd9f8f438f880497721acb` (second parent = D5-APPROVED
+reviewed head `1bbfabe91d51cde1682e3d1ae2b0beff243c5b51`; D5 fresh-GLM
+APPROVED issuecomment-6900313088 with an independently reproduced battery +
+own read-only live probe; merge receipt issuecomment-6900326465; migration
+`20261115140000_parity_p1_002.sql` applied to ENV_DB 11 OK/0 FAIL with
+preflight + post-verify receipts; D2 RED-first test GREEN post-apply; D4
+battery green at the frozen implementation head; claim transition PR #189
+merged as `93e197e9d2d91ff320c0f739dfa09e9fe5934623` with reviewed
+transition head `130fed9ff3f6fdc954a19799ff46b866584c8155`; registry closed
+by the docs-only closeout PR off main @ `85ddf75`). Full D2/D3/D4/D5/D6
+receipts in `docs/ai/handoffs/ENV-PARITY-P1-002-GLM.md`.
 **Routing:** Track-Z (GLM lane — SQL migration, table/enum/seeds, view
 logic, tests, battery). No Track F work exists in this lane (DB only, no
 visual surface; the admin UI for spec edits is explicitly deferred to the

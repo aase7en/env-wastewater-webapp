@@ -651,8 +651,154 @@ NULL`); calendar gap or NULL usage resets to 0; first day = 1.
    volumes required, else NULL); the "อย่าลืมใส่เลข มิเตอร์บ่อสูบนะจ๊ะ"
    prompt is NEVER mirrored into SQL (form-side reminder is P1.4).
 
+## D6 — CLOSEOUT RECEIPT (only by a separate reviewed closeout transition)
+
+Recorded by the closeout transition `docs/env-parity-p1-002-closeout` off
+`origin/main @ 85ddf75eb4eec5070abd9f8f438f880497721acb` (the implementation
+merge SHA; clean, fetched, ff-verified — local main fast-forwarded
+93e197e → 85ddf75, `git status` clean except the pre-existing untracked
+`_worktrees/` which is not this transition's file). Fence:
+`expected_policy_revision = 85ddf75eb4eec5070abd9f8f438f880497721acb`;
+`expected_registry_hash = f3c69b01a608d7568aa48e9927afcee4f59dd2869a9bb8ad6f471da7532f44b1`
+(guard `registry_hash` of the registry block AT `85ddf75` —
+`validate-registry` on the clean checkout at that SHA =
+`{"claims": 28, "ok": true, "registry_hash": "f3c69b01…"}`, same guard method
+as the PR #166/#169/#185/#188 closeout convention; empirically cross-checked —
+the same method at the prior base `fb57369` reproduces the prior fence
+`95d363ff…` byte-exactly). Claim `ENV-PARITY-P1-002-C1`: CLAIMED → CLOSED;
+claim-by-claim JSON-diff vs `85ddf75` = exactly 1 of 28 claims changed;
+changed files = exactly 3 (`docs/ai/CURRENT-WORK.md`,
+`docs/work-orders/ENV-PARITY-P1-002.md`, this handoff).
+
+### Full chain (each receipt verified live 2026-11-15 before writing)
+
+1. **Claim transition** — PR #189 MERGED as
+   `93e197e9d2d91ff320c0f739dfa09e9fe5934623` (head
+   `130fed9ff3f6fdc954a19799ff46b866584c8155`, base `main @ fb57369`;
+   mergedAt 2026-11-15T19:05:49Z); fence
+   `expected_policy_revision = fb57369…` /
+   `expected_registry_hash = 95d363ff…` (registry block AT base, guard
+   method `scripts/env_coordination_guard.py:454-456`).
+2. **Merge execution with expected-head discipline** — pre-merge review-trail
+   comment issuecomment-6900326465 pinned: D5 APPROVED receipt
+   issuecomment-6900313088, expected head
+   `1bbfabe91d51cde1682e3d1ae2b0beff243c5b51`, merge policy (merge commit,
+   no squash, expected head = second parent, branch kept), all 4 non-blocking
+   P3 notes carried verbatim to closeout. Gates re-verified immediately
+   before merge: PR OPEN, head == expected, MERGEABLE/CLEAN, checks notify +
+   scripts green. `gh pr merge 190 --merge --match-head-commit 1bbfabe…`;
+   merge SHA `85ddf75eb4eec5070abd9f8f438f880497721acb` with parents EXACTLY
+   (`93e197e9d2d91ff320c0f739dfa09e9fe5934623`,
+   `1bbfabe91d51cde1682e3d1ae2b0beff243c5b51`) — verified post-merge;
+   local main updated ff-only, clean; merge stat = exactly 4 claimed files
+   (migration + test + WO + handoff; 1721+/2−). **No deploy by the paths
+   filter** — the merge touched only docs/scripts/supabase-migration paths
+   (`deploy-frontend.yml` triggers on `frontend/**` only); the only workflow
+   run for the merge SHA was `test` (run 43754875845, SUCCESS).
+3. **D1 GLM-decided record (honesty anchor)** — the binding design was
+   decided by the GLM coordinator under the owner standing delegation, NOT
+   by a completed joint consult: Terra UNAVAILABLE (usage limit until
+   2026-11-20, exit-1 receipt) and Jev contract-degenerate on the A/B/C
+   choice legends (fixed families; the ONE resolvable signal Q5
+   `CODE_FAILURE` @ 1.0 = the meter-reset delta guard is code-level
+   mandatory). Receipts VERBATIM byte-verified in the D1 section above,
+   never presented as a completed Terra+Jev joint decision. Terra
+   cross-model review eligibility resumes after 2026-11-20; D5 ran on the
+   fresh-GLM floor with that limitation stated, never silently downgraded.
+4. **D3 apply + live evidence** —
+   `supabase/migrations/20261115140000_parity_p1_002.sql` applied to ENV_DB
+   via `scripts/apply_migration_api.py`: **11 OK / 0 FAIL** (CREATE TYPE →
+   CREATE TABLE → RLS ENABLE → COMMENT → 4 guarded seeds → DROP VIEW IF
+   EXISTS → CREATE VIEW → COMMENT; verbatim receipt in D3 above). Preflight
+   ×7 in D3 (ENV_DB gate `PROJECT_REF gllqtbyofrcjzmbnfoeh` +
+   `wastewater.reading` = 907 rows + `MIN(reading_date) = 2024-01-09` NO
+   drift + exactly ONE `carbon.meter` electric-meter identity with 907/907
+   `carbon_reading_id` linkage + name-collision clean +
+   reference-data-only grep clean). Post-verify (D3 + independently
+   reproduced by D5's own read-only live probe): 4 seed rows exact (flow 34
+   / flow 12 / energy 3.7 / mix 1:9, `valid_from = DATE '2024-01-09'`,
+   provenance "owner-confirmed 2026-11-15"); view
+   `wastewater.v_reading_meter_chain` spans exactly the 907 reading rows;
+   the delta guard caught **32 genuine pump meter-reset rows** in the real
+   history (`meter_boundary_flag` TRUE with delta ≤ 0 → NULL — pump1 ×1,
+   pump2 ×31; e.g. pump2 meter frozen 6810.7→6810.7 across days — never 0,
+   never negative volume, independent metrics still resolve);
+   `spec_missing_rows = 0`; `delta_kwh` resolved 906/907 (first row
+   honestly NULL); max **`chlorine_streak_count` = 484 days** (tail 480→484
+   consecutive; gaps-and-islands over real data); `chlorine_used_real`
+   907/907; spot rows verbatim (2024-01-09 all-NULL + 3-reason boundary
+   flag, streak 1; 2024-01-10: 1.0 h × 34 = 34 m³, 0.8 h × 12 = 9.6 m³,
+   delta_kwh 5, derived 43.6, avg 43.6, streak 2; 2026-07-04: 44.2/15.6/
+   59.8/52.9, streak 484); duplicate-date rows = 0.
+5. **D5 fresh-GLM independent review** — APPROVED, no P1/P2, receipt
+   issuecomment-6900313088 at exact head `1bbfabe`; battery independently
+   reproduced (vitest FULL 503/1skip, tsc clean, oxlint 0 errors, Playwright
+   FULL 213/213, guard 344 + 450 subtests, runtime 62 + 32 subtests,
+   meter-chain live 7 passed/12 subtests, checker OK v1.1.0 no-bump, RED
+   truthfulness judged TRUTHFUL); 4 non-blocking P3 notes carried:
+   1. **RED-era file provenance** — commit `ded0ec1` ("RED-first") contains
+      the post-correction test file; the pre-correction RED-era file is not
+      in git history, so RED rests on the verbatim terminal record + the
+      disclosed corrections narrative (mitigated by full disclosure +
+      independently re-executable GREEN). Future lanes: commit the RED-era
+      file (or mark in-commit provenance).
+   2. **Streak is row-based** — two readings sharing a calendar date would
+      each restart the streak; live dup-dates = 0 so day-based ≡ row-based
+      on real data today; a uniqueness/normalization note would make this
+      exact.
+   3. **Hardening follow-ups (already recorded by the lane)** — no DB-level
+      append-only enforcement; overlapping spec windows remain possible
+      until the btree_gist EXCLUDE follow-up (`UNIQUE(kind, valid_from)`
+      prevents same-start double seeds); `valid_to = valid_from`
+      (zero-length, never matched) is permitted by the window CHECK. Agreed
+      deferred to P1.4+.
+   4. **Rollback redundancy** — rollback's `DELETE FROM core.equipment_spec …`
+      before `DROP TABLE` is redundant; harmless/defensive, correct order
+      regardless.
+6. **Honest deviations (full record):**
+   - **`chlorine_streak_count` deferral CLOSED by the reviewed addendum** —
+     D0 item 1 recorded the transition instruction's exclusion ("chlorine
+     streak views already exist from P1.3 — do not duplicate") with the gap
+     kept open as a NAMED follow-up; the R2 transition-review adjudication
+     (issuecomment-6899667463 §5) ruled the delivery obligation REAL and
+     OPEN ("MUST land via a named successor claim (or a reviewed addendum
+     at the P1.2 implementation closeout)"); the claim instruction then
+     supplied that reviewed addendum and the continuous gaps-and-islands
+     `chlorine_streak_count` shipped in the view (D4 streak-closure note +
+     WO §2.2.8). This closes the deferral — the divergence from the
+     AppSheet LOW-READING counter semantics is documented in the D4 formula
+     translation notes, never silently reconciled.
+   - **RED-era file provenance** (D5 P3 #1, above) — disclosed, not hidden.
+   - **÷9-vs-÷10 divergence** — wastewater view mirrors the verbatim
+     production ÷SWITCH formula; A3's ÷10 binds the GROUNDWATER system via
+     the `chlorine_mix_groundwater` spec row (D0 item 3) — documented,
+     never silently reconciled.
+   - **Existing-view quirk untouched** —
+     `v_reading_with_computed.energy_kwh_estimate = pump2_meter -
+     pump1_meter` stays byte-identical (regression-guarded; the fix remains
+     a recorded follow-up on a frontend-consumed surface).
+   - **Spec admin UI deferred to P1.4+** — per the lane routing; the
+     delivered table is admin-writable only via future tooling.
+
+### Frontier after this closeout
+
+The next UNGATED parity lane is **P1.4** (form parity + the >2.5
+free-chlorine format rule UI; the equipment-spec admin UI belongs there or
+a successor lane — decide per its WO). **P1.5 น้ำประปา**
+(`water_supply.daily_check` consuming ×3.7/÷10) is now UNGATED too —
+constants owner-confirmed A2/A3 and the equipment-spec config table exists
+with the groundwater seeds already in. Carried follow-ups: the 4 D5 P3
+notes above, the P1.3 NULL-guard multi-location follow-up, the P1.001
+owner-gated VALIDATE CONSTRAINT follow-up, the personnel proposal pending
+(C8). Standing: #155 hooks approved-not-started (owner-manual), #156 open
+(owner-manual), Building WAITING_EXTERNAL, P4 authorized awaiting Phase
+reach. Both successor lanes need their own NEW reviewed claim transition.
+
 ## Status
 
-ENV-PARITY-P1-002-C1 → **REVIEW_REQUESTED** (implementation delivered;
-PR awaits D5 independent review at the exact frozen head; implementer
-never merges — stop point respected).
+ENV-PARITY-P1-002-C1 → **CLOSED** (implementation merged via PR #190
+`85ddf75eb4eec5070abd9f8f438f880497721acb`, second parent = D5-APPROVED
+reviewed head `1bbfabe91d51cde1682e3d1ae2b0beff243c5b51`; registry closed
+by the docs-only closeout transition `docs/env-parity-p1-002-closeout` —
+STOP at REVIEW_REQUESTED; the separate reviewer owns closeout approval and
+merge, implementer never merges).
