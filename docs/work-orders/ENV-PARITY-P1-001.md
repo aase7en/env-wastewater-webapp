@@ -2,10 +2,14 @@
 
 **Lane:** AppSheet parity program Phase 1, lane P1.1 — schema parity for the
 daily wastewater reading table + personnel enums.
-**Status:** IMPLEMENTATION DELIVERED — REVIEW_REQUESTED (implementing branch
-`feat/env-parity-p1-001`; D2 RED + D3 apply/post-verify + D4 battery receipts
-in `docs/ai/handoffs/ENV-PARITY-P1-001-GLM.md`; the implementer stops here —
-the authorized reviewer owns approval and merge).
+**Status:** DELIVERED — CLOSED. Implementation merged via PR #184 as
+`d15398343ecc6c749acc5ef801107287771d1ff7` (second parent = D5-APPROVED
+reviewed head `9ac2b08ea7f46fb7bcc68ad48e4a469bc6c6c1d7`; D5 fresh-GLM
+APPROVED issuecomment-6895358402; merge-executor trail issuecomment-6895379195;
+claim transition PR #183 merged as `aeda44108882e0dda2f55134c62a610b2da5fbd3`
+with R2 APPROVED issuecomment-6890337150; registry closed by the docs-only
+closeout PR off main @ `d153983`). Full D2/D3/D4/D5/D6 receipts in
+`docs/ai/handoffs/ENV-PARITY-P1-001-GLM.md`.
 **Routing:** Track-Z (GLM lane — lib logic, SQL, schema, tests, CI-free battery).
 No Track F work exists in this lane (schema-only, no visual surface).
 **Plan reference:** `docs/ai/APPSHEET-PARITY-PLAN.md` §6 Phase 1 lane table row
@@ -136,10 +140,13 @@ free text (`frontend/src/lib/supabase-queries.ts:179`
 
 ### 3.1 Migration file — ONE file
 
-`supabase/migrations/20261115000001_parity_p1_001.sql` (house timestamp
-naming; **deviation recorded**: the claim instruction's literal spelling
+`supabase/migrations/20261115120000_parity_p1_001.sql` (house timestamp
+naming; **deviations recorded**: the claim instruction's literal spelling
 `<timestamp>_parify_p1_001.sql` is normalized to `_parity_` — house naming is
-descriptive-lowercase and "parify" is a typo of the lane subject).
+descriptive-lowercase and "parify" is a typo of the lane subject; the
+claim-time timestamp `20261115000001` was superseded by the delivered
+`20261115120000` — filename reconciled here, §3.4, and §5 by the closeout
+transition per D5 P3-1).
 
 Requirements:
 
@@ -193,7 +200,7 @@ Run it GREEN in D4 after apply. The test never writes to the DB.
 
 - Apply to ENV_DB (`gllqtbyofrcjzmbnfoeh`, ap-southeast-1) ONLY via
   `uv run python scripts/apply_migration_api.py
-  supabase/migrations/20261115000001_parity_p1_001.sql`; record the
+  supabase/migrations/20261115120000_parity_p1_001.sql`; record the
   statement-by-statement receipt verbatim in the handoff.
 - Rollback SQL (schema-only, documented in the migration header AND the
   handoff):
@@ -234,7 +241,7 @@ transition itself lives on `docs/env-parity-p1-001-claim`).
 
 ## 5. Mutable scope (claim-bound)
 
-- `supabase/migrations/20261115000001_parity_p1_001.sql` (new)
+- `supabase/migrations/20261115120000_parity_p1_001.sql` (delivered)
 - `scripts/test_parity_p1_001_schema.py` (new)
 - `docs/work-orders/ENV-PARITY-P1-001.md` (this file)
 - `docs/ai/handoffs/ENV-PARITY-P1-001-GLM.md` (new)
