@@ -123,11 +123,217 @@ tests; no assertion weakening.
 values are fully pinned by the plan row + verbatim reference. Any later
 genuine fork gets its own consult receipt here.)
 
-## D2 — (to be appended by the implementing lane: RED test output verbatim)
+## D2 — RED (implemented by the delivering lane, 15 พฤศจิกายน 2569 / 2026-11-15)
 
-## D3 — (to be appended: preflight receipts + apply receipt + GREEN run)
+Authored `scripts/test_parity_p1_001_schema.py` (new) — Python unittest in the
+house `scripts/test_*.py` style, strictly read-only: it queries only
+`information_schema.columns` and `pg_constraint`/`pg_get_constraintdef()` on
+ENV_DB through the same Management-API path as
+`scripts/apply_migration_api.py` (`scripts/_env.py`; `SUPABASE_ACCESS_TOKEN`
+from Drive secrets, never printed). Assertions: (1) the 10 new
+`wastewater.reading` parity columns exist as `text`, nullable, NO default;
+(2) the 3 enum CHECK constraints exist with pinned
+`pg_get_constraintdef()` text and NOT VALID (`convalidated = false`);
+(3) the existing source-of-truth columns (10 booleans + `chlorine_used` +
+`chlorine_mix_ratio` + `core.personnel.position`/`.status`) remain unchanged.
 
-## D4 — (to be appended: battery outputs + no-version-bump reasoning)
+Truthful RED (run against the LIVE DB BEFORE the migration was applied —
+migration file not yet authored):
+
+```
+SUBFAILED(constraint='ck_wastewater_reading_chlorine_mix_ratio_enum') ... missing on wastewater.reading
+SUBFAILED(constraint='ck_core_personnel_position_enum') ... missing on core.personnel
+SUBFAILED(constraint='ck_core_personnel_status_enum') ... missing on core.personnel
+SUBFAILED(column='screen_cleaned_coarse_status' … 'chlorine_pump2_running_status') — all 10 "missing parity column <name>" (found {})
+13 failed, 3 passed, 1 warning, 14 subtests passed in 1.22s
+```
+
+The 14 passing subtests are assertion group 3 (source-of-truth surface
+unchanged) — i.e. the RED is exactly the missing parity surface, nothing else.
+
+Harness note (recorded): the very first RED attempt hit a test-harness bug
+(a class-attribute function became a bound method via `self.q` → TypeError);
+fixed with `staticmethod` and re-run — the recorded RED above is the
+post-fix truthful outcome, not a masked failure.
+
+### D3 gate + preflight receipts (recorded before apply)
+
+1. **ENV_DB gate (WO §3.3.1 dispatch item)** — tooling points at ENV_DB:
+   `PROJECT_REF = "gllqtbyofrcjzmbnfoeh"` hardcoded at
+   `scripts/apply_migration_api.py:29` (same constant in
+   `scripts/introspect_schema_api.py:20`); API endpoint
+   `https://api.supabase.com/v1/projects/gllqtbyofrcjzmbnfoeh/database/query`.
+   ENV_DB-identifying artifact after connecting: `SELECT count(*)` through
+   that endpoint → `wastewater.reading` = **907 rows** and
+   `core.personnel` = **9 rows**, matching the row counts captured in
+   `reports/schema-snapshot-live.md` from ENV_DB (2026-11-13). The D0 caveat
+   (MCP session attached to a different project) does not apply to this
+   Management-API path.
+2. **Token resolution deviation**: the `scripts/_env.py` resolver chain is
+   broken on this machine (no repo-local `.env` stub exists in the worktree
+   or the canonical checkout, and the sibling A-Wiki lives under
+   `_from_Desktop/A-Wiki`, outside the candidate list). Resolution used tier 1
+   of the same approved resolver — `SUPABASE_ACCESS_TOKEN` injected into the
+   process environment from the Drive secrets file
+   (`<drive>/secrets/env-wastewater-webapp.env`, Drive root resolved via the
+   A-Wiki `drive` link). The token was never printed, logged, or persisted.
+3. **Live-object check**: `wastewater.reading` and `core.personnel` exist;
+   all D0 discoveries hold live — `chlorine_mix_ratio` text/nullable/no
+   default, 10 machine/screen booleans present, `chlorine_used` numeric,
+   `position`/`status` text/nullable/no default (full lists recorded in the
+   preflight probe output).
+4. **Name-collision check**: zero `ck_%` constraints on either target table;
+   zero existing `*_status` columns on `wastewater.reading` — no collisions
+   for any of the 13 new object names.
+5. **Legacy-value evidence** (`SELECT DISTINCT` + counts; NOT VALID keeps
+   these readable and uncoerced — owner follow-up evidence):
+   - `wastewater.reading.chlorine_mix_ratio` (all 907 rows non-null): `1:4`×678,
+     `1:9`×199, `1:2`×30 — all within the enum set.
+   - `core.personnel.position` (8 of 9 rows non-null): `พนักงานบริการ`×5,
+     `นักวิชาการสาธารณสุข`×1 in-enum; **3 rows OUTSIDE the enum**:
+     `ผู้ช่วยช่างทั่วไป`×1, `พนักงานช่วยเหลือคนไข้`×1, `พนักงานเปล`×1.
+   - `core.personnel.status` (9 of 9 rows non-null): `ลาออก`×3 in-enum;
+     **6 rows OUTSIDE the enum**: `active`×6.
+   A later `VALIDATE CONSTRAINT` therefore requires an explicit owner
+   decision on legacy cleanup first (never silently coerced here).
+6. **Zero-DML confirmation**: `grep -inE
+   "INSERT|UPDATE|DELETE|TRUNCATE|GRANT|POLICY"` on the migration file →
+   zero matches (case-insensitive; no comment hits either). Local
+   `split_sql` dry-run → exactly 13 statements (10 `ADD COLUMN IF NOT
+   EXISTS` + 3 `DO $$` guards), dollar-quotes handled.
+7. **NOT VALID semantics note**: NOT VALID skips the existing-row scan
+   (907 historical rows untouched) but still enforces the CHECK on every
+   new/changed row — parity going forward, history untouched.
+
+### D3 apply receipt (verbatim)
+
+```
+20261115120000_parity_p1_001.sql: 13 statement(s)
+  [1/13] OK: ALTER TABLE wastewater.reading
+  [2/13] OK: ALTER TABLE wastewater.reading
+  [3/13] OK: ALTER TABLE wastewater.reading
+  [4/13] OK: ALTER TABLE wastewater.reading
+  [5/13] OK: ALTER TABLE wastewater.reading
+  [6/13] OK: ALTER TABLE wastewater.reading
+  [7/13] OK: ALTER TABLE wastewater.reading
+  [8/13] OK: ALTER TABLE wastewater.reading
+  [9/13] OK: ALTER TABLE wastewater.reading
+  [10/13] OK: ALTER TABLE wastewater.reading
+  [11/13] OK: DO $$
+  [12/13] OK: DO $$
+  [13/13] OK: DO $$
+
+Done: 13 OK, 0 FAIL
+```
+
+Applied via `uv run python scripts/apply_migration_api.py
+supabase/migrations/20261115120000_parity_p1_001.sql` (2026-11-15).
+
+### D3 post-verify
+
+- All 3 constraints present, `contype = 'c'`, **`convalidated = false`
+  (NOT VALID)**; live `pg_get_constraintdef()` (verbatim):
+  - `ck_wastewater_reading_chlorine_mix_ratio_enum` →
+    `CHECK ((chlorine_mix_ratio = ANY (ARRAY['1:2'::text, '1:4'::text, '1:9'::text]))) NOT VALID`
+  - `ck_core_personnel_position_enum` →
+    `CHECK (("position" = ANY (ARRAY['นายแพทย์'::text, 'พนักงานบริการ'::text, 'นักวิชาการสาธารณสุข'::text, 'นักโภชนาการ'::text, 'พนักงานประกอบอาหาร'::text]))) NOT VALID`
+  - `ck_core_personnel_status_enum` →
+    `CHECK ((status = ANY (ARRAY['ทำงาน'::text, 'ย้ายกลุ่มงาน'::text, 'ลาออก'::text, 'ลาศึกษาต่อ'::text]))) NOT VALID`
+- All 10 `*_status` columns exist: `text`, `is_nullable = YES`, no default.
+- Historical rows unchanged: `wastewater.reading` = 907, `core.personnel` = 9.
+- Schema test GREEN after pin correction: `3 passed, 1 warning, 27 subtests
+  passed in 1.27s` (10 parity columns + 3 constraints + 14 unchanged
+  source-of-truth columns, all asserted).
+
+### D3 test-pin correction (recorded — not an assertion weakening)
+
+The D2 RED run pinned the authored IN-form DDL text as the expected
+`pg_get_constraintdef()` rendering. PostgreSQL's actual deterministic deparse
+differs textually (`IN (...)` is parse-time sugar for `= ANY (ARRAY[...])`,
+adds `::text` casts, quotes the reserved-word column `"position"`, and
+appends `NOT VALID` to the def). Before the GREEN run the pinned text was
+corrected to the observed live rendering quoted above — semantically
+identical and strictly STRONGER (it now byte-pins the full cast forms and
+the NOT VALID suffix; enum values, their order, and NOT VALID remain pinned
+verbatim). No assertion was weakened to force RED→GREEN.
+
+### Post-interruption resume note (recorded)
+
+The delivering session was interrupted (API-key expiry) AFTER the apply and
+post-verify above, before the PR. On resume, the live DB state was
+re-verified BEFORE any apply attempt: all 3 `ck_%` constraints present with
+`convalidated = false`, all 10 `*_status` columns present, 907 rows —
+**already applied, verified; apply was NOT re-run** (no double-apply).
+During the interruption the same apply path and Drive-secret source were
+used again only for read-only introspection.
+
+## D4 — battery at the frozen implementation head (15 พฤศจิกายน 2569)
+
+All commands run from the lane worktree
+`/Volumes/MAC_WORK/DevWorkspace/Github/_worktrees/env-parity-p1-001`
+(branch `feat/env-parity-p1-001` @ base `aeda441`):
+
+| Item | Result |
+|---|---|
+| vitest FULL (`npm run test`) | **32 files: 503 passed \| 1 skipped (504)** — the 1 skip is the designed `skipIf` from prior lanes |
+| `tsc -b` | exit 0 (clean) |
+| lint (`npm run lint` / oxlint) | exit 0; 18 warnings / 0 errors (all pre-existing: `AuthProvider.tsx` ×2, `gen-pwa-icon-192.mjs`, et al.) |
+| Playwright FULL (`npx playwright test --workers=1`) | **213 passed (4.9m)** |
+| guard (`pytest scripts/test_env_coordination_guard.py`) | **344 passed + 450 subtests** |
+| runtime (`pytest scripts/test_env_autonomy_runtime.py`) | **62 passed + 32 subtests** |
+| schema test (`pytest scripts/test_parity_p1_001_schema.py`) | **GREEN** — 3 passed, 27 subtests (see D3) |
+| checker (`python3 scripts/check_release_version.py`) | `RELEASE VERSION CHECK: OK (v1.1.0; CHANGELOG entry v1.1.0)` |
+| `git diff --check` | clean |
+
+**No version bump — recorded reasoning**: this lane is schema-only
+preparation for later parity lanes (P1.2/P1.4); it adds DB constraints and
+nullable columns that no user-facing surface reads yet. Per the CHANGELOG
+criteria (release entries require a new or changed user-facing capability),
+no CHANGELOG entry and no version bump; `package.json` and `CHANGELOG.md`
+are untouched and the checker confirms the current `v1.1.0` pairing intact.
+
+### D4 environment-prep notes (machine-local, never committed)
+
+- The fresh worktree lacked the gitignored `frontend/.env`; the first vitest
+  run had 2 collection failures ("Missing VITE_SUPABASE_URL /
+  VITE_SUPABASE_ANON_KEY"). Fixed by copying the canonical checkout's
+  gitignored `frontend/.env` (129 bytes; publishable anon surface only) —
+  NOT the `.env.example` placeholders, which silently stalled every e2e
+  page-load. `frontend/.env` is gitignored and is not part of this PR.
+- `npm install` drift on `frontend/package-lock.json` (unclaimed file) was
+  reverted — the PR diff stays inside the claimed file set.
+- Playwright chromium (headless shell v1228) was installed locally; two
+  silent Playwright hangs (zero output for 40 min) were diagnosed to (a) an
+  orphaned vite dev server from the session interruption wedging the
+  webServer handoff and (b) the `.env.example` placeholder values above;
+  both fixed, then the suite ran clean end-to-end.
+
+### Changed files (diff vs `origin/main` @ aeda441 — claimed set only)
+
+1. `supabase/migrations/20261115120000_parity_p1_001.sql` (new)
+2. `scripts/test_parity_p1_001_schema.py` (new)
+3. `docs/work-orders/ENV-PARITY-P1-001.md` (status transition only)
+4. `docs/ai/handoffs/ENV-PARITY-P1-001-GLM.md` (D2/D3/D4 receipts appended)
+
+`docs/ai/CURRENT-WORK.md` untouched on this branch (registry transitions
+belong to the closeout convention). No `frontend/**`, no CI, no
+`supabase/functions/**`, no plan/reference edits.
+
+### Deviations (all recorded; none material to scope)
+
+1. **Migration filename**: this dispatch instruction's
+   `20261115120000_parity_p1_001.sql` was used instead of the WO
+   §3.1/§5 literal `20261115000001_parity_p1_001.sql` (the current explicit
+   instruction wins over the claim-time WO spelling; both satisfy house
+   timestamp naming; sorts after every existing migration).
+2. **WO "13 CHECK constraints"** (§3.1, §3.2 item 2, §3.4) is a conflation
+   of the 10 columns + 3 CHECKs; WO §2 pins exactly **3** CHECK constraints,
+   and exactly 3 were delivered, tested, and rolled back by name. The
+   rollback block covers "the 13 objects this migration created" (3
+   constraints + 10 columns).
+3. **Test pin correction** — see D3 above (stronger pin, recorded).
+4. **Token via process-env injection** — see D3 gate item 2.
+5. **Post-interruption resume** — see D3 resume note (no double-apply).
 
 ## D5 — (to be appended: reviewer verdict + receipt)
 
