@@ -373,3 +373,286 @@ latency_seconds: 4
 exit_code: 1
 
 ```
+
+---
+
+## D2 — RED-first meter-chain test (2026-11-15, pre-apply)
+
+Test: `scripts/test_parity_p1_002_meter_chain.py` (house P1.3 pattern:
+Management-API access path via `scripts/_env.py`; SUPABASE_ACCESS_TOKEN
+resolved per the P1.001/P1.003 deviation receipt — process-env tier of the
+approved resolver, Drive secrets file via the A-Wiki `drive` link; token
+never printed/logged/persisted).
+
+RED run against live ENV_DB BEFORE applying the migration (verbatim):
+
+```
+=========================== short test summary info ============================
+FAILED scripts/test_parity_p1_002_meter_chain.py::C1MeterChainLiveContract::test_enum_and_table_shape
+FAILED scripts/test_parity_p1_002_meter_chain.py::C1MeterChainLiveContract::test_meter_chain_semantics_rollback_fixture
+FAILED scripts/test_parity_p1_002_meter_chain.py::C1MeterChainLiveContract::test_seed_rows_exact
+FAILED scripts/test_parity_p1_002_meter_chain.py::C1MeterChainLiveContract::test_view_exists_pinned_shape_spans_readings
+4 failed, 3 passed, 1 warning in 1.75s
+```
+
+- `test_enum_and_table_shape` → "core.equipment_spec_kind /
+  core.equipment_spec missing (migration 20261115140000_parity_p1_002.sql
+  unapplied) — RED as designed"
+- `test_seed_rows_exact` → "core.equipment_spec missing … RED as designed"
+- `test_view_exists_pinned_shape_spans_readings` →
+  "wastewater.v_reading_meter_chain missing … RED as designed"
+- `test_meter_chain_semantics_rollback_fixture` → parse-safe canary gate:
+  spec_table_present/view_present/enum_present false → fixture batch NOT
+  sent (parse-time failure and zero-write risk avoided)
+- GREEN pre-apply (as designed — group 4 regression guards pin EXISTING
+  objects this lane never touches): `test_v_reading_with_computed_byte_identical`,
+  `test_p13_critical_flags_surface_intact`,
+  `test_no_new_grants_on_existing_objects`.
+
+### D2 GREEN bring-up corrections (honesty record — no assertion weakening)
+
+The first post-apply run failed on TEST-AUTHORING issues (not schema
+drift); corrections preserved the RED→GREEN failure-set mapping (the same
+groups that failed RED pass GREEN; nothing removed or loosened to
+manufacture GREEN; the fixture set got STRICTER — added anchor +
+before-window probes):
+
+1. **Constraint-def pin format** (not a schema issue): the live
+   `pg_get_constraintdef(con.oid, true)` renders enum comparisons with
+   qualified casts and drops redundant parens, e.g. `CHECK (kind <>
+   'pump_wastewater_1'::core.equipment_spec_kind OR flow_m3_per_h IS NOT
+   NULL)`. Expected cores re-captured from the LIVE rendered form
+   (verbatim sample above); the assertion still pins the exact constraint
+   NAME SET + semantic core of every named CHECK + the UNIQUE.
+2. **Unknown-ratio fixture case** (discovery): the planned ratio '1:7'
+   fixture row violates the P1.001 constraint
+   `ck_wastewater_reading_chlorine_mix_ratio_enum` (23514) — the column is
+   confined to {1:2, 1:4, 1:9}+NULL. The unknown-ratio case is therefore
+   exercised as a NULL ratio (the honest ENV representation of the
+   AppSheet blank ratio; the view's `ELSE NULL` SWITCH branch remains for
+   future ratio additions). DISCOVERY RECORDED: unknown ratios are
+   unrepresentable at the table level since P1.001.
+3. **Fixture LAG-chain anchoring**: the 907 real rows
+   (2024-01-09..2026-07-04) sit between a 2024-01-01 fixture row and the
+   2099 bands, so the 2099 chain is anchored by a dedicated 2098-12-31
+   fixture row inheriting the real last row's LAG (runtime-queried:
+   pump1_meter = 4282.10, pump2_meter = 7334.80 on 2026-07-04); the
+   before-`valid_from` case moved to 2023-12-31/2024-01-01 (BEFORE the
+   2024-01-09 seed — where the real seed correctly does NOT resolve).
+4. **Multi-statement response shape** (tooling discovery): the
+   Management-API query endpoint returns ONLY the final statement's result
+   set — the fixture batch carries ONE audit SELECT (with in-transaction
+   counts inside it); the post-rollback zero-write proof re-queries counts
+   as a separate request (P1.3 pattern).
+
+GREEN run post-apply (verbatim):
+
+```
+=========================== short test summary info ============================
+7 passed, 1 warning, 12 subtests passed in 4.96s
+```
+
+Fixture coverage (WO §3.2 item 3, all inside ONE ROLLBACK transaction,
+note 'P1.002-FIXTURE', legacy_id NULL, location_id NULL, 28 readings +
+2 fixture spec rows + 1 fixture carbon meter + 3 carbon readings):
+spec date-join (before window → NULL + `spec_missing` TRUE; real seed
+resolves far-future dates; fixture spec takeover 50→60 at its later
+`valid_from` — append-never-overwrite proof; latest-valid_from pick wins
+over the real seed's open-ended 34); LAG-not-MAX (out-of-order values
+where prev = 100 ≠ global max 7334.80; prev ≠ any later row); delta ≤ 0 →
+NULL + `meter_boundary_flag` TRUE + reason (never 0, never negative);
+missing counterpart → NULL + flag with 'no previous reading' reason;
+missing meter input → NULL without a flag; `wastewater_in_derived` NULL
+when either volume missing (numeric only); `avg_westwater_4d` gap day
+contributes nothing (264 → 360 → 284) and is NULL over an all-NULL window;
+`chlorine_used_real` ÷2/÷4/÷9 with NULL on NULL ratio and NULL value;
+`chlorine_streak_count` first day 1, consecutive 2/3, NULL usage resets to
+0, calendar gap resets to 1 (both-days-recorded gap case); zero durable
+writes proven (pre/post counts equal on `wastewater.reading`,
+`core.equipment_spec`, `carbon.meter`, `carbon.reading`,
+`wastewater.threshold_alert`; in-transaction footprint +28/+2/+1/+3
+asserted).
+
+## D3 — preflight, apply, post-verify (2026-11-15)
+
+### Preflight receipts (read-only, before apply)
+
+1. **ENV_DB gate:** PROJECT_REF `gllqtbyofrcjzmbnfoeh` hardcoded in
+   `scripts/apply_migration_api.py`; identifying artifact:
+   `wastewater.reading` = **907 rows**, `core.personnel` = **9 rows**
+   (matches `reports/schema-snapshot-live.md`). PG 17.6.
+2. **History-bound `valid_from` evidence:**
+   `SELECT MIN(reading_date), MAX(reading_date) FROM wastewater.reading` →
+   **2024-01-09 .. 2026-07-04** → NO drift; the pinned
+   `DATE '2024-01-09'` stands (STOP rule not triggered).
+3. **Electric-meter identity evidence — ESTABLISHED:** exactly ONE
+   `carbon.meter` row: id `b6be4c99-c83a-43f7-b765-72286cc78bd0`,
+   meter_name `ระบบบ่อบำบัดน้ำเสีย`, source `electricity`, unit `kWh`,
+   is_active. `carbon.reading`: 907 rows spanning 2024-01-09..2026-07-04.
+   Linkage: **907/907** `wastewater.reading` rows carry
+   `carbon_reading_id` (100%); every linked reading resolves to exactly
+   that ONE meter id; **0** linked rows have NULL `meter_value`. →
+   `delta_kwh` wiring joins per-reading `carbon_reading_id` →
+   `carbon.reading.meter_value` (no meter-id literal embedded; the
+   `electric-meter-identity-unresolved` fallback not needed).
+4. **Name-collision check:** no `equipment_spec*` table in `core`, no
+   `v_reading_meter_chain*` view in `wastewater`, no
+   `equipment_spec_kind` type — all free.
+5. **Reference-data-only grep** (non-comment lines): zero matches for
+   `UPDATE|DELETE|TRUNCATE|DROP TABLE|GRANT|POLICY` — the migration is
+   CREATE TYPE/TABLE + ENABLE RLS (new table only) + 4 guarded
+   INSERT…WHERE NOT EXISTS + DROP VIEW IF EXISTS/CREATE VIEW (new view
+   only) + COMMENTs.
+
+### Apply receipt (verbatim)
+
+```
+20261115140000_parity_p1_002.sql: 11 statement(s)
+  [1/11] OK: CREATE TYPE core.equipment_spec_kind AS ENUM (
+  [2/11] OK: CREATE TABLE core.equipment_spec (
+  [3/11] OK: ALTER TABLE core.equipment_spec ENABLE ROW LEVEL SECURITY;
+  [4/11] OK: COMMENT ON TABLE core.equipment_spec IS
+  [5/11] OK: INSERT INTO core.equipment_spec (kind, flow_m3_per_h, valid_from, note, source)
+  [6/11] OK: INSERT INTO core.equipment_spec (kind, flow_m3_per_h, valid_from, note, source)
+  [7/11] OK: INSERT INTO core.equipment_spec (kind, energy_kwh_per_h, valid_from, note, sourc
+  [8/11] OK: INSERT INTO core.equipment_spec (kind, mix_part_chlorine, mix_part_water, valid_
+  [9/11] OK: DROP VIEW IF EXISTS wastewater.v_reading_meter_chain;
+  [10/11] OK: CREATE VIEW wastewater.v_reading_meter_chain AS
+  [11/11] OK: COMMENT ON VIEW wastewater.v_reading_meter_chain IS
+
+Done: 11 OK, 0 FAIL
+```
+
+Applied via `uv run python scripts/apply_migration_api.py
+supabase/migrations/20261115140000_parity_p1_002.sql` (the ONLY apply
+path, per WO §3.4).
+
+### Post-verify receipts (read-only, after apply)
+
+- Counts: `wastewater.reading` = **907 (UNCHANGED)**, `core.equipment_spec`
+  = **4**, `wastewater.v_reading_meter_chain` = **907** (view spans
+  exactly the reading set — spot-run over all 907 real rows),
+  `carbon.meter` = 1, `carbon.reading` = 907 (both unchanged).
+- Seeds (exact): pump_wastewater_1 flow 34 · pump_wastewater_2 flow 12 ·
+  pump_groundwater energy 3.7 · chlorine_mix_groundwater parts 1:9 —
+  all `valid_from = 2024-01-09`, source
+  `owner-confirmed 2026-11-15 (plan §5.3 A1–A3)`.
+- Real-data spot stats over the view (907 rows): `delta_kwh` resolved
+  906/907 (first row honestly NULL — no previous); `meter_boundary_flag`
+  TRUE on **33 rows** (1 electric no-previous = the first row; **32
+  genuine pump delta ≤ 0 rows** in the real history — meter resets the
+  AppSheet formulas would have silently mis-attributed; all such deltas
+  are NULL, never 0, never negative); `pump1_m3` resolved 905, `pump2_m3`
+  875, `wastewater_in_derived` 874, `avg_westwater_4d` 886; `spec_missing`
+  rows **0** (every delta found its date-valid spec); `chlorine_used_real`
+  resolved 907/907 (all recorded ratios ∈ {1:2,1:4,1:9}); max
+  `chlorine_streak_count` = **484** days (gaps-and-islands over real
+  data).
+- Spot rows (verbatim): 2024-01-09 (first row) → pump/electric deltas NULL,
+  `avg_westwater_4d` NULL, `chlorine_used_real` 1.5625 (= 6.250 ÷ 4, ratio
+  1:4 — the verbatim ÷SWITCH over real data), streak 1, boundary TRUE with
+  reasons "pump1: no previous
+  reading; pump2: no previous reading; electric: no previous reading".
+  2024-01-10 → pump1_hours 1.0 × 34 = **34 m³**, pump2_hours 0.8 × 12 =
+  **9.6 m³**, `delta_kwh` 5, derived **43.6**, avg **43.6**, streak 2,
+  flag FALSE. 2026-07-04 → 1.3 × 34 = 44.2, 1.3 × 12 = 15.6, derived
+  59.8, avg 52.9.
+- Regression: `v_reading_with_computed` byte-identical (pinned
+  normalized `pg_get_viewdef` incl. the `energy_kwh_estimate` quirk);
+  P1.3 `v_reading_critical_flags` columns intact; grant sets unchanged
+  (`wastewater.reading`: postgres×7 + authenticated×4;
+  `v_reading_critical_flags`: postgres×7) and the new objects carry
+  owner-only grants (postgres×7 — plain CREATE convention, zero GRANT
+  statements).
+
+### Rollback (documented in the migration header; no other object touched)
+
+```sql
+DROP VIEW IF EXISTS wastewater.v_reading_meter_chain;
+DELETE FROM core.equipment_spec WHERE (kind, valid_from) IN (
+  ('pump_wastewater_1',        DATE '2024-01-09'),
+  ('pump_wastewater_2',        DATE '2024-01-09'),
+  ('pump_groundwater',         DATE '2024-01-09'),
+  ('chlorine_mix_groundwater', DATE '2024-01-09'));
+DROP TABLE IF EXISTS core.equipment_spec;
+DROP TYPE IF EXISTS core.equipment_spec_kind;
+```
+
+## D4 — battery at the frozen implementation head (2026-11-15)
+
+| Check | Result |
+|---|---|
+| vitest FULL (`npm test`, 32 files) | **503 passed / 1 skipped** (designed skip) |
+| `tsc -b` | clean (exit 0) |
+| `oxlint` | 0 errors (18 pre-existing warnings, unchanged class) |
+| Playwright FULL chromium `--workers=1` | **213 passed** (5.0m) |
+| guard `scripts/test_env_coordination_guard.py` | **344 passed + 450 subtests** |
+| runtime `scripts/test_env_autonomy_runtime.py` | **62 passed** (+32 subtests) |
+| meter-chain test (live) | **7 passed, 12 subtests** (GREEN post-apply) |
+| `scripts/check_release_version.py` | OK (v1.1.0; CHANGELOG entry v1.1.0) — **no bump** |
+| `git diff --check` | clean |
+
+**No-version-bump reasoning (recorded):** this lane adds DB config +
+views only — no user-facing UI surface is added or changed (the new view
+has no frontend consumer in this lane; the spec-admin UI is deferred to
+P1.4+). CHANGELOG/release criteria require no release entry; the version
+chip/checker stay at v1.1.0.
+
+**Diff scope:** exactly the 4 claimed files —
+`supabase/migrations/20261115140000_parity_p1_002.sql` (new),
+`scripts/test_parity_p1_002_meter_chain.py` (new),
+`docs/work-orders/ENV-PARITY-P1-002.md` (status + §2.2.8 addendum + §9
+D-phase log), `docs/ai/handoffs/ENV-PARITY-P1-002-GLM.md` (D2/D3/D4
+appended). `docs/ai/CURRENT-WORK.md` untouched (registry status
+transitions follow the closeout convention).
+
+### Streak-closure note (binding-addition record)
+
+The R2 transition-review adjudication (issuecomment-6899667463 §5) ruled
+the `Chlorine_StreakCount` delivery obligation REAL and OPEN ("MUST land
+via a named successor claim (or a reviewed addendum at the P1.2
+implementation closeout)"). The claim instruction supplied that reviewed
+addendum: the continuous gaps-and-islands `chlorine_streak_count` ships
+in `wastewater.v_reading_meter_chain` — **this closes the P1.3
+deferral** (handoff D0 item 1 + WO §2.2.8 addendum). Binding semantics:
+consecutive calendar days with recorded usage (`chlorine_used_real IS NOT
+NULL`); calendar gap or NULL usage resets to 0; first day = 1.
+
+### Formula translation notes (verbatim sources → ENV SQL)
+
+1. **คลอรีนน้ำที่ใช้จริง ÷SWITCH** (reference doc 12 ~line 767, verbatim):
+   `=ArrayFormula("คลอรีนน้ำที่ใช้จริง"{;IF(    R2C38:R[763]C38="",    "",
+   R2C26:R[763]C26 / SWITCH(      R2C38:R[763]C38,      "1:2", 2,
+   "1:4", 4,      "1:9", 9,      ""    )  )})` → ENV: `CASE WHEN
+   chlorine_used IS NULL THEN NULL WHEN chlorine_mix_ratio = '1:2' THEN
+   chlorine_used / 2 WHEN = '1:4' THEN / 4 WHEN = '1:9' THEN / 9 ELSE
+   NULL END` — blank/unknown ratio or NULL value → NULL, never 0. The
+   ÷2/÷4/÷9 denominators are the formula's own ratio mapping (documented
+   literal exception, WO §7); A3's ÷10 binds the GROUNDWATER system via
+   the `chlorine_mix_groundwater` spec row (pure fraction 1/10 computed
+   in P1.5 consumers, never stored) — ÷9-vs-÷10 divergence documented,
+   never silently reconciled.
+2. **Chlorine_StreakCount** (reference doc 12 ~line 1421, verbatim
+   AppSheet): `COUNT(SELECT(dates, Free Chlorine < 0.5 AND date <= today
+   AND date > MAX(SELECT(dates, date < today AND Free Chlorine >= 0.5))
+   — or 1/1/1900))` → the AppSheet counter is a LOW-READING streak; the
+   R2-addendum binding semantics is a RECORDED-USAGE continuity streak
+   (gaps-and-islands over `chlorine_used_real`, reset on gap/NULL,
+   first day 1). The addendum binds; the divergence is documented, not
+   silently reconciled.
+3. **LAG-not-MAX** (reference doc 12 lines 924/101/107/111, verbatim
+   `=MAX(SELECT(ข้อมูลคุณภาพน้ำ[เลขมิเตอร์…], [วันที่ บันทึก] <
+   [_THISROW].[วันที่ บันทึก]))` and the whole-table `TRUE` variant) →
+   ENV: `LAG(<meter>) OVER (ORDER BY reading_date, created_at, id)` —
+   deterministic date-nearest previous; the documented AppSheet global-MAX
+   bug is corrected, not mirrored.
+4. **ปริมาณน้ำเสียที่เข้าระบบบำบัด** (verbatim AppSheet text-prompt
+   formula) → ENV: numeric-only `wastewater_in_derived` (both pump
+   volumes required, else NULL); the "อย่าลืมใส่เลข มิเตอร์บ่อสูบนะจ๊ะ"
+   prompt is NEVER mirrored into SQL (form-side reminder is P1.4).
+
+## Status
+
+ENV-PARITY-P1-002-C1 → **REVIEW_REQUESTED** (implementation delivered;
+PR awaits D5 independent review at the exact frozen head; implementer
+never merges — stop point respected).
