@@ -47,4 +47,36 @@ unknown ≠ 0 (ห้ามแทนค่าศูนย์); latest ≠ live; 
 
 ## D-phase log (implementation lane appends below)
 
-(appended by the implementing lane)
+### D2 — RED-first receipt (2026-11-16, commit `45c90af`, base 01433f0 = origin/main)
+
+- Unit `src/lib/form-parity.test.ts`: **1 suite failed-to-collect** (`Cannot find module './form-parity'`), 0 tests run — the module did not exist. Truthful RED.
+- E2E `tests/e2e/env-parity-p1-004.spec.ts`: **11 failed / 0 passed** (fields, chips, highlight, spec route all absent).
+- `tsc -b` at RED: 1 error (TS2307, the missing import) — recorded honestly.
+
+### D3 — implementation receipt (commit `989dd3f`)
+
+Everything in WO §9 D-phase log D3 items 1–8 applies (form parity, honest warnings, >2.5 rule, spec admin, wiring, migration, v1.2.0). Binding-condition compliance: INSERT policy gated **admin-only** via `core.fn_is_admin()` (R2 §4a binding); SELECT policy staff-or-admin; no UPDATE/DELETE policies (append-only by grant shape; supersede-by-append documented in the migration header — closure UPDATEs + btree_gist hardening stay owner-gated follow-ups).
+
+### D3-apply — ENV_DB receipts (2026-11-16)
+
+- Preflight PASS: rls=true; policies=0; seeds=4; helpers exist; readings=907.
+- Apply via `scripts/apply_migration_api.py`: **12/12 OK, 0 FAIL** (file `supabase/migrations/20261116000001_parity_p1_004_equipment_spec_admin.sql`).
+- Post-verify PASS: INSERT policy `with check (core.fn_is_admin())`; SELECT policy `using (core.fn_is_staff_or_admin())`; data intact (4 seeds / 907 readings); `public.equipment_spec` `security_invoker=on`; anon REST probes → 401 fail-closed on both façades.
+- **DEVIATION D1-7 (reviewer adjudicates):** the same migration adds public security_invoker façade views + grants for `core.equipment_spec` (select+insert only) and `wastewater.v_reading_meter_chain` (select only). LIVE-EVIDENCE-anchored reason: ENV_DB PostgREST exposes ONLY `public` + `graphql_public` (`PGRST106` probe 2026-11-16), so schema-direct access from supabase-js is impossible; without façades the owner-named spec page cannot read or save (the exact dead-feature outcome D1-3's rationale rejects) and the honest-warning meter read is unreachable. House precedent: dock migration `20260803000001` bundles view + grant + policies; rollback documented in the migration header.
+
+### D4 — battery receipt (final head; full table in WO §9)
+
+vitest FULL 33 files **540 passed / 1 skipped**; `tsc -b` clean; oxlint exit 0 (18 pre-existing warnings, zero in changed files); Playwright FULL workers=1 **224/224** (no flaky); guard **344 OK**; runtime **62 OK**; checker **OK v1.2.0**; `git diff --check` clean; validate-registry `{ok:true, claims:29, hash 99e49674…}` with CURRENT-WORK.md byte-identical (registry flip = closeout transition, house precedent).
+
+### Honest notes + lessons (for the reviewer)
+
+1. **Two real defects caught by the D4 battery and fixed (no assertion weakening; out-of-scope suites pass unmodified):** (a) my spec-append e2e raced the POST capture — fixed with `expect.poll` (5× standalone re-run + full suite clean); (b) the status-mirror follow-up UPDATE originally THREW on failure, which misreported durably-saved readings as failed and broke the pre-existing atomic-save mobile suite — root-caused and re-designed: the mirror sync lives in the create HOOK layer, non-fatal, surfaced as an honest warning toast whose text deliberately avoids the success-toast phrase (strict-selector collision recorded in code).
+2. **fn_create_reading cannot write the P1.1 `*_status` columns** (fixed key list; RPC out of mutable scope) → create-path mirror sync is the hook-layer follow-up UPDATE; edit path carries the mirrors in the existing generic update. Recorded as a noted follow-up: if a later lane touches the RPC, folding the mirrors in would remove the extra round-trip.
+3. **Water_In source:** `water_supply.daily_check` is still the v2 skeleton (no `Water_In` column — MOD-WS-a/P1.5 pending). `fetchWaterUsedForDate` reads `select("*")` and extracts `water_in`/`Water_In` generically — errors are impossible on the missing column and the chip shows honestly either way (WO §2.2-1 binding). When P1.5 lands the column, the prefill + chip behavior switches on with zero frontend change.
+4. **Enum display order:** ลักษณะสี chips render [น้ำตาลเข้ม, น้ำตาลอ่อน, ดำ] — value SET verbatim-complete from ref 676–687; display order keeps the house frequency ordering so the pre-existing keyboard-flow e2e (out of scope) stays truthful. Same for ลักษณะกลิ่น (กลิ่นดินปกติ first).
+5. Machine-local setup (not repo changes): lane worktree `frontend/.env` copied from the canonical checkout; `npm install` in the worktree with `frontend/package-lock.json` restored to HEAD afterwards (diff clean).
+6. **STOP at REVIEW_REQUESTED — implementer never merges.** D5 fresh-GLM review at the exact frozen head; Terra cross-model eligible after 2026-11-20 (never a silent downgrade).
+
+### Fence (implementation lane)
+
+`expected_policy_revision = 01433f0274606f09ebfdc15e55931d2e8cfff026` (origin/main at branch point); `expected_registry_hash = 99e4967411678fc245d72552a62949e51c5d190162e9836dc9c09f1e872c2de9` (validate-registry output at HEAD — CURRENT-WORK.md untouched).
