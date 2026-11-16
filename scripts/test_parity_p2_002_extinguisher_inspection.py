@@ -38,19 +38,23 @@ handoff — and pass GREEN after it):
              master + latest-inspection + expiry-status payload (staff-
              context smoke inside a ROLLED-BACK transaction with a fixture
              master row — zero net persistence); anon is fail-closed.
-  TRIGGER  — trg_extinguisher_update_expdate AFTER INSERT exists;
+   TRIGGER  — trg_extinguisher_update_expdate AFTER INSERT exists;
              trg_fn_extinguisher_update_expdate is SECURITY DEFINER with
              a pinned search_path; semantics transcribed VERBATIM from the
              AppSheet Update_ExpDate bot (staff-context smoke inside a
-             ROLLED-BACK transaction): bump-later-only (chem_exp <= master
-             expiry no-op; NULL master expiry no bump — three-valued
-             transcription of the ANY() guard); master expiry becomes the
-             chem_exp of the MAX(inspection_date) inspection (latest-wins,
-             incl. the backdated-insert recompute); deterministic tiebreak
-             inspection_date DESC, created_at DESC, id DESC; NULL
-             chem_exp_snapshot insert is a no-op; the definer path works
-             as staff (staff have the SQL grant but no RLS policy for
-             master UPDATE — the definer trigger is the ONLY staff path).
+             ROLLED-BACK transaction): bump-later-only (chem_exp <= a
+             non-NULL master expiry no-op); NULL master expiry + non-NULL
+             chem_exp_snapshot ⇒ SET (P2 fix 20261116000006 — AppSheet's
+             blank master date behaves as the spreadsheet-serial zero-date
+             1899-12-30, so the verbatim bot fires; coordinator ruling
+             recorded verbatim in the handoff repair section); master
+             expiry becomes the chem_exp of the MAX(inspection_date)
+             inspection (latest-wins, incl. the backdated-insert
+             recompute); deterministic tiebreak inspection_date DESC,
+             created_at DESC, id DESC; NULL chem_exp_snapshot insert is a
+             no-op; the definer path works as staff (staff have the SQL
+             grant but no RLS policy for master UPDATE — the definer
+             trigger is the ONLY staff path).
   HONESTY  — blank id / unknown id raise the verbatim Thai error; anon
              denied on RPC + table; empty-master fail-closed (no fixture
              residue: counts pre/post smoke equal); inspection table has
@@ -517,15 +521,22 @@ class P2ExtinguisherInspectionContract(unittest.TestCase):
         """
         q(_tx(sql))
 
-    def test_22_trigger_null_chem_and_null_master_expiry_noop(self):
+    def test_22_trigger_null_master_expiry_sets_then_null_chem_noops(self):
         staff_id, _ = _staff_and_personnel()
         sql = f"""
         DO $$
         DECLARE
           v_exp date;
         BEGIN
-          -- NULL master expiry + chem_exp present: ANY() guard on NULL is
-          -- three-valued → NO bump (verbatim transcription; R2-verified).
+          -- NULL master expiry + non-NULL chem_exp ⇒ SET (P2 fix
+          -- 20261116000006; D5 finding issuecomment-6930206052): AppSheet's
+          -- blank master date behaves as the spreadsheet-serial zero-date
+          -- (1899-12-30), so the verbatim bot condition
+          -- [_THISROW].[chem_exp] > ANY(...) FIRES and the real recorded
+          -- chem_exp propagates — a real value is SET, never fabricated.
+          -- Decision receipt: coordinator ruling (delegated decision,
+          -- standing owner instruction 2026-11-15) recorded VERBATIM in
+          -- docs/ai/handoffs/ENV-PARITY-P2-002-GLM.md §7 (repair section).
           -- Fixture masters are seeded OUTSIDE the staff context.
           INSERT INTO safety.fire_extinguisher
             (legacy_row_id, location, expiry_date, source_provenance, legacy_id)
@@ -538,10 +549,11 @@ class P2ExtinguisherInspectionContract(unittest.TestCase):
             (id, inspection_date, extinguisher_id, chem_exp_snapshot, source_provenance)
           VALUES ('b0000001', '2026-11-01T09:00:00+07', 'nullxppackuuid22ch', '2030-01-01', 'fixture (rolled back)');
           SELECT expiry_date INTO v_exp FROM safety.fire_extinguisher WHERE legacy_row_id = 'nullxppackuuid22ch';
-          IF v_exp IS NOT NULL THEN
-            RAISE EXCEPTION 'NULL master expiry must not bump; got %', v_exp;
+          IF v_exp IS DISTINCT FROM DATE '2030-01-01' THEN
+            RAISE EXCEPTION 'NULL master expiry + non-NULL chem_exp must SET per ruling 20261116000006; got %', v_exp;
           END IF;
-          -- NULL chem_exp_snapshot insert → no-op (guard IS NOT NULL)
+          -- NULL chem_exp_snapshot insert → no-op (guard IS NOT NULL;
+          -- blank ≈ blank is not strictly greater — bot never fires)
           INSERT INTO safety.extinguisher_inspection
             (id, inspection_date, extinguisher_id, chem_exp_snapshot, source_provenance)
           VALUES ('b0000002', '2026-11-01T09:00:00+07', 'nullchepackuuid22ch', NULL, 'fixture (rolled back)');
