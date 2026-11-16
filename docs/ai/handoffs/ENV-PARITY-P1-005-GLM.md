@@ -73,3 +73,164 @@ vitest FULL 34 files **578 passed / 1 skipped** (designed skipIf; incl. 38 new p
 ### Status
 
 **IMPLEMENTATION DELIVERED — STOP at REVIEW_REQUESTED.** Implementer never merges. D5 fresh-GLM independent review at the exact frozen head; Terra cross-model eligible after 2026-11-20 (never a silent downgrade).
+
+## D6 — CLOSEOUT RECEIPT (only by a separate reviewed closeout transition)
+
+Recorded by the closeout transition `docs/env-parity-p1-005-closeout` off
+`origin/main @ 39402c9b3716fefd7ebb4d2bbea464efa77e25a4` (the implementation
+merge SHA; clean, fetched, ff-verified — local main at the base SHA, `git
+status` clean except the pre-existing untracked `_worktrees/` which is not
+this transition's file). Fence:
+`expected_policy_revision = 39402c9b3716fefd7ebb4d2bbea464efa77e25a4`;
+`expected_registry_hash = 5791ec2fd73e13f9985be6cb5ad0272754551871a4ad9c3b63e884c0368b54a5`
+(guard `registry_hash` of the registry block AT `39402c9` —
+`validate-registry` on the clean checkout at that SHA =
+`{"claims": 30, "ok": true, "registry_hash": "5791ec2f…"}`, same guard method
+(`scripts/env_coordination_guard.py:454-456`) as the
+PR #166/#169/#185/#188/#191/#194 closeout convention). Claim
+`ENV-PARITY-P1-005-C1`: CLAIMED → CLOSED; claim-by-claim JSON-diff vs
+`39402c9` = exactly 1 of 30 claims changed, the other 29 byte-identical;
+changed files = exactly 3 (`docs/ai/CURRENT-WORK.md`,
+`docs/work-orders/ENV-PARITY-P1-005.md`, this handoff).
+
+### Full chain (each receipt verified live 2026-11-16 before writing)
+
+1. **Claim transition** — PR #195 MERGED as
+   `049b097cfb9edd139df4643aa6470050a14cd9a9` (head
+   `a9de42a43242fc796dbb0f145b9a075c7032099a`, base
+   `main @ 1592363…`; mergedAt 2026-11-16T04:52:14Z); R2 APPROVED
+   issuecomment-6907658966 with the three adjudications ACCEPTED: (a)
+   D1-3 `lib/water-supply.ts` as the located wiring point (the literal
+   `supabase-queries.ts`/`hooks.ts` list was inaccurate about the wiring
+   point; P1.4 surfaces stay untouched), (b) D1-6 release **v1.3.0 MINOR**
+   (new user-visible usage-recording capability on `/water-supply`), (c)
+   `chlorine_usage_realy` kept **VERBATIM** (the typo is in the AppSheet
+   schema itself — ref 2411 inventory, 2584 `real_Chlorine`, 2665 heading;
+   normalizing would break source traceability); R2 also verified the fence,
+   JSON-diff (exactly 1 added claim, 29 byte-identical), guard 344/344, and
+   the ground-truth spot-check vs reference 12 §3.8 (2384–2677) verbatim.
+2. **Implementation PR #196 MERGED as
+   `39402c9b3716fefd7ebb4d2bbea464efa77e25a4`** — second parent EXACTLY the
+   repaired head `b5078fbb2c40f853b5ce6be3395b0ab7c7239377` (verified from
+   `%P` on origin/main; merge commit, no squash); merge-executor review trail
+   issuecomment-6909294658 pinned the D5 receipt, expected head, merge
+   policy, and the P3 notes carried to closeout.
+3. **D2 truthful RED** — commit `5906665` (base 049b097): unit
+   `water-supply-parity.test.ts` **1 suite failed-to-collect**
+   (`Cannot find module './water-supply-parity'`), 0 tests — the module did
+   not exist; e2e `env-parity-p1-005.spec.ts` **10 failed / 1 passed** — the
+   1 pass is the empty-chain absence test (derived-card count-0 on both
+   sides), an honest **VACUOUS RED pin** recorded per the N2 precedent; both
+   reproduced by D5.
+4. **D3 implementation + apply + live evidence** — commits `846bf1b` feat +
+   `43aaacd` positional-contract fix (usage inputs moved BELOW the quality
+   grid so the unowned positional-index ENV-MOBILE-003 suite passes
+   byte-identically — activity selector is a `<select>`, positions stable).
+   Migration `supabase/migrations/20261116000002_parity_p1_005_water_supply_usage.sql`
+   (the WO §5-pinned name, sequential after P1.4's `20261116000001` — the
+   transition instruction's `20261116020000` superseded, recorded) applied to
+   ENV_DB via `scripts/apply_migration_api.py`: **14/14 statements OK /
+   0 FAIL**. Zero-DML preflight PASS (row count 0 baseline; views/columns
+   absent; seeds `pump_groundwater` energy 3.7 + `chlorine_mix_groundwater`
+   1:9 @ `DATE '2024-01-09'` confirmed; façade + RLS untouched; no
+   migration-history collision). Live post-verify PASS: 19 columns (the 15
+   pre-existing unchanged, all NULLable no-default); verbatim CHECK
+   `ck_daily_check_activity_values`, violation probe → `23514`, rolled back;
+   `water_supply.v_daily_check_chain` + `public.v_daily_check_chain`
+   (`security_invoker=on`); rolled-back-transaction semantic probe (net zero
+   writes — the P1.2 fixture precedent): first row prev NULL +
+   `hour_boundary_flag` → hour_work 4 + `energy_use_estimate` **14.8 =
+   4 × 3.7** spec-at-date; chlorine_usage 5 → realy/concentrated **0.5 =
+   5 ÷ (1+9)** derived from the mix spec parts (not a hardcoded ÷10);
+   reset row 10→6 → hour_work NULL + boundary flag + meter-reset reason +
+   energy NULL (never 0/negative); `water_in_estimate` NULL everywhere with
+   `spec_missing` = `pump_groundwater` (D1-5 honest unknown — no flow
+   seeded); anon PostgREST probe on the new façade → **401 fail-closed**;
+   row count 0 before/after — data untouched. **Unlike P1.4 (where apply
+   evidence was implementer-reported only), D5 independently verified the
+   apply state live read-only** — the stronger evidence form.
+5. **D4 battery at the frozen head `43aaacd`** — vitest FULL 34 files
+   **578 passed / 1 skipped** (38 new parity unit); `tsc -b` clean; oxlint
+   exit 0 (18 warnings, all pre-existing files); Playwright FULL workers=1
+   **235 passed / 0 failed** (5.4m, incl. the 11 new parity e2e + the 12-test
+   ENV-MOBILE-003 suite green); guard **344 passed + 450 subtests**; runtime
+   **62 passed + 32 subtests**; checker **OK v1.3.0**; `git diff --check`
+   clean; validate-registry `{ok: true, claims: 30}` (CURRENT-WORK.md
+   byte-identical to base — the registry flip belongs to this closeout, house
+   precedent).
+6. **D5 fresh-GLM independent review** — APPROVED at exact pre-repair head
+   `a862458b750cb8e71ecf66dbc8ff1d9eda66d3fc` (issuecomment-6908876947),
+   zero P1/P2; scope diff exactly ⊆ the claimed set; CURRENT-WORK.md
+   byte-untouched; all evidence claims independently reproduced (own runs).
+   **2 non-blocking P3s repaired at `b5078fb`** (folded into closeout per the
+   D5 verdict):
+   1. CHANGELOG v1.3.0 entry missing the house
+      `การเปลี่ยนแปลงชุดนี้: PR #196` ref → added.
+   2. `chain.error` from `useWaterSupplyChain` degraded silently (card
+      simply absent) → now surfaced via `derived-chain-error` in the chain
+      card + **1 new e2e pin** (Playwright 235/235 → **236/236** at the
+      repair head; CI corroborated: `test` run 43816484825 + `E2E smoke
+      tests` run 43816484798 — 6m39s full Playwright — both SUCCESS at
+      `b5078fb`).
+   3. Observation (no action, → ledger): `spec_missing_kinds` reports
+      `pump_groundwater` for both missing-energy and missing-flow cases; the
+      surfaced `spec_energy_kwh_per_h`/`spec_flow_m3_per_h` columns
+      disambiguate for consumers.
+7. **Release v1.3.0 MINOR LIVE** — `frontend/package.json` 1.2.0→1.3.0 +
+   Thai พ.ศ. CHANGELOG entry (PR-ref line added by the P3 repair); Pages run
+   **43817831451 SUCCESS @ 39402c9**; live markers verified fresh from the
+   live origin (HTTP 200, current deploy): main chunk
+   `assets/index-CasRK031.js` carries **1.3.0** (×2) + the CHANGELOG line
+   `การเปลี่ยนแปลงชุดนี้: PR #196` (older entries #177/#174 confirm the
+   house line shape); lazy chunk `assets/WaterSupplyPage-CUfAxPq8.js` (the
+   chunk the live index references) carries ค่าประมาณจากสเปก (×2) +
+   ชั่วโมงปั๊ม (×4) + the usage testids `activity-select` /
+   `hour-meter-input` / `chlorine-usage-input` / `water-in-input` /
+   `water-in-error` / `derived-chain-card` + the P3-repair
+   `derived-chain-error` (7 total — the instruction's "all 6 testids" plus
+   the repair-added one; recorded precisely). Annotated tag **v1.3.0**
+   (`9454bd9ce724a8a684ce4be45a0f4e6de2e3031d`) dereferences `39402c9`;
+   `check_release_version.py --tag v1.3.0` **exit 0** (re-run at closeout:
+   `OK (v1.3.0; CHANGELOG entry v1.3.0)`).
+
+### Honest notes (full record)
+
+- The D2 e2e 1-pass **vacuous** nature is recorded (never presented as a real
+  RED pass); the absence invariant it pins remains legitimate coverage.
+- Playwright ran `workers=1` WITHOUT the CI=1 retry profile (D4 note); the
+  236/236 post-repair count is corroborated by CI's full E2E smoke at
+  `b5078fb` rather than re-run locally by this closeout.
+- Machine-local gitignored setup carried from the lane (worktree
+  `frontend/.env` copied from the canonical checkout; repo-root `.env` stub
+  `__LOAD_FROM_DRIVE__=true` one line no secrets; Node 24/npm 11 for
+  `npm ci`); never committed.
+- Live-marker file mapping recorded precisely above: the version/CHANGELOG
+  markers live in the main chunk, the usage labels/testids in the lazy page
+  chunk — both verified fresh on the same current deploy @ 39402c9, none
+  fabricated.
+- The migration-name reconciliation (`20261116000002…` WO-pinned vs the
+  instruction's `20261116020000…`) is recorded at D3, adjudicated in review,
+  and is filename-consistent everywhere (WO §5 mutable scope, applied
+  migration, receipts).
+
+### Frontier after this closeout
+
+The next UNGATED parity lane is **P1.6 รายงานสรุปช่วงวัน** (ทดแทน
+Filter_Water/tap water_Filter ฝั่งตัวเลข), then P1.7 (parity fixtures).
+Follow-up ledger carried: the enum-mirror create-path sync gap (candidate:
+fold into the `fn_create_reading` fix lane), the P1.3 latent NULL-guard
+multi-location follow-up (REQUIRED before any second-location onboarding),
+the P1.001 owner-gated VALIDATE CONSTRAINT follow-up, the personnel proposal
+pending (C8), and the D5 `spec_missing_kinds` observation above. Standing:
+#155 hooks approved-not-started (owner-manual), #156 open (owner-manual),
+Building WAITING_EXTERNAL, Phase 4 authorized awaiting Phase reach. All
+successor lanes need their own NEW reviewed claim transition.
+
+### Status
+
+ENV-PARITY-P1-005-C1 → **CLOSED** (implementation merged via PR #196
+`39402c9b3716fefd7ebb4d2bbea464efa77e25a4`, second parent = D5-APPROVED
+repaired head `b5078fbb2c40f853b5ce6be3395b0ab7c7239377`; released as v1.3.0
+and verified live; registry closed by the docs-only closeout transition
+`docs/env-parity-p1-005-closeout` — STOP at REVIEW_REQUESTED; the separate
+reviewer owns closeout approval and merge, implementer never merges).
