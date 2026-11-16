@@ -80,3 +80,153 @@ vitest FULL 33 files **540 passed / 1 skipped**; `tsc -b` clean; oxlint exit 0 (
 ### Fence (implementation lane)
 
 `expected_policy_revision = 01433f0274606f09ebfdc15e55931d2e8cfff026` (origin/main at branch point); `expected_registry_hash = 99e4967411678fc245d72552a62949e51c5d190162e9836dc9c09f1e872c2de9` (validate-registry output at HEAD — CURRENT-WORK.md untouched).
+
+## D6 — CLOSEOUT RECEIPT (only by a separate reviewed closeout transition)
+
+Recorded by the closeout transition `docs/env-parity-p1-004-closeout` off
+`origin/main @ b4c31726dd07e993e3ad953bbefc71651154fad8` (the implementation
+merge SHA; clean, fetched, ff-verified — local main at the base SHA, `git
+status` clean except the pre-existing untracked `_worktrees/` which is not
+this transition's file). Fence:
+`expected_policy_revision = b4c31726dd07e993e3ad953bbefc71651154fad8`;
+`expected_registry_hash = 99e4967411678fc245d72552a62949e51c5d190162e9836dc9c09f1e872c2de9`
+(guard `registry_hash` of the registry block AT `b4c3172` —
+`validate-registry` on the clean checkout at that SHA =
+`{"claims": 29, "ok": true, "registry_hash": "99e49674…"}`, same guard method
+as the PR #166/#169/#185/#188/#191 closeout convention; empirically
+cross-checked — the same method at the prior base `faf9c2f` reproduces the
+prior fence `0a616928…` byte-exactly). Claim `ENV-PARITY-P1-004-C1`:
+CLAIMED → CLOSED; claim-by-claim JSON-diff vs `b4c3172` = exactly 1 of 29
+claims changed; changed files = exactly 3 (`docs/ai/CURRENT-WORK.md`,
+`docs/work-orders/ENV-PARITY-P1-004.md`, this handoff).
+
+### Full chain (each receipt verified live 2026-11-16 before writing)
+
+1. **Claim transition** — PR #192 MERGED as
+   `01433f0274606f09ebfdc15e55931d2e8cfff026` (head
+   `56fe1fa6ebcfe8c5652468e2b1d7268821449c8d`, base `main @ faf9c2f`;
+   mergedAt 2026-11-16T00:21:57Z); R2 APPROVED issuecomment-6903872629 with
+   the BINDING admin-only RLS condition (INSERT
+   `with check (core.fn_is_admin())` — not staff-or-admin) + 2 P3; fence
+   `expected_policy_revision = faf9c2f…` /
+   `expected_registry_hash = 0a616928…` (registry block AT base, guard
+   method `scripts/env_coordination_guard.py:454-456`).
+2. **Merge execution with expected-head discipline** — pre-merge review-trail
+   comment issuecomment-6905134357 pinned: D5 APPROVED receipt
+   issuecomment-6905106639, expected head
+   `336e161f5a41b295dc5c12276b90aa84e70327eb` (branch
+   `feat/env-parity-p1-004`), merge policy (merge commit, no squash,
+   expected head = second parent, branch kept), the 3 informational P3 notes
+   carried verbatim to closeout, and the mirror-sync-gap note routed to THIS
+   ledger. Gates re-verified immediately before merge: PR OPEN, head ==
+   expected, checks notify ×2 + scripts + smoke green.
+   `gh pr merge 193 --merge --match-head-commit 336e161…`; merge SHA
+   `b4c31726dd07e993e3ad953bbefc71651154fad8` with parents EXACTLY
+   (`01433f0274606f09ebfdc15e55931d2e8cfff026`,
+   `336e161f5a41b295dc5c12276b90aa84e70327eb`) — verified from `%P` on
+   origin/main; merge stat = exactly 14 claimed files (2312+/79−).
+3. **D2 truthful RED** — commit `45c90af` on `feat/env-parity-p1-004`
+   (base 01433f0): unit `form-parity.test.ts` **1 suite failed-to-collect**
+   (`Cannot find module './form-parity'`), **0 tests run** — the module did
+   not exist; e2e `env-parity-p1-004.spec.ts` **11 failed / 0 passed**;
+   `tsc -b` 1 error (TS2307). **All three reproduced by D5 at an isolated
+   `45c90af` checkout** (D5 §7) — RED truthfulness judged TRUTHFUL.
+4. **D3 implementation + apply + live evidence** — commit `989dd3f`:
+   verbatim form parity (labels/value lists/initial values CREATE-only),
+   honest warning chips (never 60/0/never the AppSheet prompt), >2.5
+   strictly-greater red+icon on the form AND the ReadingsListPage Cl cell
+   (2.5 exactly NOT flagged), spec admin `/admin/equipment-specs` lazy +
+   `RequireAuth requireAdmin` append-only never-edit-history, pure lib
+   `form-parity.ts`, supabase-queries/hooks wiring. Migration
+   `supabase/migrations/20261116000001_parity_p1_004_equipment_spec_admin.sql`
+   applied to ENV_DB via `scripts/apply_migration_api.py`: **12/12 OK /
+   0 FAIL**. Preflight PASS (rls=true, policies=0, seeds=4, helpers exist,
+   readings=907). Post-verify PASS: `equipment_spec_insert_admin` = INSERT
+   `with check (core.fn_is_admin())` (R2-binding shape — admin-only);
+   `equipment_spec_read` = SELECT `using (core.fn_is_staff_or_admin())`; NO
+   UPDATE/DELETE policies (append-only by grant shape); public
+   security_invoker façades for `core.equipment_spec` +
+   `wastewater.v_reading_meter_chain` (**DEVIATION D1-7 ACCEPTED by D5 §5**:
+   PGRST106-anchored premise platform-true; `security_invoker=on` so caller
+   RLS still gates every row; meter-chain façade read-only by construction;
+   policies scoped `to authenticated` → anon fails closed; house precedent
+   `20260803000001` + `20260719000010:55`); data intact (4 seeds / 907
+   readings); anon REST probes → 401 fail-closed on both façades.
+5. **D4 battery at the frozen head** — vitest FULL 33 files **540 passed /
+   1 skipped**; `tsc -b` clean; oxlint 0 errors (0 in changed files);
+   Playwright FULL workers=1 **224/224**; guard **344 OK**; runtime **62
+   OK**; checker **OK v1.2.0**; `git diff --check` clean.
+6. **D5 fresh-GLM independent review** — APPROVED, zero P1/P2, receipt
+   issuecomment-6905106639 at exact head `336e161f…`; scope diff = exactly
+   14 files ⊆ the claimed set + the two adjudicated additions (D1-3
+   migration, D1-4 App.tsx route); CURRENT-WORK.md and `.github/` diffs
+   byte-identical; verbatim fidelity byte-checked; enum/boolean dual-write
+   ruled NO conflict (one boolean source per field, mirrors derived by
+   construction, the brief create→sync window surfaced honestly); own
+   battery matched D4 gate-for-gate; D1-3/D1-4/D1-7 adjudicated ACCEPTED.
+   3 informational P3 carried to the ledger:
+   1. `fetchMeterChainBefore` uses `.lt("reading_date")` strictly-before —
+      a second same-day record won't find an earlier same-day row's meters,
+      so the ยังไม่มีมิเตอร์สูบ chip may over-warn in that edge
+      (informational-only; the chip never substitutes a value; edit mode
+      uses the row's real chain).
+   2. **Apply evidence is implementer-reported** on the implementer machine
+      (D5 §6 honest limitation): D5 consistency-checked the 12-statement
+      arithmetic + post-verify policy shapes against the migration text
+      verbatim but could NOT live-probe ENV_DB (no root `.env`/psql on the
+      review machine; its MCP connection pointed at a different project,
+      untouched, no writes attempted). Shapes/anon-fail-closed remain proven
+      by construction from the policy text; any future lane touching
+      `core.equipment_spec` policies must re-confirm live shapes.
+   3. The façade views snapshot `select *` at creation — future
+      `ALTER TABLE … ADD COLUMN` on `core.equipment_spec` won't surface
+      through the façade until the view is recreated (same trade-off as the
+      existing house façades).
+7. **Release v1.2.0 MINOR LIVE** — `frontend/package.json` 1.1.0→1.2.0 +
+   Thai พ.ศ. CHANGELOG entry; Pages run **43788870487 SUCCESS @ b4c3172**
+   (Deploy frontend to GitHub Pages); live markers verified on the deployed
+   bundle `assets/index-CG2DvAxO.js` (1.2.0 + ยังไม่มีบันทึกน้ำประปาของวัน +
+   ยังไม่มีมิเตอร์สูบ + ตั้งค่าสเปกอุปกรณ์ + equipment-specs route);
+   annotated tag **v1.2.0** (`fcf316a`) pushed, dereferences `b4c3172`;
+   `check_release_version.py --tag v1.2.0` **exit 0** (re-run at closeout:
+   `OK (v1.2.0; CHANGELOG entry v1.2.0)`).
+
+### Honest deviations (full record)
+
+- **Apply evidence implementer-reported / D5-verified-consistent-only** —
+  stated plainly above (D5 P3 #2); never presented as an independent live
+  probe.
+- **Enum-mirror create-path sync gap → LEDGER** — `fn_create_reading`
+  (fixed key list, RPC outside mutable scope) cannot write the P1.1
+  `*_status` columns; create-path mirrors sync via the hook-layer targeted
+  UPDATE with a NON-FATAL honest warning (the brief create→sync window is
+  the only gap, surfaced honestly per D5 §2). Candidate fix: fold the
+  mirrors into the `fn_create_reading` fix lane when a lane touches the
+  RPC — carried to the frontier ledger, no code change in this closeout.
+- **D1-3/D1-4/D1-7 deviations ACCEPTED** — recorded by R2 (binding
+  admin-only condition on D1-3) and D5 (D1-7 façades sound, §5); no
+  unresolved adjudication carries forward.
+
+### Frontier after this closeout
+
+The next UNGATED parity lane is **P1.5 น้ำประปา** (`water_supply.daily_check`
+schema/form consuming ×3.7/÷10 — constants owner-confirmed A2/A3 and the
+groundwater seeds already in `core.equipment_spec`), then P1.6 (reports) and
+P1.7 (fixtures). Follow-up ledger carried: the enum-mirror create-path sync
+gap (candidate: fold into the `fn_create_reading` fix lane), the 3 D5
+informational P3s above, the P1.3 NULL-guard multi-location follow-up
+(REQUIRED before any second-location onboarding), the P1.001 owner-gated
+VALIDATE CONSTRAINT follow-up, the personnel proposal pending (C8).
+Standing: #155 hooks approved-not-started (owner-manual), #156 open
+(owner-manual), Building WAITING_EXTERNAL, P4 authorized awaiting Phase
+reach. All successor lanes need their own NEW reviewed claim transition.
+
+### Status
+
+ENV-PARITY-P1-004-C1 → **CLOSED** (implementation merged via PR #193
+`b4c31726dd07e993e3ad953bbefc71651154fad8`, second parent = D5-APPROVED
+reviewed head `336e161f5a41b295dc5c12276b90aa84e70327eb`; released as
+v1.2.0 and verified live; registry closed by the docs-only closeout
+transition `docs/env-parity-p1-004-closeout` — STOP at REVIEW_REQUESTED;
+the separate reviewer owns closeout approval and merge, implementer never
+merges).
