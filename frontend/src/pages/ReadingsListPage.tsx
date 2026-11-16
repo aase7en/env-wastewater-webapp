@@ -7,6 +7,7 @@ import { EmptyState } from "../components/ui/EmptyState";
 import { TableSkeleton } from "../components/ui/Skeleton";
 import { useReadings } from "../lib/hooks";
 import { fmt, thaiDate } from "../lib/utils";
+import { isFreeChlorineHigh } from "../lib/form-parity";
 
 export function ReadingsListPage() {
   const { data, loading, error, refresh } = useReadings(30);
@@ -86,7 +87,22 @@ export function ReadingsListPage() {
                     <td className="px-4 py-3 text-aura-textMain font-thai">{thaiDate(r.reading_date)}</td>
                     <td className="px-4 py-3 font-mono text-aura-textMain">{fmt(r.do_average, 2)}</td>
                     <td className="px-4 py-3 font-mono text-aura-textMain">{fmt(r.ph, 1)}</td>
-                    <td className="px-4 py-3 font-mono text-aura-textMain">{fmt(r.free_chlorine, 2)}</td>
+                    {/* §2.3 format rule (ref §10 line 6429): Free Chlorine
+                        strictly > 2.5 → red text + highlight + warning icon
+                        (2.5 exactly NOT flagged). */}
+                    <td className="px-4 py-3 font-mono">
+                      {isFreeChlorineHigh(r.free_chlorine) ? (
+                        <span
+                          data-testid={`cl-high-${r.id}`}
+                          className="inline-flex items-center gap-1 rounded-md bg-alert-red/15 border border-alert-red/40 px-1.5 py-0.5 text-alert-red"
+                        >
+                          <MSymbol name="warning" className="text-[15px]" />
+                          {fmt(r.free_chlorine, 2)}
+                        </span>
+                      ) : (
+                        <span className="text-aura-textMain">{fmt(r.free_chlorine, 2)}</span>
+                      )}
+                    </td>
                     <td className="px-4 py-3"><StatusBadge operating={r.system_operating ?? null} /></td>
                     <td className="px-4 py-3 text-right">
                       <MSymbol name="edit" className="text-[16px] text-aura-textMuted group-hover:text-aura-cyan transition-colors" />

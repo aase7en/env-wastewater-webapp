@@ -7,14 +7,54 @@ import {
   resolveHydration,
   type HydrationGateState,
 } from "../lib/form-hydration";
+import {
+  APPSHEET_EQUIPMENT_LABELS,
+  CHIP_NO_PUMP_METERS,
+  CHIP_NO_WATER_RECORD,
+  COLOR_OPTIONS,
+  DISCHARGE_OPTIONS,
+  EXCESS_SLUDGE_OPTIONS,
+  MACHINE_STATUS_OPTIONS,
+  MIX_RATIO_OPTIONS,
+  SCREEN_CLEAN_OPTIONS,
+  SMELL_OPTIONS,
+  SYSTEM_OPERATING_OPTIONS,
+  buildStatusMirror,
+  createDefaults,
+  dischargeFromEnum,
+  dischargeToEnum,
+  isEligibleRecorder,
+  isFreeChlorineHigh,
+  needsNoPumpMeterChip,
+  needsNoWaterRecordChip,
+  runningFromEnum,
+  runningToEnum,
+  screenCleanedFromEnum,
+  screenCleanedToEnum,
+  systemOperatingFromEnum,
+  systemOperatingToEnum,
+  validateElectricity,
+  validateFreeChlorine,
+  validateWastewaterIn,
+} from "../lib/form-parity";
 import { AccordionSection } from "../components/ui/Accordion";
 import { MSymbol } from "../components/ui/MSymbol";
 import { Button } from "../components/ui/Button";
 import { Skeleton } from "../components/ui/Skeleton";
-import { Field, Input, NumberInput, Textarea } from "../components/ui/Input";
+import { Field, Input, NumberInput, Select, Textarea } from "../components/ui/Input";
 import { Toggle } from "../components/ui/Toggle";
-import { useCreateReading, useEquipment, useReading, useUpdateReading } from "../lib/hooks";
+import {
+  useCreateReading,
+  useEquipment,
+  useMeterChainBefore,
+  useMeterChainById,
+  usePersonnel,
+  useReading,
+  useUpdateReading,
+  useWaterUsedForDate,
+} from "../lib/hooks";
 import { deleteReading as deleteReadingQ } from "../lib/supabase-queries";
+import type { MeterChainRow } from "../lib/supabase-queries";
 import { useToast, type ToastContextValue } from "../components/ui/Toast";
 import { checkThresholds } from "../lib/types";
 import type { ReadingCreate } from "../lib/types";
@@ -26,27 +66,25 @@ function todayISO(): string {
   return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-${String(d.getDate()).padStart(2, "0")}`;
 }
 
-/** Empty form state — every measured field defaults to "" (sent as null). */
+/** Empty form state — every measured field defaults to "" (sent as null).
+ *  ENV-PARITY-P1-004: AppSheet initial values (§2.1, create-only UI
+ *  defaults) ride on top via createDefaults() — measured values stay
+ *  EMPTY (no fallback 60/0; unknown ≠ zero). */
 function emptyForm(): FormState {
   return {
     reading_date: todayISO(),
     do_aeration: "", do_sedimentation: "", do_before_discharge: "",
     tds_aeration: "", tds_before_discharge: "",
     ph: "", temp_aeration: "", sv30: "", free_chlorine: "",
-    screen_cleaned_coarse: null, screen_cleaned_fine: null,
-    pump1_running: null, pump2_running: null,
-    aerator1_running: null, aerator2_running: null,
-    sludge_pump1_running: null, sludge_pump2_running: null,
-    chlorine_pump1_running: null, chlorine_pump2_running: null,
-    system_operating: true,
+    ...createDefaults(),
     pump1_meter: "", pump2_meter: "",
     water_used_total: "", wastewater_in: "",
-    wastewater_discharged: null,
-    chlorine_used: "", chlorine_mix_ratio: "", excess_sludge_removed: "",
-    color_desc: "", smell_desc: "", note: "",
+    chlorine_used: "", excess_sludge_removed: "",
+    note: "",
     electricity_consumption: "", electricity_meter_value: "",
     abnormal_cause: "",
-  };
+    reported_by: "",
+  } as FormState;
 }
 
 type FormState = Omit<ReadingCreate, "reading_date"> & {
@@ -57,21 +95,41 @@ type FormState = Omit<ReadingCreate, "reading_date"> & {
 };
 
 // ─── Equipment checklist config ──────────────────────────────────────────
-// Maps the *_running / screen_cleaned_* keys to the core.equipment code,
-// so we can pull the Thai name from /api/equipment (fallback to code).
-// Quick-pick chips for สี/กลิ่น — the ONLY values that exist in the real
-// 907-row dataset (SPEC: สี = น้ำตาลเข้ม 824 / น้ำตาลอ่อน 83; กลิ่น =
-// กลิ่นดินปกติ 907). Free-text stays available for new observations.
-const COLOR_CHIPS = ["น้ำตาลเข้ม", "น้ำตาลอ่อน"];
-const SMELL_CHIPS = ["กลิ่นดินปกติ"];
+// Maps the *_running / screen_cleaned_* keys to the core.equipment code.
+// ENV-PARITY-P1-004: labels are the VERBATIM AppSheet display names (§3.3),
+// and each entry carries its enum family so the enum Select rides alongside
+// the boolean Toggle (booleans REMAIN the source of truth).
+const EQUIPMENT_CHECKS: {
+  key: keyof FormState;
+  code: string;
+  family: "screen" | "machine";
+}[] = [
+  { key: "screen_cleaned_coarse", code: "screen_coarse", family: "screen" },
+  { key: "screen_cleaned_fine", code: "screen_fine", family: "screen" },
+  { key: "pump1_running", code: "pump1", family: "machine" },
+  { key: "pump2_running", code: "pump2", family: "machine" },
+  { key: "aerator1_running", code: "aerator1", family: "machine" },
+  { key: "aerator2_running", code: "aerator2", family: "machine" },
+  { key: "sludge_pump1_running", code: "sludge_pump1", family: "machine" },
+  { key: "sludge_pump2_running", code: "sludge_pump2", family: "machine" },
+  { key: "chlorine_pump1_running", code: "chlorine_pump1", family: "machine" },
+  { key: "chlorine_pump2_running", code: "chlorine_pump2", family: "machine" },
+];
 
-function QuickChips({ options, value, onPick }: { options: string[]; value: string; onPick: (v: string) => void }) {
+/** Enum vocabulary per family (verbatim §3.3). */
+const FAMILY_OPTIONS: Record<"screen" | "machine", readonly string[]> = {
+  screen: SCREEN_CLEAN_OPTIONS,
+  machine: MACHINE_STATUS_OPTIONS,
+};
+
+function QuickChips({ options, value, onPick, testIdPrefix }: { options: string[]; value: string; onPick: (v: string) => void; testIdPrefix?: string }) {
   return (
     <div className="flex flex-wrap gap-2 mb-2">
       {options.map((o) => (
         <button
           key={o}
           type="button"
+          data-testid={testIdPrefix ? `${testIdPrefix}-${o}` : undefined}
           onClick={() => onPick(o)}
           className={cn(
             "px-3.5 py-1.5 rounded-full text-xs font-thai border transition-colors min-h-[var(--touch-min)] min-w-[var(--touch-min)]",
@@ -86,19 +144,6 @@ function QuickChips({ options, value, onPick }: { options: string[]; value: stri
     </div>
   );
 }
-
-const EQUIPMENT_CHECKS: { key: keyof FormState; code: string }[] = [
-  { key: "screen_cleaned_coarse", code: "screen_coarse" },
-  { key: "screen_cleaned_fine", code: "screen_fine" },
-  { key: "pump1_running", code: "pump1" },
-  { key: "pump2_running", code: "pump2" },
-  { key: "aerator1_running", code: "aerator1" },
-  { key: "aerator2_running", code: "aerator2" },
-  { key: "sludge_pump1_running", code: "sludge_pump1" },
-  { key: "sludge_pump2_running", code: "sludge_pump2" },
-  { key: "chlorine_pump1_running", code: "chlorine_pump1" },
-  { key: "chlorine_pump2_running", code: "chlorine_pump2" },
-];
 
 // ─── ENV-UNDO-001: deferred delete + 10-second undo window ──────────────
 // The server DELETE is deferred until a 10-second undo window expires;
@@ -211,16 +256,41 @@ export function DailyFormPage() {
 
   const [form, setForm] = useState<FormState>(emptyForm);
   const [banner, setBanner] = useState<{ kind: "success" | "error" | "warning"; msg: string } | null>(null);
-  const [revealRequest, setRevealRequest] = useState<{ target: "banner" | "cause" } | null>(null);
+  const [revealRequest, setRevealRequest] = useState<{ target: string } | null>(null);
   const [dockOverlayOpen, setDockOverlayOpen] = useState(false);
   const bannerRef = useRef<HTMLDivElement>(null);
   const causeRef = useRef<HTMLTextAreaElement>(null);
 
   const { data: existing, loading: loadingExisting } = useReading(isEdit ? id : null);
   const { data: equipment } = useEquipment();
+  const { data: personnel } = usePersonnel();
   const createMut = useCreateReading();
   const updateMut = useUpdateReading();
   const queryClient = useQueryClient();
+
+  // ENV-PARITY-P1-004 — honest-warning sources (§2.2).
+  // น้ำประปา Water_In lookup for the form's date (never a fallback 60/0).
+  const readingDateStr = String(form.reading_date ?? "") || null;
+  const waterUsed = useWaterUsedForDate(readingDateStr);
+  // Meter chain: the row of THIS reading when editing, else the latest
+  // row strictly before the date (create mode — the current row is not
+  // saved yet). Read-only (P1.2 owns the view).
+  const chainById = useMeterChainById(isEdit ? id : null);
+  const chainBefore = useMeterChainBefore(isEdit ? null : readingDateStr);
+  const meterChainRow = useMemo<MeterChainRow | null>(() => {
+    if (isEdit) return chainById.data;
+    const row = chainBefore.data;
+    if (!row) return null;
+    // For a NEW reading, the previous meters to diff against are the
+    // previous row's OWN meters — normalize into the chip predicate shape.
+    return {
+      ...row,
+      meter_boundary_flag: false,
+      spec_missing: false,
+      prev_pump1_meter: row.pump1_meter,
+      prev_pump2_meter: row.pump2_meter,
+    };
+  }, [isEdit, chainById.data, chainBefore.data]);
 
   // ModuleDock renders its modal scrim outside this page. Keep the form actions
   // above the dock during normal use, but demote + inert them whenever that
@@ -261,6 +331,21 @@ export function DailyFormPage() {
     return (code: string) => map.get(code) ?? code;
   }, [equipment]);
 
+  // ENV-PARITY-P1-004 — AppSheet LOOKUP parity (ref 616–622), honestly:
+  // when the day's น้ำประปา record carries Water_In and the field is still
+  // empty, fill the RECORD's own value (never 60, never 0). Marked dirty so
+  // a background same-record snapshot cannot silently wipe the filled
+  // value. Missing record → field stays EMPTY + the warning chip (§2.2).
+  useEffect(() => {
+    const lookup = waterUsed.data;
+    if (!lookup || !lookup.hasRecord || lookup.value === null) return;
+    setForm((f) => {
+      if (String(f.water_used_total ?? "") !== "") return f;
+      gateRef.current = markDirty(gateRef.current);
+      return { ...f, water_used_total: String(lookup.value) };
+    });
+  }, [waterUsed.data]);
+
   // Inline threshold warnings (computed live from current form values).
   const thresholdAlerts = useMemo(
     () => checkThresholds({ ...form, system_operating: form.system_operating } as never),
@@ -269,6 +354,30 @@ export function DailyFormPage() {
 
   // SPEC §6: abnormal_cause required when system_operating === false.
   const causeMissing = form.system_operating === false && !String(form.abnormal_cause ?? "").trim();
+
+  // ENV-PARITY-P1-004 — Valid If / Min-Max / Invalid-value errors (§2.1
+  // items 1–3), computed live; submit is blocked while any error stands.
+  const fieldErrors = useMemo(
+    () => ({
+      free_chlorine: validateFreeChlorine(form.free_chlorine as string),
+      electricity_consumption: validateElectricity(form.electricity_consumption as string),
+      wastewater_in: validateWastewaterIn(form.wastewater_in as string),
+    }),
+    [form.free_chlorine, form.electricity_consumption, form.wastewater_in]
+  );
+  const errorFieldOrder = ["free_chlorine", "electricity_consumption", "wastewater_in"] as const;
+  const firstError = errorFieldOrder.find((k) => fieldErrors[k] !== null) ?? null;
+
+  // Honest warnings (§2.2) — informational chips, never value substitutions.
+  const showWaterChip = useMemo(() => {
+    if (!waterUsed.data) return false; // lookup still loading — no flash
+    return needsNoWaterRecordChip(waterUsed.data.hasRecord ? waterUsed.data.value : null);
+  }, [waterUsed.data]);
+  const showMeterChip = useMemo(() => {
+    if (chainById.loading && isEdit) return false;
+    if (chainBefore.loading && !isEdit) return false;
+    return needsNoPumpMeterChip(meterChainRow);
+  }, [meterChainRow, chainById.loading, chainBefore.loading, isEdit]);
 
   // Helper to update a single field. WO-STAB-004: every user edit marks
   // the hydration gate dirty so a later background refetch snapshot of the
@@ -279,12 +388,18 @@ export function DailyFormPage() {
   };
 
   // Convert form-state strings to the API shape ("" → null, numbers stay).
+  // ENV-PARITY-P1-004: the P1.1 `*_status` mirrors ride along on every save
+  // (derived from the booleans — source of truth — so they are in sync by
+  // construction), and ผู้บันทึก travels as reported_by.
   const buildPayload = (): ReadingCreate => {
     const out: Record<string, unknown> = {};
     for (const [k, v] of Object.entries(form)) {
       if (typeof v === "string") out[k] = v.trim() === "" ? null : v;
       else out[k] = v;
     }
+    if (String(out.reported_by ?? "") === "") out.reported_by = null;
+    // *_status mirrors (10 columns) — boolean-derived, never hand-entered.
+    Object.assign(out, buildStatusMirror(form as never));
     // abnormal_cause is only sent when relevant (avoids seeding spurious
     // repair_request on edits that don't touch the field).
     if (form.system_operating !== false) out.abnormal_cause = null;
@@ -297,17 +412,24 @@ export function DailyFormPage() {
   useEffect(() => {
     if (!revealRequest) return;
     const frameId = requestAnimationFrame(() => {
-      const target = revealRequest.target === "banner" ? bannerRef.current : causeRef.current;
+      const target =
+        revealRequest.target === "banner"
+          ? bannerRef.current
+          : revealRequest.target === "cause"
+            ? causeRef.current
+            : document.getElementById(revealRequest.target);
       if (!target) return;
-      target.focus({ preventScroll: true });
-      target.scrollIntoView({
-        // Error recovery is time-critical: an animated scroll can settle
-        // outside the viewport under concurrent layout updates. Reveal it
-        // synchronously; this also satisfies reduced-motion preferences.
-        behavior: "auto",
-        block: "center",
-        inline: "nearest",
-      });
+      if (target instanceof HTMLElement) {
+        target.focus({ preventScroll: true });
+        target.scrollIntoView({
+          // Error recovery is time-critical: an animated scroll can settle
+          // outside the viewport under concurrent layout updates. Reveal it
+          // synchronously; this also satisfies reduced-motion preferences.
+          behavior: "auto",
+          block: "center",
+          inline: "nearest",
+        });
+      }
     });
     return () => cancelAnimationFrame(frameId);
   }, [revealRequest]);
@@ -319,6 +441,13 @@ export function DailyFormPage() {
 
   const onSubmit = async (e: FormEvent) => {
     e.preventDefault();
+    // ENV-PARITY-P1-004 — AppSheet blocks invalid VALUES on save; mirror
+    // that by refusing submit while any Valid If / Min-Max error stands.
+    if (firstError) {
+      setBanner({ kind: "error", msg: fieldErrors[firstError] ?? "" });
+      setRevealRequest({ target: `field-${firstError}` });
+      return;
+    }
     if (causeMissing) {
       setBanner({ kind: "error", msg: "กรุณาระบุสาเหตุที่ระบบผิดปกติ" });
       setRevealRequest({ target: "cause" });
@@ -340,9 +469,19 @@ export function DailyFormPage() {
         showApiError(error ?? "อัปเดตไม่สำเร็จ");
       }
     } else {
-      const { data, error } = await createMut.mutate(payload);
+      const { data, error, statusMirrorWarning } = await createMut.mutate(payload);
       if (data) {
+        // ENV-PERF-001: navigate immediately — the 900ms setTimeout delay is
+        // gone. Success feedback travels across the navigation via the
+        // portal-based ToastProvider (kept await semantics: no optimistic
+        // insert; id/reported_by come back from the saved DB row — server
+        // truth, no client invention).
         toast.success("บันทึกรายการสำเร็จ");
+        if (statusMirrorWarning) {
+          // Honest warning: the reading saved; only the P1.1 enum mirrors
+          // (parallel parity columns) are not yet in sync.
+          toast.warning(statusMirrorWarning);
+        }
         navigate("/readings");
       } else {
         showApiError(error ?? "บันทึกไม่สำเร็จ");
@@ -453,9 +592,48 @@ export function DailyFormPage() {
           <Toggle
             checked={(form.system_operating ?? null) as boolean | null}
             onChange={(v) => set("system_operating", v)}
-            label="ระบบทำงานปกติ"
+            label="การทำงานของระบบบำบัดน้ำเสีย (ระบบทำงานปกติ)"
             description={form.system_operating === false ? "⚠ ทำเครื่องหมายว่าระบบผิดปกติ — ต้องระบุสาเหตุด้านล่าง" : "เปิดอยู่/ทำงานปกติ"}
           />
+          {/* AppSheet enum vocabulary alongside the boolean (§2.1, ref 658–669).
+              The boolean stays the source of truth; this select mirrors it. */}
+          <div className="pl-14">
+            <Field label="การทำงานของระบบบำบัดน้ำเสีย" htmlFor="system-operating-enum">
+              <Select
+                id="system-operating-enum"
+                data-testid="system-operating-select"
+                value={systemOperatingToEnum(form.system_operating as boolean | null)}
+                onChange={(e) => set("system_operating", systemOperatingFromEnum(e.target.value))}
+              >
+                <option value="">— ไม่ระบุ —</option>
+                {SYSTEM_OPERATING_OPTIONS.map((o) => (
+                  <option key={o} value={o}>{o}</option>
+                ))}
+              </Select>
+            </Field>
+          </div>
+          {/* ผู้บันทึก — Valid If (ref 716–720): only active personnel whose
+              position ∈ {นักวิชาการสาธารณสุข, พนักงานบริการ}. */}
+          <div className="pl-14">
+            <Field label="ผู้บันทึก" htmlFor="recorder-select" hint="แสดงเฉพาะบุคลากรตำแหน่ง นักวิชาการสาธารณสุข / พนักงานบริการ ที่สถานะทำงาน">
+              <Select
+                id="recorder-select"
+                data-testid="recorder-select"
+                value={String(form.reported_by ?? "")}
+                onChange={(e) => set("reported_by", e.target.value)}
+              >
+                <option value="">— ไม่ระบุ —</option>
+                {personnel
+                  .filter((p) => isEligibleRecorder(p))
+                  .map((p) => (
+                    <option key={p.id} value={p.id}>
+                      {p.full_name}
+                      {p.position ? ` (${p.position})` : ""}
+                    </option>
+                  ))}
+              </Select>
+            </Field>
+          </div>
           {form.system_operating === false && (
             <div className="space-y-1.5 pl-14">
               <Field
@@ -514,8 +692,39 @@ export function DailyFormPage() {
           <Field label="SV30" unit="mL/L">
             <NumberInput value={String(form.sv30)} onChange={(e) => set("sv30", e.target.value)} />
           </Field>
-          <Field label="คลอรีนอิสระ" unit="mg/L">
-            <NumberInput value={String(form.free_chlorine)} onChange={(e) => set("free_chlorine", e.target.value)} />
+          {/* §2.1 item 1 + §2.3 format rule: Min 0 / Max 100 with the
+              verbatim Invalid value error (ref 461), and red + warning icon
+              when the value is strictly > 2.5 (ref §10 line 6429). */}
+          <Field
+            label="คลอรีนอิสระในน้ำก่อนทิ้ง (Free Chlorine)"
+            unit="mg/L"
+            error={fieldErrors.free_chlorine ?? undefined}
+            htmlFor="free_chlorine"
+          >
+            {isFreeChlorineHigh(form.free_chlorine as string) ? (
+              <span
+                data-testid="free-chlorine-highlight"
+                className="flex items-center gap-1.5 rounded-lg bg-alert-red/15 border border-alert-red/40 px-2 py-1"
+              >
+                <MSymbol name="warning" className="text-[18px] text-alert-red" />
+                <NumberInput
+                  id="free_chlorine"
+                  data-testid="free-chlorine-input"
+                  aria-invalid={fieldErrors.free_chlorine ? true : undefined}
+                  value={String(form.free_chlorine)}
+                  onChange={(e) => set("free_chlorine", e.target.value)}
+                  className="text-alert-red border-transparent bg-transparent"
+                />
+              </span>
+            ) : (
+              <NumberInput
+                id="free_chlorine"
+                data-testid="free-chlorine-input"
+                aria-invalid={fieldErrors.free_chlorine ? true : undefined}
+                value={String(form.free_chlorine)}
+                onChange={(e) => set("free_chlorine", e.target.value)}
+              />
+            )}
           </Field>
         </div>
       </AccordionSection>
@@ -526,10 +735,31 @@ export function DailyFormPage() {
           <Field label="คลอรีนที่ใช้" unit="ลิตร">
             <NumberInput value={String(form.chlorine_used)} onChange={(e) => set("chlorine_used", e.target.value)} />
           </Field>
-          <Field label="อัตราส่วนผสม">
-            <Input value={String(form.chlorine_mix_ratio ?? "")} onChange={(e) => set("chlorine_mix_ratio", e.target.value)} placeholder="เช่น 1:5" />
+          {/* §2.1 — อัตราส่วนผสม(คลอรีน/น้ำ) enum (ref 750–761); P1.1 CHECK
+              enforces on DB. Initial value 1:4 = UI default on create only. */}
+          <Field label="อัตราส่วนผสม(คลอรีน/น้ำ)" htmlFor="mix-ratio-select">
+            <Select
+              id="mix-ratio-select"
+              data-testid="mix-ratio-select"
+              value={String(form.chlorine_mix_ratio ?? "")}
+              onChange={(e) => set("chlorine_mix_ratio", e.target.value)}
+            >
+              <option value="">— ไม่ระบุ —</option>
+              {MIX_RATIO_OPTIONS.map((o) => (
+                <option key={o} value={o}>{o}</option>
+              ))}
+            </Select>
           </Field>
-          <Field label="ตะกอนส่วนเกินที่เก็บออก" unit="m³">
+          {/* §2.1 — ตะกอนส่วนเกินที่นำไปกำจัด (ref 670–675): quick-pick
+              chips carry the four verbatim AppSheet values; the number stays
+              editable for other measurements. */}
+          <Field label="ตะกอนส่วนเกินที่นำไปกำจัด" unit="m³">
+            <QuickChips
+              options={[...EXCESS_SLUDGE_OPTIONS]}
+              value={String(form.excess_sludge_removed ?? "")}
+              onPick={(v) => set("excess_sludge_removed", v)}
+              testIdPrefix="sludge-pick"
+            />
             <NumberInput value={String(form.excess_sludge_removed)} onChange={(e) => set("excess_sludge_removed", e.target.value)} />
           </Field>
         </div>
@@ -538,13 +768,30 @@ export function DailyFormPage() {
       {/* SECTION 4 — เช็คลิสต์อุปกรณ์ */}
       <AccordionSection title="เช็คลิสต์อุปกรณ์ (10 ตัว)" subtitle="ตรวจสอบการทำงานของอุปกรณ์แต่ละชิ้น">
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-          {EQUIPMENT_CHECKS.map(({ key, code }) => (
-            <div key={code} className="rounded-xl p-3 bg-aura-surfaceHigh/30 border border-aura-borderSubtle/60">
+          {EQUIPMENT_CHECKS.map(({ key, code, family }) => (
+            <div key={code} className="rounded-xl p-3 bg-aura-surfaceHigh/30 border border-aura-borderSubtle/60 space-y-2">
               <Toggle
                 checked={(form[key] ?? null) as boolean | null}
                 onChange={(v) => set(key, v as never)}
-                label={equipLabel(code)}
+                label={APPSHEET_EQUIPMENT_LABELS[code] ?? equipLabel(code)}
               />
+              {/* AppSheet enum vocabulary alongside the boolean (§2.1):
+                  booleans REMAIN the source of truth — this select mirrors
+                  the toggle and writes the P1.1 *_status column on save. */}
+              <Select
+                aria-label={`${APPSHEET_EQUIPMENT_LABELS[code] ?? code} (สถานะ)`}
+                data-testid={`machine-select-${String(key)}`}
+                value={family === "screen" ? screenCleanedToEnum(form[key] as boolean | null) : runningToEnum(form[key] as boolean | null)}
+                onChange={(e) => {
+                  const v = family === "screen" ? screenCleanedFromEnum(e.target.value) : runningFromEnum(e.target.value);
+                  set(key, v as never);
+                }}
+              >
+                <option value="">— ไม่ระบุ —</option>
+                {FAMILY_OPTIONS[family].map((o) => (
+                  <option key={o} value={o}>{o}</option>
+                ))}
+              </Select>
             </div>
           ))}
         </div>
@@ -552,6 +799,38 @@ export function DailyFormPage() {
 
       {/* SECTION 5 — มิเตอร์ + ปริมาณน้ำ */}
       <AccordionSection title="มิเตอร์ + ปริมาณน้ำ + ไฟฟ้า" subtitle="มิเตอร์ปั๊ม, ปริมาณน้ำเข้า/ออก, ไฟฟ้า">
+        {/* Honest warnings (§2.2) — informational chips, never blockers and
+            never value substitutions (unknown ≠ 0). */}
+        {(showWaterChip || showMeterChip) && (
+          <div className="rounded-xl px-4 py-3 bg-alert-amber/10 border border-alert-amber/40 space-y-1.5">
+            {showWaterChip && (
+              <p data-testid="chip-water-missing" className="text-sm font-thai text-alert-amber flex items-center gap-1.5">
+                <MSymbol name="warning" className="text-[18px]" /> {CHIP_NO_WATER_RECORD}
+              </p>
+            )}
+            {showMeterChip && (
+              <p data-testid="chip-meter-missing" className="text-sm font-thai text-alert-amber flex items-center gap-1.5">
+                <MSymbol name="warning" className="text-[18px]" /> {CHIP_NO_PUMP_METERS}
+              </p>
+            )}
+          </div>
+        )}
+        {/* Derived meter context (P1.2 view — display-only; the form never
+            re-computes ×34/×12/streak math locally). */}
+        {meterChainRow && (
+          <div className="rounded-xl p-3 bg-aura-surfaceHigh/30 border border-aura-borderSubtle/60 text-xs font-thai text-aura-textMuted space-y-1">
+            <p className="font-semibold text-aura-textMain flex items-center gap-1.5">
+              <MSymbol name="calculate" className="text-[16px]" /> ค่าคำนวณจากระบบ (อ่านอย่างเดียว)
+            </p>
+            <p>มิเตอร์ปั๊ม 1 เมื่อวาน: {meterChainRow.prev_pump1_meter ?? "—"} · มิเตอร์ปั๊ม 2 เมื่อวาน: {meterChainRow.prev_pump2_meter ?? "—"}</p>
+            {meterChainRow.delta_kwh !== null && meterChainRow.delta_kwh !== undefined && (
+              <p>ไฟฟ้าที่ใช้ (delta): {String(meterChainRow.delta_kwh)} kWh</p>
+            )}
+            {meterChainRow.avg_westwater_4d !== null && meterChainRow.avg_westwater_4d !== undefined && (
+              <p>น้ำเข้าระบบเฉลี่ย 4 วัน: {String(meterChainRow.avg_westwater_4d)} m³</p>
+            )}
+          </div>
+        )}
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
           <Field label="มิเตอร์ปั๊ม 1" unit="kWh">
             <NumberInput value={String(form.pump1_meter)} onChange={(e) => set("pump1_meter", e.target.value)} />
@@ -559,37 +838,86 @@ export function DailyFormPage() {
           <Field label="มิเตอร์ปั๊ม 2" unit="kWh">
             <NumberInput value={String(form.pump2_meter)} onChange={(e) => set("pump2_meter", e.target.value)} />
           </Field>
-          <Field label="น้ำที่ใช้รวม" unit="m³">
-            <NumberInput value={String(form.water_used_total)} onChange={(e) => set("water_used_total", e.target.value)} />
+          <Field label="ปริมาณน้ำที่ใช้ในทุกกิจกรรม" unit="m³" hint={showWaterChip ? CHIP_NO_WATER_RECORD : undefined}>
+            {/* §2.2-1 — AppSheet defaulted blank lookups to 60; ENV keeps the
+                field EMPTY when the day's น้ำประปา record is missing (the
+                chip above carries the warning). Never 60, never 0. */}
+            <NumberInput
+              id="water_used_total"
+              data-testid="water-used-input"
+              value={String(form.water_used_total)}
+              onChange={(e) => set("water_used_total", e.target.value)}
+            />
           </Field>
-          <Field label="น้ำเข้าระบบ" unit="m³">
-            <NumberInput value={String(form.wastewater_in)} onChange={(e) => set("wastewater_in", e.target.value)} />
+          <Field label="ปริมาณน้ำเสียที่เข้าระบบบำบัด" unit="m³" error={fieldErrors.wastewater_in ?? undefined} htmlFor="wastewater_in">
+            {/* §2.1 item 3 — Invalid value error (ref 643). The AppSheet
+                text-prompt-into-value behavior is FORBIDDEN; the field is
+                numeric-only and the honest meter chip above replaces it. */}
+            <NumberInput
+              id="wastewater_in"
+              data-testid="wastewater-in-input"
+              aria-invalid={fieldErrors.wastewater_in ? true : undefined}
+              value={String(form.wastewater_in)}
+              onChange={(e) => set("wastewater_in", e.target.value)}
+            />
           </Field>
           <Field label="เลขมิเตอร์ไฟฟ้า" unit="kWh">
             <NumberInput value={String(form.electricity_meter_value)} onChange={(e) => set("electricity_meter_value", e.target.value)} />
           </Field>
-          <Field label="ไฟฟ้าที่ใช้วันนี้" unit="kWh">
-            <NumberInput value={String(form.electricity_consumption)} onChange={(e) => set("electricity_consumption", e.target.value)} />
+          <Field
+            label="ปริมาณการใช้ไฟฟ้าของระบบ"
+            unit="kWh"
+            error={fieldErrors.electricity_consumption ?? undefined}
+            htmlFor="electricity_consumption"
+          >
+            {/* §2.1 item 2 — Valid If >0 (ref 607) + verbatim error
+                (ref 613). The DERIVED value lives in the P1.2 view
+                (delta_kwh, shown above); no client-side re-derivation. */}
+            <NumberInput
+              id="electricity_consumption"
+              data-testid="electricity-input"
+              aria-invalid={fieldErrors.electricity_consumption ? true : undefined}
+              value={String(form.electricity_consumption)}
+              onChange={(e) => set("electricity_consumption", e.target.value)}
+            />
           </Field>
         </div>
-        <div className="rounded-xl p-4 bg-aura-surfaceHigh/40 border border-aura-borderSubtle">
+        <div className="rounded-xl p-4 bg-aura-surfaceHigh/40 border border-aura-borderSubtle space-y-3">
           <Toggle
             checked={(form.wastewater_discharged ?? null) as boolean | null}
             onChange={(v) => set("wastewater_discharged", v)}
-            label="มีการระบายน้ำทิ้งวันนี้"
+            label="การระบายน้ำทิ้งออกจากระบบ"
             description="บันทึกสถานะการระบายน้ำที่ผ่านการบำบัดแล้ว"
           />
+          {/* AppSheet enum vocabulary alongside the boolean (ref 646–657). */}
+          <div className="pl-14">
+            <Field label="การระบายน้ำทิ้งออกจากระบบ" htmlFor="discharge-enum">
+              <Select
+                id="discharge-enum"
+                data-testid="discharge-select"
+                value={dischargeToEnum(form.wastewater_discharged as boolean | null)}
+                onChange={(e) => set("wastewater_discharged", dischargeFromEnum(e.target.value))}
+              >
+                <option value="">— ไม่ระบุ —</option>
+                {DISCHARGE_OPTIONS.map((o) => (
+                  <option key={o} value={o}>{o}</option>
+                ))}
+              </Select>
+            </Field>
+          </div>
         </div>
       </AccordionSection>
 
       {/* SECTION 6 — หมายเหตุ */}
       <AccordionSection title="หมายเหตุ" subtitle="สี, กลิ่น, ข้อสังเกตอื่นๆ">
-        <Field label="สีของน้ำ" hint="แตะเลือกค่าที่พบบ่อย หรือพิมพ์เอง">
-          <QuickChips options={COLOR_CHIPS} value={String(form.color_desc ?? "")} onPick={(v) => set("color_desc", v)} />
+        {/* §2.1 — ลักษณะสี (ref 676–687): full verbatim value list incl. ดำ. */}
+        <Field label="ลักษณะสี" hint="แตะเลือกค่าตาม AppSheet หรือพิมพ์เอง">
+          <QuickChips options={[...COLOR_OPTIONS]} value={String(form.color_desc ?? "")} onPick={(v) => set("color_desc", v)} />
           <Input value={String(form.color_desc ?? "")} onChange={(e) => set("color_desc", e.target.value)} placeholder="เช่น น้ำตาลเข้ม" />
         </Field>
-        <Field label="กลิ่น" hint="แตะเลือกค่าที่พบบ่อย หรือพิมพ์เอง">
-          <QuickChips options={SMELL_CHIPS} value={String(form.smell_desc ?? "")} onPick={(v) => set("smell_desc", v)} />
+        {/* §2.1 — ลักษณะกลิ่น (ref 688–699): full verbatim value list. */}
+        <Field label="ลักษณะกลิ่น" hint="แตะเลือกค่าตาม AppSheet หรือพิมพ์เอง">
+          <QuickChips options={[...SMELL_OPTIONS]} value={String(form.smell_desc ?? "")} onPick={(v) => set("smell_desc", v)} />
           <Input value={String(form.smell_desc ?? "")} onChange={(e) => set("smell_desc", e.target.value)} placeholder="เช่น กลิ่นดินปกติ" />
         </Field>
         <Field label="หมายเหตุเพิ่มเติม">

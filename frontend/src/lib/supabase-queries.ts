@@ -11,6 +11,7 @@
  */
 import { supabase } from "./supabase";
 import { toLocalISODate } from "./utils";
+import { buildStatusMirror, pickStatusMirror } from "./form-parity";
 import type {
   DashboardRow,
   EquipmentOut,
@@ -22,6 +23,61 @@ import type {
   ReadingListItem,
   ReadingUpdate,
 } from "./types";
+
+// ─── Equipment-spec types (P1.4; core.equipment_spec shape from the P1.2
+// migration — kept here because types.ts is outside this lane's scope) ───
+
+/** core.equipment_spec_kind enum values (verbatim, P1.2 migration). */
+export const EQUIPMENT_SPEC_KINDS = [
+  "pump_wastewater_1",
+  "pump_wastewater_2",
+  "pump_groundwater",
+  "chlorine_mix_groundwater",
+] as const;
+export type EquipmentSpecKind = (typeof EQUIPMENT_SPEC_KINDS)[number];
+
+export interface EquipmentSpec {
+  id: string;
+  kind: EquipmentSpecKind;
+  flow_m3_per_h: number | string | null;
+  energy_kwh_per_h: number | string | null;
+  mix_part_chlorine: number | string | null;
+  mix_part_water: number | string | null;
+  valid_from: string;
+  valid_to: string | null;
+  note: string | null;
+  source: string | null;
+  created_at?: string;
+}
+
+export type EquipmentSpecInsert = Omit<EquipmentSpec, "id" | "created_at">;
+
+/** One row of wastewater.v_reading_meter_chain (read-only; P1.2 owns the
+ *  shape — only the columns the form consumes are typed). */
+export interface MeterChainRow {
+  id: string;
+  reading_date: string;
+  pump1_meter: number | string | null;
+  pump2_meter: number | string | null;
+  prev_pump1_meter: number | string | null;
+  prev_pump2_meter: number | string | null;
+  prev_electric_meter: number | string | null;
+  delta_kwh: number | string | null;
+  avg_westwater_4d: number | string | null;
+  wastewater_in_derived: number | string | null;
+  meter_boundary_flag: boolean | null;
+  meter_boundary_reason: string | null;
+  spec_missing: boolean | null;
+  spec_missing_kinds: string | null;
+}
+
+/** Result of the น้ำประปา Water_In lookup for one reading_date. */
+export interface WaterUsedLookup {
+  /** The record's own Water_In value, or null when absent/unknown. */
+  value: number | null;
+  /** True when a daily_check row exists for the date. */
+  hasRecord: boolean;
+}
 
 // ─── Read paths ──────────────────────────────────────────────────────────
 
@@ -182,6 +238,94 @@ export async function fetchPersonnel(): Promise<PersonnelOut[]> {
   return (data ?? []) as PersonnelOut[];
 }
 
+// ─── P1.4 parity reads (meter chain + water-supply lookup) ──────────────
+
+/**
+ * Meter-chain row for ONE saved reading (edit mode) — carries the LAG
+ * previous meters + boundary/spec-missing flags the honest-warning chip
+ * checks. Read-only (the view is P1.2-owned; READ-ONLY for this lane).
+ */
+export async function fetchMeterChainById(id: string): Promise<MeterChainRow | null> {
+  const { data, error } = await supabase
+    .from("v_reading_meter_chain")
+    .select("*")
+    .eq("id", id)
+    .maybeSingle();
+  if (error) throw new Error(error.message);
+  return (data as MeterChainRow) ?? null;
+}
+
+/**
+ * Latest meter-chain row STRICTLY BEFORE a reading_date (create mode —
+ * the row for an unsaved reading does not exist yet). Its own pump meters
+ * are what the new reading's deltas will be computed against. Returns
+ * null when no previous reading exists at all (first-ever reading → the
+ * honest "ยังไม่มีมิเตอร์สูบ" chip).
+ */
+export async function fetchMeterChainBefore(readingDate: string): Promise<MeterChainRow | null> {
+  const { data, error } = await supabase
+    .from("v_reading_meter_chain")
+    .select("*")
+    .lt("reading_date", readingDate)
+    .order("reading_date", { ascending: false })
+    .limit(1)
+    .maybeSingle();
+  if (error) throw new Error(error.message);
+  return (data as MeterChainRow) ?? null;
+}
+
+/**
+ * น้ำประปา Water_In lookup for one reading_date (AppSheet LOOKUP parity,
+ * ref 616–622). Reads whatever the water_supply.daily_check source
+ * currently exposes (P1.5 pending — the Water_In column may not exist
+ * yet): select("*") + generic extraction never errors on the missing
+ * column, and a missing/blank value honestly yields {value: null} → the
+ * "ยังไม่มีบันทึกน้ำประปาของวัน" chip. NEVER substitutes a number.
+ */
+export async function fetchWaterUsedForDate(readingDate: string): Promise<WaterUsedLookup> {
+  const { data, error } = await supabase
+    .from("daily_check")
+    .select("*")
+    .eq("check_date", readingDate)
+    .limit(1)
+    .maybeSingle();
+  if (error || !data) {
+    // Source absent (no row, or P1.5 not landed) → honest unknown.
+    return { value: null, hasRecord: false };
+  }
+  const raw = (data as Record<string, unknown>).water_in ?? (data as Record<string, unknown>).Water_In;
+  if (raw === null || raw === undefined || raw === "") return { value: null, hasRecord: true };
+  const n = Number(raw);
+  return { value: Number.isFinite(n) ? n : null, hasRecord: true };
+}
+
+// ─── Equipment-spec admin (P1.4; core.equipment_spec via the public
+// security_invoker façade; RLS: SELECT staff-or-admin, INSERT admin-only,
+// UPDATE/DELETE never granted — append-only) ─────────────────────────────
+
+/** Full spec history, kind-grouped, newest effective-dated row first. */
+export async function fetchEquipmentSpecs(): Promise<EquipmentSpec[]> {
+  const { data, error } = await supabase
+    .from("equipment_spec")
+    .select("*")
+    .order("kind", { ascending: true })
+    .order("valid_from", { ascending: false });
+  if (error) throw new Error(error.message);
+  return (data ?? []) as EquipmentSpec[];
+}
+
+/** Append a NEW effective-dated spec row. Never edits history — no
+ *  update/delete path exists here (UI + RLS + grants all enforce). */
+export async function createEquipmentSpec(payload: EquipmentSpecInsert): Promise<EquipmentSpec> {
+  const { data, error } = await supabase
+    .from("equipment_spec")
+    .insert(payload as unknown as Record<string, unknown>)
+    .select("*")
+    .single();
+  if (error) throw new Error(error.message);
+  return data as EquipmentSpec;
+}
+
 // ─── Write paths ────────────────────────────────────────────────────────
 
 /** Create a new reading. Replaces /api/readings POST.
@@ -208,6 +352,48 @@ export async function createReading(payload: ReadingCreate): Promise<ReadingDeta
   });
   if (error) throw new Error(error.message);
   return data as ReadingDetail;
+}
+
+/**
+ * ENV-PARITY-P1-004 — sync the P1.1 `*_status` enum mirrors after a
+ * create. fn_create_reading (P12.5, pre-dates the P1.1 status columns)
+ * extracts a FIXED key list and drops the mirrors, and the RPC is outside
+ * this lane's mutable scope — so the mirrors are synced by an immediately
+ * following targeted UPDATE (same generic update path the edit flow uses;
+ * booleans remain the source of truth, the mirrors are derived).
+ *
+ * Called by the create hook AFTER the row is durably saved: a failure is
+ * returned as an honest WARNING string (never thrown, never silent — the
+ * caller toasts it and a later edit-save re-syncs), because failing the
+ * save UX here would misreport a saved reading as lost.
+ */
+export async function syncReadingStatusMirror(
+  readingId: string,
+  source: Record<string, unknown>
+): Promise<string | null> {
+  const mirror = pickStatusMirror(
+    buildStatusMirror({
+      screen_cleaned_coarse: (source.screen_cleaned_coarse as boolean | null) ?? null,
+      screen_cleaned_fine: (source.screen_cleaned_fine as boolean | null) ?? null,
+      pump1_running: (source.pump1_running as boolean | null) ?? null,
+      pump2_running: (source.pump2_running as boolean | null) ?? null,
+      aerator1_running: (source.aerator1_running as boolean | null) ?? null,
+      aerator2_running: (source.aerator2_running as boolean | null) ?? null,
+      sludge_pump1_running: (source.sludge_pump1_running as boolean | null) ?? null,
+      sludge_pump2_running: (source.sludge_pump2_running as boolean | null) ?? null,
+      chlorine_pump1_running: (source.chlorine_pump1_running as boolean | null) ?? null,
+      chlorine_pump2_running: (source.chlorine_pump2_running as boolean | null) ?? null,
+    })
+  );
+  if (Object.keys(mirror).length === 0) return null;
+  const { error } = await supabase.from("reading").update(mirror).eq("id", readingId);
+  if (error) {
+    // Wording note: must NOT contain the success-toast phrase
+    // "บันทึกรายการสำเร็จ" — both toasts can be on screen at once and the
+    // warning must stay distinguishable (learned from the mobile e2e).
+    return `ค่าสถานะเครื่องจักร (enum) ยังไม่ตรงกับปุ่มที่เลือก — รายการถูกจัดเก็บแล้ว แก้ไขรายการและกดบันทึกซ้ำเพื่อซิงค์ (${error.message})`;
+  }
+  return null;
 }
 
 export async function updateReading(id: string, payload: ReadingUpdate): Promise<ReadingDetail> {

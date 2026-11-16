@@ -122,6 +122,11 @@ const PendingUsersPage = lazy(() =>
 const AuditLogPage = lazy(() =>
   import("./pages/admin/AuditLogPage").then((m) => ({ default: m.AuditLogPage })),
 );
+// ENV-PARITY-P1-004 — equipment-spec admin (owner ask A1; append-only,
+// RLS admin-gated). Route-only deviation D1-4.
+const EquipmentSpecPage = lazy(() =>
+  import("./pages/admin/EquipmentSpecPage").then((m) => ({ default: m.EquipmentSpecPage })),
+);
 
 export default function App() {
   return (
@@ -360,6 +365,17 @@ export default function App() {
                       <RequireAuth requireAdmin>
                         <Suspense fallback={<PageSkeleton />}>
                           <AuditLogPage />
+                        </Suspense>
+                      </RequireAuth>
+                    }
+                  />
+                  {/* ENV-PARITY-P1-004 — equipment-spec admin (D1-4). */}
+                  <Route
+                    path="/admin/equipment-specs"
+                    element={
+                      <RequireAuth requireAdmin>
+                        <Suspense fallback={<PageSkeleton />}>
+                          <EquipmentSpecPage />
                         </Suspense>
                       </RequireAuth>
                     }
