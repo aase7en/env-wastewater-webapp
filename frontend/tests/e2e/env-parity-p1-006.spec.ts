@@ -273,7 +273,30 @@ test.describe("date-range summary generation", () => {
     await expect(page.getByTestId("report-monthly-energy-chart")).toContainText("2569");
   });
 
+  // ENV-PARITY-P1-007 D1-4 — live-or-mocked: when the run carries real
+  // ENV_DB REST context (E2E_CRITICAL_FLAGS_LIVE=1 + E2E_SUPABASE_URL +
+  // E2E_SUPABASE_ANON_KEY), the case FIRST probes the applied
+  // public.v_reading_critical_flags façade — asserting it is registered
+  // with PostgREST (NOT the PGRST205 404) and anon-DENIED (security_invoker
+  // evaluates the query in the caller's context; anon lacks USAGE on schema
+  // wastewater → HTTP 401 / PG 42501). The UI pass still renders from the
+  // route mock below: the e2e session is a fake staff JWT with no real
+  // ENV_DB claim, so live count rows cannot be fetched from the browser
+  // (the real row-level evidence lives in the SQL smoke suite
+  // scripts/test_parity_p1_007_fixtures_sql.py FAC-02). Without that env
+  // context (CI default), the case runs mocked exactly as before.
   test("threshold-hit counts render from v_reading_critical_flags", async ({ authed: page }) => {
+    const liveUrl = process.env.E2E_SUPABASE_URL;
+    const liveKey = process.env.E2E_SUPABASE_ANON_KEY;
+    if (process.env.E2E_CRITICAL_FLAGS_LIVE === "1" && liveUrl && liveKey) {
+      const res = await page.request.get(`${liveUrl}/rest/v1/v_reading_critical_flags`, {
+        params: { select: "id", limit: "1" },
+        headers: { apikey: liveKey },
+      });
+      expect(res.status()).not.toBe(404); // façade registered (was PGRST205 404 pre-apply)
+      expect(res.status()).toBeGreaterThanOrEqual(400); // anon denied — fail closed
+      expect(JSON.stringify(res.json())).not.toContain("Could not find the table");
+    }
     await mockReportRest(page);
     await generateRange(page);
     await expect(page.getByTestId("report-threshold-critical-do1")).toContainText("2");
