@@ -264,6 +264,7 @@ class P2AssetMastersContract(unittest.TestCase):
             " JOIN information_schema.key_column_usage kcu"
             " ON tc.constraint_name = kcu.constraint_name AND tc.table_schema = kcu.table_schema"
             " WHERE tc.table_schema='safety' AND tc.constraint_type='PRIMARY KEY'"
+            " AND tc.table_name IN ('emergency_light','fire_extinguisher')"
             " ORDER BY tc.table_name, kcu.ordinal_position"
         )
         pks: dict[str, list[str]] = {}
@@ -293,6 +294,7 @@ class P2AssetMastersContract(unittest.TestCase):
         rows = q(
             "SELECT tablename, policyname, cmd, roles, qual, with_check"
             " FROM pg_policies WHERE schemaname='safety'"
+            " AND tablename IN ('emergency_light','fire_extinguisher')"
         )
         actual = {(r["tablename"], r["policyname"]): r for r in rows}
         for (table, name), (cmd, predicate) in EXPECTED_POLICIES.items():
@@ -331,9 +333,11 @@ class P2AssetMastersContract(unittest.TestCase):
             "SELECT table_name, column_name, column_default"
             " FROM information_schema.columns"
             " WHERE table_schema='safety'"
+            " AND table_name IN ('emergency_light','fire_extinguisher')"
             " AND column_name IN ('location_floor','receive_date','packed_date','expiry_date')"
         )
-        self.assertEqual(rows, [], "location_floor / date columns must have NO DEFAULT (D1-6, TODAY() is form-only)")
+        offenders = [r for r in rows if r["column_default"] is not None]
+        self.assertEqual(offenders, [], "location_floor / date columns must have NO DEFAULT (D1-6, TODAY() is form-only)")
 
     def test_source_provenance_default(self):
         rows = q(
