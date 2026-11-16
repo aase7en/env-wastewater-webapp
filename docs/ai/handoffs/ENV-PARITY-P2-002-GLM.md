@@ -264,3 +264,48 @@ function body, which is what any future editor of the function reads.
   reported in the repair return (single-commit repair discipline — no
   second docs commit to carry the CI receipt; the reviewer re-verifies
   live on the exact head).
+
+## 8. D6 CLOSEOUT RECEIPT (docs-only closeout lane, 2026-11-16 — branch `docs/env-parity-p2-002-closeout`)
+
+Claim `ENV-PARITY-P2-002-C1` → **CLOSED** by this closeout transition. Scope = exactly 3 files: `docs/ai/CURRENT-WORK.md` (fence×2 + registry status CLOSED + `one_next_safe_action` receipt rewrite + frontier CLOSED record + next-frontier record → P2.3), `docs/work-orders/ENV-PARITY-P2-002.md` (status → DELIVERED—CLOSED with PR refs), this handoff (D6). **STOP at REVIEW_REQUESTED — the closeout author never merges; the authorized reviewer owns approval + merge.**
+
+### 8.1 Full delivery chain (#207 → #208)
+
+| stage | PR | merge SHA | parents | evidence |
+|---|---|---|---|---|
+| claim transition | #207 | `5ccdb506609e7c9478499b9ebcc406ce8fc62249` | `086f99d9f13b3c9a1ba566e826e5f8bf0f318227` + reviewed transition head `c785c072ac1cf15f2d828bf7033b280fa2441932` | docs-only; fence pinned at base `086f99d` (registry block AT base, guard method `scripts/env_coordination_guard.py:454-456`); R2 APPROVED issuecomment-6921736220 — zero P1/P2, with the P3-1 `core.personnel`-exists correction applied (live-verified PK `uuid` / `employee_code` NOT NULL; the supabase façade exposes `employee_code`, NOT `staff_code`) + P3-2; merge-executor trail issuecomment-6921781104, expected-head discipline |
+| implementation | #208 | `fc242533c6446bce88aa44bdad8f6868cda52c7a` | `5ccdb506609e7c9478499b9ebcc406ce8fc62249` + D5-R2-APPROVED repaired head `1b1e8561e6fc68cd8b0d426de7a2a8e35b23aeb6` | merge commit, no squash, expected-head discipline, merge trail in-thread; chain: D2 RED `bd275a2` → D3 `06d9b44` → docs `78bb521` → repair `1b1e856` |
+
+### 8.2 D2/D3/D5 record (verified live at closeout)
+
+- **D2 truthful RED `bd275a2`:** SQL contract suite **16 failed / 2 passed** live pre-apply + form-parity vitest **failed-to-collect** + camera-mocked e2e **7 failed / 0 passed**.
+- **D3 `06d9b44`:** ONE migration `20261116000005_parity_p2_002.sql` applied to ENV_DB via `scripts/apply_migration_api.py` **27/27 OK** — inspection table + RLS + `fn_resolve_extinguisher_qr` (FAIL-CLOSED on unknown/blank id) + `Update_ExpDate` trigger + minimal admin master-entry UI + QR scan flow; NO seed rows.
+- **D5 R1 CHANGES_REQUIRED issuecomment-6930206052** at exact head `78bb5214ee5c926720bb1534316946daf2f0e9d8` (1×P2 + 3×P3, battery reproduced exactly):
+  - **P2** — the trigger no-ops when master `expiry_date` IS NULL even though the inspection carries a `chem_exp_snapshot` (migration 05:341 three-valued `ANY()` transcription); the lane's own primary scenario silently dead because the master is UNSEEDED and admin entry makes expiry optional.
+  - **Rulings: `frontend/package-lock.json` deviation ACCEPTED** (`npm ci` broken at base on the **npm-10 dev toolchain ONLY** — CI was never red: `deploy-frontend.yml:31-35` pins Node 24/npm 11) and **jsqr 1.4.0 ACCEPTED** (Apache-2.0; own lazy chunk `jsQR-*.js` 129.99 kB / gzip 47.50 kB, never in the entry; entry impact +4.15 kB raw / +0.90 kB gzip; native `BarcodeDetector` primary path).
+  - 3×P3: dead "unreachable" trigger comment; npm-10 wording qualifier; loose "R2-verified" attribution in test_22.
+- **The coordinator parity ruling:** AppSheet's blank-date comparison follows spreadsheet-serial behavior (blank ≈ 1899-12-30), under which the original `Update_ExpDate` bot WOULD fire and seed the master expiry from the inspection — recorded verbatim as the basis for the repair.
+- **Repair `1b1e856` per the ruling:** NEW migration `20261116000006_parity_p2_002_trigger_null_fix.sql` (CREATE OR REPLACE + idempotent trigger re-pin; migration 05 **untouched** — immutability held) with the SET semantic = **NULL master expiry + recorded `chem_exp_snapshot` SETs the master expiry** (backdated-later-row + same-transaction id-DESC tie paths documented); `test_22` inverted/renamed `test_22_trigger_null_master_expiry_sets_then_null_chem_noops`; all 3 R1 P3s resolved (reachability note; npm-10 wording fixed in WO §11.2 + handoff §6.1/§6.5; test_22 attribution cites the §7.1 ruling receipt).
+- **D5 R2 APPROVED issuecomment-6931089153** at exact head `1b1e8561e6fc68cd8b0d426de7a2a8e35b23aeb6` — fresh reviewer, repair diff exactly 4 files, own battery: SQL 18/18 (incl. the inverted pin), vitest FULL 642/1skip, tsc clean, oxlint 0 errors, Playwright FULL 255/255, guard 344/344, runtime 62/62, checker OK v1.5.0, diff-check clean; no regression (latest-wins SET + deterministic tiebreak + SECURITY DEFINER + bump-later-only byte-identical; rollback documented).
+
+### 8.3 Release evidence (v1.5.0 MINOR, verified live at closeout)
+
+- Pages run **43968901202 SUCCESS** @ `fc242533c6446bce88aa44bdad8f6868cda52c7a`.
+- Live markers: `assets/index-Dm98lm9I.js` HTTP 200 carries **1.5.0**; `assets/ExtinguisherInspectionPage-Rotz7inZ.js` HTTP 200 carries **สแกน QR ×4 + fail-closed strings (ไม่พบ / ไม่สำเร็จ)**; `assets/jsQR-CBbiOIbV.js` HTTP 200, **129,995 bytes** (the lazy jsQR chunk).
+- Annotated tag **v1.5.0** (`480db6a7c6982b987ed4a6fcf7c0b3682e479aab`) dereferences `fc242533c6446bce88aa44bdad8f6868cda52c7a` (local + `git ls-remote`).
+- `python3 scripts/check_release_version.py --tag v1.5.0` → **OK (v1.5.0; CHANGELOG entry v1.5.0), exit 0**.
+
+### 8.4 Follow-up ledger additions (this closeout)
+
+1. **`fetchPersonnel()` `staff_code` latent live bug** — the pre-existing P1.4 helper selects the nonexistent `staff_code` column (live: façade exposes `employee_code`); OUT OF SCOPE here, recorded (handoff §6.1); this lane added a separate `fetchInspectors()`.
+2. **npm-10 vs CI-npm-11 note** — `npm ci` was broken at base on the npm-10 dev toolchain only; CI pinned npm 11 and was never affected (lockfile repair benefits both majors).
+3. **Autocommit-cleanup honesty note** — the first smoke attempt autocommitted 7 fixture rows; all 7 deleted immediately, baselines re-verified 907/9/4/48/0/0, no durable data change (handoff §7).
+4. **Extinguisher master re-seed obligation STILL OPEN** — `safety.fire_extinguisher` stays 0 rows (SOURCE_UNAVAILABLE); owner shares the sheet → guarded P2.1-pattern follow-up migration; never reconstructed from the inspection table.
+
+### 8.5 Frontier + standing
+
+Next UNGATED parity lane = **P2.3 emergency-light checks** (Check table 332 rows SHAPE-ONLY fetched + Filter_Light semantics + the 48-row `safety.emergency_light` master ready from P2.1) — needs its own NEW reviewed claim transition; then P2.4–P2.6 (coliform). Standing: Phase-1 dual-run PENDING OWNER ACTION, hooks #155 approved-not-started (owner-manual), #156 open (owner-manual), Building WAITING_EXTERNAL, P4 authorized awaiting Phase reach.
+
+### 8.6 Scope-lock release
+
+Worktree `_worktrees/env-parity-p2-002` preserved clean at the delivered head `1b1e856` (fully merged via PR #208). Scope lock released at generation 1; **CLOSED confers no fresh mutation authority**; all other work still requires a NEW claim transition; no closed lane confers execution authority.
