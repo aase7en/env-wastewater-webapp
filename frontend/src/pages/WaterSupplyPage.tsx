@@ -112,7 +112,9 @@ export function WaterSupplyPage() {
         <h2 className="text-lg font-semibold font-thai">กรอกข้อมูล</h2>
         <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-3">
           {/* §2.1 activity enum (ref 2519 verbatim) — init ลงข้อมูลการใช้น้ำประจำวัน
-              is a UI default on create only; the DB column has NO default. */}
+              is a UI default on create only; the DB column has NO default.
+              (A <select>, deliberately not an <input>: the pre-existing
+              positional input contract of this card stays stable.) */}
           <Field label={LABEL_ACTIVITY}>
             <Select
               data-testid="activity-select"
@@ -127,40 +129,6 @@ export function WaterSupplyPage() {
           <Field label="วันที่ตรวจ">
             <Input type="date" value={form.check_date} onChange={(e) => set({ check_date: e.target.value })} />
           </Field>
-          {/* §2.3-1 usage group — Hour_meter = the hours the pump ran (owner A2). */}
-          {usageVisible && (
-            <Field label={LABEL_HOUR_METER}>
-              <NumberInput
-                data-testid="hour-meter-input"
-                value={form.hour_meter ?? ""}
-                onChange={(e) => set({ hour_meter: NUM(e.target.value) })}
-              />
-            </Field>
-          )}
-          {usageVisible && (
-            <Field label={LABEL_CHLORINE_USAGE}>
-              <NumberInput
-                data-testid="chlorine-usage-input"
-                value={form.chlorine_usage ?? ""}
-                onChange={(e) => set({ chlorine_usage: NUM(e.target.value) })}
-              />
-            </Field>
-          )}
-          {/* §2.3-3 Water_In — Valid If >0 + the verbatim error; empty stays
-              empty (NULL ≠ 0); the ×8 estimate is NEVER written here. */}
-          {waterInVisible && (
-            <Field label={LABEL_WATER_IN}>
-              <NumberInput
-                data-testid="water-in-input"
-                value={form.water_in ?? ""}
-                onChange={(e) => set({ water_in: NUM(e.target.value) })}
-              />
-              <p className="text-xs text-aura-textMuted font-thai">{PROMPT_WATER_IN}</p>
-              {waterInError && (
-                <p data-testid="water-in-error" className="text-xs text-red-400 font-thai mt-1">{waterInError}</p>
-              )}
-            </Field>
-          )}
           <Field label="pH">
             <NumberInput value={form.ph ?? ""} onChange={(e) => set({ ph: NUM(e.target.value) })} />
           </Field>
@@ -189,6 +157,42 @@ export function WaterSupplyPage() {
             <NumberInput value={form.tds ?? ""} onChange={(e) => set({ tds: NUM(e.target.value) })} />
           </Field>
         </div>
+        {/* §2.3 usage groups — BELOW the quality grid so the pre-existing
+            positional input contract (ENV-MOBILE-003) stays byte-stable.
+            §2.3-1 usage group — Hour_meter = the hours the pump ran (owner A2). */}
+        {usageVisible && (
+          <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-3 rounded-xl p-3 bg-aura-surfaceHigh/30 border border-aura-borderSubtle/60">
+            <Field label={LABEL_HOUR_METER}>
+              <NumberInput
+                data-testid="hour-meter-input"
+                value={form.hour_meter ?? ""}
+                onChange={(e) => set({ hour_meter: NUM(e.target.value) })}
+              />
+            </Field>
+            <Field label={LABEL_CHLORINE_USAGE}>
+              <NumberInput
+                data-testid="chlorine-usage-input"
+                value={form.chlorine_usage ?? ""}
+                onChange={(e) => set({ chlorine_usage: NUM(e.target.value) })}
+              />
+            </Field>
+            {/* §2.3-3 Water_In — Valid If >0 + the verbatim error; empty stays
+                empty (NULL ≠ 0); the ×8 estimate is NEVER written here. */}
+            {waterInVisible && (
+              <Field label={LABEL_WATER_IN}>
+                <NumberInput
+                  data-testid="water-in-input"
+                  value={form.water_in ?? ""}
+                  onChange={(e) => set({ water_in: NUM(e.target.value) })}
+                />
+                <p className="text-xs text-aura-textMuted font-thai">{PROMPT_WATER_IN}</p>
+                {waterInError && (
+                  <p data-testid="water-in-error" className="text-xs text-red-400 font-thai mt-1">{waterInError}</p>
+                )}
+              </Field>
+            )}
+          </div>
+        )}
         <Button onClick={submit}>บันทึก</Button>
         <p className="text-xs text-aura-textMuted font-thai">
           โหมด {ACTIVITY_USAGE_MODE}: กรอกชั่วโมงปั๊ม/คลอรีน/น้ำเข้า · โหมด ฟรีคลอรีน / TDS: กรอกคุณภาพน้ำ
