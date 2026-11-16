@@ -52,6 +52,13 @@ async function mockFormRefs(page: import("@playwright/test").Page, opts?: {
   });
 }
 
+/** Expand an AccordionSection like a real user (tap the header). */
+async function openSection(page: import("@playwright/test").Page, title: RegExp) {
+  const btn = page.getByRole("button", { name: title });
+  const expanded = await btn.getAttribute("aria-expanded");
+  if (expanded !== "true") await btn.click();
+}
+
 async function installStaffSession(page: import("@playwright/test").Page) {
   const session = {
     access_token: "fake-staff-access-token",
@@ -86,6 +93,17 @@ test.describe("form parity fields (§2.1 verbatim)", () => {
     await installStaffSession(page);
     await mockFormRefs(page);
     await page.goto("/form");
+    // Machine enum vocabulary alongside the booleans (ปกติ/เสีย) — the
+    // checklist section starts collapsed; expand it like a real user.
+    await openSection(page, /เช็คลิสต์อุปกรณ์/);
+    await expect(page.getByTestId("machine-select-pump1_running")).toBeVisible();
+    await expect(page.getByTestId("machine-select-pump1_running").locator('option[value="ปกติ"]')).toHaveCount(1);
+    await expect(page.getByTestId("machine-select-pump1_running").locator('option[value="เสีย"]')).toHaveCount(1);
+    // Screen enum vocabulary (ไม่ล้าง/ล้าง) + verbatim initial values.
+    await expect(page.getByTestId("machine-select-screen_cleaned_coarse")).toHaveValue("ไม่ล้าง");
+    await expect(page.getByTestId("machine-select-screen_cleaned_fine")).toHaveValue("ล้าง");
+    // ตะกอนส่วนเกินที่นำไปกำจัด quick-pick values — chlorination section.
+    await openSection(page, /คลอรีนและสารเคมี/);
     await expect(page.getByText("อัตราส่วนผสม(คลอรีน/น้ำ)")).toBeVisible();
     const mixSelect = page.getByTestId("mix-ratio-select");
     await expect(mixSelect).toBeVisible();
@@ -94,18 +112,13 @@ test.describe("form parity fields (§2.1 verbatim)", () => {
     }
     // AppSheet initial value 1:4 is the UI default on create.
     await expect(mixSelect).toHaveValue("1:4");
-    // Machine enum vocabulary alongside the booleans (ปกติ/เสีย).
-    await expect(page.getByTestId("machine-select-pump1_running")).toBeVisible();
-    await expect(page.getByTestId("machine-select-pump1_running").locator('option[value="ปกติ"]')).toHaveCount(1);
-    await expect(page.getByTestId("machine-select-pump1_running").locator('option[value="เสีย"]')).toHaveCount(1);
-    // Screen enum vocabulary (ไม่ล้าง/ล้าง) + verbatim initial values.
-    await expect(page.getByTestId("machine-select-screen_cleaned_coarse")).toHaveValue("ไม่ล้าง");
-    await expect(page.getByTestId("machine-select-screen_cleaned_fine")).toHaveValue("ล้าง");
     // ตะกอนส่วนเกินที่นำไปกำจัด quick-pick values.
     for (const v of ["1.35", "2.7", "5.4", "8.1"]) {
       await expect(page.getByTestId(`sludge-pick-${v}`)).toBeVisible();
     }
-    // ลักษณะสี gains ดำ; ลักษณะกลิ่น gains the two verbatim options.
+    // ลักษณะสี gains ดำ; ลักษณะกลิ่น gains the two verbatim options —
+    // the หมายเหตุ section starts collapsed; expand it first.
+    await openSection(page, /หมายเหตุ/);
     await expect(page.getByRole("button", { name: "ดำ", exact: true })).toBeVisible();
     await expect(page.getByRole("button", { name: "กลิ่นเหม็นแก๊สไข้เน่า" })).toBeVisible();
     await expect(page.getByRole("button", { name: "อื่นๆ", exact: true })).toBeVisible();
@@ -123,25 +136,28 @@ test.describe("validation rules (verbatim Thai errors)", () => {
     await installStaffSession(page);
     await mockFormRefs(page);
     await page.goto("/form");
+    await openSection(page, /คุณภาพน้ำ/);
     await page.getByTestId("free-chlorine-input").fill("150");
-    await page.getByRole("button", { name: "บันทึก" }).click();
-    await expect(page.getByText("แน่ใจหรือที่จะลงข้อมูลนี้")).toBeVisible();
+    await page.getByRole("button", { name: "บันทึก", exact: true }).click();
+    await expect(page.getByText("แน่ใจหรือที่จะลงข้อมูลนี้").first()).toBeVisible();
   });
   test("electricity <=0 shows ตรวจสอบข้อมูลดีๆนะจ๊ะ", async ({ page }) => {
     await installStaffSession(page);
     await mockFormRefs(page);
     await page.goto("/form");
+    await openSection(page, /มิเตอร์ \+ ปริมาณน้ำ/);
     await page.getByTestId("electricity-input").fill("-5");
-    await page.getByRole("button", { name: "บันทึก" }).click();
-    await expect(page.getByText("ตรวจสอบข้อมูลดีๆนะจ๊ะ")).toBeVisible();
+    await page.getByRole("button", { name: "บันทึก", exact: true }).click();
+    await expect(page.getByText("ตรวจสอบข้อมูลดีๆนะจ๊ะ").first()).toBeVisible();
   });
   test("wastewater-in negative shows ข้อมูลผิดพลาด", async ({ page }) => {
     await installStaffSession(page);
     await mockFormRefs(page);
     await page.goto("/form");
+    await openSection(page, /มิเตอร์ \+ ปริมาณน้ำ/);
     await page.getByTestId("wastewater-in-input").fill("-1");
-    await page.getByRole("button", { name: "บันทึก" }).click();
-    await expect(page.getByText("ข้อมูลผิดพลาด")).toBeVisible();
+    await page.getByRole("button", { name: "บันทึก", exact: true }).click();
+    await expect(page.getByText("ข้อมูลผิดพลาด").first()).toBeVisible();
   });
 });
 
@@ -150,6 +166,7 @@ test.describe("honest warnings (unknown ≠ 0 — no fallback 60)", () => {
     await installStaffSession(page);
     await mockFormRefs(page, { dailyCheck: [], meterChain: [] });
     await page.goto("/form");
+    await openSection(page, /มิเตอร์ \+ ปริมาณน้ำ/);
     await expect(page.getByTestId("chip-water-missing")).toBeVisible();
     await expect(page.getByTestId("chip-water-missing")).toContainText("ยังไม่มีบันทึกน้ำประปาของวัน");
     await expect(page.getByTestId("chip-meter-missing")).toBeVisible();
@@ -167,6 +184,8 @@ test.describe("honest warnings (unknown ≠ 0 — no fallback 60)", () => {
         {
           id: "r1",
           reading_date: "2026-11-15",
+          pump1_meter: 100,
+          pump2_meter: 200,
           meter_boundary_flag: false,
           spec_missing: false,
           prev_pump1_meter: 100,
@@ -175,6 +194,7 @@ test.describe("honest warnings (unknown ≠ 0 — no fallback 60)", () => {
       ],
     });
     await page.goto("/form");
+    await openSection(page, /มิเตอร์ \+ ปริมาณน้ำ/);
     await expect(page.getByTestId("water-used-input")).toHaveValue("45");
     await expect(page.getByTestId("chip-water-missing")).toHaveCount(0);
     await expect(page.getByTestId("chip-meter-missing")).toHaveCount(0);
@@ -186,6 +206,7 @@ test.describe("format rule Cl>2.5 (strictly greater)", () => {
     await installStaffSession(page);
     await mockFormRefs(page);
     await page.goto("/form");
+    await openSection(page, /คุณภาพน้ำ/);
     const field = page.getByTestId("free-chlorine-input");
     await field.fill("3");
     await expect(page.getByTestId("free-chlorine-highlight")).toBeVisible();
@@ -274,14 +295,15 @@ test.describe("equipment-spec admin page (/admin/equipment-specs)", () => {
     await installStaffSession(page);
     await mockSpecRest(page);
     await page.goto("/admin/equipment-specs");
-    await expect(page).not.toHaveURL(/equipment-specs/);
+    await expect(page.getByText("ไม่มีสิทธิ์เข้าถึง")).toBeVisible();
+    await expect(page.getByTestId("spec-append-form")).toHaveCount(0);
   });
 
   test("admin sees the list with Thai kind labels, read-only history", async ({ page }) => {
     await installAdminSession(page);
     await mockSpecRest(page);
     await page.goto("/admin/equipment-specs");
-    await expect(page.getByText("ปั๊มน้ำเสีย 1")).toBeVisible();
+    await expect(page.getByRole("heading", { name: "ปั๊มน้ำเสีย 1" })).toBeVisible();
     await expect(page.getByTestId("spec-row-s1")).toBeVisible();
     // History immutability: no edit/delete affordances anywhere.
     await expect(page.getByRole("button", { name: /แก้ไข|ลบ|แก้ไขสเปก/ })).toHaveCount(0);
@@ -303,7 +325,9 @@ test.describe("equipment-spec admin page (/admin/equipment-specs)", () => {
     await page.getByTestId("spec-value-input").fill("12");
     await page.getByTestId("spec-valid-from-input").fill("2026-12-01");
     await page.getByRole("button", { name: "เพิ่มสเปกใหม่" }).click();
-    expect(posted).not.toBe(null);
+    // The mutation fires after the click resolves — poll for the captured
+    // POST instead of racing it.
+    await expect.poll(() => posted, { timeout: 5000 }).not.toBe(null);
     expect(posted!["kind"]).toBe("pump_wastewater_2");
     expect(posted!["valid_from"]).toBe("2026-12-01");
     expect(Number(posted!["flow_m3_per_h"])).toBe(12);

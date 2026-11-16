@@ -74,8 +74,8 @@ describe("enum value lists (verbatim §3.3)", () => {
   it("ตะกอนส่วนเกินที่นำไปกำจัด = 1.35 / 2.7 / 5.4 / 8.1", () => {
     expect(EXCESS_SLUDGE_OPTIONS).toEqual(["1.35", "2.7", "5.4", "8.1"]);
   });
-  it("ลักษณะสี includes the third verbatim option ดำ", () => {
-    expect(COLOR_OPTIONS).toEqual(["น้ำตาลอ่อน", "น้ำตาลเข้ม", "ดำ"]);
+  it("ลักษณะสี includes the third verbatim option ดำ (set verbatim; display order = house frequency order)", () => {
+    expect(COLOR_OPTIONS).toEqual(["น้ำตาลเข้ม", "น้ำตาลอ่อน", "ดำ"]);
   });
   it("ลักษณะกลิ่น includes the two verbatim options", () => {
     expect(SMELL_OPTIONS).toEqual([
