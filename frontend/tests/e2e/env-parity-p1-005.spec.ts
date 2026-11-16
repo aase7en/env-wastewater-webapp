@@ -50,6 +50,7 @@ async function mockWaterSupplyRest(
   opts?: {
     dailyCheck?: unknown[];
     chain?: unknown[];
+    failChain?: boolean;
     capturePost?: (payload: Record<string, unknown>) => void;
   },
 ) {
@@ -70,6 +71,14 @@ async function mockWaterSupplyRest(
     });
   });
   await page.route("**/rest/v1/v_daily_check_chain**", async (route) => {
+    if (opts?.failChain) {
+      await route.fulfill({
+        status: 500,
+        contentType: "application/json",
+        body: JSON.stringify({ message: "E2E chain fetch failure", code: "E2E", details: null, hint: null }),
+      });
+      return;
+    }
     await route.fulfill({
       status: 200,
       contentType: "application/json",
@@ -207,6 +216,19 @@ test.describe("derived displays from the chain view (flags + spec provenance)", 
     await mockWaterSupplyRest(page, { chain: [] });
     await page.goto("/water-supply");
     await expect(page.getByTestId("derived-chain-card")).toHaveCount(0);
+  });
+
+  test("chain fetch failure surfaces an inline error instead of the card silently disappearing", async ({ authed: page }) => {
+    await mockWaterSupplyRest(page, { failChain: true });
+    await page.goto("/water-supply");
+    // The card area stays (no silent disappearance) and the failure is stated
+    // honestly — no fabricated numbers where the view math should be.
+    const derived = page.getByTestId("derived-chain-card");
+    await expect(derived).toBeVisible();
+    await expect(page.getByTestId("derived-chain-error")).toContainText("ดึงข้อมูลสายมิเตอร์ล่าสุดไม่สำเร็จ");
+    await expect(page.getByTestId("derived-chain-error")).toContainText("E2E chain fetch failure");
+    await expect(derived).not.toContainText("Hour_Work");
+    await expect(derived).not.toContainText("ค่าประมาณจากสเปก");
   });
 });
 

@@ -199,14 +199,24 @@ export function WaterSupplyPage() {
         </p>
       </AuraCard>
 
-      {latestChain && (
+      {(latestChain || chain.error) && (
         <AuraCard className="p-4" >
           <div data-testid="derived-chain-card" className="space-y-2">
-            <h2 className="text-lg font-semibold font-thai">ค่าที่คำนวณจากสายมิเตอร์ (ล่าสุด {latestChain.check_date})</h2>
-            <p className="text-xs text-aura-textMuted font-thai">
-              แสดงจาก view — ค่าประมาณจากสเปกอุปกรณ์ ไม่ใช่ข้อมูล live จากเซนเซอร์
-            </p>
-            <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 text-sm">
+            {latestChain && (
+              <>
+                <h2 className="text-lg font-semibold font-thai">ค่าที่คำนวณจากสายมิเตอร์ (ล่าสุด {latestChain.check_date})</h2>
+                <p className="text-xs text-aura-textMuted font-thai">
+                  แสดงจาก view — ค่าประมาณจากสเปกอุปกรณ์ ไม่ใช่ข้อมูล live จากเซนเซอร์
+                </p>
+              </>
+            )}
+            {chain.error && (
+              <p data-testid="derived-chain-error" className="text-red-400 font-thai">
+                ดึงข้อมูลสายมิเตอร์ล่าสุดไม่สำเร็จ: {chain.error}
+              </p>
+            )}
+            {latestChain && (
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 text-sm">
               <div>
                 <span className="text-aura-textMuted font-thai">{LABEL_HOUR_METER}: </span>
                 {latestChain.hour_meter ?? "—"}
@@ -253,7 +263,8 @@ export function WaterSupplyPage() {
                   ⚠ ยังไม่มีค่าในสเปก: {latestChain.spec_missing_kinds}
                 </div>
               )}
-            </div>
+              </div>
+            )}
           </div>
         </AuraCard>
       )}
