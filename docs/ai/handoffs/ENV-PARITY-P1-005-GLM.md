@@ -50,4 +50,26 @@ unknown ≠ 0 (ห้ามแทนค่าศูนย์ — missing spec/fl
 
 ## D-phase log (implementation lane appends below)
 
-(appended by the implementing lane)
+### D2 — RED-first receipt (2026-11-16, commit `5906665`, base 049b097 = origin/main)
+
+- Unit `frontend/src/lib/water-supply-parity.test.ts`: 1 suite FAILED to collect (`Cannot find module './water-supply-parity'`), 0 tests collected — truthful RED at import.
+- E2E `frontend/tests/e2e/env-parity-p1-005.spec.ts`: **10 failed / 1 passed** (11 total). The 1 pass = the empty-chain absence test (derived-card count-0 both sides) — VACUOUS RED, recorded honestly per the N2 precedent.
+- RED-era files committed (P1.2 D5 P3 precedent). Two pre-GREEN alias-neutral regex corrections in the spec-join DDL assertions (recorded; the file still failed at import, so RED evidence is unaffected).
+
+### D3 — implement + apply receipts (2026-11-16, commits `846bf1b` + `43aaacd`)
+
+- Migration name: the WO-pinned `20261116000002_parity_p1_005_water_supply_usage.sql` (sequential after `20261116000001_parity_p1_004_equipment_spec_admin.sql`). The transition instruction's `20261116020000_parity_p1_005.sql` is superseded by the WO §5 pinned name — recorded reconciliation, reviewer adjudicates.
+- Preflight (read-only, ENV_DB `gllqtbyofrcjzmbnfoeh`, Management API): views absent `[]`; usage columns absent `[]`; live `daily_check` shape = exactly the 15 snapshot columns; row count 0; `schema_migrations` tip `20260803051753` (no collision — house applies via Management API); P1.2 seeds live (`pump_groundwater` energy 3.7 NO flow; `chlorine_mix_groundwater` 1:9 @ `2024-01-09`); `public.daily_check` façade + `daily_check_authenticated_rw (ALL)` untouched; zero-DML grep 0 hits.
+- Apply: `scripts/apply_migration_api.py` → **14/14 statements OK, 0 FAIL**.
+- Post-verify (live): 4 columns NULLable/no-default (table 19 columns; the 15 pre-existing unchanged); CHECK verbatim (violation probe → `23514`, rolled back); both views present; public façade `security_invoker=on`; rolled-back-transaction semantic probe (net zero writes, P1.2 fixture precedent): prev NULL + boundary `hour: no previous reading` → hour_work 4 + energy 14.8 (4×3.7 spec-at-date) + chlorine 5 → realy 0.5 (÷(1+9) from mix parts) → reset 10→6 hour_work NULL + boundary flag + reason, energy NULL; `water_in_estimate` NULL everywhere (no flow seeded — D1-5) + `spec_missing` = `pump_groundwater`; spec join resolves the seeds on every row; anon PostgREST probe **401 fail-closed**; row count 0 before/after — data untouched.
+- Privilege note: `authenticated` ALL privileges come from Supabase project-wide defaults (identical on every façade); the view is `is_updatable NO / is_insertable_into NO` — read-only by construction (P1.4's own note); explicit `GRANT SELECT` is the binding grant.
+- Fixups: (1) five e2e tests corrected from plain `page` to the house `authed` fixture (login bounce; no assertion change); (2) usage inputs moved BELOW the quality grid (commit `43aaacd`) so the unowned positional-index ENV-MOBILE-003 suite passes byte-identically — no out-of-scope file touched.
+- Machine-local setup (gitignored, never committed): worktree `frontend/.env` copied from the canonical checkout; repo-root `.env` stub (`__LOAD_FROM_DRIVE__=true`, one line, no secrets); `A_WIKI_DRIVE_PATH` per-invocation; Node 24/npm 11 for `npm ci` (documented CI-1 root cause); `package-lock.json` diff clean.
+
+### D4 — battery at final head `43aaacd` (2026-11-16)
+
+vitest FULL 34 files **578 passed / 1 skipped** (designed skipIf; incl. 38 new parity unit) · `tsc -b` clean · oxlint exit 0 (18 warnings, all pre-existing files) · Playwright FULL `workers=1` **235 passed / 0 failed** (5.4m; incl. 11 new parity e2e; WITHOUT the CI=1 retry profile — recorded) · guard suite **344 passed + 450 subtests** · runtime suite **62 passed + 32 subtests** · `check_release_version.py --tag v1.3.0` **OK** · `git diff --check` clean · validate-registry `{ok: true, claims: 30, BOOTSTRAP_CONTROL, hash 5791ec2f…}` (CURRENT-WORK.md byte-identical to base — closeout-transition precedent) · diff vs main = 8 code files ⊆ §5 mutable scope (+2 docs here).
+
+### Status
+
+**IMPLEMENTATION DELIVERED — STOP at REVIEW_REQUESTED.** Implementer never merges. D5 fresh-GLM independent review at the exact frozen head; Terra cross-model eligible after 2026-11-20 (never a silent downgrade).
