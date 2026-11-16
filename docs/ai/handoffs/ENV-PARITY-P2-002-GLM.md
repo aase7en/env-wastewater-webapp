@@ -58,3 +58,56 @@ ONE migration `supabase/migrations/20261116000005_parity_p2_002.sql` (filename p
 ## 5. Single next safe action
 
 Independent exact-SHA review of THIS docs-only claim transition (R2 floor: fresh GLM-5.3 MAX reviewer context; the AUTHORIZATION BASIS incl. the two carried notes and the WO §3/§5 verbatim pins is an explicit adversarial check item — insufficient basis parks the claim unmerged). On approval the AUTHORIZED reviewer merges THIS transition; only then does the implementing lane activate on the merged base via a fresh freshness gate: worktree `_worktrees/env-parity-p2-002`, D2 RED → D3 apply (ENV_DB gate, receipted) → D4 battery (incl. camera-mocked QR e2e; checker OK v1.5.0) → D5 fresh-GLM → **STOP at REVIEW_REQUESTED — implementer never merges**.
+
+---
+
+## 6. D2/D3/D4 implementation receipts (2026-11-16 — this lane; frozen at PR #208 head)
+
+Implementation lane executed on the merged claim base `5ccdb506609e7c9478499b9ebcc406ce8fc62249` (worktree `_worktrees/env-parity-p2-002`, branch `feat/env-parity-p2-002`). Commits: `bd275a2` (D2 RED tests) → `06d9b44` (D3 migration + frontend + release) → docs commit (this file + WO §11 + CHANGELOG PR-ref). **STOP at REVIEW_REQUESTED — PR #208, implementer never merges.**
+
+### 6.1 R2-correction + coordinator bindings actually implemented
+
+- P3-1 applied: `inspector_id uuid NULL REFERENCES core.personnel(id)` (live-verified: PK uuid, employee_code text NOT NULL — **note the supabase façade exposes `employee_code`, NOT `staff_code`; the pre-existing `fetchPersonnel()` P1.4 helper selects the nonexistent `staff_code` column and is a latent live bug OUTSIDE this lane's scope**; this lane added a separate `fetchInspectors()` selecting `id, full_name, position, status`). Eligibility = verbatim ≠ลาออก (not the P1.4 =ทำงาน form) — `isEligibleInspector` in `frontend/src/lib/extinguisher-inspection.ts`; live data check: 3 of 9 personnel pass (positions นักวิชาการสาธารณสุข/พนักงานบริการ with status `active`/ทำงาน).
+- P3-2 applied: "occasionally blank (2/858)" wording in the migration header.
+- RPC SECURITY INVOKER per coordinator instruction (WO §4.3's definer wording superseded; gate via P2.1 master SELECT policy); public façade wrapper for PostgREST reachability; EXECUTE ACLs pinned (PUBLIC/anon revoked, authenticated granted).
+- Trigger SECURITY DEFINER per WO §5 + pinned search_path + fn_is_staff_or_admin defense-in-depth gate + deterministic tiebreak (inspection_date DESC, created_at DESC, id DESC — D1-6). A `now()`-transaction-stability subtlety surfaced in testing: within ONE transaction all rows share created_at, so the tiebreak's final id-DESC fallback decides; real saves are one transaction per HTTP request (explicit created_at values model this in the contract suite).
+- Master façade `public.fire_extinguisher` + `public.extinguisher_inspection` added (P2.1 deferred "P2.2 decides façades"); no master policy changes.
+- jsQR added as the D1-4 iOS fallback (lazy-imported; native BarcodeDetector preferred; manual pick always rendered). Consequence: `frontend/package-lock.json` changed (NOT on the WO §10 list — declared deviation; `npm ci` was broken at base: `Missing: typescript@5.9.3 from lock file`).
+
+### 6.2 D2 RED (truthful, pre-apply)
+
+| Suite | Result |
+|---|---|
+| `scripts/test_parity_p2_002_extinguisher_inspection.py` | **16 failed / 2 passed** — failures on absent objects (`42P01 relation "safety.extinguisher_inspection" does not exist`, `42703`, `function ... does not exist`); test_31 trivially green (file/rollback-doc), test_14 vacuously green (any-deny contract) — honest notes, not silent |
+| `frontend/src/lib/extinguisher-inspection.test.ts` | failed-to-collect (`Cannot find module './extinguisher-inspection'`), 0 tests |
+| `frontend/tests/e2e/extinguisher-inspection.spec.ts` | **7 failed / 0 passed** |
+
+### 6.3 D3 apply + post-verify (ENV_DB `gllqtbyofrcjzmbnfoeh`)
+
+- Preflight: objects absent ×3 + RPC count 0; baselines 907/9/4/48/0.
+- Apply: **27 statements → 27 OK / 0 FAIL** (1 create-table + 1 RLS + 4 drop-policy + 4 create-policy + 1 table-grant + 2 create-function + 4 revoke + 2 grant-execute + 1 create-trigger-fn + 1 drop-trigger + 1 create-trigger + 2 create-view + 2 view-grant + 1 notify).
+- Post-verify: contract suite **18/18 GREEN** (see WO §11.4 for the group list). Trigger smoke: bump-later-only (chem_exp ≤ expiry no-op), bump-to-NEW (latest-wins), backdated larger-chem_exp does NOT lower/override the MAX-date winner, NULL chem_exp no-op, NULL master expiry no-bump (three-valued ANY() transcription), created_at-DESC then id-DESC tiebreak, **staff-path bump via SECURITY DEFINER while direct staff UPDATE is RLS-silently-denied**. All smokes inside single-request BEGIN…ROLLBACK — post-run counts equal pre-run (zero net persistence); inspection table 0 rows (nothing seeded); baselines intact.
+- Machine note: secrets resolution needed the explicit Drive override on this machine (`A_WIKI_DRIVE_PATH`/`SUPABASE_ACCESS_TOKEN` exported from the Drive secrets file — token never printed); the worktree also needed the gitignored `frontend/.env` copied from the canonical checkout (the app throws at boot without `VITE_SUPABASE_URL` — a local-env fix only, never committed).
+
+### 6.4 D4 battery (full, green)
+
+| Item | Result |
+|---|---|
+| vitest FULL | **642 passed / 1 skipped** (37 files; skip = pre-existing designed skipIf) |
+| `tsc -b` | clean |
+| `oxlint` | exit 0 (pre-existing warnings only; none in new files) |
+| Playwright FULL workers=1 | **255/255** (5.8m) — incl. camera-mocked QR (BarcodeDetector stub) → auto-fill → submit, manual pick, verbatim unknown-QR error, expired-master breakdown/cause/photo gating, mobile-360, admin gate + add-row + QR-payload preview |
+| guard | **344/344** + 450 subtests |
+| runtime | **62/62** + 32 subtests |
+| checker | **OK (v1.5.0; CHANGELOG entry v1.5.0)** — explicit `--root .` (default-root pointed at the canonical checkout from inside the worktree) |
+| `git diff --check` | clean |
+
+Local-run notes (environment, not code): the copied `node_modules` in this worktree initially served a blank page because the gitignored `frontend/.env` was missing (see 6.3) — after copying it, all suites ran normally; Playwright route-order lesson recorded: last-registered route wins, so the admin test registers the admin `app_user` mock AFTER the general refs.
+
+### 6.5 Deviations + honesty ledger
+
+1. `frontend/package-lock.json` — outside WO §10's mutable list; changed by the sanctioned jsqr dependency + lockfile metadata repair (documented §6.1; also fixes the base-broken `npm ci`).
+2. `frontend/.env` + `node_modules` exist locally in the worktree but are gitignored — never committed (verified in the diff).
+3. `docs/ai/CURRENT-WORK.md` untouched by this lane (WO §10: this transition + the later closeout only) — the closeout remains its own reviewed transition after D5/merge.
+4. The WO §3.1 `inspector_id` auth-uuid wording is superseded by P3-1 + the coordinator instruction; §3.1 left as-written (claim-phase record) and corrected in WO §11.1 + the migration header (the operative contract).
+5. Worktree path correction: the task prompt named `Github/_worktrees/env-parity-p2-002`; the actual registered worktree is `Github/env-wastewater-webapp/_worktrees/env-parity-p2-002` (same repo, registered via `git worktree list`) — used as-is at the pinned SHA.
