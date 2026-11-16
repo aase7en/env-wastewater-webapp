@@ -76,3 +76,174 @@ RED-first executed truthfully pre-implementation (D2 plan of D0 followed):
 - Fast checks re-verified after the docs-only commit that carries these receipts (guard + checker + `git diff --check`); vitest/Playwright counts carry over (docs-only delta).
 
 **STOP at REVIEW_REQUESTED — implementer never merges.** Next: D5 fresh-GLM independent review at the exact frozen head (Terra cross-model eligible after 2026-11-20 per the P1.2 D1 receipt — never a silent downgrade), with an independently executed battery rerun where possible; D1-5 and the three recorded label/range micro-notes require explicit reviewer adjudication.
+
+## D6 — CLOSEOUT RECEIPT (only by a separate reviewed closeout transition)
+
+Recorded by the closeout transition `docs/env-parity-p1-006-closeout` off
+`origin/main @ be4a342523c033df4382fce7285e93ebbb410da0` (the implementation
+merge SHA; clean, fetched, ff-verified — local HEAD = `origin/main` = the base
+SHA, `git status` clean except the pre-existing untracked `_worktrees/` which
+is not this transition's file). Fence:
+`expected_policy_revision = be4a342523c033df4382fce7285e93ebbb410da0`;
+`expected_registry_hash = 91b662b2411504b211751a7c45a5ed0581372b53fc73dcaa88b525db89d91fb4`
+(guard `registry_hash` of the registry block AT `be4a342` —
+`validate-registry` on the clean checkout at that SHA =
+`{"claims": 31, "ok": true, "registry_hash": "91b662b2…"}`, same guard method
+(`scripts/env_coordination_guard.py:454-456`) as the
+PR #166/#169/#185/#188/#191/#194/#197 closeout convention). Claim
+`ENV-PARITY-P1-006-C1`: CLAIMED → CLOSED; claim-by-claim JSON-diff vs
+`be4a342` = exactly 1 of 31 claims changed, the other 30 byte-identical;
+changed files = exactly 3 (`docs/ai/CURRENT-WORK.md`,
+`docs/work-orders/ENV-PARITY-P1-006.md`, this handoff).
+
+### Full chain (each receipt verified live 2026-11-16 before writing)
+
+1. **Claim transition** — PR #198 MERGED as
+   `a99f27ca44e570687f4fb4474613b3db17d49bb7` (parents EXACTLY
+   `12df32fa413f60866daf6401b1bbf5246d442b7a` + the R2-APPROVED reviewed
+   transition head `1a77f738d262c80031299e69196b0a34caa6a042`; mergedAt
+   2026-11-16T07:37:11Z); R2 APPROVED issuecomment-6910373359 (fresh-GLM,
+   exact-SHA, not the author) with zero P1/P2 findings and **all four D1
+   deviations adjudicated ACCEPTED**: D1-1 the BINDING
+   **client-side-aggregation ruling** (client rollup over the existing views
+   is adequate — 907-row corpus far under PostgREST defaults — AND
+   honesty-superior: per-row `meter_boundary_flag`/`spec_missing`/estimate
+   provenance and calendar missing-day counts survive to the display layer
+   where SQL SUM collapses NULLs and would silently erase exactly the
+   unknown≠0 surface; mirrors the AppSheet virtual-column model;
+   `supabase/**` forbidden-scope coherent), D1-2 additive
+   `supabase-queries.ts` wiring (`water-supply.ts` byte-identical; `App.tsx`
+   correctly not claimed — `/reports` route verified at `App.tsx:232`), D1-3
+   the ×1.2 chlorine-litter factors as named display constants with verbatim
+   provenance (ref 1949/2849 — report-display semantics, not device rates),
+   D1-4 release v1.4.0 MINOR; R2 independently recomputed the fence
+   (`258d4927…` at base `12df32f`, guard method) and reproduced the
+   prior-fence method byte-exactly; merge-executor review trail
+   issuecomment-6910400742 (expected-head discipline `--match-head-commit`,
+   merge commit no squash, branch `docs/env-parity-p1-006-claim` kept).
+2. **Implementation PR #199 MERGED as
+   `be4a342523c033df4382fce7285e93ebbb410da0`** — second parent EXACTLY the
+   D5-APPROVED reviewed head `3afc319dc66f10525c1dbe7d102a4ad7572cb029`
+   (verified from the merge commit object; merge commit, no squash);
+   merge-executor review trail issuecomment-6913095029 pins the D5 receipt,
+   expected head, merge policy, and the P3 notes carried to closeout; merge
+   diff = exactly the 9 claimed files (ReportsPage.tsx, supabase-queries.ts
+   additive section, report-summary.ts + test, e2e spec, package.json,
+   CHANGELOG, WO, handoff), `supabase/**` zero diff, CURRENT-WORK.md zero
+   diff.
+3. **D5 fresh-GLM independent review** — APPROVED at exact head `3afc319`
+   (base `a99f27c`), issuecomment-6912632368, **0×P1 / 0×P2 / 3×P3
+   informational**. Own runs at the head: vitest FULL 35 files **610 passed /
+   1 skipped** · `tsc -b` exit 0 · oxlint exit 0 (18 pre-existing warnings) ·
+   Playwright FULL `--workers=1` **248 passed / 0 failed** · guard **344 +
+   450 subtests** · runtime **62 + 32 subtests** · checker OK v1.4.0 ·
+   `git diff --check` clean. Numeric fidelity pinned in code (Sum_Energy Σ
+   `delta_kwh` with boundary rows excluded AND counted via
+   `energyBoundaryExcluded`; recorded reading sums; `useage_Chlorine` Σ
+   `chlorine_used_real`; water recorded vs estimate kept separate and
+   test-pinned; no-record months render "—", never 0). Own RED reproduction
+   at an isolated detached checkout of `1e64dee`: unit 1 suite
+   failed-to-collect (`Cannot find module './report-summary'`), 0 tests —
+   matches the D2 record verbatim; e2e **11 failed / 1 passed**, exactly as
+   recorded, the single pass being the existing PDF-template-chooser
+   regression guard (genuine assertion over a surface that really exists —
+   judged legitimate, not vacuous).
+
+### The D1-5 RULING (recorded VERBATIM from issuecomment-6912632368)
+
+> **3. D1-5 RULING — (A) ACCEPTABLE-WITH-RECORD + named follow-up lane. NOT
+> this lane's breach.** Repo evidence confirms the claim:
+> `wastewater.v_reading_critical_flags` was created by P1.3
+> (`20261115130000_parity_p1_003.sql:288-295`) with **no** `public.*` façade
+> and no grant anywhere in the repo; every REST-reachable sibling got its
+> façade **in its own lane** (`20260719000010_schema5_rest_exposure.sql` for
+> v_dashboard_14day/v_reading_with_computed, P1.4
+> `20261116000001…:108-116` for `public.v_reading_meter_chain`, P1.5
+> `20261116000002…:241-245` for `public.v_daily_check_chain`). This lane was
+> forbidden to touch `supabase/**` (D1-1), so it could not repair P1.3's gap
+> itself; the escalation valve was used correctly (STOP + record, no silent
+> switch). The feature ships honestly — amber `ยังไม่พร้อมใช้ — ต้องมี
+> public façade…` notice, counts never re-derived client-side, never
+> silently absent, CHANGELOG discloses it, acceptance §8.1 marked PARTIAL.
+> **Required follow-up (named lane, not P2 here):** one façade-only
+> micro-lane — `create view public.v_reading_critical_flags with
+> (security_invoker=on) as select * from wastewater.v_reading_critical_flags;
+> grant select … to authenticated; notify pgrst` per the P1.4 pattern —
+> explicitly adjudicated; the wiring already queries the view name and goes
+> live with zero code change. Acceptance becomes full when that lands.
+
+D5 bottom line (verbatim tail): "APPROVED — zero P1/P2. D1-5 ruling = (A)
+acceptable-with-record; carry the façade micro-lane as a named follow-up on
+P1.3's account." The (delta)-label micro-note was adjudicated-correct in the
+same comment: "delta is derived-from-records, not spec-derived, so '(delta)'
+is the more honest label; boundary exclusions are counted beside it".
+
+### Release evidence v1.4.0 MINOR (all verified live 2026-11-16)
+
+- `package.json` 1.3.0→1.4.0 + Thai พ.ศ. CHANGELOG entry carrying PR #199
+  (the D3 `#XXX` placeholder was repaired to `#199` in the merged head).
+- Pages run **43843759020 SUCCESS @ `be4a342`** (event push).
+- Live markers verified fresh from the live origin: `index-CpmEbNuV.js`
+  carries `1.4.0` ×2 + the CHANGELOG heading `v1.4.0 — 16 พฤศจิกายน พ.ศ.
+  2569`; lazy chunk **`ReportsPage-BRDQSiPh.js` HTTP 200** carries
+  `ไม่มีบันทึก` ×4 + `ค่าประมาณจากสเปก` + `ประมาณจากชั่วโมงปั๊ม` +
+  `data-testid` hooks + the `v_reading_critical_flags` view name.
+- Annotated tag `v1.4.0` (object `e6bbe1e1c77db0c46fc0784c710cded7b949a25e`)
+  dereferences `^{}` → `be4a342` (the deployed merge SHA, not the PR head).
+- `check_release_version.py --tag v1.4.0` → "RELEASE VERSION CHECK: OK",
+  exit 0.
+
+### P3 ledger (carried; none repaired silently in this closeout)
+
+1. **404-classifier wording** (`ReportsPage.tsx:199-200`): the
+   `/not found|404/i` classifier may not match PostgREST's actual PGRST205
+   wording ("Could not find the table … in the schema cache"), in which case
+   the generic `ดึงข้อมูลธงวิกฤตไม่สำเร็จ` error renders instead of the
+   specific façade notice — both honest; suggest matching PGRST205 /
+   `not find` when the façade micro-lane lands. Related: the specific-notice
+   branch has no e2e 404-mock pin (the threshold e2e mocks a 200).
+2. **Year-scoped 12-month grid** (`ReportsPage.tsx:213,458`): the grid is
+   scoped to `rangeStart`'s CE year (VC_CY per-year semantics, matches
+   AppSheet); a range spanning a year boundary shows only the start year —
+   honest; future header/clarification or explicit year selector.
+3. **"(delta)" label adjudicated-correct** (WO §2.4-2 nuance): delta-energy
+   renders the P1.4-precedent provenance label; D5 ruled the precedent
+   correct (derived-from-records, not spec-derived) — defect memory carries
+   the adjudication.
+
+Plus the standing ledger carried forward: the **D1-5 façade gap** itself
+(remedy = the named micro-lane above; can fold into P1.7 if scoped at
+claim), the enum-mirror create-path sync gap (candidate: fn_create_reading
+fix lane), the P1.3 NULL-guard multi-location follow-up (REQUIRED before any
+second-location onboarding), the P1.001 owner-gated VALIDATE CONSTRAINT
+follow-up, the personnel C8 proposal (pending owner decision).
+
+### Frontier recorded at closeout
+
+TWO next lanes (both recorded; either requires its own NEW reviewed claim
+transition): (1) **P1.7 parity fixtures** — the FINAL Phase 1 lane (test
+tables with expected values from the AppSheet formulas verbatim; can ALSO
+carry the critical-flags façade per the D5 ruling if scoped at claim); (2)
+the **façade-only micro-lane** standalone if not folded into P1.7. Standing:
+hooks #155 approved-not-started (owner-manual), #156 open (owner-manual),
+Building WAITING_EXTERNAL, Phase 4 authorized awaiting Phase reach.
+
+### Honest notes
+
+- Merge executed by the designated GPT reviewer per the STOP-at-REVIEW-
+  REQUESTED protocol; this closeout is a separate docs-only transition and
+  likewise stops at REVIEW_REQUESTED.
+- Both closeout-fence transitions verified receipt-by-receipt live (PR
+  states, merge SHAs + parents, review comment IDs, trail IDs, run, tag,
+  live markers, checker) before any text was written; no receipt is copied
+  from chat memory.
+- The worktree `_worktrees/env-parity-p1-006` is preserved clean at the
+  delivered head (fully merged via PR #199); this transition deliberately
+  does not touch it.
+- D2's recorded environment noise (missing gitignored `frontend/.env` in the
+  lane worktree; one stale zombie vite server) and the disclosed RED-era
+  spec corrections were re-audited by D5 and judged not to weaken any
+  assertion — the reproductions above are the durable proof.
+- Acceptance §8.1 threshold bullet stands PARTIAL until the façade
+  micro-lane lands; this is the recorded consequence of the D1-5 ruling,
+  not a silent downgrade of the delivered lane.
