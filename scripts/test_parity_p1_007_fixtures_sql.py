@@ -587,11 +587,26 @@ class C1ParityFixturesSql(unittest.TestCase):
             "  IS NULL THEN NULL ELSE has_table_privilege('authenticated',"
             "  'public.v_reading_critical_flags', 'SELECT') END AS auth_ok,"
             " CASE WHEN to_regclass('public.v_reading_critical_flags')"
-            "  IS NULL THEN NULL ELSE has_table_privilege('anon',"
-            "  'public.v_reading_critical_flags', 'SELECT') END AS anon_ok"
+            "  IS NULL THEN NULL ELSE has_schema_privilege('anon',"
+            "  'wastewater', 'USAGE') END AS anon_ww_usage,"
+            " CASE WHEN to_regclass('public.v_reading_critical_flags')"
+            "  IS NULL THEN NULL ELSE (SELECT reloptions::text FROM pg_class"
+            "  WHERE oid = to_regclass('public.v_reading_critical_flags'))"
+            "  END AS relopts"
         )
         self.assertIs(rows[0]["auth_ok"], True, "authenticated must hold SELECT")
-        self.assertIs(rows[0]["anon_ok"], False, "anon must NOT hold SELECT")
+        # The anon DENIAL is at QUERY time (house-wide mechanism, identical
+        # to the P1.4 sibling facade): Supabase default privileges give anon
+        # nominal table grants on new public objects, but security_invoker
+        # evaluates the underlying query in the caller's context and anon
+        # holds NO USAGE on schema `wastewater` → permission denied. The
+        # executable denial proof is the REST probe (see
+        # test_anon_rest_denied_and_registered); here we pin the mechanism:
+        self.assertIs(
+            rows[0]["anon_ww_usage"], False,
+            "anon must lack USAGE on schema wastewater (the fail-closed path)",
+        )
+        self.assertIn("security_invoker=on", rows[0]["relopts"])
 
     def test_base_viewdef_byte_identical(self):
         rows = self.q(
