@@ -102,8 +102,8 @@ describe("migration DDL contract (additive, verbatim, zero DML)", () => {
   it("energy_use_estimate joins spec-at-date (pump_groundwater, half-open window)", () => {
     expect(sql).toMatch(/energy_use_estimate/);
     expect(sql).toMatch(/'pump_groundwater'/);
-    expect(sql).toMatch(/es\.valid_from <= d?\.?check_date/);
-    expect(sql).toMatch(/es\.valid_to IS NULL OR es\.valid_to > d?\.?check_date/);
+    expect(sql).toMatch(/es\.valid_from <= \w+\.check_date/);
+    expect(sql).toMatch(/es\.valid_to IS NULL OR es\.valid_to > \w+\.check_date/);
     expect(sql).toMatch(/ORDER BY es\.valid_from DESC/);
   });
 
