@@ -105,3 +105,43 @@ Same suite: **20 passed / 0 failed**. En route, 3 TEST-HARNESS scope fixes were 
 4. **pytest via `uv run --with pytest` / `--with httpx`** (P1.7 house command; pyproject/uv.lock untouched).
 5. **Committer identity auto-configured** (house precedent, recorded like prior lanes).
 6. D1-1 substitution workbook re-verified at lane start (§5.1); the extinguisher master's SOURCE_UNAVAILABLE ruling and the re-fetch obligation at P2.2 carry forward unchanged.
+
+---
+
+## 6. D6 CLOSEOUT RECEIPT (docs-only closeout lane, 2026-11-16 — branch `docs/env-parity-p2-001-closeout`)
+
+Claim `ENV-PARITY-P2-001-C1` → **CLOSED** by this closeout transition. Scope = exactly 3 files: `docs/ai/CURRENT-WORK.md` (fence×2 + registry status CLOSED + `one_next_safe_action` receipt rewrite + frontier CLOSED record + next-frontier record), `docs/work-orders/ENV-PARITY-P2-001.md` (status → DELIVERED—CLOSED with PR refs + the D5 P3-2 rollback-wording reconciliation), this handoff (D6). **STOP at REVIEW_REQUESTED — the closeout author never merges; the authorized reviewer owns approval + merge.**
+
+### 6.1 Full delivery chain (#204 → #205)
+
+| stage | PR | merge SHA | parents | evidence |
+|---|---|---|---|---|
+| claim transition | #204 | `d8974739815d9ba5a84e8ccad1cf6e6c8712ad5c` | `71d3902682077078b9fa2ed6c94d8344d99fade7` + reviewed transition head `9a8763483dc04c8402d6427bcbdfdcf089b63c43` | docs-only; fence pinned at base `71d3902` (registry block AT base, guard method `scripts/env_coordination_guard.py:454-456`) |
+| implementation | #205 | `1ae8695ca609e231c9820e3615cd2af8bc461e3c` | `d8974739815d9ba5a84e8ccad1cf6e6c8712ad5c` + `8bd9cafa64196e53556b1a0427832735e4288a73` | second parent EXACTLY the D5-APPROVED reviewed head `8bd9caf`; merge commit, no squash, expected-head discipline `--match-head-commit`; merge trail issuecomment-6920819912 |
+| closeout | (this PR) | — | — | off main @ `1ae8695`; fence re-pinned: `expected_policy_revision = 1ae8695ca609e231c9820e3615cd2af8bc461e3c`, `expected_registry_hash = e2205c013dad31ec71166fb0fd51eabfe96d5ff450ac0d116a4518621b46ba2a` (guard `registry_hash` of the registry block AT `1ae8695`, method `scripts/env_coordination_guard.py:454-456`; same convention as #166/#169/#185/#188/#191/#194/#197/#200/#203) |
+
+D5 fresh-GLM APPROVED at exact head `8bd9caf` (issuecomment-6920788302): zero P1/P2, **SEED-LINEAGE RULING GENUINE**, 2 informational P3s. Reviews never merged their own work: #204 and #205 were merged by the authorized merge executor with the in-thread trail.
+
+### 6.2 Apply evidence (D3, re-verified)
+
+- Apply: `scripts/apply_migration_api.py supabase/migrations/20261116000004_parity_p2_001.sql` → **73 statements → 73 OK / 0 FAIL** (1 schema no-op + 1 grant no-op + 2 tables + 2 alter-RLS + 8 drop-policy + 8 create-policy + 2 table-grants + 48 guarded seeds + 1 notify).
+- Preflight: both tables absent; target policies 0; `safety` schema PRE-EXISTING (hosts only `monthly_check` — `CREATE SCHEMA IF NOT EXISTS` + `GRANT USAGE` verified no-ops); baseline 907/9/4 intact.
+- Post-verify: counts **48 / 0**; 8 pinned policy shapes + 0 anon policies + RLS enabled ×2; byte-exact CSV spot-checks (`002`, `018`, `032` trailing space verbatim); anon fail-closed (404 PGRST205 / 406 PGRST106); contract suite **20 passed** post-apply.
+- Exact-main verification at `1ae8695` (pre-closeout): guard suite **344 passed + 450 subtests**; `validate-registry` **ok:true, 33 claims, C1 still CLAIMED** (closeout transitions it); merge stat = **exactly 4 files** (813+/4−); **NO Pages deploy** — `deploy-frontend.yml` paths filter (`frontend/**` + its own workflow file) excludes docs/scripts/supabase; only the main `test` run executed post-merge.
+
+### 6.3 Seed-lineage verification note (the D5 critical check)
+
+D5's ruling: the `/tmp/env-p2-001-sources/sheet-fire-inspection.csv` snapshot **genuinely contains the EMERGENCY-LIGHT master, not fire-inspection rows** — header `ERL_ID,location,Pic,QR,Receive_date,location_floor,Providers`, all 48 Pic refs under `Emergency light_Images/*`, uniform พ.ศ. dates. The filename reflects the export source (P3-1 "landmine"); the true lineage (workbook ข้อมูลตรวจไฟฉุกเฉิน `1iqSxix…`, tab `Emergency light`) is disclosed in three committed places (migration header `20261116000004_parity_p2_001.sql:22-25`, WO §2, handoff §5.1). D5's own programmatic cross-check: **ALL 48 seed rows vs CSV bytes = 0 mismatches** (beyond the required ≥5), including the 032 trailing space at raw-byte level, the 38 NULL providers, the 8 NULL pics, and the 044 gap absent in both; QR verified as a pure derived formula of the id on all 48 rows and correctly NOT stored. The D2 seed expectations table was generated from the CSV bytes, not hand-typed. **Carry-forward: the P2.2 brief must carry the filename≠content note; the extinguisher master remains UNSEEDED (SOURCE_UNAVAILABLE) with the re-fetch obligation — owner sharing the sheet or an admin-UI entry path needed; never reconstructed from the inspection table.**
+
+### 6.4 Honest deviations (consolidated)
+
+1. **Migration filename** — delivered `20261116000004_parity_p2_001.sql` per the coordinator dispatch (true next slot), superseding the claim-era draft name; WO §4/§9/§10 carry the delivered name (P1.7 coordinator-pin precedent).
+2. **3 test-harness scope fixes en route to GREEN** (§5.6) — table-scoped query filters only; RED meaning unchanged; D5 independently re-executed the RED commit (post-apply DB makes exact 17F/3P non-recreatable without destructive drops — disclosed; the actual 4F/16P run is exactly corroborative of the disclosed mode, and its 16 passes include all SEED tests proving live DB==CSV through the RED-commit test itself).
+3. **Worktree bring-up** — gitignored `.env` stub + `frontend/.env` (Drive resolver), npm ci `--legacy-peer-deps`; never committed (diff contains no env files), never printed.
+4. **pytest via `uv run --with pytest` / `--with httpx`**; committer identity auto-configured (house precedent).
+5. **WO rollback wording** (D5 P3-2) — reconciled in THIS closeout: WO §4 now aligned to the delivered migration header reality (plain drop-schema fails-by-design on ENV_DB; the two DROP TABLEs are the precise rollback). No code/migration content changed by this closeout — docs only.
+6. **CSV filename landmine** (D5 P3-1) — recorded as a REQUIRED note for the P2.2 brief (§6.3); the `/tmp` snapshots are ephemeral and their names are not authoritative — the committed citations are.
+
+### 6.5 Scope-lock release
+
+Scope lock released at generation 1; CLOSED confers no fresh mutation authority; the closeout itself changed exactly the 3 docs files above; all other work still requires a NEW reviewed claim transition (next lane: P2.2 extinguisher inspection QR flow — see the CURRENT-WORK.md next-frontier record).

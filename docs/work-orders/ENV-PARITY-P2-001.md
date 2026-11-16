@@ -1,6 +1,6 @@
 # Work Order — ENV-PARITY-P2-001 (Claim ENV-PARITY-P2-001-C1, gen 1)
 
-**Status: DELIVERED — implementation complete, STOP at REVIEW_REQUESTED (PR: implementation lane, branch `feat/env-parity-p2-001`). Implementer never merges; reviewer owns approval + merge.**
+**Status: DELIVERED — CLOSED (closeout PR: docs-only transition off main @ `1ae8695ca609e231c9820e3615cd2af8bc461e3c`, branch `docs/env-parity-p2-001-closeout`; STOP at REVIEW_REQUESTED — the closeout author never merges, the authorized reviewer owns approval + merge). Implementation PR #205 merged `1ae8695ca609e231c9820e3615cd2af8bc461e3c` (second parent = D5-APPROVED reviewed head `8bd9cafa64196e53556b1a0427832735e4288a73`, merge commit, no squash, expected-head discipline; D5 APPROVED issuecomment-6920788302 — SEED-LINEAGE GENUINE 48/48 byte-verified, 2 informational P3); claim transition PR #204 merged `d8974739815d9ba5a84e8ccad1cf6e6c8712ad5c`.**
 **Claim branch:** `docs/env-parity-p2-001-claim` · **Implementation base:** `d8974739815d9ba5a84e8ccad1cf6e6c8712ad5c` (PR #204 merge, origin/main tip, worktree fresh-verified)
 **Governance pattern:** PR #183–#201 claim-transition series (docs-only claim → reviewed merge → implementation lane → D5 → closeout).
 
@@ -75,7 +75,7 @@ Both tables live in a **NEW `safety` schema** (D1-5: `CREATE SCHEMA IF NOT EXIST
 
 ## 4. Seed plan (D3) — guarded, idempotent, honest
 
-- ONE migration `supabase/migrations/20261116000004_parity_p2_001.sql` (schema + RLS + seeds; header carries rollback SQL — `DROP TABLE` ×2, `DROP SCHEMA safety` guarded by an exists-subquery so it only drops when empty).
+- ONE migration `supabase/migrations/20261116000004_parity_p2_001.sql` (schema + RLS + seeds; header carries rollback SQL — `DROP TABLE` ×2 precise per-lane rollback; the `DROP SCHEMA safety` attempt is documented in the delivered header (:64-71) as failing-by-design on ENV_DB because the schema pre-dates this lane and hosts `monthly_check` — a plain drop-schema rollback is intentionally NOT the rollback of this lane's objects; claim-era draft wording said "guarded by an exists-subquery" — superseded by the delivered header, aligned here per D5 P3-2).
   **FILENAME DEVIATION (recorded at implementation, D3):** this WO's claim-era draft pinned `20261117000000_parity_p2_001_asset_masters.sql`; the coordinator's implementation dispatch pins `20261116000004_parity_p2_001.sql` (true next sequential slot after `20261116000003`) and directs the exact name to be pinned here — the dispatch pin governs (P1.7 coordinator-pin precedent). All filename pointers in this WO now carry the delivered name.
 - Emergency-light seed: INSERT … SELECT per row **guarded `WHERE NOT EXISTS`** on `erl_id` — re-running the file is a no-op (idempotency is a D2 test group). `source_provenance = 'AppSheet Sheets export 2026-11-16'`. Blank cells → NULL **never 0/''**; พ.ศ. dates parsed per D1-4; `legacy_id` = sheet `ERL_ID`.
 - Fire-extinguisher seed: **ZERO rows** (§2.1). The migration carries a commented-out, shape-complete template + the reconciliation record so a later lane can activate it the moment the sheet is fetchable — with its own reviewed transition if that lane changes scope.
