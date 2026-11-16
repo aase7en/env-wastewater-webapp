@@ -67,6 +67,10 @@ const BuildingPage = lazy(() =>
 const SafetyPage = lazy(() =>
   import("./pages/SafetyPage").then((m) => ({ default: m.SafetyPage })),
 );
+// ENV-PARITY-P2-002 — extinguisher per-unit inspection flow (staff).
+const ExtinguisherInspectionPage = lazy(() =>
+  import("./pages/ExtinguisherInspectionPage").then((m) => ({ default: m.ExtinguisherInspectionPage })),
+);
 const FoodPage = lazy(() =>
   import("./pages/FoodPage").then((m) => ({ default: m.FoodPage })),
 );
@@ -126,6 +130,11 @@ const AuditLogPage = lazy(() =>
 // RLS admin-gated). Route-only deviation D1-4.
 const EquipmentSpecPage = lazy(() =>
   import("./pages/admin/EquipmentSpecPage").then((m) => ({ default: m.EquipmentSpecPage })),
+);
+// ENV-PARITY-P2-002 — minimal admin master entry for the UNSEEDED
+// fire-extinguisher master (WO §6).
+const ExtinguisherMasterPage = lazy(() =>
+  import("./pages/admin/ExtinguisherMasterPage").then((m) => ({ default: m.ExtinguisherMasterPage })),
 );
 
 export default function App() {
@@ -307,6 +316,12 @@ export default function App() {
                   <Route path="/safety" element={<RequireAuth><Suspense fallback={<PageSkeleton />}>
             <SafetyPage />
           </Suspense></RequireAuth>} />
+                  {/* ENV-PARITY-P2-002 — ตรวจรายถัง (extinguisher per-unit inspection, staff). */}
+                  <Route
+                    path="/safety/extinguisher-inspections"
+                    element={<RequireAuth><Suspense fallback={<PageSkeleton />}>
+                      <ExtinguisherInspectionPage />
+                    </Suspense></RequireAuth>} />
                   <Route path="/food" element={<RequireAuth><Suspense fallback={<PageSkeleton />}>
             <FoodPage />
           </Suspense></RequireAuth>} />
@@ -376,6 +391,17 @@ export default function App() {
                       <RequireAuth requireAdmin>
                         <Suspense fallback={<PageSkeleton />}>
                           <EquipmentSpecPage />
+                        </Suspense>
+                      </RequireAuth>
+                    }
+                  />
+                  {/* ENV-PARITY-P2-002 — extinguisher master entry (admin; WO §6). */}
+                  <Route
+                    path="/admin/extinguishers"
+                    element={
+                      <RequireAuth requireAdmin>
+                        <Suspense fallback={<PageSkeleton />}>
+                          <ExtinguisherMasterPage />
                         </Suspense>
                       </RequireAuth>
                     }

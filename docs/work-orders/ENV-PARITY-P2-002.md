@@ -1,8 +1,10 @@
 # Work Order — ENV-PARITY-P2-002 (Claim ENV-PARITY-P2-002-C1, gen 1)
 
-**Status: CLAIMED — claim transition PR (docs-only, branch `docs/env-parity-p2-002-claim`, base `086f99d9f13b3c9a1ba566e826e5f8bf0f318227`; STOP at REVIEW_REQUESTED — the transition author never merges, the authorized reviewer owns approval + merge of THIS transition; the implementing lane then runs D2→D5 on the merged base and stops at REVIEW_REQUESTED again — implementer never merges the implementation PR either).**
-**Claim branch:** `docs/env-parity-p2-002-claim` · **Implementation base:** the merge SHA of this claim transition (origin/main tip after the authorized merge).
-**Governance pattern:** PR #183–#204 claim-transition series (docs-only claim → reviewed merge → implementation lane → D5 → closeout); direct predecessor: ENV-PARITY-P2-001 (PRs #204/#205 — asset masters delivered 2026-11-16).
+**Status: IMPLEMENTATION DELIVERED — REVIEW_REQUESTED (implementation lane, 2026-11-16; PR #208 off the merged claim base `5ccdb506609e7c9478499b9ebcc406ce8fc62249`; D2 RED 16 failed/2 passed pre-apply → D3 apply 27/27 OK → contract suite 18/18 GREEN → D4 battery green incl. Playwright 255/255 + checker OK v1.5.0; implementer NEVER merges — awaiting D5 fresh-GLM independent review).**
+
+**Claim phase (superseded):** CLAIMED — claim transition PR (docs-only, branch `docs/env-parity-p2-002-claim`, base `086f99d9f13b3c9a1ba566e826e5f8bf0f318227`, merged as PR #207). The implementing lane ran D2→D4 on the merged base and stopped at REVIEW_REQUESTED — implementer never merges.
+**Claim branch:** `docs/env-parity-p2-002-claim` · **Implementation branch:** `feat/env-parity-p2-002` (base = merged claim `5ccdb506`).
+**Governance pattern:** PR #183–#207 claim-transition series (docs-only claim → reviewed merge → implementation lane → D5 → closeout); direct predecessor: ENV-PARITY-P2-001 (PRs #204/#205 — asset masters delivered 2026-11-16).
 
 ## 0. Lane identity
 
@@ -123,3 +125,44 @@ D1-1 the two carried notes are binding (master UNSEEDED/SOURCE_UNAVAILABLE + adm
 **Forbidden:** everything else — ALL pre-existing `supabase/` files (49 migrations + functions/ + config.toml + seed/ stay untouched; the ONE authorized supabase write is the new migration file; the P2.1 master tables are consumed, never re-altered beyond the trigger's guarded expiry UPDATE); P1 surfaces; emergency-light checks (P2.3 `safety.emergency_light_check`); coliform (P2.4+); the P2.5 aggregate report; `.github/**` / CI changes; reference/plan docs (`docs/ai/APPSHEET-PARITY-PLAN.md`, `docs/ai/digital-twin/**`, PROJECT-BRIEF, ROADMAP, DEFECT-MEMORY, ENV-ENGINEERING-LOOP, HANDOFF.md, AGENTS.md — reference doc 12 is READ-ONLY ground truth); `data/**`; `.env`; secrets/raw data never committed or printed; **Google Drive writes of any kind** (the inspection sheet is READ-ONLY, fetched once via the public gviz CSV export with a local temporary snapshot only); other schemas READ-ONLY (wastewater, water_supply, carbon, core, food — the `fn_is_admin`/`fn_is_staff_or_admin` helpers are consumed, never edited); bulk-import UI; printable-QR generation; Phase 4 surfaces (PDF, Telegram, alert dispatcher); shared shell/nav surfaces beyond the App.tsx route-only additions.
 
 **STOP at REVIEW_REQUESTED — the implementing agent never merges its own PR.**
+
+## 11. Implementation-lane log (2026-11-16 — this lane; appends the D-phase receipts)
+
+### 11.1 R2 corrections applied (issuecomment-6921736220 — binding on this lane)
+
+- **P3-1 — false premise corrected:** `core.personnel` EXISTS (v2 baseline, 9 rows live-verified 2026-11-16: PK `id uuid`, `employee_code text NOT NULL`, position/status TEXT with the P1.1 NOT-VALID enum CHECKs; `personnel_read` policy; `public.personnel` façade; C8 pending = owner approval of enum VALUES, not table existence; no auth↔personnel linkage column). Per the coordinator instruction the inspector ref binds to core.personnel following the wastewater form's ผู้บันทึก pattern: `inspector_id uuid NULL REFERENCES core.personnel(id)` — NOT the auth-uuid convention this WO §3.1 wording assumed (§3.1 left as-written above; the correction is recorded here and in the migration header, which is the operative transcription). Eligibility UI filter = the AppSheet Valid If VERBATIM (position ∈ {นักวิชาการสาธารณสุข, พนักงานบริการ} ∧ status ≠ 'ลาออก') — deliberately ≠ลาออก, NOT the P1.4 recorder's =ทำงาน form (the reference says ≠ลาออก; the live legacy status 'active' passes the verbatim rule and would fail =ทำงาน). The SWITCH(USEREMAIL()) init is NOT replicated (no auth↔personnel mapping column — R2-verified); the picker starts empty (unknown stays unknown).
+- **P3-2 — wording corrected:** inspection `type` blanks are occasional (2/858; master-side blanks propagate) — blank ⇒ NULL rule unchanged (migration header says "occasionally", not "frequently").
+
+### 11.2 Coordinator bindings beyond this WO's pre-claim wording (recorded, reviewer-attention items)
+
+- **RPC is SECURITY INVOKER** (RLS respected) — the coordinator instruction supersedes the §4.3 "SECURITY DEFINER gated staff-or-admin" wording; the staff-or-admin gate is enforced by the P2.1 master SELECT policy itself (an anon caller sees no master row ⇒ the same verbatim unknown-id error). The TRIGGER stays SECURITY DEFINER per §5 (the definer path is the ONLY staff bump path — pinned by the SQL contract suite's test_24).
+- **RPC exposure:** canonical `safety.fn_resolve_extinguisher_qr(text)` + thin `public.fn_resolve_extinguisher_qr(text)` SECURITY INVOKER wrapper (PostgREST exposes only `public`; `fn_create_reading` house precedent) — EXECUTE revoked from PUBLIC/anon, granted to authenticated.
+- **Master façade added:** `public.fire_extinguisher` + `public.extinguisher_inspection` (security_invoker) — the P2.1 header deferred façades to "P2.2 decides"; the manual pick list + admin entry need REST reachability. No new policies; base RLS applies through the views.
+- **`frontend/package-lock.json` deviation:** not on the §10 mutable list; changed by the D1-4-sanctioned `jsqr` dependency (iOS fallback) + npm lockfile metadata repair. Qualifier (D5 P3-2): `npm ci` was broken at base on the **npm-10 local dev toolchain only** ("Missing: typescript@5.9.3 from lock file", reproduced at base) — **CI was never red**: `.github/workflows/deploy-frontend.yml:31-35` pins Node 24/npm 11, which resolves the base lockfile fine; the repair makes the lockfile compatible with BOTH majors (both `npm ci` majors verified live at head by D5). Declared in the PR body.
+
+### 11.3 D2 RED (pre-apply, 2026-11-16 — truthful)
+
+- `scripts/test_parity_p2_002_extinguisher_inspection.py` (Management-API path, ENV_DB gate): **16 failed / 2 passed** — the 16 fail on absent objects (`relation "safety.extinguisher_inspection" does not exist` / `function ... does not exist`); test_31 passes trivially (migration-file/rollback-doc check, green once the file exists), test_14 passes vacuously pre-apply (any-deny contract catches the function-missing error as a deny) — both noted honestly.
+- `frontend/src/lib/extinguisher-inspection.test.ts`: failed-to-collect (`Cannot find module './extinguisher-inspection'`), 0 tests.
+- `frontend/tests/e2e/extinguisher-inspection.spec.ts`: **7 failed / 0 passed** (routes + testids absent).
+
+### 11.4 D3 apply + post-verify (ENV_DB gate `gllqtbyofrcjzmbnfoeh`, 2026-11-16)
+
+- Preflight live: target objects absent (`to_regclass` NULL ×3; RPC count 0); baselines wastewater.reading 907 / core.personnel 9 / core.equipment_spec 4 / safety.emergency_light 48 / safety.fire_extinguisher 0.
+- Apply: `scripts/apply_migration_api.py supabase/migrations/20261116000005_parity_p2_002.sql` → **27 statements → 27 OK / 0 FAIL**.
+- Post-verify: contract suite **18/18 GREEN** — SCHEMA (columns/types/nullability/defaults, PK, FK→fire_extinguisher + FK→core.personnel, legacy_id UNIQUE, ZERO CHECK constraints on the documented enums, RLS enabled + exactly 4 pinned policy shapes, both façade views security_invoker=on) · RPC (invoker + pinned search_path ×2 functions, EXECUTE ACLs: PUBLIC+anon revoked / authenticated granted, blank/whitespace/unknown fail-closed with the verbatim error, staff-context payload smoke incl. the padded-payload resolve, anon fail-closed) · TRIGGER (AFTER INSERT shape, SECURITY DEFINER + pinned search_path, bump-later-only, latest-wins SET, backdated recompute, NULL chem_exp no-op, NULL master expiry no-bump, deterministic tiebreak created_at-DESC-then-id-DESC, **SECURITY-DEFINER-path-works-as-staff** — staff hold the SQL grant but no master UPDATE policy, so a direct staff UPDATE is RLS-silently-denied and the definer trigger is the only staff bump path) · HONESTY/COUNTS (**zero net persistence** — every smoke in an explicit single-request BEGIN…ROLLBACK with pre/post count equality; zero seed; baselines 907/9/4/48/0 intact; inspection table 0 rows).
+- Rollback smoke = the same rolled-back-transaction harness (the migration header's rollback SQL is documented; a destructive rollback was NOT executed on ENV_DB — nothing to roll back, and the header SQL is the reviewed contract).
+
+### 11.5 D4 battery (worktree `_worktrees/env-parity-p2-002` @ implementation head 06d9b44 + docs commit)
+
+- vitest FULL: **642 passed / 1 skipped** (37 files; the 1 skip is the pre-existing designed skipIf from the versioning lane)
+- `tsc -b`: clean (0 errors) · `oxlint`: exit 0 (pre-existing warnings only, none in new files)
+- Playwright FULL workers=1: **255 passed / 255** (5.8m) — includes the camera-mocked QR e2e (BarcodeDetector stub → scan → RPC auto-fill → read-only snapshots → submit), manual-pick flow, unknown-QR verbatim error, expired-master gating + cause/photo Show If, mobile-360 no-horizontal-scroll, admin in-place ไม่มีสิทธิ์เข้าถึง gate + add-row + QR-payload preview (display only, never stored)
+- guard: **344/344 passed + 450 subtests** · runtime: **62/62 passed + 32 subtests**
+- release checker: **OK (v1.5.0; CHANGELOG entry v1.5.0)** — `check_release_version.py --tag v1.5.0 --root .` (explicit root: the default-root resolution pointed at the canonical checkout from inside the worktree)
+- `git diff --check`: clean
+- Diff vs main @ `5ccdb506` ⊆ the claimed files + the documented package-lock.json deviation (§11.2). `docs/ai/CURRENT-WORK.md` untouched (this transition + the later closeout only).
+
+### 11.6 Where the lane stopped
+
+**REVIEW_REQUESTED — PR #208 (base main, head = final docs commit).** The implementing agent never merges. Next: D5 fresh-GLM independent review at the exact frozen head with an independently executed battery rerun where possible; then the authorized reviewer merges; then the closeout lane (CURRENT-WORK.md registry CLOSEOUT) by its own reviewed transition.

@@ -553,3 +553,148 @@ export async function bulkInsertReadingRows(
   const { error } = await supabase.from("reading").insert(rows);
   return { error: error?.message ?? null };
 }
+
+// ─── P2.2 extinguisher inspection flow (additive section — P1.4/P1.6
+// precedent) ─────────────────────────────────────────────────────────────
+// Reads/writes go through the NEW public security_invoker façade views
+// (migration 20261116000005) — PostgREST exposes only `public`; base RLS
+// (staff read / staff insert on the log; admin write on the master)
+// applies to every row. The QR auto-fill RPC resolves a scanned payload
+// to the master row + latest inspection + honest expiry status.
+
+export interface ExtinguisherRow {
+  legacy_row_id: string;
+  location: string | null;
+  extinguisher_type: string | null;
+  photo_path: string | null;
+  packed_date: string | null;
+  expiry_date: string | null;
+  size_label: string | null;
+  source_provenance?: string;
+  legacy_id?: string | null;
+}
+
+export interface ExtinguisherInspectionRow {
+  id: string;
+  legacy_id: string | null;
+  inspection_date: string;
+  extinguisher_id: string;
+  location_snapshot: string | null;
+  type_snapshot: string | null;
+  packed_date_snapshot: string | null;
+  chem_exp_snapshot: string | null;
+  size_snapshot: string | null;
+  pipe: string | null;
+  handle: string | null;
+  tank: string | null;
+  pressure_gauge: string | null;
+  barrier: string | null;
+  breakdown_details: string | null;
+  cause_of_damaged: string | null;
+  inspector_id: string | null;
+  source_provenance?: string;
+  created_at?: string;
+}
+
+export type ExtinguisherInspectionInsert = Omit<ExtinguisherInspectionRow, "created_at">;
+
+export type ExtinguisherMasterInsert = Omit<ExtinguisherRow, "source_provenance"> & {
+  source_provenance?: string;
+};
+
+/** shape of safety.fn_resolve_extinguisher_qr's jsonb return */
+export interface ExtinguisherResolveResult {
+  master: {
+    legacy_row_id: string;
+    location: string | null;
+    extinguisher_type: string | null;
+    packed_date: string | null;
+    expiry_date: string | null;
+    size_label: string | null;
+  };
+  latest_inspection: {
+    id: string;
+    inspection_date: string;
+    chem_exp_snapshot: string | null;
+    pipe: string | null;
+    handle: string | null;
+    tank: string | null;
+    pressure_gauge: string | null;
+    barrier: string | null;
+    breakdown_details: string | null;
+    created_at: string;
+  } | null;
+  expiry_status: "หมดอายุ" | "ไม่หมดอายุ" | null;
+}
+
+const INSPECTOR_COLS = "id, full_name, position, status";
+
+/**
+ * Eligible-inspector lookup for the ผู้ตรวจสอบ picker. Selects the REAL
+ * core.personnel columns (id uuid / full_name / position / status) —
+ * deliberately NOT reusing fetchPersonnel(), whose `staff_code` column
+ * does not exist on the live table (latent P1.4 mismatch recorded in the
+ * handoff; outside this lane's scope to fix).
+ */
+export async function fetchInspectors(): Promise<PersonnelOut[]> {
+  const { data, error } = await supabase
+    .from("personnel")
+    .select(INSPECTOR_COLS)
+    .order("full_name");
+  if (error) throw new Error(error.message);
+  return (data ?? []) as PersonnelOut[];
+}
+
+export async function fetchExtinguishers(): Promise<ExtinguisherRow[]> {
+  const { data, error } = await supabase
+    .from("fire_extinguisher")
+    .select("*")
+    .order("location");
+  if (error) throw new Error(error.message);
+  return (data ?? []) as ExtinguisherRow[];
+}
+
+export async function fetchExtinguisherInspections(limit = 50): Promise<ExtinguisherInspectionRow[]> {
+  const { data, error } = await supabase
+    .from("extinguisher_inspection")
+    .select("*")
+    .order("inspection_date", { ascending: false })
+    .limit(limit);
+  if (error) throw new Error(error.message);
+  return (data ?? []) as ExtinguisherInspectionRow[];
+}
+
+export async function createExtinguisherInspection(
+  payload: ExtinguisherInspectionInsert,
+): Promise<ExtinguisherInspectionRow> {
+  const { data, error } = await supabase
+    .from("extinguisher_inspection")
+    .insert(payload as unknown as Record<string, unknown>)
+    .select("*")
+    .single();
+  if (error) throw new Error(error.message);
+  return data as ExtinguisherInspectionRow;
+}
+
+/** Admin master entry (WO §6) — through the UNCHANGED P2.1 admin INSERT
+ * policy; no new master policies. legacy_row_id/legacy_id are generated
+ * UI-side (PackedUUID shape) and travel with the payload. */
+export async function createExtinguisherMaster(payload: ExtinguisherMasterInsert): Promise<ExtinguisherRow> {
+  const { data, error } = await supabase
+    .from("fire_extinguisher")
+    .insert(payload as unknown as Record<string, unknown>)
+    .select("*")
+    .single();
+  if (error) throw new Error(error.message);
+  return data as ExtinguisherRow;
+}
+
+/** QR auto-fill: resolve a scanned payload (PackedUUID or raw
+ * legacy_row_id — the same column) via the RPC. The PostgREST error for
+ * blank/unknown ids carries the verbatim Thai message
+ * ('ไม่พบข้อมูล!!  ให้ถามเอ นะจ๊ะ') — surfaced as-is. */
+export async function resolveExtinguisherQr(qr: string): Promise<ExtinguisherResolveResult> {
+  const { data, error } = await supabase.rpc("fn_resolve_extinguisher_qr", { p_qr: qr });
+  if (error) throw new Error(error.message);
+  return data as ExtinguisherResolveResult;
+}
