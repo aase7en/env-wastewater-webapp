@@ -2,11 +2,16 @@ import { useCallback, useEffect, useState } from "react";
 import { useQuery, useMutation as useRqMutation, useQueryClient } from "@tanstack/react-query";
 import {
   createEquipmentSpec as createEquipmentSpecQ,
+  createExtinguisherInspection,
+  createExtinguisherMaster,
   createReading as createReadingQ,
   deleteReading as deleteReadingQ,
   fetchDashboard,
   fetchEquipment,
   fetchEquipmentSpecs,
+  fetchExtinguisherInspections,
+  fetchExtinguishers,
+  fetchInspectors,
   fetchMeterChainBefore,
   fetchMeterChainById,
   fetchPersonnel,
@@ -18,6 +23,10 @@ import {
 } from "./supabase-queries";
 import type {
   EquipmentSpecInsert,
+  ExtinguisherInspectionInsert,
+  ExtinguisherInspectionRow,
+  ExtinguisherMasterInsert,
+  ExtinguisherRow,
 } from "./supabase-queries";
 import type {
   ReadingCreate,
@@ -323,6 +332,94 @@ export function useCreateEquipmentSpec() {
   });
   const mutate = useCallback(
     async (payload: EquipmentSpecInsert): Promise<MutationResult<unknown>> => {
+      try {
+        const data = await m.mutateAsync(payload);
+        return { data: data ?? null, error: null };
+      } catch (e) {
+        const msg = e instanceof Error ? e.message : String(e);
+        return { data: null, error: msg };
+      }
+    },
+    [m],
+  );
+  return { loading: m.isPending, error: m.error?.message ?? null, mutate };
+}
+
+// ─── P2.2 extinguisher inspection flow (additive — usePersonnel P1.4
+// precedent; NOT reusing usePersonnel because its fetcher selects the
+// nonexistent staff_code column) ─────────────────────────────────────────
+
+export function useInspectors() {
+  const q = useQuery({
+    queryKey: ["inspectors"] as const,
+    queryFn: () => fetchInspectors(),
+  });
+  return {
+    data: q.data ?? [],
+    loading: q.isLoading,
+    error: q.error?.message ?? null,
+  };
+}
+
+export function useExtinguishers() {
+  const q = useQuery({
+    queryKey: ["extinguishers"] as const,
+    queryFn: () => fetchExtinguishers(),
+  });
+  return {
+    data: q.data ?? [],
+    loading: q.isLoading,
+    error: q.error?.message ?? null,
+    refresh: () => q.refetch(),
+  };
+}
+
+export function useExtinguisherInspections() {
+  const q = useQuery({
+    queryKey: ["extinguisher-inspections"] as const,
+    queryFn: () => fetchExtinguisherInspections(),
+  });
+  return {
+    data: q.data ?? [],
+    loading: q.isLoading,
+    error: q.error?.message ?? null,
+    refresh: () => q.refetch(),
+  };
+}
+
+export function useCreateExtinguisherInspection() {
+  const qc = useQueryClient();
+  const m = useRqMutation({
+    mutationFn: (payload: ExtinguisherInspectionInsert) => createExtinguisherInspection(payload),
+    onSettled: () => {
+      void qc.invalidateQueries({ queryKey: ["extinguisher-inspections"] });
+    },
+  });
+  const mutate = useCallback(
+    async (payload: ExtinguisherInspectionInsert): Promise<MutationResult<ExtinguisherInspectionRow>> => {
+      try {
+        const data = await m.mutateAsync(payload);
+        return { data: data ?? null, error: null };
+      } catch (e) {
+        const msg = e instanceof Error ? e.message : String(e);
+        return { data: null, error: msg };
+      }
+    },
+    [m],
+  );
+  return { loading: m.isPending, error: m.error?.message ?? null, mutate };
+}
+
+export function useCreateExtinguisher() {
+  const qc = useQueryClient();
+  const m = useRqMutation({
+    mutationFn: (payload: ExtinguisherMasterInsert) => createExtinguisherMaster(payload),
+    onSettled: () => {
+      void qc.invalidateQueries({ queryKey: ["extinguishers"] });
+    },
+  });
+  const mutate = useCallback(
+    async (payload: ExtinguisherMasterInsert): Promise<MutationResult<ExtinguisherRow>> => {
       try {
         const data = await m.mutateAsync(payload);
         return { data: data ?? null, error: null };
