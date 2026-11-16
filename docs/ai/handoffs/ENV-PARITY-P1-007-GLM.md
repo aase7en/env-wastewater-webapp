@@ -69,3 +69,157 @@ unknown ≠ 0 (missing/boundary/spec-missing ⇒ NULL + flag, never 0, never a f
 ### D5 — pending
 
 Fresh-GLM independent review at the exact frozen PR head; implementer never merges. The reviewer should re-run: (a) the SQL suite (`uv run --with pytest python -m pytest scripts/test_parity_p1_007_fixtures_sql.py -q` — needs SUPABASE_ACCESS_TOKEN/SUPABASE_ANON_KEY via the approved resolver), (b) the vitest + Playwright batteries, (c) the façade `pg_get_viewdef` byte-pin against the pre-apply canonical embedded in the smoke suite.
+
+## D6 — CLOSEOUT RECEIPT (only by a separate reviewed closeout transition)
+
+Recorded by the closeout transition `docs/env-parity-p1-007-closeout` off
+`origin/main @ 2d766736b8bd2dce2f9e0d2e23d25d9e1819eae6` (the implementation
+merge SHA; clean, fetched, ff-verified — local HEAD = `origin/main` = the base
+SHA, `git status` clean except the pre-existing untracked `_worktrees/` which
+is not this transition's file). Fence:
+`expected_policy_revision = 2d766736b8bd2dce2f9e0d2e23d25d9e1819eae6`;
+`expected_registry_hash = d16381885aa8e55f474b1920cea7df321bb37fb1467a5dfc3625c64e71bad3ec`
+(guard `registry_hash` of the registry block AT `2d76673` —
+`validate-registry` on the clean checkout at that SHA =
+`{"claims": 32, "ok": true, "registry_hash": "d1638188…"}`, same guard method
+(`scripts/env_coordination_guard.py:454-456`) as the
+PR #166/#169/#185/#188/#191/#194/#197/#200 closeout convention; the value was
+independently recomputed by the PR #201 R2 reviewer as the head-block hash —
+same convention: the fence pins the base state). Claim
+`ENV-PARITY-P1-007-C1`: CLAIMED → CLOSED; claim-by-claim JSON-diff vs
+`2d76673` = exactly 1 of 32 claims changed, the other 31 byte-identical;
+changed files = exactly 3 (`docs/ai/CURRENT-WORK.md`,
+`docs/work-orders/ENV-PARITY-P1-007.md`, this handoff).
+
+### Full chain (each receipt verified live 2026-11-16 before writing)
+
+1. **Claim transition** — PR #201 MERGED as
+   `2a8de7d37eda18033dd6656362b7ddb532389f1e` (parents EXACTLY
+   `dfd44238d500b25b653321880a82f3f4346b13ab` + the R2-APPROVED reviewed
+   transition head `9e937f3026d9b9b1082da540c1320606425d5d7b`; mergedAt
+   2026-11-16T10:39:40Z); R2 APPROVED issuecomment-6914097689 (fresh
+   independent reviewer, exact-SHA, not the author) — **0×P1 / 0×P2 / 0×P3**,
+   fence independently recomputed (`eef1dc00…` at base `dfd4423`, guard
+   method) and the claim-by-claim JSON-diff reproduced (exactly 1 added
+   claim, 31 byte-identical); merge trail recorded in-thread.
+2. **Implementation PR #202 MERGED as
+   `2d766736b8bd2dce2f9e0d2e23d25d9e1819eae6`** — second parent EXACTLY the
+   D5-APPROVED reviewed head `f4515c6a8ca3796878312c5c6b28b93081675f2f`
+   (verified from the merge commit object; merge commit, no squash);
+   merge-executor review trail issuecomment-6915442926 pins the D5 receipt,
+   expected head, and merge policy.
+3. **D2 truthful RED `bbc5f98`** (disclosed as-run): the SQL rollback-smoke
+   suite **4 failed / 6 passed** pre-apply — failures = exactly the façade
+   group FAC-01/02/05/03 against the UNAPPLIED façade (REST probe PGRST205
+   404); the 43 fixture subtests pass-by-design against the delivered
+   P1.2/P1.3/P1.5 objects — disclosed, never claimed as RED. The parity unit
+   suite failed-to-collect at RED (module absent), then **20/20
+   pass-by-design disclosed** (pure-additive over shipped P1.4–P1.6
+   surfaces). No forced-live e2e RED (truthful pre-apply behavior = the same
+   PGRST205 404 the SQL suite recorded; default mocked path unchanged).
+4. **D3** — the ONE façade migration
+   `20261116000003_parity_p1_007_critical_flags_facade.sql` applied to ENV_DB
+   via `scripts/apply_migration_api.py` **4/4 statements OK** with the
+   zero-DML preflight + live post-verify: façade rows **907 = 907**, base
+   `pg_get_viewdef` **byte-identical pre/post**, anon REST **HTTP 401 / PG
+   42501** (security_invoker + anon missing USAGE on schema wastewater),
+   authenticated SELECT = TRUE; rollback SQL documented, unexecuted.
+   Migration-name deviation recorded, never silent (claim draft
+   `20261117000000` → applied `20261116000003`, coordinator instruction
+   pinned, re-pinned in the WO). E2E tweak spec-file-only (live-or-mocked;
+   NO app code change).
+5. **D4 battery + ACHIEVED PARITY = 100%** — vitest FULL **630 passed / 1
+   skipped** (36 files; parity-fixtures 20/20) · tsc clean · oxlint 0 errors
+   · Playwright FULL **248/248** workers=1 (+ reports spec live-mode 12/12)
+   · guard 344 + 450 subtests · runtime 62 + 32 subtests ·
+   `git diff --check` clean. **45/45 executable fixture cases** vs the P1
+   DoD ≥98% — met; **9 divergent cases** (MC-01..04, CH-05, ES-01..04) all
+   assert the CORRECTED expectation with divergence notes (LAG-vs-global-MAX;
+   delta≤0→NULL vs negative raw difference; spec-config vs hardcoded
+   ×34/×12; ÷10-in-the-schema ≡ ÷(1+9)-from-spec; ×3.7 spec-derived/
+   negative→0 not replicated; Water_In ×8 RECORDED-NOT-REPLICATED) — no
+   silent formula match.
+6. **D5 fresh-GLM independent review** — APPROVED at exact head `f4515c6`
+   (issuecomment-6915414332): **0 blocking; 2 non-blocking P3** (ES-04
+   wording; CH-01 ref range off-by-one). D5 hand-computed the fixture
+   expected values (incl. the MC-04 interleaved corrected expectation) and
+   re-ran the battery.
+7. **Release v1.4.1 PATCH LIVE** — `frontend/package.json` 1.4.0→1.4.1 +
+   Thai พ.ศ. CHANGELOG entry (threshold card notice → real counts); Pages
+   run **43860200309 SUCCESS @ `2d76673`**; live markers verified fresh from
+   the live origin (`index-BcL044EM.js` carries `1.4.1`; lazy chunk
+   **`ReportsPage-S2i4fQdi.js` HTTP 200** carries the live threshold card
+   reading `v_reading_critical_flags` + testids + threshold vocabulary — the
+   `ยังไม่พร้อมใช้` string remains in the bundle ONLY as the dead fallback
+   branch of the fetch-catch ternary, honest-by-construction); annotated tag
+   `v1.4.1` (object `2194aa9562126dfeca8c9b35c1b38755be06bba2`) dereferences
+   `^{}` → `2d76673` (the deployed merge SHA); `check_release_version.py
+   --tag v1.4.1` → OK, exit 0.
+
+### PHASE 1 COMPLETION RECORD — ALL 7 LANES CLOSED
+
+| Lane | Scope | Claim SHA | Impl SHA | PRs | Release |
+|---|---|---|---|---|---|
+| P1.1 | schema parity (enums + 10 status columns) | `aeda44108882e0dda2f55134c62a610b2da5fbd3` | `d15398343ecc6c749acc5ef801107287771d1ff7` | #183/#184 | — (schema-only) |
+| P1.3 | thresholds + `fn_critical_flags` + `v_reading_critical_flags` | `a65125ecfa3338a0c37102e62337d9b41bbcdddc` | `83b2ba05d7690d1113459418bfff98a3754b80d0` | #186/#187 | — |
+| P1.2 | `core.equipment_spec` + meter-chain LAG view | `93e197e9d2d91ff320c0f739dfa09e9fe5934623` | `85ddf75eb4eec5070abd9f8f438f880497721acb` | #189/#190 | — |
+| P1.4 | form parity + spec admin + façade pattern | `01433f0274606f09ebfdc15e55931d2e8cfff026` | `b4c31726dd07e993e3ad953bbefc71651154fad8` | #192/#193 | v1.2.0 |
+| P1.5 | water-supply usage + chain | `049b097cfb9edd139df4643aa6470050a14cd9a9` | `39402c9b3716fefd7ebb4d2bbea464efa77e25a4` | #195/#196 | v1.3.0 |
+| P1.6 | `/reports` range summary | `a99f27ca44e570687f4fb4474613b3db17d49bb7` | `be4a342523c033df4382fce7285e93ebbb410da0` | #198/#199 | v1.4.0 |
+| P1.7 | parity fixtures + critical-flags façade | `2a8de7d37eda18033dd6656362b7ddb532389f1e` | `2d766736b8bd2dce2f9e0d2e23d25d9e1819eae6` | #201/#202 | v1.4.1 |
+
+(All 14 SHAs verified resolving in the merged main history before recording.)
+
+**P1 DoD status (plan §6/§7):**
+
+1. **ทุกช่องรายวันของ AppSheet มีทางเข้าใน ENV ✓** — บ่อบำบัด (`wastewater.reading` + views/forms) และ น้ำประปา (`water_supply.daily_check` + chain) ครบทั้งสอง surface.
+2. **สูตร parity 100% ≥ 98% ✓** — 45/45 executable fixture cases, 9 divergent all corrected-expectation with notes.
+3. **เจ้าของลองบันทึกจริง 1 สัปดาห์คู่ขนาน = PENDING OWNER ACTION** — the remaining DoD item, recorded as the frontier's HUMAN GATE: **เชิญเจ้าของเริ่ม dual-run บันทึกคู่ขนาน AppSheet+ENV ตั้งแต่บัดนี้ได้** (ทั้งสองระบบพร้อมใช้คู่ขนานแล้วตั้งแต่ v1.4.1 — ทุกช่องของ AppSheet มีทางเข้าใน ENV และสูตรตรงตาม fixture แล้ว).
+
+### P3 ledger (carried; none repaired silently in this closeout)
+
+1. **ES-04 wording** (D5 P3): the estimate-family fixture ES-04's wording needs tightening (ref-range/expectation phrasing) — future fixture-doc pass.
+2. **CH-01 ref range off-by-one** (D5 P3): the CH-01 fixture's reference-line citation is off by one line — future fixture-doc pass; both are citation/wording quality items, not computation defects (D5 hand-computed the values themselves as correct).
+
+Plus the standing ledger carried forward: the enum-mirror create-path sync gap
+(candidate: fold into the fn_create_reading fix lane), the P1.3 NULL-guard
+multi-location follow-up (REQUIRED before any second-location onboarding), the
+P1.001 owner-gated VALIDATE CONSTRAINT follow-up, the personnel C8 proposal
+(pending owner decision), the P1.6 P3s (404-classifier wording — the
+specific-notice branch is now dead-but-honest with the façade live;
+year-scoped 12-month grid), the P1.2 D5 P3s (RED-era file provenance;
+row-based streak dup-date note; append-only/btree_gist hardening; redundant
+rollback DELETE).
+
+### Frontier recorded at closeout
+
+NO active claim. **BOTH options recorded honestly** — the natural pause point
+is exactly here (Phase 1 complete + the dual-run invitation open):
+(a) **continue Phase 2** (ถังดับเพลิง/ไฟฉุกเฉิน/coliform — 6 lanes) per the
+owner standing instruction ต่อยาวๆ ตามแผนและ roadmap ที่วางไว้ — each lane
+requires its own NEW reviewed claim transition; or (b) **pause at the Phase 1
+boundary** and resume Phase 2 on the owner's dual-run signal. Neither option
+self-executes from this CLOSED record. Standing: hooks #155
+approved-not-started (owner-manual, not agent-actionable), #156 open
+(owner-manual), Building WAITING_EXTERNAL, Phase 4 authorized awaiting Phase
+reach (owner decisions OPEN per plan §5.3/§8 risk row 4).
+
+### Honest notes
+
+- Merge executed by the authorized reviewer per the STOP-at-REVIEW-REQUESTED
+  protocol; this closeout is a separate docs-only transition and likewise
+  stops at REVIEW_REQUESTED (implementer never merges — the closeout author
+  is not the merger).
+- All receipts (PR states, merge SHAs + parents, review comment IDs, trail
+  ID, Pages run, tag peel, live markers, checker, the 14 lane SHAs) were
+  verified live before any text was written; no receipt is copied from chat
+  memory.
+- The GitHub Releases API has no `v1.4.1` release object (404) — consistent
+  with the house convention: the version release surface is the
+  package.json bump + พ.ศ. CHANGELOG entry + annotated tag at the deployed
+  merge SHA + live-marker verification (same as v1.2.0/v1.3.0/v1.4.0; no
+  GitHub Release object was created for any of them).
+- The worktree `_worktrees/env-parity-p1-007` is preserved clean at the
+  delivered head (fully merged via PR #202). Scope lock released at
+  generation 1; CLOSED confers no fresh mutation authority; all other work
+  still requires a NEW claim transition.
