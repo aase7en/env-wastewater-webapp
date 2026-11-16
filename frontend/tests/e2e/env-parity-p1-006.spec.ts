@@ -16,7 +16,7 @@
  * (spec-missing chain row) — pinned expectations:
  *   บ่อบำบัด: มีบันทึก 2 / ไม่มีบันทึก 5 · ไฟฟ้า 120+80=200 (boundary NULL
  *   excluded + counted) · น้ำเข้า 40+50=90 (เฉลี่ย 45 จาก 2 วัน) · คลอรีนที่ใช้ 5 ·
- *   คลอรีนใช้จริง 2.5 · W/V ลิตร = 2.5×1.2 = 3 (ref 1949) · ตะกอน 30+12=42 ·
+ *   คลอรีนใช้จริง 2.5 · W/V ลิตร = 2.5×1.2 = 3 (ref 1949) · ตะกอนรวม 30 ·
  *   ปริมาณสูบ 20+22=42 (ค่าประมาณจากสเปก)
  *   น้ำประปา: มีบันทึก 1 / ไม่มีบันทึก 6 · น้ำเข้า 45 · คลอรีนจริง 0.5 ·
  *   Kg คลอรีน = 0.5×1.2 = 0.6 (ref 2849) · ไฟฟ้า 14.8 (ค่าประมาณจากสเปก) ·
@@ -47,7 +47,7 @@ const READING_ROWS = [
   {
     id: "r2",
     reading_date: "2026-11-04",
-    do_aeration: null,
+    do_aeration: 5,
     do_sedimentation: null,
     do_before_discharge: null,
     ph: null,
@@ -167,11 +167,12 @@ async function mockReportRest(page: import("@playwright/test").Page) {
   await page.route("**/rest/v1/v_overview_carbon**", async (route) => {
     await route.fulfill({ status: 200, contentType: "application/json", body: JSON.stringify(CARBON_ROWS) });
   });
-  // No-durable-write guard: record any non-GET REST call this page attempts
-  // (GETs fall through to the specific mocks / the auth fixture above).
+  // No-durable-write guard: record WRITE-method REST calls this page
+  // attempts (POST/PATCH/PUT/DELETE mutate; HEAD/GET are read-only).
   await page.route("**/rest/v1/**", async (route) => {
-    if (route.request().method() !== "GET") {
-      writes.push(route.request().method());
+    const method = route.request().method();
+    if (method === "POST" || method === "PATCH" || method === "PUT" || method === "DELETE") {
+      writes.push(method);
       await route.fulfill({ status: 200, contentType: "application/json", body: "[]" });
       return;
     }
@@ -207,7 +208,7 @@ test.describe("date-range summary generation", () => {
     await expect(page.getByTestId("report-chlorine-total")).toContainText("5"); // คลอรีนน้ำ ที่ใช้
     await expect(page.getByTestId("report-chlorine-real-total")).toContainText("2.5"); // useage_Chlorine
     await expect(page.getByTestId("report-chlorine-litter")).toContainText("3"); // ×1.2 (ref 1949)
-    await expect(page.getByTestId("report-sludge-total")).toContainText("42"); // 30+12
+    await expect(page.getByTestId("report-sludge-total")).toContainText("30"); // recorded sludge (r1)
     await expect(page.getByTestId("report-pump-volume")).toContainText("42"); // spec-driven
     await expect(page.getByTestId("report-pump-volume")).toContainText("ค่าประมาณจากสเปก");
   });

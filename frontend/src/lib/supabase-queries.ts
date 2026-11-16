@@ -326,6 +326,115 @@ export async function createEquipmentSpec(payload: EquipmentSpecInsert): Promise
   return data as EquipmentSpec;
 }
 
+// ─── P1.6 report reads (date-range summary, /reports) ───────────────────
+// ENV-PARITY-P1-006 (D1-2 additive section — the P1.4 precedent). The
+// aggregation itself is pure client-side (lib/report-summary.ts, D1-1);
+// these fetchers only range-fetch the EXISTING views' rows, inclusive both
+// endpoints per the AppSheet range predicate (ref 1668–1675:
+// [วันที่ บันทึก] >= Start AND <= End). water-supply.ts stays byte-untouched
+// (P1.5 surface); hooks.ts untouched.
+
+import type {
+  ReportReadingRow,
+  ReportMeterChainRow,
+  ReportCriticalFlagRow,
+  ReportWaterChainRow,
+} from "./report-summary";
+
+/**
+ * Per-day recorded wastewater rows for the range — v_reading_with_computed
+ * (the house detail view; r.* carries DO-1/2/3, pH, TDS-1/2, SV30, FreeCl,
+ * wastewater_in, chlorine_used, excess_sludge_removed individually, which
+ * v_dashboard_14day does not expose). Read-only.
+ */
+export async function fetchReadingDetailRange(
+  startISO: string,
+  endISO: string,
+): Promise<ReportReadingRow[]> {
+  const { data, error } = await supabase
+    .from("v_reading_with_computed")
+    .select(
+      "id, reading_date, do_aeration, do_sedimentation, do_before_discharge, ph, free_chlorine, tds_aeration, tds_before_discharge, sv30, wastewater_in, chlorine_used, chlorine_mix_ratio, excess_sludge_removed",
+    )
+    .gte("reading_date", startISO)
+    .lte("reading_date", endISO)
+    .order("reading_date", { ascending: true });
+  if (error) throw new Error(error.message);
+  return (data ?? []) as ReportReadingRow[];
+}
+
+/**
+ * Meter-chain rows for the range — v_reading_meter_chain (public
+ * security_invoker façade, P1.4). View-computed deltas/volumes/real-chlorine
+ * only; the report never re-derives them.
+ */
+export async function fetchMeterChainRange(
+  startISO: string,
+  endISO: string,
+): Promise<ReportMeterChainRow[]> {
+  const { data, error } = await supabase
+    .from("v_reading_meter_chain")
+    .select(
+      "id, reading_date, delta_kwh, pump1_m3, pump2_m3, chlorine_used_real, meter_boundary_flag, meter_boundary_reason, spec_missing, spec_missing_kinds",
+    )
+    .gte("reading_date", startISO)
+    .lte("reading_date", endISO)
+    .order("reading_date", { ascending: true });
+  if (error) throw new Error(error.message);
+  return (data ?? []) as ReportMeterChainRow[];
+}
+
+/**
+ * Critical-flag rows for the range — wastewater.v_reading_critical_flags
+ * (P1.3 computed view; WO §2.4-4: threshold counts come from THIS view
+ * only, never threshold_alert, never client-side re-derivation).
+ *
+ * RECORDED DEVIATION D1-5 (reviewer adjudicates): this view has NO public
+ * PostgREST façade yet — unlike its siblings (public.v_dashboard_14day,
+ * public.v_reading_meter_chain, public.v_daily_check_chain, all created by
+ * their own lanes as `public.*` security_invoker façades; PostgREST serves
+ * public only). Until the adjudicated façade amendment lands, this fetch
+ * fails at runtime and the report renders an honest "not available" notice
+ * — it never silently substitutes another surface.
+ */
+export async function fetchCriticalFlagsRange(
+  startISO: string,
+  endISO: string,
+): Promise<ReportCriticalFlagRow[]> {
+  const { data, error } = await supabase
+    .from("v_reading_critical_flags")
+    .select(
+      "id, reading_date, critical_do1, critical_do2, critical_do3, critical_free_chlorine_low, critical_free_chlorine_high, critical_tds2, critical_ph, immediate_sv30, immediate_wastewater_in",
+    )
+    .gte("reading_date", startISO)
+    .lte("reading_date", endISO)
+    .order("reading_date", { ascending: true });
+  if (error) throw new Error(error.message);
+  return (data ?? []) as ReportCriticalFlagRow[];
+}
+
+/**
+ * น้ำประปา chain rows for the range — public.v_daily_check_chain (P1.5
+ * security_invoker façade). Read-only (WATER_SUPPLY_CHAIN_TABLE constant
+ * lives in water-supply.ts, which this lane must not touch — the same
+ * literal table name is pinned here with the cross-reference note).
+ */
+export async function fetchWaterSupplyChainRange(
+  startISO: string,
+  endISO: string,
+): Promise<ReportWaterChainRow[]> {
+  const { data, error } = await supabase
+    .from("v_daily_check_chain")
+    .select(
+      "id, check_date, hour_work, water_in, water_in_estimate, chlorine_usage_realy, energy_use_estimate, hour_boundary_flag, spec_missing, spec_missing_kinds",
+    )
+    .gte("check_date", startISO)
+    .lte("check_date", endISO)
+    .order("check_date", { ascending: true });
+  if (error) throw new Error(error.message);
+  return (data ?? []) as ReportWaterChainRow[];
+}
+
 // ─── Write paths ────────────────────────────────────────────────────────
 
 /** Create a new reading. Replaces /api/readings POST.
