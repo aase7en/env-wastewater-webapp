@@ -109,4 +109,46 @@ unknown ≠ 0 (ห้ามแทนค่าศูนย์ — missing spec/fl
 
 ## 9. D-phase log (implementation lane appends here)
 
-(appended by the implementing lane — RED/GREEN evidence, preflight/apply receipts, battery results, deviations)
+### D2 — RED-first receipt (2026-11-16, commit `5906665`, base 049b097 = origin/main)
+
+| Suite | Result |
+|---|---|
+| Unit `frontend/src/lib/water-supply-parity.test.ts` | 1 suite FAILED to collect — `Cannot find module './water-supply-parity'` — 0 tests collected (truthful RED at import) |
+| E2E `frontend/tests/e2e/env-parity-p1-005.spec.ts` | **10 failed / 1 passed** (11 total) — the 1 pass is the empty-chain absence test (derived-card count-0 on both sides) — a VACUOUS RED pin, recorded honestly |
+
+RED-era files committed (P1.2 D5 P3 precedent). Two pre-GREEN regex corrections in the unit test (recorded, no assertion weakening — the file still failed at import): the spec-join DDL regexes made alias-neutral (`es.valid_from <= \w+\.check_date`).
+
+### D3 — implement + apply (2026-11-16, commits `846bf1b` feat + `43aaacd` positional-contract fix)
+
+Implementation per §3. Migration uses the WO-pinned name `20261116000002_parity_p1_005_water_supply_usage.sql` (sequential after P1.4's `20261116000001`; the transition instruction's `20261116020000_parity_p1_005.sql` name is superseded by this WO's pinned mutable-scope name — recorded, not silent).
+
+Preflight (read-only, ENV_DB `gllqtbyofrcjzmbnfoeh` via Management API): both views absent `[]` ✓ · usage columns absent `[]` ✓ · live daily_check column-shape pin = exactly the 15 snapshot columns ✓ · row count 0 (data-untouched baseline) ✓ · no migration-history collision (`schema_migrations` tip `20260803051753` — the house applies via the Management API, not the CLI history) ✓ · spec seeds confirmed: `pump_groundwater` energy 3.7 (NO flow) + `chlorine_mix_groundwater` 1:9 @ `DATE '2024-01-09'` ✓ · `public.daily_check` façade exists + RLS `daily_check_authenticated_rw (ALL)` untouched ✓ · zero-DML grep on the file: 0 hits ✓.
+
+Apply: `scripts/apply_migration_api.py` → **14/14 statements OK, 0 FAIL**.
+
+Post-verify (live): the 4 new columns NULLable with `column_default = NULL`; table totals 19 columns (15 pre-existing unchanged) ✓ · CHECK `ck_daily_check_activity_values` live with the two verbatim values; violation probe (invalid activity) → `23514` constraint error, rolled back ✓ · both views present; `public.v_daily_check_chain` carries `security_invoker=on`; owner-path queryable ✓ · semantic probe inside a ROLLED-BACK transaction (net zero writes — the P1.2 fixture precedent): first row prev NULL + `hour_boundary_flag` true + reason `hour: no previous reading`; delta row hour_work 4 + energy_use_estimate 14.8 (4 × 3.7 spec-at-date) + chlorine_usage 5 → realy/concentrated 0.5 (= 5 ÷ (1+9) derived from the mix spec parts); reset row 10→6 hour_work NULL + boundary flag + `hour: delta <= 0 (meter reset/swap suspected)` + energy NULL (never 0/negative); `water_in_estimate` NULL on every row (no flow seeded — D1-5 honest unknown) with `spec_missing` flagged `pump_groundwater`; the spec join resolves the 2024-01-09 seeds on every row ✓ · anon PostgREST probe on the new façade: **401 fail-closed** ✓ · row count 0 before/after probes — data untouched ✓.
+
+Privilege note (recorded, not a deviation): `authenticated` shows project-default ALL privileges (Supabase-wide default) — identical on every pre-existing façade; the view itself reports `is_updatable NO / is_insertable_into NO` (window view — read-only by construction, the same P1.4 note), and the migration's explicit `GRANT SELECT` is the binding grant.
+
+Fixups recorded: (1) five e2e tests initially used the plain `page` fixture → login bounce; corrected to the house `authed` fixture (no assertion change). (2) The pre-existing ENV-MOBILE-003 suite pins POSITIONAL input indices of the form card — the usage inputs moved BELOW the quality grid so the unowned suite passes byte-identically (the activity selector is a `<select>`, not an `<input>` — positions stable; commit `43aaacd`); no out-of-scope file touched.
+
+### D4 — battery at final head `43aaacd` (2026-11-16)
+
+| Gate | Result |
+|---|---|
+| vitest FULL | 34 files — **578 passed / 1 skipped** (designed skipIf) — incl. 38 new parity unit tests |
+| `tsc -b` | clean |
+| oxlint | exit 0 — 18 warnings, ALL pre-existing files, none in changed/new files |
+| Playwright FULL `workers=1` | **235 passed / 0 failed** (5.4m) — incl. the 11 new parity e2e + the 12-test ENV-MOBILE-003 suite green |
+| guard suite | **344 passed + 450 subtests, OK** |
+| runtime suite | **62 passed + 32 subtests, OK** |
+| `check_release_version.py --tag v1.3.0` | OK (v1.3.0 ↔ CHANGELOG entry) |
+| `git diff --check` | clean |
+| validate-registry | `{ok: true, claims: 30, BOOTSTRAP_CONTROL, hash 5791ec2f…}` — CURRENT-WORK.md byte-identical to base (registry/status flip belongs to the closeout transition, house precedent) |
+| diff vs main | 8 code files (+2 docs in the docs commit) — all ⊆ §5 mutable scope |
+
+Honesty notes: (1) Playwright ran `workers=1` WITHOUT the CI=1 retry profile (recorded). (2) Lane-worktree machine-local gitignored setup: `frontend/.env` copied from the canonical checkout; repo-root `.env` stub created (`__LOAD_FROM_DRIVE__=true` — one line, no secrets); `A_WIKI_DRIVE_PATH` exported per-invocation for the scripts; `npm ci` on Node 24/npm 11 (the documented CI-1 root cause — Node 22's npm 10 fails `npm ci` with "Missing: typescript@5.9.3"); `package-lock.json` diff clean.
+
+### Status
+
+**IMPLEMENTATION DELIVERED — STOP at REVIEW_REQUESTED.** Implementer never merges. D5 fresh-GLM independent review at the exact frozen head (Terra cross-model eligible after 2026-11-20 per the P1.2 D1 receipt — never a silent downgrade).
