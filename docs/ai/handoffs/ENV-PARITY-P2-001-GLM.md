@@ -38,3 +38,70 @@ Mutable = 5 files: the ONE migration, the ONE test script, this handoff, the WO,
 ## 4. Single next safe action
 
 After this claim transition is independently reviewed (R2 floor: fresh GLM-5.3 MAX) and merged: activate the implementation worktree `_worktrees/env-parity-p2-001` on the merged base (freshness gate), execute D2 RED → D3 apply (row counts in receipts) → D4 battery → D5 fresh-GLM — and STOP at REVIEW_REQUESTED; the implementing agent never merges.
+
+---
+
+## 5. D2/D3/D4 receipts (implementation lane, 2026-11-16 — worktree `_worktrees/env-parity-p2-001`, branch `feat/env-parity-p2-001`)
+
+### 5.1 D1 re-fetch obligation (WO §2.1)
+
+The instruction's four dead Drive IDs were NOT retried blindly. The substitution source was re-verified: workbook `1iqSxixJxPApUOYNFFvw2cgH4zD7lPcC_tPzNs2QePAw` tab `Emergency light`, snapshot `/tmp/env-p2-001-sources/sheet-fire-inspection.csv` (48 data rows present, headers `ERL_ID,location,Pic,QR,Receive_date,location_floor,Providers`). The extinguisher master remains unfetchable — SOURCE_UNAVAILABLE stands; nothing reconstructed. Zero Drive writes.
+
+### 5.2 Count reconciliation (WO §5 — the before/after table)
+
+| table / sheet | sheet data rows | parseable | seeded (this lane) | skipped (reason) |
+|---|---|---|---|---|
+| Emergency light (master) | 48 (IDs 001–049, source gap 044) | 48 (all dates `5/6/2568` → `2025-06-05`; floors {1:28, 2:18, 3:2}; 38 NULL providers; 8 NULL pics) | **48** (live `count(*)` = 48 post-apply) | 0 |
+| ข้อมูลถังดับเพลิง (master) | SOURCE UNAVAILABLE (0 fetchable) | 0 | **0** (live `count(*)` = 0) | whole table: `SOURCE_UNAVAILABLE` reconciliation + commented activation template in the migration (§6) |
+| ตรวจสอบถัง (inspection) | 858 | — | **0 — SHAPE ONLY, P2.2 scope** | out of lane scope |
+| Check (inspection) | 332 | — | **0 — SHAPE ONLY, P2.3 scope** | out of lane scope |
+
+### 5.3 D2 RED (commit `bd7cfe2`) — TRUTHFUL pre-apply outcome
+
+Command: `A_WIKI_DRIVE_PATH=<drive> uv run --with pytest python -m pytest scripts/test_parity_p2_001_asset_masters.py -q`
+Result: **17 failed / 3 passed** (live ENV_DB, tables absent).
+- All 17 failures carry the true reason: `relation "safety.emergency_light" does not exist` (or fire_extinguisher / policy probes).
+- The 3 passes are honestly classified: `test_no_anon_policies` + `test_no_defaults_on_floor_and_dates` = vacuous empty-result probes on absent tables (they become meaningful post-apply); `test_preexisting_safety_table_untouched` = genuine pre+post pass (monthly_check).
+- `test_seed_block_reapply_is_noop` failed at its CANARY (tables absent) → the seed batch was never sent pre-apply — zero-write risk avoided (P1.3 house method).
+- Zero durable writes: every group is read-only; the only write-capable probe (idempotency re-send) is canary-gated + rollback-smoked.
+
+### 5.4 D3 preflight (verified live immediately before apply)
+
+- `safety.emergency_light` / `safety.fire_extinguisher` → `to_regclass` NULL (absent) ✓
+- target policies = 0 ✓ · `safety` schema PRE-EXISTING (verified: it hosts the garbage/safety-domain `safety.monthly_check`, owner postgres, RLS on, 1 ALL-authenticated policy; schema ACL = postgres USAGE+CREATE, authenticated USAGE — identical shape to `water_supply`). The migration's `CREATE SCHEMA IF NOT EXISTS safety` + `GRANT USAGE … TO authenticated` are therefore verified NO-OPs on ENV_DB (and still create the schema on fresh environments, D1-5 as adjudicated). monthly_check untouched throughout (policy count 1 pre/post).
+- Baseline counters: `wastewater.reading` 907 / `core.personnel` 9 / `core.equipment_spec` 4 ✓ (re-verified unchanged post-apply).
+
+### 5.5 D3 apply + post-verify
+
+- Apply: `uv run --with httpx python scripts/apply_migration_api.py supabase/migrations/20261116000004_parity_p2_001.sql` → **73 statements → 73 OK / 0 FAIL** (1 schema + 1 grant + 2 tables + 2 alter-RLS + 8 drop-policy + 8 create-policy + 2 table-grants + 48 guarded seeds + 1 notify).
+- Post-verify (live): counts **48 / 0** ✓; `pg_policies` = exactly the 8 pinned shapes (`*_read` SELECT using `core.fn_is_staff_or_admin()`; `*_insert_admin` / `*_update_admin` / `*_delete_admin` on `core.fn_is_admin()`; UPDATE carries USING+WITH CHECK) ✓; 0 anon policies ✓; `relrowsecurity` true ×2 ✓.
+- **Byte-exact spot-checks vs the saved CSV** (rows `002`, `018`, `032` — including the mandated 032-trailing-space + a NULL-provider row class): DB tuple (location, pic_path, receive_date, location_floor, providers) == CSV bytes for all 3; `repr(location[032]) = 'OPD หัตการ เบอร์7 '` (trailing space verbatim). Row `018` pins the NULL-pic/floor-3 class, `002` the populated-provider class.
+- RLS anon fail-closed: `GET /rest/v1/emergency_light` (anon) → **404 PGRST205** (not in exposed `public`); `Accept-Profile: safety` → **406 PGRST106** (only public/graphql_public exposed) — plus 0 anon policies at the RLS layer. No REST façade in this lane (P2.2 decides).
+- Seed VALUES were generated PROGRAMMATICALLY from the snapshot CSV by a throwaway generator (parse rules: blanks→NULL, พ.ศ. −543, verbatim whitespace, QR-derived-from-id asserted on all 48 rows and NOT stored; id gap 044 asserted) — never hand-typed; generator cited here per the dispatch and NOT committed (unclaimed file).
+
+### 5.6 D2 GREEN (post-apply)
+
+Same suite: **20 passed / 0 failed**. En route, 3 TEST-HARNESS scope fixes were needed (recorded in the D3 commit): `test_primary_keys` / `test_policy_shapes` / `test_no_defaults_on_floor_and_dates` had initially scoped queries to the whole `safety` schema and leaked into the pre-existing `monthly_check` (false "unexpected policy/PK" + false DEFAULT rows). Fixes = table-scoped filters only; **RED meaning unchanged** (they failed pre-apply on the true absent-object reason; the vacuous-pass classification of the two empty-probe tests is unchanged). No assertion weakened.
+
+### 5.7 D4 battery (at the docs head)
+
+| check | result |
+|---|---|
+| vitest FULL | **630 passed / 1 designed skip (631)** — after the gitignored `frontend/.env` bring-up (see deviations) |
+| `tsc -b` | exit 0 |
+| oxlint | exit 0 — **18 pre-existing warnings** (exact baseline), 0 errors |
+| Playwright FULL workers=1 | **248 passed (5.7m)** |
+| guard | **344 passed + 450 subtests** |
+| runtime | **62 passed + 32 subtests** |
+| release checker | `RELEASE VERSION CHECK: OK (v1.4.1)` — **NO BUMP** (D1-8: DB-only lane, zero user-visible frontend surface; P1.3 precedent) |
+| `git diff --check` | clean |
+| scope | diff vs main = exactly the claimed files (migration + test + WO + handoff; no CURRENT-WORK.md) |
+
+### 5.8 Recorded deviations / honesty notes (reviewer)
+
+1. **Migration filename** — delivered `20261116000004_parity_p2_001.sql` per the coordinator dispatch (true next slot; "pin exact name in WO"); the claim-era draft name `20261117000000_parity_p2_001_asset_masters.sql` is superseded and the WO §4/§9/§10 now carry the delivered name (P1.7 coordinator-pin precedent). Rollback section in the migration header notes the `DROP SCHEMA safety` guard reality: on ENV_DB the schema is NOT empty (`monthly_check` pre-dates this lane) so a plain drop-schema rollback fails by design — the two `DROP TABLE`s are the precise rollback of this lane's objects.
+2. **Test-harness scope fixes** (§5.6) — 3 query-scope repairs, RED meaning unchanged, disclosed.
+3. **Worktree bring-up (machine-local, gitignored, never committed/printed):** `.env` stub (`__LOAD_FROM_DRIVE__=true`, documented chain) + `frontend/.env` from the approved Drive resolver (SUPABASE_URL / SUPABASE_ANON_KEY); first vitest run failed 3 files on the missing `frontend/.env` (module-load contract), re-run green after bring-up; npm ci used `--legacy-peer-deps` (house CI-1 note, lock byte-untouched — verified clean status).
+4. **pytest via `uv run --with pytest` / `--with httpx`** (P1.7 house command; pyproject/uv.lock untouched).
+5. **Committer identity auto-configured** (house precedent, recorded like prior lanes).
+6. D1-1 substitution workbook re-verified at lane start (§5.1); the extinguisher master's SOURCE_UNAVAILABLE ruling and the re-fetch obligation at P2.2 carry forward unchanged.
