@@ -49,4 +49,30 @@ unknown ≠ 0 (missing days counted + shown; real denominators; no-record months
 
 ## D-phase log (implementation lane appends below)
 
-(awaiting D2 RED receipt after the claim transition merges)
+### D2 — RED receipt (commit `1e64dee` @ `feat/env-parity-p1-006`, 16 พฤศจิกายน 2569)
+
+RED-first executed truthfully pre-implementation (D2 plan of D0 followed):
+
+- **Unit** `frontend/src/lib/report-summary.test.ts` (32 pins queued): vitest → **1 suite failed-to-collect, 0 tests** — `Cannot find module './report-summary'`. Pins: recorded sums (ref 1685–1779), real-denominator averages, inclusive calendar + missing-days (never 0-fill), VC_CY monthly NULL honesty, named ×1.2 constants w/ provenance comments (D1-3), P1.5 verbatim estimate flags, `v_reading_critical_flags` class counting, พ.ศ. verbatim (ref 1817–1844), CO2 no-recompute source-scan.
+- **E2E** `frontend/tests/e2e/env-parity-p1-006.spec.ts`: **11 failed / 1 passed** (`--workers=1`). The pass = existing PDF-template-chooser regression guard (proves harness + untouched flow); the 11 failures = the missing date-range section. All Supabase REST mocked via `page.route` (P1.5 house pattern) — **no durable writes anywhere**; the write-guard test records POST/PATCH/PUT/DELETE attempts (none occur).
+- RED-era files committed as the D2 commit (P1.2/P1.5 D5 precedent). Honesty records: (a) the lane worktree lacked the gitignored `frontend/.env`, blanking the app in e2e — fixed by copying the canonical checkout's `.env` (gitignored, never committed, public anon pair per `.env.example`); (b) a first e2e run hit a stale zombie vite server (leftover from a timed-out earlier invocation) — those artifacts were discarded as environment noise; recorded RED counts are from the clean environment; (c) RED-era spec corrections at D3 (disclosed, test-side only, none weaken assertions): sludge expectation aligned to the e2e fixture (42→30), r2 gained `do_aeration: 5` (2-day DO-1 denominator as the header describes), `getByRole` `exact: true` (substring collided with template-card footers), write-guard narrowed to write methods (supabase-js HEAD is read-only).
+
+### D3 — implementation receipt (commit `f2c0ca0`, 16 พฤศจิกายน 2569)
+
+- **D1-5 RECORDED DEVIATION (hard blocker; escalation valve invoked; coordinator ASK posted on the shared board before continuing)**: `v_reading_critical_flags` has NO public PostgREST façade — full evidence chain + minimal remedy shape in WO §9 D1-5. Disposition: view-name wiring + pure counting + honest "ยังไม่พร้อมใช้" UI notice; no silent switch, no `supabase/**` change, threshold_alert never read, flags never re-derived client-side. **Reviewer must adjudicate** (acceptance §8.1 threshold bullet = PARTIAL).
+- Pure lib `report-summary.ts`: per WO §3.2 — never a second write path, never re-derives view math, aggregates view-provided values only. Label notes for adjudication: meter-delta energy provenance follows the P1.4 precedent ("ไฟฟ้ารวม (จาก delta มิเตอร์)", not the spec flag — P1.4's form shows "ไฟฟ้าที่ใช้ (delta)" without "ค่าประมาณจากสเปก", since delta energy is derived-from-records, not spec-derived); range default = current month (transition instruction) with end=today, both editable (WO §3.4 said "defaults today" — the instruction's current-month reading was implemented; recorded).
+- Wiring detail for adjudication (recorded micro-note): quality rows fetch `v_reading_with_computed` (the house detail view `r.*`, fetchReading precedent) instead of WO §3.3's literal "v_dashboard_14day or v_reading_detail" — v_dashboard_14day lacks DO-1/2/3/TDS-1/2/SV30 individually and `v_reading_detail` is the legacy pre-P12 view that the P12 migration comment declares superseded.
+- UI: section added to `ReportsPage.tsx`; existing PDF flow byte-untouched; พ.ศ. everywhere; missing-day honesty rows; estimate flags; monthly grid "—" honesty + native Recharts bar; CO2 reuse; no PDF in the new section (Phase 4).
+- Version: package.json **1.4.0** (D1-4) + CHANGELOG Thai พ.ศ. entry (PR ref placeholder `#XXX` → fixed immediately after `gh pr create`, same PR).
+
+### D4 — battery at head `f2c0ca0` (16 พฤศจิกายน 2569)
+
+- vitest FULL **35 files: 610 passed / 1 skipped** (designed skipIf; incl. 32 new report-summary unit pins)
+- `tsc -b` exit 0 · oxlint exit 0 (**18 warnings — all pre-existing files**, same as the P1.5 baseline)
+- Playwright FULL `--workers=1`: **248 passed / 0 failed** (5.6m; incl. 12 new `env-parity-p1-006` e2e; local profile without CI retries — recorded)
+- guard suite **344 passed + 450 subtests** · runtime suite **62 passed + 32 subtests**
+- `check_release_version.py --tag v1.4.0` **OK** · `git diff --check` clean
+- Scope: diff vs main = exactly the §5 mutable-scope files (+ this WO + this handoff); **zero `supabase/**`** (D1-1 holds); CURRENT-WORK.md untouched (registry update = closeout transition, P1.5 precedent)
+- Fast checks re-verified after the docs-only commit that carries these receipts (guard + checker + `git diff --check`); vitest/Playwright counts carry over (docs-only delta).
+
+**STOP at REVIEW_REQUESTED — implementer never merges.** Next: D5 fresh-GLM independent review at the exact frozen head (Terra cross-model eligible after 2026-11-20 per the P1.2 D1 receipt — never a silent downgrade), with an independently executed battery rerun where possible; D1-5 and the three recorded label/range micro-notes require explicit reviewer adjudication.
