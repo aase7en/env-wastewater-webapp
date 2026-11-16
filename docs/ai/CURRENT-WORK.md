@@ -38,8 +38,8 @@ exact-SHA independent review and merge into `main`.
   "coordination_registry": {
     "version": 1,
     "enforcement_mode": "BOOTSTRAP_CONTROL",
-    "expected_policy_revision": "39402c9b3716fefd7ebb4d2bbea464efa77e25a4",
-    "expected_registry_hash": "5791ec2fd73e13f9985be6cb5ad0272754551871a4ad9c3b63e884c0368b54a5",
+    "expected_policy_revision": "12df32fa413f60866daf6401b1bbf5246d442b7a",
+    "expected_registry_hash": "258d4927d0193fa0df8cf6c3aeb49819ed26e2a882856777cfc39d2d3b37410b",
     "claims": [
       {
         "task_id": "ENV-COORD-002",
@@ -1507,6 +1507,77 @@ exact-SHA independent review and merge into `main`.
         "one_next_safe_action": "CLOSED by the docs-only closeout transition off main @ b4c31726dd07e993e3ad953bbefc71651154fad8 - this rewrite records the delivered chain. Full chain: claim transition PR #192 merged 01433f0274606f09ebfdc15e55931d2e8cfff026 (parents faf9c2f9641fbd7d666a2dba9e32d63d000e4518 + R2-APPROVED reviewed transition head 56fe1fa6ebcfe8c5652468e2b1d7268821449c8d; R2 APPROVED issuecomment-6903872629 with the BINDING admin-only RLS condition (INSERT with check (core.fn_is_admin()) - not staff-or-admin) + 2 P3; fence expected_policy_revision = faf9c2f9641fbd7d666a2dba9e32d63d000e4518 / expected_registry_hash = 0a616928cc9143d42c1057d8727ebec06316db846abc6473258d2c02ff75576e, registry block AT base, guard method scripts/env_coordination_guard.py:454-456, empirically cross-checked) -> implementation PR #193 merged b4c31726dd07e993e3ad953bbefc71651154fad8 (second parent = D5-APPROVED reviewed head 336e161f5a41b295dc5c12276b90aa84e70327eb; merge commit, no squash, expected-head discipline --match-head-commit, branch kept; merge stat = exactly 14 claimed files 2312+/79-; merge trail issuecomment-6905134357). D2 truthful RED 45c90af (form-parity unit suite failed-to-collect 0 tests - the module did not exist; e2e 11 failed / 0 passed; tsc 1 TS2307 error - all three reproduced by D5 at an isolated 45c90af checkout); D3 989dd3f (verbatim form parity labels/value lists/initial values CREATE-only; honest warning chips never 60/0/never the AppSheet prompt; >2.5 strictly-greater red+icon on the form AND the ReadingsListPage Cl cell; spec admin /admin/equipment-specs lazy + RequireAuth requireAdmin, append-only never-edit-history; pure lib form-parity.ts; supabase-queries/hooks wiring incl. the create-path status-mirror sync as a NON-FATAL honest warning - the fn_create_reading fixed-key-list gap stays a LEDGER follow-up) + migration 20261116000001_parity_p1_004_equipment_spec_admin.sql applied to ENV_DB via scripts/apply_migration_api.py 12/12 OK / 0 FAIL with preflight PASS (rls=true, policies=0, seeds=4, helpers exist, readings=907) + post-verify PASS (equipment_spec_insert_admin = INSERT with check (core.fn_is_admin()) per the R2 binding condition; equipment_spec_read = SELECT using (core.fn_is_staff_or_admin()); NO UPDATE/DELETE policies - append-only by grant shape; public security_invoker facades for core.equipment_spec + wastewater.v_reading_meter_chain per DEVIATION D1-7 ACCEPTED by D5 - PGRST106-anchored, security_invoker=on so caller RLS still gates every row, anon probes 401 fail-closed; data intact 4 seeds / 907 readings); D4 battery at the frozen head (vitest FULL 540 passed / 1 skipped, tsc -b clean, oxlint 0 errors, Playwright FULL workers=1 224/224, guard 344/344, runtime 62/62, checker OK v1.2.0, git diff --check clean); D5 fresh-GLM independent review APPROVED issuecomment-6905106639 at exact head 336e161f5a41b295dc5c12276b90aa84e70327eb (zero P1/P2; D1-3/D1-4/D1-7 adjudicated ACCEPTED; RED truthfulness reproduced; own battery matched D4; enum/boolean dual-write ruled NO conflict - one boolean source per field, mirrors derived by construction, the brief create->sync window surfaced honestly; 3 informational P3 carried to the LEDGER: fetchMeterChainBefore .lt strictly-before same-day edge may over-warn the chip; apply evidence implementer-reported on the implementer machine - D5 consistency-checked the 12-statement arithmetic + policy shapes vs migration text and could not live-probe ENV_DB, re-confirm live shapes if any future lane touches core.equipment_spec policies; facade views snapshot select * at creation until the view is recreated). Release: v1.2.0 MINOR (frontend/package.json 1.1.0->1.2.0 + Thai พ.ศ. CHANGELOG entry); Pages run 43788870487 SUCCESS @ b4c3172; live markers verified on the deployed bundle (1.2.0 + ยังไม่มีบันทึกน้ำประปาของวัน + ยังไม่มีมิเตอร์สูบ + ตั้งค่าสเปกอุปกรณ์ + /admin/equipment-specs route); annotated tag v1.2.0 dereferences b4c3172; check_release_version.py exit 0. The frontier after this closeout merges: the next UNGATED parity lane is Phase 1 lane P1.5 น้ำประปา (water_supply.daily_check schema/form consuming ×3.7/÷10 - constants owner-confirmed A2/A3 and the groundwater seeds already in core.equipment_spec; needs its own NEW reviewed claim transition), then P1.6 (reports) and P1.7 (fixtures). Follow-up ledger carried: the enum-mirror create-path sync gap (candidate: fold the mirrors into the fn_create_reading fix lane), the 3 D5 informational P3s above, the P1.3 NULL-guard multi-location follow-up (REQUIRED before any second-location onboarding), the P1.001 owner-gated VALIDATE CONSTRAINT follow-up, the personnel proposal pending (C8). Standing: hooks #155 approved-not-started (owner-manual, not agent-actionable), #156 open (owner-manual), Building WAITING_EXTERNAL, P4 authorized awaiting Phase reach. All other work still requires a NEW claim transition; no closed lane confers execution authority."
       },
       {
+        "task_id": "ENV-PARITY-P1-006",
+        "claim_id": "ENV-PARITY-P1-006-C1",
+        "claim_generation": 1,
+        "status": "CLAIMED",
+        "owner_role": "product_implementation",
+        "agent_model": "GLM-5.3 MAX (Track-Z: date-range summary report — client-side aggregation over EXISTING views, charts via EXISTING house Recharts vocabulary — no new visual language, genuinely new chart design parks for Track F per the routing record)",
+        "execution_holder_id": "kilo-env-parity-p1-006-g1-primary",
+        "worktree": "_worktrees/env-parity-p1-006",
+        "branch": "docs/env-parity-p1-006-claim",
+        "base_sha": "12df32fa413f60866daf6401b1bbf5246d442b7a",
+        "mutable_scope": [
+          "frontend/src/pages/ReportsPage.tsx",
+          "frontend/src/lib/report-summary.ts",
+          "frontend/src/lib/report-summary.test.ts",
+          "frontend/src/lib/supabase-queries.ts",
+          "frontend/tests/e2e/env-parity-p1-006.spec.ts",
+          "CHANGELOG.md",
+          "frontend/package.json",
+          "docs/work-orders/ENV-PARITY-P1-006.md",
+          "docs/ai/handoffs/ENV-PARITY-P1-006-GLM.md",
+          "docs/ai/CURRENT-WORK.md"
+        ],
+        "forbidden_scope": [
+          "docs/ai/HANDOFF.md",
+          "AGENTS.md",
+          "docs/ai/architecture/ENV-COORDINATION-GUARD.md",
+          "scripts/env_coordination_guard.py",
+          "scripts/env_autonomy_runtime.py",
+          "docs/ai/APPSHEET-PARITY-PLAN.md",
+          "docs/ai/digital-twin/**",
+          ".github/**",
+          "data/**",
+          ".env",
+          ".kilo/**",
+          "supabase/**",
+          "NO migration exists in this lane - WO D1-1 pins CLIENT-SIDE aggregation from the EXISTING views; a summary SQL view would be an adjudicated scope amendment with the P1.4 D1-7 security_invoker facade, never a silent switch",
+          "wastewater.reading and all wastewater views (v_reading_meter_chain, v_reading_critical_flags, v_dashboard_14day, v_reading_detail, legacy v_reading_detail — READ-ONLY; P1.2/P1.3 delivered)",
+          "wastewater.threshold",
+          "wastewater.threshold_alert (flag counts come from the computed v_reading_critical_flags view only)",
+          "carbon schema views (READ-ONLY surfacing only - CO2 factor 0.4999 recomputation FORBIDDEN, plan line 38)",
+          "water_supply.daily_check + water_supply.v_daily_check_chain + its public facade (READ-ONLY — P1.5 delivered)",
+          "core.equipment_spec table/enum/seeds/policies (READ-ONLY — spec provenance surfaced, never changed; no new seeds)",
+          "delivered P1.2-P1.5 frontend surfaces READ-ONLY (the exact page/lib/test files are pinned in WO section 6: water-supply form+list+spec-admin pages, trends/carbon pages, water-supply and form-parity libs and tests, hooks, and the app entry - reused never edited; NO route change needed - the reports route already exists in the app entry line 232)",
+          "the existing ReportsPage PDF-template flow (ทส.1/ทส.2/ใบแจ้งซ่อม + lib/pdf.ts) byte-untouched",
+          "frontend/src/pages/FlowDiagramPage.tsx",
+          "frontend/src/components/flow/**",
+          "frontend/src/components/digital-twin/**",
+          "frontend/src/components/pfd/**",
+          "Digital Twin",
+          "CI",
+          "personnel pages",
+          "Phase 4 surfaces (PDF ทส.1/ทส.2 for the new report section per plan §6 P4.1, alert dispatcher, Telegram, scheduled reports)",
+          "any data backfill/write (the report is read-only; history backfill = Phase 5 per plan §7)"
+        ],
+        "work_order_path": "docs/work-orders/ENV-PARITY-P1-006.md",
+        "handoff_path": "docs/ai/handoffs/ENV-PARITY-P1-006-GLM.md",
+        "review_owner": "Claim transition: independent exact-SHA review per the owner routing policy - R2 floor: fresh GLM-5.3 MAX reviewer context; cross-model R3/D5 where admission allows (Terra eligible as cross-model reviewer after 2026-11-20 per the P1.2 D1 receipt - never a silent downgrade); never author-and-approve. Implementation PR: D5 fresh-GLM independent review at the exact frozen head with an independently executed battery rerun where possible. The AUTHORIZATION BASIS (owner standing instruction 2026-11-15/16 + owner parity authorization 2026-11-14 + plan §6 row P1.6 + plan §3 coverage row line 38 + plan §4 QuickChart→Recharts DIVERGE line 153 + delivered P1.2-P1.5 prerequisites at base + verbatim reference-doc 12 §3.7/§3.10/§5 ground truth) is an explicit adversarial check item - insufficient basis parks the claim unmerged. EXPLICIT adjudication items: WO D1-1 (NO migration - CLIENT-SIDE aggregation over the EXISTING views pinned, with the recorded rationale and the STOP-and-record escalation valve; supabase/** entirely forbidden for this claim), WO D1-2 (the wiring point is an additive 'P1.6 report reads' section in frontend/src/lib/supabase-queries.ts per the P1.4 precedent - water-supply.ts stays byte-identical; App.tsx NOT claimed, the /reports route exists at App.tsx:232), WO D1-3 (the two AppSheet-verbatim ×1.2 chlorine-litter factors ref 1949/2849 replicated as NAMED display constants with provenance, never silently folded into sums), WO D1-4 (release v1.4.0 MINOR - new user-visible report capability on /reports per the CHANGELOG criteria)",
+        "dependencies": [
+          "Owner standing Goal-mode instruction 2026-11-15/16 (ต่อยาวๆ ตามแผนและ roadmap ที่วางไว้)",
+          "Owner parity authorization 2026-11-14 producing docs/ai/APPSHEET-PARITY-PLAN.md; lane scope = §6 Phase 1 table row P1.6 bound exactly (รายงานสรุปช่วงวัน (ทดแทน Filter_Water/tap water_Filter ฝั่งตัวเลข — PDF อยู่ Phase 4) — surface /reports)",
+          "Plan §3 Filter_Water coverage row (line 38): ยอดรวมช่วงวัน = SQL views ครอบแล้ว, กราฟ 12 เดือน = Recharts ในเครื่องแทน, CO2 ×0.4999 = carbon.v_overview_carbon, ขาด = PDF ทส.1/ทส.2 (→ Phase 4 owner gate) — this lane delivers the missing in-app date-range NUMERIC report; plan §4 DIVERGE (line 153): QuickChart URL retired, native Recharts",
+          "Verbatim AppSheet ground truth BINDING (docs/ai/digital-twin/12-UTHAI-APPSHEET-DEFINITION-REFERENCE.md): §3.7 Filter_Water ref 1544-2383 (range TODAY inits 1632-1646; Sum_Energy/Sum_Water/Sum_waste_water/Sum_Chlorine/Sum_excess sludge/useage_Chlorine SUM(SELECT(range)) 1685-1779; W/V_Chlorine Litter = [useage_Chlorine]*1.2 ref 1944-1950; month_thai/year_thai(+543) 1817-1844; VC_CY_01..12 monthly energy sums with month-not-reached→null 1964-2126; VC_Chart_URL QuickChart 1952-1962) + §3.10 tap water_Filter ref 2708-2960 (Sum_water_in 2796-2810; Sum_Chlorine_use over Chlorine_usage_realy 2812-2826; Energy usage over Energy_use 2828-2842; Kg_chlorine = Sum_Chlorine_use*1.2 2844-2850; รายการตรวจสอบที่เรียงแล้ว ORDERBY date DESC 2852-2868) + §5 findings (5.1 TODAY defaults; 5.3 recorded-input honesty; 5.4 backward SUM/SELECT rollups = the VC_CY pattern)",
+          "Delivered prerequisites at base 12df32f (consumed READ-ONLY): P1.2 core.equipment_spec + wastewater.v_reading_meter_chain (LAG chain, delta≤0→NULL+meter_boundary_flag, spec-at-date pump1/pump2_m3, chlorine_used_real ÷SWITCH verbatim — PR #190); P1.3 wastewater.v_reading_critical_flags computed flag view (PR #187); P1.4 form parity + security_invoker façade PATTERN + supabase-queries.ts additive-reads precedent (PR #193, D1-7 ACCEPTED); P1.5 water_supply.v_daily_check_chain (energy_use_estimate/water_in_estimate/chlorine_usage_realy spec-derived + flags — PR #196, v1.3.0 LIVE)",
+          "House aggregation pattern precedent: fetchDashboardByMonth exact-range fetch over v_dashboard_14day (supabase-queries.ts:111-127) + the C3 cap-60-days fix (ReportsPage.tsx:53-56, 2026-08-03) — the client-side range-fetch → client-rollup shape this lane generalizes (WO D1-1)",
+          "Claim transition independently reviewed and merged to main before implementation mutation",
+          "Version v1.4.0 MINOR decided per the CHANGELOG criteria (ฟีเจอร์ใหม่ที่ใช้งานได้โดยไม่กระทบของเดิม: new user-visible date-range summary report on /reports — WO D1-4); package.json 1.3.0→1.4.0 + Thai พ.ศ. CHANGELOG entry in the implementation PR + annotated tag at the deployed merge SHA post-deploy"
+        ],
+        "last_checkpoint_pointer": "docs/ai/handoffs/ENV-PARITY-P1-006-GLM.md",
+        "one_next_safe_action": "CLAIMED at gen 1 — awaiting the independent exact-SHA review and merge of THIS docs-only transition (fence expected_policy_revision = 12df32fa413f60866daf6401b1bbf5246d442b7a / expected_registry_hash = 258d4927d0193fa0df8cf6c3aeb49819ed26e2a882856777cfc39d2d3b37410b, registry block AT base, guard method scripts/env_coordination_guard.py:454-456). After merge: D2 truthful RED (report-summary unit suite fails-to-collect — module absent; e2e fails on the absent report section) → D3 implement per WO §3 (NO migration — D1-1 client-side decision; pure lib report-summary.ts + additive supabase-queries.ts section + ReportsPage date-range section + e2e) → D4 FULL battery (vitest + tsc -b + lint + Playwright FULL workers=1 + guard + runtime + checker OK v1.4.0 + git diff --check + validate-registry) → D5 fresh-GLM independent review at the exact frozen head → STOP at REVIEW_REQUESTED; implementer never merges. NO PDF in this lane (Phase 4); supabase/** untouched (D1-1)."
+      },
+      {
         "task_id": "ENV-PARITY-P1-005",
         "claim_id": "ENV-PARITY-P1-005-C1",
         "claim_generation": 1,
@@ -1592,6 +1663,8 @@ exact-SHA independent review and merge into `main`.
 ```
 
 ## Active frontier - 2026-10-06
+
+- **`ENV-PARITY-P1-006` / CLAIMED / gen 1** — AppSheet parity Phase 1 lane **P1.6 รายงานสรุปช่วงวัน** (ทดแทน Filter_Water/tap water_Filter ฝั่งตัวเลข — PDF อยู่ Phase 4; plan §6 row P1.6, surface `/reports`): the date-range numeric summary report — ปริมาณน้ำเข้ารวม/เฉลี่ย, ไฟฟ้ารวม (จาก meter-chain deltas, flagged), ปริมาณสูบรวม (spec-driven, flagged), คลอรีนใช้จริงรวม, ค่าเฉลี่ยคุณภาพน้ำ (DO/pH/TDS/SV30/FreeCl, real denominators), จำนวนวันที่มี/ไม่มีบันทึก (honesty: missing days counted + shown, never 0), เดือน/ปี breakdowns (the AppSheet VC_CY_01..12 pattern → honest-NULL monthly/yearly rollups), threshold-hit counts (from `v_reading_critical_flags`), charts via the existing house Recharts vocabulary, พ.ศ. dates. Claim transition authored off base `12df32fa413f60866daf6401b1bbf5246d442b7a` (registry 30 claims, `ENV-PARITY-P1-005-C1` CLOSED) on `docs/env-parity-p1-006-claim` — **STOP at REVIEW_REQUESTED; implementer never merges**. WO D1 adjudication items: D1-1 NO migration (CLIENT-SIDE aggregation over the existing views pinned — house `fetchDashboardByMonth` precedent; supabase/** forbidden for this claim), D1-2 wiring = additive `supabase-queries.ts` section (P1.4 precedent; `water-supply.ts` byte-identical; no route change — `App.tsx:232`), D1-3 the AppSheet-verbatim ×1.2 chlorine-litter factors as named provenance constants, D1-4 v1.4.0 MINOR.
 
 - **`ENV-COORD-001` / CLOSED / PR #82** — Astra independently APPROVED exact architecture SHA `e5f6a419aa226151788763970e8c008f48d4a28d` with no blockers; PR #82 merged with expected-head protection as `6360e149f42c419a8d7f878f28fc439e0ef1f6cc`. Production activation is still blocked because coordination enforcement is not yet installed.
 - **ENV-COORD-002 / CLOSED (owner-authorized release) / BOOTSTRAP_CONTROL** — PR #89 merged as `839ff34185dff675a7bfd4adf6350d6b2c1e4eaa`. Claim ENV-COORD-002-C1, generation 1, released 2026-10-06 by the owner's explicit `AUTHORIZE_C1_RELEASE_WITH_DURABLE_LOSS_RISK_RECORD` decision recorded in this transition (PR #97): the implementation is fully merged (R17 head `297133f` ancestor of main), the worktree is clean, no holder process or Kilo session exists, and the §4.2B typed facts are permanently unproducible because the telemetry mechanism postdates the holder. Durable loss/risk record: `docs/work-orders/ENV-COORD-002-C1-RELEASE-RISK-RECORD.md` (merged via PR #96). Scope lock released; a stale writer gains no authority for fresh guard admissions; unenforced late writes (hooks unactivated, main unprotected) remain documented residual risk.
