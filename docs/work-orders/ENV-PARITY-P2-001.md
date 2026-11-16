@@ -1,7 +1,7 @@
 # Work Order — ENV-PARITY-P2-001 (Claim ENV-PARITY-P2-001-C1, gen 1)
 
-**Status: CLAIMED — docs-only claim transition; implementation NOT started.**
-**Branch:** `docs/env-parity-p2-001-claim` · **Base:** `71d3902682077078b9fa2ed6c94d8344d99fade7` (origin/main tip, clean/fetched/ff verified)
+**Status: DELIVERED — implementation complete, STOP at REVIEW_REQUESTED (PR: implementation lane, branch `feat/env-parity-p2-001`). Implementer never merges; reviewer owns approval + merge.**
+**Claim branch:** `docs/env-parity-p2-001-claim` · **Implementation base:** `d8974739815d9ba5a84e8ccad1cf6e6c8712ad5c` (PR #204 merge, origin/main tip, worktree fresh-verified)
 **Governance pattern:** PR #183–#201 claim-transition series (docs-only claim → reviewed merge → implementation lane → D5 → closeout).
 
 ## 0. Lane identity
@@ -75,7 +75,8 @@ Both tables live in a **NEW `safety` schema** (D1-5: `CREATE SCHEMA IF NOT EXIST
 
 ## 4. Seed plan (D3) — guarded, idempotent, honest
 
-- ONE migration `supabase/migrations/20261117000000_parity_p2_001_asset_masters.sql` (schema + RLS + seeds; header carries rollback SQL — `DROP TABLE` ×2, `DROP SCHEMA safety` guarded by an exists-subquery so it only drops when empty).
+- ONE migration `supabase/migrations/20261116000004_parity_p2_001.sql` (schema + RLS + seeds; header carries rollback SQL — `DROP TABLE` ×2, `DROP SCHEMA safety` guarded by an exists-subquery so it only drops when empty).
+  **FILENAME DEVIATION (recorded at implementation, D3):** this WO's claim-era draft pinned `20261117000000_parity_p2_001_asset_masters.sql`; the coordinator's implementation dispatch pins `20261116000004_parity_p2_001.sql` (true next sequential slot after `20261116000003`) and directs the exact name to be pinned here — the dispatch pin governs (P1.7 coordinator-pin precedent). All filename pointers in this WO now carry the delivered name.
 - Emergency-light seed: INSERT … SELECT per row **guarded `WHERE NOT EXISTS`** on `erl_id` — re-running the file is a no-op (idempotency is a D2 test group). `source_provenance = 'AppSheet Sheets export 2026-11-16'`. Blank cells → NULL **never 0/''**; พ.ศ. dates parsed per D1-4; `legacy_id` = sheet `ERL_ID`.
 - Fire-extinguisher seed: **ZERO rows** (§2.1). The migration carries a commented-out, shape-complete template + the reconciliation record so a later lane can activate it the moment the sheet is fetchable — with its own reviewed transition if that lane changes scope.
 - RLS (house convention, `core.fn_is_staff_or_admin()` / `core.fn_is_admin()` — shapes per `20261116000001:81-91`): SELECT using staff-or-admin; INSERT **with check (admin)**; UPDATE both using+with check (admin); DELETE using (admin). Masters are admin-managed EDITABLE reference data — unlike the append-only `core.equipment_spec`, UPDATE must exist because P2.2's expiry trigger updates `expiry_date` (D1-7). No anonymous access; no REST façade in this lane (P2.2 decides façades).
@@ -112,8 +113,15 @@ D1-1 the §2.1 source-ID deviation + fire-extinguisher seed-NOTHING ruling · D1
 
 ## 9. Scope
 
-**Mutable:** `supabase/migrations/20261117000000_parity_p2_001_asset_masters.sql` · `scripts/test_parity_p2_001_asset_masters.py` · `docs/work-orders/ENV-PARITY-P2-001.md` · `docs/ai/handoffs/ENV-PARITY-P2-001-GLM.md` · `docs/ai/CURRENT-WORK.md` (this transition + the later closeout only).
+**Mutable:** `supabase/migrations/20261116000004_parity_p2_001.sql` · `scripts/test_parity_p2_001_asset_masters.py` · `docs/work-orders/ENV-PARITY-P2-001.md` · `docs/ai/handoffs/ENV-PARITY-P2-001-GLM.md` · `docs/ai/CURRENT-WORK.md` (this transition + the later closeout only).
 
 **Forbidden:** everything else — ALL existing supabase/ files (47 migrations + config + seed stay untouched; the ONE authorized supabase write is the new migration file); inspection tables/flows (P2.2/P2.3); frontend/** (pages, components, lib, e2e specs); CI (`.github/**`); reference/plan docs (`docs/ai/APPSHEET-PARITY-PLAN.md`, `docs/ai/digital-twin/**`, `docs/ai/PROJECT-BRIEF.md`, ROADMAP, DEFECT-MEMORY, ENV-ENGINEERING-LOOP, HANDOFF.md, AGENTS.md); `data/**`; `.env`; Drive writes (the CSVs are read-only snapshots under /tmp); `wastewater.*` / `water_supply.*` / `carbon.*` / `core.*` / `food.*` schemas (TESTED-NOT-EDITED at most); Phase 4 surfaces; CHANGELOG/package.json (no release — D1-8).
 
 **STOP at REVIEW_REQUESTED — the implementing agent never merges its own PR.**
+
+## 10. D-phase execution log (implementation lane, 2026-11-16)
+
+- **D2 RED (commit `bd7cfe2`)** — `scripts/test_parity_p2_001_asset_masters.py`, live ENV_DB pre-apply: **17 failed / 3 passed** (the 3 passes = `test_no_anon_policies` + `test_no_defaults_on_floor_and_dates` [vacuous empty results on absent tables] + `test_preexisting_safety_table_untouched` [monthly_check genuinely intact]). Every failure's true reason = absent objects (`relation "safety.emergency_light" does not exist`). The idempotency test's canary gate held — seed batch never sent pre-apply (zero-write risk avoided). Zero durable writes.
+- **D3 (commit `d2bf762` + docs commit)** — preflight receipts: both tables absent, target policies 0, `safety` schema pre-existing with only `monthly_check` (garbage/safety domain; USAGE already granted to postgres+authenticated — the migration's `CREATE SCHEMA IF NOT EXISTS` + `GRANT USAGE` are verified no-ops there), baseline 907/9/4 intact. Applied via `scripts/apply_migration_api.py`: **73 statements → 73 OK / 0 FAIL**. Post-verify: counts **48 / 0**; 8 policies with pinned shapes (SELECT staff-or-admin, INSERT/UPDATE/DELETE admin) + 0 anon policies + RLS enabled ×2; byte-exact spot-checks vs the saved CSV for rows `002`, `018`, `032` (incl. the 032 trailing space) — all match; anon REST probes fail-closed (PGRST205 outside `public`, PGRST106 profile refusal); monthly_check + baseline untouched. Contract suite GREEN post-apply: **20 passed** (after 3 test-harness scope fixes — queries had leaked into the pre-existing `monthly_check`; RED meaning unchanged, recorded in the handoff).
+- **D4 battery at the docs head** — vitest FULL **630 passed / 1 designed skip (631)**; `tsc -b` exit 0; oxlint exit 0 (**18 pre-existing warnings**, baseline intact, 0 errors); Playwright FULL workers=1 **248 passed (5.7m)**; guard **344 passed + 450 subtests**; runtime **62 passed + 32 subtests**; release checker **OK (v1.4.1)** — **NO bump** per D1-8 (DB-only lane, no user-visible frontend surface; P1.3 precedent; reasoning recorded); `git diff --check` clean; diff vs main = exactly the claimed files.
+- **D1-1 re-fetch obligation honored at D2**: the instruction's dead Drive IDs were not retried blindly; the substitution workbook + CSV snapshot (§2) were re-verified as the seed source (snapshot bytes parsed programmatically; the D2 expectations table is generated, not hand-typed).
