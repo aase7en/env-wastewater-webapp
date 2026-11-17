@@ -1,0 +1,67 @@
+# Handoff — ENV-PARITY-P2-004-GLM (D0 — claim transition)
+
+Claim `ENV-PARITY-P2-004-C1` (gen 1, CLAIMED) — AppSheet parity Phase 2 lane P2.4: **Coliform ×3 (น้ำ/อาหาร/พนักงาน) — ขยาย `food.lab_test` (จุดเก็บ enum, ผู้เก็บ/ผู้รายงานแยก, FK อุปกรณ์→Items master เตรียม Phase 3, flow สองจังหวะ collect→result + suggested +1/+2 วัน)** (plan §6 row P2.4, line 234, verbatim). **Implementer never merges; stop at REVIEW_REQUESTED.**
+
+## 1. Authorization
+
+1. Owner standing Goal-mode instruction 2026-11-15/16 ("ต่อยาวๆ ตามแผนและ roadmap ที่วางไว้").
+2. Owner parity authorization 2026-11-14 → `docs/ai/APPSHEET-PARITY-PLAN.md`; lane bound to §6 Phase 2 row P2.4 (line 234) exactly.
+3. The P2.3 closeout frontier (PR #212 merged `e2e845f93e226c179b31987f9e843701ce09b9ed` = this transition's base): "Next lane: P2.4–P2.6 — coliform (3 lanes; source sheets coliform bac. ×4 tables per plan §6) — each needs its own NEW reviewed claim transition." This transition IS the P2.4 claim of that record.
+4. **Boundary decision D1-1 (decided AT claim, per the plan's own numbering):** the dispatch hypothesis "water only in P2.4; employee/food in P2.5/P2.6" contradicts the plan — its own rows assign P2.4 = Coliform ×3 via ONE shared `food.lab_test` extension, P2.5 = the รายงานสรุป lane (สรุป coliform numbers), P2.6 = tests + master seed + QR. The lane therefore covers the plan row as written: the shared schema + two-step flow + the three verbatim source vocabularies; the water emphasis of the dispatch is honored as the seed-deferral record (§2.2 — the only coliform history the dispatch named, and it is SOURCE_UNAVAILABLE).
+
+## 2. D0 scope discoveries (verified read-only 2026-11-17)
+
+### 2.1 Carried prerequisites
+
+- **`food.lab_test` is LIVE and generic** (§2.2 of the WO — 15 columns, RLS `lab_test_authenticated_rw` FOR ALL TO authenticated staff-or-admin, audit trigger, dormant reagent trigger, REST façade `public.lab_test` security_invoker, empty at last snapshot 0 rows). `/food` → `FoodPage.tsx` → `lib/food.ts` CRUD is the existing surface the two-step flow extends additively.
+- **P2.1/P2.3 conventions carry:** guarded-seed pattern (single transaction, `WHERE NOT EXISTS` canary — zero durable writes during RED), `legacy_id` + `source_provenance` traceability, personnel resolution UUID-or-NULL with DRIVE-SOURCED lookups only, camera-irrelevant (no QR in this lane), `scripts/apply_migration_api.py` + ENV_DB gate (PROJECT_REF `gllqtbyofrcjzmbnfoeh`), one-migration-per-lane.
+- **P2.3 D5 P1 lesson (recorded for the future coliform seed):** numeric-stored IDs break string probes — lookups ALWAYS type-coerce (the `coliform bac. Employee` `sample` refs and any future `ผู้เก็บ/ผู้รายงาน` seed resolution against Drive-sourced `Employee_id` values must normalize numeric vs text before comparing).
+
+### 2.2 The coliform history sheets — SOURCE_UNAVAILABLE (the locate receipt)
+
+The dispatch directed fetching `coliform bac._Water` per the P2.1 handoff D0 folder extraction. Executed READ-ONLY (ห้ามเขียน Drive — nothing written):
+
+- Parent folder `ActivatedSludge-29279640` `1HBhuEaBeQLz8jlj0VxPXvbM03It1bNre` re-enumerated (50 titles): **all 6 public spreadsheets tab-enumerated from full XLSX exports — ZERO coliform tabs** (pond 12 tabs / markad 6 / garden 4 / tool 1 / extinguisher 5 / light 4 — exact tab lists in WO §2.1). Subfolders (Content/_recoveryData/background/รูป/Send line notify_photo) hold PDF templates, images, one txt — no workbooks. The `"Appsheet"` item is a Google Apps Script, not a spreadsheet.
+- The AppSnapshot JSON (`1ymX1B45b6X5Ex_OzDJ_h6PAaYLtSxrw5`, 1,087,558 bytes, `/tmp/env-p2-004-snapshot.json`) carries the four coliform **definitions** (tableSettings `"Identifiers redacted": true` — no workbook IDs) and **no row data** (programmatic check: enum tokens only, no row arrays).
+- AppSheet's own image folders (`coliform bac. Employee_Images`, `coliform bac. Food._Images`) exist but no `coliform bac._Water_Images` (the Water table has no Image column — consistent with ref 12 §3.16) — and no coliform source workbook is shared.
+- **Verdict D1-3: seed NOTHING (0 rows); nothing reconstructed; the re-fetch obligation joins the extinguisher-master ledger entry (owner shares the coliform sheet(s), or an admin-UI entry path); the guarded seed design + `legacy_id`/`source_provenance` ship NOW so the deferred seed needs NO second migration.** The P2.1 extinguisher-master SOURCE_UNAVAILABLE precedent (0-row ship + durable obligation) governs. **This deviates from the dispatch's seed directive — recorded, not silently dropped.**
+
+### 2.3 Verbatim AppSheet ground truth (reference 12 READ-ONLY) — the binding pins
+
+- **§3.16 `coliform bac._Water`** (ref 3528-3601, 8 cols, key `Collect_Location`): `Collect_date` TODAY() · `Collect_Location` Enum Key Label {โรงครัว / ตู้กดน้ำ OPD / ตู้กดน้ำ IPD / ตู้กดน้ำปฐมภูมิ (ห้องฟัน)} · `Result_date` TODAY() · `Result_bac.` {Positive/Negative} · `อุปกรณ์` Ref→Items init `=aca317bf` · `ผู้รายงาน` Ref Valid If `ตำแหน่ง<>"นายแพทย์"…`. **NO result-step Show If, NO suggested dates, NO image column** — the water surface is genuinely collect+result-in-one in AppSheet; the two-step flow comes from the plan row and the Food/Employee tables; ENV renders water with the SAME two-step flow (the plan's single flow) but WITHOUT the +1/+2 suggestions (honest per-source parity — D1-7).
+- **§3.17 `coliform bac. Food.`** (ref 3603-3789, 11 cols): `sample` {ช้อนสั้น / ถาด / มือพี่กุ้ง / มือป้าอ้อ / มือแก๊ป}; `Result_date` init `=IF([Collect_date]>=NOW(),"",TODAY())` + **Suggested `=LIST(date([Collect_date]+1),date([Collect_date]+2))`** (ref 3654) + **Show If `=TODAY()>[Collect_date]`** (ref 3656-3658); `Result_bac.` {Positive/Negative/Positive ++/invalid} + same Show If; `ภาพผลการตรวจ` Image + same Show If; `ผู้เก็บตัวอย่าง` Ref SWITCH-init default READ_ONLY + Valid If (นักวิชาการสาธารณสุข, ไม่ลาออก); `ผู้รายงาน` Ref IF(TODAY()>[Collect_date],SWITCH…,"") + Valid If (นักวิชาการสาธารณสุข) + Show If; `อุปกรณ์` init `=aca317bf` Valid If OR(aca317bf, 2fe4aa7c); `อุปกรณ์ (List)` virtual OUT.
+- **§3.19 `coliform bac. Employee`** (ref 3792-3960, 10 cols): `sample` **Ref → ข้อมูลผู้ปฏิบัติงาน** Valid If `OR([ตำแหน่ง]="นักโภชนาการ",[ตำแหน่ง]="พนักงานประกอบอาหาร")` (the swab SUBJECT is a staff member — personnel-class); `Result_date` init `=IF([Collect_date]<=TODAY(),TODAY(),"")` + the same Suggested +1/+2 (ref 3848) + Show If; `อุปกรณ์` init `=2fe4aa7c`; `ผู้รายงาน`/`ผู้เก็บตัวอย่าง` same SWITCH family.
+- **§3.11 `coliform bac.`** (ref 2973-3060, 8 cols): the general table — `สานถานที่เก็บตัวอย่าง` {โรงครัว / บ่อบำบัด}; `ผู้รายงาน` Valid If `ตำแหน่ง<>"นายแพทย์"`; `อ11` = a static shared Drive image virtual (**OUT**); `Result` {Positive/Negative}.
+- **§3.37 `Filter_ColiformBac`** (ref 5523+, 8 cols): date-range report builder — **OUT** (numbers → P2.5; PDF → Phase 4).
+- **PII pin (ref 12 §11 + P2.3 R2/D5 precedent):** `Employee_id` IS the Thai national ID. `sample_person_id`/`collected_by_id`/`reporter_id` resolve **UUID-or-NULL, NEVER verbatim**; legacy TEXT columns exist for DRIVE-SOURCED unresolved values only; the future seed's resolution is a type-coerced lookup against Drive-sourced data, never repo data; 13-digit digit-run grep of the migration = 0 matches (suite pin).
+
+### 2.4 House facts verified (D0)
+
+- Baselines at base `e2e845f`: registry **35 claims** (validate-registry `ok:true`, registry_hash `12836f892420ddb1d16e712f0c42b5883b8ec4178ae821475c95213dc62a9f90` — the fence value), all CLOSED except ENV-BUILDING-REPAIR-001 (DEFERRED) + THIS claim after append; ENV_DB counts 907/9/4 + masters 48/0 + extinguisher inspection 0 + emergency_light_check 332 + food.lab_test 0 (last recorded snapshot; re-verified live at D3 preflight).
+- One migration slot: `supabase/migrations/20261117000003_parity_p2_004.sql` (true next sequential after `20261117000002` — pinned at claim, no filename deviation).
+- `frontend/package.json` = 1.6.0 → **v1.7.0 MINOR** at D4 (D1-9: first user-visible coliform two-step flow; existing `/food` behavior preserved — no regression, additive UI only).
+
+## 3. Testable-unit analysis → D2 RED plan
+
+1. **SCHEMA** — the 9 additive columns (`sample_source`, `collect_point`, `sample_person_id`, `collected_by_id`, `collected_by_legacy`, `reporter_id`, `reporter_legacy`, `equipment_legacy`, `result_image`) + `legacy_id` UNIQUE + `source_provenance`; FK shapes → `core.personnel(id)`; types/nullability per WO §3.1; the existing 15 columns byte-identical.
+2. **RLS/REGRESSION** — `lab_test_authenticated_rw` untouched (shape pinned); audit trigger intact; façade `public.lab_test` exposes the new columns; anon probes fail closed; the existing FoodPage CRUD path unchanged.
+3. **FLOW** — result-side columns (`result`, `mpn_value`, `reported_date`, `reporter_id`) carry NO DB defaults (app-supplied step-2 writes; the AppSheet TODAY() inits are form-only); `sample_date` NOT NULL DEFAULT CURRENT_DATE (step-1 always fills); no NOT NULL added on any result-side column.
+4. **HONESTY** — 0 seed rows (the SOURCE_UNAVAILABLE reconciliation pin); baselines intact (907/9/4/48/0/0/332/0); no 13-digit digit-runs in the migration; enum columns have NO hard CHECK (documented value sets are UI-restricted verbatim lists).
+5. **FORM PARITY (vitest `food.test.ts`)** — two-step flow state machine (collect → pending → result); verbatim value sets per `sample_source` (water 4-enum / food 5-enum / general 2-enum / employee personnel pick); Show If gating (result fields only when TODAY() > collect date — same-day collect renders รอผล, never editable); suggested +1/+2 chips on food/employee ONLY, never auto-filled; `equipment_legacy` defaults per source (aca317bf water/food, 2fe4aa7c employee); Thai labels; พ.ศ. dates.
+6. **E2E (Playwright `coliform-lab-test.spec.ts`)** — บันทึกเก็บตัวอย่าง → row appears รอผล → กรอกผลภายหลัง (next-day simulation via an old collect date) → result renders; mobile 360/390/430; existing /food single-step regression case.
+
+Truthful RED pre-apply: the SQL suite fails on absent columns/objects; vitest fails-to-collect (no `food.test.ts` yet); e2e fails on absent testids/flow.
+
+## 4. Bound scope (WO §9)
+
+ONE migration `supabase/migrations/20261117000003_parity_p2_004.sql` (additive `ALTER TABLE food.lab_test` ×9 + FKs + `legacy_id` UNIQUE index; NO seed block; NO policy changes; NO grants changes) + the SQL contract suite + FoodPage additive two-step integration + `components/coliform/**` + `lib/food.ts` + `lib/food.test.ts` + additive wiring (supabase-queries/hooks) + App.tsx route-only (only if the D1 split needs it) + e2e spec + CHANGELOG/package.json (v1.7.0 MINOR) + the WO + this handoff + `docs/ai/CURRENT-WORK.md` (transition + closeout only). Everything else forbidden (WO §9) — including the P2.5 report, P2.6 surfaces, Phase-3 masters, extinguisher/light/P1 surfaces, CI, reference/plan docs, Drive writes, `data/**`, `.env`. **No personnel-table writes; no master fabrication; no seed rows.**
+
+## 5. Single next safe action
+
+Independent exact-SHA review of THIS docs-only claim transition (R2 floor: fresh GLM-5.3 MAX reviewer context; the AUTHORIZATION BASIS incl. the D1-1 boundary decision (plan-row-verbatim ×3), the D1-2 generic-extension decision, and the D1-3 SOURCE_UNAVAILABLE seed ruling is an explicit adversarial check item — insufficient basis parks the claim unmerged). On approval the AUTHORIZED reviewer merges THIS transition; only then does the implementing lane activate on the merged base via a fresh freshness gate: worktree `_worktrees/env-parity-p2-004`, D2 RED → D3 ENV_DB-gated apply (ONE additive migration, no seed) → D4 battery (vitest FULL, tsc, oxlint, Playwright FULL workers=1, guard 344, runtime 62, checker OK v1.7.0) → D5 fresh-GLM → **STOP at REVIEW_REQUESTED — implementer never merges**.
+
+---
+
+## 6. Implementation-lane receipts (D2/D3/D4 — appended after the claim merges)
+
+*(empty — filled by the implementing lane)*
