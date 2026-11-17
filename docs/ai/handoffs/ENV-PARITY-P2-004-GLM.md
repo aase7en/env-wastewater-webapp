@@ -89,3 +89,49 @@ Independent exact-SHA review of THIS docs-only claim transition (R2 floor: fresh
 - Release checker: `RELEASE VERSION CHECK: OK (v1.7.0; CHANGELOG entry v1.7.0)`. `git diff --check`: clean.
 - Release: package.json 1.6.0→1.7.0 MINOR + Thai พ.ศ. CHANGELOG (17 พฤศจิกายน พ.ศ. 2569). The CHANGELOG PR-ref line is stamped with the real PR number in the final docs commit after `gh pr create`.
 - **STOP at REVIEW_REQUESTED — implementer never merges.** Next: D5 fresh-GLM review at the exact frozen head with independent battery rerun where possible.
+
+## 7. D6 CLOSEOUT RECEIPT (docs-only closeout lane, 2026-11-17 — branch `docs/env-parity-p2-004-closeout`)
+
+Claim `ENV-PARITY-P2-004-C1` → **CLOSED** by this closeout transition. Scope = exactly 3 files: `docs/ai/CURRENT-WORK.md` (fence×2 + registry status CLOSED + `one_next_safe_action` receipt rewrite + frontier CLOSED record + next-frontier record → P2.5 next ungated, then P2.6), `docs/work-orders/ENV-PARITY-P2-004.md` (top Status + §10 Status → DELIVERED—CLOSED with PR refs), this handoff (D6). **STOP at REVIEW_REQUESTED — the closeout author never merges; the authorized reviewer owns approval + merge.**
+
+### 7.1 Full delivery chain (#213 → #214) — all receipts verified live at closeout
+
+| stage | PR | merge SHA | parents | evidence |
+|---|---|---|---|---|
+| claim transition | #213 | `d22c993ec432c2835a86e0a5035f4134f3faacec` | `e2e845f93e226c179b31987f9e843701ce09b9ed` + reviewed transition head | docs-only; fence pinned at base `e2e845f` (registry block AT base, guard method `scripts/env_coordination_guard.py:454-456`); **R2 APPROVED issuecomment-6938316372** — fresh reviewer, zero P1/P2, 1 non-blocking P3 = the pre-existing BUILDING-status narrative/registry wording (untouched, 35-identical verified); the two EXPLICIT adjudications ruled: **D1-1 boundary ACCEPT** (the plan's OWN numbering assigns P2.4 = Coliform ×3 น้ำ/อาหาร/พนักงาน via ONE shared `food.lab_test` extension; P2.5 = the รายงานสรุป lane per plan line 235; P2.6 = tests+master-seed+QR per line 236 — the "water-only P2.4" dispatch hypothesis rejected) and **D1-3 SOURCE_UNAVAILABLE ACCEPT** (all 6 public workbooks tab-enumerated 2026-11-17 — zero coliform tabs; 0-seed + carried re-fetch obligation per the P2.1 precedent; `legacy_id` UNIQUE + `source_provenance` shipped NOW so the deferred seed needs NO second migration) |
+| implementation | #214 | `2df4bb0d8de35a669accd05b1c56db3753666ce9` | `d22c993ec432c2835a86e0a5035f4134f3faacec` + **D5-APPROVED head `6bb0c2d85856a77080029ab30537dc70d0ded026`** | merge commit, no squash, expected-head discipline; chain: D2 RED `0f13b70` → D3 `654cfae` → façade-fix `5660dea` (recorded deviation) → `dc9cc55` version-literal cleanup → `6bb0c2d` changelog PR-ref stamp; **D5 APPROVED issuecomment-6940988505** at exact head `6bb0c2d`; merge-execution review trail **issuecomment-6941049339** |
+
+### 7.2 D2/D3/D5 record (verified live at closeout)
+
+- **D2 truthful RED `0f13b70`:** SQL contract suite **8 failed / 7 passed** (the 8 failures = absent columns/FK/UNIQUE/flow/smoke/file; the 7 passes = pre-existing pins: 0-seed count, baselines, RLS shape, triggers, no-new-CHECK, `sample_date` default, anon fail-closed) + form-parity vitest **fail-to-collect** (`./food` coliform exports absent) + e2e coliform spec **recorded 9 failed / 0 passed**.
+  - **P3-1 RED-count reconcile (D5, carried as a note — no repair):** the D5 isolated rerun measured **8 failed / 1 passed** — the 1 pass is the legacy-form no-regression test, which passes **trivially at RED** because the legacy UI predates the lane. RED discipline itself is intact (all 8 coliform-capability tests fail truthfully); future RED records should report the legacy pass honestly.
+- **D3 `654cfae`:** ONE additive migration `20261117000003_parity_p2_004.sql` applied via `scripts/apply_migration_api.py` with the ENV_DB gate — 11 columns + FKs + `legacy_id` UNIQUE; **NO seed** (SOURCE_UNAVAILABLE — `food.lab_test` 0 rows before and after; baselines 907/9/4/48/0/0/332/0 intact); NO policy changes.
+  - **Recorded deviation (caught by the D3 post-verify, not silently fixed):** the pre-created `select *` REST façade **expands `*` at creation in Postgres**, so the new columns were REST-unreachable after the first apply (suite 13P/2F: the façade pin caught it). **Fix `5660dea`:** ONE `create or replace view public.lab_test with (security_invoker=on) as select * from food.lab_test` — the **same definition schema5 already had**; OR REPLACE preserves ACLs; no policy/grant statement; deviation documented in the migration header.
+  - **D5 ruling on the fix:** **legitimate byte-equivalent**, with `security_invoker=on` explicitly **restated** — required because OR REPLACE resets reloptions, so omitting it would have silently dropped the option. (Also verified: no policy exists on the view — RLS lives on `food.lab_test` and is enforced through the invoker view; column append keeps OR REPLACE valid — existing output names/types/order unchanged.)
+  - `dc9cc55`: version-literal cleanup — the checker's rule-3 caught `v1.7.0` literals inside src comments; comment-only change.
+- **D5 fresh-GLM independent review APPROVED issuecomment-6940988505** at exact head `6bb0c2d` — zero P1/P2, **3 P3**:
+  1. **P3-1** the RED e2e count reconcile (recorded 9F/0P vs isolated rerun 8F/1P trivial legacy pass) — reconciled in this D6 note per the reviewer's closeout-lane suggestion.
+  2. **P3-2** `frontend/src/components/coliform/ColiformFlow.tsx:356,364` — the +1/+2 chip labels render CE/ISO dates (`+1 วัน (2026-11-18)`) — user-facing date not พ.ศ. Mitigations: sits beside the native `type=date` input it populates (platform-ISO), and row-header dates are พ.ศ. via `thaiDate`. Advisory: consider `thaiDate` in the label with ISO as the value. Carried as a follow-up.
+  3. **P3-3** `frontend/src/lib/food.test.ts:23-37` — the env-stub explanation comment appears twice (duplicated block). Cosmetic. Carried as a follow-up.
+  - **D5 honesty note:** no resolvable `SUPABASE_ACCESS_TOKEN` on the review machine → the SQL suite could not execute live there; D5 verified it by **static trace of the exact RED tree, reproducing exactly 8F/7P**, and re-ran the e2e RED isolated on its own dev server (first two runs were contaminated by a leftover vite server on :5173 via `reuseExistingServer`; isolated on :5377 for the true result).
+  - D5 own battery at `6bb0c2d`: SQL 15/15, vitest FULL **676/1skip** (`food.test.ts` 21/21), Playwright FULL **272/272**.
+
+### 7.3 Release evidence (v1.7.0 MINOR, verified live at closeout)
+
+- Pages run **44034603993 SUCCESS** @ `2df4bb0d8de35a669accd05b1c56db3753666ce9` (live-checked: status completed, conclusion success, headSha exact).
+- Live markers: index bundle carries **1.7.0**; `assets/FoodPage-D_Xw8wMI.js` HTTP 200 carries **รอผล ×7 + ตู้กดน้ำ + โรงครัว**.
+- Annotated tag **v1.7.0** (`21735b9248e2f21475bf1126f0173721545b17bd`) dereferences `2df4bb0d8de35a669accd05b1c56db3753666ce9` (local + remote).
+- `python3 scripts/check_release_version.py --tag v1.7.0` → **OK, exit 0**.
+
+### 7.4 Follow-up ledger additions (this closeout)
+
+1. **Coliform history SOURCE_UNAVAILABLE re-fetch obligation** — owner shares the coliform sheet(s) → seed later via the guarded P2.1/P2.3 pattern; `legacy_id`/`source_provenance` already shipped by the P2.4 migration, so **no second schema migration** is needed; type-coerced personnel lookups per the P2.3 lesson.
+2. **The 3 D5 P3 follow-ups** (see §7.2): RED count reconcile note (recorded here — no repair needed), the พ.ศ. chip-label advisory (`ColiformFlow.tsx:356,364`), the duplicated comment (`food.test.ts:23-37`, cosmetic).
+
+### 7.5 Frontier + standing
+
+Next parity lane = **P2.5 รายงานสรุป** (the aggregate report lane per plan line 235 — นับปกติ/ผิดปกติถัง, ผ่าน/ไม่ผ่านไฟ, สรุป coliform — ตัวเลขอย่างเดียว; Filter_Firer/Filter_Light/Filter_ColiformBac semantics), then **P2.6** (tests + seed ข้อมูล master จาก Sheets + เชื่อม QR per plan line 236 — the natural home of the extinguisher-master + coliform-history re-seeds) — each needs its own NEW reviewed claim transition. Standing: **Phase-1 dual-run PENDING OWNER ACTION**, extinguisher-master + coliform history await owner shares, hooks #155 approved-not-started (owner-manual), #156 open (owner-manual), Building WAITING_EXTERNAL, P4 authorized awaiting Phase reach.
+
+### 7.6 Scope-lock release
+
+Worktree `_worktrees/env-parity-p2-004` preserved clean at the delivered head `6bb0c2d` (fully merged via PR #214). Scope lock released at generation 1; **CLOSED confers no fresh mutation authority**; all other work still requires a NEW claim transition; no closed lane confers execution authority.
