@@ -42,6 +42,9 @@ import {
 // dynamically imported inside onDownload so jspdf/html2canvas only load
 // when the user actually clicks "ดาวน์โหลด PDF".
 import type { RepairRequestInput } from "../lib/pdf";
+// ENV-PARITY-P2-005 — the additive safety+coliform numeric summary
+// section (own state + fetch, mounted after the P1.6 summary block).
+import { SafetyColiformSummarySection } from "../components/reports/SafetyColiformSummarySection";
 
 const THRESHOLD_FLAG_LABELS: Array<{ key: keyof FlagClassCounts; label: string }> = [
   { key: "critical_do1", label: "Critical DO-1 (บ่อเติมอากาศ)" },
@@ -563,6 +566,13 @@ export function ReportsPage() {
           </p>
         </div>
       )}
+
+      {/* ─── P2.5 safety+coliform numeric summary (additive section —
+           AppSheet Filter_Firer / Filter_Light / Filter_ColiformBac
+           numeric layer). Aggregates recorded rows client-side; รอผล its
+           own number; master SOURCE_UNAVAILABLE empty state; NO PDF
+           here (Phase 4). */}
+      <SafetyColiformSummarySection />
 
       {/* Template chooser */}
       <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
