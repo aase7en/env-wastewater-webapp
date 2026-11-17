@@ -23,7 +23,17 @@
  *   - พ.ศ. labels (Thai full month + year+543, the P1.6 verbatim order)
  *   - counts only — no names, no Employee_id anywhere (PII pin WO §4.4-4)
  */
-import { describe, it, expect } from "vitest";
+import { describe, it, expect, vi } from "vitest";
+
+// coliform-summary.ts consumes isPendingResult from ./food, which lives in
+// the supabase-client module graph; the client throws at load without the
+// two env vars. The tests below exercise PURE functions only — stub the
+// env before the imports evaluate (vi.hoisted runs ahead of them; no
+// network is ever touched; the node vitest environment has no .env).
+vi.hoisted(() => {
+  process.env.VITE_SUPABASE_URL ??= "https://stub.supabase.test";
+  process.env.VITE_SUPABASE_ANON_KEY ??= "stub-anon-key";
+});
 import { readFileSync } from "node:fs";
 import { fileURLToPath } from "node:url";
 import {
