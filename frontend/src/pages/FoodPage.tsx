@@ -9,6 +9,7 @@ import { AuraCard } from "../components/ui/AuraCard";
 import { Button } from "../components/ui/Button";
 import { TableSkeleton } from "../components/ui/Skeleton";
 import { Input, Field, Textarea, Select, NumberInput } from "../components/ui/Input";
+import { ColiformFlow } from "../components/coliform/ColiformFlow";
 import { useFoodLabTests, createFoodLabTest, deleteFoodLabTest, type FoodInput } from "../lib/food";
 
 const NUM = (v: string) => (v === "" ? null : Number(v));
@@ -149,6 +150,10 @@ export function FoodPage() {
           </div>
         )}
       </AuraCard>
+      {/* ENV-PARITY-P2-004 — the additive coliform ×3 two-step flow
+          (น้ำ/อาหาร/พนักงาน/ทั่วไป). Sits BELOW the legacy single-step
+          form/list — existing behavior untouched (additive only). */}
+      <ColiformFlow rows={data} onChanged={refresh} />
     </div>
   );
 }
