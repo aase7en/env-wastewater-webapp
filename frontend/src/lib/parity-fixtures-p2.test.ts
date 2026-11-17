@@ -53,6 +53,14 @@ import {
   EXTINGUISHER_CASES,
   LIGHT_CASES,
   P2_006_SQL_CASE_IDS,
+  type ColiformGateCase,
+  type ColiformPendingCase,
+  type ColiformSuggestCase,
+  type ColiformVocabCase,
+  type ExtinguisherFormCase,
+  type LightQrCase,
+  type LightShowIfCase,
+  type LightValueSetCase,
 } from "./parity-fixtures-p2";
 
 import {
@@ -114,6 +122,12 @@ import {
   suggestsResultDates,
 } from "./food";
 
+/** Typed case-picker: filters a fixture table by id(s) and narrows to the
+ *  declared case shape (id-filters alone do not narrow the family unions). */
+function pick<T>(table: readonly unknown[], ids: string[]): T[] {
+  return table.filter((c): c is T => ids.includes((c as { id: string }).id));
+}
+
 // ─── fixture-data integrity (meta-pins, every family) ───────────────────────
 
 describe("P2 parity fixture tables — citation completeness (WO §4-4)", () => {
@@ -142,16 +156,13 @@ describe("P2 parity fixture tables — citation completeness (WO §4-4)", () => 
     }
   });
 
-  it("the SQL-exercised id registry mirrors exactly the SQL-side cases", () => {
-    const vitestOnly = ALL_P2_CASES.map((c) => c.id).filter(
-      (id) => !P2_006_SQL_CASE_IDS.includes(id),
-    );
-    const sqlSide = ALL_P2_CASES.map((c) => c.id).filter((id) =>
-      P2_006_SQL_CASE_IDS.includes(id),
-    );
-    expect(P2_006_SQL_CASE_IDS.length).toBe(sqlSide.length);
-    // every SQL-side id belongs to a declared SQL-exercised case shape
-    expect(vitestOnly.length + sqlSide.length).toBe(ALL_P2_CASES.length);
+  it("the SQL-exercised id registry mirrors exactly the sql:true-marked cases", () => {
+    const sqlTableIds = ALL_P2_CASES.filter((c) => c.sql === true).map((c) => c.id);
+    expect([...P2_006_SQL_CASE_IDS].sort()).toEqual([...sqlTableIds].sort());
+    // and the registry carries no phantom ids
+    expect(
+      P2_006_SQL_CASE_IDS.every((id) => ALL_P2_CASES.some((c) => c.id === id)),
+    ).toBe(true);
   });
 
   it("covers the three WO §4 families", () => {
@@ -164,7 +175,11 @@ describe("P2 parity fixture tables — citation completeness (WO §4-4)", () => 
   it("PII pin: no 13-digit digit-run anywhere in the new fixture files", () => {
     for (const f of ["parity-fixtures-p2.ts", "parity-fixtures-p2.test.ts"]) {
       const src = readFileSync(path.join(__dirname, f), "utf8");
-      expect(src.match(/\d{13}/), `${f} must carry no 13-digit run`).toBeNull();
+      // documented migration-filename timestamps (14-digit tokens, e.g. the
+      // NULL-fix migration citation) are scrubbed before the scan — they
+      // are documentation, not data (the P2.4 test_32 precedent).
+      const scrubbed = src.replace(/\d{14}/g, "");
+      expect(scrubbed.match(/\d{13}/), `${f} must carry no 13-digit run`).toBeNull();
     }
   });
 });
@@ -187,17 +202,17 @@ describe("extinguisher form value sets verbatim (ref 3256–3330)", () => {
   });
 
   it("EX-V04: the 6-vs-5 type-enum divergence — both lists pinned VERBATIM (ref 3198 vs 3072)", () => {
-    for (const c of EXTINGUISHER_CASES.filter((x) => x.id === "EX-V04")) {
-      expect(c.expected.inspectionTypeOptions).toEqual([...TYPE_SNAPSHOT_OPTIONS]);
-      expect(c.expected.masterTypeOptions).toEqual([...MASTER_TYPE_OPTIONS]);
-      expect(c.expected.inspectionTypeOptions.length).toBe(6);
-      expect(c.expected.masterTypeOptions.length).toBe(5);
+    for (const c of pick<ExtinguisherFormCase>(EXTINGUISHER_CASES, ["EX-V04"])) {
+      const insp = c.expected.inspectionTypeOptions ?? [];
+      const master = c.expected.masterTypeOptions ?? [];
+      expect(insp).toEqual([...TYPE_SNAPSHOT_OPTIONS]);
+      expect(master).toEqual([...MASTER_TYPE_OPTIONS]);
+      expect(insp.length).toBe(6);
+      expect(master.length).toBe(5);
       // the AppSheet self-divergence, verbatim both sides:
-      expect(c.expected.inspectionTypeOptions[4]).toBe("น้ำ (Water Extinguishers)");
-      expect(c.expected.masterTypeOptions[4]).toBe("น้ำ (Best Drop)");
-      expect(c.expected.inspectionTypeOptions[5]).toBe(
-        "น้ำ (Best Drop แบบ Low Pressure Water Mist)",
-      );
+      expect(insp[4]).toBe("น้ำ (Water Extinguishers)");
+      expect(master[4]).toBe("น้ำ (Best Drop)");
+      expect(insp[5]).toBe("น้ำ (Best Drop แบบ Low Pressure Water Mist)");
       expect(JSON.stringify(c.divergence)).toContain(
         "inspection-type 6-value vs master 5-value",
       );
@@ -205,7 +220,7 @@ describe("extinguisher form value sets verbatim (ref 3256–3330)", () => {
   });
 
   it("EX-V05: breakdown_details auto-label IF([chem_exp]<=[Date_time],…) — hand-computed (ref 3337)", () => {
-    const cases = EXTINGUISHER_CASES.filter((x) => x.id === "EX-V05");
+    const cases = pick<ExtinguisherFormCase>(EXTINGUISHER_CASES, ["EX-V05"]);
     expect(cases.length).toBeGreaterThan(0);
     for (const c of cases) {
       expect(deriveBreakdownLabel(c.input.chemExp, c.input.inspectionDate)).toBe(
@@ -215,9 +230,24 @@ describe("extinguisher form value sets verbatim (ref 3256–3330)", () => {
     // the exact hand-computed AppSheet semantics, case by case:
     expect(deriveBreakdownLabel("2026-01-15", "2026-01-15T10:00")).toBe("หมดอายุ");
     expect(deriveBreakdownLabel("2026-01-16", "2026-01-15T10:00")).toBe("ไม่หมดอายุ");
-    expect(deriveBreakdownLabel("2026-09-13", "2026-01-15")).toBe("หมดอายุ");
+    expect(deriveBreakdownLabel("2026-09-13", "2026-01-15")).toBe("ไม่หมดอายุ");
     expect(deriveBreakdownLabel(null, "2026-01-15")).toBe("");
     expect(deriveBreakdownLabel("2026-01-15", undefined)).toBe("");
+  });
+
+  it("EX-V01/V02/V03: the verbatim value sets + inits are table-carried and shipped (ref 3258/3276/3294/3312/3330)", () => {
+    const setCases = pick<ExtinguisherFormCase>(EXTINGUISHER_CASES, ["EX-V01", "EX-V02", "EX-V03"]);
+    for (const c of setCases) {
+      expect(c.expected.options, `${c.id} options`).toBeTruthy();
+      expect(c.expected.init, `${c.id} init`).toBeTruthy();
+    }
+    const byId = Object.fromEntries(setCases.map((c) => [c.id, c.expected]));
+    expect(byId["EX-V01"].options).toEqual([...ITEM_OPTIONS]);
+    expect(byId["EX-V01"].init).toBe(ITEM_DEFAULT);
+    expect(byId["EX-V02"].options).toEqual([...PRESSURE_OPTIONS]);
+    expect(byId["EX-V02"].init).toBe("ปกติ");
+    expect(byId["EX-V03"].options).toEqual([...BARRIER_OPTIONS]);
+    expect(byId["EX-V03"].init).toBe(BARRIER_DEFAULT);
   });
 
   it("EX-V06: the Show If gates — 5-way abnormal OR (ref 3351/3389) + 7-way breakdown OR (ref 3343)", () => {
@@ -255,7 +285,7 @@ describe("extinguisher form value sets verbatim (ref 3256–3330)", () => {
   });
 
   it("EX-V07: ผู้ตรวจสอบ Valid If — positions × status ≠ ลาออก (ref 3377, hand-computed)", () => {
-    const cases = EXTINGUISHER_CASES.filter((x) => x.id === "EX-V07");
+    const cases = pick<ExtinguisherFormCase>(EXTINGUISHER_CASES, ["EX-V07"]);
     expect(cases.length).toBeGreaterThan(0);
     for (const c of cases) {
       expect(isEligibleInspector(c.input)).toBe(c.expected.eligible);
@@ -269,7 +299,7 @@ describe("extinguisher form value sets verbatim (ref 3256–3330)", () => {
   });
 
   it("EX-Q01: QR derive-never-store — payload = Row ID, the QR image/URL never persisted (ref 3079)", () => {
-    const cases = EXTINGUISHER_CASES.filter((x) => x.id === "EX-Q01");
+    const cases = pick<ExtinguisherFormCase>(EXTINGUISHER_CASES, ["EX-Q01"]);
     for (const c of cases) {
       expect(c.expected.qrStored).toBe(false);
       expect(c.expected.payloadShape).toBe("22-char PackedUUID text");
@@ -321,7 +351,7 @@ describe("light Check value sets verbatim (ref 5055/5067/5085/5118/5138)", () =>
   });
 
   it("LT-V04: Status = 3 values verbatim, blank ⇒ NULL (ref 5138; no init pinned — seed reality blank×300)", () => {
-    for (const c of LIGHT_CASES.filter((x) => x.id === "LT-V04")) {
+    for (const c of pick<LightValueSetCase>(LIGHT_CASES, ["LT-V04"])) {
       expect(c.expected.options).toEqual([...STATUS_OPTIONS]);
       expect(c.expected.blankIsPossible).toBe(true);
     }
@@ -329,7 +359,7 @@ describe("light Check value sets verbatim (ref 5055/5067/5085/5118/5138)", () =>
   });
 
   it("LT-V05: Broken_detail EnumList = the 5 documented values verbatim (ref 5118)", () => {
-    for (const c of LIGHT_CASES.filter((x) => x.id === "LT-V05")) {
+    for (const c of pick<LightValueSetCase>(LIGHT_CASES, ["LT-V05"])) {
       expect(c.expected.options).toEqual([...BROKEN_DETAIL_OPTIONS]);
     }
     expect([...BROKEN_DETAIL_OPTIONS]).toEqual([
@@ -344,7 +374,7 @@ describe("light Check value sets verbatim (ref 5055/5067/5085/5118/5138)", () =>
 
 describe("light Show If matrix — hand-computed (ref 5080/5113/5125/5133)", () => {
   it("LT-S01: test_result gated on [Persistency]=\"มี\" — unknown persistency never reveals", () => {
-    const cases = LIGHT_CASES.filter((x) => x.id === "LT-S01");
+    const cases = pick<LightShowIfCase>(LIGHT_CASES, ["LT-S01"]);
     for (const c of cases) {
       expect(showTestResult(c.input.persistency)).toBe(c.expected.visible);
     }
@@ -355,7 +385,7 @@ describe("light Show If matrix — hand-computed (ref 5080/5113/5125/5133)", () 
   });
 
   it("LT-S02: Broken_detail on the 2-way OR(ไม่ผ่าน, ไม่เหมาะสม) — persistency=ไม่มี ALONE does NOT open it (ref 5113)", () => {
-    const cases = LIGHT_CASES.filter((x) => x.id === "LT-S02");
+    const cases = pick<LightShowIfCase>(LIGHT_CASES, ["LT-S02"]);
     for (const c of cases) {
       expect(showLightBrokenDetail(c.input)).toBe(c.expected.visible);
     }
@@ -363,14 +393,15 @@ describe("light Show If matrix — hand-computed (ref 5080/5113/5125/5133)", () 
     expect(showLightBrokenDetail({ testResult: "ไม่ผ่าน", position: "เหมาะสม" })).toBe(true);
     expect(showLightBrokenDetail({ testResult: "ผ่าน", position: "ไม่เหมาะสม" })).toBe(true);
     // the discriminator vs Pic/Status: the third arm is persistency —
-    // NOT part of the Broken_detail gate (hand-computed AppSheet matrix)
+    // NOT part of the Broken_detail gate (the predicate carries no
+    // persistency arm at all; hand-computed AppSheet matrix)
     expect(
-      showLightBrokenDetail({ testResult: "ผ่าน", position: "เหมาะสม", persistency: "ไม่มี" }),
+      showLightBrokenDetail({ testResult: "ผ่าน", position: "เหมาะสม" }),
     ).toBe(false);
   });
 
   it("LT-S03: Pic/Status on the 3-way OR(ไม่ผ่าน, ไม่เหมาะสม, ไม่มี) (ref 5125/5133)", () => {
-    const cases = LIGHT_CASES.filter((x) => x.id === "LT-S03");
+    const cases = pick<LightShowIfCase>(LIGHT_CASES, ["LT-S03"]);
     for (const c of cases) {
       expect(showPicAndStatus(c.input)).toBe(c.expected.visible);
     }
@@ -382,7 +413,7 @@ describe("light Show If matrix — hand-computed (ref 5080/5113/5125/5133)", () 
   });
 
   it("LT-Q01: light QR derive-never-store over [ERL_ID] (ref 4954) + the honest unresolved label", () => {
-    const cases = LIGHT_CASES.filter((x) => x.id === "LT-Q01");
+    const cases = pick<LightQrCase>(LIGHT_CASES, ["LT-Q01"]);
     for (const c of cases) {
       expect(c.expected.qrStored).toBe(false);
       expect(c.expected.qrFormula).toBe(
@@ -406,7 +437,7 @@ describe("light Show If matrix — hand-computed (ref 5080/5113/5125/5133)", () 
 
 describe("coliform same-day รอผล gate — TODAY()>[Collect_date] (ref 3660/3854)", () => {
   it("CB-G: hand-computed gate cases — strictly-later day only", () => {
-    const gateCases = CB_COLIFORM_CASES.filter((x) => x.id.startsWith("CB-G"));
+    const gateCases = pick<ColiformGateCase>(CB_COLIFORM_CASES, ["CB-G01", "CB-G02", "CB-G03", "CB-G04"]);
     for (const c of gateCases) {
       expect(showResultFields(c.input.collectDate, c.input.todayISO)).toBe(
         c.expected.resultFieldsVisible,
@@ -420,7 +451,7 @@ describe("coliform same-day รอผล gate — TODAY()>[Collect_date] (ref 36
   });
 
   it("CB-P: isPendingResult consumed, never re-derived (lib/food.ts:251-255) — both writes required", () => {
-    const pendingCases = CB_COLIFORM_CASES.filter((x) => x.id.startsWith("CB-P"));
+    const pendingCases = pick<ColiformPendingCase>(CB_COLIFORM_CASES, ["CB-P01", "CB-P02", "CB-P03", "CB-P04"]);
     for (const c of pendingCases) {
       expect(isPendingResult(c.input)).toBe(c.expected.pending);
     }
@@ -432,7 +463,7 @@ describe("coliform same-day รอผล gate — TODAY()>[Collect_date] (ref 36
   });
 
   it("CB-S: +1/+2 suggestions Food/Employee ONLY (ref 3654/3848) — hand-computed boundary math", () => {
-    const suggestCases = CB_COLIFORM_CASES.filter((x) => x.id.startsWith("CB-S"));
+    const suggestCases = pick<ColiformSuggestCase>(CB_COLIFORM_CASES, ["CB-S01", "CB-S02", "CB-S03", "CB-S04", "CB-S05"]);
     for (const c of suggestCases) {
       expect(suggestsResultDates(c.input.source)).toBe(c.expected.suggests);
       if (c.expected.suggests && c.input.collectDate) {
@@ -459,7 +490,7 @@ describe("coliform same-day รอผล gate — TODAY()>[Collect_date] (ref 36
   });
 
   it("CB-V: per-source vocabularies gated, never coerced (ref 3563/3641/3008/§3.19)", () => {
-    const vocabCases = CB_COLIFORM_CASES.filter((x) => x.id.startsWith("CB-V"));
+    const vocabCases = pick<ColiformVocabCase>(CB_COLIFORM_CASES, ["CB-V01", "CB-V02", "CB-V03", "CB-V04", "CB-V05", "CB-V06", "CB-V07"]);
     for (const c of vocabCases) {
       if (c.expected.collectPoints !== undefined) {
         expect([...collectPointsFor(c.input.source)]).toEqual(c.expected.collectPoints);
