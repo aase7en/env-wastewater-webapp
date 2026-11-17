@@ -64,4 +64,28 @@ Independent exact-SHA review of THIS docs-only claim transition (R2 floor: fresh
 
 ## 6. Implementation-lane receipts (D2/D3/D4 — appended after the claim merges)
 
-*(empty — filled by the implementing lane)*
+**IMPLEMENTATION DELIVERED — REVIEW_REQUESTED (implementer never merges).** Head `dc9cc553e269d96a9b3954c3a5d2a7eef3cde6a6` on `feat/env-parity-p2-004` (base `d22c993` = origin/main at claim merge; freshness gate re-verified 2026-11-17). Commits: `0f13b70` (D2 RED) → `654cfae` (D3 feat) → `5660dea` (façade-fix deviation) → `dc9cc55` (checker-driven literal cleanup). Diff vs main = exactly 9 files, all in WO §9 scope: `supabase/migrations/20261117000003_parity_p2_004.sql`, `scripts/test_parity_p2_004_coliform_lab_test.py`, `frontend/src/lib/food.ts`, `frontend/src/lib/food.test.ts`, `frontend/src/components/coliform/ColiformFlow.tsx`, `frontend/src/pages/FoodPage.tsx`, `frontend/tests/e2e/coliform-lab-test.spec.ts`, `CHANGELOG.md`, `frontend/package.json`. `supabase-queries.ts`/`hooks.ts`/`App.tsx` needed NO changes (the personnel pickers reuse the existing `useInspectors()` hook — the §4-bound additive-wiring slots stayed empty by design). `docs/ai/CURRENT-WORK.md` untouched.
+
+### D2 RED receipts (commit `0f13b70`, migration UNAPPLIED, ENV_DB live)
+
+- SQL contract suite: **8 failed / 7 passed** — truthful absent-schema failures (`additive column sample_source missing`, FK/UNIQUE absent, façade columns absent, flow-smoke insert failing on the missing column, migration-file pins). The 7 passes are pre-existing pins (0-seed count, baselines 907/9/4/48/0/0/332/0, RLS single-policy shape, both triggers, no-new-CHECK pair, sample_date CURRENT_DATE default, anon fail-closed).
+- `frontend/src/lib/food.test.ts`: fails-to-collect (no coliform exports in `./food`).
+- `frontend/tests/e2e/coliform-lab-test.spec.ts`: **9 failed / 0 passed**.
+
+### D3 APPLY receipts (ENV_DB gate PROJECT_REF `gllqtbyofrcjzmbnfoeh`, `scripts/apply_migration_api.py`)
+
+- Preflight: 15 pre-existing columns, the 11 new columns absent, `lab_test_legacy_id_key` absent, baselines exact (907/9/4/48/0/0/332/food.lab_test 0) → gate OK.
+- Apply: **15/15 statements OK** (11×ADD COLUMN in one ALTER + FKs inline, the UNIQUE DO-block, 10×COMMENT, the façade OR REPLACE, `notify pgrst`).
+- Post-verify: SQL contract suite **15/15 GREEN**; zero-net-persistence rollback-smoke proved the two-step flow live (step-1 insert defaults `sample_date=CURRENT_DATE` with all result-side NULL; step-2 update works; duplicate `legacy_id` → unique_violation; NULL duplicates allowed).
+- **Count report / 0-seed disclosure (SOURCE_UNAVAILABLE D1-3):** `food.lab_test` **0 rows before apply / 0 rows after** — NOTHING seeded, NOTHING reconstructed; per-column reconciliation is vacuously 0/0; the personnel-ref suppression count is N/A (no seed rows exist); the re-fetch obligation stands with the extinguisher-master ledger entry. The 13-digit digit-run grep of the migration = **0 matches** (PII pin).
+- **Recorded deviation (caught by the D3 post-verify, not silently fixed):** WO §2.2 claimed the `select *` façade "flows the new columns through automatically" — FALSE in Postgres (views expand `*` at creation). First apply → suite 13P/2F (`façade does not expose sample_source`). Fix commit `5660dea`: ONE `create or replace view public.lab_test with (security_invoker=on) as select * from food.lab_test` — the same definition schema5 already had; OR REPLACE preserves ACLs; no policy/grant statement. Deviation documented in the migration header D1-6 note.
+
+### D4 battery receipts (final head `dc9cc55`)
+
+- vitest FULL: **39 files / 676 passed / 1 skipped** (designed skipIf); `food.test.ts` 21/21 GREEN.
+- `tsc -b`: clean. oxlint: exit 0 (pre-existing warnings only — CarbonPage/Toast untouched by this lane).
+- Playwright FULL chromium workers=1: **272/272** (6.1m), including the new 9-test coliform spec (two-step per domain, รอผล same-day gate, +1/+2 chips text, mobile 360/390/430 overflow, legacy single-step regression) — mock-model only, zero ENV_DB writes.
+- Coordination guard: **344 passed + 450 subtests**. Autonomy runtime: **62 passed + 32 subtests**.
+- Release checker: `RELEASE VERSION CHECK: OK (v1.7.0; CHANGELOG entry v1.7.0)`. `git diff --check`: clean.
+- Release: package.json 1.6.0→1.7.0 MINOR + Thai พ.ศ. CHANGELOG (17 พฤศจิกายน พ.ศ. 2569). The CHANGELOG PR-ref line is stamped with the real PR number in the final docs commit after `gh pr create`.
+- **STOP at REVIEW_REQUESTED — implementer never merges.** Next: D5 fresh-GLM review at the exact frozen head with independent battery rerun where possible.
