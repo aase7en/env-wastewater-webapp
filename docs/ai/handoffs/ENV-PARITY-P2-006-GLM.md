@@ -108,4 +108,51 @@ Lane activated on the merged base `85743a2` (origin/main @ claim merge PR #219) 
 
 ## 7. D6 CLOSEOUT RECEIPT (docs-only closeout lane)
 
-*(appended by the closeout lane)*
+Appended 2026-11-18 by the closeout lane (branch `docs/env-parity-p2-006-closeout` off main @ `2f7d52349ab63f3583ebe764c67c15ffe9af13d7`; 3 changed docs: `docs/ai/CURRENT-WORK.md` + this handoff + the WO status line).
+
+### Delivered chain (all receipts verified live before writing)
+
+| Step | Receipt |
+|---|---|
+| Claim transition | PR #219 merged `85743a29adb40953e03d13999449873cc7d9938b` (docs-only, base `5e30a54332e296906a1ffc4421b880ac7ffdd3a4`) |
+| Implementation | PR #220 merged `2f7d52349ab63f3583ebe764c67c15ffe9af13d7` — second parent EXACTLY the D5-APPROVED head `e1478d41ff3e045e61f6ceff4ac76d15926126f2`, merge commit no squash, expected-head discipline `--match-head-commit e1478d41ff3e045e61f6ceff4ac76d15926126f2`; merge stat = exactly the PR's 5 files (2215+/2−); CURRENT-WORK.md diff EMPTY at merge; supabase/ EMPTY (D1-2); NO BUMP v1.8.0 stays + tag untouched (D1-3) |
+| D5 review | fresh-GLM APPROVED issuecomment-6964073525 at exact frozen head `e1478d4` — 59/59 fixture cases hand-verified vs ref-12 verbatim formulas; RED reproduced at isolated `e4b84c1`; own battery rerun green (vitest 743/1skip, Playwright 284/284, guard 344+450, runtime 62+32, checker OK v1.8.0); zero P1/P2; 2 non-blocking P3 doc-consistency nits carried to the ledger (CB-G04 blank-Collect_date arm `parity-fixtures-p2.ts:587-592` + EX-V05 missing-date arm `:338` lack divergence notes vs the AppSheet zero-date reading — safety-positive, asserted production behavior unaffected) |
+| Merge trail | issuecomment-6964101922 (D5 receipt + expected head + merge policy + no-bump note), posted pre-merge by the merge executor |
+| Pre-merge gates | PR OPEN / MERGEABLE / CLEAN; checks notify ×2 + scripts + smoke all pass; head OID == expected |
+| Post-merge at `2f7d523` | guard 344/344 + 450 subtests OK; validate-registry ok:true 38 claims BOOTSTRAP_CONTROL (claim still CLAIMED at merge time — this closeout closed it); local main ff-only 85743a2→2f7d523 clean; merge stat exactly 5 files |
+| Deploy (honest note) | the merge touched frontend/ paths (the two new fixture lib files) so Deploy frontend to GitHub Pages TRIGGERED — Pages run 44199974779 SUCCESS @ `2f7d523` + E2E smoke run 44199974571 SUCCESS + test run 44199974935 success; no release bump, no tag (test-only lane) |
+
+### Fence
+
+- `expected_policy_revision` = `2f7d52349ab63f3583ebe764c67c15ffe9af13d7` (the PR #220 merge SHA)
+- `expected_registry_hash` = `40d85c2053c4a0cf45d817ae9d9babcc2b43772228285591e172df50be973a25` (guard validate-registry registry_hash AT `2f7d523`, claim still CLAIMED — the pre-closeout block)
+
+### Claim-by-claim JSON diff vs `2f7d523`
+
+Exactly **1 of 38 claims changed** (`ENV-PARITY-P2-006-C1` → CLOSED + `one_next_safe_action` rewrite); the other 37 byte-identical (programmatic sort-keys comparison).
+
+### PHASE 2 COMPLETION — ALL 6 LANES CLOSED (claim SHA / implementation SHA)
+
+| Lane | Claim | Impl | PRs | Release |
+|---|---|---|---|---|
+| P2.1 masters | `d897473` | `1ae8695` | #204/#205 | no release (DB-only; emergency_light seeded 48/48; fire_extinguisher schema 0 rows — SOURCE_UNAVAILABLE awaiting owner source) |
+| P2.2 inspection QR | `5ccdb50` | `fc24253` | #207/#208 | v1.5.0 MINOR |
+| P2.3 light checks | `70c0a64` | `c408e62` | #210/#211 | v1.6.0 MINOR |
+| P2.4 coliform ×3 | `d22c993` | `2df4bb0` | #213/#214 | v1.7.0 MINOR |
+| P2.5 summary report | `22edf23` | `79482b4` | #216/#217 | v1.8.0 MINOR |
+| P2.6 fixtures (this lane) | `85743a2` | `2f7d523` | #219/#220 | NO BUMP — v1.8.0 stays (test-only) |
+
+### Phase-2 DoD status per plan (honest)
+
+- **ตรวจถัง/ไฟด้วยสแกน QR ได้ครบจุดที่ AppSheet ทำ ✓** — P2.2/P2.3 scan flows + resolve RPCs live; P2.6 added the QR-connectivity fixture coverage (derive-never-store, fail-closed RPC contracts, verbatim Valid If/error labels); printable-QR label generation OUT per the P2.2 ruling (no owner ask).
+- **งานรายเดือน/ตามช่วง parity delivered ✓** — P2.5 numeric summaries (ถัง/ไฟ/coliform — ตัวเลขอย่างเดียว; PDF = Phase 4).
+- **Honest gaps (NOT zero-coerced):** the extinguisher master + the coliform history + the 858-row ตรวจสอบถัง inspection history remain UNSEEDED — SOURCE_UNAVAILABLE awaits owner sheet-shares (P5 backfill dependencies; the guarded P2.1/P2.3 recipe recorded dependency-ordered master → inspections → coliform ×4; `legacy_id`/`source_provenance` columns already shipped so the deferred seeds need NO second schema migration).
+
+### Next + standing
+
+- **Next UNGATED:** Phase 3 (งานสนับสนุน — มอบหมายงาน job / คลัง Items-Inventory-Vendors / คู่มือ — 6 lanes per plan §6; each needs its own NEW reviewed claim transition; `core.item` ABSENT at base, never fabricated). Phase 4 (PDF) remains owner-gated per plan §5.3.
+- **Standing:** Phase-1 dual-run PENDING OWNER ACTION; the sheet-share re-seeds PENDING OWNER ACTION; hooks #155 approved-not-started + #156 open (owner-manual); Building WAITING_EXTERNAL; P4 authorized awaiting Phase reach.
+
+### Deviations
+
+None. Scope = exactly the 3 docs files; guard + registry green at the branch head; implementer never merged; the closeout author does not merge this PR either — STOP at REVIEW_REQUESTED.
