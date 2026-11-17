@@ -103,3 +103,44 @@ vitest FULL **655 passed / 1 skipped** · `tsc -b` clean · oxlint exit 0 (pre-e
 - **CHANGELOG**: v1.6.0 entry carries the `การเปลี่ยนแปลงชุดนี้: PR #211` line (P3-2).
 
 **Live post-verify (after fix apply):** 332 total unchanged · `auditor_id` set = **77** (exactly the source non-blank rows; all = STAFF-001's personnel UUID `11590d77-f73d-4742-9446-22c442814a91`, 1 distinct) · NULL = **255** · `auditor_legacy_id` still 0 · no duplicates (`legacy_id` 332 distinct). Battery re-run at the repair head recorded in the commit receipt; CI green on the pushed head.
+
+## 7. D6 CLOSEOUT RECEIPT (docs-only closeout lane, 2026-11-17 — branch `docs/env-parity-p2-003-closeout`)
+
+Claim `ENV-PARITY-P2-003-C1` → **CLOSED** by this closeout transition. Scope = exactly 3 files: `docs/ai/CURRENT-WORK.md` (fence×2 + registry status CLOSED + `one_next_safe_action` receipt rewrite + frontier CLOSED record + next-frontier record → P2.4–P2.6 coliform), `docs/work-orders/ENV-PARITY-P2-003.md` (status → DELIVERED—CLOSED with PR refs), this handoff (D6). **STOP at REVIEW_REQUESTED — the closeout author never merges; the authorized reviewer owns approval + merge.**
+
+### 7.1 Full delivery chain (#210 → #211) — all receipts verified live at closeout
+
+| stage | PR | merge SHA | parents | evidence |
+|---|---|---|---|---|
+| claim transition | #210 | `70c0a6430f4e45f204b684497d12968f1c7b1ed7` | `efac8fcf11d7e93e5e09e3d340400575b4a9422b` + repaired transition head `5ec9c3de205c898273aaa0d022e0453c9182330a` | docs-only; fence pinned at base `efac8fc` (registry block AT base, guard method `scripts/env_coordination_guard.py:454-456`); R1 CHANGES_REQUIRED issuecomment-6931780345 — 1×P2 PII verbatim-risk (the Auditor national-ID class: 13-digit must never reach the repo) → repair `5ec9c3d` (auditor resolution pinned to personnel-UUID-or-NULL, never verbatim, MIGRATION.md:53-61 legacy-id precedent citation) → R2 APPROVED issuecomment-6931946227 — fresh reviewer at exact repaired head, zero P1/P2/P3, D1-3 CLOSED |
+| implementation | #211 | `c408e62f20ae4093e7b4f9efeead6919760b72af` | `70c0a6430f4e45f204b684497d12968f1c7b1ed7` + D5-R2-APPROVED repaired head `be3059a84e02cb2931a0bcfd825b8a883c73592e` | merge commit, no squash, expected-head discipline; chain: D2 RED `f33e047` → D3 `7196a66` → release `3fc1db2` (v1.6.0) → D5-R1 repair `be3059a` |
+
+### 7.2 D2/D3/D5 record (both repair rounds; verified live at closeout)
+
+- **D2 truthful RED `f33e047`:** SQL contract suite **18 failed / 2 passed** live pre-apply (absent objects + absent migration file; ok = anon-fail-closed vacuously closed + baselines 907/9/4/48/0/0 live) + form-parity vitest **fail-to-collect** (`Cannot find module './emergency-light-check'`) + camera-mocked e2e **8 failed / 0 passed** (absent route/testids).
+- **D3 `7196a66`:** ONE migration `20261117000001_parity_p2_003.sql` applied via `scripts/apply_migration_api.py` with the ENV_DB gate — check table + RLS + resolve RPC (invoker + canonical safety fn + thin public wrapper, P2.2 §11.2 bindings) + `public.emergency_light_check` facade view + the guarded 332-row history seed. **Throttle-recovery honestly recorded:** the seed hit Management-API rate limits at statement 233/355 (228 OK / 127 FAIL, every failure `ThrottlerException`, zero SQL errors); the guarded idempotent seed statements were re-applied through the retrying helper (429 backoff) — 205 already durable, 127 backfilled, no duplicates, **332/332 final**. Count report per MIGRATION.md convention: 331 `light_id` resolved + 1 NULL for the non-padded `31` row (payload verbatim, never normalized to `031`); blanks ⇒ NULL (Status 300, location 1); พ.ศ. 2568×144 / 2569×188 parsed from actual bytes.
+- **D5 R1 CHANGES_REQUIRED issuecomment-6936446464** at exact head `19f7510` (1×P1 + 2×P3):
+  - **P1 — the §6.2 Auditor-resolution record was FALSE.** The "NO deterministic match (0/34)" probe was a **partial-data error**: it compared only the 14 packed-header tokens of the Drive-sourced `ข้อมูลผู้ปฏิบัติงาน` tab and never reached its per-employee rows. A deterministic match **EXISTED** (re-fetch verified 2026-11-17): the Check Auditor value (**77 rows, 1 distinct**) EXACTLY equals the `Employee_id` of one per-employee row (excel row 32 col A — `Employee_id` is stored as a NUMBER in the sheet, so string probes without numeric normalization miss it), and that row's name resolves **UNIQUELY by exact full-name match** to `core.personnel` **STAFF-001** (นายวิลาส รื่นวิชา). **Seed fidelity otherwise field-by-field clean.**
+  - 2×P3: missing house `notify pgrst, 'reload schema'` trailer on the fix-migration; the v1.6.0 CHANGELOG entry lacked the PR reference line.
+- **Repair `be3059a` (migration 000001 IMMUTABLE):** fix-migration `20261117000002_parity_p2_003_auditor_fix.sql` — fail-closed DO-block guard (personnel code must resolve to EXACTLY one row), guarded idempotent `UPDATE … SET auditor_id = STAFF-001's personnel UUID` for exactly the 77 source-non-blank row_IDs (generated programmatically from the CSV snapshot), house notify trailer (P3-1), documented rollback; **the 13-digit value NEVER appears in the file or anywhere in the repo (REDACTED evidence, first-3/last-2)**. Live post-verify: 332 total unchanged · `auditor_id` set = **77** (1 distinct UUID `11590d77-f73d-4742-9446-22c442814a91`) · NULL = **255** · `auditor_legacy_id` 0 · `legacy_id` 332 distinct (0 dupes). **4 record sites corrected APPEND-ONLY** (originals preserved): migration 000001 header `auditor_id` note + DDL inline comment; WO §10 D5-correction paragraph after the count table; this handoff §6.2 (corrected by §6.4); suite pins — `DIST_PINS.auditor_id_nonnull` 0→77, docstring/HONESTY lines, `test_30` extended to grep BOTH migration files (filename-timestamp tokens excluded), new `test_33` pinning the live repair (exactly 1 distinct auditor UUID, guarded re-apply no-op, rollback/trailer/guard markers). P3-2: CHANGELOG v1.6.0 entry carries the `การเปลี่ยนแปลงชุดนี้: PR #211` line.
+- **D5 R2 APPROVED issuecomment-6937336680** at exact head `be3059a` — fresh reviewer, the R1 findings fully repaired, **zero open P1/P2/P3**, own live probe + own battery: SQL contract suite **21/21** (incl. the new test_33), vitest FULL **655 passed / 1 skipped**, Playwright FULL **263/263**.
+
+### 7.3 Release evidence (v1.6.0 MINOR, verified live at closeout)
+
+- Release commit `3fc1db2` ("release: v1.6.0 (MINOR) — ตรวจไฟฉุกเฉิน check flow; CHANGELOG Thai พ.ศ. 2569"); Pages run **44011140631 SUCCESS** @ `c408e62f20ae4093e7b4f9efeead6919760b72af` (live-checked: status completed, conclusion success, headSha exact).
+- Live markers: index carries **1.6.0**; `assets/EmergencyLightCheckPage-DZeMUzsa.js` carries **ผ่าน / ไม่ผ่าน / สแกน / ไฟฉุกเฉิน**.
+- Annotated tag **v1.6.0** (`a61ce8ea164fdb219ec9954f34b1eb42204427a7`) dereferences `c408e62f20ae4093e7b4f9efeead6919760b72af` (local + remote).
+- `python3 scripts/check_release_version.py --tag v1.6.0` → **OK, exit 0**.
+
+### 7.4 Follow-up ledger additions (this closeout)
+
+1. **THE PARTIAL-DATA-PROBE LESSON** — numeric-stored IDs break string probes: the D5-R1 P1 root cause was a probe that compared 14 packed-header tokens and never reached the per-employee rows, plus `Employee_id` stored as a NUMBER defeating string equality. **Always type-coerce lookups** (numeric normalization before any string comparison). Recorded for the parity fixture/audit convention — future seed/audit probes must (a) read the full row set, never a header/partial slice, and (b) coerce numeric-stored identifiers before matching.
+2. **13-digit never committed** — the national-ID-class value never appeared in the repo at any point (grep-verified twice, incl. the `test_30` dual-migration-file pin with filename-timestamp tokens excluded); the D1-3 PII boundary held end-to-end (claim R1 P2 + implementation §6.2 suppression + the corrected repair all pin personnel-UUID-or-NULL, never verbatim).
+
+### 7.5 Frontier + standing
+
+Next parity lanes = **P2.4–P2.6 coliform (3 lanes; source sheets coliform bac. ×4 tables per plan §6)** — each needs its own NEW reviewed claim transition. Standing: **Phase-1 dual-run PENDING OWNER ACTION**, extinguisher master re-seed awaiting owner share (guarded P2.1 pattern, never reconstructed from the inspection table), hooks #155 approved-not-started (owner-manual), #156 open (owner-manual), Building WAITING_EXTERNAL, P4 authorized awaiting Phase reach.
+
+### 7.6 Scope-lock release
+
+Worktree `_worktrees/env-parity-p2-003` preserved clean at the delivered head `be3059a` (fully merged via PR #211). Scope lock released at generation 1; **CLOSED confers no fresh mutation authority**; all other work still requires a NEW claim transition; no closed lane confers execution authority.
