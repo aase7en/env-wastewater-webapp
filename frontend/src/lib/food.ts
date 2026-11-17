@@ -12,7 +12,7 @@
  * Show If `TODAY()>Collect_date` gating (same-day collect stays รอผล),
  * UI-only +1/+2 วัน suggestions, personnel resolution UUID-or-NULL (PII
  * pin — never verbatim national-ID-class identifiers). The existing
- * single-step form/CRUD behavior is preserved untouched (v1.7.0 MINOR).
+ * single-step form/CRUD behavior is preserved untouched (additive only).
  */
 import { useQuery } from "@tanstack/react-query";
 import { supabase } from "./supabase";

@@ -152,7 +152,7 @@ export function FoodPage() {
       </AuraCard>
       {/* ENV-PARITY-P2-004 — the additive coliform ×3 two-step flow
           (น้ำ/อาหาร/พนักงาน/ทั่วไป). Sits BELOW the legacy single-step
-          form/list — existing behavior untouched (v1.7.0 MINOR). */}
+          form/list — existing behavior untouched (additive only). */}
       <ColiformFlow rows={data} onChanged={refresh} />
     </div>
   );
