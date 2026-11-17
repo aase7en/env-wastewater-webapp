@@ -55,7 +55,54 @@ Independent exact-SHA review of THIS docs-only claim transition (R2 floor: fresh
 
 ## 6. Implementation-lane receipts (D2/D3/D4 — appended after the claim merges)
 
-*(appended by the implementing lane)*
+Lane activated on the merged base `85743a2` (origin/main @ claim merge PR #219) in the registered worktree `env-wastewater-webapp/_worktrees/env-parity-p2-006`, branch `feat/env-parity-p2-006`. Track-Z GLM, **test-only lane — NO seed, NO bump** (WO §3/§6; D1-2/D1-3/D1-4 honored: `supabase/` diff EMPTY, `CHANGELOG.md` + `frontend/package.json` byte-untouched at 1.8.0, zero seed rows, zero Drive writes).
+
+### D2 RED (commit `e4b84c1` — test file committed ALONE, importing the absent `./parity-fixtures-p2`)
+
+- **Focused vitest** `src/lib/parity-fixtures-p2.test.ts` → `Test Files 1 failed (1); Tests no tests` — `Error: Cannot find module './parity-fixtures-p2'` — the honest **fail-to-collect** RED mode for a new-file lane (P1.7/P2.4 precedent; handoff §3 truthfulness note).
+- **FULL vitest at RED** → `Test Files 1 failed | 41 passed (42); Tests 711 passed | 1 skipped (712)` — the single failed file IS the RED suite; zero legacy failures (P2.4 P3-1 lesson applied: any legacy pass at RED is recorded — here 41 files/711 tests passed by design, none claimed as RED).
+- **tsc at RED** → `error TS2307: Cannot find module './parity-fixtures-p2'` + implicit-any cascade from the unresolvable import — all collateral of the same absence (cleared at D3).
+- **SQL script at RED: DID NOT EXIST** (new-file lane) — recorded plainly; its D3 first run is expected GREEN (its subject is verification of EXISTING delivered objects, never claimed as RED).
+- Environment repairs at RED (gitignored local files only, never committed): fresh worktree lacked `frontend/node_modules` → `npm ci` (738 packages); lacked `frontend/.env` → created from the Drive secrets via the approved resolver (values never printed; `frontend/.env` is gitignored). Without it, 3 unrelated suites fail loud at module load (`Missing VITE_SUPABASE_URL / VITE_SUPABASE_ANON_KEY`) — the at-base FULL-vitest truth is the post-repair record above.
+
+### D3 implement (fixture tables + SQL battery; suite green)
+
+- `frontend/src/lib/parity-fixtures-p2.ts` — **59 fixture cases** across the three WO §4 families, every case carrying its verbatim ref-12 citation, **3 divergence-noted cases** all asserting CORRECTED expectations: `EX-T04` (NULL-expiry parity ruling, migration 20261116000006), `EX-V04` (inspection-type 6-value vs master 5-value — AppSheet self-divergence, both lists verbatim ref 3198 vs 3072), `LT-R02` (no Check-specific error pinned — §3.13-family label reused). SQL-side cases (22) marked `sql: true` and mirrored 1:1 by `P2_006_SQL_CASE_IDS`.
+- `frontend/src/lib/parity-fixtures-p2.test.ts` — 32 vitest tests covering the 37 vitest-executed cases against the shipped pure libs (`extinguisher-inspection`, `emergency-light-check`, `food`) — no re-derivation, no edits to any existing lib or suite (additive-only lane).
+- `scripts/test_parity_p2_006_fixtures_sql.py` — the transactional battery (single-request BEGIN…ROLLBACK per batch, zero net persistence; the P2.2/P2.3/P2.4 house shape): trigger decision table EX-T01..06, RPC contracts EX-R01..05 (incl. snapshot freezing), light RPC LT-R01/R02, seed-reality distributions LT-D01..04, catalog probes LT-K01/CB-C01/CB-C03/CB-F01, two-step smoke CB-C02, preflight/post baselines + probe-residue asserts.
+- **Preflight baselines live-verified 2026-11-18** (read-only, before any battery): `wastewater.reading` 907 · `core.personnel` 9 · `core.equipment_spec` 4 · `safety.emergency_light` 48 · `safety.fire_extinguisher` 0 (SOURCE_UNAVAILABLE — NO seed, D1-4) · `safety.extinguisher_inspection` 0 · `safety.emergency_light_check` 332 · `food.lab_test` 0 — byte-matching WO §7 D3's expected preflight.
+- Seed-reality distributions re-verified live (exact, pre-assertion): test_result ผ่าน×316/ไม่ผ่าน×16; Persistency มี×315/ไม่มี×17; Position เหมาะสม×329/ไม่เหมาะสม×3; Status blank×300/ขอติดตั้ง×16/แจ้งซ่อม×14/แจ้งย้ายตำแหน่ง×2.
+- **SQL battery first run (D3): 24/24 passed GREEN** — expected and recorded honestly (it verifies EXISTING P2.2/P2.3/P2.4 delivered objects); post-run baselines identical + probe residue 0.
+- Hand-computation honesty: two implementer-side corrections landed inside the D3 commit before any green claim — the EX-V05 hand-computed assert (chem_exp 2026-09-13 vs inspection 2026-01-15 ⇒ ไม่หมดอายุ; the shipped lib was right, the first assert line was wrong) and the PII scan applying the P2.4 test_32 scrub precedent (documented 14-digit migration-filename tokens scrubbed before the 13-digit scan — they are documentation, not data).
+
+### D4 battery (at the D3 head, recorded before push)
+
+| Check | Result |
+|---|---|
+| vitest FULL | `Test Files 42 passed (42); Tests 743 passed \| 1 skipped (744)` (32 new tests included) |
+| `tsc -b` | clean (0 errors) |
+| oxlint | exit 0 — 0 errors, 19 warnings all pre-existing in unrelated files; the two NEW lib files lint with **0 findings** |
+| Playwright FULL chromium `--workers=1` | **284/284 passed (6.4m), exit 0** — the no-regression gate green on this lane's code. Honesty record: the two earlier runs reported `273 passed / 11 failed (11.8m)` — root-caused NOT to this lane's changes but to a STALE zombie vite dev server (a prior lane's, serving the P2.004-era worktree) occupying shared port 5173, which Playwright's `reuseExistingServer` silently reused (exactly the P2.5-summary spec's 11 tests failed — the section absent from P2.4-era code; 273+11 = 284 = the --list total). The stale server was killed; the clean run above exercises THIS worktree's own dev server. |
+| guard (`env_coordination_guard status`) | `ok: true` — 344/344 + 450 subtests (self-test battery `344 passed`) |
+| runtime (`test_env_autonomy_runtime.py`) | 62/62 passed + 32 subtests |
+| release checker | regression battery `37 passed, 0 failed`; `check_release_version.py --tag v1.8.0` → `RELEASE VERSION CHECK: OK (v1.8.0; CHANGELOG entry v1.8.0)` exit 0 — **NO bump confirmed** |
+| `git diff --check` | clean |
+| PII 13-digit scan (3 new files) | raw grep hits = the documented 14-digit migration-filename tokens only; **after the P2.4-precedent scrub: 0 matches** (suite-pinned) |
+| diff vs base `85743a2` | EXACTLY the 5 claimed files (`parity-fixtures-p2.ts`, `parity-fixtures-p2.test.ts`, `test_parity_p2_006_fixtures_sql.py`, WO, this handoff); `supabase/` EMPTY; `CHANGELOG.md`/`frontend/package.json` byte-untouched; CURRENT-WORK untouched by the implementation lane |
+
+### Achieved-parity report (the P1 DoD ≥98% convention, reported honestly)
+
+- **Executable cases: 59/59 passing = 100%** (target ≥98% met) — 37 vitest-executed + 22 SQL-exercised; every case hand-computed from the ref-12 verbatim formulas; zero cases skipped or weakened.
+- **Divergence-corrected cases: 3** (EX-T04 NULL-expiry parity ruling · EX-V04 inspection-6-vs-master-5 type divergence · LT-R02 reused fail-closed label) — all asserting CORRECTED expectations with the note + ruling reference, never silently matching a bug.
+- SQL battery makes **zero durable writes** (preflight/post baselines identical; probe residue asserted 0 after every batch).
+
+### Deviations / environment records (none material to scope)
+
+1. The dispatch's stated worktree path `Github/_worktrees/env-parity-p2-006` does not exist on this machine; the registered worktree (git worktree list, authoritative) is `env-wastewater-webapp/_worktrees/env-parity-p2-006` @ `85743a2` [feat/env-parity-p2-006] — all work done there (recorded per the AGENTS.md local-worktree caveat rule).
+2. Secrets resolution on this machine required the documented `A_WIKI_DRIVE_PATH` override (Drive root via the `_from_Desktop/A-Wiki/drive` symlink); `scripts/_env.py` default candidates don't match this layout. Values never printed.
+3. RED-commit test-file adjustments before D3 green (all recorded above; none affect the RED evidence, which is the fail-to-collect itself).
+
+**STOP at REVIEW_REQUESTED — implementer never merges. Next: D5 fresh-GLM independent review at the exact frozen head (independently executed battery rerun where possible + hand-verification of the fixture expected values against the ref-12 verbatim formulas); the authorized reviewer owns approval + merge.**
 
 ---
 
