@@ -48,9 +48,15 @@ handoff — and pass GREEN after it):
              มี315/ไม่มี17; Position เหมาะสม329/ไม่เหมาะสม3; test_result
              ผ่าน316/ไม่ผ่าน16; Status blank300/ขอติดตั้ง16/แจ้งซ่อม14/
              แจ้งย้ายตำแหน่ง2; Broken_detail 16 nonempty; Pic 31 nonempty;
-             Auditor 77 nonempty at source => auditor_id 0 + auditor_
+             Auditor 77 nonempty at source => auditor_id 77 + auditor_
              legacy_id 0 committed — the single distinct 13-digit account
-             had NO deterministic core.personnel match, D1-3 CLOSED);
+             resolves deterministically: it EXACTLY equals the Employee_id
+             of one per-employee row of the Drive-sourced ข้อมูลผู้ปฏิบัติงาน
+             tab, and that row's name resolves UNIQUELY by exact full-name
+             match to core.personnel STAFF-001 (D5 P1 repair, fix-migration
+             20261117000002; the prior 0/34 "no match" record was a
+             partial-data probe error — it hit only the 14 packed-header
+             tokens, never the per-employee rows);
              light_id resolved 331/332 (exact erl_id match) + the ONE
              non-padded '31' row NULL/verbatim (D1-1 — never normalized to
              '031'); legacy_id 332 distinct; guarded idempotency (re-seed
@@ -58,9 +64,12 @@ handoff — and pass GREEN after it):
              re-INSERT); source_provenance pin (workbook + gid).
   HONESTY  — the '31' row: erl_payload verbatim '31', light_id NULL,
              location_snapshot NULL, never matched to '031'; blanks stay
-             NULL (status 300 NULLs; location 1 NULL); no 13-digit string
-             anywhere in the migration file (grep-test of the SQL text);
-             baselines intact: wastewater.reading 907, core.personnel 9,
+             NULL (status 300 NULLs; location 1 NULL); the 13-digit Auditor
+             value appears NOWHERE in this repo — grep-test of BOTH
+             migration files (migration-name timestamp tokens excluded,
+             they are not data); all 77 seeded auditor rows carry the ONE
+             resolved personnel UUID; baselines intact: wastewater.reading
+             907, core.personnel 9,
              core.equipment_spec 4, safety.emergency_light 48,
              safety.fire_extinguisher 0, safety.extinguisher_inspection 0.
   FILE     — the pinned migration file exists with documented rollback SQL
@@ -87,6 +96,13 @@ API_URL = (
 
 MIGRATION = "20261117000001_parity_p2_003.sql"
 MIGRATION_PATH = Path(__file__).resolve().parent.parent / "supabase/migrations" / MIGRATION
+
+# D5 P1 repair (2026-11-17): the auditor-resolution fix migration. The base
+# migration 20261117000001 is IMMUTABLE — the correction ships as a new
+# guarded fix file (house 0000…fix convention, P2.2 trigger_null_fix
+# precedent).
+FIX_MIGRATION = "20261117000002_parity_p2_003_auditor_fix.sql"
+FIX_MIGRATION_PATH = Path(__file__).resolve().parent.parent / "supabase/migrations" / FIX_MIGRATION
 
 # Honest Thai fail-closed error — the §3.13-family QR Valid If error
 # ('ไม่พบข้อมูล!!  ให้ถามเอ นะจ๊ะ', double space verbatim). Reference 12 §3.33
@@ -150,8 +166,10 @@ DIST_PINS = {
     "status_แจ้งย้ายตำแหน่ง": 2,
     "broken_nonnull": 16,
     "pic_nonnull": 31,
-    "auditor_id_nonnull": 0,        # D1-3 CLOSED: no deterministic match
-    "auditor_legacy_nonnull": 0,    #   => UUID-or-NULL both NULL + disclosure
+    "auditor_id_nonnull": 77,       # D5 P1 REPAIR: deterministic match EXISTS
+    "auditor_legacy_nonnull": 0,    #   (Drive per-employee row → STAFF-001 by
+                                    #   exact name); legacy stays NULL — the
+                                    #   13-digit value is never seeded
     "light_id_null": 1,             # the '31' row only
     "location_null": 1,             # the same '31' row
     "legacy_distinct": 332,
@@ -619,6 +637,19 @@ class P2EmergencyLightCheckContract(unittest.TestCase):
         for ln in text.splitlines():
             if "auditor_legacy_id" in ln and "INSERT" in ln.upper():
                 self.assertIn("NULL", ln, "auditor_legacy_id seeded non-NULL in migration VALUES")
+        # D5 P1 repair: the fix migration is under the same pin. Migration
+        # FILENAME timestamp tokens (e.g. a 14-digit YYYYMMDDHHMMSS-style
+        # name reference in the header comments) are documentation, not
+        # data — they are removed before the digit-run grep; anything else
+        # 13+ digits long is a violation.
+        self.assertTrue(FIX_MIGRATION_PATH.exists(), f"{FIX_MIGRATION} not written yet")
+        fix_text = FIX_MIGRATION_PATH.read_text(encoding="utf-8")
+        scrubbed = fix_text.replace(MIGRATION, "").replace(FIX_MIGRATION, "")
+        m2 = re.search(r"\d{13}", scrubbed)
+        self.assertIsNone(m2, f"13-digit digit-run found in fix migration (outside filename refs) — PII pin violated")
+        for ln in fix_text.splitlines():
+            if "auditor_legacy_id" in ln and ln.strip().lower().startswith(("update", "insert")):
+                self.assertIn("null", ln.lower(), "fix migration must never write auditor_legacy_id")
 
     def test_31_migration_carries_documented_rollback(self):
         self.assertTrue(MIGRATION_PATH.exists(), f"{MIGRATION} not written yet")
@@ -643,6 +674,48 @@ class P2EmergencyLightCheckContract(unittest.TestCase):
         self.assertEqual(counts["light"], 48, "safety.emergency_light baseline moved")
         self.assertEqual(counts["ext"], 0, "fire_extinguisher must stay UNSEEDED")
         self.assertEqual(counts["insp"], 0, "extinguisher_inspection baseline moved")
+
+    # ───────────────── D5 P1 REPAIR — auditor_id resolution ────────────────
+
+    def test_33_auditor_resolved_to_staff001(self):
+        # The deterministic chain (D5 re-fetch 2026-11-17): the single
+        # distinct 13-digit Check Auditor value exactly equals the
+        # Employee_id of one per-employee row of the Drive-sourced
+        # ข้อมูลผู้ปฏิบัติงาน tab, whose name resolves UNIQUELY by exact
+        # full-name match to core.personnel STAFF-001 (employee_code is
+        # the live synthetic code column — no legacy identifier column
+        # exists on that table). The fix migration
+        # 20261117000002 backfills auditor_id for exactly the 77 source
+        # rows; the 13-digit value itself never enters this repo.
+        self.assertTrue(FIX_MIGRATION_PATH.exists(), f"{FIX_MIGRATION} not written yet")
+        fix_text = FIX_MIGRATION_PATH.read_text(encoding="utf-8")
+        self.assertIn("notify pgrst, 'reload schema';", fix_text, "house PostgREST reload trailer missing")
+        lowered = fix_text.lower()
+        self.assertIn("auditor_id is null", lowered, "fix must be guarded (WHERE auditor_id IS NULL)")
+        for marker in ("rollback", "auditor_id = null"):
+            self.assertIn(marker, lowered, f"fix rollback documentation missing: {marker}")
+        self.assertIn("employee_code = 'STAFF-001'", fix_text, "resolution must pin the live synthetic code")
+        # live: exactly ONE distinct auditor UUID, and it IS STAFF-001's
+        rows = q("""
+        SELECT count(*) AS n,
+               count(DISTINCT auditor_id) AS distinct_ids,
+               bool_and(auditor_id = (SELECT id FROM core.personnel WHERE employee_code = 'STAFF-001')) AS all_staff001
+          FROM safety.emergency_light_check WHERE auditor_id IS NOT NULL
+        """)[0]
+        self.assertEqual(rows["n"], DIST_PINS["auditor_id_nonnull"], "auditor backfill count mismatch")
+        self.assertEqual(rows["distinct_ids"], 1, "exactly one distinct auditor person expected")
+        self.assertTrue(rows["all_staff001"], "every auditor row must be STAFF-001's personnel UUID")
+        # the guarded update is idempotent: re-running the fix's full
+        # UPDATE statement inside a ROLLED-BACK transaction affects 0 rows
+        # (everything already carries auditor_id) and leaves counts untouched
+        n_before = q("SELECT count(*) AS n FROM safety.emergency_light_check WHERE auditor_id IS NOT NULL")[0]["n"]
+        lines = fix_text.splitlines()
+        start = next(i for i, ln in enumerate(lines) if ln.strip().lower().startswith("update safety.emergency_light_check"))
+        end = next(i for i in range(start, len(lines)) if lines[i].rstrip().endswith(");"))
+        stmt = "\n".join(lines[start : end + 1])
+        q("BEGIN;\n" + stmt + "\nROLLBACK;")
+        n_after = q("SELECT count(*) AS n FROM safety.emergency_light_check WHERE auditor_id IS NOT NULL")[0]["n"]
+        self.assertEqual(n_before, n_after, "guarded re-apply must be a no-op")
 
 
 if __name__ == "__main__":

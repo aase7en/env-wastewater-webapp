@@ -42,6 +42,25 @@
 --          no legacy identifier column). VALUES carry ONLY the resolved
 --          personnel UUID or NULL — here ALL NULL + disclosure count in
 --          the handoff/MIGRATION count report. NEVER the 13-digit ID.
+--          ── D5 P1 CORRECTION (2026-11-17; fix-migration
+--          20261117…000002_parity_p2_003_auditor_fix.sql — the full
+--          filename lives in the fix file itself; this immutable file's
+--          recorded "no 13-digit digit-run" grep pin stays byte-true,
+--          so the timestamp token is written non-contiguously here): the
+--          "NO deterministic match (0/34)" claim above was a PARTIAL-DATA
+--          PROBE ERROR, now corrected — it compared only the 14
+--          packed-header tokens of the ข้อมูลผู้ปฏิบัติงาน tab, never its
+--          per-employee rows. A deterministic match EXISTS: the Auditor
+--          value (77 rows, 1 distinct) EXACTLY equals the Employee_id of
+--          one per-employee row of that tab (stored as a NUMBER in the
+--          sheet — string probes missed it), and that row's name resolves
+--          UNIQUELY by exact full-name match to core.personnel STAFF-001
+--          (employee_code, live-verified 2026-11-17). This seed DID ship
+--          all 77 auditor_id NULL as recorded above; the fix migration
+--          backfills exactly those 77 rows to the STAFF-001 UUID. The
+--          13-digit value still NEVER appears in this repo (evidence
+--          REDACTED). This file is immutable — the original claim text is
+--          preserved as written; only this correction note is appended.
 --        • broken_detail TEXT NULL — free-text-capable (observed free-text
 --          tokens น๊อตหลุด/ถอดปลั๊กออก beyond the 5-value enum); NO CHECK.
 --        • pic_path TEXT NULL — AppSheet Drive-relative legacy refs
@@ -137,6 +156,12 @@ create table safety.emergency_light_check (
     -- else NULL; auditor_legacy_id exists for a NON-national-ID legacy
     -- identifier slot and stays NULL under the same pin. This seed: ALL
     -- NULL (no deterministic match — disclosure count in the handoff).
+    -- D5 P1 CORRECTION (2026-11-17): a deterministic match EXISTS (see
+    -- the header note) — fix-migration 20261117…000002 (parity_p2_003_
+    -- auditor_fix) backfilled the 77 rows to STAFF-001's personnel UUID.
+    -- This immutable seed block still reads NULL,NULL as shipped; the
+    -- live table is corrected by the fix migration, not by editing
+    -- this file.
     auditor_id         uuid REFERENCES core.personnel(id),
     auditor_legacy_id  text,
     -- AppSheet Broken_detail EnumList (5 documented values) + free text
