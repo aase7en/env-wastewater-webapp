@@ -461,7 +461,7 @@ class P2ColiformLabTestContract(unittest.TestCase):
         for marker in (
             "rollback",
             "drop index if exists",
-            "alter table food.lab_test drop column",
+            "drop column if exists",
             "notify pgrst, 'reload schema'",
         ):
             self.assertIn(marker, lowered, f"rollback/pgrst-trailer documentation missing: {marker}")

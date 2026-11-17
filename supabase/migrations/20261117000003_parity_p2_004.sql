@@ -27,9 +27,16 @@
 --   D1-6 existing RLS UNTOUCHED: the ONE policy lab_test_authenticated_rw
 --        (FOR ALL TO authenticated, staff-or-admin), the audit trigger
 --        trg_audit_log and the dormant trg_decrement_reagent stay exactly
---        as delivered (oauth4 restate + FOOD-CORE-001). No grants change;
---        the public.lab_test security_invoker façade flows the new columns
---        through automatically (select * — no façade statement here).
+--        as delivered (oauth4 restate + FOOD-CORE-001). No grants change.
+--        Façade NOTE (recorded deviation, post-apply verified 2026-11-17):
+--        the WO §2.2 assumption "new columns flow through automatically,
+--        no façade change" is WRONG in Postgres — a stored `select *`
+--        view expands its column list AT CREATION, so the new columns
+--        would be unreachable via REST. The migration therefore adds ONE
+--        `create or replace view public.lab_test with (security_invoker=on)
+--        as select * from food.lab_test` statement — the SAME definition
+--        the schema5 façade already has, ACLs preserved by OR REPLACE, no
+--        policy/grant statement involved.
 --   D1-7 two-step flow semantics: sample_date (NOT NULL DEFAULT
 --        CURRENT_DATE, existing) = Collect_date — always filled at step 1;
 --        the RESULT step (result / mpn_value / reported_date / reporter_id)
@@ -178,6 +185,17 @@ COMMENT ON COLUMN food.lab_test.legacy_id IS
 
 COMMENT ON COLUMN food.lab_test.source_provenance IS
     'P2.4 — MIGRATION.md provenance convention: manual UI entries set their own (e.g. ENV UI manual entry); a future seed pins workbook+tab+fetch date.';
+
+-- ─── 4) Façade refresh — same definition, now carrying the new columns.
+--       Postgres expands `select *` at view creation (the WO §2.2
+--       "flows through automatically" assumption is wrong — recorded
+--       deviation): OR REPLACE preserves the view's ACLs and the
+--       security_invoker option is restated explicitly. No policy/grant
+--       statement exists on this view — none is added.
+
+create or replace view public.lab_test
+with (security_invoker=on) as
+select * from food.lab_test;
 
 -- ─── P3-1 (house trailer): PostgREST schema cache reload.
 notify pgrst, 'reload schema';
