@@ -804,10 +804,93 @@ export async function createEmergencyLightCheck(
 }
 
 /** QR resolve: the master row + the prior-check summary via the RPC. The
- * PostgREST error for blank/unknown ids carries the honest Thai message
- * ('ไม่พบข้อมูล!!  ให้ถามเอ นะจ๊ะ') — surfaced as-is, fail-closed. */
+ *  PostgREST error for blank/unknown ids carries the honest Thai message
+ *  ('ไม่พบข้อมูล!!  ให้ถามเอ นะจ๊ะ') — surfaced as-is, fail-closed. */
 export async function resolveEmergencyLightQr(qr: string): Promise<EmergencyLightResolveResult> {
   const { data, error } = await supabase.rpc("fn_resolve_emergency_light_qr", { p_qr: qr });
   if (error) throw new Error(error.message);
   return data as EmergencyLightResolveResult;
+}
+
+// ─── P2.5 report reads (safety + coliform summary, /reports) ─────────────
+// ENV-PARITY-P2-005 (D1-2 additive section — the P1.6 D1-1 precedent).
+// The aggregation itself is pure client-side (lib/safety-summary.ts +
+// lib/coliform-summary.ts); these fetchers only range-fetch the EXISTING
+// tables/façade rows, inclusive both endpoints per the AppSheet range
+// predicate. NO limit — the report must see the full range (existing
+// fetchers' default limits are NOT relied on). NO migration: all four
+// surfaces already exist (extinguisher_inspection / fire_extinguisher /
+// emergency_light_check / public.lab_test) with RLS as-is, consumed
+// read-only.
+
+/** ถัง inspections in range — safety.extinguisher_inspection (the P2.2
+ *  RLS path fetchExtinguisherInspections uses). */
+export async function fetchExtinguisherInspectionRange(
+  startISO: string,
+  endISO: string,
+): Promise<ExtinguisherInspectionRow[]> {
+  const { data, error } = await supabase
+    .from("extinguisher_inspection")
+    .select("*")
+    .gte("inspection_date", startISO)
+    .lte("inspection_date", endISO)
+    .order("inspection_date", { ascending: true });
+  if (error) throw new Error(error.message);
+  return (data ?? []) as ExtinguisherInspectionRow[];
+}
+
+/** The extinguisher MASTER register ids (จำนวนถังที่มี denominator) —
+ *  safety.fire_extinguisher via the unchanged P2.1 read path
+ *  (fetchExtinguishers). Empty today → the summary renders the honest
+ *  SOURCE_UNAVAILABLE state, never a fabricated denominator. */
+export async function fetchExtinguisherMasterIds(): Promise<string[]> {
+  const { data, error } = await supabase
+    .from("fire_extinguisher")
+    .select("legacy_row_id")
+    .order("legacy_row_id");
+  if (error) throw new Error(error.message);
+  return ((data ?? []) as Array<{ legacy_row_id: string | null }>).map((r) => r.legacy_row_id ?? "");
+}
+
+/** ไฟ checks in range — safety.emergency_light_check (the P2.3 RLS path
+ *  fetchEmergencyLightChecks uses), check_date DESC + id tiebreak. */
+export async function fetchEmergencyLightCheckRange(
+  startISO: string,
+  endISO: string,
+): Promise<EmergencyLightCheckRow[]> {
+  const { data, error } = await supabase
+    .from("emergency_light_check")
+    .select("*")
+    .gte("check_date", startISO)
+    .lte("check_date", endISO)
+    .order("check_date", { ascending: false })
+    .order("id", { ascending: false });
+  if (error) throw new Error(error.message);
+  return (data ?? []) as EmergencyLightCheckRow[];
+}
+
+/** coliform lab_test rows in range — the public.lab_test security_invoker
+ *  façade (the P2.4 read path fetchFoodLabTests uses); ONLY the five
+ *  summary-relevant columns (counts only — never personnel identity). */
+export interface ColiformLabTestRangeRow {
+  id: string;
+  sample_date: string;
+  sample_source: string | null;
+  collect_point: string | null;
+  result: string | null;
+  reported_date: string | null;
+}
+
+export async function fetchColiformLabTestRange(
+  startISO: string,
+  endISO: string,
+): Promise<ColiformLabTestRangeRow[]> {
+  const { data, error } = await supabase
+    .from("lab_test")
+    .select("id, sample_date, sample_source, collect_point, result, reported_date")
+    .gte("sample_date", startISO)
+    .lte("sample_date", endISO)
+    .order("sample_date", { ascending: true });
+  if (error) throw new Error(error.message);
+  return (data ?? []) as ColiformLabTestRangeRow[];
 }

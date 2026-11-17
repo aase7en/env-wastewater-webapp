@@ -1,6 +1,7 @@
 # Work Order — ENV-PARITY-P2-005 (Claim ENV-PARITY-P2-005-C1, gen 1)
 
-**Status: CLAIMED (claim transition PR — docs-only, branch `docs/env-parity-p2-005-claim` off main @ `fb2beadd76a5c5b61def430dc9a765d0189000e5`; STOP at REVIEW_REQUESTED — the transition author never merges, the authorized reviewer owns approval + merge).**
+**Status: IMPLEMENTED — REVIEW_REQUESTED (implementation lane `feat/env-parity-p2-005` off main @ `22edf23ccf0bb9f0920265d456317eb1654944ab`; implementation PR = the D2/D3/D4 delivery; STOP at REVIEW_REQUESTED — the implementer never merges, the authorized D5 reviewer owns approval + merge. Full D2/D3/D4 receipts: `docs/ai/handoffs/ENV-PARITY-P2-005-GLM.md` §6.)**
+**Prior status: CLAIMED (claim transition PR — docs-only, branch `docs/env-parity-p2-005-claim` off main @ `fb2beadd76a5c5b61def430dc9a765d0189000e5`; merged as PR #216).**
 **Governance pattern:** PR #183–#215 claim-transition series (docs-only claim → reviewed merge → implementation lane → D5 → closeout); direct predecessors: ENV-PARITY-P2-001 (PRs #204/#205 — safety asset masters), ENV-PARITY-P2-002 (PRs #207/#208 — extinguisher inspection QR flow, v1.5.0), ENV-PARITY-P2-003 (PRs #210/#211 — emergency-light check flow + 332-row seed, v1.6.0), ENV-PARITY-P2-004 (PRs #213/#214 — coliform ×3 two-step flow, v1.7.0); **the structural report-lane precedent is ENV-PARITY-P1-006 (PRs #198/#199 — the `/reports` date-range numeric summary, v1.4.0)**, whose D1-1 client-side-aggregation decision this lane follows.
 
 ## 0. Lane identity — plan row pinned VERBATIM, boundary decided at claim
