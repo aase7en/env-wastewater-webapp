@@ -1,6 +1,6 @@
 # Work Order — ENV-PARITY-P2-003 (Claim ENV-PARITY-P2-003-C1, gen 1)
 
-**Status: CLAIMED — docs-only claim transition (branch `docs/env-parity-p2-003-claim`, base `efac8fcf11d7e93e5e09e3d340400575b4a9422b` = origin/main tip; STOP at REVIEW_REQUESTED — the claim author never merges, the authorized reviewer owns approval + merge). The implementing lane runs D2→D4 on the merged base and stops at REVIEW_REQUESTED — implementer never merges.**
+**Status: IMPLEMENTATION DELIVERED — REVIEW_REQUESTED (implementation lane branch `feat/env-parity-p2-003`, base = this transition's merge `70c0a6430f4e45f204b684497d12968f1c7b1ed7` = origin/main tip; D2 RED f33e047 → D3 7196a66 → release 3fc1db2; STOP at REVIEW_REQUESTED — the implementing agent never merges, the authorized reviewer owns approval + merge; D5 fresh-GLM independent review is the next gate). The docs-only claim transition above (branch `docs/env-parity-p2-003-claim`) was reviewed and merged as PR #210 (R2 PII repair included — D1-3 CLOSED).**
 **Governance pattern:** PR #183–#209 claim-transition series (docs-only claim → reviewed merge → implementation lane → D5 → closeout); direct predecessors: ENV-PARITY-P2-001 (PRs #204/#205 — safety asset masters, 48-row emergency-light master seeded 2026-11-16) and ENV-PARITY-P2-002 (PRs #207/#208 — extinguisher inspection QR flow, released v1.5.0).
 
 ## 0. Lane identity
@@ -116,4 +116,63 @@ D1-1 the `31` unresolved-reference ruling (NULL `light_id` + verbatim payload; n
 
 ## 10. Implementation-lane log (appends the D-phase receipts after the claim merges)
 
-_(empty at claim — the implementing lane appends D2/D3/D4/D5 receipts here after the reviewed merge, per the P2.2 precedent §11.)_
+### D2 RED — commit `f33e047` (2026-11-17)
+
+- **SQL contract suite** `scripts/test_parity_p2_003_emergency_light_check.py` (20 tests): **18 FAILED / 2 ok** — truthful absent-object failures (`42P01: relation "safety.emergency_light_check" does not exist` across SCHEMA/SEED groups + the 2 absent-migration-file FILE failures); ok = test_14 anon fail-closed (vacuously closed pre-apply — any deny passes) + test_32 baselines intact (907/9/4/48/0/0 live). Raw record: `/tmp/env-p2-003-receipts/d2-red-sql.txt`.
+- **vitest** `frontend/src/lib/emergency-light-check.test.ts`: 1 file **failed-to-collect** (`Cannot find module './emergency-light-check'`), 0 tests — truthful RED.
+- **Playwright** `frontend/tests/e2e/emergency-light-check.spec.ts`: **8 failed / 0 passed** (absent route `/safety/emergency-light-checks` + absent testids) — truthful RED.
+- The camera-mocked QR e2e follows the P2.2 pattern (BarcodeDetector stub → scan → RPC resolve → gates → submit; manual pick + typed code always available).
+
+### D3 — commit `7196a66` (2026-11-17)
+
+**Apply evidence** (ENV_DB `gllqtbyofrcjzmbnfoeh`, via `scripts/apply_migration_api.py`):
+
+- Preflight (live, immediately before apply): all 5 target objects absent (`safety.emergency_light_check`, both façade views, both RPC schemas), baselines intact 907/9/4/48/0/0.
+- **Throttling event (honest record):** the single apply run completed all DDL + policies + RPCs + views + grants, then hit Management-API rate limits mid-seed (statement 233/355: 228 OK / 127 FAIL — **every failure a `ThrottlerException: Too Many Requests`, zero SQL errors**). The seed is guarded-idempotent (`WHERE NOT EXISTS` on `legacy_id`), so the exact same seed statements were re-applied through the retrying helper (429 backoff, 6 retries) — 205 rows were already durable, 127 backfilled. Final: **no duplicates, count 332/332**.
+- Post-verify (live + the 20-test contract suite **GREEN 20/20**): objects + policy shapes + RPC ACLs + façades verified; **count report 332/332**:
+
+| measure | value |
+|---|---|
+| seed rows (live `count(*)`) | **332/332** |
+| light_id resolved (exact `erl_id` match) | 331 |
+| light_id NULL (the non-padded `31` row — payload verbatim, never normalized to `031`) | **1** (`erl_payload='31'`, `legacy_id='305cd644'`) |
+| พ.ศ. date parse (year > 2500 ⇒ −543) | 2568×144 → 2025 · 2569×188 → 2026 (live-verified) |
+| Status blank ⇒ NULL | 300 NULL (16 ขอติดตั้ง / 14 แจ้งซ่อม / 2 แจ้งย้ายตำแหน่ง) |
+| Persistency มี/ไม่มี | 315/17 |
+| Position เหมาะสม/ไม่เหมาะสม | 329/3 |
+| test_result ผ่าน/ไม่ผ่าน | 316/16 |
+| broken_detail non-NULL (free text preserved verbatim) | 16 |
+| pic_path non-NULL (legacy `Check_Images/…` refs verbatim) | 31 |
+| **Auditor outcome (D1-3 CLOSED)** | source 77 nonempty rows = ONE distinct 13-digit account; **NO deterministic match** — the Drive-sourced `ข้อมูลผู้ปฏิบัติงาน` tab (workbook ข้อมูลบ่อบำบัดประจำวัน `1kWtdmDzUNWTB5LnUY87fHjeK6Wcs8jTxeXCIkAoM6Vk`, 34 rows) has 0 exact / 0 digits-only / 0 last-13 `Employee_id` matches; `core.personnel` (9 rows) carries no legacy identifier column (live-verified column list) ⇒ **all 77 rows seeded `auditor_id NULL` + `auditor_legacy_id NULL`** (suppression DISCLOSED per the pin); live: auditor_uuid_rows=0, auditor_legacy_rows=0; **13-digit digit-run grep of the migration file: 0 matches** (suite test_30 pins it) |
+| anon fail-closed | SQL-role anon probes: table SELECT denied (no anon policy), RPC denied (EXECUTE revoked) — suite test_14 GREEN |
+| spot-check 3 rows vs CSV bytes | `c33588cf` (joined-enum `ไม่มีหัตถการ , มีแสงสว่างจากธรรมชาติ , ไม่มีเวรดึก`, 2025-06-06), `430671f5` (free-text `น๊อตหลุด`, legacy Pic ref, 2025-06-17), `305cd644` (the `31` row: light_id NULL + location NULL + payload verbatim, 2025-08-19) — all byte-exact (suite test_24 GREEN) |
+| guarded reseed no-op | suite test_25 GREEN (re-running the seed block inside a rolled-back tx leaves counts untouched) |
+
+**D5 P1 CORRECTION (2026-11-17, repair lane on PR #211 — supersedes the Auditor-outcome row above; the row itself is preserved as written):** the "NO deterministic match (0/34)" finding was FALSE — a partial-data probe error. The probe compared only the **14 packed-header tokens** of the Drive-sourced `ข้อมูลผู้ปฏิบัติงาน` tab and never reached its per-employee rows. A deterministic match EXISTS: the Check Auditor value (**77 rows, 1 distinct**) EXACTLY equals the `Employee_id` of one per-employee row of that tab (excel row 32, col A — the sheet stores `Employee_id` as a NUMBER, so string probes without numeric normalization miss it), and that row's name resolves **UNIQUELY by exact full-name match** to `core.personnel` **STAFF-001** (`employee_code` = the live synthetic code column, live-verified 2026-11-17; the 9-row table has exactly one such name). Repairs: fix-migration `supabase/migrations/20261117000002_parity_p2_003_auditor_fix.sql` backfills `auditor_id` for exactly those 77 rows (guarded `WHERE auditor_id IS NULL`, fail-closed single-row personnel guard, `notify pgrst` trailer, documented rollback); suite pins corrected (`auditor_id_nonnull` 0→77, both-migration 13-digit grep); migration 000001 header/DDL notes appended with the correction (immutable file — original claims preserved). **PII pin UNCHANGED:** the 13-digit value appears NOWHERE in the repo (receipts REDACTED first-3/last-2; suite test_30 extended to grep both migration files, filename timestamp tokens excluded).
+
+**Recorded deviations/decisions (reviewer adjudication):**
+
+1. **`light_id` is TEXT (not UUID)** — the WO §8 D1-2 wording says "UUID NULL FK → emergency_light(erl_id)", but the live master's PK `erl_id` is TEXT and the table has no UUID column; an FK must reference the target's actual type. Semantics unchanged (NULLable FK, exact-match resolve, the `31` row stays NULL).
+2. **NO hard CHECK constraints on the documented enums** (persistency/position/test_result/status/broken_detail) — the instruction's "CHECK" shorthand is implemented as the WO §3.1 explicit "documented enum verbatim, NO CHECK" pin (D1-2/P1.001 lesson: unknown ≠ rejected; Broken_detail carries free-text tokens `น๊อตหลุด`×3/`ถอดปลั๊กออก`×1 beyond the 5-value enum). The UI restricts to the verbatim lists.
+3. **pic** — seed rows carry the legacy `Check_Images/…` refs verbatim per WO §3.1 (P2.1 precedent); NEW UI entries follow the house attachment pattern (core.attachment upload; the Storage path stored in `pic_path`) per the instruction's "pic via house attachment pattern".
+4. **RPC error text** — reference 12 pins NO Check-specific error; the house reuses the §3.13-family verbatim `ไม่พบข้อมูล!!  ให้ถามเอ นะจ๊ะ` (the same text P2.2 verified byte-level).
+5. **`public.emergency_light` façade view added** (new in this lane, consuming the UNCHANGED P2.1 policies — no master DDL, no new policies) — the manual-pick list needs REST reachability (the P2.2 `public.fire_extinguisher` precedent).
+6. **D2-suite authoring fixes during GREEN** (truthful record): test_21 referenced a `total` key absent from its SQL result (covered by test_20) and test_13's fixture date (2026-01-15) postdated nothing — seeded พ.ศ.-2569 rows run to 2026-09-16, so the fixture moved to 2027-06-15. Both were test bugs, not migration defects; the RED record above predates them.
+7. **Local env setup** — this machine's checkout had no `frontend/.env` (gitignored); created locally from the Drive secrets (`VITE_SUPABASE_URL`/`VITE_SUPABASE_ANON_KEY`, never committed/printed) so the dev-server e2e boots. Same for `SUPABASE_ACCESS_TOKEN` via process env (the `_env.py` loader needs a local stub this machine lacks).
+
+### D4 battery — at freeze `3fc1db2` (2026-11-17)
+
+| gate | result |
+|---|---|
+| vitest FULL | **655 passed / 1 skipped** (656; the designed skip) |
+| `tsc -b` | clean |
+| oxlint | exit 0 (pre-existing warnings only) |
+| Playwright FULL workers=1 | **263 passed** (incl. the 8 new camera-mocked/manual-pick/gates/history/mobile e2e + the 7 P2.2 regression) |
+| guard (test_env_coordination_guard) | **344 passed + 450 subtests** |
+| runtime + checker + workflow-runtimes (pytest) | **76 passed + 32 subtests** (runtime 62/62 within) |
+| release checker | **OK (v1.6.0; CHANGELOG entry v1.6.0)** |
+| validate-registry | `{ok: true, claims: 35, BOOTSTRAP_CONTROL}` |
+| `git diff --check` | clean |
+| changed files ⊆ claimed scope | yes (see the PR body list) |
+
+Commits: `f33e047` (D2 RED) → `7196a66` (D3 feat) → `3fc1db2` (release v1.6.0) → docs (this commit). **STOP at REVIEW_REQUESTED — the implementing agent never merges.**

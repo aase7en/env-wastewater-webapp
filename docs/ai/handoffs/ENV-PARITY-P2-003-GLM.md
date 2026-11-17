@@ -58,3 +58,48 @@ ONE migration `supabase/migrations/20261117000001_parity_p2_003.sql` (check tabl
 ## 5. Single next safe action
 
 Independent exact-SHA review of THIS docs-only claim transition (R2 floor: fresh GLM-5.3 MAX reviewer context; the AUTHORIZATION BASIS incl. the seed-NOW decision (WO §5) and the verbatim §3.33/§3.35/§10 pins is an explicit adversarial check item — insufficient basis parks the claim unmerged). On approval the AUTHORIZED reviewer merges THIS transition; only then does the implementing lane activate on the merged base via a fresh freshness gate: worktree `_worktrees/env-parity-p2-003`, D2 RED → D3 apply (ENV_DB gate `gllqtbyofrcjzmbnfoeh`, receipted preflight/post-verify, guarded 332-row seed + MIGRATION.md count report) → D4 battery (vitest FULL, tsc, oxlint, Playwright FULL workers=1 incl. the camera-mocked e2e, guard 344, runtime 62, checker OK v1.6.0) → D5 fresh-GLM → **STOP at REVIEW_REQUESTED — implementer never merges**.
+
+---
+
+## 6. Implementation-lane receipts (D2/D3/D4 — appended 2026-11-17)
+
+The claim transition was reviewed and merged as **PR #210** (head 5ec9c3d, merge 70c0a64 — the D1-3 PII repair INCLUDED: auditor resolution pinned to personnel-UUID-or-NULL, never verbatim). The implementation lane activated on the merged base 70c0a64 in worktree `_worktrees/env-parity-p2-003` (branch `feat/env-parity-p2-003`), freshness-gated (`git fetch origin main`; HEAD == origin/main tip 70c0a64 at lane start).
+
+**Commits:** `f33e047` (D2 RED) → `7196a66` (D3 feat) → `3fc1db2` (release v1.6.0) → docs (WO §10 + this section). **PR: STOP at REVIEW_REQUESTED — the implementing agent never merges.**
+
+### 6.1 D2 RED (f33e047)
+
+- SQL contract suite (20 tests): **18 FAIL / 2 ok**, truthful — 17 absent-object `42P01 relation "safety.emergency_light_check" does not exist` + 2 absent-migration-file failures; ok = anon-fail-closed (vacuously closed) + baselines 907/9/4/48/0/0 live.
+- vitest: fail-to-collect (`Cannot find module './emergency-light-check'`), 0 tests.
+- Playwright: **8 failed / 0 passed** (absent route/testids).
+- Full raw record: `/tmp/env-p2-003-receipts/d2-red-sql.txt` (ephemeral; counts recorded here verbatim).
+
+### 6.2 D3 (7196a66) — apply + count report
+
+Preflight live: 5 target objects absent; baselines 907/9/4/48/0/0 intact. Apply via `scripts/apply_migration_api.py`.
+
+**Throttling event (honest record):** DDL/policies/RPC/views/grants all landed; the seed hit Management-API rate limits at statement 233/355 (228 OK / 127 FAIL — every failure `ThrottlerException`, zero SQL errors). The guarded-idempotent seed statements were re-applied through the retrying helper (429 backoff); 205 were already durable, 127 backfilled; **no duplicates; 332/332 final**.
+
+**Count report (live post-verify):** 332/332 · light_id resolved 331 + NULL 1 (the non-padded `31` row, `legacy_id='305cd644'`, payload verbatim, never `031`) · พ.ศ. 2568×144→2025 / 2569×188→2026 · Status blank→NULL 300 (16/14/2) · Persistency 315/17 · Position 329/3 · test_result 316/16 · broken_detail 16 (free text verbatim) · pic_path 31 (legacy refs verbatim) · **Auditor: 77 source rows = ONE distinct 13-digit account → NO deterministic match** (Drive-sourced `ข้อมูลผู้ปฏิบัติงาน` tab of workbook `1kWtdmDzUNWTB5LnUY87fHjeK6Wcs8jTxeXCIkAoM6Vk`: 34 rows, 0 exact / 0 digits-only / 0 last-13 `Employee_id` matches; `core.personnel` carries no legacy identifier column — live column list verified) ⇒ **all 77 rows `auditor_id NULL` + `auditor_legacy_id NULL`, suppression DISCLOSED**; migration file 13-digit grep: **0 matches** (suite test_30 pins) · anon fail-closed (SQL-role probes) · spot-checks `c33588cf` / `430671f5` / `305cd644` byte-exact vs CSV incl. one free-text · guarded reseed no-op proven.
+
+**Contract suite GREEN: 20/20** after two truthful test-authoring fixes recorded in WO §10 (test_21 `total` key; test_13 fixture date — test bugs, not migration defects).
+
+**Deviations/decisions (reviewer adjudication) — full detail in WO §10:** (1) `light_id` TEXT not UUID (FK target `erl_id` is the master TEXT PK — no UUID column exists on the live master); (2) NO hard CHECKs on documented enums (WO §3.1 pin governs over the instruction's "CHECK" shorthand; P1.001 lesson); (3) pic: seed legacy refs verbatim + new UI entries via the house core.attachment pattern; (4) RPC error text = the §3.13-family verbatim (no Check-specific error pinned in ref 12); (5) `public.emergency_light` façade view added (unchanged P2.1 policies — manual-pick REST reachability, P2.2 precedent); (6) the D2-suite fixes above; (7) local gitignored `frontend/.env` + process-env token (this machine has no `.env` stub — Drive secrets path resolved manually, values never printed).
+
+### 6.3 D4 battery (at freeze 3fc1db2)
+
+vitest FULL **655 passed / 1 skipped** · `tsc -b` clean · oxlint exit 0 (pre-existing warnings only) · Playwright FULL workers=1 **263 passed** (8 new + 7 P2.2 regression green) · guard **344 passed + 450 subtests** · runtime+checker+workflow pytest **76 passed + 32 subtests** (runtime 62/62) · release checker **OK (v1.6.0)** · validate-registry `{ok:true, claims:35, BOOTSTRAP_CONTROL, hash aab66d68…}` · `git diff --check` clean · changed files ⊆ WO §9 claimed scope.
+
+**Next:** D5 fresh-GLM independent review at the exact frozen head; the authorized reviewer owns approval + merge (implementer never merges). Post-merge closeout lane flips the claim registry status.
+
+### 6.4 D5 P1 REPAIR — auditor resolution CORRECTED (2026-11-17, repair lane on PR #211)
+
+**The D5 receipt's P1 stands: the §6.2 Auditor record above was FALSE.** The "NO deterministic match (0/34)" probe was a **partial-data error** — it compared only the **14 packed-header tokens** of the Drive-sourced `ข้อมูลผู้ปฏิบัติงาน` tab and never reached its per-employee rows. A deterministic match EXISTS (re-fetch verified 2026-11-17): the Check Auditor value (**77 rows, 1 distinct**) EXACTLY equals the `Employee_id` of one per-employee row of that tab (excel row 32 col A — `Employee_id` is stored as a NUMBER in the sheet, so string probes without numeric normalization miss it), and that row's name resolves **UNIQUELY by exact full-name match** to `core.personnel` **STAFF-001** (นายวิลาส รื่นวิชา; `employee_code` = the live synthetic code column, live-verified 2026-11-17; the 9-row table carries exactly one such name).
+
+**Repairs (fix head; migration 20261117000001 IMMUTABLE):**
+
+- **Fix-migration** `supabase/migrations/20261117000002_parity_p2_003_auditor_fix.sql`: fail-closed DO-block guard (personnel code must resolve to EXACTLY one row), guarded idempotent `UPDATE … SET auditor_id = (SELECT id FROM core.personnel WHERE employee_code = 'STAFF-001') WHERE auditor_id IS NULL AND legacy_id IN (<the 77 row_IDs, generated programmatically from the CSV snapshot where Auditor non-blank>)`, house `notify pgrst, 'reload schema'` trailer (P3-1), documented rollback. **The 13-digit value NEVER appears in the file or anywhere in the repo (evidence REDACTED first-3/last-2).**
+- **4 record sites corrected** (originals preserved, corrections appended): migration 000001 header `auditor_id` note + DDL inline comment; WO §10 count report (D5-correction paragraph after the table); this handoff §6.2 (corrected by §6.4); suite pins (`DIST_PINS.auditor_id_nonnull` 0→77 + docstring/HONESTY lines + test_30 extended to grep BOTH migration files with filename-timestamp tokens excluded + new test_33 pinning the live repair: exactly 1 distinct auditor UUID = STAFF-001's, guarded re-apply no-op, rollback/trailer/guard markers present).
+- **CHANGELOG**: v1.6.0 entry carries the `การเปลี่ยนแปลงชุดนี้: PR #211` line (P3-2).
+
+**Live post-verify (after fix apply):** 332 total unchanged · `auditor_id` set = **77** (exactly the source non-blank rows; all = STAFF-001's personnel UUID `11590d77-f73d-4742-9446-22c442814a91`, 1 distinct) · NULL = **255** · `auditor_legacy_id` still 0 · no duplicates (`legacy_id` 332 distinct). Battery re-run at the repair head recorded in the commit receipt; CI green on the pushed head.

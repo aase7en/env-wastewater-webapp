@@ -71,6 +71,11 @@ const SafetyPage = lazy(() =>
 const ExtinguisherInspectionPage = lazy(() =>
   import("./pages/ExtinguisherInspectionPage").then((m) => ({ default: m.ExtinguisherInspectionPage })),
 );
+
+// ENV-PARITY-P2-003 — emergency-light check flow (staff).
+const EmergencyLightCheckPage = lazy(() =>
+  import("./pages/EmergencyLightCheckPage").then((m) => ({ default: m.EmergencyLightCheckPage })),
+);
 const FoodPage = lazy(() =>
   import("./pages/FoodPage").then((m) => ({ default: m.FoodPage })),
 );
@@ -321,6 +326,12 @@ export default function App() {
                     path="/safety/extinguisher-inspections"
                     element={<RequireAuth><Suspense fallback={<PageSkeleton />}>
                       <ExtinguisherInspectionPage />
+                    </Suspense></RequireAuth>} />
+                  {/* ENV-PARITY-P2-003 — ตรวจไฟฉุกเฉิน (emergency-light check, staff). */}
+                  <Route
+                    path="/safety/emergency-light-checks"
+                    element={<RequireAuth><Suspense fallback={<PageSkeleton />}>
+                      <EmergencyLightCheckPage />
                     </Suspense></RequireAuth>} />
                   <Route path="/food" element={<RequireAuth><Suspense fallback={<PageSkeleton />}>
             <FoodPage />

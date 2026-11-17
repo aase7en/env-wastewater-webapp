@@ -3,6 +3,7 @@ import { useQuery, useMutation as useRqMutation, useQueryClient } from "@tanstac
 import {
   createEquipmentSpec as createEquipmentSpecQ,
   createExtinguisherInspection,
+  createEmergencyLightCheck,
   createExtinguisherMaster,
   createReading as createReadingQ,
   deleteReading as deleteReadingQ,
@@ -12,6 +13,8 @@ import {
   fetchExtinguisherInspections,
   fetchExtinguishers,
   fetchInspectors,
+  fetchEmergencyLightChecks,
+  fetchEmergencyLights,
   fetchMeterChainBefore,
   fetchMeterChainById,
   fetchPersonnel,
@@ -22,6 +25,8 @@ import {
   updateReading as updateReadingQ,
 } from "./supabase-queries";
 import type {
+  EmergencyLightCheckInsert,
+  EmergencyLightCheckRow,
   EquipmentSpecInsert,
   ExtinguisherInspectionInsert,
   ExtinguisherInspectionRow,
@@ -420,6 +425,57 @@ export function useCreateExtinguisher() {
   });
   const mutate = useCallback(
     async (payload: ExtinguisherMasterInsert): Promise<MutationResult<ExtinguisherRow>> => {
+      try {
+        const data = await m.mutateAsync(payload);
+        return { data: data ?? null, error: null };
+      } catch (e) {
+        const msg = e instanceof Error ? e.message : String(e);
+        return { data: null, error: msg };
+      }
+    },
+    [m],
+  );
+  return { loading: m.isPending, error: m.error?.message ?? null, mutate };
+}
+
+// ─── ENV-PARITY-P2-003 — emergency-light check flow (staff) ──────────────
+
+export function useEmergencyLights() {
+  const q = useQuery({
+    queryKey: ["emergency-lights"] as const,
+    queryFn: () => fetchEmergencyLights(),
+  });
+  return {
+    data: q.data ?? [],
+    loading: q.isLoading,
+    error: q.error?.message ?? null,
+    refresh: () => q.refetch(),
+  };
+}
+
+export function useEmergencyLightChecks() {
+  const q = useQuery({
+    queryKey: ["emergency-light-checks"] as const,
+    queryFn: () => fetchEmergencyLightChecks(),
+  });
+  return {
+    data: q.data ?? [],
+    loading: q.isLoading,
+    error: q.error?.message ?? null,
+    refresh: () => q.refetch(),
+  };
+}
+
+export function useCreateEmergencyLightCheck() {
+  const qc = useQueryClient();
+  const m = useRqMutation({
+    mutationFn: (payload: EmergencyLightCheckInsert) => createEmergencyLightCheck(payload),
+    onSettled: () => {
+      void qc.invalidateQueries({ queryKey: ["emergency-light-checks"] });
+    },
+  });
+  const mutate = useCallback(
+    async (payload: EmergencyLightCheckInsert): Promise<MutationResult<EmergencyLightCheckRow>> => {
       try {
         const data = await m.mutateAsync(payload);
         return { data: data ?? null, error: null };
