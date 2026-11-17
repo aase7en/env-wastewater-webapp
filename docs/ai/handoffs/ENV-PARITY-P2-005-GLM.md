@@ -81,4 +81,4 @@ Independent exact-SHA review of THIS docs-only claim transition (R2 floor: fresh
 - Release: package.json 1.7.0→1.8.0 MINOR + Thai พ.ศ. CHANGELOG (17 พฤศจิกายน พ.ศ. 2569). The CHANGELOG PR-ref line is stamped with the real PR number in the final docs commit after `gh pr create`.
 - **STOP at REVIEW_REQUESTED — implementer never merges.** Next: D5 fresh-GLM review at the exact frozen head with independent battery rerun where possible.
 
-*(receipts appended by the implementing lane 2026-11-18; PR number stamped post-creation)*
+*(receipts appended by the implementing lane 2026-11-18; implementation PR = **#217** https://github.com/aase7en/env-wastewater-webapp/pull/217 — PR-ref stamped in the final docs commit)*
