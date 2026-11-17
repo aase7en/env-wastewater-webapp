@@ -20,6 +20,21 @@
  * RED-first: before the implementation lands these exports do not exist —
  * the suite fails to collect, and that failure is the evidence.
  */
+// food.ts lives in the supabase-client module graph; the client throws at
+// load without the two env vars. The tests below exercise PURE functions
+// only — stub the env before the import so collection succeeds (no
+// network is ever touched; the node vitest environment has no .env).
+import { describe, expect, it, vi } from "vitest";
+
+// food.ts lives in the supabase-client module graph; the client throws at
+// load without the two env vars. The tests below exercise PURE functions
+// only — stub the env before the imports evaluate (vi.hoisted runs ahead
+// of them; no network is ever touched; the node vitest environment has
+// no .env).
+vi.hoisted(() => {
+  process.env.VITE_SUPABASE_URL ??= "https://stub.supabase.test";
+  process.env.VITE_SUPABASE_ANON_KEY ??= "stub-anon-key";
+});
 import {
   COLIFORM_SOURCES,
   COLIFORM_RESULT_EXTENDED,
@@ -180,10 +195,10 @@ describe("personnel pickers (UUID-or-NULL, never verbatim IDs)", () => {
     expect(ids).toEqual(["p1"]);
   });
 
-  it("reporter food/employee = นักวิชาการสาธารณสุข (§3.17/§3.19 Valid If)", () => {
+  it("reporter food/employee = นักวิชาการสาธารณสุข — position ONLY, no status clause (§3.17 ref 3737/§3.19 Valid If verbatim: the ลาออก exclusion belongs to the COLLECTOR's Valid If, not the reporter's)", () => {
     const ids = eligibleReporters(STAFF, "อาหาร" as ColiformSource).map((p) => p.id);
-    expect(ids).toEqual(["p1"]);
-    expect(eligibleReporters(STAFF, "พนักงาน" as ColiformSource).map((p) => p.id)).toEqual(["p1"]);
+    expect(ids).toEqual(["p1", "p5"]);
+    expect(eligibleReporters(STAFF, "พนักงาน" as ColiformSource).map((p) => p.id)).toEqual(["p1", "p5"]);
   });
 
   it("reporter water/general = ตำแหน่ง ≠ นายแพทย์ (§3.11/§3.16 Valid If)", () => {

@@ -11,7 +11,18 @@
  */
 import { test, expect, type Page } from "./fixtures";
 
-const STAFF_ID = "00000000-0000-0000-0000-0000000000aa";
+// Deterministic-vs-clock fixtures: "today" is the REAL run date so the
+// Show If gate (TODAY()>Collect_date) behaves identically on any day.
+const pad = (n: number) => String(n).padStart(2, "0");
+function isoOffset(days: number): string {
+  const d = new Date();
+  d.setDate(d.getDate() + days);
+  return `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}`;
+}
+const TODAY_ISO = isoOffset(0);
+const OLD_ISO = isoOffset(-3);
+const OLD_D1 = isoOffset(-2);
+const OLD_D2 = isoOffset(-1);
 
 const PERSONNEL_ROWS = [
   { id: "p1", full_name: "สมศรี สาธารณสุข", position: "นักวิชาการสาธารณสุข", status: "ทำงาน" },
@@ -24,7 +35,7 @@ const PERSONNEL_ROWS = [
  * (Show If TODAY() > Collect_date holds). */
 const PENDING_OLD = {
   id: "old",
-  sample_date: "2026-11-14",
+  sample_date: OLD_ISO,
   sample_type: "อาหาร",
   test_type: "total_coliform",
   result: null,
@@ -37,7 +48,7 @@ const PENDING_OLD = {
   follow_up_action: null,
   recorded_by: null,
   note: null,
-  created_at: "2026-11-14T03:00:00Z",
+  created_at: `${OLD_ISO}T03:00:00Z`,
   sample_source: "อาหาร",
   collect_point: "ช้อนสั้น",
   sample_person_id: null,
@@ -55,52 +66,32 @@ const PENDING_OLD = {
 const PENDING_TODAY = {
   ...PENDING_OLD,
   id: "today",
-  sample_date: "2026-11-17",
+  sample_date: TODAY_ISO,
   collect_point: "ถาด",
-  created_at: "2026-11-17T03:00:00Z",
+  created_at: `${TODAY_ISO}T03:00:00Z`,
 };
 
 /** A completed row — renders its result, never รอผล. */
 const DONE = {
   ...PENDING_OLD,
   id: "done",
-  sample_date: "2026-11-10",
+  sample_date: isoOffset(-7),
   result: "Negative",
-  reported_date: "2026-11-11",
+  reported_date: isoOffset(-6),
   reporter_id: "p1",
 };
 
 const ALL_ROWS = [DONE, PENDING_TODAY, PENDING_OLD];
 
-function installSession(page: Page, role: "staff" | "admin") {
-  const session = {
-    access_token: `fake-${role}-access-token`,
-    refresh_token: `fake-${role}-refresh-token`,
-    token_type: "bearer",
-    expires_in: 3600,
-    expires_at: Math.floor(Date.now() / 1000) + 3600,
-    user: {
-      id: STAFF_ID,
-      app_metadata: { provider: "email", providers: ["email"] },
-      user_metadata: { email: `${role}@example.test`, full_name: `E2E ${role}` },
-      aud: "authenticated",
-      email: `${role}@example.test`,
-    },
-  };
-  return page.addInitScript((sess) => {
-    localStorage.setItem("sb-gllqtbyofrcjzmbnfoeh-auth-token", JSON.stringify(sess));
-  }, session);
-}
-
 async function mockRefs(page: Page) {
-  await page.route("**/rest/v1/app_user**", (route) =>
-    route.fulfill({
-      status: 200,
-      contentType: "application/json",
-      body: JSON.stringify([
-        { id: STAFF_ID, role: "staff", display_name: "E2E Staff", is_active: true },
-      ]),
-    }));
+  // app-shell reads (the shell fetches these on every route — food-mobile precedent)
+  await page.route("**/rest/v1/role_module_visibility**", (route) =>
+    route.fulfill({ status: 200, contentType: "application/json", body: "[]" }));
+  await page.route("**/rest/v1/threshold_alert**", async (route) => {
+    const headers: Record<string, string> = {};
+    if ((route.request().headers()["prefer"] ?? "").includes("count=")) headers["content-range"] = "*/0";
+    await route.fulfill({ status: 200, contentType: "application/json", headers, body: "[]" });
+  });
   await page.route("**/rest/v1/personnel**", (route) =>
     route.fulfill({ status: 200, contentType: "application/json", body: JSON.stringify(PERSONNEL_ROWS) }));
   await page.route("**/rest/v1/lab_test**", async (route) => {
@@ -127,12 +118,12 @@ async function mockRefs(page: Page) {
 }
 
 test.describe("coliform two-step flow (staff, /food)", () => {
-  test("step-1 collect: อาหาร source with verbatim 5-value enum, result fields NULL, lands as รอผล", async ({ page }) => {
-    await installSession(page, "staff");
+  test("step-1 collect: อาหาร source with verbatim 5-value enum, result fields NULL, lands as รอผล", async ({ authed: page }) => {
     await mockRefs(page);
     await page.goto("/food");
 
     // source picker carries the 4 verbatim sources
+    await expect(page.getByTestId("coliform-source")).toBeVisible();
     const opts = await page.getByTestId("coliform-source").locator("option").allTextContents();
     expect(opts.filter((o) => o !== "")).toEqual(["น้ำ", "อาหาร", "พนักงาน", "ทั่วไป"]);
 
@@ -144,6 +135,7 @@ test.describe("coliform two-step flow (staff, /food)", () => {
     }
     // equipment default for food is the aca317bf item id (shown read-only)
     await expect(page.getByTestId("coliform-equipment")).toHaveValue("aca317bf");
+    await page.getByTestId("coliform-collect-point").selectOption("ช้อนสั้น");
 
     // submit step-1 → POST carries NO result-side values
     let posted: Record<string, unknown> | null = null;
@@ -157,15 +149,14 @@ test.describe("coliform two-step flow (staff, /food)", () => {
       return route.fulfill({ status: 200, contentType: "application/json", body: JSON.stringify(ALL_ROWS) });
     });
     await page.getByTestId("coliform-collect-save").click();
-    await expect(poll(() => posted)).not.toBeNull();
+    await expect.poll(() => posted).not.toBeNull();
     expect(posted!["result"]).toBeNull();
     expect(posted!["reported_date"]).toBeNull();
     expect(posted!["test_type"]).toBe("total_coliform");
     expect(posted!["sample_source"]).toBe("อาหาร");
   });
 
-  test("same-day collect stays รอผล — result entry gated (Show If TODAY()>Collect_date)", async ({ page }) => {
-    await installSession(page, "staff");
+  test("same-day collect stays รอผล — result entry gated (Show If TODAY()>Collect_date)", async ({ authed: page }) => {
     await mockRefs(page);
     await page.goto("/food");
     // pending list renders both pending rows with the truthful รอผล state
@@ -178,15 +169,14 @@ test.describe("coliform two-step flow (staff, /food)", () => {
     await expect(todayRow.getByTestId("coliform-result-select")).toHaveCount(0);
   });
 
-  test("step-2 กรอกผลภายหลัง: next-day pending row exposes the extended food enum + suggested +1/+2 chips (UI-only)", async ({ page }) => {
-    await installSession(page, "staff");
+  test("step-2 กรอกผลภายหลัง: next-day pending row exposes the extended food enum + suggested +1/+2 chips (UI-only)", async ({ authed: page }) => {
     await mockRefs(page);
     await page.goto("/food");
     const oldRow = page.getByTestId("coliform-pending-row-old");
     await expect(oldRow).toBeVisible();
     // suggested chips show collect+1 / collect+2 — visible for food, suggestions only
-    await expect(oldRow.getByTestId("coliform-suggest-chip-1")).toHaveText("+1 วัน (2026-11-15)");
-    await expect(oldRow.getByTestId("coliform-suggest-chip-2")).toHaveText("+2 วัน (2026-11-16)");
+    await expect(oldRow.getByTestId("coliform-suggest-chip-1")).toHaveText(`+1 วัน (${OLD_D1})`);
+    await expect(oldRow.getByTestId("coliform-suggest-chip-2")).toHaveText(`+2 วัน (${OLD_D2})`);
     // result enum for food carries the 4 verbatim values incl. the ++/invalid variants
     const resultOpts = await oldRow.getByTestId("coliform-result-select").locator("option").allTextContents();
     for (const v of ["Positive", "Negative", "Positive ++", "invalid"]) {
@@ -204,13 +194,12 @@ test.describe("coliform two-step flow (staff, /food)", () => {
       return route.fulfill({ status: 200, contentType: "application/json", body: JSON.stringify(ALL_ROWS) });
     });
     await oldRow.getByTestId("coliform-result-save").click();
-    await expect(poll(() => patched)).not.toBeNull();
+    await expect.poll(() => patched).not.toBeNull();
     expect(patched!["result"]).toBe("Positive ++");
     expect(patched!["reported_date"]).toBeTruthy();
   });
 
-  test("water domain: 4-value collect enum + 2-value result set + NO suggested chips", async ({ page }) => {
-    await installSession(page, "staff");
+  test("water domain: 4-value collect enum + 2-value result set + NO suggested chips", async ({ authed: page }) => {
     await mockRefs(page);
     await page.goto("/food");
     await page.getByTestId("coliform-source").selectOption("น้ำ");
@@ -225,36 +214,33 @@ test.describe("coliform two-step flow (staff, /food)", () => {
     // Here we pin the water collect-point + equipment parity.
   });
 
-  test("employee domain: swab subject picker = นักโภชนาการ/พนักงานประกอบอาหาร only + equipment 2fe4aa7c", async ({ page }) => {
-    await installSession(page, "staff");
+  test("employee domain: swab subject picker = นักโภชนาการ/พนักงานประกอบอาหาร only + equipment 2fe4aa7c", async ({ authed: page }) => {
     await mockRefs(page);
     await page.goto("/food");
     await page.getByTestId("coliform-source").selectOption("พนักงาน");
     // collect-point picker hidden for employee (the sample is a person)
     await expect(page.getByTestId("coliform-collect-point")).toBeHidden();
     // personnel picker appears with the eligible positions ONLY
-    const persons = await page.getByTestId("coliform-sample-person").locator("option").allTextContents();
+    const persons = (await page.getByTestId("coliform-sample-person").locator("option").allTextContents()).join(" | ");
     expect(persons).toContain("สมศักดิ์ โภชนาการ");
     expect(persons).toContain("สมใจ ประกอบอาหาร");
     expect(persons).not.toContain("นายแพทย์ ใหญ่");
     await expect(page.getByTestId("coliform-equipment")).toHaveValue("2fe4aa7c");
   });
 
-  test("existing single-step FoodPage form is preserved (no regression)", async ({ page }) => {
-    await installSession(page, "staff");
+  test("existing single-step FoodPage form is preserved (no regression)", async ({ authed: page }) => {
     await mockRefs(page);
     await page.goto("/food");
     await expect(page.locator("#food-sample-date")).toBeVisible();
     await expect(page.locator("#food-result")).toBeVisible();
-    await expect(page.getByRole("button", { name: "บันทึก" })).toBeVisible();
+    await expect(page.getByRole("button", { name: "บันทึก", exact: true })).toBeVisible();
     // legacy history table still renders
     await expect(page.getByRole("region", { name: "ประวัติผลตรวจอาหาร" })).toBeVisible();
   });
 
   for (const width of [360, 390, 430]) {
-    test(`mobile ${width}: the two-step surface fits without horizontal overflow`, async ({ page }) => {
-      await installSession(page, "staff");
-      await mockRefs(page);
+    test(`mobile ${width}: the two-step surface fits without horizontal overflow`, async ({ authed: page }) => {
+        await mockRefs(page);
       await page.setViewportSize({ width, height: 800 });
       await page.goto("/food");
       await expect(page.getByTestId("coliform-source")).toBeVisible();
