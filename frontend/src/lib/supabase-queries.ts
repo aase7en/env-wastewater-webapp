@@ -698,3 +698,116 @@ export async function resolveExtinguisherQr(qr: string): Promise<ExtinguisherRes
   if (error) throw new Error(error.message);
   return data as ExtinguisherResolveResult;
 }
+
+// ─── ENV-PARITY-P2-003 — emergency-light check flow (staff) ──────────────
+
+export interface EmergencyLightRow {
+  erl_id: string;
+  location: string;
+  pic_path: string | null;
+  receive_date: string | null;
+  location_floor: number | null;
+  providers: string | null;
+  source_provenance?: string;
+  legacy_id?: string | null;
+}
+
+export interface EmergencyLightCheckRow {
+  id: string;
+  legacy_id: string | null;
+  check_date: string;
+  erl_payload: string;
+  light_id: string | null;
+  location_snapshot: string | null;
+  persistency: string;
+  position: string;
+  test_result: string;
+  auditor_id: string | null;
+  auditor_legacy_id: string | null;
+  broken_detail: string | null;
+  pic_path: string | null;
+  status: string | null;
+  source_provenance?: string;
+  created_at?: string;
+}
+
+export type EmergencyLightCheckInsert = Omit<EmergencyLightCheckRow, "created_at">;
+
+/** shape of safety.fn_resolve_emergency_light_qr's jsonb return */
+export interface EmergencyLightResolveResult {
+  master: {
+    erl_id: string;
+    location: string | null;
+    location_floor: number | null;
+    providers: string | null;
+    receive_date: string | null;
+  };
+  prior: {
+    check_count: number;
+    latest_check_date: string | null;
+    latest_test_result: string | null;
+  };
+}
+
+/** Manual-pick list — the 48-row master through the security_invoker
+ * façade (unchanged P2.1 policies). */
+export async function fetchEmergencyLights(): Promise<EmergencyLightRow[]> {
+  const { data, error } = await supabase
+    .from("emergency_light")
+    .select("*")
+    .order("erl_id");
+  if (error) throw new Error(error.message);
+  return (data ?? []) as EmergencyLightRow[];
+}
+
+/** Recent checks (staff list) — check_date DESC + id tiebreak (the
+ * AppSheet SortKey transcription). */
+export async function fetchEmergencyLightChecks(limit = 50): Promise<EmergencyLightCheckRow[]> {
+  const { data, error } = await supabase
+    .from("emergency_light_check")
+    .select("*")
+    .order("check_date", { ascending: false })
+    .order("id", { ascending: false })
+    .limit(limit);
+  if (error) throw new Error(error.message);
+  return (data ?? []) as EmergencyLightCheckRow[];
+}
+
+/** Per-light history — the re_check REF_ROWS semantics (light_id OR the
+ * verbatim payload, so the unresolved-'31' rows stay attached to nothing
+ * but render in the global list honestly). */
+export async function fetchEmergencyLightChecksByLight(
+  erlId: string,
+  limit = 50,
+): Promise<EmergencyLightCheckRow[]> {
+  const { data, error } = await supabase
+    .from("emergency_light_check")
+    .select("*")
+    .or(`light_id.eq.${erlId},erl_payload.eq.${erlId}`)
+    .order("check_date", { ascending: false })
+    .order("id", { ascending: false })
+    .limit(limit);
+  if (error) throw new Error(error.message);
+  return (data ?? []) as EmergencyLightCheckRow[];
+}
+
+export async function createEmergencyLightCheck(
+  payload: EmergencyLightCheckInsert,
+): Promise<EmergencyLightCheckRow> {
+  const { data, error } = await supabase
+    .from("emergency_light_check")
+    .insert(payload as unknown as Record<string, unknown>)
+    .select("*")
+    .single();
+  if (error) throw new Error(error.message);
+  return data as EmergencyLightCheckRow;
+}
+
+/** QR resolve: the master row + the prior-check summary via the RPC. The
+ * PostgREST error for blank/unknown ids carries the honest Thai message
+ * ('ไม่พบข้อมูล!!  ให้ถามเอ นะจ๊ะ') — surfaced as-is, fail-closed. */
+export async function resolveEmergencyLightQr(qr: string): Promise<EmergencyLightResolveResult> {
+  const { data, error } = await supabase.rpc("fn_resolve_emergency_light_qr", { p_qr: qr });
+  if (error) throw new Error(error.message);
+  return data as EmergencyLightResolveResult;
+}

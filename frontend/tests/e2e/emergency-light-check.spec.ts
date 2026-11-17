@@ -128,10 +128,21 @@ async function mockRefs(page: Page, opts?: { resolveError?: boolean; resolvePayl
     if (opts?.resolveError) {
       return route.fulfill({ status: 400, contentType: "application/json", body: JSON.stringify({ message: "ไม่พบข้อมูล!!  ให้ถามเอ นะจ๊ะ", code: "P0001" }) });
     }
+    if (opts?.resolvePayload) {
+      return route.fulfill({ status: 200, contentType: "application/json", body: JSON.stringify(opts.resolvePayload) });
+    }
+    // echo the requested payload like the real RPC: pick the matching
+    // master row (unknown ids fail closed in the RPC itself)
+    const arg = (route.request().postDataJSON() as { p_qr?: string })?.p_qr ?? "";
+    const master = MASTER_ROWS.find((m) => m.erl_id === arg) ?? MASTER_ROWS[0];
+    // light 001 carries 2 seeded history rows (HISTORY_ROWS below); 002 none
+    const prior = master.erl_id === "001"
+      ? { check_count: 2, latest_check_date: "2025-08-19", latest_test_result: "ผ่าน" }
+      : { check_count: 0, latest_check_date: null, latest_test_result: null };
     return route.fulfill({
       status: 200,
       contentType: "application/json",
-      body: JSON.stringify(opts?.resolvePayload ?? RESOLVE_OK),
+      body: JSON.stringify({ master, prior }),
     });
   });
   await page.route("**/rest/v1/attachment**", (route) =>

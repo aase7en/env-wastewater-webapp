@@ -113,9 +113,9 @@ describe("id generator (8-hex UNIQUEID() shape)", () => {
 describe("unresolved-'31' honest display state", () => {
   it("unresolved payload renders verbatim with an explicit unresolved marker", async () => {
     const { unresolvedLightLabel } = await import("./emergency-light-check");
-    expect(unresolvedLightLabel("31")).toContain("31");
-    expect(unresolvedLightLabel("31")).toContain("ไม่พบอ้างอิง");
+    expect(unresolvedLightLabel("31", false)).toContain("31");
+    expect(unresolvedLightLabel("31", false)).toContain("ไม่พบอ้างอิง");
     // resolved payload has no marker
-    expect(unresolvedLightLabel("001")).not.toContain("ไม่พบอ้างอิง");
+    expect(unresolvedLightLabel("001", true)).not.toContain("ไม่พบอ้างอิง");
   });
 });

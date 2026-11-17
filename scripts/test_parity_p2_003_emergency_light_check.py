@@ -455,10 +455,12 @@ class P2EmergencyLightCheckContract(unittest.TestCase):
           IF (v->'prior'->>'latest_check_date') IS NULL OR (v->'prior'->>'latest_test_result') IS NULL THEN
             RAISE EXCEPTION 'prior summary incomplete: %', v;
           END IF;
-          -- a fixture check (inserted as staff) is the prior latest:
+          -- a fixture check (inserted as staff) is the prior latest: its
+          -- date must postdate ALL seeded rows (seeded 2569 rows run to
+          -- 2026-09-16) — 2027-06-15 qualifies.
           INSERT INTO safety.emergency_light_check
             (id, check_date, erl_payload, light_id, persistency, position, test_result, source_provenance)
-          VALUES ('deadbeef', DATE '2026-01-15', '001', '001', 'มี', 'เหมาะสม', 'ไม่ผ่าน', 'fixture (rolled back)');
+          VALUES ('deadbeef', DATE '2027-06-15', '001', '001', 'มี', 'เหมาะสม', 'ไม่ผ่าน', 'fixture (rolled back)');
           v := safety.fn_resolve_emergency_light_qr('001');
           IF (v->'prior'->>'latest_test_result') IS DISTINCT FROM 'ไม่ผ่าน' THEN
             RAISE EXCEPTION 'prior latest must be the fixture row: %', v;
@@ -530,6 +532,8 @@ class P2EmergencyLightCheckContract(unittest.TestCase):
           (SELECT count(DISTINCT legacy_id) FROM safety.emergency_light_check) AS legacy_distinct
         """)[0]
         for k, want in DIST_PINS.items():
+            if k == "total":
+                continue  # covered by test_20 (seed count)
             self.assertEqual(counts[k], want, f"pin {k}: got {counts[k]}, want {want}")
 
     def test_22_unresolved_31_row_verbatim(self):
