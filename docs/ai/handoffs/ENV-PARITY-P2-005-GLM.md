@@ -1,0 +1,58 @@
+# Handoff — ENV-PARITY-P2-005-GLM (D0 — claim transition)
+
+Claim `ENV-PARITY-P2-005-C1` (gen 1, CLAIMED) — AppSheet parity Phase 2 lane P2.5: **รายงานสรุปรายเดือน/ช่วงวัน (นับปกติ/ผิดปกติถัง, ผ่าน/ไม่ผ่านไฟ, สรุป coliform) — ตัวเลขอย่างเดียว (PDF = Phase 4)** (plan §6 row P2.5, line 235, verbatim). **Implementer never merges; stop at REVIEW_REQUESTED.**
+
+## 1. Authorization
+
+1. Owner standing Goal-mode instruction 2026-11-15/16 ("ต่อยาวๆ ตามแผนและ roadmap ที่วางไว้").
+2. Owner parity authorization 2026-11-14 → `docs/ai/APPSHEET-PARITY-PLAN.md`; lane bound to §6 Phase 2 row P2.5 (line 235) exactly.
+3. The P2.4 closeout frontier (PR #215 merged `fb2beadd76a5c5b61def430dc9a765d0189000e5` = this transition's base): "the next UNGATED parity lane is P2.5 รายงานสรุป (the aggregate report lane per plan line 235: นับปกติ/ผิดปกติถัง, ผ่าน/ไม่ผ่านไฟ, สรุป coliform — ตัวเลขอย่างเดียว; Filter_Firer/Filter_Light/Filter_ColiformBac semantics), then P2.6 … each needs its own NEW reviewed claim transition." This transition IS the P2.5 claim of that record.
+4. **Verbatim-pin directive honored (D0):** the dispatch required reading the actual row text before writing — the earlier "รายงานสรุป lane" shorthand is superseded by the row's own three-domain text; the boundary ruling (all three domains, one additive `/reports` section; the dispatch's coliform emphasis = the coliform section's binding detail spec) is WO D1-1, THE adversarial check item.
+5. **Structural precedent carried:** ENV-PARITY-P1-006 (PRs #198/#199, v1.4.0) — the P1.6 `/reports` date-range numeric summary delivered the house report shape: client-side aggregation (D1-1, NO migration), a pure summary lib + test, an additive fetch section, an additive ReportsPage section, month-not-reached NULL honesty, Recharts house vocabulary. This lane clones that shape for the ถัง/ไฟ/coliform domains.
+
+## 2. D0 scope discoveries (verified read-only 2026-11-17)
+
+### 2.1 Carried prerequisites (all LIVE at base `fb2bead`)
+
+- **The three data surfaces exist and are queryable** (WO §2.1 table): `safety.extinguisher_inspection` (0 rows) + `safety.fire_extinguisher` (0 rows, SOURCE_UNAVAILABLE master), `safety.emergency_light_check` (332 rows via `public.emergency_light_check` façade or the direct RLS path the P2.3 page uses), `food.lab_test` (0 rows) via the `public.lab_test` security_invoker façade that exposes all P2.4 columns. Existing fetchers: `fetchExtinguishers`/`fetchExtinguisherInspections` (`supabase-queries.ts:648-671`), `fetchEmergencyLights`/`fetchEmergencyLightChecks` (`:754-784`), `fetchFoodLabTests` (`lib/food.ts:70`).
+- **The pending predicate is house code — CONSUME, never re-derive:** `isPendingResult` (`lib/food.ts:251-255`; pending ⇔ result blank OR reported_date blank) — the same predicate ColiformFlow uses for the รอผล badge.
+- **The ReportsPage shape:** `frontend/src/pages/ReportsPage.tsx` (670 lines) — P1.6 section `data-testid="report-summary-section"`, range pickers (current-month defaults), `lib/report-summary.ts` (473 lines) pure aggregates, Recharts `BarChart` monthly rollup, threshold-hit card, honesty lines, PDF-template chooser (byte-untouched by this lane).
+- **Row shapes verified:** `ExtinguisherInspectionRow` (`supabase-queries.ts:577-597` — `inspection_date`, `extinguisher_id`, `pipe/handle/tank/pressure_gauge/barrier`, `breakdown_details`), `EmergencyLightCheckRow` (`:715-732` — `check_date`, `light_id`, `persistency`, `position`, `test_result`, `status`), `FoodLabTest` (`food.ts:20-57` — `sample_date`, `result`, `reported_date`, `sample_source`, `collect_point`).
+- **Seed-reality pins for the honesty buckets (P2.3 count report):** test_result {ผ่าน×316, ไม่ผ่าน×16}, Persistency {มี×315, ไม่มี×17}, Position {เหมาะสม×329, ไม่เหมาะสม×3}, **Status {blank×300, ขอติดตั้ง×16, แจ้งซ่อม×14, แจ้งย้ายตำแหน่ง×2}** — the blank-300 makes the ไม่ระบุ bucket REQUIRED (D1-5).
+
+### 2.2 Verbatim AppSheet ground truth (reference 12 READ-ONLY) — the binding pins
+
+- **§3.18 `menu_สุขาภิบาลอาหาร`** (ref 3772-3790, 5 cols, key `name`): name/icon/link/`Link view` (`=LINKTOVIEW([link],…)`) — **navigation-only, ZERO data columns**; ENV parity = the summary section on the existing `/reports` navigation; NO menu table replicated.
+- **§7 module views (ref 5811-5949):** `Menu_สุขาภิบาลอาหาร` (card, name Descending) + `menu_สุขาภิบาลอาหาร_Detail`; coliform ×4 `_Detail/_Form/_Inline`; `coliform_ยังไม่เสร็จ` (pending view over Food.); `em.SI2`/`search.emSI2` (card over slice `Coliform.Em_Slice1`, Collect_date Descending) + `search.Food.SI2` (slice `Coliform.Food_Slice1`) + `SI2`; `Filter_ColiformBac_Detail/_Form`; `Filter_fire`/`Filter_Firer_Detail/_Form/_Inline`; `filter_Light`/`Filter_Light_Detail/_Form`; **`sumER-Light`** (the Filter_Light summary detail view — the AppSheet "รายงานสรุป" surface for ไฟ).
+- **§3.20 `Filter_Firer`** (ref 3954-4293, 24 cols, key `ID`): Start/End Date init `TODAY()`; `ตัวเลือก` EnumList {ปกติ, ผิดปกติ} (report-filter, not data); **`จำนวนถังทั้งที่ตรวจ` = COUNT(UNIQUE(SELECT(ตรวจสอบถัง[QR_CODE], range)))**; **`จำนวนถังที่มี` = COUNT(UNIQUE(ข้อมูลถังดับเพลิง[Row ID]))** (master denominator); **`จำนวนถัง`** = ปกติ-count (pipe∧handle∧tank∧pressure_gauge all ปกติ) + ผิดปกติ-count (OR(pipe/handle/tank=ชำรุด, pressure_gauge=ไม่ปกติ, breakdown_details=หมดอายุ)) gated by `IN(...,[ตัวเลือก])`; **`จำนวนถังผิดปกติ`** = the same OR-count unconditioned; ordered list ORDERBY SortKey; `linkPDF_Fire`/pdfCount = Phase 4 OUT. **`barrier` is NOT in any predicate — the verbatim pin (D1-4).**
+- **§3.35 `Filter_Light`** (ref 5183-5510, 26 cols, key `ID`): choice1 {มี,ไม่มี}/choice2 {ผ่าน,ไม่ผ่าน}/choice3 {เหมาะสม,ไม่เหมาะสม}/choice4 EnumList {แจ้งซ่อม,แจ้งย้ายตำแหน่ง,ขอติดตั้ง}; **`จำนวนการคงอยู่`/`จำนวนผลการทดสอบ`/`จำนวนตำแหน่ง`** = COUNT(SELECT(CHECK[<col>], range AND =choice)); **`จำนวนความต้องการ`** = COUNT(... IN([Status],choice4)); **`จำนวนที่ตรวจสอบ`** (hidden total); **`จำนวนการทดสอบผ่าน`/`จำนวนการทดสอบไม่ผ่าน`** (headline pair); `sumER-Light` view; `linkPDF_light` = Phase 4 OUT. ENV renders BOTH values of each choice (no picker) + the Status ไม่ระบุ bucket (D1-5).
+- **§3.37 `Filter_ColiformBac`** (ref 5523-5574, 8 cols, key `Row ID`, **4 init formulas**: `UNIQUEID("PackedUUID")` / `TODAY()` / `TODAY()` / `1`): the date-range coliform report BUILDER; `Export PDF` Enum {อ.13 (SI-2), อ.11} + `PDF` File = **Phase 4 OUT**; what this lane ships = the date-range numeric aggregation over the four coliform tables (§3.11/§3.16/§3.17/§3.19 — delivered read-write by P2.4, consumed read-only here) with the dispatch's binding detail spec (WO §4.3): per-`sample_source` เก็บ/รอผล/มีผล, ผ่าน(Negative)/ไม่ผ่าน(Positive, Positive ++), invalid + ค่าอื่น separate, water 4-source breakdown, monthly rollups with the P1.6 month-not-reached NULL pattern.
+- **PII pin (ref 12 §11 + P2.3/P2.4 precedent):** `Employee_id` IS the Thai national ID; `ผู้ตรวจสอบ`/`Auditor`/`ผู้เก็บ`/`ผู้รายงาน` Refs are INPUTS, never summary numbers — **the section renders COUNTS ONLY**; 13-digit digit-run grep of the new files = 0 matches (suite pin).
+
+### 2.3 House facts verified (D0)
+
+- Baselines at base `fb2bead`: registry **36 claims** (validate-registry `ok:true`, registry_hash `faae38d56954e630098c61dabf3276229ad9b5d2dfdba214c7fb118f90345efc` — the fence value, empirically cross-checked: the same guard method at the prior claim base `e2e845f` reproduces the recorded `12836f89…` byte-exactly), all CLOSED except ENV-BUILDING-REPAIR-001 (DEFERRED) + THIS claim after append; ENV_DB counts 907/9/4 + masters 48/0 + extinguisher inspection 0 + emergency_light_check 332 + food.lab_test 0 (last recorded snapshot; re-verified at D3 if any DB probe is needed — none is required, this lane writes NO DB).
+- `frontend/package.json` = 1.7.0 → **v1.8.0 MINOR** at D4 (D1-3: new user-visible report section = the CHANGELOG MINOR criterion ฟีเจอร์ใหม่ที่ใช้งานได้โดยไม่กระทบของเดิม; the P1.6 report lane shipped MINOR v1.4.0 for the same class; existing ReportsPage behavior preserved — additive section only).
+
+## 3. Testable-unit analysis → D2 RED plan
+
+1. **COLIFORM AGGREGATES (`coliform-summary.test.ts`)** — per-`sample_source` เก็บ/รอผล/มีผล counts over fixture rows; ผ่าน(Negative)/ไม่ผ่าน(Positive∨Positive ++) with the มีผล denominator; Positive ++ and invalid counted separately; blank/unknown result → ค่าอื่น bucket (never coerced); `isPendingResult` consumed (pending rows never counted as ผ่าน/ไม่ผ่าน); collect-point breakdowns (water 4 / food 5 / general 2 / employee no-point); monthly rollup with month-not-reached + no-record months → NULL never 0; พ.ศ. headers.
+2. **SAFETY AGGREGATES (`safety-summary.test.ts`)** — ถัง: distinct-`extinguisher_id` count, master count, VERBATIM ปกติ predicate (4 components ∧, barrier excluded — the D1-4 pin asserted by fixture), VERBATIM ผิดปกติ OR-predicate, blank-component honesty line; ไฟ: test_result ผ่าน/ไม่ผ่าน pair, Persistency both values, Position both values, Status 3 values + ไม่ระบุ bucket (the blank-300 fixture), total-in-range.
+3. **WIRING (supabase-queries additive section)** — range-fetch helpers `.gte/.lte` per domain (existing fetchers byte-untouched; existing fetchers' limit defaults NOT relied on for the report).
+4. **E2E (`env-parity-p2-005-summary.spec.ts`)** — the section renders on `/reports` with the three domain blocks, รอผล displayed as its own number, empty-state honesty labels (ยังไม่มีข้อมูลทะเบียนถัง / the coliform empty state), พ.ศ. range labels, mobile 360/390/430; the P1.6 section still renders (no regression).
+
+Truthful RED pre-implementation: the two lib suites fail-to-collect (modules absent — the honest P2.4-precedent RED mode); the e2e fails on absent testids/section.
+
+## 4. Bound scope (WO §9 / registry mutable_scope)
+
+`frontend/src/lib/coliform-summary.ts` + `.test.ts`, `frontend/src/lib/safety-summary.ts` + `.test.ts`, `frontend/src/lib/supabase-queries.ts` (additive "P2.5 report reads" section ONLY), `frontend/src/pages/ReportsPage.tsx` (additive section ONLY — the P1.6 section + PDF chooser byte-untouched), `frontend/src/components/reports/**` (new colocated components, additive, only if the D1 split needs them), `frontend/tests/e2e/env-parity-p2-005-summary.spec.ts`, `CHANGELOG.md` + `frontend/package.json` (v1.8.0 MINOR at D4), the WO + this handoff + `docs/ai/CURRENT-WORK.md` (transition + closeout only). Everything else forbidden (WO §8) — including any migration/DB object (NONE in this lane; an escalation to a SQL summary view requires an explicitly adjudicated scope amendment, never a silent switch), form surfaces, P2.6 scope, Phase-3 masters, PDF/export, CI, reference/plan docs, Drive writes, `data/**`, `.env`, and any personnel-identity display in the section (counts only). **No writes of any kind to any database.**
+
+## 5. Single next safe action
+
+Independent exact-SHA review of THIS docs-only claim transition (R2 floor: fresh GLM-5.3 MAX reviewer context; the AUTHORIZATION BASIS incl. the D1-1 three-domain boundary ruling (plan-row-verbatim) is an explicit adversarial check item — insufficient basis parks the claim unmerged). On approval the AUTHORIZED reviewer merges THIS transition; only then does the implementing lane activate on the merged base via a fresh freshness gate: worktree `_worktrees/env-parity-p2-005`, D2 RED → D3 implement (client-side only, NO migration) → D4 battery (vitest FULL, tsc, oxlint, Playwright FULL workers=1, guard 344, runtime 62, checker OK v1.8.0 MINOR) → D5 fresh-GLM → **STOP at REVIEW_REQUESTED — implementer never merges**.
+
+---
+
+## 6. Implementation-lane receipts (D2/D3/D4 — appended after the claim merges)
+
+*(empty — filled by the implementing lane)*
