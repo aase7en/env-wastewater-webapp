@@ -1,6 +1,6 @@
 # Work Order — ENV-PARITY-P3-003 (Claim ENV-PARITY-P3-003-C1, gen 1)
 
-**Status: REGISTERED — CLAIMED (claim transition pending review; this WO is the binding brief. Implementation begins ONLY after the claim-transition PR merges — STOP at REVIEW_REQUESTED; the implementer never merges; the authorized reviewer owns approval + merge of every PR in this lane's chain.)**
+**Status: REGISTERED — CLAIMED — IMPLEMENTATION DELIVERED, STOP AT REVIEW_REQUESTED (PR #229 @ head `0dfeb73`; the implementer never merges; the authorized reviewer owns approval + merge. D2/D3/D4 receipts in §11 below.)**
 
 **Governance pattern:** PR #183–#227 claim-transition series (docs-only claim → reviewed merge → implementation lane → D5 fresh-GLM → closeout). Direct predecessor: ENV-PARITY-P3-002 (PRs #225/#226/#227 — delivered + RELEASED v1.10.0 + CLOSED; base `29087982624da2ad6a28bd3bcd70de53791e5452` = the P3.2 closeout merge). This lane is **Phase 3 lane 3, the THIRD Phase-3 lane**.
 
@@ -94,3 +94,57 @@ If implementation discovers a hard blocker (e.g. a seed-byte divergence vs the p
 Mutable: `supabase/migrations/20261118000005_parity_p3_003.sql` (+ house-convention fix-migrations if D5 demands — never an edit of an applied migration), the new admin calibration page/component files + `frontend/src/App.tsx` (additive nav/route only) + `frontend/src/lib/supabase-queries.ts` (additive calibration reads/writes) + the new calibration lib + its `.test.ts` + the new e2e spec + `scripts/test_parity_p3_003_calibration.py`, `CHANGELOG.md` + `frontend/package.json` (the v1.11.0 bump only), `docs/work-orders/ENV-PARITY-P3-003.md`, `docs/ai/handoffs/ENV-PARITY-P3-003-GLM.md`, `docs/ai/CURRENT-WORK.md` (transition + closeout only). Exact new-file names pinned at the WO/implementation start inside these bounded paths — any rename is a recorded deviation, never silent.
 
 Forbidden: everything else — the other Phase-3 modules (P3.4 job/QR/geofence — the `งานสวน` workbook `job` tab is P3.4's lane; P3.5 คู่มือ ×2 + address; P3.6 tests consolidated lane — each needs its own NEW reviewed claim transition), Phase 4 PDF/Telegram dispatcher surfaces (owner-gated per plan §5.3), Phase 5 cutover scope, the `Tool_Machine` machine-master seeding into core.item or any new master table (D1-3), seed rows beyond the ONE guarded 11-row `maintaining` history (`tool_Calibrate` 0 rows; core.item stays 0 — never fabricated), the delivered `/chemical` + `/admin/inventory` + `/admin/masters` + all delivered P1/P2 form/report/QR/report surfaces (byte-untouched; existing test suites edit-forbidden — additive only), `.github/**`, CI changes of any kind, `docs/ai/digital-twin/**` (reference 12 READ-ONLY), reference/plan docs (`APPSHEET-PARITY-PLAN.md`, `PROJECT-BRIEF`, `ROADMAP`, `DEFECT-MEMORY`, `ENV-ENGINEERING-LOOP`, `HANDOFF.md`, `AGENTS.md`), `docs/ai/architecture/ENV-COORDINATION-GUARD.md` + `scripts/env_coordination_guard.py` + `scripts/env_autonomy_runtime.py`, `data/**`, `.env`, secrets and raw data never committed/printed, Google Drive writes of any kind, personnel-identity values anywhere (the `Employee_id` national-ID class; 13-digit digit-run grep of new files = 0).
+
+## 11. Implementation receipts (this lane, 2026-11-18; PR #229, head `0dfeb73`)
+
+### 11.1 D2 RED (commit `26e22fa` — zero durable writes)
+
+| Suite | RED result |
+|---|---|
+| vitest `src/lib/calibration.test.ts` | fails-to-collect (`./calibration` absent — the honest new-file RED mode); 0 tests run |
+| `tsc -b` | 1 × TS2307 (absent module) + 2 × TS7006 cascades |
+| Playwright `env-parity-p3-003-calibration.spec.ts` | 6 failed / 0 passed over the absent surface |
+| `scripts/test_parity_p3_003_calibration.py` (live ENV_DB) | **7 failed truthfully** (table/view/policies absent — the real DB errors) / **1 passed** (the disclosed legacy baseline probe over pre-existing objects — the RED canary) / **5 skipped** (the seed fixtures are canary-gated and were NEVER SENT pre-apply) |
+
+### 11.2 D2 rulings (D1 items adjudicated by the implementing lane per the owner dispatch; reviewer-overturnable, never silent)
+
+- **D1-2 (table shape):** ONE `core.item_calibration` per the WO §3-1 column list; `calibrate_range`/`calibrate_unit` carried additive NULLable; **`compare_ref` carries VERBATIM in `cal_result`** (the WO §0 equivalence `Cal_result`/`compare_ref` = ผล — seeded values `InControl`/`Higher Ref.`); `cal_method` NULL for seeded rows (no source column — never fabricated).
+- **D1-5 (next-due) — THE ruling:** **NO next-due is computed, stored, or rendered.** Justification: §3.30's only formula is `Cal_date` Init `TODAY()`; no next-due column/formula exists in ref 12 (R2 zero-hit); and the hypothesized cycle inputs are NOT intervals — the fetched bytes show `calibrate_range`+`unit` are MEASURED VALUES (12.7 %, 319.0 ppm, 7.1 pH, 100.0 %, 1.0 ppm; units %/ppm/mg/L/pH), `compare_ref` is a result class. No interval rule is justifiable from any source ⇒ the UI shows **ครั้งล่าสุด + จำนวนครั้ง** per tool and states the absence honestly on-screen (never presented as an AppSheet transcription). Pinned by `NEXT_DUE_PINNED_ABSENT` in the lib + e2e assertions.
+- **D1-6 (RLS):** the owner dispatch pin rules the **log/append posture** — SELECT+INSERT `core.fn_is_staff_or_admin()` / UPDATE+DELETE `core.fn_is_admin()` (USING+WITH CHECK on UPDATE); zero anon policies (fail-closed). This AMENDS the WO §3-1 proposed master default (INSERT admin), recorded here per the dispatch instruction.
+- **พ.ศ.→CE date translation (the seed's one recorded value conversion):** the sheet `date` values carry พ.ศ. years (2566/2567); ENV stores CE (year − 543) per the house พ.ศ.-parse rule (P3.2 MFG precedent); the UI renders CE + 543 back to พ.ศ. Spot-checked live (all distinct years CE; `1d5ce050` → 2024-05-16).
+
+### 11.3 D3 apply evidence (ENV_DB gate held; `scripts/apply_migration_api.py`)
+
+- Preflight PASS: `core.item_calibration`/`public.item_calibration` absent, policies 0, **12/12 baselines intact** (wastewater.reading 907 / core.personnel 9 / core.equipment_spec 4 / safety.emergency_light 48 / safety.fire_extinguisher 0 / safety.emergency_light_check 332 / food.lab_test 0 / core.item 0 / core.vendor 0 / core.item_category 0 / core.distributor 6 / chemical.inventory_lot 0).
+- Apply: **33 OK / 0 FAIL** (single migration; no edit of any applied migration).
+- Post-verify: contract suite **13 passed / 0 failed / 0 skipped** — 11/11 seed reconciliation, census exact (tool_legacy_id 6 distinct · calibration_date 5 distinct · calibrate_range 7 nonempty + 4 NULL · calibrate_unit 4 distinct · cal_result 2 distinct), **2-row verbatim spot-check re-read from the fetched XLSX bytes** (`1d5ce050`, `664d0c36`), guarded re-send inserts 0, no RPC/trigger/generated column, the 4 pinned RLS policies + zero anon policies, façade security_invoker on; **anon REST probe 401 (42501) fail-closed** with the real publishable key; zero fixture leaks; baselines identical post-battery.
+
+### 11.4 D4 battery (at frozen head `0dfeb73`)
+
+| Check | Result |
+|---|---|
+| vitest FULL | 787 passed / 1 skipped (45 files) |
+| `tsc -b` | clean |
+| oxlint FULL | 0 errors; 19 warnings — **all pre-existing** (0 in the new calibration files) |
+| Playwright FULL chromium workers=1 | **303 passed / 0 failed** (6.7 min; incl. the 6 new calibration tests) |
+| guard | 344 passed + 450 subtests |
+| runtime | 62 passed + 32 subtests |
+| checker | RELEASE VERSION CHECK: OK (v1.11.0; CHANGELOG entry v1.11.0) |
+| `git diff --check` (base→head) | clean |
+| exact-13-digit-run grep of new files | 0 hits (the raw `[0-9]{13}` probe matches only the 14-digit migration-slot timestamp `20261118000005` — a repo-internal identifier class present in every prior lane, not a person-identity run) |
+| diff ⊆ claimed scope | 11 files, all inside WO §10 mutable_scope (App.tsx additive route only; `supabase-queries.ts` intentionally untouched — the calibration lib owns reads/writes, the inventory-lib precedent) |
+
+### 11.5 Seed count table (the deliverable count report)
+
+| Census column | pinned | seeded | match |
+|---|---|---|---|
+| rows (`maintaining` tab) | 11 | 11 | ✓ |
+| `tool_legacy_id` (sheet `tool_id`) | 11 nonempty / 6 distinct | 11 / 6 | ✓ |
+| `calibration_date` (sheet `date`, พ.ศ.→CE) | 11 nonempty / 5 distinct | 11 / 5 | ✓ |
+| `calibrate_range` | 7 nonempty / 4 blank | 7 / 4 NULL | ✓ |
+| `calibrate_unit` (sheet `unit`) | 11 nonempty / 4 distinct | 11 / 4 | ✓ |
+| `cal_result` (sheet `compare_ref`) | 11 nonempty / 2 distinct | 11 / 2 | ✓ |
+| `cal_method` | — (no source column) | NULL ×11 | ✓ (never fabricated) |
+| `item_id` / `item_name` | — (core.item 0 rows) | NULL ×11 | ✓ (honest empty picker) |
+| `tool_Calibrate` tab | 0 rows (REACHABLE-but-EMPTY) | 0 seeded | ✓ (honest zero) |
+| `Tool_Machine` master | UNSEEDED (D1-3) | 0 rows | ✓ |
