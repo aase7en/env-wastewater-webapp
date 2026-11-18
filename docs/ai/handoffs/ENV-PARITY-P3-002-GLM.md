@@ -56,3 +56,77 @@ WO `docs/work-orders/ENV-PARITY-P3-002.md` holds the full binding pins (§0 comp
 ## 5. Single next safe action
 
 After the transition PR merges: create `_worktrees/env-parity-p3-002` off the new main tip, commit D2 RED (unit + e2e + SQL-contract + tsc evidence, zero durable writes), then D3 → D4 → D5 per §3 — stopping at REVIEW_REQUESTED.
+
+---
+
+## 6. IMPLEMENTATION RECEIPT (D2 → D4, 2026-11-18, Track-Z GLM lane — STOP at REVIEW_REQUESTED)
+
+Lane branch `feat/env-parity-p3-002` off the merged main tip `5dcd2c7bbf6c9c9637a90d07c454e0e12133beb1` (PR #225 merge; ancestry verified). Worktree `_worktrees/env-parity-p3-002` (clean at start; the repo-level `_worktrees/` untracked dir on the main checkout predates this lane — untouched). Commits: D2 RED `16d5f1c` → D3 feat `8edaf82` → release v1.10.0 + docs (final head recorded on the PR). **Implementer never merges; the authorized reviewer owns approval + merge.**
+
+### 6.1 Environment receipts (local machine)
+
+- Secrets resolution: the sibling-A-Wiki chain does NOT resolve from this machine layout; the Drive root is mounted at `~/Library/CloudStorage/GoogleDrive-aase7en@sunday-estate.com/My Drive/A-Wiki-Data` — supplied per-invocation via `A_WIKI_DRIVE_PATH` (never printed). Gate held: `SUPABASE_DB_URL` asserted to contain the ENV_DB ref `gllqtbyofrcjzmbnfoeh` (boolean-checked only); `SUPABASE_ACCESS_TOKEN` len 44 (never printed).
+- The kilo-config supabase MCP token is STALE (401 on Management API + MCP `Unauthorized`) — all live probes ran through the Drive-secrets token + `scripts/_env.py`/`apply_migration_api.py` path instead.
+- Local gitignored stubs created per house precedent (worktrees don't inherit them): repo-root `.env` = one line `__LOAD_FROM_DRIVE__=true`; `frontend/.env` copied from the canonical checkout (public publishable values only). `git check-ignore` verified both.
+
+### 6.2 D2 RED (commit `16d5f1c`) — counts VERBATIM
+
+| Channel | Result |
+|---|---|
+| vitest focused (`src/lib/inventory.test.ts`) | **1 file failed-to-collect** — `Error: Cannot find module '.../src/lib/inventory'` (TS2307); **0 tests collected** |
+| `tsc -b` | **exit 2** — `src/lib/inventory.test.ts(21,8): error TS2307: Cannot find module './inventory' or its corresponding type declarations.` (1 error) |
+| Playwright focused (`env-parity-p3-002-inventory.spec.ts`) | **4 failed / 0 passed** — truthful failures over the absent surface: `/admin/inventory` hit the unauthed catch-all (NotFound), so even the anon-bounce assertion had no route to bounce |
+| Live SQL contract (`scripts/test_parity_p3_002_inventory.py`) | **10 failed / 1 passed / 9 skipped** — the 10 failures are the truthful absent-object reasons (e.g. `relation "chemical.inventory_lot" does not exist`, `column "legacy_item_id" does not exist`); the **1 pass is the DISCLOSED legacy pass** (the 11-table baseline canary 907/9/4/48/0/332/0/0/0/0/6 + master 0 — asserted over pre-existing objects only, by design so the durable-write canary is observable at RED); the **9 skips are the canary holding** (deduction fixtures F-A…F-G + seed re-send are NEVER SENT while the objects are absent — zero durable writes pre-apply) |
+
+RED-suite mechanics note (honest): the suite file received assertion-mechanics corrections during D3 AFTER the RED capture (polcmd char codes not bitmasks; `timestamp with time zone` long name; `to_regprocedure` not `to_regproc`; a missing `;` before ROLLBACK in the fixture runner; a correlated-scope bug in two evidence subqueries; the mapping test moved to the fix-migration after the live 42703) — the RED RUN above was executed against the file as it stood at `16d5f1c` and the counts are from that run; the corrections changed how assertions read, not what they pin.
+
+**D2 ruling — P3-1 reversal: IMPLEMENTED (not out-of-scope).** Both usage-row delete paths are real app surfaces (`supabase-queries.ts:deleteReading`, `water-supply.ts:deleteWaterSupplyDaily` — grep receipts at base), so orphaned `direction='out'` movements were a live gap; the compensation is EXACT (the allocation ledger records every slice — lot ↔ movement), so FEFO-inverse restore can never over-restore and the never-negative CHECKs hold by construction. Ruling + justification recorded in WO §7a; fixtures F-F/F-F2 + the delete-path wiring prove it.
+
+**D2 pin — P3-2 result shape:** typed jsonb `{status: 'deducted'|'partial'|'skipped'|'already-deducted'|'already-skipped'|'reversed'|'nothing-to-reverse'|'noop', deducted_total, shortfall, already_recorded, allocated[], reason}`; a retried save is an IDEMPOTENT SUCCESS returning the truthful prior state (`already-deducted` w/ the prior total; `already-skipped` w/ the prior shortfall) and the badge renders it truthfully — never a double deduction, never a misreported "ไม่ได้หัก".
+
+**D2 pin — P3-3:** the config-seed anchor citation is REF 6014 (the verbatim `=[Item ID] = "0c0e6a47"` inside the correctly-cited 6011-6031 range; fence 6013) — carried in the migration header, the fix-migration provenance paragraph, and asserted by `test_config_seed_provenance_recorded_in_source`.
+
+### 6.3 D3 — migration + live evidence (commit `8edaf82`)
+
+- `supabase/migrations/20261118000002_parity_p3_002.sql` applied via `scripts/apply_migration_api.py`: **37/38 OK** — the ONLY failure was statement [37/38] (the guarded config seed) failing LIVE `42703: column "source_provenance" of relation "master" does not exist`: the seed block had assumed the P2.1/P3.1 seed-lineage column, but `chemical.master` (20260719000006) predates that convention and WO §3-3 forbids ANY further column. **Repaired per the house `*_fix` convention as a NEW migration `20261118000003_parity_p3_002_fix.sql`** (never an edit of the applied file; the original in-file seed block stays for the record, unapplied), applied **2/2 OK**. The mapping row seeds `(name 'คลอรีน 10%', unit 'kg', legacy_item_id '0c0e6a47')` only; its provenance (ref 6014 + the SOURCE_UNAVAILABLE 0-lot verdict) is carried verbatim in the fix-migration source — the honest carrier, since no column may hold it. **DEVIATION (recorded, reviewer to rule): the fix migration was demanded at D3 by a live failure, not at D5** — the WO anticipated the convention for D5 repairs; the same rule applied earlier.
+- Preflight/post-verify baselines (read-only probes, live): `chemical.master` **0 rows** at claim (clean seed; probe receipt 2026-11-18) → **exactly 1** mapping row post-apply; `chemical.inventory_lot` / RPCs absent pre-apply (to_regclass/to_regprocedure NULL receipts) → present post-apply; the 11-table baselines 907/9/4/48/0/332/0/0/0/0/6 intact pre/post.
+- Live rollback-smoke (all inside single-request BEGIN…ROLLBACK, zero net persistence proven by post-counts 0/0/0 + balance restored 0.000): FEFO order incl. NULL-expiry-last + multi-lot split (LOT-B 3.0 → LOT-A 2.5, LOT-C untouched); shortfall fail-closed (partial 2.0/3.0 surfaced); no-stock → `skipped` + full shortfall + 0 movements; idempotent retry → `already-deducted`, 1 movement, 1 ledger row; direct overdraw → `check_fired` (named CHECK holds); reversal → `direction='in'` ×2 with `purpose_rev` + `note_has_provenance` true, lots restored to 0, ledger `reversed`, second call `nothing-to-reverse`; mapping-absent (is_active=false in-txn) → honest `skipped` + mapping-absent reason + ledger row; **balance-drop smoke: receipt 5.0 → deduct 2.0 → `current_balance` 3.0** (trigger-owned) with 0 lots + balance 0.000 after ROLLBACK.
+- Contract battery final: **21/21 GREEN** (was 10F/1P/9S at RED).
+- **D3 design correction caught by the live fixture:** a lot receipt must ALSO write ONE `direction='in'` movement — without it `fn_recompute_balance` (movement-net authority) drives `current_balance` negative on the first deduction (the fixture measured −2.0). `createInventoryLot` writes lot + matching 'in' movement (two sequential writes; the second's failure surfaces an honest warning — an atomic receipt RPC is a possible future lane, not a pinned surface). The contract battery encodes the receipt-movement rule (F-B).
+
+### 6.4 D3 frontend (same commit)
+
+- `frontend/src/lib/inventory.ts` — pins (CHLORINE_LEGACY_ITEM_ID = '0c0e6a47' ref 6014; SOURCE_WASTEWATER/SOURCE_WATER_SUPPLY per D1-3 BOTH-IN), the verbatim ÷SWITCH `chlorineUsedReal` (mirrors `wastewater.v_reading_meter_chain`; blank/unknown → NULL never 0), `formatDeductionBadge` truthful texts (WO §5 verbatim lines + the P3-2 already-* lines), RPC wrappers (`fn_deduct_chlorine_stock` / `fn_revoke_chlorine_deduction` pinned arg names), save-path helpers (`deductForReading` derives the real qty from the SAVED payload; `deductForWaterSupplyCheck` reads the VIEW-owned `chlorine_usage_realy` back from `v_daily_check_chain` — never re-derived client-side, the report-summary precedent; missing spec → honest skip note, never a guessed quantity), delete-path `revokeForUsageRow` (best-effort honest warning — the delete already succeeded), lot CRUD (blanks ⇒ NULL; amount > 0 enforced; the receipt-movement contract).
+- `frontend/src/pages/admin/InventoryPage.tsx` + `components/inventory/LotReceiptSection.tsx` + `StockViewSection.tsx` — the admin-gated surface (RequireAuth requireAdmin; route-only `/admin/inventory`, the /admin/masters precedent — admin nav lives in AppShell, outside the lane); honest empty state verbatim "ยังไม่มีล็อตสต๊อก — รอการรับเข้าจริง"; MFG blank = "ไม่ทราบ" never coerced; FEFO preview order mirrors the RPC; พ.ศ. dates via `thaiDate`; `fefoOrder` lives in the lib (pure, testable).
+- `frontend/src/App.tsx` — additive lazy import + `/admin/inventory` route ONLY (17 added lines).
+- ADDITIVE wiring: `DailyFormPage.tsx` (create branch: `chlorine_used > 0` → `deductForReading` → non-blocking honest toast before navigate; edits never re-deduct), `WaterSupplyPage.tsx` (submit → `createWaterSupplyDailyWithDeduction` + badge toast; remove → reversal-note toast), `supabase-queries.ts` (`deleteReading` → best-effort reversal warning), `water-supply.ts` (delete → best-effort reversal warning; new `createWaterSupplyDailyWithDeduction`; plain `createWaterSupplyDaily` byte-identical). `form-parity.ts` NOT touched (the additive badge state did not require it — no deviation). The delivered `/chemical` page + `chemical.ts` are byte-untouched.
+- Known boundary (recorded, never silent): CSV bulk import (`bulkInsertReadingRows`) does NOT auto-deduct — the lane wires the two FORM save paths only (WO §4-1); imported readings with chlorine_used stay undeducted until a future claim wires the import surface.
+
+### 6.5 D4 battery (at the freeze head)
+
+| Check | Result |
+|---|---|
+| vitest FULL | **44 files, 779 passed / 1 skipped (the designed skipIf)** |
+| `tsc -b` | clean (exit 0) |
+| oxlint | **0 errors / 19 warnings — byte-equal count to the main-checkout baseline (0 new)** |
+| Playwright FULL chromium workers=1 (CI=1) | **297/297 passed (6.6m)** |
+| guard suite | **344/344 (+450 subtests)** |
+| runtime suite | **62/62 (+32 subtests)** |
+| `check_release_version.py --tag v1.10.0` | **OK (v1.10.0; CHANGELOG entry v1.10.0), exit 0** — one iteration: the checker caught (a) the CHANGELOG/package mismatch ordering and (b) a hardcoded `v1.10.0` literal inside `inventory.ts` source_provenance text → reworded to `ENV-PARITY-P3-002` (the checker doing its job) |
+| `git diff --check` | clean |
+| 13-digit digit-run grep (new files) | only 14-digit migration-name substrings (`2026111800000…`/`20261115140000` in comments) — **0 PHI** |
+| validate-registry | ok:true, **40 claims, BOOTSTRAP_CONTROL** — CURRENT-WORK.md diff EMPTY (transition+closeout only, per scope) |
+| Diff vs main | **exactly the 16 claimed-scope files** (2563+/6−) |
+
+### 6.6 Deviations ledger (all recorded; none silent)
+
+1. **`*_fix` repair migration at D3** (live 42703 demanded it immediately) — the WO text anticipated the convention "if D5 demands"; same house rule applied earlier; reviewer to rule.
+2. **D1-5 RLS posture AMENDED** as the WO anticipated: `inventory_lot` UPDATE = staff-or-admin (the SECURITY INVOKER RPC must deduct on staff saves — admin-only UPDATE would break every staff-initiated save's deduction), INSERT/DELETE admin, SELECT staff-or-admin; ledger + allocation = the movement posture (staff-or-admin ALL). Honesty floor held by the named CHECKs regardless of writer; the admin UI never hand-edits `amount_deducted`.
+3. **The WO §3-2 "deduction index" realized as TWO tables** — `chemical.inventory_lot_deduction` ((source_table, source_id) UNIQUE ledger) + `chemical.inventory_lot_allocation` (slice join): `chemical.movement` gains NO columns (WO §3-3) and has no source columns, so per-source traceability + FEFO-inverse reversal provenance live in the join; both are additive new objects in the lane's data layer.
+4. **Receipts write a matching 'in' movement** (item D3 above) — keeps the delivered balance authority truthful; the fixture caught the negative-balance failure mode.
+5. **Local gitignored env stubs** (repo-root `.env` one-liner + `frontend/.env` copy) — house precedent, `git check-ignore` verified, never committed.
+6. **RED-suite mechanics corrections during D3** — disclosed in 6.2; the RED counts are from the run at `16d5f1c`.
+
+### 6.7 Next step
+
+D5 fresh-GLM independent review at the exact frozen head (battery rerun where possible + own read-only live probes — movement rows ONLY inside ROLLBACK transactions; the canary/baselines table in 6.5 is the zero-net receipt). The implementer NEVER merges; the authorized reviewer owns approval + merge. Release v1.10.0 MINOR: annotated tag at the deployed merge SHA post-deploy per ENV-APP-VERSION-001 D6.

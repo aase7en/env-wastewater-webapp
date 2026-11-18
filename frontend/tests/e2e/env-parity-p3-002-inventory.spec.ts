@@ -22,7 +22,8 @@ test.describe("ENV-PARITY-P3-002 inventory surface", () => {
     await expect(page).toHaveURL(/\/login\?next=%2Fadmin%2Finventory/);
   });
 
-  test("admin sees the inventory page with lot receipt + stock view sections", async ({ page }) => {
+  test("admin sees the inventory page with lot receipt + stock view sections", async ({ authedAdmin: page }) => {
+
     // Deterministic honest empty state: no lots yet (SOURCE_UNAVAILABLE at
     // this lane — 0 seeded rows; the view also returns 0 for a fresh read).
     await page.route("**/rest/v1/inventory_lot**", async (route) => {
@@ -43,10 +44,11 @@ test.describe("ENV-PARITY-P3-002 inventory surface", () => {
     await expect(page.getByTestId("inventory-page")).toBeVisible();
     await expect(page.getByTestId("inventory-lot-receipt")).toBeVisible();
     await expect(page.getByTestId("inventory-stock-view")).toBeVisible();
-    await expect(page.getByText("สต๊อกคลอรีน", { exact: false })).toBeVisible();
+    await expect(page.getByText("สต๊อกคลอรีน", { exact: false }).first()).toBeVisible();
   });
 
-  test("stock view shows the honest empty state — never a fabricated stock number", async ({ page }) => {
+  test("stock view shows the honest empty state — never a fabricated stock number", async ({ authedAdmin: page }) => {
+
     await page.route("**/rest/v1/inventory_lot**", async (route) => {
       await route.fulfill({ status: 200, contentType: "application/json", body: JSON.stringify([]) });
     });
@@ -65,7 +67,8 @@ test.describe("ENV-PARITY-P3-002 inventory surface", () => {
     await expect(page.getByText("ยังไม่มีล็อตสต๊อก — รอการรับเข้าจริง")).toBeVisible();
   });
 
-  test("lot receipt form carries the per-ถัง fields (LotNo/MFG/EXP + kg amount)", async ({ page }) => {
+  test("lot receipt form carries the per-ถัง fields (LotNo/MFG/EXP + kg amount)", async ({ authedAdmin: page }) => {
+
     await page.route("**/rest/v1/inventory_lot**", async (route) => {
       await route.fulfill({ status: 200, contentType: "application/json", body: JSON.stringify([]) });
     });

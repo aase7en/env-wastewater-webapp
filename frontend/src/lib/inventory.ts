@@ -376,7 +376,7 @@ export function buildLotPayload(form: Partial<LotEntryForm>): Record<string, unk
     lifetime_note: blankToNull(form.lifetime_note),
     amount_received: amount,
     note: blankToNull(form.note),
-    source_provenance: "manual admin entry (ENV v1.10.0 inventory UI)",
+    source_provenance: "manual admin entry (ENV-PARITY-P3-002 inventory UI)",
   };
   return payload;
 }
