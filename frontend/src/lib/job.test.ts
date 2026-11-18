@@ -13,7 +13,7 @@
  * D2 RED: this suite fails-to-collect while `./job` is absent (the honest
  * new-file RED mode — P1.5/P2.4/P3.1/P3.2/P3.3 precedent).
  */
-import { describe, expect, it } from "vitest";
+import { describe, expect, it, vi } from "vitest";
 import {
   DISPLAY_CHECK_LIMIT_KM,
   EMPTY_JOBS_LABEL,
@@ -34,10 +34,20 @@ import {
   type JobArea,
 } from "./job";
 
+// the lib imports ./supabase (env-gated at module load) — mock it; these
+// tests exercise the pure form-parity/geofence surface only.
+vi.mock("./supabase", () => ({
+  supabase: { from: () => ({ select: () => ({ order: () => Promise.resolve({ data: [], error: null }) }) }) },
+}));
+
 const AREA: JobArea = {
   id: "aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa",
   legacy_id: "d9423cc0",
   area_name: "ต้นไม้และสนามหญ้า บ่อบำบัด",
+  qr_url: null,
+  image_ref: null,
+  source_provenance: "test",
+  created_at: "2026-01-01T00:00:00Z",
 };
 
 /** A synthetic in-range point ~13 m from the hospital pin (the shape of the

@@ -77,6 +77,12 @@ const EmergencyLightCheckPage = lazy(() =>
   import("./pages/EmergencyLightCheckPage").then((m) => ({ default: m.EmergencyLightCheckPage })),
 );
 
+// ENV-PARITY-P3-004 — grounds-work job log (staff; the §3.24 practician
+// Valid If = the P1.4 ผู้บันทึก gate — a staff flow).
+const JobLogPage = lazy(() =>
+  import("./pages/JobLogPage").then((m) => ({ default: m.JobLogPage })),
+);
+
 // ENV-PARITY-P3-002 — chlorine inventory lots (admin; route-only, the
 // /admin/masters precedent — admin nav lives in AppShell, outside the lane).
 const InventoryPage = lazy(() =>
@@ -349,6 +355,12 @@ export default function App() {
                     path="/safety/emergency-light-checks"
                     element={<RequireAuth><Suspense fallback={<PageSkeleton />}>
                       <EmergencyLightCheckPage />
+                    </Suspense></RequireAuth>} />
+                  {/* ENV-PARITY-P3-004 — บันทึกการทำงาน (grounds-work job log, staff; WO §5). */}
+                  <Route
+                    path="/safety/job-log"
+                    element={<RequireAuth><Suspense fallback={<PageSkeleton />}>
+                      <JobLogPage />
                     </Suspense></RequireAuth>} />
                   <Route path="/food" element={<RequireAuth><Suspense fallback={<PageSkeleton />}>
             <FoodPage />

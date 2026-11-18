@@ -617,7 +617,9 @@ class SeedFixtures(unittest.TestCase):
                 exp_resolved += cnt
         self.assertEqual(exp_resolved, 765, "expected disclosure: 765 cells resolve to UUIDs")
         self.assertEqual(row["resolved"], exp_resolved, "seeded resolved count must match the source re-resolution")
-        self.assertEqual(row["null_prac"], 335, "335 unresolvable cells ⇒ NULL (never fabricated)")
+        # 335 unresolvable nonempty cells + the 2 blank practician cells
+        # (blanks ⇒ NULL) = 337 rows with NULL practitioner_id
+        self.assertEqual(row["null_prac"], 337, "335 unresolvable + 2 blank cells ⇒ NULL (never fabricated)")
         # every seeded practitioner_id must exist in core.personnel (9 rows)
         bound = q(
             "SELECT count(*) AS c FROM core.job_log j"
@@ -665,11 +667,16 @@ class SeedFixtures(unittest.TestCase):
             row = q(
                 "SELECT qr_legacy_id, location_area_id, location_name, lat::text, lng::text,"
                 " working, image_ref, issue, practitioner_id::text,"
-                " scanned_at::text, source_provenance"
+                " scanned_at, source_provenance"
                 " FROM core.job_log WHERE legacy_id = '" + str(legacy).strip() + "'"
             )
             self.assertEqual(len(row), 1, f"seeded row {legacy} missing")
             r = row[0]
+            # compare INSTANTS (the JSON render is server-tz; the seed
+            # literal is pinned ICT +07 — same moment must hold)
+            got_at = datetime.fromisoformat(str(r["scanned_at"]).replace("Z", "+00:00"))
+            want_at = datetime.fromisoformat(_scanned_at_iso(src[1]).replace(" ICT", "").replace(" +07", "+07"))
+            self.assertEqual(got_at, want_at, f"{legacy} พ.ศ.→CE ICT translation (instant equality)")
             self.assertEqual(r["qr_legacy_id"], qr, f"{legacy} qr must carry verbatim")
             self.assertEqual(r["location_area_id"], expected_area, f"{legacy} area join")
             self.assertEqual(r["location_name"], (str(src[4]).strip() if src[4] is not None and str(src[4]).strip() != "" else None))
@@ -680,7 +687,6 @@ class SeedFixtures(unittest.TestCase):
             self.assertEqual(r["image_ref"], (str(src[7]).strip() if src[7] is not None and str(src[7]).strip() != "" else None))
             self.assertEqual(r["issue"], (str(src[8]).strip() if src[8] is not None and str(src[8]).strip() != "" else None))
             self.assertEqual(r["practitioner_id"], prac_uuid, f"{legacy} practician resolution must match")
-            self.assertEqual(r["scanned_at"], _scanned_at_iso(src[1]), f"{legacy} พ.ศ.→CE ICT translation")
             self.assertTrue(
                 r["source_provenance"].startswith(SEED_PROVENANCE_PREFIX),
                 f"{legacy} seed provenance pin",
