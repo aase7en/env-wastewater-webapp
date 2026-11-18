@@ -120,7 +120,7 @@ describe("formatDeductionBadge — truthful statuses (WO §5 verbatim intent + R
       already_recorded: true,
       allocated: [],
     });
-    expect(msg).toContain("หักไปแล้ว");
+    expect(msg).toContain("ถูกหักสต๊อกไปแล้ว");
     expect(msg).toContain("4 kg");
     expect(msg).toContain("ไม่หักซ้ำ");
   });
@@ -144,6 +144,7 @@ describe("formatDeductionBadge — truthful statuses (WO §5 verbatim intent + R
       status: "reversed",
       deducted_total: 0,
       shortfall: 0,
+      restored_total: 4,
       allocated: [{ lot_id: "l1", lot_no: "LOT-B", quantity: 4, movement_id: "m9" }],
     });
     expect(msg).toContain("ย้อนหักสต๊อกแล้ว 4 kg");

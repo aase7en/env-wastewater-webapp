@@ -53,6 +53,8 @@ import {
   useUpdateReading,
   useWaterUsedForDate,
 } from "../lib/hooks";
+// ENV-PARITY-P3-002 — ADDITIVE deduction wiring (D1-3; the badge text is honest per outcome)
+import { deductForReading } from "../lib/inventory";
 import { deleteReading as deleteReadingQ } from "../lib/supabase-queries";
 import type { MeterChainRow } from "../lib/supabase-queries";
 import { useToast, type ToastContextValue } from "../components/ui/Toast";
@@ -481,6 +483,23 @@ export function DailyFormPage() {
           // Honest warning: the reading saved; only the P1.1 enum mirrors
           // (parallel parity columns) are not yet in sync.
           toast.warning(statusMirrorWarning);
+        }
+        // ENV-PARITY-P3-002 (additive badge lines, D1-3): a save with
+        // chlorine_used > 0 also drives the FEFO stock deduction — the
+        // honest outcome badge is non-blocking and never misreports the
+        // save itself (the reading IS saved; only the deduction outcome
+        // varies: deducted / partial / skipped / already-*). Edits do NOT
+        // re-deduct (WO §4-4).
+        const usedRaw = payload.chlorine_used;
+        const usedNum = usedRaw === null || usedRaw === undefined || usedRaw === "" ? null : Number(usedRaw);
+        if (Number.isFinite(usedNum as number) && (usedNum as number) > 0 && data.id) {
+          const deductionNote = await deductForReading({
+            readingId: data.id,
+            chlorineUsed: usedNum,
+            mixRatio: (payload.chlorine_mix_ratio as string | null) ?? null,
+            readingDate: payload.reading_date,
+          });
+          if (deductionNote) toast.warning(deductionNote);
         }
         navigate("/readings");
       } else {

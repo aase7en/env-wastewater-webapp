@@ -10,6 +10,8 @@
 
 import { useQuery } from "@tanstack/react-query";
 import { supabase } from "./supabase";
+// ENV-PARITY-P3-002 — ADDITIVE deduction/reversal wiring (D1-3 BOTH-IN + the D2 P3-1 reversal ruling)
+import { deductForWaterSupplyCheck, revokeForUsageRow } from "./inventory";
 
 export interface WaterSupplyCheck {
   id: string;
@@ -58,9 +60,43 @@ export async function createWaterSupplyDaily(input: WaterSupplyInput): Promise<W
   return data as WaterSupplyCheck;
 }
 
-export async function deleteWaterSupplyDaily(id: string): Promise<void> {
+export async function deleteWaterSupplyDaily(id: string): Promise<string | null> {
   const { error } = await supabase.from("daily_check").delete().eq("id", id);
   if (error) throw new Error(error.message);
+
+  // ENV-PARITY-P3-002 (D2 P3-1 reversal ruling, ADDITIVE wiring only):
+  // after the usage row is durably deleted, compensate its recorded
+  // chlorine deduction (provenance-reversal RPC — lot stock restored
+  // FEFO-inverse). Best-effort: the delete already succeeded, so a
+  // reversal failure returns an honest warning string (never thrown,
+  // never silent — the caller toasts it).
+  return revokeForUsageRow({ sourceTable: "water_supply.daily_check", sourceId: id });
+}
+
+/**
+ * ENV-PARITY-P3-002 (D1-3 BOTH-IN, ADDITIVE wiring only): create the daily
+ * check, then — when the save carries a chlorine usage — call the FEFO
+ * deduction RPC with the VIEW-owned real quantity (chlorine_usage_realy
+ * read back from v_daily_check_chain for the saved row; never re-derived
+ * client-side). The result travels as `deductionNote` (truthful badge text
+ * or an honest skip/warning note — never thrown; the usage save already
+ * succeeded and must never be misreported as failed by the deduction).
+ * The plain createWaterSupplyDaily stays byte-identical for existing
+ * callers.
+ */
+export async function createWaterSupplyDailyWithDeduction(
+  input: WaterSupplyInput
+): Promise<{ row: WaterSupplyCheck; deductionNote: string | null }> {
+  const row = await createWaterSupplyDaily(input);
+  const usage = Number((input as { chlorine_usage?: number | string | null }).chlorine_usage ?? 0);
+  let deductionNote: string | null = null;
+  if (Number.isFinite(usage) && usage > 0) {
+    deductionNote = await deductForWaterSupplyCheck({
+      checkId: row.id,
+      checkDate: row.check_date,
+    });
+  }
+  return { row, deductionNote };
 }
 
 export function useWaterSupplyDaily(limit = 30) {

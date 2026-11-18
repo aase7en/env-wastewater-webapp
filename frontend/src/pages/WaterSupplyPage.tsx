@@ -22,7 +22,7 @@ import { Input, NumberInput, Field, Select } from "../components/ui/Input";
 import {
   useWaterSupplyDaily,
   useWaterSupplyChain,
-  createWaterSupplyDaily,
+  createWaterSupplyDailyWithDeduction,
   deleteWaterSupplyDaily,
   type WaterSupplyInput,
 } from "../lib/water-supply";
@@ -87,8 +87,13 @@ export function WaterSupplyPage() {
       // object through, so the extended shape carries instrument_id
       // without touching lib/water-supply.ts (out of this lane's scope).
       const payload = { ...form, instrument_id: instrumentId || null } as WaterSupplyInput & { instrument_id: string | null };
-      await createWaterSupplyDaily(payload);
+      // ENV-PARITY-P3-002 (additive badge lines): the save also carries the
+      // FEFO chlorine deduction — the honest result badge is non-blocking
+      // and never misreports the save itself (the record IS saved; only the
+      // deduction outcome varies: deducted / partial / skipped / already-*).
+      const { deductionNote } = await createWaterSupplyDailyWithDeduction(payload);
       toast("success", "บันทึกสำเร็จ");
+      if (deductionNote) toast("warning", deductionNote);
       refresh();
       chain.refresh();
     } catch (e) {
@@ -97,7 +102,15 @@ export function WaterSupplyPage() {
   }
   async function remove(id: string) {
     if (!confirm("ลบแถวนี้?")) return;
-    try { await deleteWaterSupplyDaily(id); toast("success", "ลบแล้ว"); refresh(); chain.refresh(); }
+    try {
+      // ENV-PARITY-P3-002 (additive badge lines): deleting a usage row also
+      // reverses its recorded chlorine deduction (D2 P3-1) — the honest
+      // reversal outcome is surfaced without ever misreporting the delete.
+      const reversalNote = await deleteWaterSupplyDaily(id);
+      toast("success", "ลบแล้ว");
+      if (reversalNote) toast("warning", reversalNote);
+      refresh(); chain.refresh();
+    }
     catch (e) { toast("error", `ผิดพลาด: ${(e as Error).message}`); }
   }
 

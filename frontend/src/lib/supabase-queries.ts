@@ -10,6 +10,7 @@
  * supabase/migrations/20260718000000_p12_frontend_views.sql).
  */
 import { supabase } from "./supabase";
+import { revokeForUsageRow } from "./inventory"; // ENV-PARITY-P3-002 — delete-path reversal wiring (additive)
 import { toLocalISODate } from "./utils";
 import { buildStatusMirror, pickStatusMirror } from "./form-parity";
 import type {
@@ -534,9 +535,18 @@ export async function updateReading(id: string, payload: ReadingUpdate): Promise
   return data as ReadingDetail;
 }
 
-export async function deleteReading(id: string): Promise<void> {
+export async function deleteReading(id: string): Promise<string | null> {
   const { error } = await supabase.from("reading").delete().eq("id", id);
   if (error) throw new Error(error.message);
+
+  // ENV-PARITY-P3-002 (D2 P3-1 reversal ruling, additive): after the usage
+  // row is durably deleted, compensate its recorded chlorine deduction with
+  // the provenance-reversal RPC (opposite direction='in' movements, lot
+  // stock restored FEFO-inverse). Best-effort — the delete already
+  // succeeded, so a reversal failure returns an honest WARNING string
+  // (never thrown, never silent — the caller toasts it), mirroring the
+  // syncReadingStatusMirror warning precedent.
+  return revokeForUsageRow({ sourceTable: "wastewater.reading", sourceId: id });
 }
 
 /**

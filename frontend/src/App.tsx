@@ -76,6 +76,12 @@ const ExtinguisherInspectionPage = lazy(() =>
 const EmergencyLightCheckPage = lazy(() =>
   import("./pages/EmergencyLightCheckPage").then((m) => ({ default: m.EmergencyLightCheckPage })),
 );
+
+// ENV-PARITY-P3-002 — chlorine inventory lots (admin; route-only, the
+// /admin/masters precedent — admin nav lives in AppShell, outside the lane).
+const InventoryPage = lazy(() =>
+  import("./pages/admin/InventoryPage").then((m) => ({ default: m.InventoryPage })),
+);
 const FoodPage = lazy(() =>
   import("./pages/FoodPage").then((m) => ({ default: m.FoodPage })),
 );
@@ -418,6 +424,17 @@ export default function App() {
                       <RequireAuth requireAdmin>
                         <Suspense fallback={<PageSkeleton />}>
                           <ExtinguisherMasterPage />
+                        </Suspense>
+                      </RequireAuth>
+                    }
+                  />
+                  {/* ENV-PARITY-P3-002 — chlorine inventory lots (admin; WO §5). */}
+                  <Route
+                    path="/admin/inventory"
+                    element={
+                      <RequireAuth requireAdmin>
+                        <Suspense fallback={<PageSkeleton />}>
+                          <InventoryPage />
                         </Suspense>
                       </RequireAuth>
                     }

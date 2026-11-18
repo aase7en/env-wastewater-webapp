@@ -93,6 +93,13 @@ API_URL = (
 MIGRATION = "20261118000002_parity_p3_002.sql"
 MIGRATION_PATH = Path(__file__).resolve().parent.parent / "supabase/migrations" / MIGRATION
 
+# The guarded seed lives in the house *_fix migration — the original seed
+# block failed live (42703: chemical.master has no source_provenance/note
+# column; the WO §3-3 boundary forbids adding one) and was repaired as a
+# NEW migration per the house convention (never an edit of the applied one).
+FIX_MIGRATION = "20261118000003_parity_p3_002_fix.sql"
+FIX_MIGRATION_PATH = Path(__file__).resolve().parent.parent / "supabase/migrations" / FIX_MIGRATION
+
 SEED_MARKER_START = "-- >>> SEED-BLOCK-START"
 SEED_MARKER_END = "-- <<< SEED-BLOCK-END"
 
@@ -110,7 +117,6 @@ BASELINES = {
     ("core", "vendor"): 0,
     ("core", "item_category"): 0,
     ("core", "distributor"): 6,
-    ("chemical", "master"): 0,  # live-empty at claim (2026-11-18 probe); the ONE config seed row is asserted separately
 }
 
 
@@ -151,8 +157,8 @@ def _objects_present() -> bool:
             "SELECT to_regclass('chemical.inventory_lot') AS lot,"
             " to_regclass('chemical.inventory_lot_deduction') AS ded,"
             " to_regclass('chemical.inventory_lot_allocation') AS alloc,"
-            " to_regproc('chemical.fn_deduct_chlorine_stock(text,uuid,numeric,date)') AS fn,"
-            " to_regproc('chemical.fn_revoke_chlorine_deduction(text,uuid,date)') AS rev,"
+            " to_regprocedure('chemical.fn_deduct_chlorine_stock(text,uuid,numeric,date)') AS fn,"
+            " to_regprocedure('chemical.fn_revoke_chlorine_deduction(text,uuid,date)') AS rev,"
             " EXISTS (SELECT 1 FROM information_schema.columns WHERE table_schema='chemical'"
             "   AND table_name='master' AND column_name='legacy_item_id') AS col"
         )
@@ -172,9 +178,7 @@ def _baseline_counts_sql() -> str:
     parts = [
         f"(SELECT count(*) FROM {s}.{t}) AS {s.replace('_', '')}_{t.replace('_', '')}"
         for (s, t) in BASELINES
-        if (s, t) != ("chemical", "master")
     ]
-    parts.append("(SELECT count(*) FROM chemical.master) AS chemical_master")
     return "SELECT " + ", ".join(parts)
 
 
@@ -227,7 +231,7 @@ class DeductionFixtures(unittest.TestCase):
         endpoint is simple-protocol, one transaction per request, last
         result set wins). The capture temp tables are ON COMMIT DROP and
         the ROLLBACK kills everything else — zero net persistence."""
-        sql = f"BEGIN;\n{body}\n{evidence}\nROLLBACK;"
+        sql = f"BEGIN;\n{body}\n{evidence};\nROLLBACK;"
         rows = q(sql)
         assert rows, "fixture evidence query returned no rows"
         return rows[0]
@@ -237,17 +241,20 @@ class DeductionFixtures(unittest.TestCase):
     def test_f_a_fefo_order_nulls_last_split_and_movement_shape(self):
         body = """
 CREATE TEMP TABLE fx ON COMMIT DROP AS
-INSERT INTO chemical.inventory_lot (master_id, receipt_date, lot_no, mfg_date, expiry_date,
-                                    amount_received, source_provenance, legacy_id)
-SELECT m.id, CURRENT_DATE, v.lot_no, v.mfg, v.exp, v.amt, 'contract-fixture (txn-rolled-back)', v.legacy_id
-FROM chemical.master m,
-     (VALUES
-        ('LOT-A', NULL::date, '2027-01-31'::date, 4.0::numeric, 'fx-lot-a'),
-        ('LOT-B', '2026-10-01'::date, '2026-12-01'::date, 3.0::numeric, 'fx-lot-b'),
-        ('LOT-C', NULL::date, NULL::date, 5.0::numeric, 'fx-lot-c')
-     ) AS v(lot_no, mfg, exp, amt, legacy_id)
-WHERE m.legacy_item_id = '0c0e6a47'
-RETURNING id, lot_no;
+WITH ins AS (
+  INSERT INTO chemical.inventory_lot (master_id, receipt_date, lot_no, mfg_date, expiry_date,
+                                      amount_received, source_provenance, legacy_id)
+  SELECT m.id, CURRENT_DATE, v.lot_no, v.mfg, v.exp, v.amt, 'contract-fixture (txn-rolled-back)', v.legacy_id
+  FROM chemical.master m,
+       (VALUES
+          ('LOT-A', NULL::date, '2027-01-31'::date, 4.0::numeric, 'fx-lot-a'),
+          ('LOT-B', '2026-10-01'::date, '2026-12-01'::date, 3.0::numeric, 'fx-lot-b'),
+          ('LOT-C', NULL::date, NULL::date, 5.0::numeric, 'fx-lot-c')
+       ) AS v(lot_no, mfg, exp, amt, legacy_id)
+  WHERE m.legacy_item_id = '0c0e6a47'
+  RETURNING id, lot_no, legacy_id
+)
+SELECT id, lot_no, legacy_id FROM ins;
 CREATE TEMP TABLE cap ON COMMIT DROP AS
 SELECT chemical.fn_deduct_chlorine_stock('wastewater.reading', '44444444-4444-4444-4444-444444444444', 5.5, CURRENT_DATE) AS r;
 """
@@ -286,15 +293,21 @@ SELECT jsonb_build_object(
 
     def test_f_b_shortfall_fail_closed_partial_never_negative(self):
         body = """
-CREATE TEMP TABLE fx ON COMMIT DROP AS
 INSERT INTO chemical.inventory_lot (master_id, receipt_date, lot_no, expiry_date,
                                     amount_received, source_provenance, legacy_id)
 SELECT m.id, CURRENT_DATE, 'LOT-S1', '2026-12-15', 1.5, 'contract-fixture (txn-rolled-back)', 'fx-lot-s1'
-FROM chemical.master m WHERE m.legacy_item_id = '0c0e6a47'
-RETURNING id, lot_no;
+FROM chemical.master m WHERE m.legacy_item_id = '0c0e6a47';
 INSERT INTO chemical.inventory_lot (master_id, receipt_date, lot_no, expiry_date,
                                     amount_received, source_provenance, legacy_id)
 SELECT m.id, CURRENT_DATE, 'LOT-S2', NULL, 0.5, 'contract-fixture (txn-rolled-back)', 'fx-lot-s2'
+FROM chemical.master m WHERE m.legacy_item_id = '0c0e6a47';
+-- the receipt-movement contract (mirrors the admin UI): each receipt is ONE
+-- direction='in' movement so fn_recompute_balance stays truthful
+INSERT INTO chemical.movement (movement_date, chemical_name, direction, quantity, unit, purpose, note, lot_no, expiry_date, master_id)
+SELECT CURRENT_DATE, m.name, 'in', 1.5, m.unit, 'inventory lot receipt', 'contract-fixture (txn-rolled-back)', 'LOT-S1', '2026-12-15', m.id
+FROM chemical.master m WHERE m.legacy_item_id = '0c0e6a47';
+INSERT INTO chemical.movement (movement_date, chemical_name, direction, quantity, unit, purpose, note, master_id)
+SELECT CURRENT_DATE, m.name, 'in', 0.5, m.unit, 'inventory lot receipt', 'contract-fixture (txn-rolled-back)', m.id
 FROM chemical.master m WHERE m.legacy_item_id = '0c0e6a47';
 CREATE TEMP TABLE cap ON COMMIT DROP AS
 SELECT chemical.fn_deduct_chlorine_stock('water_supply.daily_check', '55555555-5555-5555-5555-555555555555', 5.0, CURRENT_DATE) AS r;
@@ -305,11 +318,11 @@ SELECT jsonb_build_object(
   'total', (SELECT (r->>'deducted_total')::numeric FROM cap),
   'shortfall', (SELECT (r->>'shortfall')::numeric FROM cap),
   'remaining_negatives', (SELECT count(*) FROM chemical.inventory_lot WHERE amount_deducted > amount_received),
-  'lot_deducted', (SELECT jsonb_object_agg(lot_no, amt) FROM (
-      SELECT lot_no,
+  'lot_deducted', (SELECT jsonb_object_agg(l, amt) FROM (
+      SELECT v.l,
              (SELECT amount_deducted FROM chemical.inventory_lot i WHERE i.legacy_id IN ('fx-lot-s1','fx-lot-s2')
-                AND i.lot_no = lot_no) AS amt
-      FROM (VALUES ('LOT-S1'), ('LOT-S2')) v(lot_no)) s),
+                AND i.lot_no = v.l) AS amt
+      FROM (VALUES ('LOT-S1'), ('LOT-S2')) v(l)) s),
   'master_min_balance', (SELECT min(current_balance) FROM chemical.master WHERE legacy_item_id = '0c0e6a47')
 ) AS evidence
 """
@@ -433,10 +446,10 @@ SELECT jsonb_build_object(
                                       ORDER BY m.quantity)
                     FROM chemical.movement m
                     WHERE m.purpose LIKE 'auto-reversal wastewater.reading:88888888%'),
-  'lot_restored', (SELECT jsonb_object_agg(lot_no, amt) FROM (
-      SELECT lot_no, (SELECT amount_deducted FROM chemical.inventory_lot i
-                      WHERE i.legacy_id IN ('fx-lot-r1','fx-lot-r2') AND i.lot_no = lot_no) AS amt
-      FROM (VALUES ('LOT-R1'), ('LOT-R2')) v(lot_no)) s),
+  'lot_restored', (SELECT jsonb_object_agg(l, amt) FROM (
+      SELECT v.l, (SELECT amount_deducted FROM chemical.inventory_lot i
+                      WHERE i.legacy_id IN ('fx-lot-r1','fx-lot-r2') AND i.lot_no = v.l) AS amt
+      FROM (VALUES ('LOT-R1'), ('LOT-R2')) v(l)) s),
   'ledger_status', (SELECT status FROM chemical.inventory_lot_deduction
                     WHERE source_id = '88888888-8888-8888-8888-888888888888'),
   'second_rev', (SELECT r->>'status' FROM cap2)
@@ -495,7 +508,7 @@ SELECT jsonb_build_object(
     # ── SEED idempotency (guarded re-send, txn-rolled-back) ──────────
 
     def test_seed_block_resend_inserts_zero_rows(self):
-        text = MIGRATION_PATH.read_text(encoding="utf-8")
+        text = FIX_MIGRATION_PATH.read_text(encoding="utf-8")
         start = text.index(SEED_MARKER_START)
         end = text.index(SEED_MARKER_END)
         block = text[start:end]
@@ -508,6 +521,16 @@ SELECT jsonb_build_object(
         q(sql)
         after = q("SELECT count(*) AS c FROM chemical.master WHERE legacy_item_id = '0c0e6a47'")[0]["c"]
         self.assertEqual(before, after, "guarded seed re-send must insert ZERO rows")
+
+    def test_config_seed_provenance_recorded_in_source(self):
+        """chemical.master has no provenance column and the WO §3-3 boundary
+        forbids adding one — the provenance contract is carried verbatim in
+        the *_fix migration source (asserted here, never fabricated into an
+        unrelated column)."""
+        text = FIX_MIGRATION_PATH.read_text(encoding="utf-8")
+        self.assertIn("ref 6014", text.lower())
+        self.assertIn('0c0e6a47', text)
+        self.assertIn("SOURCE_UNAVAILABLE", text)
 
 
 class SchemaContract(unittest.TestCase):
@@ -544,7 +567,7 @@ class SchemaContract(unittest.TestCase):
             ("inventory_lot_allocation", "movement_id", "uuid", "NO"),
             ("inventory_lot_allocation", "quantity", "numeric", "NO"),
             ("inventory_lot_allocation", "reversed_movement_id", "uuid", "YES"),
-            ("inventory_lot_allocation", "reversed_at", "timestamptz", "YES"),
+            ("inventory_lot_allocation", "reversed_at", "timestamp with time zone", "YES"),
         ]
         cols = q(
             "SELECT table_name, column_name, data_type, is_nullable"
@@ -570,7 +593,7 @@ class SchemaContract(unittest.TestCase):
     def test_pinned_checks_exist(self):
         rows = q(
             "SELECT conname FROM pg_constraint"
-            " WHERE conrelid IN ('chemical.inventory_lot'::regclass,)"
+            " WHERE conrelid = 'chemical.inventory_lot'::regclass"
             " AND contype = 'c' AND conname IN"
             " ('inventory_lot_amount_positive','inventory_lot_amount_deducted_nonnegative','inventory_lot_remaining_nonnegative')"
         )
@@ -619,12 +642,13 @@ class SchemaContract(unittest.TestCase):
         }
         for (table, policy), (cmd,) in expected.items():
             rows = q(
-                "SELECT cmd FROM pg_policy"
+                "SELECT polcmd::text AS cmd FROM pg_policy"
                 " WHERE polrelid = 'chemical." + table + "'::regclass AND polname = '" + policy + "'"
             )
             self.assertTrue(rows, f"policy {policy} missing on chemical.{table}")
-            got = {("SELECT",): {1}, ("INSERT",): {2}, ("UPDATE",): {3}, ("DELETE",): {4}, ("ALL",): {1, 2, 3, 4}}[(cmd,)]
-            self.assertEqual(rows[0]["cmd"], got, f"policy {policy} cmd mismatch on chemical.{table}")
+            # pg_policy.polcmd char codes: r=SELECT a=INSERT w=UPDATE d=DELETE *=ALL
+            polcmd = {"SELECT": "r", "INSERT": "a", "UPDATE": "w", "DELETE": "d", "ALL": "*"}[cmd]
+            self.assertEqual(rows[0]["cmd"], polcmd, f"policy {policy} cmd mismatch on chemical.{table}")
         anon = q(
             "SELECT count(*) AS c FROM pg_policy p JOIN pg_class c ON c.oid = p.polrelid"
             " WHERE c.relname IN ('inventory_lot','inventory_lot_deduction','inventory_lot_allocation')"
@@ -653,7 +677,7 @@ class SchemaContract(unittest.TestCase):
 
     def test_config_mapping_seed_row(self):
         rows = q(
-            "SELECT name, unit, legacy_item_id, source_provenance, is_active"
+            "SELECT name, unit, legacy_item_id, is_active"
             " FROM chemical.master WHERE legacy_item_id = '0c0e6a47'"
         )
         self.assertEqual(len(rows), 1, "exactly ONE mapping row expected")
@@ -661,7 +685,9 @@ class SchemaContract(unittest.TestCase):
         self.assertEqual(row["legacy_item_id"], CHLORINE_LEGACY_ITEM_ID)
         self.assertEqual(row["unit"], "kg")
         self.assertTrue(row["is_active"])
-        self.assertIn("ref 6014", row["source_provenance"], "provenance must cite ref 6014 (R2 P3-3 pin)")
+        # chemical.master has NO provenance column (WO §3-3 forbids adding
+        # one) — the provenance contract is asserted from the *_fix source:
+        self.assertIn("ref 6014", FIX_MIGRATION_PATH.read_text(encoding="utf-8").lower())
 
     def test_zero_durable_lot_rows(self):
         rows = q("SELECT count(*) AS c FROM chemical.inventory_lot")
