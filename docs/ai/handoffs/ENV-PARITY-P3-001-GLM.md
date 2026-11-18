@@ -84,7 +84,7 @@ Worktree `_worktrees/env-parity-p3-001` (fresh: `origin/main` `bb43c83` = ancest
 | core.vendor | — | **0** | — | SOURCE_UNAVAILABLE — seed NOTHING |
 | core.item_category | — | **0** | — | SOURCE_UNAVAILABLE — seed NOTHING |
 
-- **Byte verification vs the source CSV** (`/tmp/env-p3-001-pond.xlsx` 364,794 bytes, tab distributor sheetId 11; extracted programmatically to `/tmp/env-p3-001-distributor.csv`): spot-check 1 = full-row `f67d5e26` byte-equal (7/7 fields); spot-check 2 = `e5e76725` dealer char_length 4 / UTF-8 octet length 10 (Thai multi-byte verbatim) + salesname null-shape; FULL-TABLE AUDIT = all 6 rows byte-equal to the CSV, whitespace audit clean (no value carries leading/trailing whitespace — the source itself is whitespace-clean, recorded). Blanks ⇒ NULL (4 email / 2 address / 0 tel / 3 salesname / 4 lineID — counts DERIVED from the embedded sheet bytes in the contract suite, never hand-counted; an earlier hand-count 3/2/3/4 was corrected to the derived numbers — the seeded data was never wrong, only the test's expectation).
+- **Byte verification vs the source CSV** (`/tmp/env-p3-001-pond.xlsx` 364,794 bytes, tab distributor sheetId 11; extracted programmatically to `/tmp/env-p3-001-distributor.csv`): spot-check 1 = full-row `f67d5e26` byte-equal (7/7 fields); spot-check 2 = `e5e76725` dealer char_length 4 / UTF-8 octet length 10 (Thai multi-byte verbatim) + salesname null-shape; FULL-TABLE AUDIT = all 6 rows byte-equal to the CSV, whitespace audit clean (no value carries leading/trailing whitespace — the source itself is whitespace-clean, recorded). Blanks ⇒ NULL (4 email / 2 address / 0 tel / 3 salesname / 5 lineID — counts DERIVED from the embedded sheet bytes in the contract suite, never hand-counted; an earlier hand-count 3/2/3/4 was corrected to the derived numbers — the seeded data was never wrong, only the test's expectation. **[CORRECTED at closeout 2026-11-18 per D5 P3-1: this prose previously said "4 lineID"; the derived truth — the committed test's bytes-derived expectation at `scripts/test_parity_p3_001_masters.py:519` (`sum(... if v[5] is None)` over `EXPECTED_DISTRIBUTOR_ROWS`) and the seeded rows — is 5 (`e5e76725`, `0a7abe65`, `becdc598`, `262d81ee`, `96e0f383`; only `f67d5e26` carries a line_id). Seed data unaffected — byte-equal per the D5 independent 36/36 audit; prose-only.]**)
 - **Contract suite GREEN: 23/23 passed** post-apply (one 429 throttle retry disclosed — Management-API rate limit, not a logic failure).
 - **Bindings live:** `food.lab_test.equipment_id` FK → `core.item(id)` (+ `public.lab_test` refreshed to expose it); `water_supply.daily_check.instrument_id` FK → `core.item(id)` (+ `public.daily_check` refreshed); `equipment_legacy` verbatim column untouched.
 
@@ -116,3 +116,38 @@ Worktree `_worktrees/env-parity-p3-001` (fresh: `origin/main` `bb43c83` = ancest
 ### Handoff to D5
 
 Fresh-GLM independent review at the exact frozen head; independently re-run the battery where possible + re-verify the seed lineage bytes. The implementer never merges; the authorized reviewer owns approval + merge (release v1.9.0 tag at the deployed merge SHA post-deploy per ENV-APP-VERSION-001 D6).
+
+## D6 — CLOSEOUT RECEIPT (2026-11-18)
+
+Docs-only closeout transition off main @ `767a087e6cbb151b93076cf8a76e60cd8f8a8cd6`; branch `docs/env-parity-p3-001-closeout`; STOP at REVIEW_REQUESTED — the closeout author never merges; the authorized reviewer owns approval + merge. Scope: exactly 3 files — `docs/ai/CURRENT-WORK.md` (registry closeout), this handoff (lineID correction + this D6), `docs/work-orders/ENV-PARITY-P3-001.md` (status → DELIVERED — CLOSED).
+
+### Full chain
+
+1. **Claim transition** — PR #222 merged `bb43c83f3f39fbf232f2dab65e74fed421b3ccf1` (docs-only, off base `5253f66594e02af04ee56fc3896fc86b0f7232ed`; fence `expected_policy_revision = 5253f66…` / `expected_registry_hash = 73083e44…`, registry block AT base, guard method — re-verified byte-exactly at closeout: validate-registry at `5253f66` reproduces `73083e44e653f62d86b03faed2feff5b0c38bdfcf9e9aff3803b05499ea9a78b`).
+2. **Implementation** — PR #223 merged `767a087e6cbb151b93076cf8a76e60cd8f8a8cd6`, second parent EXACTLY the D5-APPROVED head `db430839611f5b0bac1f3ed371a5f445e0f83ef5` (merge commit, no squash, `gh pr merge --match-head-commit db430839…`); merge stat = 18 files 3002+/3- = the 16 claimed code files + WO + handoff (the D5 file reconciliation); CURRENT-WORK.md diff EMPTY at merge; ONE recorded deviation `frontend/src/lib/food.ts` +6 ruled ACCEPT by D5.
+3. **D5 fresh-GLM independent review** — APPROVED issuecomment-6966808162 at exact frozen head `db43083` (base `bb43c83`): 0 P1 / 0 P2 / 3 P3 + 1 informational; distributor seed independently re-verified 36/36 field checks 0 mismatches; Items/Vendors/Categories zero-seed SOURCE_UNAVAILABLE independently reproduced; all D1 rulings D1-1…D1-8 CONFIRMED, none overturned.
+4. **Merge-execution review trail** — issuecomment-6966860214 (D5 receipt, expected head `db430839…`, merge policy, the 4 P3 carries, tag plan).
+5. **Deploy verification** — Pages run 44221110267 SUCCESS for `767a087`; live HTTP-200 checks: `assets/index-hdVgf-yA.js` carries `1.9.0` ×2 + `app-version-chip` + `app-version-summary` + `ข้อมูลเวอร์ชันแอป`; `assets/MastersPage-CwceHGUq.js` carries `ผู้จัดจำหน่าย` / `ยังไม่มีข้อมูล` / `ตัวที่ยังไม่มีข้อมูลจาก Sheets`.
+6. **Release v1.9.0 MINOR (D1-5)** — annotated tag `v1.9.0` (tag object `4eb1ff37007fb6f51b4dc4100132a7dfcc07d5d9`) created on the deployed merge SHA `767a087` (peels to it, `ls-remote` confirmed), pushed; `python3 scripts/check_release_version.py --tag v1.9.0` → "RELEASE VERSION CHECK: OK (v1.9.0; CHANGELOG entry v1.9.0)", exit 0.
+7. **Post-merge verification at `767a087`** — guard 344/344 OK; validate-registry `{ok:true, claims:39, BOOTSTRAP_CONTROL}` with this claim still CLAIMED at merge time (the closeout lane closed it); local main ff-only `bb43c83→767a087` clean.
+
+### The 4 D5 doc-nits — carried and reconciled here
+
+- **P3-1** — handoff blanks-census prose said "4 lineID"; derived truth (the committed test's bytes-derived expectation `scripts/test_parity_p3_001_masters.py:519` + the seeded rows) is **5**. Per D5's "fix in closeout or leave with this comment as the correction of record": BOTH applied — the prose above is corrected in place with a bracketed correction note, and the WO status records the correction of record. Seed data unaffected (D5's independent 36/36 byte audit).
+- **P3-2** — RED commit `57422c1` carried a second, unrecorded tsc error TS6133 `'ItemFormInput' is declared but its value is never read` at `masters.test.ts(36,8)` (unused type import, removed by head). Disclosure-level; RED mode/mic meaning unaffected. Carried to the CURRENT-WORK ledger — no fix required.
+- **P3-3 (informational)** — XLSX export size drift (364,794 → 366,687 at D5's re-fetch) is Sheets metadata volatility; distributor-tab content verified byte-equal. No action.
+- **P3-4 (informational)** — the D5 session could not independently rerun the live-DB contract suite (Drive-secrets token + MCP unreachable there). Live-DB state rests on the implementer's receipts (72 OK / 0 FAIL, 23/23 post-apply) + D5's source-level byte verification. Carried to the ledger; re-run belongs to a future lane with Drive access.
+
+### Fence
+
+`expected_policy_revision = 767a087e6cbb151b93076cf8a76e60cd8f8a8cd6`; `expected_registry_hash = 6de13bfb9f302575c77bea2a57f58fc280eef5432a2616e33e010b71d0a2059a` (guard `validate-registry` registry_hash AT `767a087`; method empirically cross-checked — the same method at claim base `5253f66` reproduces the recorded `73083e44…` byte-exactly).
+
+### Programmatic verification (to be re-run at the closeout head)
+
+- guard 344/344 OK; validate-registry `ok:true` 39 claims, `ENV-PARITY-P3-001-C1` CLOSED; `git diff --check` clean.
+- Claim-by-claim JSON diff vs `767a087`: exactly 1 of 39 claims changed (this claim → CLOSED), other 38 byte-identical.
+- `git diff --stat` vs `767a087`: exactly 3 files (CURRENT-WORK.md + WO + handoff).
+
+### Frontier after this closeout merges
+
+Phase 3 lane **P3.2** next per plan §6 line 246 — "Inventory: ผูก Lot/MFG/EXP + หักสต๊อกผ่าน `chemical.movement` (ทางเลือก auto ตาม owner decision §5.3-3)" — needs its own NEW reviewed claim transition (core.item remains seedless until the owner shares the Items sheet; the P3.1 schema + legacy/provenance columns make the deferred seeds migration-free). Items/Vendors/Categories master seeds STILL AWAIT OWNER SHEET-SHARES (guarded P2.1/P2.3 recipe, never fabricated). Phase 4 remains owner-gated per plan §5.3 (อย่าเริ่มก่อนได้คำตอบ §5.3). Standing: Phase-1 dual-run PENDING OWNER ACTION; the extinguisher-master + coliform-history + 858-row ตรวจสอบถัง sheet-share re-seeds PENDING OWNER ACTION; hooks #155 approved-not-started (owner-manual); #156 open (owner-manual); Building WAITING_EXTERNAL; P4 authorized awaiting Phase reach. CLOSED confers no fresh mutation authority.
