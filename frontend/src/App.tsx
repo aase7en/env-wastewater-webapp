@@ -82,6 +82,12 @@ const EmergencyLightCheckPage = lazy(() =>
 const InventoryPage = lazy(() =>
   import("./pages/admin/InventoryPage").then((m) => ({ default: m.InventoryPage })),
 );
+
+// ENV-PARITY-P3-003 — maintenance/calibration log (admin; route-only, the
+// /admin/inventory precedent — admin nav lives in AppShell, outside the lane).
+const CalibrationPage = lazy(() =>
+  import("./pages/admin/CalibrationPage").then((m) => ({ default: m.CalibrationPage })),
+);
 const FoodPage = lazy(() =>
   import("./pages/FoodPage").then((m) => ({ default: m.FoodPage })),
 );
@@ -435,6 +441,17 @@ export default function App() {
                       <RequireAuth requireAdmin>
                         <Suspense fallback={<PageSkeleton />}>
                           <InventoryPage />
+                        </Suspense>
+                      </RequireAuth>
+                    }
+                  />
+                  {/* ENV-PARITY-P3-003 — maintenance/calibration log (admin; WO §5). */}
+                  <Route
+                    path="/admin/calibration"
+                    element={
+                      <RequireAuth requireAdmin>
+                        <Suspense fallback={<PageSkeleton />}>
+                          <CalibrationPage />
                         </Suspense>
                       </RequireAuth>
                     }

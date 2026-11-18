@@ -32,8 +32,8 @@ test.describe("ENV-PARITY-P3-003 calibration surface", () => {
   test("admin sees the calibration page with the history list + entry form sections", async ({
     authedAdmin: page,
   }) => {
-    await page.route("**/rest/v1/item_calibration**", emptyList);
     await page.route("**/rest/v1/item**", emptyList);
+    await page.route("**/rest/v1/item_calibration**", emptyList);
 
     await page.goto("/admin/calibration");
     await expect(page.getByTestId("calibration-page")).toBeVisible();
@@ -42,8 +42,8 @@ test.describe("ENV-PARITY-P3-003 calibration surface", () => {
   });
 
   test("honest empty state — never a fabricated calibration entry", async ({ authedAdmin: page }) => {
-    await page.route("**/rest/v1/item_calibration**", emptyList);
     await page.route("**/rest/v1/item**", emptyList);
+    await page.route("**/rest/v1/item_calibration**", emptyList);
 
     await page.goto("/admin/calibration");
     await expect(page.getByTestId("calibration-list-empty")).toBeVisible();
@@ -53,8 +53,8 @@ test.describe("ENV-PARITY-P3-003 calibration surface", () => {
   test("D1-5: NO next-due is rendered — the honest absence note replaces it", async ({
     authedAdmin: page,
   }) => {
-    await page.route("**/rest/v1/item_calibration**", emptyList);
     await page.route("**/rest/v1/item**", emptyList);
+    await page.route("**/rest/v1/item_calibration**", emptyList);
 
     await page.goto("/admin/calibration");
     await expect(page.getByTestId("next-due-absent-note")).toBeVisible();
@@ -65,8 +65,8 @@ test.describe("ENV-PARITY-P3-003 calibration surface", () => {
   test("form carries the §3.30 verbatim-named fields; calibration_date defaults to today (Cal_date Init TODAY())", async ({
     authedAdmin: page,
   }) => {
-    await page.route("**/rest/v1/item_calibration**", emptyList);
     await page.route("**/rest/v1/item**", emptyList);
+    await page.route("**/rest/v1/item_calibration**", emptyList);
 
     await page.goto("/admin/calibration");
     await expect(page.getByLabel(/วิธีสอบเทียบ|Cal_method/i).first()).toBeVisible();
@@ -81,6 +81,7 @@ test.describe("ENV-PARITY-P3-003 calibration surface", () => {
   test("seeded history renders พ.ศ. dates (CE + 543) with the per-tool ครั้งล่าสุด grouping", async ({
     authedAdmin: page,
   }) => {
+    await page.route("**/rest/v1/item**", emptyList);
     await page.route("**/rest/v1/item_calibration**", async (route) => {
       await route.fulfill({
         status: 200,
@@ -115,11 +116,10 @@ test.describe("ENV-PARITY-P3-003 calibration surface", () => {
         ]),
       });
     });
-    await page.route("**/rest/v1/item**", emptyList);
 
     await page.goto("/admin/calibration");
-    // พ.ศ. render: 2024-05-16 → 16/05/2567 (CE + 543)
-    await expect(page.getByText("16/05/2567").first()).toBeVisible();
+    // พ.ศ. render (thaiDate): 2024-05-16 → 16 พ.ค. 2567 (CE + 543)
+    await expect(page.getByText("16 พ.ค. 2567").first()).toBeVisible();
     // per-tool grouping: af420125 has 2 records, ครั้งล่าสุด 2024-05-16
     await expect(page.getByText("ครั้งล่าสุด").first()).toBeVisible();
     await expect(page.getByText(/จำนวน 2 ครั้ง/).first()).toBeVisible();

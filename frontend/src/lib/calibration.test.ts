@@ -17,7 +17,6 @@ import {
   NEXT_DUE_PINNED_ABSENT,
   buildCalibrationPayload,
   latestByTool,
-  type CalibrationRow,
 } from "./calibration";
 
 const h = vi.hoisted(() => ({
@@ -96,9 +95,13 @@ describe("buildCalibrationPayload — form honesty (blanks ⇒ NULL; Cal_date In
     expect(payload.source_provenance).toContain("manual admin entry");
   });
 
-  it("keeps calibration_date required — the Cal_date Init TODAY() column has a value (the one verbatim §3.30 pin)", () => {
+  it("a cleared calibration_date falls back to today (the Cal_date Init TODAY() verbatim behavior — the one §3.30 pin); a malformed date throws", () => {
+    const today = new Date();
+    const iso = `${today.getFullYear()}-${String(today.getMonth() + 1).padStart(2, "0")}-${String(today.getDate()).padStart(2, "0")}`;
+    const payload = buildCalibrationPayload({ tool_legacy_id: "af420125", calibration_date: "" });
+    expect(payload.calibration_date).toBe(iso);
     expect(() =>
-      buildCalibrationPayload({ tool_legacy_id: "af420125", calibration_date: "" })
+      buildCalibrationPayload({ tool_legacy_id: "af420125", calibration_date: "not-a-date" })
     ).toThrow(/วันที่สอบเทียบ/);
   });
 
@@ -120,10 +123,10 @@ describe("buildCalibrationPayload — form honesty (blanks ⇒ NULL; Cal_date In
 });
 
 describe("latestByTool — the ครั้งล่าสุด + จำนวนครั้ง grouping (display-time only)", () => {
-  const rows: CalibrationRow[] = [
-    { id: "a", tool_legacy_id: "af420125", item_name: null, calibration_date: "2024-05-16" },
-    { id: "b", tool_legacy_id: "af420125", item_name: null, calibration_date: "2023-08-09" },
-    { id: "c", tool_legacy_id: "cf9a417e", item_name: "TDS meter", calibration_date: "2024-05-30" },
+  const rows: Parameters<typeof latestByTool>[0] = [
+    { id: "a", item_id: null, tool_legacy_id: "af420125", item_name: null, calibration_date: "2024-05-16" },
+    { id: "b", item_id: null, tool_legacy_id: "af420125", item_name: null, calibration_date: "2023-08-09" },
+    { id: "c", item_id: null, tool_legacy_id: "cf9a417e", item_name: "TDS meter", calibration_date: "2024-05-30" },
   ];
   it("groups per tool: latest calibration_date + count", () => {
     const g = latestByTool(rows);
@@ -137,8 +140,8 @@ describe("latestByTool — the ครั้งล่าสุด + จำนว�
   });
   it("groups unbound rows (tool_legacy_id NULL) under their own identity, never merged into a guessed tool", () => {
     const g = latestByTool([
-      { id: "x", tool_legacy_id: null, item_name: "เครื่องวัด pH", calibration_date: "2024-01-01" },
-      { id: "y", tool_legacy_id: null, item_name: null, calibration_date: "2024-02-01" },
+      { id: "x", item_id: null, tool_legacy_id: null, item_name: "เครื่องวัด pH", calibration_date: "2024-01-01" },
+      { id: "y", item_id: null, tool_legacy_id: null, item_name: null, calibration_date: "2024-02-01" },
     ]);
     expect(g).toHaveLength(2);
   });
