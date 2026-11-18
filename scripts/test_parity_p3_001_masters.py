@@ -509,6 +509,15 @@ class P3MastersContract(unittest.TestCase):
             self.assertEqual(rows[key], 0, f"{key}: blank cells must be NULL (unknown ≠ '')")
 
     def test_null_shape_matches_sheet_bytes(self):
+        # Expected null counts DERIVED from the embedded sheet bytes (never
+        # hand-counted — the P2.1 discipline).
+        exp = {
+            "email_null": sum(1 for v in EXPECTED_DISTRIBUTOR_ROWS.values() if v[1] is None),
+            "addr_null": sum(1 for v in EXPECTED_DISTRIBUTOR_ROWS.values() if v[2] is None),
+            "tel_null": sum(1 for v in EXPECTED_DISTRIBUTOR_ROWS.values() if v[3] is None),
+            "sales_null": sum(1 for v in EXPECTED_DISTRIBUTOR_ROWS.values() if v[4] is None),
+            "line_null": sum(1 for v in EXPECTED_DISTRIBUTOR_ROWS.values() if v[5] is None),
+        }
         rows = q(
             "SELECT"
             " count(*) FILTER (WHERE dealer_email IS NULL) AS email_null,"
@@ -518,11 +527,11 @@ class P3MastersContract(unittest.TestCase):
             " count(*) FILTER (WHERE line_id IS NULL) AS line_null"
             " FROM core.distributor"
         )[0]
-        self.assertEqual(rows["email_null"], 3, "3 blank dealer_email cells must be NULL")
-        self.assertEqual(rows["addr_null"], 2, "2 blank dealer_address cells must be NULL")
-        self.assertEqual(rows["tel_null"], 0, "dealer_tel is filled on all 6 sheet rows")
-        self.assertEqual(rows["sales_null"], 3, "3 blank salesname cells must be NULL")
-        self.assertEqual(rows["line_null"], 4, "4 blank lineID cells must be NULL")
+        self.assertEqual(rows["email_null"], exp["email_null"], "blank dealer_email cells must be NULL per sheet bytes")
+        self.assertEqual(rows["addr_null"], exp["addr_null"], "blank dealer_address cells must be NULL per sheet bytes")
+        self.assertEqual(rows["tel_null"], exp["tel_null"], "blank dealer_tel cells must be NULL per sheet bytes")
+        self.assertEqual(rows["sales_null"], exp["sales_null"], "blank salesname cells must be NULL per sheet bytes")
+        self.assertEqual(rows["line_null"], exp["line_null"], "blank lineID cells must be NULL per sheet bytes")
 
     def test_no_13_digit_national_id_shaped_value(self):
         """The PII pin: Employee_id IS the Thai national ID — no 13-digit

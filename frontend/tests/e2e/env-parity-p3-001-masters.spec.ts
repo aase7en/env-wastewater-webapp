@@ -213,8 +213,11 @@ test.describe("lab อุปกรณ์ picker (coliform flow, /food)", () => {
     });
     await page.goto("/food");
     await expect(page.getByTestId("coliform-equipment-select")).toBeVisible();
-    await expect(page.getByTestId("coliform-equipment-select").locator("option")).toHaveCount(1); // the real item only
+    // placeholder + the real item only — never fabricated options
+    await expect(page.getByTestId("coliform-equipment-select").locator("option")).toHaveCount(2);
     await page.getByTestId("coliform-equipment-select").selectOption("11111111-1111-4111-8111-111111111111");
+    // น้ำ source requires a collect point (the existing verbatim gate)
+    await page.getByTestId("coliform-collect-point").selectOption("โรงครัว");
     await page.getByTestId("coliform-collect-save").click();
     await expect.poll(() => posted, { timeout: 5000 }).not.toBe(null);
     expect(posted!["equipment_id"]).toBe("11111111-1111-4111-8111-111111111111");
