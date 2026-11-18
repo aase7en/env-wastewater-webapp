@@ -309,6 +309,11 @@ export type ColiformSampleInput = {
   sample_person_id: string | null;
   collected_by_id: string | null;
   equipment_legacy: string | null;
+  // P3.1 deviation (recorded): the lab อุปกรณ์ picker binding needs this
+  // optional field + the insert key below — the mutable_scope pinned only
+  // the wiring files, but this closed insert literal would silently drop
+  // the D1-4 FK write. 2 additive lines, never a silent switch (WO §8).
+  equipment_id?: string | null;
   sample_date?: string;
   test_type?: string;
   sample_type?: string | null;
@@ -335,6 +340,7 @@ export async function createColiformSample(input: ColiformSampleInput): Promise<
       sample_person_id: input.sample_person_id,
       collected_by_id: input.collected_by_id,
       equipment_legacy: input.equipment_legacy,
+      equipment_id: input.equipment_id ?? null,
       sample_date: input.sample_date || undefined,
       test_type: input.test_type || TEST_TYPE_DEFAULT,
       sample_type: input.sample_type ?? null,

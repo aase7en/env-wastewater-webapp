@@ -44,6 +44,7 @@ import {
   showWaterIn,
   validateWaterIn,
 } from "../lib/water-supply-parity";
+import { useItems, formatItemOption, EMPTY_ITEM_PICKER_LABEL } from "../lib/masters";
 
 const NUM = (v: string) => (v === "" ? null : Number(v));
 
@@ -61,6 +62,12 @@ export function WaterSupplyPage() {
   });
   const set = (patch: Partial<WaterSupplyInput>) => setForm({ ...form, ...patch });
 
+  // ENV-PARITY-P3-001 (D1-3) — the ชนิดเครื่องมือตรวจ picker over core.item
+  // (AppSheet น้ำประปา Ref→Items, ref 2397 + §4 line 5605). Empty master ⇒
+  // honest empty state — never a fabricated option; unset stays NULL.
+  const [instrumentId, setInstrumentId] = useState("");
+  const { data: items } = useItems();
+
   // §2.3 Show-If groups — this page has no location picker yet, so
   // สถานที่ resolves to the AppSheet init default (โรงจ่ายคลอรีน) at the UI
   // layer (display only — location_id stays NULL in storage).
@@ -76,7 +83,11 @@ export function WaterSupplyPage() {
       return;
     }
     try {
-      await createWaterSupplyDaily(form);
+      // additive D1-3 payload: the water-supply insert passes the input
+      // object through, so the extended shape carries instrument_id
+      // without touching lib/water-supply.ts (out of this lane's scope).
+      const payload = { ...form, instrument_id: instrumentId || null } as WaterSupplyInput & { instrument_id: string | null };
+      await createWaterSupplyDaily(payload);
       toast("success", "บันทึกสำเร็จ");
       refresh();
       chain.refresh();
@@ -156,6 +167,32 @@ export function WaterSupplyPage() {
           <Field label="TDS (mg/L)">
             <NumberInput value={form.tds ?? ""} onChange={(e) => set({ tds: NUM(e.target.value) })} />
           </Field>
+          {/* ENV-PARITY-P3-001 (D1-3) — ชนิดเครื่องมือตรวจ picker (additive,
+              appended after the pre-existing quality fields so the
+              positional input contract of this card stays stable). */}
+          {items.length > 0 ? (
+            <Field label="ชนิดเครื่องมือตรวจ (Items master)">
+              <Select
+                data-testid="instrument-select"
+                value={instrumentId}
+                onChange={(e) => setInstrumentId(e.target.value)}
+              >
+                <option value="">— ไม่ระบุ —</option>
+                {items.map((it) => (
+                  <option key={it.id} value={it.id}>{formatItemOption(it)}</option>
+                ))}
+              </Select>
+            </Field>
+          ) : (
+            <Field label="ชนิดเครื่องมือตรวจ (Items master)">
+              <p
+                data-testid="instrument-empty"
+                className="text-xs text-aura-textMuted font-thai rounded-lg border border-aura-borderSubtle/60 px-3 py-2"
+              >
+                {EMPTY_ITEM_PICKER_LABEL} — master Items ยังไม่มีข้อมูลจาก Sheets (ผู้ดูแลระบบเพิ่มได้ที่ /admin/masters); ระบบจะไม่แสดงรายการแทน
+              </p>
+            </Field>
+          )}
         </div>
         {/* §2.3 usage groups — BELOW the quality grid so the pre-existing
             positional input contract (ENV-MOBILE-003) stays byte-stable.

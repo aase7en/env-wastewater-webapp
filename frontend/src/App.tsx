@@ -141,6 +141,11 @@ const EquipmentSpecPage = lazy(() =>
 const ExtinguisherMasterPage = lazy(() =>
   import("./pages/admin/ExtinguisherMasterPage").then((m) => ({ default: m.ExtinguisherMasterPage })),
 );
+// ENV-PARITY-P3-001 — the four AppSheet masters (Items/Vendors/Categories/
+// distributor), admin-gated editable reference data.
+const MastersPage = lazy(() =>
+  import("./pages/MastersPage").then((m) => ({ default: m.MastersPage })),
+);
 
 export default function App() {
   return (
@@ -413,6 +418,17 @@ export default function App() {
                       <RequireAuth requireAdmin>
                         <Suspense fallback={<PageSkeleton />}>
                           <ExtinguisherMasterPage />
+                        </Suspense>
+                      </RequireAuth>
+                    }
+                  />
+                  {/* ENV-PARITY-P3-001 — the four masters (admin; WO §4). */}
+                  <Route
+                    path="/admin/masters"
+                    element={
+                      <RequireAuth requireAdmin>
+                        <Suspense fallback={<PageSkeleton />}>
+                          <MastersPage />
                         </Suspense>
                       </RequireAuth>
                     }

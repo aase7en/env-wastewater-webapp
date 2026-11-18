@@ -54,3 +54,65 @@ WO `docs/work-orders/ENV-PARITY-P3-001.md` holds the full binding pins (§0 comp
 ## 5. Single next safe action
 
 After the transition PR merges: create `_worktrees/env-parity-p3-001` off the new main tip, commit D2 RED (unit + e2e + SQL-contract + tsc evidence, zero durable writes), then D3 → D4 → D5 per §3 — stopping at REVIEW_REQUESTED.
+
+---
+
+## 6. Implementation receipts — D2/D3/D4 (Track-Z GLM lane, 2026-11-18)
+
+Worktree `_worktrees/env-parity-p3-001` (fresh: `origin/main` `bb43c83` = ancestor of HEAD at lane start). Commits: D2 RED `57422c1` → D3 implementation `5854cdc` → docs receipts (this commit). **STOP at REVIEW_REQUESTED — never merged by the implementer.**
+
+### D2 RED (commit `57422c1`) — every count verbatim; zero durable writes
+
+| Suite | RED outcome |
+|---|---|
+| vitest FULL (`frontend/src/lib/masters.test.ts`) | FAILED SUITE ×1 — fail-to-collect: `Cannot find module './masters'`; 42 files passed / 743 passed + 1 skipped (the legacy pass DISCLOSED per the P2.4 P3-1 convention) |
+| `tsc -b` | `src/lib/masters.test.ts(38,8): error TS2307: Cannot find module './masters'` |
+| Playwright (new spec `env-parity-p3-001-masters.spec.ts`, chromium w=1) | **9 failed / 0 passed** — truthful failures over the absent surface (`/admin/masters` route absent, no masters/picker testids) |
+| SQL contract (`scripts/test_parity_p3_001_masters.py`, live ENV_DB) | **22 failed / 1 passed** — the 1 pre-apply pass is `test_no_anon_policies_on_core_masters`, VACUOUSLY true on absent tables (disclosed); the seed canary HELD (`core.distributor` absent ⇒ seed block NOT sent) ⇒ zero durable writes; baselines asserted intact pre-apply |
+
+### D3 implement + gated apply (commit `5854cdc`)
+
+- **Gate:** `SUPABASE_DB_URL` resolved from Drive secrets and asserted to point at ENV_DB `gllqtbyofrcjzmbnfoeh` (never printed); token via the same Drive-secrets path, never printed.
+- **Preflight (live, all asserted):** 4 core targets + 4 public façades ABSENT; target policies 0; `equipment_id`/`instrument_id` columns absent; baselines wastewater.reading 907 / core.personnel 9 / core.equipment_spec 4 / safety.emergency_light 48 / safety.fire_extinguisher 0 / safety.emergency_light_check 332 / food.lab_test 0 intact.
+- **Apply:** `scripts/apply_migration_api.py supabase/migrations/20261118000001_parity_p3_001.sql` → **72 statements OK / 0 FAIL** (documented rollback in the migration header).
+- **Seed count table (count-reconciliation GREEN):**
+
+| Master | Sheet | Seeded | Skipped | Verdict |
+|---|---|---|---|---|
+| core.distributor | 6 | **6** | 0 | REACHABLE — guarded seed shipped |
+| core.item | — | **0** | — | SOURCE_UNAVAILABLE — seed NOTHING |
+| core.vendor | — | **0** | — | SOURCE_UNAVAILABLE — seed NOTHING |
+| core.item_category | — | **0** | — | SOURCE_UNAVAILABLE — seed NOTHING |
+
+- **Byte verification vs the source CSV** (`/tmp/env-p3-001-pond.xlsx` 364,794 bytes, tab distributor sheetId 11; extracted programmatically to `/tmp/env-p3-001-distributor.csv`): spot-check 1 = full-row `f67d5e26` byte-equal (7/7 fields); spot-check 2 = `e5e76725` dealer char_length 4 / UTF-8 octet length 10 (Thai multi-byte verbatim) + salesname null-shape; FULL-TABLE AUDIT = all 6 rows byte-equal to the CSV, whitespace audit clean (no value carries leading/trailing whitespace — the source itself is whitespace-clean, recorded). Blanks ⇒ NULL (4 email / 2 address / 0 tel / 3 salesname / 4 lineID — counts DERIVED from the embedded sheet bytes in the contract suite, never hand-counted; an earlier hand-count 3/2/3/4 was corrected to the derived numbers — the seeded data was never wrong, only the test's expectation).
+- **Contract suite GREEN: 23/23 passed** post-apply (one 429 throttle retry disclosed — Management-API rate limit, not a logic failure).
+- **Bindings live:** `food.lab_test.equipment_id` FK → `core.item(id)` (+ `public.lab_test` refreshed to expose it); `water_supply.daily_check.instrument_id` FK → `core.item(id)` (+ `public.daily_check` refreshed); `equipment_legacy` verbatim column untouched.
+
+### UI + lib (house patterns)
+
+- `/admin/masters` (RequireAuth requireAdmin; route-additive only): `MastersPage` + `ItemsSection`/`VendorsSection`/`CategoriesSection`/`DistributorSection` — EDITABLE reference-data semantics (list + create + edit + delete) per the AppSheet Update-mode-7 rows, unlike the append-only equipment_spec; Thai labels, mobile-first grids, พ.ศ. display via the house utils elsewhere; Category enum tokens `w6hwsyj`/`72b68b19`/`9a7ebdaf` carried VERBATIM as a UI-restricted list (no hard CHECK); honest empty states everywhere (`ยังไม่มีข้อมูลอุปกรณ์/ผู้ขาย/หมวดหมู่/ผู้จัดจำหน่าย` — never a fabricated option).
+- The two pickers: lab อุปกรณ์ (`ColiformFlow` — additive; empty `core.item` ⇒ honest empty chip, no picker rendered; non-empty ⇒ picker + `equipment_id` in the collect POST, legacy default untouched) and water ชนิดเครื่องมือตรวจ (`WaterSupplyPage` — additive lines; extended-payload passthrough so `lib/water-supply.ts` stays untouched).
+- `lib/masters.ts` (+ 14-test unit suite): types, honesty helpers (`toNullableText`/`toNullableNumber` — blanks ⇒ NULL, never coerced), payload builders, façade fetchers/CRUD, read/mutation hooks (hooks.ts untouched — out of scope).
+
+### Recorded deviation (WO §8 — never silent)
+
+- **`frontend/src/lib/food.ts` +6 lines (2 functional)**: `ColiformSampleInput.equipment_id?: string | null` + the insert key `equipment_id: input.equipment_id ?? null`. The mutable_scope pinned FoodPage/ColiformFlow for the lab wiring, but the ONLY write path (`createColiformSample`) uses a closed insert literal that would silently DROP the D1-4 FK write — a decorative picker. The 2 additive lines are the minimal honest fix (same track owns the file; no other lane's surface touched). Everything else ⊆ the pinned mutable_scope.
+
+### D4 battery (at head `5854cdc` + docs)
+
+| Gate | Result |
+|---|---|
+| vitest FULL | **757 passed / 1 skipped (758)** — 43 files (743 legacy + 14 new masters tests) |
+| `tsc -b` | clean (exit 0) |
+| oxlint | exit 0 — 0 errors; 19 warnings ALL pre-existing (0 findings in new/changed files) |
+| Playwright FULL chromium w=1 | **293 passed** (284 legacy + 9 new) |
+| guard (`test_env_coordination_guard.py`) | **344 passed + 450 subtests** |
+| runtime (`test_env_autonomy_runtime.py`) | **62 passed + 32 subtests** |
+| `check_release_version.py --tag v1.9.0` | **OK (v1.9.0; CHANGELOG entry v1.9.0)** — package.json 1.8.0→1.9.0, Thai พ.ศ. CHANGELOG entry, PR #223-ref |
+| `git diff --check` | clean |
+| exact-13-digit digit-run grep over all 16 changed files | **0 matches** (the only digit-runs ≥13 digits are the 14-digit migration timestamps — no national-ID-class value) |
+| diff vs main | exactly 16 files — 15 ⊆ mutable_scope + the recorded food.ts deviation |
+
+### Handoff to D5
+
+Fresh-GLM independent review at the exact frozen head; independently re-run the battery where possible + re-verify the seed lineage bytes. The implementer never merges; the authorized reviewer owns approval + merge (release v1.9.0 tag at the deployed merge SHA post-deploy per ENV-APP-VERSION-001 D6).

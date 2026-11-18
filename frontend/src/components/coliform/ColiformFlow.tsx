@@ -28,6 +28,7 @@ import { Button } from "../ui/Button";
 import { Field, Input, Select, NumberInput } from "../ui/Input";
 import { useInspectors } from "../../lib/hooks";
 import { uploadAttachment } from "../../lib/attachments";
+import { useItems, formatItemOption, EMPTY_ITEM_PICKER_LABEL } from "../../lib/masters";
 import {
   COLIFORM_SOURCES,
   EQUIPMENT_DEFAULTS,
@@ -73,6 +74,10 @@ export function ColiformFlow({ rows, onChanged }: { rows: FoodLabTest[]; onChang
   const [samplePersonId, setSamplePersonId] = useState(EMPTY);
   const [collectorId, setCollectorId] = useState(EMPTY);
   const [collectBusy, setCollectBusy] = useState(false);
+  // ENV-PARITY-P3-001 (D1-4) — the อุปกรณ์ picker over core.item; unset
+  // stays NULL (the verbatim legacy default keeps carrying equipment_legacy).
+  const [equipmentId, setEquipmentId] = useState(EMPTY);
+  const { data: items } = useItems();
 
   const points = collectPointsFor(source);
   const equipment = EQUIPMENT_DEFAULTS[source];
@@ -111,6 +116,7 @@ export function ColiformFlow({ rows, onChanged }: { rows: FoodLabTest[]; onChang
         collect_point: source === "พนักงาน" || points.length === 0 ? null : collectPoint,
         sample_person_id: source === "พนักงาน" ? samplePersonId : null,
         collected_by_id: collectorId === EMPTY ? null : collectorId,
+        equipment_id: equipmentId === EMPTY ? null : equipmentId,
         equipment_legacy: equipment,
         sample_date: collectDate,
         test_type: TEST_TYPE_DEFAULT,
@@ -196,6 +202,7 @@ export function ColiformFlow({ rows, onChanged }: { rows: FoodLabTest[]; onChang
                 setSource(e.target.value as ColiformSource);
                 setCollectPoint(EMPTY);
                 setSamplePersonId(EMPTY);
+                setEquipmentId(EMPTY);
               }}
             >
               {COLIFORM_SOURCES.map((s) => (
@@ -272,6 +279,34 @@ export function ColiformFlow({ rows, onChanged }: { rows: FoodLabTest[]; onChang
                 readOnly
                 aria-readonly="true"
               />
+            </Field>
+          )}
+          {items.length > 0 ? (
+            <Field
+              label="อุปกรณ์ (Items master)"
+              htmlFor="coliform-equipment-select"
+              hint="เลือกจาก master Items — ค่าว่าง = ใช้ค่าเริ่มต้น legacy"
+            >
+              <Select
+                id="coliform-equipment-select"
+                data-testid="coliform-equipment-select"
+                value={equipmentId}
+                onChange={(e) => setEquipmentId(e.target.value)}
+              >
+                <option value="">{UNSET}</option>
+                {items.map((it) => (
+                  <option key={it.id} value={it.id}>{formatItemOption(it)}</option>
+                ))}
+              </Select>
+            </Field>
+          ) : (
+            <Field label="อุปกรณ์ (Items master)">
+              <p
+                data-testid="coliform-equipment-empty"
+                className="text-xs text-aura-textMuted font-thai rounded-lg border border-aura-borderSubtle/60 px-3 py-2"
+              >
+                {EMPTY_ITEM_PICKER_LABEL} — master Items ยังไม่มีข้อมูลจาก Sheets (ผู้ดูแลระบบเพิ่มได้ที่ /admin/masters); ระบบจะไม่แสดงรายการแทน
+              </p>
             </Field>
           )}
         </div>
