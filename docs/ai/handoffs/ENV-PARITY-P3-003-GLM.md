@@ -51,3 +51,15 @@ WO `docs/work-orders/ENV-PARITY-P3-003.md` holds the full binding pins (§0 comp
 ## 5. Single next safe action
 
 After the transition PR merges: create `_worktrees/env-parity-p3-003` off the new main tip, commit D2 RED (unit + e2e + SQL-contract + tsc evidence, zero durable writes), then D3 → D4 → D5 per §3 — stopping at REVIEW_REQUESTED.
+
+---
+
+## 6. Implementation receipts (D2/D3/D4, 2026-11-18; PR #229 — STOP at REVIEW_REQUESTED)
+
+Full receipts live in the WO §11 (`docs/work-orders/ENV-PARITY-P3-003.md`); the D5 reviewer's one-paragraph digest:
+
+- **D2 RED truthful** (`26e22fa`, zero durable writes): vitest fails-to-collect / tsc TS2307 / e2e 6F-0P / live SQL contract 7F-1P(disclosed legacy baseline)-5S(canary — fixtures never sent pre-apply).
+- **D2 rulings:** D1-2 compare_ref→`cal_result` verbatim (`InControl`/`Higher Ref.`); **D1-5 NO next-due anywhere** (cycle fields are measured values %/ppm/mg/L/pH, not intervals — ครั้งล่าสุด + จำนวนครั้ง + on-screen absence note; `NEXT_DUE_PINNED_ABSENT` pins it); D1-6 log/append RLS (staff SELECT+INSERT / admin UPDATE+DELETE) per the owner dispatch pin; sheet dates translated พ.ศ.→CE (year − 543, house พ.ศ.-parse rule) and rendered back to พ.ศ. by the UI.
+- **D3 apply:** preflight PASS (12/12 baselines + target absent) → **33 OK / 0 FAIL** → post-verify **13/13** (11/11 seed, census exact, 2-row spot-check vs the fetched XLSX bytes, guarded re-send adds 0, no RPC/trigger/generated column, 4 pinned policies + zero anon, façade security_invoker, anon REST 401/42501 fail-closed, zero fixture leaks).
+- **D4 battery** (`0dfeb73`): vitest 787P/1S · tsc clean · oxlint 0 errors (19 pre-existing warnings, 0 in new files) · Playwright FULL chromium w=1 **303/303** · guard 344+450 · runtime 62+32 · checker OK v1.11.0 · `git diff --check` clean · exact-13-digit-run grep 0 · diff = 11 files ⊆ WO §10.
+- **D5 next:** fresh-GLM review at head `0dfeb73` (re-run the battery where possible + own read-only probes; the contract suite is transaction-scoped and re-runnable as-is; the source XLSX re-fetches GET-only to `/tmp/env-p3-003-maintaining.xlsx` when absent). Implementer never merges; the authorized reviewer owns approval + merge; the closeout (CURRENT-WORK rewrite) is the successor docs lane.
