@@ -95,6 +95,24 @@ export interface ReversalResult {
   reason: string | null;
 }
 
+/** Badge styling (D5 P3-4): a clean full deduction is a SUCCESS outcome —
+ * only it renders with the success variant; every other outcome (partial /
+ * skipped / already-* / reversed / failure) stays a warning. The variant
+ * rides the structured result, never string-matching on the badge text. */
+export type DeductionBadgeVariant = "success" | "warning";
+
+export interface DeductionBadge {
+  text: string;
+  variant: DeductionBadgeVariant;
+}
+
+function deductionBadge(result: DeductionResult): DeductionBadge {
+  return {
+    text: formatDeductionBadge(result),
+    variant: result.status === "deducted" ? "success" : "warning",
+  };
+}
+
 // ─── Derivations (view-mirroring, never re-invented math) ────────────────
 
 /**
@@ -189,20 +207,24 @@ export async function revokeChlorineDeduction(input: {
 
 /**
  * Wastewater save-path wiring (D1-3, additive): derive the ÷SWITCH real
- * usage from the SAVED payload and call the RPC. Returns the truthful badge
- * text (never throws for deduction outcomes — a deduction failure must not
- * misreport the usage save, which already succeeded; the caller toasts the
- * warning — the statusMirrorWarning precedent).
+ * usage from the SAVED payload and call the RPC. Returns the truthful
+ * badge (never throws for deduction outcomes — a deduction failure must
+ * not misreport the usage save, which already succeeded; the caller toasts
+ * it in the badge's variant — success for a clean deduction, warning for
+ * every other outcome, the D5 P3-4 repair).
  */
 export async function deductForReading(input: {
   readingId: string;
   chlorineUsed: number | null;
   mixRatio: string | null;
   readingDate?: string;
-}): Promise<string | null> {
+}): Promise<DeductionBadge | null> {
   const real = chlorineUsedReal(input.chlorineUsed, input.mixRatio);
   if (real === null) {
-    return "ยังไม่ได้หักสต๊อก — ไม่ทราบปริมาณคลอรีนจริง (อัตราส่วนผสมว่างหรือไม่รู้จัก)";
+    return {
+      text: "ยังไม่ได้หักสต๊อก — ไม่ทราบปริมาณคลอรีนจริง (อัตราส่วนผสมว่างหรือไม่รู้จัก)",
+      variant: "warning",
+    };
   }
   if (real <= 0) return null; // honest no-op — zero usage deducts nothing
   try {
@@ -212,9 +234,12 @@ export async function deductForReading(input: {
       quantity: Math.round(real * 1000) / 1000,
       movementDate: input.readingDate,
     });
-    return formatDeductionBadge(result);
+    return deductionBadge(result);
   } catch (e) {
-    return `ยังไม่ได้หักสต๊อก (RPC ล้มเหลว): ${(e as Error).message}`;
+    return {
+      text: `ยังไม่ได้หักสต๊อก (RPC ล้มเหลว): ${(e as Error).message}`,
+      variant: "warning",
+    };
   }
 }
 
@@ -228,19 +253,25 @@ export async function deductForReading(input: {
 export async function deductForWaterSupplyCheck(input: {
   checkId: string;
   checkDate?: string;
-}): Promise<string | null> {
+}): Promise<DeductionBadge | null> {
   const { data, error } = await supabase
     .from("v_daily_check_chain")
     .select("id, chlorine_usage_realy")
     .eq("id", input.checkId)
     .maybeSingle();
   if (error) {
-    return `ยังไม่ได้หักสต๊อก (อ่านค่าคลอรีนจริงไม่สำเร็จ): ${error.message}`;
+    return {
+      text: `ยังไม่ได้หักสต๊อก (อ่านค่าคลอรีนจริงไม่สำเร็จ): ${error.message}`,
+      variant: "warning",
+    };
   }
   const real = (data as { chlorine_usage_realy: number | null } | null)
     ?.chlorine_usage_realy;
   if (real === null || real === undefined) {
-    return "ยังไม่ได้หักสต๊อก — ค่าคลอรีนจริง (÷สเปกผสม) ยังคำนวณไม่ได้ (สเปกขาดหาย)";
+    return {
+      text: "ยังไม่ได้หักสต๊อก — ค่าคลอรีนจริง (÷สเปกผสม) ยังคำนวณไม่ได้ (สเปกขาดหาย)",
+      variant: "warning",
+    };
   }
   if (real <= 0) return null;
   try {
@@ -250,9 +281,12 @@ export async function deductForWaterSupplyCheck(input: {
       quantity: Math.round(real * 1000) / 1000,
       movementDate: input.checkDate,
     });
-    return formatDeductionBadge(result);
+    return deductionBadge(result);
   } catch (e) {
-    return `ยังไม่ได้หักสต๊อก (RPC ล้มเหลว): ${(e as Error).message}`;
+    return {
+      text: `ยังไม่ได้หักสต๊อก (RPC ล้มเหลว): ${(e as Error).message}`,
+      variant: "warning",
+    };
   }
 }
 

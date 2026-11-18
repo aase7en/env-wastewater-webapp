@@ -234,10 +234,15 @@ function scheduleDeferredDelete(entry: Omit<PendingDelete, "timerId">, qc: Query
   const timerId = setTimeout(async () => {
     pendingDeletes.delete(entry.id);
     try {
-      await deleteReadingQ(entry.id);
+      // ENV-PARITY-P3-002 (D5 P2-2 repair): the reversal warning returned by
+      // deleteReading (never thrown, never silent — the caller toasts it) is
+      // captured and surfaced, mirroring the water-supply delete path. The
+      // usage row is already gone, so a failed reversal must stay visible.
+      const reversalNote = await deleteReadingQ(entry.id);
       qc.removeQueries({ queryKey: ["reading", entry.id] });
       void qc.invalidateQueries({ queryKey: ["readings"] });
       void qc.invalidateQueries({ queryKey: ["dashboard"] });
+      if (reversalNote) entry.toast.warning(reversalNote);
     } catch {
       // Honest failure — never silent loss on either side: surface the
       // error and refetch so the record visibly returns from server truth.
@@ -489,17 +494,21 @@ export function DailyFormPage() {
         // honest outcome badge is non-blocking and never misreports the
         // save itself (the reading IS saved; only the deduction outcome
         // varies: deducted / partial / skipped / already-*). Edits do NOT
-        // re-deduct (WO §4-4).
+        // re-deduct (WO §4-4). D5 P3-4: the badge renders in its variant —
+        // a clean deduction is success; every other outcome is a warning.
         const usedRaw = payload.chlorine_used;
         const usedNum = usedRaw === null || usedRaw === undefined || usedRaw === "" ? null : Number(usedRaw);
         if (Number.isFinite(usedNum as number) && (usedNum as number) > 0 && data.id) {
-          const deductionNote = await deductForReading({
+          const badge = await deductForReading({
             readingId: data.id,
             chlorineUsed: usedNum,
             mixRatio: (payload.chlorine_mix_ratio as string | null) ?? null,
             readingDate: payload.reading_date,
           });
-          if (deductionNote) toast.warning(deductionNote);
+          if (badge) {
+            if (badge.variant === "success") toast.success(badge.text);
+            else toast.warning(badge.text);
+          }
         }
         navigate("/readings");
       } else {

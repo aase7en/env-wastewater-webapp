@@ -130,3 +130,33 @@ RED-suite mechanics note (honest): the suite file received assertion-mechanics c
 ### 6.7 Next step
 
 D5 fresh-GLM independent review at the exact frozen head (battery rerun where possible + own read-only live probes — movement rows ONLY inside ROLLBACK transactions; the canary/baselines table in 6.5 is the zero-net receipt). The implementer NEVER merges; the authorized reviewer owns approval + merge. Release v1.10.0 MINOR: annotated tag at the deployed merge SHA post-deploy per ENV-APP-VERSION-001 D6.
+
+## 7. D5 REPAIR RECEIPT (2026-11-18 — 2×P2 + 4×P3, one repair commit; STOP at REVIEW_REQUESTED)
+
+D5 verdict: CHANGES_REQUIRED (review receipt: PR #226 issuecomment-6969433332 @ head `03e0f60`). Repairs only — no merge, no approval; the authorized reviewer owns re-review.
+
+- **P2-1 revoke race** → NEW fix migration `supabase/migrations/20261118000004_parity_p3_002_revoke_lock.sql` (house `*_fix` convention — the applied 000002 is NOT edited): `CREATE OR REPLACE chemical.fn_revoke_chlorine_deduction` with (a) the ledger probe `SELECT … FOR UPDATE` — under READ COMMITTED a second concurrent revoke blocks on the row, then re-reads the winner's committed status and returns the honest `nothing-to-reverse` instead of restoring again; (b) `FOR UPDATE` on the allocation cursor in the SAME deterministic order for every revoker (`created_at DESC, id DESC`) — the deduct function's consistent-order lock discipline (000002:385-391), no cross-revoker deadlock. The concurrent double-revoke scenario (two tabs / stale-row delete; the water-supply path has no single-fire guard) is documented in the migration header. Applied via the ENV_DB gate (`scripts/apply_migration_api.py`, Drive-secrets token, never printed): **7/7 statements OK**. Function-body diff vs 000002 verified programmatically: ONLY the two lock lines + comments — no semantic drift.
+- **Rollback-smoke evidence** (single-request BEGIN…ROLLBACK, zero net persistence **0 lots / 0 movements / 0 ledger rows** post-probe): the D5 over-restore shape — ONE lot (4.0 kg) carrying TWO deductions from different usage rows (U1 −1.5, U2 −1.0 → peak `amount_deducted` 2.5); revoke #1 → `reversed`, restored **exactly 1.5** (lot → 1.0); revoke #2 same row (concurrent-style sequential) → `nothing-to-reverse`, restored **0**, lot stays **1.0** — U2's 1.0 slice intact, **never over-restored**; only ONE reversal movement created; ledger `reversed`; allocation reversed 1/1. Bonus P3-3 live: deduct retry on U1 → **`reversed`** with the truthful reason (never `already-skipped`); retry on U2 → `already-deducted` (idempotency unchanged). 15 assertions GREEN.
+- **P3-3 reversed mislabel** → same fix migration: `fn_deduct_chlorine_stock`'s idempotency probe returns the truthful `reversed` status (`already_recorded` true, no re-deduction) instead of mapping a reversed prior deduction to `already-skipped`. Verified live in the smoke above.
+- **P2-2 dropped reversal warning** → `DailyFormPage.tsx` `scheduleDeferredDelete` now captures `deleteReading`'s returned `string | null` and toasts it via `entry.toast.warning` — mirroring the water-supply delete path (never thrown, never silent; the usage row is already gone, so a failed reversal must stay visible).
+- **P3-4 success badges as warnings** → `lib/inventory.ts` `deductForReading`/`deductForWaterSupplyCheck` now return a structured badge `{ text, variant }` (`'deducted'` → success variant; every other outcome → warning; classification rides the result status, never string-matching); `DailyFormPage` create path, `water-supply.ts` `createWaterSupplyDailyWithDeduction` (`deductionNote` → `deductionBadge`), and `WaterSupplyPage` render the badge in its variant. Delete-path reversal notes stay warning-styled strings by contract (D5 ruled the water-supply path correct as-is).
+- **P3-2 replay record (000002 NOT edited — do-not-edit honored)**: the committed in-file seed block of `20261118000002` is EARLY-BOUND — its INSERT references `chemical.master.source_provenance/note`, columns chemical.master does not have (WO §3-3 forbids them). Fresh-replay consequence: on any fresh `supabase db reset`/`push` the chain replays 000002 → statements 1-36 persist (tables/functions/views), statement [37/38] (the seed) fails live 42703 → `20261118000003_parity_p3_002_fix.sql` repairs the seed with the 3-column guarded INSERT (late-bound-safe) → the chain completes; `20261118000004` is function-only (late-bound CREATE OR REPLACE) and replays cleanly on top. The deviation itself stands recorded in the 000003 header.
+- **P3-1 PR-body scope-count correction**: the PR body's "Changed files (16)" undercounts — the raw diff at head `03e0f60` is **18 files** (the body enumerated 17 entries and omitted `frontend/tests/e2e/env-parity-p3-002-inventory.spec.ts`); this repair adds `20261118000004_parity_p3_002_revoke_lock.sql` on top (19). SCOPE ITSELF CLEAN per D5: every file sits inside WO §10 mutable_scope (the e2e spec explicitly authorized; fix-migrations are the pre-authorized house convention; CURRENT-WORK.md and form-parity.ts untouched).
+
+### 7.1 Battery at the repair head (own run, verbatim)
+
+| Check | Result |
+|---|---|
+| Live SQL contract (`scripts/test_parity_p3_002_inventory.py`) | **21/21 passed** (7.95s) |
+| Rollback-smoke (D5 P2-1, this repair) | **15 assertions GREEN + zero-persistence 0/0/0** |
+| vitest FULL | **779 passed / 1 skipped** (44 files, baseline-equal) |
+| `tsc -b` | clean (exit 0) |
+| oxlint | exit 0 — **19 warnings, byte-equal to the D4 baseline (0 new)** |
+| Playwright FULL chromium workers=1 (CI=1) | **297/297 passed (6.7m)** |
+| guard suite | **344/344 (+450 subtests)** |
+| runtime suite | **62/62 (+32 subtests)** |
+| `check_release_version.py --tag v1.10.0` | **OK (v1.10.0; CHANGELOG entry v1.10.0), exit 0** |
+| `git diff --check` | clean |
+| 13-digit digit-run grep (changed/new files) | migration-name substrings only — **0 PHI** |
+
+Repair commit: one commit — `fix(inventory): D5 P2 — revoke FOR UPDATE locking + reversal-warning surfacing (+P3 repairs)` — exact head SHA recorded on the PR. Next step: D5 re-review at the new head; implementer NEVER merges.

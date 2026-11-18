@@ -91,9 +91,11 @@ export function WaterSupplyPage() {
       // FEFO chlorine deduction — the honest result badge is non-blocking
       // and never misreports the save itself (the record IS saved; only the
       // deduction outcome varies: deducted / partial / skipped / already-*).
-      const { deductionNote } = await createWaterSupplyDailyWithDeduction(payload);
+      // D5 P3-4: the badge renders in its variant — a clean deduction is
+      // success; every other outcome is a warning.
+      const { deductionBadge } = await createWaterSupplyDailyWithDeduction(payload);
       toast("success", "บันทึกสำเร็จ");
-      if (deductionNote) toast("warning", deductionNote);
+      if (deductionBadge) toast(deductionBadge.variant, deductionBadge.text);
       refresh();
       chain.refresh();
     } catch (e) {

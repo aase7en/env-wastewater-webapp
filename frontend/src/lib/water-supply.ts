@@ -11,7 +11,7 @@
 import { useQuery } from "@tanstack/react-query";
 import { supabase } from "./supabase";
 // ENV-PARITY-P3-002 — ADDITIVE deduction/reversal wiring (D1-3 BOTH-IN + the D2 P3-1 reversal ruling)
-import { deductForWaterSupplyCheck, revokeForUsageRow } from "./inventory";
+import { deductForWaterSupplyCheck, revokeForUsageRow, type DeductionBadge } from "./inventory";
 
 export interface WaterSupplyCheck {
   id: string;
@@ -78,25 +78,26 @@ export async function deleteWaterSupplyDaily(id: string): Promise<string | null>
  * check, then — when the save carries a chlorine usage — call the FEFO
  * deduction RPC with the VIEW-owned real quantity (chlorine_usage_realy
  * read back from v_daily_check_chain for the saved row; never re-derived
- * client-side). The result travels as `deductionNote` (truthful badge text
- * or an honest skip/warning note — never thrown; the usage save already
- * succeeded and must never be misreported as failed by the deduction).
+ * client-side). The result travels as `deductionBadge` (truthful badge
+ * text + its variant — success for a clean deduction, warning otherwise,
+ * the D5 P3-4 repair; never thrown; the usage save already succeeded and
+ * must never be misreported as failed by the deduction).
  * The plain createWaterSupplyDaily stays byte-identical for existing
  * callers.
  */
 export async function createWaterSupplyDailyWithDeduction(
   input: WaterSupplyInput
-): Promise<{ row: WaterSupplyCheck; deductionNote: string | null }> {
+): Promise<{ row: WaterSupplyCheck; deductionBadge: DeductionBadge | null }> {
   const row = await createWaterSupplyDaily(input);
   const usage = Number((input as { chlorine_usage?: number | string | null }).chlorine_usage ?? 0);
-  let deductionNote: string | null = null;
+  let deductionBadge: DeductionBadge | null = null;
   if (Number.isFinite(usage) && usage > 0) {
-    deductionNote = await deductForWaterSupplyCheck({
+    deductionBadge = await deductForWaterSupplyCheck({
       checkId: row.id,
       checkDate: row.check_date,
     });
   }
-  return { row, deductionNote };
+  return { row, deductionBadge };
 }
 
 export function useWaterSupplyDaily(limit = 30) {
