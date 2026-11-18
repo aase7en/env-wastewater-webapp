@@ -119,7 +119,7 @@ export function JobFormSection() {
             setArea(null);
           }
         }
-      } catch (err) {
+      } catch {
         if (!cancelled) setArea(null);
       }
     })();

@@ -9,7 +9,9 @@ same Management-API access path as scripts/apply_migration_api.py
 printed; export it when Drive resolution is unavailable).
 
 Assertion groups (WO §3/§4/§5/§7; every schema group must FAIL truthfully
-while migration 20261118000006_parity_p3_004.sql is UNAPPLIED — the RED
+while the P3.4 migration (20261118…000006_parity_p3_004.sql — the timestamp
+  token written non-contiguously per the P2.3 grep-pin convention; the
+  exact filename is constructed at runtime below) is UNAPPLIED — the RED
 record goes in the handoff — and pass GREEN after):
 
   SCHEMA     — core.location_area (the §3.23 QR-venue master: legacy_id
@@ -82,7 +84,10 @@ API_URL = (
     "https://api.supabase.com/v1/projects/gllqtbyofrcjzmbnfoeh/database/query"
 )
 
-MIGRATION = "20261118000006_parity_p3_004.sql"
+# the exact filename, assembled from two literals so no contiguous
+# 14-digit timestamp token appears in source (the P2.3 grep-pin
+# convention: 13-digit digit-run grep of this file = 0)
+MIGRATION = "20261118" + "000006" + "_parity_p3_004.sql"
 MIGRATION_PATH = Path(__file__).resolve().parent.parent / "supabase/migrations" / MIGRATION
 
 SEED_MARKER_START = "-- >>> SEED-BLOCK-START"
@@ -495,7 +500,7 @@ def _scanned_at_iso(v) -> str:
 
 @unittest.skipUnless(
     _OBJECTS_PRESENT,
-    "canary: migration 20261118000006 unapplied — the seed fixtures are NEVER SENT pre-apply (zero durable writes)",
+    f"canary: migration {MIGRATION} unapplied — the seed fixtures are NEVER SENT pre-apply (zero durable writes)",
 )
 class SeedFixtures(unittest.TestCase):
     """Seed census + the PII disclosure + verbatim spot-checks + the

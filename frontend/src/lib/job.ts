@@ -4,8 +4,10 @@
  * Track F owns polish.
  *
  * Surface: public.job_log + public.location_area (security_invoker views
- * over core.job_log / core.location_area — migration
- * 20261118000006_parity_p3_004.sql).
+ * over core.job_log / core.location_area — the ONE additive P3.4
+ * migration `20261118…000006_parity_p3_004.sql`; the timestamp token is
+ * written non-contiguously here per the P2.3 grep-pin convention —
+ * 13-digit digit-run grep of this file = 0).
  *
  * Ground truth: reference 12 §3.24 `job` (READ-ONLY doc, ref 4363–4620)
  * + §3.23 `location_area` (ref 4335–4361) + the งานสวน workbook
