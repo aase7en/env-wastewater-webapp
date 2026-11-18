@@ -42,7 +42,7 @@
 
 หน้าบันทึกรับเข้า/จ่ายออกด้วยมือเดิม (/chemical) ไม่เปลี่ยนแปลง
 
-การเปลี่ยนแปลงชุดนี้: PR #XXX
+การเปลี่ยนแปลงชุดนี้: PR #226
 (ENV-PARITY-P3-002 — Inventory lots (Lot/MFG/EXP per ถัง) + หักสต๊อกคลอรีน
 อัตโนมัติผ่าน chemical.movement ตาม owner decision B6 15 พ.ย. 2569)
 
