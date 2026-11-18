@@ -1,6 +1,6 @@
 # Work Order — ENV-PARITY-P3-003 (Claim ENV-PARITY-P3-003-C1, gen 1)
 
-**Status: REGISTERED — CLAIMED — IMPLEMENTATION DELIVERED, STOP AT REVIEW_REQUESTED (PR #229 @ head `0dfeb73`; the implementer never merges; the authorized reviewer owns approval + merge. D2/D3/D4 receipts in §11 below.)**
+**Status: REGISTERED — CLAIMED — IMPLEMENTATION DELIVERED — DELIVERED—CLOSED (PR #229 merged `8cd6af6c0e1a4fcbf28434fce90a22c7186f5af9` — second parent = the D5-APPROVED head `21754799e7bc8eebe9e762ddb175b76d3eb70f5b`, merge trail issuecomment-6973349954; D5 APPROVED issuecomment-6973281802 (0 P1 / 0 P2; 2 informational P3 carried to the ledger); released v1.11.0: Pages run 44268317493 SUCCESS @ `8cd6af6`, live markers verified fresh (index-D0rBYg6j.js = 1.11.0 + chip markers; CalibrationPage-Dx9vJhyQ.js = สอบเทียบเครื่องมือ + the honest absence note), annotated tag `v1.11.0` (df0c93e4) dereferences `8cd6af6`, `check_release_version.py --tag v1.11.0` exit 0; claim ENV-PARITY-P3-003-C1 → CLOSED by the docs-only closeout transition `docs/env-parity-p3-003-closeout` — STOP at REVIEW_REQUESTED, the closeout author never merges. D2/D3/D4 receipts in §11 below.)**
 
 **Governance pattern:** PR #183–#227 claim-transition series (docs-only claim → reviewed merge → implementation lane → D5 fresh-GLM → closeout). Direct predecessor: ENV-PARITY-P3-002 (PRs #225/#226/#227 — delivered + RELEASED v1.10.0 + CLOSED; base `29087982624da2ad6a28bd3bcd70de53791e5452` = the P3.2 closeout merge). This lane is **Phase 3 lane 3, the THIRD Phase-3 lane**.
 
