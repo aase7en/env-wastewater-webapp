@@ -164,6 +164,14 @@ const ExtinguisherMasterPage = lazy(() =>
 const MastersPage = lazy(() =>
   import("./pages/MastersPage").then((m) => ({ default: m.MastersPage })),
 );
+// ENV-PARITY-P3-005 — manuals ×2 admin (คู่มือ ×2; link-only metadata,
+// admin-gated) + address report-header reference admin (B7 ตารางแก้ไขได้).
+const ManualsPage = lazy(() =>
+  import("./pages/admin/ManualsPage").then((m) => ({ default: m.ManualsPage })),
+);
+const AddressPage = lazy(() =>
+  import("./pages/admin/AddressPage").then((m) => ({ default: m.AddressPage })),
+);
 
 export default function App() {
   return (
@@ -475,6 +483,28 @@ export default function App() {
                       <RequireAuth requireAdmin>
                         <Suspense fallback={<PageSkeleton />}>
                           <MastersPage />
+                        </Suspense>
+                      </RequireAuth>
+                    }
+                  />
+                  {/* ENV-PARITY-P3-005 — manuals ×2 admin (link-only metadata; WO §5). */}
+                  <Route
+                    path="/admin/manuals"
+                    element={
+                      <RequireAuth requireAdmin>
+                        <Suspense fallback={<PageSkeleton />}>
+                          <ManualsPage />
+                        </Suspense>
+                      </RequireAuth>
+                    }
+                  />
+                  {/* ENV-PARITY-P3-005 — address report-header reference admin (B7; WO §5). */}
+                  <Route
+                    path="/admin/address"
+                    element={
+                      <RequireAuth requireAdmin>
+                        <Suspense fallback={<PageSkeleton />}>
+                          <AddressPage />
                         </Suspense>
                       </RequireAuth>
                     }
