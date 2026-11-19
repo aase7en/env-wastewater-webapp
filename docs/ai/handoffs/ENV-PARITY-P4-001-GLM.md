@@ -31,4 +31,63 @@ D1 enumeration above → D2 RED (counts verbatim; legacy passes disclosed) → D
 
 ## 5. D-phase log (implementation lane fills this in)
 
-- (to be recorded by the implementing lane, one bullet per phase, with exact SHAs and verbatim counts)
+### D1 — TEMPLATE ENUMERATION (2026-11-19, READ-ONLY; recorded BEFORE D2)
+
+**Folder re-location (the id was NOT durably recorded in-repo — honesty pin).** Parent folder `ActivatedSludge-29279640` `1HBhuEaBeQLz8jlj0VxPXvbM03It1bNre` (the P2.1/P2.4 extraction base) re-enumerated live READ-ONLY via the public Drive folder listing (48 rows parsed; HTTP GET only, ห้ามเขียน Drive — nothing written). The B4 "content" folder found: **`Content` = `1p0nSwVa9wQD03rety6ltjkQW1FnX143l`** (modified 27 เม.ย. 2566). The ref-12 bot OUTPUT folders also verified as siblings: `PDFv2` `1n4yjE2DYiwE0uoQ1DIyD8kz-1x_WaIWy` (bot `PDF` → ทส.1 output) + `PDF_ทส2` `1TCq-ITN45QD9jcHHSRj1Osdo5BfydSeg` (bot `PDF 2` → ทส.2 output) — output folders, not templates (folder listings ≠ sheet enumerations; template FILES are what is mirrored).
+
+**Content folder enumeration (10 items, all provenance metadata only — binaries NEVER copied into repo/DB/chat; downloads to /tmp/env-p4-001 only, deleted after verification):**
+
+| File (verbatim) | Drive id | Format (honest) | sha256 (of downloaded bytes) | Bytes | Verdict |
+|---|---|---|---|---|---|
+| `261109_PDF_TEMPLATE_ทส1_V5.1.3_หมอปรัช.docx` | `1ptC4G55ftF3Dv74RaL8Vd-yNFgqWsTcc` | Microsoft Word 2007+ (.docx) | `378be461b17cac44998b8b4923a1840c5cf90fb28fd6ef4045e554ea39b7a9e8` | 2,657,668 | **ทส.1 LAYOUT AUTHORITY** (newest ทส.1, date prefix 261109 = 9 พ.ย. 2569; readable — field layout extracted from `word/document.xml`) |
+| `260806_PDF_TEMPLATE_ทส1_V5.1.2.docx` | `1Ubs5vRMI8rl_FaAElhDxZlSVkXgKXHyb` | Microsoft Word 2007+ | `97ee0701e0c1d28b0a63c88bcb49e98d576d326dddfa41b859a5b377574f66a5` | 2,657,807 | superseded (same field set as V5.1.3) |
+| `260806_PDF_TEMPLATE_ทส1_V5.1.1.docx` | `1KYaiMuDyvN0IDjrvLrF8M1-UuFS6lQm6` | Microsoft Word 2007+ | `57160e9ca18891df840794d0de08ffeceb4568aef8a2cb26f1b48339f49876e3` | 2,563,762 | superseded (same field set) |
+| `PDF_TEMPLATE_ทส1_V5.1.0.docx` | `1rMTHhsvumaawn6dS0JP3kfcYNXHfyaxv` | Microsoft Word 2007+ | `ab89ef00d6a116e1ca78b4e8f6502f88fc5234a616ed120871e1bd1178f5babb` | 2,563,572 | superseded (same field set) |
+| `PDF_ทส1_หมอกุ้ง.docx` | `1T-pZWmkErkbXGJJGkLMCXnWFRc-FPJHT` | Microsoft Word 2007+ | `83b37104c19b6fd432ace9853e408aa9b8f684a9f58c88db7db4fc823520a835` | 23,640 | legacy ทส.1 variant (older author หมอกุ้ง) — not the authority |
+| `ทส.2_Template_หมอปรัช` | `1Wj16uu2q5pTbWTeOs-U6rOpH7X79h6zP2yDudEGkU80` | **Google Docs** (native gdoc — no binary; public txt export used for layout) | `c6e67afa53f92ff540ee6e9fd5c2f8218cc9019dadcd0494523f06d8393136f9` (sha256 of the UTF-8 **txt export** — honest note: the native gdoc has no directly-hashable file bytes) | 8,684 | **ทส.2 LAYOUT AUTHORITY** (9 พ.ย.; fully readable via public export) |
+| `Task for Createทส.1_BodyTemplate_20260501_092151` | `15vYjjbvuWQYYBBP2uM_EwbSrxCTPKp3Xp8L5DWUml4c` | Google Docs (txt export) | `352bf893e420a278d309b5c08a7f88a3ea8ed34c3601788f14008fb7c3ece0ed` | 1,596 | Apps Script body template — the Filter_Water parameter-row column census VERBATIM (corroborates ref-12 §3.7: Start Date/End Date/Export PDF/Sum_Energy/Sum_Water/Sum_waste_water/Sum_Chlorine/Sum_excess sludge/useage_Chlorine/month_thai/year_thai/St.*.thai/End.*.thai/W/V_Chlorine Litter/VC_CY_01..12/VC_LY_01..12/VC_Elec_CY/LY/Total_CO2_CY/LY) |
+| `Task for Createทส.2_BodyTemplate_20250228_081619` | `1FN2z6Y9MjhrV-mVbn7RsBY27AFE9UrDKSocyztfr6CA` | Google Docs (txt export) | `efa287aec4be7ccfbda1b6a61c021be3c1aa0a22f9f47b492fc677393d779ca6` | 762 | Apps Script body template (same parameter-row census, no VC_* group) |
+| `รายงานตรวจสอบถังดับเพลิง` | `1lKL8xgo_JnFcznMxncJ_kBKHgHpYYLgfOkhKy3WLPqg` | Google Docs | — (not fetched) | — | OUT of lane (ถังดับเพลิง = successor lane; enumerated, untouched) |
+| `รายงานตรวจสอบไฟฉุกเฉิน` | `1MDUy6PHBXPISfnKGXyGnRZPJpT1ef4RHbeODQ9f_Pi4` | Google Docs | — (not fetched) | — | OUT of lane (ไฟฉุกเฉิน = successor lane; enumerated, untouched) |
+
+**Pin: ทส.1 field layout (V5.1.3 docx authority — DRIVE FILE, readable).** The docx carries REAL AppSheet template expressions: a daily-row loop `<<START:ORDERBY(FILTER("ข้อมูลคุณภาพน้ำ",(AND([วันที่ บันทึก] >= [_THISROW].[Start Date],[วันที่ บันทึก] <= [_THISROW].[End Date]))),[วันที่ บันทึก],FALSE)>> … <<END>>` — i.e. rows = RECORDED days of the Filter_Water date range, date-ordered. 18 columns (headers verbatim + row merge fields verbatim):
+1. วันเดือนปี ← `<<[วันที่ บันทึก]>>`
+2. ปริมาณการใช้ไฟฟ้าของระบบบำบัดน้ำเสีย (หน่วย) ← `<<[ปริมาณการใช้ไฟฟ้าของระบบ]>>`
+3. ปริมาณน้ำใช้ในทุกกิจกรรมของแหล่งกำเนิดมลพิษ (ลบ.ม.) ← `<<[ปริมาณน้ำที่ใช้ในทุกกิจกรรม]>>`
+4. ปริมาณน้ำเสียที่เข้าระบบบ่อบำบัดน้ำเสีย (ลบ.ม.) ← `<<[ปริมาณน้ำเสียที่เข้าระบบบำบัด]>>`
+5. การระบายน้ำทิ้งจากระบบบำบัดน้ำเสีย ← `<<[การระบายน้ำทิ้งออกจากระบบ]>>`
+6. ปริมาณสารเคมีหรือสารสกัดชีวภาพที่ใช้ (คลอรีนน้ำ ลิตร) ← `<<[คลอรีนน้ำ ที่ใช้]>>`
+7. ปริมาณตะกอนส่วนเกินที่นำไปกำจัด(ลบ.ม.) ← `<<[ตะกอนส่วนเกินที่นำไปกำจัด]>>`
+8. ปริมาณของแข็งละลายน้ำ (TDS) ← `<<[ในบ่อเติมอากาศ (TDS-1)]>>`
+9. ปริมาณออกซิเจนละลายน้ำ OD ← `<<[น้ำก่อนทิ้ง(DO-3)]>>`
+10–17. การทำงานของอุปกรณ์เดินระบบบำบัดน้ำเสีย: เครื่องสูบน้ำ 1 / เครื่องสูบน้ำ 2 / เครื่องเติมอากาศ 1 / เครื่องเติมอากาศ 2 / เครื่องสูบตะกอน 1 / เครื่องสูบตะกอน 2 / เครื่องจ่ายคลอรีน 1 / เครื่องจ่ายคลอรีน 2 ← `<<[เครื่องสูบน้ำเสีย 1/2]>> <<[เครื่องเติมอากาศ 1/2]>> <<[เครื่องสูบตะกอน 1/2]>> <<[เครื่องจ่ายคลอรีน 1/2]>>`
+18. ผู้บันทึก ← `<<[ชื่อนาม-สกุล ผู้บันทึก]>>`
+Plus: title "แบบรายงาน ทส.1" (docx header, vertical margin text); หมายเหตุ ๑./๒. verbatim; certification block "ขอรับรองว่าการบันทึกสถิติและข้อมูลตามตารางข้างต้นถูกต้องทุกประการ" + signature lines เจ้าของหรือผู้ครอบครองแหล่งกำเนิดมลพิษ / ผู้ควบคุมระบบบำบัดน้ำเสีย / ใบอนุญาตเลขที่…หมดอายุ… / ออกให้โดย… **NO address header block in ทส.1** (honest template fact); the template hardcodes owner name (นาย ปรัชญา พยัคฆ์เรือง) in the signature line — NOT rendered (D1-5 personnel-identity pin wins; signature lines render blank rules). **NO year-comparison block (VC_CY/LY) in ทส.1 or ทส.2** — the census columns exist in Filter_Water (body templates corroborate) but the DRIVE templates do not render them → NOT rendered (drive-file-wins), recorded.
+
+**Pin: ทส.2 field layout (`ทส.2_Template_หมอปรัช` gdoc authority — readable).** Structure: title "แบบ ทส.2" + "รายงานสรุปผลการทำงานของระบบบำบัดน้ำเสีย" → **§๑ ข้อมูลทั่วไป = THE B7 ADDRESS HEADER**: "แหล่งกำเนิดมลพิษ ตั้งอยู่ที่ โรงพยาบาลอุทัย เลขที่15 หมู่ที่ 5 ซอย - ถนน - แขวง/ตำบล อุทัย เขต/อำเภอ อุทัย จังหวัด พระนครศรีอยุธยา โทรศัพท์ 035-356336 … ประกอบกิจการประเภท โรงพยาบาล ชุมชนขนาด 30 เตียง" — B7 ruling: the header chain (แขวง/ตำบล/เขต/อำเภอ/จังหวัด) reads from `core.address` at print time (NOT embedded); fields NOT in `core.address` (ชื่อหน่วยงาน/เลขที่/หมู่/ซอย/ถนน/โทรศัพท์/ประเภทกิจการ/ใบอนุญาต) remain the template's own constants (no fabrication — they are the template's static facts); the hardcoded owner names (นายเศกสรรค์ ชวนะดีเลิศ, นาย ปรัชญา พยัคฆ์เรือง) are NOT rendered (personnel-identity pin) — signature rule lines only. Report month line: "เดือน <<[month_thai]>> พ.ศ. <<[year_thai]>>" + มาตรา ๘๐ preamble verbatim. **§๒** static system facts verbatim: (๑) Activated Sludge, 60 ลบ.ม./วัน (๒) แบบต่อเนื่อง 24 ชั่วโมง/วัน (☑) (๓) อุปกรณ์ ☑เครื่องสูบน้ำ ☑เครื่องเติมอากาศ ☑เครื่องสูบตะกอน (๔) แหล่งรองรับน้ำทิ้ง คลองข้าวเม่า (๕) วิธีจัดการตะกอน ตากแห้งทำปุ๋ย. **§๓ สรุปผลการทำงานรายเดือน** (the merge-field layer): (๑) ปริมาณการใช้ไฟฟ้า (หน่วย) `<<[Sum_Energy]>>` (๒) ปริมาณน้ำใช้ทุกกิจกรรม (ลบ.ม.) `<<[Sum_Water]>>` (๓) ปริมาณน้ำเสียที่เข้าระบบ (ลบ.ม.) `<<[Sum_waste_water]>>` (๔) การระบายน้ำทิ้ง (template constant text "ละบายทุกวัน" — RE-RENDERED COMPUTED per honesty: the printed value derives from recorded rows, never an asserted constant) (๕) ปริมาณสารเคมีฯ (ลิตร) `<<[useage_Chlorine]>>` (carries the ×1.2 W/V litter display line per the P1.6 convention) (๖) การทำงานของระบบ/อุปกรณ์ checkboxes (ปกติ/ผิดปกติ rendered COMPUTED from recorded rows — template's static ☑ not asserted blindly) (๗) ปริมาณตะกอนส่วนเกินที่นำไปกำจัด (ลบ.ม.) `<<[Sum_excess sludge]>>` (๘) ปัญหา อุปสรรค์ และแนวทางแก้ไข (blank). คำเตือน ๑./๒. (มาตรา ๑๐๖/๑๐๗) verbatim. Signature block ×2 (เจ้าของ + ผู้รับจ้าง) — blank rules, no names.
+
+**Aggregate mapping (every field cites its source):** `Sum_Energy` → `buildWastewaterSummary().sumEnergy` (Σ v_reading_meter_chain.delta_kwh, meter-delta provenance, boundary days excluded + counted); `Sum_Water` → `buildWaterSupplySummary().sumWaterIn` (Σ น้ำประปา Water_In — ref-12 1701–1716 reads the water-supply source, P1.6 lib pin); `Sum_waste_water` → `sumWastewaterIn`; `useage_Chlorine` → `sumChlorineReal` + `chlorineLitter` ×1.2 display line; `Sum_excess sludge` → `sumSludge`; ทส.1 daily columns → v_reading_with_computed (TDS-1/DO-3/คลอรีน/ตะกอน) + v_dashboard_14day (น้ำใช้/ระบาย) + `wastewater.reading` equipment-run booleans (8 คอลัมน์เครื่องจักร — pump1/2, aerator1/2, sludge_pump1/2, chlorine_pump1/2) + meter chain (ไฟฟ้า delta); unknown renders ค่าว่าง/"—" NEVER 0; estimate provenance flags carried into the PRINTED output (ENERGY_DELTA_PROVENANCE, ค่าประมาณจากสเปก-class notes, ×1.2); พ.ศ. + month_thai via the existing report-summary helpers.
+
+**Recorded divergences (drive-file-wins / honesty pins — never silent):**
+1. ทส.1 has NO address header (B7 header applies to ทส.2 §๑); ทส.1 ได้ certification block instead — owner name hardcoded in the drive file → not rendered (personnel pin).
+2. ทส.1 column 6 header says (ลิตร) while the recorded surface stores คลอรีนน้ำ ที่ใช้ in kg — the view renders the recorded value + a printed footer note carrying the ×1.2 W/V liters conversion; never a coerced unit.
+3. ทส.2 §๓(๔) "ละบายทุกวัน" + §๓(๖) static ☑ checkboxes are data claims → re-rendered COMPUTED from recorded rows (divergence recorded; honesty beats template constant).
+4. ผู้บันทึก column (ทส.1 #18) renders ค่าว่าง — the AppSheet ข้อมูลผู้ปฏิบัติงาน personnel master has no delivered ENV surface (never fabricated; no PHI/personnel rendering).
+5. Year-comparison columns (VC_CY/LY, Total_CO2) present in the Filter_Water census but absent from the drive templates → not rendered.
+6. ทส.2 address header chain renders live `core.address` values for the hospital's row located by the template chain (ตำบล อุทัย / อำเภอ อุทัยธานี / จังหวัด พระนครศรีอยุธยา, exact match) — if the census row is absent, the header renders an honest "ยังไม่พบ" notice + ค่าว่าง slots (never the template constants masquerading as table values).
+
+**Mechanism (D1-2 implementer pick, recorded):** dedicated print-ready React components rendered on ReportsPage (NO new route — routes/App.tsx are outside the §7 scope) with A4 print CSS + `window.print()` (browser print-to-PDF = the production mechanism; the print dialog's "Save as PDF" is the owner's B4 path). The jspdf export is KEPT as the fallback per what exists: `generateTs1`/`generateTs2` upgraded to render the SAME enumerated layouts (field-census fidelity + honesty flags), `generateRepairRequest`/`downloadPDF`/shared `header`/`footer` byte-untouched. DYNAMIC-IMPORT pattern kept (jspdf only loads on download).
+
+**Pinned new-file names (§7 scope):** `frontend/src/components/reports/Tos1PrintView.tsx`, `frontend/src/components/reports/Tos2PrintView.tsx`, `frontend/src/components/reports/report-print.css` (A4 print CSS), `frontend/src/lib/pdf.test.ts` (NEW lib test — the pinned sibling), `frontend/tests/e2e/env-parity-p4-001-tos-reports.spec.ts`; upgrades: `frontend/src/lib/pdf.ts` (ทส.1/ทส.2 only: new pure `buildTs1PrintModel`/`buildTs2PrintModel` + generateTs1/2 re-targeted to the models), `frontend/src/lib/supabase-queries.ts` (additive report-reads ONLY: equipment run-status range fetch + the one-row B7 address fetch), `frontend/src/pages/ReportsPage.tsx` (additive print-view section + the onDownload ทส.1/ทส.2 region upgrade; P1.6/P2.5 sections byte-untouched), `frontend/package.json` 1.13.0→1.14.0, `CHANGELOG.md` (v1.14.0 Thai พ.ศ.), WO + this handoff.
+
+### D2 — RED
+
+- (to be recorded at the RED commit with verbatim counts)
+
+### D3 — IMPLEMENT
+
+- (to be recorded with the exact diff scope)
+
+### D4 — BATTERY
+
+- (to be recorded with verbatim counts)
