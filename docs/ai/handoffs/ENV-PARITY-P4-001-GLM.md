@@ -123,3 +123,30 @@ NOT touched (scope-clean): all `supabase/` files (diff EMPTY), CURRENT-WORK.md (
 - **13-digit PII digit-run grep of the lane's files: 0 in the lane's additions** (the only 13-digit runs in `supabase-queries.ts` are the pre-existing base migration-timestamp constants — verified identical at base 15947b5).
 - **`supabase/` diff vs base: EMPTY** (0 files).
 - **Diff vs base ⊆ §7 claimed scope:** 11 files — the exact §7 mutable list (see D3 table).
+
+### D6 — CLOSEOUT RECEIPT (2026-11-19; claim ENV-PARITY-P4-001-C1 CLAIMED → CLOSED)
+
+This closeout is the docs-only transition (CURRENT-WORK.md registry + fence, this WO status, this D6). The lane is DONE: released v1.14.0, deployed, tagged.
+
+**Full chain:**
+1. Claim transition PR #240 merged `15947b5553a1bd8e656ddbeb73222fff3002ac72` (docs-only; base `8e56592c26448f654e21ea265a485ca86abb1f50` = the P3.6 closeout merge).
+2. Implementation PR #241 — 4 commits on `feat/env-parity-p4-001`: `3ef4ec4` D1 template enumeration → `314ca73` D2 RED → `438c1a1` D3 feat + release v1.14.0 → `95e5b3d` D4/D5 docs. Merged as `31c457a2f5dcc7a652f1e32e6b6c44fa314fe3b7` — parents exactly (`15947b5…`, `95e5b3d1c182fcdd4821ac52fe59b1acecbc7954`); merge commit, no squash; expected-head discipline `--match-head-commit 95e5b3d…`.
+3. D5 fresh-GLM APPROVED issuecomment-7012408195 @ exact head `95e5b3d` — 0 P1 / 0 P2 / 3 P3-informational; D5's own Drive template fidelity byte-verification (ทส.1 docx sha256 `378be461…a9e8` 2,657,668 B; ทส.2 txt sha256 `c6e67afa…36f9` 8,684 B), own RED reproduction at isolated `314ca73`, own full battery at head (vitest FULL 967P/1S, tsc clean, oxlint 0 errors, Playwright FULL 329/329, guard 344/344, runtime 62/62, checker OK v1.14.0).
+4. Merge-executor review trail issuecomment-7012463748 (D5 receipt + expected head + merge policy + tag plan).
+5. Merge stat = exactly 12 files 1611+/73− — all ⊆ WO §7; `supabase/` EMPTY; CURRENT-WORK.md untouched at merge. **(P3-2 reconciliation: the D3/D4 prose above said "11 files" — actual 12; the D3 table itself lists 10 code/release files + WO + handoff = 12. Count corrected here, table was right.)**
+6. Post-merge at `31c457a`: guard 344/344 (+450 subtests), validate-registry `{ok:true, claims:45, BOOTSTRAP_CONTROL, registry_hash 64600528…d34}` with THIS claim still CLAIMED at merge time; local main ff-only `15947b5`→`31c457a` clean.
+7. Deploy: Pages run 44547236638 SUCCESS @ `31c457a`. Live markers verified fresh (last-modified 2026-11-19 14:46:18 GMT): `assets/index-BY4Y6ZZF.js` HTTP 200 — "1.14.0" ×2 + `app-version-chip` + `app-version-summary` + ข้อมูลเวอร์ชันแอป + ยังไม่มีข้อมูล release; lazy chunk `assets/ReportsPage-CzYOoisP.js` HTTP 200 — แบบรายงาน ทส.1 (Tos1PrintView h1) + แบบ ทส.2 (Tos2PrintView h1) + มุมมองพิมพ์ ×3 + กดพิมพ์แล้วเลือก.
+8. Release: annotated tag `v1.14.0` (tag object `aa316bf38017ba946c5d87ff92bd2ca3b5e82ae2`) peels to the deployed merge SHA `31c457a…`; pushed; `check_release_version.py --tag v1.14.0` → OK exit 0.
+
+**The 3 D5 P3 reconciliations (ledger — none silently dropped):**
+- **P3-1 (CHANGELOG trail line)** — the v1.14.0 trail line cites "PR ของ ENV-PARITY-P4-001" without the PR number. CHANGELOG.md sits OUTSIDE this closeout's 3-file diff contract (CURRENT-WORK.md + WO + handoff), so the 1-line fix is CARRIED as a trivial docs follow-up for the next CHANGELOG-touching lane. Recorded in the registry ledger.
+- **P3-2 (file-count prose)** — doc-side; RECONCILED above (chain item 5): actual 12, the D3 table was right, the prose undercounted.
+- **P3-3 (ทส.1 ORDERBY micro-divergence)** — recorded: the drive template's `ORDERBY([วันที่ บันทึก], FALSE)` sorts daily rows DESCENDING; the delivered view renders date-ASCENDING (pdf.ts:206 area — chronological reading order). Zero data impact (same rows, same values). Matching the template row order = an OPTIONAL successor micro-lane; recorded in the registry ledger.
+
+**Also carried (known issue):** the jspdf Thai-font doc-comment inaccuracy (D3 note (2) — the pre-existing pdf.ts:5-6 comment claims a bundled Sarabun base64 that was never wired). Disclosure retained, NOT silently "fixed"; the print view is the primary faithful output; the jspdf fallback renders via the same models. Successor lane may wire the font or drop the comment.
+
+**Frontier (the registry `one_next_safe_action` + CURRENT-WORK hold the canonical copy):** P4.2 Telegram alerts (owner B5 — the AppSheet bots' `Send Telegram` webhook steps, bot-reuse per ref 12 §9) needs its own NEW reviewed claim transition NEXT; then the remaining Phase 4 rows (P4.3 BI/scheduled reports + the three other PDF report families ถังดับเพลิง/ไฟฉุกเฉิน/น้ำประปา per the D1-1 boundary — each its own NEW reviewed claim).
+
+**Standing (unchanged by this lane):** Phase-5 dual-run/cutover + AppSheet shutdown untouched; sheet-share obligations owner-pending (P2.1 fire_extinguisher master sheet + P3.5 คู่มือน้ำประปา); hooks #155 approved-not-started + #156 open (owner-manual); ENV-BUILDING-REPAIR-001-C1 WAITING_EXTERNAL.
+
+**Honesty notes:** the implementer/merge-executor never merges its own closeout — this PR stops at REVIEW_REQUESTED; the fence pins `expected_policy_revision = 31c457a2f5dcc7a652f1e32e6b6c44fa314fe3b7` and `expected_registry_hash = 64600528a78420f00438c6fc0303552ffd1e6f35faeba18bfc130b35bf703d34` (guard registry_hash AT that SHA; validate-registry empirically cross-checked at the same tree). No PHI; no Drive writes; no DB writes; no tag before deploy-verification.
