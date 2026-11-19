@@ -45,6 +45,13 @@ import type { RepairRequestInput } from "../lib/pdf";
 // ENV-PARITY-P2-005 — the additive safety+coliform numeric summary
 // section (own state + fetch, mounted after the P1.6 summary block).
 import { SafetyColiformSummarySection } from "../components/reports/SafetyColiformSummarySection";
+// ENV-PARITY-P4-001 — the print-ready ทส.1/ทส.2 views (AppSheet P4.1, B4).
+import { Tos1PrintView } from "../components/reports/Tos1PrintView";
+import { Tos2PrintView } from "../components/reports/Tos2PrintView";
+import {
+  fetchHospitalAddressRow,
+  fetchReadingRunStatusRange,
+} from "../lib/supabase-queries";
 
 const THRESHOLD_FLAG_LABELS: Array<{ key: keyof FlagClassCounts; label: string }> = [
   { key: "critical_do1", label: "Critical DO-1 (บ่อเติมอากาศ)" },
@@ -140,37 +147,105 @@ export function ReportsPage() {
     status: "open",
   });
 
+  // ENV-PARITY-P4-001 — the print-ready ทส.1/ทส.2 model state.
+  const [printModel, setPrintModel] = useState<
+    | { kind: "ts1"; model: import("../lib/pdf").Ts1PrintModel }
+    | { kind: "ts2"; model: import("../lib/pdf").Ts2PrintModel }
+    | null
+  >(null);
+  const [openingPrint, setOpeningPrint] = useState(false);
+
+  /** Fetch the month's report surfaces and build the print model for the
+   *  selected ทส.1/ทส.2 template. Same data feeds the jspdf fallback. */
+  const buildTosModel = async (): Promise<
+    | { kind: "ts1"; model: import("../lib/pdf").Ts1PrintModel }
+    | { kind: "ts2"; model: import("../lib/pdf").Ts2PrintModel }
+  > => {
+    const startISO = `${month}-01`;
+    const [y, m] = month.split("-").map(Number);
+    const endISO = toLocalISODate(new Date(y, m, 0));
+    const [monthRows, readings, chain, waterChain, runStatus, address] = await Promise.all([
+      fetchDashboardByMonth(month),
+      fetchReadingDetailRange(startISO, endISO),
+      fetchMeterChainRange(startISO, endISO),
+      fetchWaterSupplyChainRange(startISO, endISO),
+      fetchReadingRunStatusRange(startISO, endISO),
+      fetchHospitalAddressRow().catch(() => null),
+    ]);
+    const { buildTs1PrintModel, buildTs2PrintModel } = await import("../lib/pdf");
+    if (selected === "ts1") {
+      return {
+        kind: "ts1",
+        model: buildTs1PrintModel({ month, dashboardRows: monthRows, readings, chain, runStatus }),
+      };
+    }
+    return {
+      kind: "ts2",
+      model: buildTs2PrintModel({
+        month,
+        startISO,
+        endISO,
+        dashboardRows: monthRows,
+        readings,
+        chain,
+        waterChain,
+        runStatus,
+        address,
+      }),
+    };
+  };
+
+  /** P4.1 — open the dedicated print-ready view (browser print-to-PDF is
+   *  the production mechanism; window.print() on the A4 frame). */
+  const onOpenPrint = async () => {
+    if (openingPrint) return;
+    setOpeningPrint(true);
+    try {
+      const built = await buildTosModel();
+      if (built.kind === "ts1" && built.model.rows.length === 0) {
+        toast.warning(`ไม่มีข้อมูลในเดือน ${monthLabel(month)}`);
+        return;
+      }
+      setPrintModel(built);
+    } catch (e) {
+      toast.error(`เปิดมุมมองพิมพ์ไม่สำเร็จ: ${e instanceof Error ? e.message : String(e)}`);
+    } finally {
+      setOpeningPrint(false);
+    }
+  };
+
   const onDownload = async () => {
     if (downloading) return;
     setDownloading(true);
     try {
-      // Fetch the exact selected month (YYYY-MM) — no rolling-window cap.
-      const monthRows = (selected === "ts1" || selected === "ts2")
-        ? await fetchDashboardByMonth(month)
-        : [];
-      if ((selected === "ts1" || selected === "ts2") && monthRows.length === 0) {
-        toast.warning(`ไม่มีข้อมูลในเดือน ${monthLabel(month)}`);
-        return;
-      }
-      const label = monthLabel(month);
-      // Dynamic import — pdf.ts pulls jspdf + html2canvas (~600KB). Loading
-      // only on demand keeps the Reports page bundle small.
-      const { downloadPDF, generateRepairRequest, generateTs1, generateTs2 } =
-        await import("../lib/pdf");
-      if (selected === "ts1") {
-        downloadPDF(generateTs1(monthRows, label), `ทส.1_${month}.pdf`);
-        toast.success(`ดาวน์โหลด ทส.1 เดือน ${label} แล้ว`);
-      } else if (selected === "ts2") {
-        downloadPDF(generateTs2(monthRows, label), `ทส.2_${month}.pdf`);
-        toast.success(`ดาวน์โหลด ทส.2 เดือน ${label} แล้ว`);
-      } else {
-        if (!repair.cause.trim()) {
-          toast.error("กรุณากรอกสาเหตุการแจ้งซ่อม");
+      // ENV-PARITY-P4-001 — the jspdf fallback renders THE SAME layout
+      // models as the print-ready views (one source of honesty pins).
+      if (selected === "ts1" || selected === "ts2") {
+        const built = await buildTosModel();
+        if (built.kind === "ts1" && built.model.rows.length === 0) {
+          toast.warning(`ไม่มีข้อมูลในเดือน ${monthLabel(month)}`);
           return;
         }
-        downloadPDF(generateRepairRequest(repair), `ใบแจ้งซ่อม_${repair.date}.pdf`);
-        toast.success("ดาวน์โหลดใบแจ้งซ่อมแล้ว");
+        const { downloadPDF, generateTs1, generateTs2 } = await import("../lib/pdf");
+        const label = monthLabel(month);
+        if (built.kind === "ts1") {
+          downloadPDF(generateTs1(built.model), `ทส.1_${month}.pdf`);
+          toast.success(`ดาวน์โหลด ทส.1 เดือน ${label} แล้ว`);
+        } else {
+          downloadPDF(generateTs2(built.model), `ทส.2_${month}.pdf`);
+          toast.success(`ดาวน์โหลด ทส.2 เดือน ${label} แล้ว`);
+        }
+        return;
       }
+      // Dynamic import — pdf.ts pulls jspdf + html2canvas (~600KB). Loading
+      // only on demand keeps the Reports page bundle small.
+      const { downloadPDF, generateRepairRequest } = await import("../lib/pdf");
+      if (!repair.cause.trim()) {
+        toast.error("กรุณากรอกสาเหตุการแจ้งซ่อม");
+        return;
+      }
+      downloadPDF(generateRepairRequest(repair), `ใบแจ้งซ่อม_${repair.date}.pdf`);
+      toast.success("ดาวน์โหลดใบแจ้งซ่อมแล้ว");
     } catch (e) {
       toast.error(`สร้าง PDF ไม่สำเร็จ: ${e instanceof Error ? e.message : String(e)}`);
     } finally {
@@ -580,6 +655,7 @@ export function ReportsPage() {
           <button
             key={t.key}
             type="button"
+            data-testid={`report-template-${t.key}`}
             onClick={() => setSelected(t.key)}
             className={
               "text-left p-4 rounded-2xl border transition-all font-thai " +
@@ -609,6 +685,7 @@ export function ReportsPage() {
               <MSymbol name="calendar_month" className="absolute left-3 top-1/2 -translate-y-1/2 text-[16px] text-aura-textMuted pointer-events-none" />
               <Input
                 type="month"
+                data-testid="report-month"
                 value={month}
                 onChange={(e) => setMonth(e.target.value)}
                 className="pl-10"
@@ -671,10 +748,45 @@ export function ReportsPage() {
             : "ข้อมูลมาจาก wastewater.reading ของเดือนที่เลือก — รวมเฉพาะวันที่มีบันทึกจริง"}
         </div>
 
+        {(selected === "ts1" || selected === "ts2") && (
+          <Button
+            size="lg"
+            className="w-full"
+            onClick={onOpenPrint}
+            disabled={openingPrint}
+            data-testid="report-open-print"
+          >
+            <MSymbol name="print" className="text-[18px]" /> เปิดมุมมองพิมพ์ (พร้อมบันทึกเป็น PDF)
+          </Button>
+        )}
+
         <Button size="lg" className="w-full" onClick={onDownload} disabled={downloading}>
           <MSymbol name="download" className="text-[18px]" /> ดาวน์โหลด PDF
         </Button>
       </AuraCard>
+
+      {/* ─── P4.1 print-ready ทส.1/ทส.2 view (AppSheet P4.1, owner B4) —
+           the dedicated A4 print frame; window.print() → the browser's
+           "Save as PDF" is the production mechanism. The jspdf download
+           above remains the fallback rendering THE SAME model. */}
+      {printModel && (
+        <div className="space-y-3">
+          <AuraCard className="flex items-center justify-between gap-3">
+            <p className="text-sm text-aura-textMuted font-thai">
+              มุมมองพิมพ์ {printModel.kind === "ts1" ? "ทส.1" : "ทส.2"} — กดพิมพ์แล้วเลือก
+              "บันทึกเป็น PDF" (กระดาษ A4) ในกล่องพิมพ์ของเบราว์เซอร์
+            </p>
+            <Button onClick={() => window.print()} data-testid="report-print-button">
+              <MSymbol name="print" className="text-[16px]" /> พิมพ์ / บันทึกเป็น PDF
+            </Button>
+          </AuraCard>
+          {printModel.kind === "ts1" ? (
+            <Tos1PrintView model={printModel.model} />
+          ) : (
+            <Tos2PrintView model={printModel.model} />
+          )}
+        </div>
+      )}
     </div>
   );
 }

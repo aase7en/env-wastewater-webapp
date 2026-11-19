@@ -1,0 +1,97 @@
+/* ENV-PARITY-P4-001 — the A4 print-ready report frame.
+ *
+ * On screen the report renders inside the app shell (readable A4 preview);
+ * in @media print everything else is hidden and ONLY the report area
+ * prints at A4 — window.print() → the browser's "Save as PDF" is the
+ * production print-to-PDF path (owner B4 mechanism).
+ */
+
+.tos-print-area {
+  background: #ffffff;
+  color: #111111;
+  width: 210mm;
+  max-width: 100%;
+  margin: 0 auto;
+  padding: 14mm 12mm;
+  font-family: "Sarabun", "TH SarabunPSK", "Noto Sans Thai", sans-serif;
+  font-size: 13px;
+  line-height: 1.5;
+  border: 1px solid #d4d4d4;
+  border-radius: 4px;
+}
+
+.tos-print-area h1 {
+  text-align: center;
+  font-size: 18px;
+  font-weight: 700;
+  margin: 0 0 2mm;
+}
+
+.tos-print-area h2 {
+  text-align: center;
+  font-size: 15px;
+  font-weight: 700;
+  margin: 0 0 6mm;
+}
+
+.tos-print-area h3 {
+  font-size: 14px;
+  font-weight: 700;
+  margin: 6mm 0 2mm;
+}
+
+.tos-print-table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 10px;
+}
+
+.tos-print-table th,
+.tos-print-table td {
+  border: 1px solid #444;
+  padding: 2px 4px;
+  text-align: center;
+  vertical-align: middle;
+}
+
+.tos-print-table th {
+  background: #f0faf6;
+  font-weight: 700;
+}
+
+.tos-print-meta {
+  font-size: 12px;
+}
+
+.tos-print-notes {
+  font-size: 11px;
+  margin-top: 4mm;
+}
+
+.tos-print-sign {
+  margin-top: 10mm;
+  font-size: 12px;
+}
+
+@media print {
+  body * {
+    visibility: hidden;
+  }
+  .tos-print-area,
+  .tos-print-area * {
+    visibility: visible;
+  }
+  .tos-print-area {
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 210mm;
+    border: none;
+    border-radius: 0;
+    padding: 0;
+  }
+  @page {
+    size: A4;
+    margin: 12mm;
+  }
+}
