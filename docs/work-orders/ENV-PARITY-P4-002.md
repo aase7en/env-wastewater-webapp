@@ -1,6 +1,6 @@
 # Work Order — ENV-PARITY-P4-002 (Claim ENV-PARITY-P4-002-C1, gen 1)
 
-**Status: REGISTERED — CLAIMED (this docs-only claim transition; implementation starts ONLY after the authorized reviewer merges this transition)**
+**Status: REVIEW_REQUESTED (gen-1 implementation complete — PR ready for the authorized reviewer; implementer never merges. D1–D4 receipts in `docs/ai/handoffs/ENV-PARITY-P4-002-GLM.md` §5.)**
 
 **Governance pattern:** PR #183–#242 claim-transition series (docs-only claim → reviewed merge → implementation lane → D5 fresh-GLM → closeout). Direct predecessor: ENV-PARITY-P4-001 (PRs #240/#241/#242 — delivered v1.14.0, closeout merged as `710a7e018e8102687b6b3b82ba6da2d56315d5dd` = THIS transition's base). This lane is **Phase 4 lane 2** — the owner's Phase-4 gate is OPEN per plan §5.3 (answers B4–B7 of 2026-11-15; B5 decides the channel).
 
