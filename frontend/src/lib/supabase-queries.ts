@@ -904,3 +904,66 @@ export async function fetchColiformLabTestRange(
   if (error) throw new Error(error.message);
   return (data ?? []) as ColiformLabTestRangeRow[];
 }
+
+// ─── ENV-PARITY-P4-001 — additive report-reads (ทส.1/ทส.2 print views) ────
+// Additive ONLY (WO §7): these two reads serve the print-ready report
+// views; no existing fetch is modified.
+
+/** Per-day equipment run-status booleans from wastewater.reading — the
+ *  ทส.1 drive-template's 8 การทำงานของอุปกรณ์ columns (เครื่องสูบน้ำ 1/2,
+ *  เครื่องเติมอากาศ 1/2, เครื่องสูบตะกอน 1/2, เครื่องจ่ายคลอรีน 1/2).
+ *  Unknown (NULL) stays NULL — never coerced to a value. */
+export interface ReadingRunStatusRow {
+  id: string;
+  reading_date: string;
+  pump1_running: boolean | null;
+  pump2_running: boolean | null;
+  aerator1_running: boolean | null;
+  aerator2_running: boolean | null;
+  sludge_pump1_running: boolean | null;
+  sludge_pump2_running: boolean | null;
+  chlorine_pump1_running: boolean | null;
+  chlorine_pump2_running: boolean | null;
+}
+
+export async function fetchReadingRunStatusRange(
+  startISO: string,
+  endISO: string,
+): Promise<ReadingRunStatusRow[]> {
+  const { data, error } = await supabase
+    .from("reading")
+    .select(
+      "id, reading_date, pump1_running, pump2_running, aerator1_running, aerator2_running, sludge_pump1_running, sludge_pump2_running, chlorine_pump1_running, chlorine_pump2_running",
+    )
+    .gte("reading_date", startISO)
+    .lte("reading_date", endISO)
+    .order("reading_date", { ascending: true });
+  if (error) throw new Error(error.message);
+  return (data ?? []) as ReadingRunStatusRow[];
+}
+
+/** The B7 report-header row (ทส.2 §๑): located in the editable
+ *  public.address census by the drive-template header chain (ตำบล อุทัย /
+ *  อำเภอ อุทัยธานี / จังหวัด พระนครศรีอยุธยา) — EXACT match only, never a
+ *  fuzzy substitute. Returns null when the census carries no such row →
+ *  the report header renders the honest "ยังไม่พบ" notice (never the
+ *  template constants masquerading as table values). READ-ONLY. */
+export interface HospitalAddressPick {
+  id: string;
+  tambon_id: number;
+  tambon_thai: string;
+  district_thai: string;
+  province_thai: string;
+}
+
+export async function fetchHospitalAddressRow(): Promise<HospitalAddressPick | null> {
+  const { data, error } = await supabase
+    .from("address")
+    .select("id, tambon_id, tambon_thai, district_thai, province_thai")
+    .eq("tambon_thai", "อุทัย")
+    .eq("district_thai", "อุทัยธานี")
+    .eq("province_thai", "พระนครศรีอยุธยา")
+    .limit(1);
+  if (error) throw new Error(error.message);
+  return ((data ?? []) as HospitalAddressPick[])[0] ?? null;
+}

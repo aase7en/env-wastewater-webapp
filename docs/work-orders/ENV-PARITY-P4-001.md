@@ -1,6 +1,6 @@
 # Work Order — ENV-PARITY-P4-001 (Claim ENV-PARITY-P4-001-C1, gen 1)
 
-**Status: REGISTERED — CLAIMED (this docs-only claim transition; implementation starts ONLY after the authorized reviewer merges this transition)**
+**Status: IMPLEMENTATION DELIVERED — REVIEW_REQUESTED (implementation lane branch `feat/env-parity-p4-001`, PR open, stopped per the review gate; the authorized reviewer owns approval + merge. Never merged by the implementer.)**
 
 **Governance pattern:** PR #183–#239 claim-transition series (docs-only claim → reviewed merge → implementation lane → D5 fresh-GLM → closeout). Direct predecessor: ENV-PARITY-P3-006 (PRs #237/#238/#239 — PHASE 3 COMPLETE, all 6 lanes CLOSED; base `8e56592c26448f654e21ea265a485ca86abb1f50` = the P3.6 closeout merge). This lane is **Phase 4 lane 1, the FIRST Phase-4 lane** — the owner's Phase-4 gate is OPEN per plan §5.3 (answers B4–B7 of 2026-11-15).
 
