@@ -136,7 +136,7 @@ class TestEFSourceContract(unittest.TestCase):
         m = re.search(r'skipped:\s*true', src)
         self.assertIsNotNone(m, "dormant skip ({skipped:true,…}) missing")
         skip_pos = m.start()
-        queue_pos = src.find('v_pending_threshold_alerts')
+        queue_pos = src.find('.from("v_pending_threshold_alerts")')
         self.assertGreaterEqual(queue_pos, 0, "queue view usage missing")
         self.assertLess(
             skip_pos, queue_pos,
