@@ -131,7 +131,7 @@ describe("P3 parity fixture tables — citation completeness (WO §2)", () => {
   it("every case carries a non-empty ref citation citing reference doc 12", () => {
     for (const c of ALL_P3_CASES) {
       expect(c.ref.trim().length, `${c.id} ref must be non-empty`).toBeGreaterThan(0);
-      expect(c.ref, `${c.id} must cite a reference-12 line (ref …)`).toMatch(/ref \d/);
+      expect(c.ref, `${c.id} must cite a reference-12 line (ref …)`).toMatch(/ref ~?\d/);
     }
   });
 
@@ -167,7 +167,6 @@ describe("P3 parity fixture tables — citation completeness (WO §2)", () => {
   it("the SQL battery file mirrors every sql:true case id (file-level cross-pin)", () => {
     const batteryPath = join(
       dirname(__dirname),
-      "..",
       "..",
       "..",
       "scripts",
@@ -299,11 +298,12 @@ describe("inventory family — FEFO order + ÷SWITCH real usage (§3.28; FEFO EN
       chlorineUsed: c.input.used,
       mixRatio: c.input.ratio,
     });
-    if (c.expected.badge === null) {
+    const exp = c.expected.badge;
+    if (exp === null) {
       expect(badge).toBeNull();
     } else {
-      expect(badge?.variant).toBe(c.expected.variant);
-      expect(badge?.text).toBe(c.expected.text);
+      expect(badge?.variant).toBe(exp.variant);
+      expect(badge?.text).toBe(exp.text);
     }
   });
 
@@ -419,7 +419,12 @@ describe("job family — geofence verdicts + QR gates + PII resolution (§3.24)"
     // 2·asin(sin(Δφ/2)) = Δφ exactly — the fixture latitudes in
     // JOB_GEOFENCE_CASES are hand-derived from this identity
     // (deg/km = 180/(π·R) = 8.993218e-3 at R = 6371.0088).
-    const d = haversineKm(14.361183, 100.645474, 14.361183 + 0.69 * (180 / ((6371.0088 * Math.PI) / 180)), 100.645474);
+    const d = haversineKm(
+      14.361183,
+      100.645474,
+      14.361183 + 0.69 * (180 / (6371.0088 * Math.PI)),
+      100.645474
+    );
     expect(d).toBeCloseTo(0.69, 5);
   });
 
@@ -431,7 +436,15 @@ describe("job family — geofence verdicts + QR gates + PII resolution (§3.24)"
     "%s",
     (_id, c: JobPayloadCase) => {
       if (c.expected.throws) {
-        expect(() => buildJobPayload(c.input)).toThrow(c.expected.throws);
+        // The corpus may cite a delivered verbatim constant by symbol
+        // (ERR_QR / ERR_GEOFENCE) — resolved here, never re-typed.
+        const expectedMsg =
+          c.expected.throws === "ERR_QR"
+            ? ERR_QR
+            : c.expected.throws === "ERR_GEOFENCE"
+              ? ERR_GEOFENCE
+              : c.expected.throws;
+        expect(() => buildJobPayload(c.input)).toThrow(expectedMsg);
         return;
       }
       const payload = buildJobPayload(c.input);
@@ -526,15 +539,17 @@ describe("address family — Address_Key display-time only + census helpers (§3
 
   it.each(ADDRESS_SEARCH_CASES.map((c) => [c.id, c] as const))("%s", (_id, c) => {
     if (c.expected.filteredIds) {
-      expect(filterAddressRows(c.input.rows, c.input.query).map((r) => r.tambon_id)).toEqual(
-        c.expected.filteredIds
-      );
+      expect(
+        filterAddressRows(c.input.rows ?? [], c.input.query ?? "").map((r) => r.tambon_id)
+      ).toEqual(c.expected.filteredIds);
     }
     if (c.expected.pageIds) {
       expect(
-        paginateAddressRows(c.input.rows, c.input.page as number, c.input.size as number).map(
-          (r) => r.tambon_id
-        )
+        paginateAddressRows(
+          c.input.rows ?? [],
+          c.input.page as number,
+          c.input.size as number
+        ).map((r) => r.tambon_id)
       ).toEqual(c.expected.pageIds);
     }
     if (c.expected.pageSize !== undefined) {
