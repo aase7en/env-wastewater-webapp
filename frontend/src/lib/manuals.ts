@@ -6,7 +6,7 @@
  * Surface: public.manual_wastewater + public.manual_water_supply
  * (security_invoker views over core.manual_wastewater /
  * core.manual_water_supply — the ONE additive P3.5 migration
- * 20261118000007_parity_p3_005.sql; RLS: SELECT staff-or-admin,
+ * 20261118…000007_parity_p3_005.sql; RLS: SELECT staff-or-admin,
  * INSERT/UPDATE/DELETE admin — the D1-6 admin-manage/staff-read posture;
  * zero anon policies, anonymous access fails closed).
  *

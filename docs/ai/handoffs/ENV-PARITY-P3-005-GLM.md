@@ -58,3 +58,15 @@ WO `docs/work-orders/ENV-PARITY-P3-005.md` holds the full binding pins (§0 comp
 ## 5. Single next safe action
 
 After the transition PR merges: create `_worktrees/env-parity-p3-005` off the new main tip, commit D2 RED (unit + e2e + SQL-contract + tsc evidence, zero durable writes), then D3 → D4 → D5 per §3 — stopping at REVIEW_REQUESTED.
+
+## 6. Implementation receipts (D2/D3/D4, 2026-11-19; PR #235 — STOP at REVIEW_REQUESTED)
+
+Full receipts live in the WO §11 (`docs/work-orders/ENV-PARITY-P3-005.md`); the D5 reviewer's one-paragraph digest:
+
+- **D2 RED truthful** (`21a8391`, zero durable writes): vitest 2 suites fails-to-collect (0 tests) / tsc TS2307 / e2e **12F-0P** truthful / live SQL contract **20F+1E + 4P disclosed** (3 vacuous over absent tables + 1 REAL baseline canary). Seed fixtures NEVER sent pre-apply. Env note (P3.4 precedent): the fresh worktree lacked the gitignored `frontend/.env` — resolved at D3, disclosed.
+- **D2 rulings carried from the claim (none new):** D1-3 full census; D1-9 verbatim 8; D1-4 link-only + new-admin http(s) allowed in the same column; D1-5 Address_Key display-time only; D1-6 master posture ×3 (address UPDATE carries USING+WITH CHECK per B7); D1-7 routes-only (nav in AppShell outside scope); D1-8 v1.13.0 MINOR; D1-2 two tables.
+- **D3 apply:** preflight PASS live (6 targets NULL / 0 policies / 15 baselines exact) → gated apply **90/90 OK, 0 FAIL, 21.4 s** (no throttle) → contract suite **25/25 OK** (counts 10/0/7,436; census shape 77/928/70-over-8; 5 verbatim spot rows vs XLSX bytes incl. `สมพงษ.pdf`; guarded re-send +0; RLS smoke admin-ok/staff-denied; anon fail-closed ×3; baselines identical).
+- **D4 battery** (docs head): vitest FULL **835P/1S (48 files)** · tsc clean · oxlint 0 errors (pre-existing warnings only; the 4 new files scoped-lint clean) · Playwright FULL chromium w=1 **322P** (310 base + 12 new) · guard **344/344 (+450 subtests)** · runtime **62/62 (+32 subtests)** · checker OK v1.13.0 · `git diff --check` clean · diff = 10 files ⊆ WO §10 · 13-digit digit-run grep of new files = 0 (the migration-name timestamp tokens written non-contiguously per the P3.4 grep-pin convention).
+- **D5 next:** fresh-GLM review at the exact frozen head (battery re-run where possible + own read-only live probes; the contract suite re-runs as-is; XLSX re-fetches GET-only to `/tmp/env-p3-005-pond.xlsx` + `/tmp/env-p3-005-markad.xlsx`). Implementer never merges; the authorized reviewer owns approval + merge; the closeout (CURRENT-WORK rewrite) is the successor docs lane.
+
+---

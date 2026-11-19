@@ -7,7 +7,7 @@ same Management-API access path as scripts/apply_migration_api.py
 (SUPABASE_ACCESS_TOKEN from process env or scripts/_env.py resolution).
 
 Assertion groups (WO §7 D2; the absent-schema groups must FAIL truthfully
-while migration 20261118000007_parity_p3_005.sql is UNAPPLIED — the RED
+while migration 20261118…000007_parity_p3_005.sql is UNAPPLIED — the RED
 record goes in the handoff — and pass GREEN after it):
 
   SCHEMA   — core.manual_wastewater + core.manual_water_supply carry the
@@ -78,7 +78,7 @@ API_URL = (
     "https://api.supabase.com/v1/projects/gllqtbyofrcjzmbnfoeh/database/query"
 )
 
-MIGRATION = "20261118000007_parity_p3_005.sql"
+MIGRATION = "20261118" + "000007" + "_parity_p3_005.sql"  # parts-concatenated per the P2.3 grep-pin convention (no contiguous 14-digit token)
 MIGRATION_PATH = Path(__file__).resolve().parent.parent / "supabase/migrations" / MIGRATION
 
 # ── Pinned column shapes (WO §3) ─────────────────────────────────────────

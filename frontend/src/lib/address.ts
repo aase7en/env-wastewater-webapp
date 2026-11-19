@@ -5,7 +5,7 @@
  * ตารางแก้ไขได้ — ไม่ฝังในเทมเพลต).
  *
  * Surface: public.address (security_invoker view over core.address — the
- * ONE additive P3.5 migration 20261118000007_parity_p3_005.sql; RLS:
+ * ONE additive P3.5 migration 20261118…000007_parity_p3_005.sql; RLS:
  * SELECT staff-or-admin, INSERT/UPDATE/DELETE admin — zero anon policies,
  * anonymous access fails closed).
  *
