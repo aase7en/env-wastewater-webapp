@@ -82,12 +82,44 @@ Plus: title "แบบรายงาน ทส.1" (docx header, vertical margin
 
 ### D2 — RED
 
-- (to be recorded at the RED commit with verbatim counts)
+Commit `314ca73` (RED tests) on `feat/env-parity-p4-001`; base = merge `15947b5553a1bd8e656ddbeb73222fff3002ac72` (origin/main ancestor-verified fresh). Verbatim counts against the unmodified base:
+
+- **vitest `src/lib/pdf.test.ts` (focused): 15 failed / 15 passed — 0.** RED class = fail-to-collect-by-missing-export: `TypeError: buildTs1PrintModel is not a function` (the upgraded `./pdf` has no such export at base; the whole suite fails on the import). No legacy passes to disclose (the module is NEW).
+- **Playwright `tests/e2e/env-parity-p4-001-tos-reports.spec.ts` (focused): 7 failed / 7 — 0 passed.** RED class = behavioral (every test fails waiting for `getByTestId('report-template-ts2')` / the print-view selectors that do not exist on the base ReportsPage).
+- **`tsc -b` at RED: 6 errors** — `TS2305: Module '"./pdf"' has no exported member 'buildTs1PrintModel'/'buildTs2PrintModel'`, `TS2305: Module '"./supabase-queries"' has no exported member 'ReadingRunStatusRow'` (+ the derived duplicates) — recorded honestly; the D4 battery only asserts tsc at the final head.
 
 ### D3 — IMPLEMENT
 
-- (to be recorded with the exact diff scope)
+Commit `438c1a1` (feat + release v1.14.0). Diff vs base — changed files exactly the §7 claimed scope:
 
-### D4 — BATTERY
+| File | Change |
+|---|---|
+| `frontend/src/lib/pdf.ts` | ทส.1/ทส.2 upgrade ONLY: new pure `buildTs1PrintModel`/`buildTs2PrintModel`/`buildTs2Operations`/`TS1_COLUMNS` (the D1 drive-template layouts as models) + `generateTs1`/`generateTs2` re-targeted to render the models; `generateRepairRequest`/`downloadPDF`/`header`/`footer` byte-untouched |
+| `frontend/src/lib/pdf.test.ts` | NEW (the pinned sibling lib test) — 15 model tests (census layout, พ.ศ., unknown ≠ 0, equipment mapping, day-count honesty, B7 table-driven header, ×1.2 provenance, computed discharge/ops, no-personnel pins) |
+| `frontend/src/lib/supabase-queries.ts` | additive report-reads ONLY (64 added lines at EOF): `ReadingRunStatusRow` + `fetchReadingRunStatusRange` (the 8 equipment-run booleans from `reading`) + `HospitalAddressPick` + `fetchHospitalAddressRow` (the exact-match B7 chain on `address`); no existing fetch modified |
+| `frontend/src/components/reports/Tos1PrintView.tsx` | NEW — ทส.1 A4 print view (18 census columns, cell testids incl. `tos1-cell-energy-*`/`tos1-cell-chlorine-*`, honesty notes, signature rule lines without names) |
+| `frontend/src/components/reports/Tos2PrintView.tsx` | NEW — ทส.2 A4 print view (§๑ B7 table-driven address header testids, พ.ศ. heading testid, §๓ items with provenance-note testids, computed ops, คำเตือน verbatim) |
+| `frontend/src/components/reports/report-print.css` | NEW — A4 print CSS (on-screen preview + `@media print` frame + `@page size: A4`) |
+| `frontend/src/pages/ReportsPage.tsx` | additive + the onDownload ทส.1/ทส.2 upgrade region ONLY: template-card testids, month-input testid, "เปิดมุมมองพิมพ์" button, print-view section + `window.print()` button, onDownload builds the SAME models for the jspdf fallback; P1.6 summary sections + P2.5 section byte-untouched |
+| `frontend/tests/e2e/env-parity-p4-001-tos-reports.spec.ts` | NEW — 7 print-view e2e (B7 table-driven header, พ.ศ., provenance flags, census labels, unknown ≠ 0, `window.print()` affordance, no-durable-write guard) |
+| `frontend/package.json` | 1.13.0 → **1.14.0** |
+| `CHANGELOG.md` | v1.14.0 Thai พ.ศ. entry (ผู้ใช้เห็น: รายงาน ทส.1/ทส.2 พร้อมพิมพ์/บันทึก PDF ตรงแบบเทมเพลตเดิม) |
 
-- (to be recorded with verbatim counts)
+NOT touched (scope-clean): all `supabase/` files (diff EMPTY), CURRENT-WORK.md (transition/closeout are separate lanes), P1.6/P2.5 delivered sections, `generateRepairRequest`, `.github/**`, digital-twin references, `/pdf-designer`.
+
+**Recorded honesty notes:** (1) the D2→D3 e2e run initially failed 7/7 with the page never booting — root cause = the FRESH lane worktree had no `frontend/.env` (gitignored, machine-local); created a LOCAL dummy `.env` (never committed; `git check-ignore` verified) and the same spec went 7/7 — an environment issue, not a code change. (2) The jspdf fallback's Thai text rendering follows the pre-existing approach in `pdf.ts` (the file's old doc-comment claims a bundled Sarabun base64 that was never actually wired — pre-existing inaccuracy, disclosed, NOT silently "fixed" in this lane; the print view is the primary faithful output).
+
+### D4 — BATTERY (final head `438c1a1`)
+
+- **vitest FULL: 50 files — 967 passed / 1 skipped (designed skipIf) / 0 failed** (incl. the 15 new model tests).
+- **`tsc -b`: clean** (exit 0).
+- **oxlint: exit 0** (19 pre-existing warnings; 0 in the lane's files).
+- **Playwright FULL chromium workers=1: 329 passed / 0 failed (7.3 min)** — includes the 7 new print-view e2e + all untouched suites green (the no-regression gate).
+- **guard: 344/344 passed + 450 subtests** (`scripts/test_env_coordination_guard.py`).
+- **runtime: 62/62 passed + 32 subtests** (`scripts/test_env_autonomy_runtime.py`).
+- **scripts battery (full `pytest scripts/`): 462 passed / 64 skipped / 491 subtests** (skips = the ENV_DB/network-gated ones).
+- **release checker: `--tag v1.14.0` → `RELEASE VERSION CHECK: OK (v1.14.0; CHANGELOG entry v1.14.0)` exit 0.**
+- **`git diff --check`: clean.**
+- **13-digit PII digit-run grep of the lane's files: 0 in the lane's additions** (the only 13-digit runs in `supabase-queries.ts` are the pre-existing base migration-timestamp constants — verified identical at base 15947b5).
+- **`supabase/` diff vs base: EMPTY** (0 files).
+- **Diff vs base ⊆ §7 claimed scope:** 11 files — the exact §7 mutable list (see D3 table).
