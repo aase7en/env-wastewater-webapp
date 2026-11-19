@@ -50,3 +50,54 @@ Consumed READ-ONLY at base `a967ec90b71ee9784ec03534e25f51043735fb6f`: `core.ite
 ## 5. Single next safe action
 
 After the transition PR merges: create `_worktrees/env-parity-p3-006` off the new main tip, commit D2 RED (the suite importing the absent module + tsc evidence, zero durable writes), then D3 → D4 → D5 per §3 — stopping at REVIEW_REQUESTED.
+
+## 6. IMPLEMENTATION RECEIPT — D2/D3/D4 complete, STOP at REVIEW_REQUESTED (2026-11-19)
+
+**Branch `feat/env-parity-p3-006` off main `492e5f5`; commits: D2 RED `4528b0c` → D3 `3a3ae3f` → docs (this commit). Implementer never merges.**
+
+### D2 RED (verbatim record)
+
+- vitest focused: **1 test file failed-to-collect** — `Error: Cannot find module './parity-fixtures-p3' imported from …/src/lib/parity-fixtures-p3.test.ts`; **Test Files 1 failed (1), Tests no tests**.
+- `tsc -b`: **59 errors on the new file** — root **TS2307 (`src/lib/parity-fixtures-p3.test.ts(126,8): Cannot find module './parity-fixtures-p3' or its corresponding type declarations.`)** + 58 cascade errors (TS7006 implicit-any / TS2345) from the absent module's types.
+- **Zero durable writes** — the SQL battery did not exist at RED (the honest new-file lane; disclosed per the P2.6 framing). No legacy pass to disclose.
+
+### D3 delivered
+
+- `frontend/src/lib/parity-fixtures-p3.ts` — **126 corpus cases** (masters 20 / inventory 27 / calibration 15 / job 36 / manuals-address 28), every case carrying a ref-12 line citation; **10 divergence-corrected** cases each citing DIVERGENCE_KINDS_P3 (the 0.7-vs-2 geofence bound ×2; NEXT_DUE_PINNED_ABSENT ×6; FEFO = ENV-new per owner B6 ×2; the plan line-95 '~1 แถว' vs the 7,436 census ×1 — 10 total across the corpus); `P3_006_SQL_CASE_IDS` (19) mirrors the battery 1:1.
+- `frontend/src/lib/parity-fixtures-p3.test.ts` — 117 tests (the corpus + the meta-pins: citation completeness, id uniqueness, family coverage, SQL-mirror completeness both directions, divergence honesty, the 13-digit digit-run scan ×2 files).
+- `scripts/test_parity_p3_006_fixtures_sql.py` — the 19 mirrored cases as transactional BEGIN…ROLLBACK probes / read-only catalog+census probes + the preflight/post canaries (18 baselines: 907/9/4/48/0/332/0/0/0/0/6/0/11/15/1102/10/0/7436) + probe-residue-0 checks + the DB-free FILE mirror pins.
+
+### D4 battery @ `3a3ae3f` (all counts verbatim)
+
+| Gate | Result |
+|---|---|
+| vitest FULL | **49 files, 952 passed + 1 skipped** (P3.5 base 835P/1S/48 files + this lane's +117 cases/+1 file) |
+| `tsc -b` | clean |
+| oxlint | **0 errors** (pre-existing warnings only) |
+| Playwright FULL chromium workers=1 | **322/322** (7.1m) |
+| guard | **344/344 (+450 subtests)** |
+| runtime | **62/62 (+32 subtests)** |
+| checker regression | **37/37** |
+| checker `--tag v1.13.0` | **OK exit 0** — NO bump (`frontend/package.json` 1.13.0, `CHANGELOG.md` byte-untouched) |
+| `git diff --check` | clean |
+| 13-digit digit-run grep (3 new files) | **0** |
+| diff vs base `492e5f5` | exactly the 3 deliverable files, **+3275/−0**; `supabase/` EMPTY; CURRENT-WORK.md untouched |
+
+### Achieved parity (executable cases passing/total)
+
+- **vitest corpus: 107/107 = 100%** executed-and-passing; the 10 divergence-corrected cases all assert the CORRECTED/owner-decided expectation with their divergence note + refs.
+- **SQL battery: 3/3 DB-free FILE pins PASS; 23 DB tests SKIP credential-less** on the delivery machine (no `SUPABASE_ACCESS_TOKEN` resolvable — `scripts/_env.py` returned empty; the lazy-token gate skipped each cleanly, suite **exit 0, no crash** — the P3.5 P3-1 lesson verified in production). The 19 SQL case probes are recorded as **credential-less-skips, not failures**; their first live run is expected GREEN against the LIVE delivered objects (the P2.6 framing — the battery verifies EXISTING delivered semantics) wherever credentials resolve, e.g. the D5 reviewer rerun.
+- No case failed anywhere in the battery.
+
+### Recorded deviations (none silent)
+
+1. **§3 access path** — WO §3 said the SQL battery "reads `.env` for `SUPABASE_DB_URL`"; implemented with the house Management-API path (`scripts/_env.py` → `SUPABASE_ACCESS_TOKEN`) because this machine has no psql binary and no `.env`; same ENV_DB target, documented in the battery docstring.
+2. **Lazy-token gate (the P3.5 P3-1 lesson, implemented as instructed)** — token resolution is lazy inside `q()` (per-test clean skips); the module-level `_TOKEN = _token()` pattern that crashed credential-less machines is never used.
+3. **Test-file repairs vs the RED commit** — citation meta-pin regex `/ref \d/` → `/ref ~?\d/` (the corpus cites approximate ref-12 line anchors with the `~` prefix, e.g. `ref ~4448`); the throw-symbol mapping (corpus cites ERR_QR/ERR_GEOFENCE by symbol, resolved to the delivered verbatim constants in the suite); an order-of-operations fix in the haversine-helper pin; 3 null-safety guards. None weakened a RED assertion (RED ran 0 tests).
+4. **A transient session interruption (provider rate limit)** occurred mid-lane before any file was written; the lane reconstructed state from the SSoT (clean worktree @ base) and re-derived every step — no state was lost, no partial file was committed.
+
+### Boundary holds
+
+TEST-ONLY: no migration/DB object/seed row/apply/grants; the battery is transactional zero-net-persistence with preflight/post baselines identical and probe residue 0. The delivered P3.1–P3.5 surfaces and suites are byte-untouched (diff = the 3 new files only). NO bump. No `.env`/secrets in commits or chat. No Phase-4/CI/plan-doc/Drive writes. Synthetic fixture values only — the only UUIDs are syntactically-valid synthetic v4-shapes; the 13-digit digit-run scan pins 0.
+
+**STOP: REVIEW_REQUESTED — awaiting the D5 fresh-GLM independent review at the exact frozen head; the authorized reviewer owns approval + merge.**
