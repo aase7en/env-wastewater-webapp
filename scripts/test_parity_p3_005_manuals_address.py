@@ -345,11 +345,12 @@ class P3ManualsAddressContract(unittest.TestCase):
         self.assertIn(POLICY_GATE_SELECT, by_cmd["SELECT"]["qual"] or "", f"core.{table} SELECT gate drifted")
         for cmd in ("INSERT", "UPDATE", "DELETE"):
             self.assertIn(cmd, by_cmd, f"core.{table} {cmd} policy missing")
-            self.assertIn(POLICY_GATE_ADMIN, by_cmd[cmd]["qual"] or "", f"core.{table} {cmd} USING gate drifted")
-        self.assertIn(POLICY_GATE_ADMIN, by_cmd["UPDATE"]["with_check"] or "",
-                      f"core.{table} UPDATE must carry WITH CHECK (B7 admin-editable)")
-        self.assertIn(POLICY_GATE_ADMIN, by_cmd["INSERT"]["with_check"] or "",
-                      f"core.{table} INSERT WITH CHECK drifted")
+            # INSERT's gate lives in WITH CHECK; DELETE's in USING; UPDATE
+            # must carry BOTH (B7 admin-editable with re-check).
+            if cmd in ("UPDATE", "DELETE"):
+                self.assertIn(POLICY_GATE_ADMIN, by_cmd[cmd]["qual"] or "", f"core.{table} {cmd} USING gate drifted")
+            if cmd in ("INSERT", "UPDATE"):
+                self.assertIn(POLICY_GATE_ADMIN, by_cmd[cmd]["with_check"] or "", f"core.{table} {cmd} WITH CHECK gate drifted")
         # zero anon policies on the table
         anon = q(
             "SELECT count(*) AS n FROM pg_policies"
@@ -431,11 +432,13 @@ class P3ManualsAddressContract(unittest.TestCase):
           IF NOT EXISTS (SELECT 1 FROM core.manual_wastewater) THEN
             RAISE EXCEPTION 'staff SELECT returned nothing (read posture broken)';
           END IF;
-          -- STAFF denied on UPDATE/DELETE
-          BEGIN
-            UPDATE core.manual_wastewater SET title = 'hacked' WHERE true;
-            RAISE EXCEPTION 'staff UPDATE was NOT denied';
-          EXCEPTION WHEN insufficient_privilege THEN NULL; END;
+          -- STAFF denied on UPDATE/DELETE — RLS USING filters the rows
+          -- (0 rows touched, FOUND false) rather than raising; the write
+          -- never lands either way.
+          UPDATE core.manual_wastewater SET title = 'hacked' WHERE true;
+          IF FOUND THEN
+            RAISE EXCEPTION 'staff UPDATE was NOT denied (rows updated)';
+          END IF;
         END $probe$;
         """
         q(_tx(sql))
@@ -463,10 +466,12 @@ class P3ManualsAddressContract(unittest.TestCase):
             VALUES (999998, 'x', 9999, 'x', 99, 'x', 'probe');
             RAISE EXCEPTION 'staff INSERT was NOT denied on core.address';
           EXCEPTION WHEN insufficient_privilege THEN NULL; END;
-          BEGIN
-            UPDATE core.address SET tambon_thai = 'hacked' WHERE true;
-            RAISE EXCEPTION 'staff UPDATE was NOT denied on core.address';
-          EXCEPTION WHEN insufficient_privilege THEN NULL; END;
+          -- RLS USING filters: the staff UPDATE touches 0 rows (FOUND
+          -- false) rather than raising — the write never lands either way.
+          UPDATE core.address SET tambon_thai = 'hacked' WHERE true;
+          IF FOUND THEN
+            RAISE EXCEPTION 'staff UPDATE was NOT denied on core.address (rows updated)';
+          END IF;
         END $probe$;
         """
         q(_tx(sql))

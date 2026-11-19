@@ -52,7 +52,7 @@ describe("D1-4 link-display predicate — absolute http(s) only, never a fake li
 
 describe("table binding — the row's คู่มือ ×2 verbatim (D1-2)", () => {
   it("the two domains map to the two AppSheet tables ×2 (never one shared table)", () => {
-    expect(Object.keys(MANUAL_TABLES).sort()).toEqual(["watersupply", "wastewater"]);
+    expect(Object.keys(MANUAL_TABLES).sort()).toEqual(["watersupply", "wastewater"].sort());
     expect(MANUAL_TABLES.wastewater).toBe("manual_wastewater");
     expect(MANUAL_TABLES.watersupply).toBe("manual_water_supply");
   });
