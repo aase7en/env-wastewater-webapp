@@ -49,17 +49,18 @@ D1 re-verification above → D2 RED (counts verbatim; legacy passes disclosed) �
 - The ONE sibling lib + 3 views + ReportsPage additive mounts + `fetchWaterSupplyPrintRange` + release v1.15.0 (package.json 1.14.0→1.15.0 + CHANGELOG Thai พ.ศ. entry). Scope-exact vs WO §7 — changed files vs base: CHANGELOG.md, frontend/package.json, components/reports/** (lib + 3 views + 3 tests), lib/supabase-queries.ts, pages/ReportsPage.tsx, tests/e2e/env-parity-p4-005-family-reports.spec.ts. Byte-untouched pins held: pdf.ts / Tos1/Tos2PrintView / report-print.css / water-supply.ts / safety-summary.ts / report-summary.ts / the delivered family pages / CURRENT-WORK.md / supabase/.
 - Honesty pins shipped: the extinguisher SOURCE_UNAVAILABLE master note (`ยังไม่มีข้อมูลทะเบียนถังดับเพลิง (master)`) + history-only rows; unknown ≠ 0 everywhere ("—", ค่าว่าง notes); the ☑/☐ pairs COMPUTED from recorded rows (never static; no-row months never assert ☑); the P1.5 water provenance in print (÷10 chlorine per A3, ค่าประมาณจากสเปก/ประมาณจากชั่วโมงปั๊ม per A2, meter-chain boundary disclosure, missing days counted); พ.ศ. computed year (the templates' hardcoded 2569 divergence recorded); NO address header (none of the 3 templates carries one — core.address NOT consumed); personnel ONLY via the core.personnel display path (— ไม่ระบุ — fallback); the hardcoded template names never render; signature blank rules + date slots; no Telegram step; WATER_LAYOUT_NOTE carries the sample-PDF authority honestly.
 
-### D4 — battery (2026-11-20, at f3ea985)
+### D4 — battery (2026-11-20)
 
-- vitest FULL: **990 passed | 1 skipped** (53 files) — legacy + new all green.
+- **Head note:** the D3 commit f3ea985 missed one 2-line water-test fixture edit (spec_missing_kinds — required by the WaterChainInput/ReportWaterChainRow contract); the working tree carried the fix during the first battery pass, and it was committed as `79bef5e` with the fix's provenance stated in the commit message. **The FULL battery below was RE-RUN at 79bef5e** (the code-freeze head before the docs-only receipt commits) — no ambiguity between tree and commit.
+- vitest FULL at 79bef5e: **990 passed | 1 skipped** (53 files) — legacy + new all green.
 - `tsc -b`: clean. oxlint: **exit 0** (19 pre-existing warnings repo-wide, 0 in the new/changed files).
-- Playwright FULL chromium workers=1: **335 passed** (7.4 min) — includes the 6 new family tests AND the untouched P4.1/P1.6/P2.5 suites (no-regression gate).
-- guard: **344 passed + 450 subtests**; validate-registry `{ok:true, BOOTSTRAP_CONTROL}`; claim ENV-PARITY-P4-005-C1 CLAIMED.
-- runtime: **62 passed + 32 subtests**.
-- release checker: regression `OK (v1.15.0; CHANGELOG entry v1.15.0)`; `--tag v1.15.0` **exit 0**; `--tag v1.14.0` exit 1 (correct reject).
-- `git diff --check` 0323fe3..HEAD: clean. `supabase/` diff: **EMPTY** (D1-6 held).
+- Playwright FULL chromium workers=1 at 79bef5e: **335 passed** (7.4 min) — includes the 6 new family tests AND the untouched P4.1/P1.6/P2.5 suites (no-regression gate).
+- guard at 79bef5e: **344 passed + 450 subtests**; validate-registry `{ok:true, BOOTSTRAP_CONTROL}`; claim ENV-PARITY-P4-005-C1 CLAIMED.
+- runtime at 79bef5e: **62 passed + 32 subtests**.
+- release checker at 79bef5e: `--tag v1.15.0` **exit 0** (`OK (v1.15.0; CHANGELOG entry v1.15.0)`); `--tag v1.14.0` exit 1 (correct reject).
+- `git diff --check` 0323fe3..79bef5e: clean. `supabase/` diff: **EMPTY** (D1-6 held).
 - 13-digit PII digit-run grep of all changed files: **0 hits in added lines** (3 pre-existing migration-timestamp literals at base, not IDs).
-- Diff vs base ⊆ WO §7 mutable scope (the 12 code files above; docs receipts commit adds exactly the 2 doc files).
+- Diff vs base ⊆ WO §7 mutable scope (the 12 code files above; the docs receipt commits add exactly the 2 doc files + the fixture-fix commit).
 
 ### D5 — fresh-GLM independent review
 
