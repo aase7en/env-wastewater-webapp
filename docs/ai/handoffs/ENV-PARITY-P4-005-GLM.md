@@ -62,6 +62,54 @@ D1 re-verification above → D2 RED (counts verbatim; legacy passes disclosed) �
 - 13-digit PII digit-run grep of all changed files: **0 hits in added lines** (3 pre-existing migration-timestamp literals at base, not IDs).
 - Diff vs base ⊆ WO §7 mutable scope (the 12 code files above; the docs receipt commits add exactly the 2 doc files + the fixture-fix commit).
 
-### D5 — fresh-GLM independent review
+### D5 — fresh-GLM independent review — APPROVED (receipt issuecomment-7029784131, 2026-11-20)
 
-PENDING — the authorized reviewer owns it at the exact frozen head. The implementing lane NEVER merges. **STOP at REVIEW_REQUESTED.**
+**VERDICT: APPROVED** — 0×P1, 0×P2, **3×P3-informational carried** (never silently fixed): (1) `WATER_COLUMNS` ships `"วัน/เดือน/ปี"` + `"Hour_meter"` while the sample-PDF authority's recorded extraction reads `"วัน/เดือน/ปี อ่านได้"` / `"(Hour_meter)"` — micro-fidelity divergence, the sample's Thai glyphs are not machine-re-extractable (subsetted font, no `/ToUnicode`); a 2-string change if the owner wants exactness. (2) Reviewer battery note: the first FULL Playwright run hit the known garbage-mobile load-flake (334/1); 3×9/9 isolated reruns → flake, no action. (3) RED-e2e reproduction note for future reviewers: `playwright.config.ts` skips its webServer when `E2E_BASE_URL` is set — run WITHOUT it (free :5173) for the true behavioral RED.
+
+D5's OWN verification at the exact head `aecea6f`: template authorities BYTE-MATCHED (extinguisher gdoc `c9f5f439…`/5,143 B; light gdoc `fad4cef1…`/4,300 B; sample `รายงานน้ำประปา-1.pdf` `8d0e81c5…`/116,723 B/15 pages; Content folder live-re-listed = 10 entries, the น้ำประปา template absence re-confirmed); column censuses `EXT_COLUMNS`(9)/`LIGHT_COLUMNS`(6)/`WATER_COLUMNS`(5) verbatim; the ☑/☐ pairs COMPUTED (unit-pinned both flips + null on empty months); the extinguisher master note pinned exact-string in unit + e2e; NO address header (grep 0); hardcoded personnel names never render (grep 0); RED truthfulness reproduced at isolated `ea4a07f` (3 failed-to-collect suites + exactly 3×TS2307 + family e2e 6 failed / 0 passed); own battery: vitest FULL 990 passed / 1 skipped (53 files), `tsc -b` clean, oxlint exit 0, Playwright FULL workers=1 334 passed + flake, guard 344 + 450 subtests, runtime 62 + 32 subtests, checker `--tag v1.15.0` exit 0, `git diff --check` clean, 13-digit digit-run grep of ALL added lines = 0.
+
+### STOP
+
+**REVIEW_REQUESTED → CLOSED (see §6).** The implementing lane never merged; PR #250 was merged by the authorized merge-executor after D5 APPROVED — the closeout receipt is §6 below.
+
+## 6. D6 CLOSEOUT RECEIPT (closeout lane, 2026-11-20)
+
+### Full delivery chain (claim transition → implementation → closeout)
+
+1. **Claim transition PR #249** merged `0323fe397ff0e1f40fe5b9a3a59bdcde82e7220f` (docs-only, base `14b5296f5a3cbc607d62a21601c9d37796a2d6fd` = the P4.4 closeout merge) — authorized this lane.
+2. **Implementation PR #250** merged `826ac8f8d836f4ce3a35dbbbbc22153cb710954f` — merge commit, no squash; second parent EXACTLY the D5-APPROVED head `aecea6f57d77d46c366c5d047bab834c5e718c27` (verified post-merge: `git log -1 --format='%H %P' origin/main` → parents `0323fe39…` + `aecea6f5…`); expected-head discipline `--match-head-commit aecea6f…`; PR OPEN → MERGEABLE/CLEAN → MERGED; checks green pre-merge (notify ×2 + scripts + smoke 9m28s); merge-executor review trail **issuecomment-7029833078** pinning the D5 receipt + expected head + merge policy + tag plan; implementation branch kept on remote; merge stat = exactly 14 files 1785+/2− (`supabase/` EMPTY, CURRENT-WORK.md untouched at merge); local main ff-only `0323fe3`→`826ac8f` clean.
+3. **D5 fresh-GLM APPROVED issuecomment-7029784131** at the exact frozen head `aecea6f` — full receipt in §5 above.
+4. **Release v1.15.0 MINOR DELIVERED:** Pages run **44670468981 SUCCESS** @ `826ac8f`; live markers verified fresh: `index-Eevdb2Y0.js` (last-modified 2026-11-20 03:51:49 GMT) carries the version constant `1.15.0` ×2 (the constant + the CHANGELOG heading `## v1.15.0 — 20 พฤศจิกายน พ.ศ. 2569`) + `app-version-chip` + `app-version-summary` + `ข้อมูลเวอร์ชันแอป`; the lazy chunk `ReportsPage-ZsMq8QwQ.js` (HTTP 200, same freshness) carries all three family print-view titles `แบบฟอร์มรายงานผลการตรวจสอบถังดับเพลิงโรงพยาบาลอุทัย` / `แบบฟอร์มรายงานผลการตรวจโคมไฟฉุกเฉินโรงพยาบาลอุทัย` / `แบบรายงานการใช้น้ำประปาบาดาลโรงพยาบาลอุทัย` + the SOURCE_UNAVAILABLE master note `ยังไม่มีข้อมูลทะเบียนถังดับเพลิง (master)`; annotated tag **v1.15.0** dereferences the deployed merge SHA `826ac8f`; `check_release_version.py --tag v1.15.0` → `OK (v1.15.0; CHANGELOG entry v1.15.0)`, exit 0.
+5. **Closeout transition = THIS PR** (docs-only, 3 files: CURRENT-WORK.md fence ×2 + status CLOSED + `one_next_safe_action` rewrite + the CLOSED frontier bullet; WO status → DELIVERED—CLOSED; this §6). Fence: expected_policy_revision = `826ac8f8d836f4ce3a35dbbbbc22153cb710954f`, expected_registry_hash = `dce38c59ed6d5aa2fa8d55bc6ecd37ce59a459badab170e8c9cb726fd0e61d5b` (guard validate-registry registry_hash AT `826ac8f` — the empirically cross-checked PR #166/#169 method). Programmatic claim-by-claim JSON diff vs `826ac8f`: exactly 1 of 48 claims changed (ENV-PARITY-P4-005-C1 → CLOSED), the other 47 byte-identical.
+
+### PHASE 4 COMPLETION RECORD — ALL OWNER GATES + PLAN ROWS DELIVERED ✅
+
+| Gate / row | Surface | Delivered via | Release |
+|---|---|---|---|
+| **B4 — รายงาน PDF ×5** | ทส.1/ทส.2 print views + families ถังดับเพลิง/ไฟฉุกเฉิน/น้ำประปา ×3 | P4.1 (PR #241) + THIS lane (PR #250) | v1.14.0 + **v1.15.0** |
+| **B5 — Telegram** | notify-threshold EF dormant-live + OWNER ACTIVATION runbook; notify-monthly-report via pg_cron | P4.2 (PR #244) + P4.4 (PR #247) | no-bump (dormant) |
+| **B6 — คลอรีน save paths** | both chlorine save paths wired per owner "เปิด ถ้าทำได้จริง" | P3.2 (PR #226) | v1.10.0 |
+| **B7 — หัวรายงานจาก address** | core.address headers (ทส.2; none of the 3 family templates carries one — honest template fact) | P3.5 (PR #235) | v1.13.0 |
+| **P4.3 — BI** | chlorine BI = pre-existing live content (delivered via P3.2) | — | — |
+| **P4.4 — งานตามเวลา** | pg_cron + pg_net + monthly_report_cycle + notify-monthly-report dormant-live (`cron.job` jobid=1 @ 00:05 ICT on the 2nd) | P4.4 (PR #247) | no-bump (dormant) |
+
+**PHASE 4 IS COMPLETE.**
+
+### The honest remaining — the PHASE 5 OWNER-GATED cutover checklist (the owner's action, NOT agent-actionable)
+
+1. **Telegram credentials** — plug `TELEGRAM_BOT_TOKEN`/`TELEGRAM_CHAT_ID` via `supabase secrets` (+ the vault `service_role` secret) per the P4.2 §OWNER ACTIVATION runbook; then verify ONE monthly cron send manually (the failed-month retry note = one owner-runbook line).
+2. **Owner sheet-shares** for the SOURCE_UNAVAILABLE masters — `safety.fire_extinguisher`, `core.manual_water_supply`, Items/Vendors/Categories, the coliform history (guarded P2.1/P2.3 re-seed recipe; schema + `legacy_id` + `source_provenance` already shipped; never fabricated).
+3. **START THE DUAL-RUN (the Phase 5 signal)** — AppSheet + ENV บันทึกคู่ขนาน ≥ 14 วัน per plan §6 P5.1 line 271 + the 5-condition DoD line 276; then the AppSheet retirement checklist with read-access kept ≥ 90 วัน as rollback.
+4. Owner-manual standing items — hooks #155 approved-not-started; #156 OPENROUTER_API_KEY renewal.
+
+**FRONTIER: NO active claim.** The parity program's remaining work is Phase 5 คัทโอเวอร์ which is OWNER-ACTION-GATED (the dual-run start signal above); no agent lane is authorized until the owner acts.
+
+### NON-OWNER REPAIR-LANE CANDIDATES (optional — each its own NEW reviewed claim transition, no silent fix)
+
+- **(a) the P4.2 wastewater-view repair candidate** — `wastewater.v_pending_threshold_alerts` exists in schema `wastewater` while `notify-threshold/index.ts:142` reads it via the default-schema supabase-js client (the P4.4 D5-confirmed REAL finding, carried from the P4.4 closeout).
+- **(b) README staleness** — the Pages list lacks the parity-delivered routes (`/masters`, `/manuals`, `/address`, `/job-log`, …) and the migration example path says `db/migrations/` while the house path is `supabase/migrations/`.
+- **(c) the ledger P3s carried across lanes** — the WATER_COLUMNS 2-string fidelity option (D5 P3-1 above), the failed-month retry gap + the anon-JWT post-activation surface + the redundant cron-schema grant (P4.4), the fetchMeterChainBefore same-day edge (P1.4), the checker vSemVer false-positive mode + the mobile-360 dock-overlap pin (v1.0.0), the P2.5 e2e header-comment staleness, the vacuous anon fail-closed probe re-raise note + docs-precision nits (P3.6) — see each lane's D6 in its handoff.
+
+### Ledger (this lane's carried P3s — recorded, never silently fixed)
+
+The 3 D5 P3-informational items (§5 above) are carried to the frontier/repair-lane ledger. Standing: ENV-BUILDING-REPAIR-001-C1 WAITING_EXTERNAL; Phase-1 dual-run PENDING OWNER ACTION. Scope lock released at generation 1; CLOSED confers no fresh mutation authority; all other work still requires a NEW claim transition.
