@@ -12,10 +12,11 @@ workflow to Supabase.
   approved per user (pending-approval flow), with an admin role for DBA/AI/
   user-management consoles.
 - **Versioning**: the app version lives in `frontend/package.json` and is
-  shown by a small chip in the footer corner of the app — tap it for the
-  latest-release summary. See [`CHANGELOG.md`](CHANGELOG.md) (Thai, พ.ศ.
-  dates) for the release history and bump criteria. Documentation-only merges
-  do not bump the version and do not create a git tag.
+  shown by a small fixed chip in the bottom-left corner of the app shell —
+  tap it for the latest-release summary. See [`CHANGELOG.md`](CHANGELOG.md)
+  (Thai, พ.ศ. dates) for the release history and bump criteria.
+  Documentation-only merges do not bump the version and do not create a
+  git tag.
 - **Data**: `data/raw/` is gitignored — source exports never get committed.
 
 ## Pages (as routed in `frontend/src/App.tsx`)
@@ -30,12 +31,16 @@ workflow to Supabase.
   safety, food
 - Domain modules: `/water-supply`, `/garbage`, `/fuel`, `/garden`,
   `/building`, `/safety`, `/food`, `/chemical`
+- Safety sub-pages: `/safety/extinguisher-inspections`,
+  `/safety/emergency-light-checks`, `/safety/job-log`
 - Records: `/readings`, `/trends`, `/reports`, `/equipment`, `/sensors`
 - Environment & compliance: `/carbon`, `/carbon-rollup`, `/sustainability`
   (T-VER readiness), `/regulations`, `/water-watch`
 - Operations: `/operations` (attention board)
 - Admin tools: `/import`, `/pdf-designer`, `/attachments`, `/admin/db`,
-  `/admin/ai`, `/admin/users`, `/admin/audit`
+  `/admin/ai`, `/admin/users`, `/admin/audit`, `/admin/equipment-specs`,
+  `/admin/extinguishers`, `/admin/inventory`, `/admin/calibration`,
+  `/admin/masters`, `/admin/manuals`, `/admin/address`
 - Auth: `/login`, `/auth/callback`, `/pending-approval`
 
 ## Tech stack
@@ -46,6 +51,12 @@ workflow to Supabase.
 - **Backend**: Supabase (Postgres + RLS; the frontend talks to it directly
   via supabase-js, per ADR-0004 — the retired FastAPI backend was removed
   2026-07-19 and is preserved on the `archive/fastapi-backend` branch)
+- **Edge Functions**: two Supabase Edge Functions live outside the Pages
+  deploy — `notify-threshold` (Telegram dispatcher for pending threshold
+  alerts; honest-dormant until the owner sets credentials) and
+  `notify-monthly-report` (monthly ทส.-report pusher, driven by pg_cron at
+  00:05 ICT on the 2nd). Contract + activation runbook:
+  [`supabase/functions/README.md`](supabase/functions/README.md)
 - **Digital Twin**: Three.js / React-Three-Fiber
 - **Deploy**: GitHub Pages, auto-deploy on merge to `main`
 
@@ -54,9 +65,9 @@ workflow to Supabase.
 - Single source of truth: `frontend/package.json` → `"version"` (SemVer
   `vMAJOR.MINOR.PATCH`), injected into the build via a Vite `define`
   (`__APP_VERSION__`) and read only by `frontend/src/lib/version.ts`.
-- The chip (footer corner of the app shell) shows the running version; tap
-  or keyboard-activate it for the latest-release summary with a pointer to
-  the CHANGELOG.
+- The chip (bottom-left corner of the app shell) shows the running version;
+  tap or keyboard-activate it for the latest-release summary with a pointer
+  to the CHANGELOG.
 - Release history + Thai bump criteria: [`CHANGELOG.md`](CHANGELOG.md).
   Git tags (`v1.0.0`, …) are cut after merge + deploy verification and must
   match `package.json` (`python3 scripts/check_release_version.py --tag vX.Y.Z`).
@@ -68,7 +79,7 @@ repo is scripts-only:
 
 ```bash
 # Apply a SQL migration to ENV_DB via the Supabase Management API
-uv run python scripts/apply_migration_api.py db/migrations/<file>.sql
+uv run python scripts/apply_migration_api.py supabase/migrations/<file>.sql
 
 # Refresh reports/schema-snapshot-live.md (read-only introspection)
 uv run python scripts/introspect_schema_api.py
