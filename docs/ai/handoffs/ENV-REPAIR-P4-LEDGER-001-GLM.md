@@ -339,3 +339,128 @@ standing passes (P2.4 P3-1 convention). `git diff --check` clean at RED.
    whose CURRENT-WORK diff was EMPTY). `validate-registry` stays ok:true.
 4. supabase CLI emits a deprecation warning for `--project-ref` (v4 will
    rename it); deploy succeeded — cosmetic, recorded.
+
+## 8. D6 — closeout receipt (docs-only closeout transition, 2026-11-20)
+
+This section records the closeout transition that flips claim
+ENV-REPAIR-P4-LEDGER-001-C1 CLAIMED → CLOSED. It is written by the
+merge/closeout executor off main @ `61cf09963f83b82284bc0e15876d445b61b9693d`;
+all receipts below were verified live before writing.
+
+### 8.1 The bug story — E1-E8 → live confirm → façade fix + hardening + docs
+
+1. **Suspicion pinned (repo evidence E1-E8, WO §0.1):** the notify-threshold
+   EF's queue read targets `public.v_pending_threshold_alerts`
+   (`index.ts:132` default-schema client + `:141-144`), but the view lives in
+   `wastewater` (migration `20260718000001:62`), the schema5 façade batch
+   (`20260719000010:41-45`) created `public.threshold_alert` only, and
+   PostgREST exposes `public` only (the P1.7 precedent) ⇒ at owner activation
+   the dispatcher would fail before any send. The P4.4 D5 independently
+   confirmed the mismatch REAL (issuecomment-7027119917, deviation (e)).
+2. **Live confirmation (D1):** REST view-path probe → **404 PGRST205** (the
+   EF's exact pre-activation failure); queue honestly EMPTY 0/0/0; EF dormant
+   `skipped:true`; no `TELEGRAM_*` secrets anywhere, vault empty. The
+   schema-scoped-client alternative live-RULED-OUT by **406 PGRST106**
+   (`wastewater` not in the exposed-schemas set) → D1-2 ruled the **ONE
+   public façade** form (the schema5/P1.7 house precedent).
+3. **The fix:** migration `20261120000001_repair_p4_ledger_queue_facade.sql`
+   applied 8 OK 0 FAIL via `scripts/apply_migration_api.py` —
+   `public.v_pending_threshold_alerts with (security_invoker=on)` + the
+   service_role grant chain, including the D3-discovered
+   **`USAGE core + INSERT core.audit_log`** link the mark UPDATE fires
+   (the audit trigger `trg_audit_log` on the façade base table). EF
+   redeployed **VERSION 2 ACTIVE 05:01:38Z**; live before/after: view-path
+   REST 404 PGRST205 → 401 `42501` (fail-closed, no longer 404). D2 RED
+   `6 failed / 11 passed` (standing passes disclosed) → GREEN **17/17**.
+4. **The hardenings (the two adjudicated P4.2 P3s):** `marked` = honest
+   `count:"exact"` RETURNING affected rows + additive `markError` (never fake
+   success; failed marks stay queued); bounded 429 back-off
+   `floor(min(retry_after, 30s cap), remaining ≤60s budget)` awaited between
+   batch items. Python mirror matches the TS math exactly.
+5. **The docs truth sweep:** root `README.md` (migration path
+   `db/migrations/` → `supabase/migrations/`, the Pages list re-verified
+   against `App.tsx`, the version-chip wording, the EF inventory) +
+   `supabase/functions/README.md` (the delivered
+   `TELEGRAM_BOT_TOKEN`/`TELEGRAM_CHAT_ID` Authorization-header contract
+   replacing the July-era `WEBHOOK_THRESHOLD_NOTIFY_*` names, the P4.4
+   pg_cron schedule reality, the failed-month retry owner-runbook line) +
+   the CHANGELOG v1.14.0 trail-line PR number (inside the EXISTING entry) +
+   the §0.2 stale schedule-comment rider in `index.ts`.
+
+### 8.2 Review + merge receipts (verified live)
+
+- **D5 fresh-GLM APPROVED** issuecomment-7031647410 at the exact frozen head
+  `49dc5676608f18081587f21344dcafcaf9f95255` — 0×P1, 0×P2, 2×P3
+  informational, with D5's OWN battery at head (EF 17/17, vitest FULL 990/1s,
+  tsc 0, oxlint 0 errors, Playwright FULL 335/335, guard 344 + 450 subtests,
+  runtime 62 + 32 subtests, checker `OK (v1.15.0)`), OWN RED reproduction at
+  isolated `d3850c2` (2 failed / 15 passed — truthful; the pre-apply
+  6F/11P record arithmetically sane), and OWN live read-only re-verification
+  against ENV_DB: façade `security_invoker=on` exactly 7 pinned columns, the
+  full grant chain, anon 401 `42501` on both REST paths, EF v2 ACTIVE to the
+  second, pg_cron jobid=1 live — plus a rollback-scoped service_role
+  **full-path emulation** (probe → queue read → mark through the façade →
+  row leaves the pending view → rollback clean, audit INSERT included).
+- **Merge-executor review trail** issuecomment-7031701616 (D5 receipt +
+  expected head + merge policy + the no-bump/no-tag ruling + the
+  no-Pages-expectation note).
+- **Pre-merge gates:** PR #253 OPEN / MERGEABLE / CLEAN at head `49dc567`;
+  `notify` + `scripts` checks PASS.
+- **Merge:** PR #253 merged as **`61cf09963f83b82284bc0e15876d445b61b9693d`**
+  (merge commit, no squash; parents verified EXACTLY
+  `(3b8ee3692ade0f55ebe078afa1ba952989c997d4, 49dc5676608f18081587f21344dcafcaf9f95255)`
+  via `git log --format='%H %P'`; PR state MERGED 2026-11-20T05:52:15Z).
+  Local main ff-only `3b8ee36`→`61cf099` clean (only the pre-existing
+  untracked `_worktrees/` + `supabase/.temp/`).
+- **Merge stat:** exactly the 8 claimed files, 687+/37−; `frontend/` diff
+  EMPTY; CURRENT-WORK.md byte-untouched at merge (the closeout is this
+  separate reviewed transition).
+- **Post-merge at `61cf099`:** guard 344/344 passed + 450 subtests;
+  validate-registry `{ok:true, claims:49, BOOTSTRAP_CONTROL}` with the claim
+  still CLAIMED at merge time — this closeout closed it; registry hash at
+  the merge SHA = `360404df43d794acb1a6f84e3f1f44c5bca9ad865298ef9d6bf25c962c3d732f`.
+- **Deploy honest note:** **NO Pages run at `61cf099`** — `gh run list
+  --commit 61cf099` shows only the `test` workflow (backend+docs-only paths;
+  the deploy-frontend.yml filter does not match), exactly as the pre-merge
+  trail predicted. **NO tag** created (NO BUMP — v1.15.0 stays).
+
+### 8.3 Ledger carried forward (never silently dropped)
+
+- **P3-1 (D5, successor candidate):** Supabase default privileges leave
+  SELECT on `public.v_pending_threshold_alerts` attached to
+  anon/authenticated. No current exposure (security_invoker chains to
+  `wastewater`, where neither role holds grants; REST anon 401 `42501`
+  verified) — a successor lane should add
+  `REVOKE SELECT … FROM anon, authenticated` so the catalog posture matches
+  the migration's intent.
+- **P3-2 (D5, informational):** the deployed-EF source could not be
+  byte-compared via the Management API (empty-body function GET); deploy
+  verified via VERSION 2 / ACTIVE / timestamp-to-the-second + live
+  dormant-invoke behavior instead.
+- **Adjacent successor observation (honestly recorded, untouched):**
+  `wastewater.reading` carries the same audit trigger — a service_role
+  INSERT through ingest-sensor would hit the same `42501`. Successor-lane
+  material; can ride a future lane or a batch with P3-1.
+- All LEAVE-WITH-LEDGER items inventoried in WO §2 stay on the ledger
+  unchanged (the P4.1 ORDERBY micro-divergence, the jspdf font comment, the
+  P4.4 anon-JWT surface + redundant cron grant, the P4.5 informational
+  trio, the older carries).
+
+### 8.4 Program frontier after this closeout
+
+**NO active claim.** ALL non-owner work exhausted — the AppSheet parity
+program stands **COMPLETE through Phase 4 + repairs** (P4.1–P4.5 CLOSED +
+this repair sweep). REMAINING = **Phase 5 คัทโอเวอร์ OWNER-GATED** (dual-run
+start ≥14 วัน, Telegram token via supabase secrets, cron-verify,
+sheet-shares — the owner's action) + the ledger successor candidates (§8.3),
+which are optional and can ride future lanes or a batch. Standing
+owner-manual items unchanged: hooks #155 approved-not-started, #156
+OPENROUTER_API_KEY renewal, ENV-BUILDING-REPAIR-001-C1 WAITING_EXTERNAL,
+Phase-1 dual-run PENDING OWNER ACTION. CLOSED confers no fresh mutation
+authority; all other work requires a NEW claim transition.
+
+Fence for this closeout: `expected_policy_revision =
+61cf09963f83b82284bc0e15876d445b61b9693d`, `expected_registry_hash =
+360404df43d794acb1a6f84e3f1f44c5bca9ad865298ef9d6bf25c962c3d732f`
+(guard validate-registry registry_hash AT `61cf099`, the cross-checked
+closeout convention of PRs #166/#169).
