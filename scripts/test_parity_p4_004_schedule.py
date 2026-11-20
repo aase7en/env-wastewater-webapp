@@ -321,7 +321,7 @@ class TestEFSourceContract(unittest.TestCase):
 
     def test_2d_state_honesty_idempotency(self):
         self.assertIn("monthly_report_cycle", self.src)
-        for status in ("'sent'", "'pending'", "'skipped'"):
+        for status in ('status: "sent"', 'status: "pending"', 'status: "skipped"'):
             self.assertIn(status, self.src, f"status literal missing: {status}")
         self.assertIn("notified_at", self.src)
         self.assertIn("reason", self.src)
@@ -452,11 +452,16 @@ class TestLiveScheduleContract(unittest.TestCase):
             "public.monthly_report_cycle where month_key='2000-02';"
         )
         self.assertEqual(r[0]["n"], 1, "valid sent row must insert")
-        # duplicate month_key → rejected (one row per covered month)
+        # duplicate month_key → rejected (one row per covered month); BOTH
+        # inserts run in the SAME transaction so the conflict is real —
+        # after a rollback there is no prior row left to conflict with.
         with self.assertRaises(AssertionError):
             self._scoped(
-                "insert into public.monthly_report_cycle "
-                "(month_key, status, reason) values ('2000-02','pending','dup');"
+                "insert into public.monthly_report_cycle (month_key, status, "
+                "notified_at, reason, provenance) values ('2000-02','sent',"
+                "now(),null,'rollback-probe');"
+                "insert into public.monthly_report_cycle (month_key, status, "
+                "reason) values ('2000-02','pending','dup');"
             )
         post = _query("select count(*)::int as n from public.monthly_report_cycle")[0]["n"]
         self.assertEqual(pre, post, "ROLLBACK probes must leave the table untouched")
