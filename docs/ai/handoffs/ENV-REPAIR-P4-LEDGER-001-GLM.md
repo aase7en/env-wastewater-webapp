@@ -289,12 +289,38 @@ standing passes (P2.4 P3-1 convention). `git diff --check` clean at RED.
   semantics: exactly 1 row), watched it leave the pending view, and
   rolled back with the queue table count unchanged (0→0).
 
-### D4 — battery (final head, verbatim counts)
+### D4 — battery (final head `3b6ccfa`, verbatim counts)
 
-See the PR body; headline: EF suite 17/17; FULL vitest; `tsc -b` clean;
-oxlint; Playwright FULL chromium workers=1; guard 344/344; runtime 62/62;
-checker `OK (v1.15.0)` exit 0 (NO BUMP); `git diff --check` clean;
-13-digit grep 0; token/JWT-literal grep 0; diff vs base ⊆ WO §7.
+- EF contract suite `scripts/test_parity_p4_002_notify.py`: **17 passed**
+  (GREEN after D3; RED record 6 failed / 11 passed above)
+- Guard: `python3 -m pytest scripts/test_env_coordination_guard.py -q` →
+  **344 passed, 450 subtests passed**
+- Runtime: `python3 -m pytest scripts/test_env_autonomy_runtime.py -q` →
+  **62 passed, 32 subtests passed**
+- Release checker: `python3 scripts/check_release_version.py` →
+  `RELEASE VERSION CHECK: OK (v1.15.0; CHANGELOG entry v1.15.0)` exit **0**
+  — the §4 NO BUMP ruling holds (no version strings touched)
+- `git diff --check 3b8ee36..HEAD` → **clean**
+- Exact-13-digit grep over the full diff → **0 hits**; token/JWT-literal
+  grep (`bot\d{5,}:…` / `eyJ…`) → **0 hits**
+- Diff vs base `3b8ee36` = **exactly the 8 claimed files**
+  (CHANGELOG.md, README.md, the lane handoff, the WO,
+  scripts/test_parity_p4_002_notify.py, supabase/functions/README.md,
+  supabase/functions/notify-threshold/index.ts,
+  supabase/migrations/20261120000001_repair_p4_ledger_queue_facade.sql);
+  `docs/ai/CURRENT-WORK.md` byte-untouched (deviation 3 below)
+- Frontend: `tsc -b` exit 0; `oxlint` 0 errors exit 0 (pre-existing
+  warnings only); **vitest FULL 53 files: 990 passed / 1 skipped**;
+  **Playwright FULL chromium workers=1: 335/335 passed** (first run:
+  334 passed + 1 flake — `garbage-mobile.spec.ts:186`, the load-flake the
+  P4.5 ledger already recorded; isolated re-run 9/9; the confirmation
+  FULL run passed 335/335 clean)
+- Worktree-environment note (disclosed): the fresh worktree lacked the
+  gitignored machine-local `frontend/.env` — vitest's first run failed
+  7 suite collections (`Missing VITE_SUPABASE_URL / VITE_SUPABASE_ANON_KEY`)
+  + 2 water-supply tests; after copying the main checkout's gitignored
+  `.env` into the worktree (never committed), FULL vitest passed 990/1.
+  Zero frontend code edits in this lane (the diff proves it).
 
 ### Deviations (all disclosed, none silent)
 
