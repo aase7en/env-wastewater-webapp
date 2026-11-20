@@ -436,6 +436,46 @@ export async function fetchWaterSupplyChainRange(
   return (data ?? []) as ReportWaterChainRow[];
 }
 
+/**
+ * ENV-PARITY-P4-005 — น้ำประปา PRINT rows for the month (additive
+ * report-read, WO §7): the same public.v_daily_check_chain P1.5 façade
+ * but with the recorded daily-log columns the sample-PDF table prints
+ * (hour_meter reading, recorded chlorine_usage liters, recorded_by for
+ * the ผู้บันทึก personnel display path) that fetchWaterSupplyChainRange
+ * (byte-untouched) does not select. Read-only; NO migration.
+ */
+export interface WaterSupplyPrintRow {
+  id: string;
+  check_date: string;
+  hour_meter: number | string | null;
+  hour_work: number | string | null;
+  water_in: number | string | null;
+  water_in_estimate: number | string | null;
+  chlorine_usage: number | string | null;
+  chlorine_usage_realy: number | string | null;
+  energy_use_estimate: number | string | null;
+  hour_boundary_flag: boolean | null;
+  spec_missing: boolean | null;
+  spec_missing_kinds: string | null;
+  recorded_by: string | null;
+}
+
+export async function fetchWaterSupplyPrintRange(
+  startISO: string,
+  endISO: string,
+): Promise<WaterSupplyPrintRow[]> {
+  const { data, error } = await supabase
+    .from("v_daily_check_chain")
+    .select(
+      "id, check_date, hour_meter, hour_work, water_in, water_in_estimate, chlorine_usage, chlorine_usage_realy, energy_use_estimate, hour_boundary_flag, spec_missing, spec_missing_kinds, recorded_by",
+    )
+    .gte("check_date", startISO)
+    .lte("check_date", endISO)
+    .order("check_date", { ascending: true });
+  if (error) throw new Error(error.message);
+  return (data ?? []) as WaterSupplyPrintRow[];
+}
+
 // ─── Write paths ────────────────────────────────────────────────────────
 
 /** Create a new reading. Replaces /api/readings POST.

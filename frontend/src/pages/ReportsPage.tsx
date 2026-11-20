@@ -52,6 +52,30 @@ import {
   fetchHospitalAddressRow,
   fetchReadingRunStatusRange,
 } from "../lib/supabase-queries";
+// ENV-PARITY-P4-005 — the three family print-ready views (AppSheet P4
+// FINAL lane: ถังดับเพลิง/ไฟฉุกเฉิน/น้ำประปา) — additive mounts only;
+// the P4.1 print region above stays byte-untouched. The family models
+// live in the ONE sibling lib (pdf.ts byte-untouched — D1-2: no new
+// jspdf generators; the browser print-to-PDF path is the sole output).
+import { ExtinguisherPrintView } from "../components/reports/ExtinguisherPrintView";
+import { LightPrintView } from "../components/reports/LightPrintView";
+import { WaterPrintView } from "../components/reports/WaterPrintView";
+import {
+  buildExtinguisherPrintModel,
+  buildLightPrintModel,
+  buildPersonnelNameMap,
+  buildWaterPrintModel,
+  type ExtinguisherPrintModel,
+  type LightPrintModel,
+  type WaterPrintModel,
+} from "../components/reports/family-report-models";
+import {
+  fetchEmergencyLightCheckRange,
+  fetchExtinguisherInspectionRange,
+  fetchExtinguisherMasterIds,
+  fetchInspectors,
+  fetchWaterSupplyPrintRange,
+} from "../lib/supabase-queries";
 
 const THRESHOLD_FLAG_LABELS: Array<{ key: keyof FlagClassCounts; label: string }> = [
   { key: "critical_do1", label: "Critical DO-1 (บ่อเติมอากาศ)" },
@@ -213,6 +237,81 @@ export function ReportsPage() {
       setOpeningPrint(false);
     }
   };
+
+  // ─── ENV-PARITY-P4-005 — family print views (ถังดับเพลิง/ไฟฉุกเฉิน/
+  //     น้ำประปา): own state + fetch + month picker (the P4.1 month-input
+  //     pattern); the ทส.1/ทส.2 state above stays byte-untouched.
+  const FAMILY_TEMPLATES = [
+    {
+      key: "ext",
+      code: "ถังดับเพลิง",
+      title: "รายงานตรวจสอบถังดับเพลิง",
+      description: "ตารางรายถัง 9 คอลัมน์ + สรุปผล ☑/☐ คำนวณจากบันทึกจริง",
+    },
+    {
+      key: "light",
+      code: "ไฟฉุกเฉิน",
+      title: "รายงานตรวจโคมไฟฉุกเฉิน",
+      description: "ตารางรายการตรวจ 6 คอลัมน์ + สรุปผล ☑/☐ คำนวณจากบันทึกจริง",
+    },
+    {
+      key: "water",
+      code: "น้ำประปา",
+      title: "รายงานการใช้น้ำประปาบาดาล",
+      description: "ตารางรายวัน 5 คอลัมน์ + ยอดรวมประจำเดือน (ธงค่าประมาณชัดเจน)",
+    },
+  ] as const;
+  type FamilyKey = (typeof FAMILY_TEMPLATES)[number]["key"];
+  const [family, setFamily] = useState<FamilyKey>("ext");
+  const [familyMonth, setFamilyMonth] = useState(THIS_MONTH);
+  const [familyPrint, setFamilyPrint] = useState<
+    | { kind: "ext"; model: ExtinguisherPrintModel }
+    | { kind: "light"; model: LightPrintModel }
+    | { kind: "water"; model: WaterPrintModel }
+    | null
+  >(null);
+  const [familyOpening, setFamilyOpening] = useState(false);
+
+  /** P4.005 — fetch the month's family surfaces and build the print
+   *  model (same data surfaces the delivered pages/P2.5 read; unknown
+   *  stays unknown). */
+  const onOpenFamilyPrint = async () => {
+    if (familyOpening) return;
+    setFamilyOpening(true);
+    try {
+      const startISO = `${familyMonth}-01`;
+      const [fy, fm] = familyMonth.split("-").map(Number);
+      const endISO = toLocalISODate(new Date(fy, fm, 0));
+      const personnel = buildPersonnelNameMap(await fetchInspectors().catch(() => []));
+      if (family === "ext") {
+        const [inspections, masterIds] = await Promise.all([
+          fetchExtinguisherInspectionRange(startISO, endISO),
+          fetchExtinguisherMasterIds(),
+        ]);
+        setFamilyPrint({
+          kind: "ext",
+          model: buildExtinguisherPrintModel({ month: familyMonth, inspections, masterIds, personnel }),
+        });
+      } else if (family === "light") {
+        const checks = await fetchEmergencyLightCheckRange(startISO, endISO);
+        setFamilyPrint({
+          kind: "light",
+          model: buildLightPrintModel({ month: familyMonth, checks, personnel }),
+        });
+      } else {
+        const chainRows = await fetchWaterSupplyPrintRange(startISO, endISO);
+        setFamilyPrint({
+          kind: "water",
+          model: buildWaterPrintModel({ month: familyMonth, chainRows, personnel }),
+        });
+      }
+    } catch (e) {
+      toast.error(`เปิดมุมมองพิมพ์ไม่สำเร็จ: ${e instanceof Error ? e.message : String(e)}`);
+    } finally {
+      setFamilyOpening(false);
+    }
+  };
+  const familyLabel = FAMILY_TEMPLATES.find((f) => f.key === family)?.code ?? "";
 
   const onDownload = async () => {
     if (downloading) return;
@@ -784,6 +883,85 @@ export function ReportsPage() {
             <Tos1PrintView model={printModel.model} />
           ) : (
             <Tos2PrintView model={printModel.model} />
+          )}
+        </div>
+      )}
+
+      {/* ─── P4.005 family print-ready views (AppSheet P4 FINAL lane) —
+           ถังดับเพลิง / ไฟฉุกเฉิน / น้ำประปา. Same mechanism as P4.1:
+           the dedicated A4 print frame + window.print() → the browser's
+           "Save as PDF". ADDITIVE section; the P4.1/P1.6/P2.5 blocks
+           above stay byte-untouched. */}
+      <AuraCard className="space-y-4">
+        <div>
+          <h2 className="font-display font-semibold text-aura-textMain font-thai flex items-center gap-2">
+            <MSymbol name="print" className="text-[18px] text-aura-cyan" />
+            รายงานพร้อมพิมพ์ — ถังดับเพลิง / ไฟฉุกเฉิน / น้ำประปา
+          </h2>
+          <p className="text-xs text-aura-textMuted font-thai mt-1">
+            รายงานประจำเดือนตามแบบฟอร์มเดิมของระบบ AppSheet — จัดหน้า A4 ภาษาไทย ปี พ.ศ. กดพิมพ์แล้วเลือก
+            "บันทึกเป็น PDF" ในกล่องพิมพ์ของเบราว์เซอร์ · ช่องว่างแสดง "—" ไม่ถูกแทนด้วยศูนย์
+          </p>
+        </div>
+
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
+          {FAMILY_TEMPLATES.map((t) => (
+            <button
+              key={t.key}
+              type="button"
+              data-testid={`report-family-${t.key}`}
+              onClick={() => setFamily(t.key)}
+              className={
+                "text-left p-4 rounded-2xl border transition-all font-thai " +
+                (family === t.key
+                  ? "bg-aura-cyan/10 border-aura-cyan/50 shadow-aura-glow-cyan"
+                  : "bg-aura-bg/40 border-aura-borderSubtle hover:border-aura-cyan/30")
+              }
+            >
+              <div className="flex items-center gap-2 mb-2">
+                <MSymbol name="description" className={"text-[20px] " + (family === t.key ? "text-aura-cyan" : "text-aura-textMuted")} />
+                <span className="text-xs font-bold text-aura-textMuted">{t.code}</span>
+              </div>
+              <div className="font-semibold text-aura-textMain">{t.title}</div>
+              <div className="text-xs text-aura-textMuted mt-1">{t.description}</div>
+            </button>
+          ))}
+        </div>
+
+        <Field label="เดือนที่ต้องการรายงาน" required>
+          <div className="relative">
+            <MSymbol name="calendar_month" className="absolute left-3 top-1/2 -translate-y-1/2 text-[16px] text-aura-textMuted pointer-events-none" />
+            <Input
+              type="month"
+              data-testid="report-family-month"
+              value={familyMonth}
+              onChange={(e) => setFamilyMonth(e.target.value)}
+              className="pl-10"
+            />
+          </div>
+        </Field>
+
+        <Button onClick={onOpenFamilyPrint} disabled={familyOpening} data-testid="report-family-open-print">
+          <MSymbol name="print" className="text-[16px]" /> เปิดมุมมองพิมพ์ (พร้อมบันทึกเป็น PDF)
+        </Button>
+      </AuraCard>
+
+      {familyPrint && (
+        <div className="space-y-3">
+          <AuraCard className="flex items-center justify-between gap-3">
+            <p className="text-sm text-aura-textMuted font-thai">
+              มุมมองพิมพ์ {familyLabel} — กดพิมพ์แล้วเลือก "บันทึกเป็น PDF" (กระดาษ A4) ในกล่องพิมพ์ของเบราว์เซอร์
+            </p>
+            <Button onClick={() => window.print()} data-testid="report-family-print-button">
+              <MSymbol name="print" className="text-[16px]" /> พิมพ์ / บันทึกเป็น PDF
+            </Button>
+          </AuraCard>
+          {familyPrint.kind === "ext" ? (
+            <ExtinguisherPrintView model={familyPrint.model} />
+          ) : familyPrint.kind === "light" ? (
+            <LightPrintView model={familyPrint.model} />
+          ) : (
+            <WaterPrintView model={familyPrint.model} />
           )}
         </div>
       )}
