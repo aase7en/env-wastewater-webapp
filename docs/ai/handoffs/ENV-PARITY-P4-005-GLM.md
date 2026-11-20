@@ -29,3 +29,38 @@ unknown ≠ zero (ค่าว่าง/ไม่มีข้อมูล, never
 D1 re-verification above → D2 RED (counts verbatim; legacy passes disclosed) → D3 implement (scope-exact vs WO §7; Tos1/Tos2PrintView + the P4.1 print region + P1.6/P2.5 sections + the delivered family pages byte-untouched) → D4 battery (vitest FULL; tsc -b; oxlint; Playwright FULL workers=1 incl. the new e2e; guard 344/344; runtime 62/62; checker `--tag v1.15.0` OK; `git diff --check` clean; 13-digit grep 0; `supabase/` EMPTY) → D5 fresh-GLM → **STOP at REVIEW_REQUESTED**. Release v1.15.0 MINOR in the implementation PR (CHANGELOG Thai พ.ศ. entry + package.json 1.14.0→1.15.0); annotated tag at the deployed merge SHA post-deploy per ENV-APP-VERSION-001 D6.
 
 ## 5. D-phase log (implementation lane fills this in)
+
+### D1 — Drive re-verification (2026-11-20, READ-ONLY; no Drive write; binaries never left /tmp)
+
+- `รายงานตรวจสอบถังดับเพลิง` gdoc `1lKL8xgo_JnFcznMxncJ_kBKHgHpYYLgfOkhKy3WLPqg` — public txt export re-downloaded: **sha256 `c9f5f439e2b8594b28c56509ee7fec710f5352ff4fee2fc714e32bde5b8fc3a6`, 5,143 B — BYTE-MATCH** the WO §0 record. Layout read from the export (9 columns + computed ☑/☐ pair + signature rules).
+- `รายงานตรวจสอบไฟฉุกเฉิน` gdoc `1MDUy6PHBXPISfnKGXyGnRZPJpT1ef4RHbeODQ9f_Pi4` — txt export: **sha256 `fad4cef1282fb898dc28763d3f6ce5b3867e71aadfc58e91f4f046c89f1d28df`, 4,300 B — BYTE-MATCH**. Layout read (6 columns + computed pair).
+- น้ำประปา template file: **STILL ABSENT** — Content folder `1p0nSwVa9wQD03rety6ltjkQW1FnX143l` re-listed live: the same 10 file entries (no น้ำประปา entry; `รายงานน้ำประปา` string-count 0); output folder `PDFน้ำประปา` `1ueYJSiwiOwoZqlfWC6ItIM5iQfdPrseu` holds exactly the one sample `รายงานน้ำประปา-1.pdf` (id `1AhI3lkDEYiDHoVPkVjD95RpmG-qrW5FP`, byte-size 116,723 visible in Drive metadata). The sample PDF + censuses remain the layout authority — the divergence is RECORDED in the shipped view (WATER_LAYOUT_NOTE), never silent. drive-file-wins intact.
+- **D1 pins:** ONE lib path = NEW sibling `frontend/src/components/reports/family-report-models.ts` (+ its 3 co-located test files); `lib/pdf.ts` BYTE-UNTOUCHED (the 3 families are print-view-only — D1-2: no new jspdf generators). Views: `ExtinguisherPrintView.tsx` / `LightPrintView.tsx` / `WaterPrintView.tsx` (reuse `report-print.css` classes — CSS file untouched). Fetch shapes: existing `fetchExtinguisherInspectionRange` / `fetchExtinguisherMasterIds` / `fetchEmergencyLightCheckRange` / `fetchInspectors` reused byte-untouched; ONE new additive `fetchWaterSupplyPrintRange` (v_daily_check_chain + the recorded daily-log columns the sample prints: hour_meter / chlorine_usage / recorded_by — genuinely required, WO §7 "additive report-reads only if genuinely required"). Personnel display path: buildPersonnelNameMap over core.personnel (— ไม่ระบุ — fallback).
+
+### D2 — RED (2026-11-20, commit ea4a07f, counts verbatim)
+
+- vitest FULL: **3 failed-to-collect suites** (`Cannot find module './family-report-models'` ×3 — extinguisher/light/water) / **0 new tests**; **legacy 967 passed + 1 designed skip** (50 files) — disclosed green. Note: the fresh worktree initially showed 8 extra fail-to-collect files (address/manuals/masters/overview/parity-fixtures-p2/p3/admin-ai-sql + 2 behavioral water-supply-parity) — ROOT CAUSE = the gitignored `frontend/.env` missing in the fresh worktree (Missing VITE_SUPABASE_URL); after copying the local `.env` (never committed/printed), those went green — environment issue, NOT base regressions.
+- e2e new spec (`env-parity-p4-005-family-reports.spec.ts`): **6 failed / 0 passed** (behavioral — family controls absent at RED).
+- tsc at RED: exactly **3× TS2307** on the absent module (expected for the fail-to-collect house class; disclosed).
+- RED commit: `ea4a07f` (4 files: 3 model test files + 1 e2e spec; 732 insertions).
+
+### D3 — implement (2026-11-20, commit f3ea985)
+
+- The ONE sibling lib + 3 views + ReportsPage additive mounts + `fetchWaterSupplyPrintRange` + release v1.15.0 (package.json 1.14.0→1.15.0 + CHANGELOG Thai พ.ศ. entry). Scope-exact vs WO §7 — changed files vs base: CHANGELOG.md, frontend/package.json, components/reports/** (lib + 3 views + 3 tests), lib/supabase-queries.ts, pages/ReportsPage.tsx, tests/e2e/env-parity-p4-005-family-reports.spec.ts. Byte-untouched pins held: pdf.ts / Tos1/Tos2PrintView / report-print.css / water-supply.ts / safety-summary.ts / report-summary.ts / the delivered family pages / CURRENT-WORK.md / supabase/.
+- Honesty pins shipped: the extinguisher SOURCE_UNAVAILABLE master note (`ยังไม่มีข้อมูลทะเบียนถังดับเพลิง (master)`) + history-only rows; unknown ≠ 0 everywhere ("—", ค่าว่าง notes); the ☑/☐ pairs COMPUTED from recorded rows (never static; no-row months never assert ☑); the P1.5 water provenance in print (÷10 chlorine per A3, ค่าประมาณจากสเปก/ประมาณจากชั่วโมงปั๊ม per A2, meter-chain boundary disclosure, missing days counted); พ.ศ. computed year (the templates' hardcoded 2569 divergence recorded); NO address header (none of the 3 templates carries one — core.address NOT consumed); personnel ONLY via the core.personnel display path (— ไม่ระบุ — fallback); the hardcoded template names never render; signature blank rules + date slots; no Telegram step; WATER_LAYOUT_NOTE carries the sample-PDF authority honestly.
+
+### D4 — battery (2026-11-20, at f3ea985)
+
+- vitest FULL: **990 passed | 1 skipped** (53 files) — legacy + new all green.
+- `tsc -b`: clean. oxlint: **exit 0** (19 pre-existing warnings repo-wide, 0 in the new/changed files).
+- Playwright FULL chromium workers=1: **335 passed** (7.4 min) — includes the 6 new family tests AND the untouched P4.1/P1.6/P2.5 suites (no-regression gate).
+- guard: **344 passed + 450 subtests**; validate-registry `{ok:true, BOOTSTRAP_CONTROL}`; claim ENV-PARITY-P4-005-C1 CLAIMED.
+- runtime: **62 passed + 32 subtests**.
+- release checker: regression `OK (v1.15.0; CHANGELOG entry v1.15.0)`; `--tag v1.15.0` **exit 0**; `--tag v1.14.0` exit 1 (correct reject).
+- `git diff --check` 0323fe3..HEAD: clean. `supabase/` diff: **EMPTY** (D1-6 held).
+- 13-digit PII digit-run grep of all changed files: **0 hits in added lines** (3 pre-existing migration-timestamp literals at base, not IDs).
+- Diff vs base ⊆ WO §7 mutable scope (the 12 code files above; docs receipts commit adds exactly the 2 doc files).
+
+### D5 — fresh-GLM independent review
+
+PENDING — the authorized reviewer owns it at the exact frozen head. The implementing lane NEVER merges. **STOP at REVIEW_REQUESTED.**

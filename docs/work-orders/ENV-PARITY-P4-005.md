@@ -1,6 +1,6 @@
 # Work Order — ENV-PARITY-P4-005 (Claim ENV-PARITY-P4-005-C1, gen 1)
 
-**Status: CLAIMED — claim transition REVIEW_REQUESTED (docs-only; this WO + the handoff + the CURRENT-WORK.md registry append are the transition's 3 changed files). STOP at REVIEW_REQUESTED — the implementing/transition author never merges; the authorized reviewer owns approval + merge.**
+**Status: IMPLEMENTATION DELIVERED — REVIEW_REQUESTED (implementation lane feat/env-parity-p4-005 @ f3ea985 + docs commit; PR — see the handoff D-phase log). STOP at REVIEW_REQUESTED — the implementing lane never merges; the authorized reviewer (D5 fresh-GLM) owns approval + merge. The claim transition's 3 docs files merged as 0323fe3 (PR #249); the implementation PR carries the code + the WO/handoff receipts.**
 
 **Governance pattern:** PR #183–#248 claim-transition series (docs-only claim → reviewed merge → implementation lane → D5 fresh-GLM → closeout). Direct predecessor: ENV-PARITY-P4-004 (PRs #246/#247/#248 — pg_cron monthly automation dormant-live; closeout merged as `14b5296f5a3cbc607d62a21601c9d37796a2d6fd` = THIS transition's base, fetched/clean/ff-verified). This lane is the **Phase 4 FINAL lane** — after it, Phase 4 is COMPLETE and Phase 5 คัทโอเวอร์ remains OWNER-GATED.
 
