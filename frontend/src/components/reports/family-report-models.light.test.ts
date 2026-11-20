@@ -118,7 +118,7 @@ describe("ไฟฉุกเฉิน print model — the gdoc authority layout"
   it("off-vocabulary test_result values are disclosed (otherCount) — never coerced into ผ่าน/ไม่ผ่าน", () => {
     const m = buildLightPrintModel({
       month: MONTH,
-      checks: [chk({ test_result: "เสีย" }), chk({ id: "b", test_result: "" })],
+      checks: [chk({ test_result: "เสีย" }), chk({ id: "b", check_date: "2026-11-06", test_result: "" })],
       personnel: PERSONNEL,
     });
     expect(m.failCount).toBe(0);
