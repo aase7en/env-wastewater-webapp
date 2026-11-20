@@ -103,4 +103,48 @@ Implementation branch `feat/env-parity-p4-004` off the post-merge main tip `1f77
 
 ### STOP
 
-**REVIEW_REQUESTED.** The implementing lane never merges; the authorized reviewer owns approval + merge (D5 fresh-GLM at the exact frozen head).
+**REVIEW_REQUESTED → CLOSED (see §6).** The implementing lane never merged; PR #247 was merged by the authorized merge-executor after D5 APPROVED — the closeout receipt is §6 below.
+
+## 6. D6 CLOSEOUT RECEIPT (closeout lane, 2026-11-20)
+
+### Full delivery chain (claim transition → implementation → closeout)
+
+1. **Claim transition PR #246** merged `1f77119ae587cc8fd7f58d3813d083ee99180c44` (docs-only, base `86674ce1cfee53182685a530a954f0b0d1e950a6` = the P4.2 closeout merge) — authorized this lane.
+2. **Implementation PR #247** merged `b3cb4cb7dee276f344e2a0872e432374e788c725` — merge commit, no squash; second parent EXACTLY the D5-APPROVED head `5188139655b8f2e591067fe29fc885182bc688d8` (verified post-merge: `git log -1 --format='%H %P' origin/main` → parents `1f77119ae…` + `51881396…`); expected-head discipline `--match-head-commit 5188139…`; PR OPEN → MERGEABLE/CLEAN → MERGED; merge-executor review trail issuecomment-7027186956 pinning the D5 receipt + the independently verified cron math + expected head + merge policy + the no-bump/no-tag ruling; implementation branch kept on remote.
+3. **D5 fresh-GLM APPROVED issuecomment-7027119917** at the exact frozen head `5188139` — 0 P1 / 0 P2; 3 P3-informational + the latent P4.2 view mismatch independently confirmed REAL (deviation (e)); D5's OWN battery rerun at head (contract suite 19/19; vitest FULL 967 passed / 1 skipped; `tsc -b` exit 0; oxlint 0 errors; Playwright FULL workers=1 329/329; guard 344 + 450 subtests; runtime 62 + 32 subtests; checker `OK (v1.14.0)` exit 0 — no-bump holds; exact-13-digit grep 0; token/JWT-literal grep 0) and D5's OWN live probes (`cron.job` jobid=1 `notify-monthly-report` `'5 17 1 * *'` active=true; pg_cron 1.6.4 + pg_net 0.20.3 installed; `monthly_report_cycle` rows = 0; EF no-auth → `401`; anon-bearer → `200 {"skipped":true,…}` zero state mutation).
+
+### D1 enablement success — the lane's headline claim, CLOSED in-repo
+
+The P4.2 closeout's honest gap (pg_cron/pg_net AVAILABLE but NOT INSTALLED — "NO in-repo schedule ships; owner manual-cron steps recorded") is REVERSED by this lane: the ONE claimed migration `20261120000000_parity_p4_004.sql` enabled **pg_cron 1.6.4 + pg_net 0.20.3** via `scripts/apply_migration_api.py` — **9/9 OK, 0 FAIL** (the platform did NOT block `create extension` via the Management-API path). **The cron day-2 record (D1 pin 1, D5-verified):** `cron.job` jobid=1 `notify-monthly-report` pinned at `'5 17 1 * *'` (UTC) = **00:05 ICT on the 2nd** of each month — a literal 00:05-ICT-on-the-1st point is NOT expressible in a single vixie expression from UTC (no `L` field; a `28-31` day field multi-fires on 3–4 days), so the day-2 pin is the only clean single-expression form and, being ≥24h inside the new month, makes covered = previous ICT month unambiguous (day-1 readings have all landed). The activating instruction's quoted `'5 18 1 * *'` = 01:05 ICT on the 2nd was correctly REJECTED (deviation (a), accepted-with-record). `public.monthly_report_cycle` created EMPTY + RLS enabled no policies (fail-closed); the EF `notify-monthly-report` deployed dormant-live (`functions list` ACTIVE; no-auth 401; anon-bearer 200 `{"skipped":true,…}` — zero state mutation; dormancy skip precedes ALL state work).
+
+### Merge stat + post-merge verification
+
+- Merge stat at `b3cb4cb`: **exactly 5 files, 992+/2−** = `supabase/migrations/20261120000000_parity_p4_004.sql` NEW +122 + `supabase/functions/notify-monthly-report/index.ts` NEW +292 + `scripts/test_parity_p4_004_schedule.py` NEW +504 + WO + handoff. `supabase/functions/notify-threshold/**` + `ingest-sensor/**` + `frontend/**` + `CHANGELOG.md` + `package.json` diff EMPTY (the frozen P4.2 dispatcher contract held); **CURRENT-WORK.md diff EMPTY at merge**.
+- Local main ff-only `1f77119`→`b3cb4cb`, clean (pre-existing untracked `_worktrees/` + `supabase/.temp/` untouched).
+- Post-merge at `b3cb4cb`: guard **344/344 OK** (+450 subtests); `validate-registry --file docs/ai/CURRENT-WORK.md` → `{ok:true, claims:47, BOOTSTRAP_CONTROL}` with THIS claim still **CLAIMED at merge time** — the closeout transition closed it; registry hash AT `b3cb4cb` = `97d74eb2621b184f80a97bf0856a8f02f387d78f923288931e05e61a092e0c9f`.
+- Closeout PR programmatic claim-by-claim JSON diff vs `b3cb4cb`: **exactly 1 of 47 claims changed** (`ENV-PARITY-P4-004-C1` CLAIMED → CLOSED), the other 46 byte-identical; `git diff --check` clean.
+
+### Release + deploy honesty
+
+- **NO BUMP — v1.14.0 STAYS, NO tag** per D1-6 (server-side-only + dormant; the held P4.2 dormant-channel precedent; D5 checker `OK (v1.14.0)` corroborates).
+- **Deploy honest note: NO Pages run at `b3cb4cb`** — only the `test` workflow (success; notify + scripts) ran at the merge SHA: the backend-only paths (supabase migration + EF + scripts + docs) do not match the `deploy-frontend.yml` filter (`frontend/**` + the workflow file). The migration/cron objects and the EF were applied/deployed live during the lane (D1/D3 receipts above) and required no merge-time re-deploy.
+
+### Ledger (4 carried — never silently dropped)
+
+1. **P3-1 (D5)** failed-month retry gap — `notify-monthly-report/index.ts:185` keeps a failed send honestly `pending`, but automatic retry only occurs at the NEXT monthly fire (covering the next month); correction = a manually timed re-invocation (`runMonthlyCycle` reads "now"). One line for the owner runbook.
+2. **P3-2 (D5)** post-activation anon-JWT surface — the platform gate checks JWT validity, not role; any valid anon JWT reaches the function. Impact bounded: idempotent dedupe gate, no PHI in the message, ≤1 extra send before the state marks `sent`. Matches the house anon-bearer convention.
+3. **P3-3 (D5)** redundant `grant all privileges on all tables in schema cron to postgres` (migration:69) — postgres owns the cron schema on Supabase. Harmless.
+4. **P3-4 THE LATENT P4.2 WASTEWATER-VIEW MISMATCH (D5 deviation (e), independently confirmed REAL)** — `wastewater.v_pending_threshold_alerts` exists in schema `wastewater` while `notify-threshold/index.ts:142` reads it via the default-schema supabase-js client. Frozen contract in both lanes (byte-untouched); a real follow-up bug candidate for a successor repair claim.
+- Plus the disclosed RED sequencing note (D5 §5): the same-day `4cf437f` reproduction was 11F/8P (groups 3a–3d pass against the live post-apply table); the claimed 15F/4P is exactly consistent with the pre-apply DB state per the D1 verbatim probes — honestly recorded, suite differences between RED and head disclosed.
+
+### Fence
+
+`expected_policy_revision = b3cb4cb7dee276f344e2a0872e432374e788c725`; `expected_registry_hash = 97d74eb2621b184f80a97bf0856a8f02f387d78f923288931e05e61a092e0c9f` (guard `validate-registry` registry_hash AT `b3cb4cb` — the empirically cross-checked method of the PR #166/#169 closeout convention).
+
+### Frontier + standing
+
+**Frontier after this closeout merges:** the three other PDF report families (**ถังดับเพลิง / ไฟฉุกเฉิน / น้ำประปา** — owner-approved via B4's verbatim five-family answer, carved out of P4.1 by D1-1) are the NEXT UNGATED successor lanes, each its own NEW reviewed claim transition; after those three **Phase 4 is COMPLETE** (B4→P4.1 v1.14.0, B5→P4.2 dormant-live, B6→done-in-P3.2, B7→done-in-P3.5, P4.3 pre-existing live, P4.4 the schedule — this lane). Then **Phase 5 คัทโอเวอร์ remains OWNER-GATED**: dual-run ≥14 วัน per plan §6 P5.1 line 271 + the 5-condition DoD line 276 + the awaiting-sheet backfills/shares + the AppSheet retirement checklist with read-access kept ≥90 วัน as rollback — the owner's action.
+
+**STANDING:** hooks #155 approved-not-started + #156 OPENROUTER_API_KEY renewal (owner-manual), ENV-BUILDING-REPAIR-001-C1 WAITING_EXTERNAL, Phase-1 dual-run PENDING OWNER ACTION, and the OWNER ACTIVATION runbook for the dormant channel (§OWNER ACTIVATION above: Telegram credentials via `supabase secrets` + the one-time `vault.create_secret('…', 'service_role')`; the next real cycle then fires 00:05 ICT on the 2nd of the month).
+
+**Scope lock released at generation 1; CLOSED confers no fresh mutation authority; all other work still requires a NEW claim transition.**
