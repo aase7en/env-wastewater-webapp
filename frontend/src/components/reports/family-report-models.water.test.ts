@@ -38,6 +38,7 @@ function w(over: Partial<WaterChainInput>): WaterChainInput {
     energy_use_estimate: null,
     hour_boundary_flag: false,
     spec_missing: false,
+    spec_missing_kinds: null,
     recorded_by: "p3",
     ...over,
   };
@@ -123,6 +124,7 @@ describe("น้ำประปา print model — the sample-PDF layout (honest
           water_in_estimate: 14.8,
           energy_use_estimate: 14.8,
           spec_missing: true,
+          spec_missing_kinds: "water_in",
         }),
       ],
       personnel: PERSONNEL,
