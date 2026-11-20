@@ -39,6 +39,41 @@ the P2.4 P3-1 convention):
       ASC); the threshold_alert queue table exists with notified_at.
       (Passes already — the P1.3-delivered objects, consumed READ-ONLY.)
 
+ENV-REPAIR-P4-LEDGER-001 extension (group 3 — the lane's fix + hardening pins,
+written RED against the UNMODIFIED base and re-run GREEN after D3):
+
+  3a. Queue-view resolution (live catalog): the public façade view
+      public.v_pending_threshold_alerts EXISTS (security_invoker semantics
+      pinned by the migration file) — RED truthfully while the façade is
+      unapplied (the D1-confirmed PGRST205 state).
+  3b. service_role queue read resolves (live, rollback-scoped
+      `set local role service_role`): the EF's exact read path
+      (`select … from public.v_pending_threshold_alerts` as service_role)
+      returns instead of 42P01/PGRST205. RED: relation does not exist.
+  3c. service_role grant chain (live): usage on schema wastewater + select
+      on wastewater.v_pending_threshold_alerts + select/update on
+      wastewater.threshold_alert (the mark path's underlying) + select on
+      the public façade — all TRUE post-fix. RED: all false (D1 probe:
+      service_role had zero wastewater grants).
+  3d. Full-path emulation (live, rollback-scoped): probe alert row inserted
+      (FK to a real reading), then AS service_role the queue view is read
+      and the mark UPDATE through the public.threshold_alert façade with
+      RETURNING affects exactly the probe row and the row leaves the
+      pending queue; rollback leaves the table count unchanged.
+      RED: the read fails (façade absent).
+  3e. marked-count truthfulness (source pin): the mark UPDATE requests
+      PostgREST `count: "exact"` (RETURNING count), `marked` = rows the
+      UPDATE actually affected (never notifiedIds.length), and a mark
+      failure surfaces an additive `markError` field (legacy response
+      fields preserved; never fake success).
+  3f. 429 bounded back-off (source pin): RETRY_AFTER_MAX_SECONDS = 30
+      (per-wait cap), BACKOFF_BUDGET_SECONDS = 60 (per-invocation budget),
+      computeBackoffDelayMs wired into the batch loop with an awaited
+      bounded sleep between items after a 429 (never unbounded).
+  3g. Back-off delay math mirror (pure Python — DISCLOSED STANDING PASS at
+      RED per the P2.4 P3-1 convention: independent of implementation
+      state; mirrors computeBackoffDelayMs exactly).
+
 Run:  python3 -m pytest scripts/test_parity_p4_002_notify.py -q
       (or python3 -m unittest scripts.test_parity_p4_002_notify)
 """
@@ -102,6 +137,26 @@ def _query(sql: str) -> list[dict]:
     )
     assert r.status_code == 201, f"query API returned {r.status_code}: {r.text[:200]}"
     return r.json()
+
+
+def _query_raw(sql: str) -> tuple[int, object]:
+    """Run SQL via the Management API, returning (status, body) raw.
+
+    Used by the rollback-scoped service_role probes where a RED-state
+    statement error IS the observation — the caller asserts on the status.
+    """
+    tok = _load_token()
+    assert tok, "SUPABASE_ACCESS_TOKEN not found (env or Drive secrets)"
+    r = httpx.post(
+        API_URL,
+        json={"query": sql},
+        headers={"Authorization": f"Bearer {tok}"},
+        timeout=30,
+    )
+    try:
+        return r.status_code, r.json()
+    except ValueError:
+        return r.status_code, r.text
 
 
 def _ef_source() -> str:
@@ -248,6 +303,193 @@ class TestLiveQueueContract(unittest.TestCase):
         rows = _query("select count(*)::int as n from wastewater.v_pending_threshold_alerts")
         self.assertIsInstance(rows[0]["n"], int)
         print(f"\n[receipt] pending threshold alerts right now: {rows[0]['n']}")
+
+
+RETRY_AFTER_MAX_SECONDS = 30
+BACKOFF_BUDGET_SECONDS = 60
+
+
+def mirror_backoff_delay_ms(retry_after_s: float, remaining_budget_ms: float) -> int:
+    """Python mirror of the EF's computeBackoffDelayMs (group 3g).
+
+    min(retry_after, per-wait cap) * 1000 further capped by the remaining
+    budget; 0 when either input is not strictly positive. Never negative.
+    """
+    if not (retry_after_s > 0) or not (remaining_budget_ms > 0):
+        return 0
+    capped_ms = min(retry_after_s, RETRY_AFTER_MAX_SECONDS) * 1000
+    return int(min(capped_ms, remaining_budget_ms))
+
+
+class TestRepairP4LedgerFix(unittest.TestCase):
+    """Group 3 — ENV-REPAIR-P4-LEDGER-001: the façade fix + the two
+    hardenings. 3a–3f are RED against the unmodified base; 3g is a
+    disclosed standing pass (pure mirror)."""
+
+    def test_3a_public_queue_facade_exists(self):
+        """3a: public.v_pending_threshold_alerts exists (view)."""
+        rows = _query(
+            "select c.relkind from pg_class c join pg_namespace n "
+            "on n.oid = c.relnamespace where n.nspname = 'public' "
+            "and c.relname = 'v_pending_threshold_alerts'"
+        )
+        self.assertEqual(
+            len(rows), 1,
+            "public.v_pending_threshold_alerts façade missing — the EF's "
+            "default-schema queue read cannot resolve (PGRST205)",
+        )
+        self.assertEqual(rows[0]["relkind"], "v", "façade must be a view")
+        print("\n[receipt] public.v_pending_threshold_alerts relkind=v")
+
+    def test_3b_service_role_queue_read_resolves(self):
+        """3b: the EF's exact read path as service_role returns a count
+        (rollback-scoped — zero durable state)."""
+        status, body = _query_raw(
+            "begin; set local role service_role; "
+            "select count(*)::int as n from public.v_pending_threshold_alerts; "
+            "rollback;"
+        )
+        self.assertEqual(
+            status, 201,
+            f"service_role queue read failed (live): {body}",
+        )
+        self.assertIsInstance(body[0]["n"], int)
+        print(f"\n[receipt] service_role queue read OK: {body[0]['n']} pending")
+
+    def test_3c_service_role_grant_chain(self):
+        """3c: the grant chain both EF paths need under security_invoker."""
+        rows = _query(
+            "select "
+            "has_schema_privilege('service_role','wastewater','usage') "
+            "  as sr_usage_wastewater, "
+            "has_table_privilege('service_role',"
+            "'wastewater.v_pending_threshold_alerts','select') "
+            "  as sr_select_queue_view, "
+            "has_table_privilege('service_role',"
+            "'wastewater.threshold_alert','select') as sr_select_alert_tbl, "
+            "has_table_privilege('service_role',"
+            "'wastewater.threshold_alert','update') as sr_update_alert_tbl, "
+            "has_table_privilege('service_role',"
+            "'public.v_pending_threshold_alerts','select') as sr_select_facade"
+        )
+        r = rows[0]
+        for key in ("sr_usage_wastewater", "sr_select_queue_view",
+                    "sr_select_alert_tbl", "sr_update_alert_tbl",
+                    "sr_select_facade"):
+            self.assertTrue(
+                r[key],
+                f"service_role grant missing: {key} — the EF path it feeds "
+                "cannot execute (permission denied)",
+            )
+        print(f"\n[receipt] service_role grant chain: {dict(r)}")
+
+    def test_3d_full_path_emulation_rollback_scoped(self):
+        """3d: probe row → service_role queue read → mark UPDATE through the
+        public.threshold_alert façade (RETURNING) → row leaves the queue →
+        rollback leaves the table untouched."""
+        pre = _query(
+            "select count(*)::int as n from wastewater.threshold_alert"
+        )[0]["n"]
+        status, body = _query_raw(
+            "begin; "
+            "insert into wastewater.threshold_alert (reading_id, field, message) "
+            "  select id, 'do_average', 'ledger-probe (rollback-scoped)' "
+            "  from wastewater.reading order by id limit 1; "
+            "set local role service_role; "
+            "select count(*)::int as pending_seen "
+            "  from public.v_pending_threshold_alerts; "
+            "with marked as ( "
+            "  update public.threshold_alert set notified_at = now() "
+            "  where notified_at is null returning id "
+            ") select count(*)::int as marked_update from marked; "
+            "select "
+            "  (select count(*)::int from wastewater.threshold_alert "
+            "   where notified_at is not null "
+            "     and message like 'ledger-probe%') as marked_rows, "
+            "  (select count(*)::int from public.v_pending_threshold_alerts) "
+            "    as pending_after; "
+            "rollback;"
+        )
+        self.assertEqual(
+            status, 201,
+            f"service_role full-path emulation failed (live): {body}",
+        )
+        self.assertEqual(body[0]["marked_rows"], 1, "mark must affect the probe row")
+        self.assertEqual(
+            body[0]["pending_after"], 0,
+            "a marked row must leave the pending queue",
+        )
+        post = _query(
+            "select count(*)::int as n from wastewater.threshold_alert"
+        )[0]["n"]
+        self.assertEqual(pre, post, "rollback-scoped probe left durable rows")
+        print(f"\n[receipt] full-path emulation OK "
+              f"(marked_rows={body[0]['marked_rows']}, "
+              f"pending_after={body[0]['pending_after']}); table {pre}→{post}")
+
+    def test_3e_ef_marked_count_returning_source_pin(self):
+        """3e: marked = rows the mark UPDATE actually affected (count exact,
+        RETURNING); mark failure surfaces additive markError — never fake."""
+        src = _ef_source()
+        self.assertIn(
+            'count: "exact"', src,
+            "the mark UPDATE must request PostgREST count (RETURNING count)",
+        )
+        self.assertRegex(
+            src, r"marked\s*=\s*count",
+            "marked must be the UPDATE's affected-row count",
+        )
+        self.assertIn(
+            "markError", src,
+            "a mark failure must surface the additive markError field",
+        )
+        self.assertIn(
+            "notifiedIds", src,
+            "success-only mark list must remain",
+        )
+
+    def test_3f_ef_backoff_bounded_source_pin(self):
+        """3f: retry_after honored between batch items — bounded waits only."""
+        src = _ef_source()
+        self.assertIn(
+            f"RETRY_AFTER_MAX_SECONDS = {RETRY_AFTER_MAX_SECONDS}", src,
+            "per-wait cap constant missing",
+        )
+        self.assertIn(
+            f"BACKOFF_BUDGET_SECONDS = {BACKOFF_BUDGET_SECONDS}", src,
+            "per-invocation budget constant missing",
+        )
+        self.assertIn(
+            "computeBackoffDelayMs", src,
+            "bounded back-off helper missing",
+        )
+        self.assertIn(
+            "await sleep(", src,
+            "the batch loop must await the bounded delay between items",
+        )
+        self.assertRegex(
+            src,
+            r"backoffBudgetMs\s*-=\s*delay",
+            "the wait budget must be decremented by the waited amount",
+        )
+
+    def test_3g_backoff_math_mirror(self):
+        """3g (DISCLOSED STANDING PASS at RED): pure delay-math mirror."""
+        self.assertEqual(mirror_backoff_delay_ms(5, 60_000), 5_000)
+        self.assertEqual(
+            mirror_backoff_delay_ms(45, 60_000),
+            RETRY_AFTER_MAX_SECONDS * 1000,
+            "per-wait cap must bound retry_after",
+        )
+        self.assertEqual(
+            mirror_backoff_delay_ms(10, 4_000), 4_000,
+            "remaining budget must bound the wait",
+        )
+        self.assertEqual(mirror_backoff_delay_ms(0, 60_000), 0)
+        self.assertEqual(mirror_backoff_delay_ms(-3, 60_000), 0)
+        self.assertEqual(mirror_backoff_delay_ms(5, 0), 0)
+        self.assertEqual(mirror_backoff_delay_ms(5, -100), 0)
+        self.assertEqual(mirror_backoff_delay_ms(0.5, 60_000), 500)
 
 
 if __name__ == "__main__":
