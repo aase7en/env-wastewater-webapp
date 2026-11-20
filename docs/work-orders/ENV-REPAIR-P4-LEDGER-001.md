@@ -1,6 +1,21 @@
 # Work Order — ENV-REPAIR-P4-LEDGER-001 (Claim ENV-REPAIR-P4-LEDGER-001-C1, gen 1)
 
-**Status at REVIEW_REQUESTED: implementation delivered on branch
+**Status: DELIVERED—CLOSED.** D5 fresh-GLM independent review **APPROVED** at
+the exact frozen head `49dc5676608f18081587f21344dcafcaf9f95255`
+(issuecomment-7031647410 — 0×P1, 0×P2, 2×P3 informational carried to the
+ledger). Implementation merged as PR #253 `61cf09963f83b82284bc0e15876d445b61b9693d`
+(merge commit, second parent EXACTLY the D5-APPROVED head, expected-head
+discipline --match-head-commit; merge-executor review trail
+issuecomment-7031701616; merge stat = exactly the 8 claimed files 687+/37−;
+`frontend/` diff EMPTY; CURRENT-WORK.md untouched at merge; local main
+ff-only clean; post-merge guard 344/344 OK +450 subtests, validate-registry
+ok:true claims:49). **NO BUMP held — v1.15.0 stays, no tag; NO Pages run at
+`61cf099`** (backend+docs-only paths). Closeout: registry claim C1 → CLOSED
+by this lane's docs-only closeout transition; full receipts in
+`docs/ai/handoffs/ENV-REPAIR-P4-LEDGER-001-GLM.md` §8 (D6 closeout receipt)
+and the registry record's `one_next_safe_action`.
+
+*Historical record at REVIEW_REQUESTED: implementation delivered on branch
 `feat/env-repair-p4-ledger-001` off main @
 `3b8ee3692ade0f55ebe078afa1ba952989c997d4` (STOP at REVIEW_REQUESTED — the
 implementing lane NEVER merges; the authorized reviewer owns approval +
