@@ -1,5 +1,28 @@
 # Work Order — ENV-REPAIR-P4-LEDGER-001 (Claim ENV-REPAIR-P4-LEDGER-001-C1, gen 1)
 
+**Status at REVIEW_REQUESTED: implementation delivered on branch
+`feat/env-repair-p4-ledger-001` off main @
+`3b8ee3692ade0f55ebe078afa1ba952989c997d4` (STOP at REVIEW_REQUESTED — the
+implementing lane NEVER merges; the authorized reviewer owns approval +
+merge). D1 live probe CONFIRMED E1–E8 (view-path REST → 404 PGRST205; the
+EF's exact failure; queue honestly EMPTY 0/0/0; EF dormant `skipped:true`,
+no `TELEGRAM_*` secrets, vault empty); D1-2: schema-scoped client RULED OUT
+by live `406 PGRST106` (wastewater not REST-exposed) → the ONE public
+façade form shipped (`20261120000001_repair_p4_ledger_queue_facade.sql`,
+8 OK 0 FAIL via the house applier — façade `security_invoker=on` + the
+service_role grant chain incl. the D3-discovered `core.audit_log` INSERT
+path the mark UPDATE fires); EF redeployed (VERSION 2 ACTIVE 05:01:38Z,
+dormant invoke unchanged) with the two adjudicated hardenings
+(`marked` = RETURNING count-exact affected rows + additive `markError`;
+bounded 429 back-off 30s cap / 60s budget) + the §0.2 comment truth rider;
+README×2 + CHANGELOG v1.14.0 trail-line refreshed; D2 RED `6 failed /
+11 passed` (standing passes disclosed) → GREEN 17/17 with live before/after
+(404 PGRST205 → 401 42501 resolved) and the rollback-scoped service_role
+full-path emulation (queue read + RETURNING mark + row leaves queue +
+rollback clean). Release §4 NO BUMP confirmed (`check_release_version.py`
+`OK (v1.15.0)` exit 0). D1–D4 receipts verbatim in
+`docs/ai/handoffs/ENV-REPAIR-P4-LEDGER-001-GLM.md` §7.**
+
 Post-Phase-4 quality repair sweep — ONE lane sweeping the P4.5 closeout frontier's
 NON-OWNER REPAIR-LANE CANDIDATES **(a) + (b) + (c)**: the P4.2 wastewater-view
 resolution investigation/fix, the README truth refresh, and the ledger P3s.
