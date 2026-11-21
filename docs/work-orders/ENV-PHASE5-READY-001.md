@@ -1,11 +1,19 @@
 # Work Order — ENV-PHASE5-READY-001 (Claim ENV-PHASE5-READY-001-C1, gen 1)
 
-**Status: IMPLEMENTATION DELIVERED — REVIEW_REQUESTED (2026-11-21; implementation
-branch `feat/env-phase5-ready-001` off main `8cf9d3e` = the claim-transition
-merge PR #261; head `d17b3e4`; the implementer NEVER merges — the authorized
-reviewer owns approval + merge). D1 live re-enumeration + D2 RED + D3
-implementation + D4 battery (incl. the LIVE read-only smoke run) are complete;
-receipts in `docs/ai/handoffs/ENV-PHASE5-READY-001-GLM.md` §6. The claim
+**Status: DELIVERED — CLOSED (2026-11-21; docs-only closeout). Full chain:
+claim transition PR #261 merged `8cf9d3e` (merge-executor review R2 APPROVED
+issuecomment-7059845106) → implementation PR #262 merged `da96248` (second
+parent EXACTLY the D5-R2-APPROVED repaired head `aaee056`; merge commit, no
+squash; merge trail in-thread). D2 truthful RED `c507744`; D4 battery + the
+LIVE read-only smoke run (17 domains: 7 ตรงกัน / 4 ต่างกัน = EXPECTED
+pre-cutover drift honestly disclosed / 6 ยังไม่มีแหล่ง); D5 R1
+CHANGES_REQUIRED issuecomment-7060512572 (1×P2 checklist expected-drift +
+§5 backfill register; 1×P3 Feb-29 crash) → repairs at `aaee056` (§2.4 +
+ตารางที่ 2 rows 9-12 + try/except unparsable-safe + regression) → D5 R2
+APPROVED issuecomment-7060669826. Deliverables live: `scripts/phase5_parity_check.py`
+(mocked suite 23 passed) + `scripts/test_phase5_parity_check.py` +
+`docs/ai/PHASE5-CUTOVER-CHECKLIST.md` (Thai; NO BUMP — v1.15.0 stays).
+Implementation receipts handoff §7; closeout receipt handoff §8. The claim
 transition context below is retained as authored (base
 `6bb14e98458bce30a7fdea7cb720358ef9bfebc4` = the ENV-PERSONNEL-C8-001
 closeout merge / PR #260).**
