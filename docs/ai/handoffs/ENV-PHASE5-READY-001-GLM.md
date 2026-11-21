@@ -128,3 +128,118 @@ Summary:
   (READ-ONLY).
 - ENV table ground truth: the delivered migrations + `scripts/_env.py`
   helpers (READ-ONLY reuse, never edit).
+
+---
+
+## 7. Implementation receipts (D1–D4, 2026-11-21; PR — STOP at REVIEW_REQUESTED)
+
+**Branch `feat/env-phase5-ready-001` off main `8cf9d3e8e53435a9eadfe1be953c3306233eb65e`
+(= claim-transition merge PR #261), 4 commits, exact head `d17b3e4`:**
+
+1. `c507744` **D2 RED-first** — `scripts/test_phase5_parity_check.py` (374
+   lines, MOCKED sheet/DB fixtures, ZERO live network): truthful
+   fail-to-collect RED recorded BEFORE the script existed —
+   `ModuleNotFoundError: No module named 'phase5_parity_check'` at
+   `scripts/test_phase5_parity_check.py:47`, collection interrupted
+   1 error, 0 tests (the honest new-file RED mode, P3.5 precedent).
+2. `f5fd409` **D3** — `scripts/phase5_parity_check.py` (the tool) +
+   `docs/ai/PHASE5-CUTOVER-CHECKLIST.md` (Thai; dual-run protocol +
+   friction-log template + per-domain acceptance + backfill inventory
+   §5 + rollback/retirement §6 + 🚧เจ้าของตัดสิน markers + พ.ศ.).
+3. `3587a28` **D4 fixes driven by the LIVE smoke** (see D4 below — honest
+   mapping repairs, disclosed).
+4. `d17b3e4` **D4 hygiene** — the synthetic PII canary reshaped to a
+   12-digit token → zero 13-digit runs in the new test file (the only
+   13-digit run left in the diff is the migration-filename token
+   `20261118000005`, the accepted class per the C8 grep-pin convention).
+
+### D1 (READ-ONLY) — source reality re-verified LIVE 2026-11-21
+
+All 6 public workbooks answer the `export?format=xlsx` fetch TODAY (real
+GETs during the live smoke): pond 12 tabs (tab `ข้อมูลคุณภาพน้ำ` = 1,027
+rows live!), markad 6 (tab `address` = 7,436), งานสวน 4 (`job` 1,102 /
+`location_area` 15), tool_maintainance 1 (`maintaining` 11),
+fire_extinguisher 5 (`ตรวจสอบถัง` 877 — GROWN from the 858 SHAPE-ONLY-era
+count), ข้อมูลตรวจไฟฉุกเฉิน 4 (`Emergency light` 48 / `Check` 342 — GROWN
+from 332). The 6 unshared domains still answer NOTHING (coliform ×3,
+คู่มือน้ำประปา, extinguisher master, Items/Vendors/Categories, Inventory,
+water-supply operational) — the `ยังไม่มีแหล่งข้อมูล` sections stand; NO
+drift vs WO §0.3. ENV_DB reachable via the Management-API read-only path.
+
+**D1-adjacent discoveries (disclosed, fixed at `3587a28`):** (a) sheet
+date columns carry Thai/verbatim names (`วันที่ บันทึก`, `Cal_date`,
+`Date_time`) NOT the ENV column names — the script now resolves the
+sheet column from the real header (declared verbatim name → auto-detect
+→ honest `ไม่ทราบ`), never assuming a translation; (b) `core.item_calibration`'s
+real ENV column is `calibration_date` (NOT `cal_date` — the first live
+run hit an honest 42703 which the report rendered as `ไม่ทราบ`); (c)
+`safety.extinguisher_inspection.inspection_date` is timestamptz; (d) the
+sheets carry **พ.ศ. year numbers inside Excel date cells** (`2566` =
+2023 CE) — converted per the P2.3 seed precedent (`พ.ศ. 2568×144→2025`).
+
+### D2 truthful RED (commit `c507744`, isolated)
+
+`uv run --with pytest --with openpyxl python -m pytest
+scripts/test_phase5_parity_check.py -q` → **ERROR collecting… Interrupted:
+1 error during collection** — `ModuleNotFoundError: No module named
+'phase5_parity_check'` (right reason: the module did not exist), zero
+live network. Two D3-time test-wording repairs are disclosed: the
+mismatch/empty/unshared verdict tokens were fixed to `ตรงกัน` vs `ต่างกัน`
+("ไม่ตรงกัน" contains "ตรงกัน" as a substring — the committed RED
+assertions were self-contradictory) and one fetch-call assertion was
+re-worded; RED evidence above is unaffected.
+
+### D4 battery at head `d17b3e4`
+
+- NEW mocked suite GREEN: **22 passed + 17 subtests** (5 honesty shapes +
+  read-only SQL guard + fetch-only interface + date-parsing honesty +
+  พ.ศ. + domain-map integrity + report-file honesty + the D4-discovery
+  pins).
+- Guard **344/344 OK** (+450 subtests) · runtime **62/62 OK** (+32
+  subtests) · checker **`OK (v1.15.0; CHANGELOG entry v1.15.0)` exit 0**
+  (NO BUMP honored).
+- vitest FULL **990 passed / 1 skipped (designed)** · `tsc -b` clean ·
+  oxlint **0 errors** (pre-existing warnings only) · Playwright FULL
+  chromium workers=1 **335 passed** (7.6m).
+- `git diff --check` clean · diff vs `8cf9d3e` = exactly the claimed
+  files (3 NEW + this WO + this handoff) · **`docs/ai/CURRENT-WORK.md`
+  diff EMPTY** · PII/secrets/token/JWT grep = 0 over all changed files
+  (13-digit runs: the migration-filename token only).
+- Environment note (P3.5 precedent, disclosed): the fresh worktree
+  lacked the gitignored `frontend/.env` — restored by copying the
+  canonical checkout's file (untracked, never printed/committed); 9
+  vitest files failed before the copy, 990P after.
+
+### D4 LIVE read-only smoke run — the generator's first real evidence
+
+Real XLSX GETs + real Management-API read-only queries, ZERO writes; the
+report file was written ONLY to the operator-named `/tmp` path (no repo
+write). **17 domains: 7 ตรงกัน · 4 ต่างกัน · 6 ยังไม่มีแหล่งข้อมูล** —
+summary verbatim from `2026-11-21T15:58 ICT` run:
+
+```
+ตรงกัน: 7 โดเมน          (distributor 6/6 · manual_wastewater 10/10 · item_calibration 11/11 ·
+                          job_log 1102/1102 · location_area 15/15 · address 7436/7436 · emergency_light 48/48)
+ต่างกัน: 4 โดเมน          (reading AppSheet 1027 / ENV 907 — delta 120: ENV horizon 2026-07-04 ณ การย้าย,
+                          ชีต 98.0% coverage 1026/1047 วัน, 21 missing days listed;
+                          personnel 34/9 — delta 25: baseline 9 แถว ปัก ณ การย้าย, ชีต = roster รวมสถานะ C8;
+                          extinguisher_inspection 877/0 — delta 877: P2.2 seed NOTHING, ประวัติรอ backfill เจ้าของ;
+                          emergency_light_check 342/332 — delta 10: แถวใหม่หลัง seed P2.3)
+ยังไม่มีแหล่งข้อมูล: 6 โดเมน  (manual_water_supply · fire_extinguisher_master · coliform ·
+                          items_masters · chemical_inventory · water_supply_daily — ENV counts real: all 0)
+```
+
+Honesty checks observed in the live output: unshared domains emit the
+`ยังไม่มีแหล่งข้อมูล` section with `ไม่ประเมิน parity` + `ห้าม 0-vs-0`
+lines (never a 0-vs-0 parity row); missing days are listed with stated
+denominators; sheet date columns are named with their resolution method;
+the first run's honest failures (42703 → `ไม่ทราบ`) rendered verbatim in
+the report instead of being papered over.
+
+**Deviation disclosed:** the `SUPABASE_ACCESS_TOKEN` for this one live
+run was resolved directly from the same Drive secrets file the approved
+`scripts/_env.py` stub resolves to (`<drive>/secrets/env-wastewater-webapp.env`)
+because this fresh worktree lacks the gitignored `.env` stub
+(CANONICAL_ENV_ABSENT, verified read-only). The token was exported into
+the process env only, never printed, never committed. No other channel
+was used; the script's own resolver path is unchanged.
