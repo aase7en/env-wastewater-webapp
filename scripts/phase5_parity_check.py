@@ -270,12 +270,20 @@ def _to_iso_date(value):
     if isinstance(value, dt.datetime):
         y = value.year
         if y >= 2400:  # the recorded seed precedent: sheet พ.ศ. years → CE −543
-            value = value.replace(year=y - 543)
+            try:
+                value = value.replace(year=y - 543)
+            except ValueError:
+                # e.g. a พ.ศ. leap-day cell (29/2/2568) whose CE year 2025 is
+                # not a leap year — honest unparsable, never abort the run
+                return None
         return value.date().isoformat()
     if isinstance(value, dt.date):
         y = value.year
         if y >= 2400:  # Excel date cells whose year number is พ.ศ. (P2.3 precedent)
-            value = value.replace(year=y - 543)
+            try:
+                value = value.replace(year=y - 543)
+            except ValueError:
+                return None
         return value.isoformat()
     if isinstance(value, (int, float)) and not isinstance(value, bool):
         try:

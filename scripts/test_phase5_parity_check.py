@@ -315,6 +315,31 @@ class DateParsingHonesty(unittest.TestCase):
         self.assertEqual(p5._to_iso_date(dt.datetime(2569, 9, 23, 8, 0)), "2026-09-23")
         self.assertEqual(p5._to_iso_date(dt.date(2024, 2, 29)), "2024-02-29")  # CE untouched
 
+    def test_buddhist_era_feb29_cell_is_unparsable_not_fatal(self):
+        # D5 P3 regression — a พ.ศ. Feb-29 cell whose CE year is NOT a leap
+        # year (29/2 พ.ศ. 2568 → CE 2025): .replace(year=−543) used to raise
+        # ValueError and abort the entire report. A bad date must come back
+        # as None and be counted as unparsable; the run continues.
+        self.assertIsNone(p5._to_iso_date(dt.date(2568, 2, 29)))
+        self.assertIsNone(p5._to_iso_date(dt.datetime(2568, 2, 29, 8, 0)))
+        d = _domain("emergency_light_check")
+        rows = [
+            {d["date_column"]: "5/6/2568"},
+            {d["date_column"]: dt.date(2568, 2, 29)},  # 29/2 พ.ศ.-style cell
+        ]
+        parsed = p5.parse_sheet_dates(rows, d["date_column"])
+        self.assertEqual(parsed.total, 2)  # both rows still counted in totals
+        self.assertEqual(parsed.unparsable, 1)  # the Feb-29 cell, disclosed
+        self.assertEqual(parsed.iso_dates, ["2025-06-05"])  # the good row survives
+        # a genuine 29/2/2567 leap cell (CE 2024 IS a leap year) still converts
+        self.assertEqual(p5._to_iso_date("29/2/2567"), "2024-02-29")
+        # end-to-end: the report renders and discloses the unparsable row
+        sheets = FakeSheetSource({(d["workbook_id"], d["tab"]): p5.SheetFrame(rows)})
+        dbs = FakeDbSource({("safety", "emergency_light_check"): db(1)})
+        text, md = p5.run_check([d], sheets, dbs, RUN_AT)
+        for blob in (text, md):
+            self.assertIn("แถวที่อ่านวันที่ไม่ได้: 1", blob)
+
 
 class ThaiDates(unittest.TestCase):
     """User-facing dates are พ.ศ. (AGENTS.md dates rule)."""
