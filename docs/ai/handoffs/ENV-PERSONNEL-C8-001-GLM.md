@@ -368,6 +368,32 @@ with ZERO frontend diffs — pure no-regression gate.
    personnel name into /tmp-only stderr — never committed, never
    re-quoted; declared here per the honesty pins.
 
+### D5 repair receipt (2026-11-21) — P2 rollback-comment correction + P3 repairs
+
+**P2 — rollback comment block corrected in place (comment-only edit;
+the applied statements stay byte-identical).** The documented ROLLBACK
+trailer in `supabase/migrations/20261121100000_parity_c8_personnel_enum.sql`
+had a statement-order bug: its UPDATE-first draft ran
+`SET status='active'` while the LIVE-VALIDATED 4-value status CHECK was
+still in place → 23514 on all 6 rows (PG re-validates the whole new row
+on every UPDATE). Rewritten to the fails-closed order: (1) DROP both
+CHECK constraints → (2) reverse UPDATE (status='active' by the
+synthetic 6-code set) → (3) re-ADD both CHECKs NOT VALID. Precedent:
+the P2.2 D5-P3 comment-correction class — comments edited in place,
+applied statements never touched (verified: git diff = comment lines
+only).
+
+**P3a — stale test renamed** to match the {STAFF-001, STAFF-006,
+STAFF-008} pin: `…admits_staff001_and_staff008…` →
+`test_recorder_gate_admits_exactly_staff001_staff006_staff008_post_fix`
+(assertion body + the in-test pin-correction record unchanged).
+
+**Lane lessons (DEFECT-MEMORY-style, for future apply lanes):**
+
+- Apply tooling continues past failed statements — attempt-1 left a
+  schema-only intermediate state; always verify post-apply posture via
+  the count guard.
+
 ### STOP
 
 Implementation halted at REVIEW_REQUESTED per the claim contract — the

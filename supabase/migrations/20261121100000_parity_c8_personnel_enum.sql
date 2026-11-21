@@ -114,20 +114,28 @@ ALTER TABLE core.personnel
 notify pgrst, 'reload schema';
 
 -- ROLLBACK (documented per WO §5 D3 — restores the EXACT pre-fix
--- posture; never executed unless the owner orders it):
+-- posture; never executed unless the owner orders it). ORDER — D5
+-- CORRECTED 2026-11-21 to this FAILS-CLOSED sequence: the earlier
+-- UPDATE-first draft could not run at all — the reverse UPDATE writes
+-- status='active' while the LIVE-VALIDATED 4-value status CHECK is
+-- still in place, so PG re-validates the whole new row on every UPDATE
+-- and 23514s all 6 rows. Constraints drop FIRST, the reverse write runs
+-- with both CHECKs absent, both return NOT VALID last:
+--   ALTER TABLE core.personnel DROP CONSTRAINT ck_core_personnel_position_enum;
+--   ALTER TABLE core.personnel DROP CONSTRAINT ck_core_personnel_status_enum;
 --   UPDATE core.personnel
 --      SET status = 'active'
 --    WHERE status = 'ทำงาน'
 --      AND employee_code IN ('STAFF-001', 'STAFF-002', 'STAFF-003',
 --                            'STAFF-006', 'STAFF-008', 'STAFF-009');
---   ALTER TABLE core.personnel DROP CONSTRAINT ck_core_personnel_position_enum;
 --   ALTER TABLE core.personnel
 --     ADD CONSTRAINT ck_core_personnel_position_enum
 --     CHECK (position IN ('นายแพทย์','พนักงานบริการ','นักวิชาการสาธารณสุข',
 --                         'นักโภชนาการ','พนักงานประกอบอาหาร')) NOT VALID;
---   ALTER TABLE core.personnel DROP CONSTRAINT ck_core_personnel_status_enum;
 --   ALTER TABLE core.personnel
 --     ADD CONSTRAINT ck_core_personnel_status_enum
 --     CHECK (status IN ('ทำงาน','ย้ายกลุ่มงาน','ลาออก','ลาศึกษาต่อ')) NOT VALID;
 --   notify pgrst, 'reload schema';
--- (convalidated = false ×2 restored — the exact pre-fix posture.)
+-- (re-ADD ×2 NOT VALID → convalidated = false ×2 restored — the exact
+-- pre-fix posture; NOT VALID also leaves the restored 'active' rows
+-- outside revalidation.)

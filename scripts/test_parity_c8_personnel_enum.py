@@ -318,7 +318,7 @@ class C1PersonnelEnumLiveContract(unittest.TestCase):
 
     # ── D. the P1.4 recorder-gate shape ──
 
-    def test_recorder_gate_admits_staff001_and_staff008_post_fix(self):
+    def test_recorder_gate_admits_exactly_staff001_staff006_staff008_post_fix(self):
         rows = self.q(
             "SELECT employee_code FROM core.personnel WHERE position IN "
             "('นักวิชาการสาธารณสุข','พนักงานบริการ') AND status='ทำงาน'"
