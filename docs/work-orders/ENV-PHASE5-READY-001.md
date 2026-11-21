@@ -1,10 +1,14 @@
 # Work Order — ENV-PHASE5-READY-001 (Claim ENV-PHASE5-READY-001-C1, gen 1)
 
-**Status: CLAIMED (claim transition authored 2026-11-21, base `6bb14e98458bce30a7fdea7cb720358ef9bfebc4`
-= the ENV-PERSONNEL-C8-001 closeout merge / PR #260). The transition PR is
-docs-only (this WO + the lane handoff + `docs/ai/CURRENT-WORK.md`) and stops
-at REVIEW_REQUESTED — the implementer never merges; the authorized reviewer
-owns approval + merge of every PR in this lane's chain.**
+**Status: IMPLEMENTATION DELIVERED — REVIEW_REQUESTED (2026-11-21; implementation
+branch `feat/env-phase5-ready-001` off main `8cf9d3e` = the claim-transition
+merge PR #261; head `d17b3e4`; the implementer NEVER merges — the authorized
+reviewer owns approval + merge). D1 live re-enumeration + D2 RED + D3
+implementation + D4 battery (incl. the LIVE read-only smoke run) are complete;
+receipts in `docs/ai/handoffs/ENV-PHASE5-READY-001-GLM.md` §6. The claim
+transition context below is retained as authored (base
+`6bb14e98458bce30a7fdea7cb720358ef9bfebc4` = the ENV-PERSONNEL-C8-001
+closeout merge / PR #260).**
 
 The AppSheet parity program is COMPLETE through Phase 4 + repairs
 (P4.1–P4.5 all CLOSED; the P4-ledger repair sweep and the prevent lane
