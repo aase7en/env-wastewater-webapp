@@ -1,0 +1,41 @@
+name: Build synthetic ENV preview
+on:
+  pull_request:
+    paths: ['frontend/**', '.github/workflows/preview-sandbox.yml']
+  push:
+    branches: ['feat/env-preview-sandbox']
+  workflow_dispatch:
+permissions:
+  contents: read
+concurrency:
+  group: preview-${{ github.ref }}
+  cancel-in-progress: true
+jobs:
+  build-preview:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v7
+        with:
+          ref: ${{ github.event.pull_request.head.sha || github.sha }}
+      - uses: actions/setup-node@v7
+        with:
+          node-version: '24'
+          cache: npm
+          cache-dependency-path: frontend/package-lock.json
+      - run: npm ci
+        working-directory: frontend
+      - run: node --test preview/database.test.mjs
+        working-directory: frontend
+      - run: npx vite build --config vite.preview.config.ts
+        working-directory: frontend
+        env:
+          PREVIEW_SHA: ${{ github.event.pull_request.head.sha || github.sha }}
+          PREVIEW_BRANCH: ${{ github.head_ref || github.ref_name }}
+      - uses: actions/upload-artifact@v7
+        with:
+          name: env-sandbox-${{ github.event.pull_request.head.sha || github.sha }}
+          path: dist
+          retention-days: 14
+# This produces a build artifact only. Sites publication still requires its
+# supported owner connector; no reusable Sites CI credential is available.
+# Never add production Supabase credentials to this workflow.
