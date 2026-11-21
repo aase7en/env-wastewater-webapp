@@ -129,6 +129,100 @@ ENV-BUILDING-REPAIR-001-C1 WAITING_EXTERNAL; ENV-SUNDAYMCP-ROUTING-001
 CLAIMED (disjoint surface); the parity follow-up ledger stays. This lane
 adjudicates ONLY its three confirmed defects and sweeps nothing else.
 
+## 7. D1 execution record (implementation lane, 2026-11-21)
+
+### 7.0 Branch mapping (R2 P3-3 — stated at D1 as required)
+
+The claim record's `branch` field pins the TRANSITION branch
+`docs/env-repair-report-honesty-001-claim`, which merged as the SECOND PARENT
+of main `2b1cfd9edd600ef061646f67743a6cdc24a1d9a7` (PR #264, merge commit
+"Merge pull request #264 from aase7en/docs/env-repair-report-honesty-001-claim",
+first parent `c12775f05d2e15187dbc97c031471a05e9cd2f13`). The IMPLEMENTATION
+branch per the WO/handoff and the merge plan is
+`feat/env-repair-report-honesty-001` in
+`_worktrees/env-repair-report-honesty-001`, branched off that post-merge main
+tip (verified at D1: HEAD == `origin/main` == `2b1cfd9`; freshness gate
+`git merge-base --is-ancestor origin/main HEAD` → true).
+
+### 7.1 D1 probe receipt — LIVE re-run at the implementation base (guard 10)
+
+Read-only, outside the repo (`/tmp/kilo/env-honesty-d1/probe.spec.ts`, run
+with vitest against the worktree source; zero repo mutations, worktree clean
+before/after). All 3 defect shapes reproduce IDENTICALLY to Appendix A —
+**no drift**, no pivot:
+
+```
+EXT incomplete-only (1 inspection, all 4 component enums null):
+  totalInspected: 1, abnormalCount: 0, incompleteCount: 1
+  summaryReady: "☑ ถังดับเพลิงทุกจุดอยู่ในสภาพพร้อมใช้งาน"        ← defect live
+  summaryAction: "☐ มีถังดับเพลิง…จำนวน 0 ถัง (ตามรายละเอียดในตาราง)"
+
+LIGHT unknown-result-only ("เสีย" + ""):
+  failCount: 0, otherCount: 2
+  summaryReady: "☑ โคมไฟฉุกเฉินทุกจุดอยู่ในสภาพพร้อมใช้งาน"        ← defect live
+
+WATER zero-rows: sumWaterIn 0, sumChlorineReal 0, recordedDays 0, missingDays 30
+  summaryLines: ["การบริโภคน้ำประปาบาดาล ตลอดเดือน พฤศจิกายน 0 ลบ.ม.",
+                 "ปริมาณสารเคมี… (คลอรีนน้ำ) 0 ลิตร"]              ← defect live
+WATER rows-but-all-null (1 row, water_in/chlorine null):
+  summaryLines: same "0 ลบ.ม." / "0 ลิตร"                          ← defect live
+WS empty (P1.6 :587 class): sumWaterIn 0, recordedDays 0            ← defect live
+```
+
+VERDICT-2 anchors re-verified by live source trace at base: `onOpenPrint`
+(ReportsPage.tsx:224-239) never clears `familyPrint`; `onOpenFamilyPrint`
+(:278-313) never clears `printModel`; mounts :871-888 / :949-967; all 5 print
+views share exactly one `.tos-print-area` each (Tos1:25, Tos2:22,
+Extinguisher:24, Light:22, Water:25); `report-print.css:76` holds the ONLY
+`@media print` block in `frontend/src` (grep-verified) making every such node
+visible + absolute top-left.
+
+### 7.2 D1 rulings (decided before D2)
+
+- **D1-1 honest non-verdict wording (ext + light):** `summaryReady` becomes
+  `⚠ ยังสรุปความพร้อมใช้งานไม่ได้ — มี N รายการ…` (⚠ prefix — never ☑, never a
+  pass verdict) disclosing the exact incomplete/other count (unknown never
+  zero); `summaryAction` keeps the truthful ☐-0 action line. Flows through the
+  EXISTING `summaryReady ?? fallback` view path — ExtinguisherPrintView /
+  LightPrintView stay byte-untouched.
+- **D1-2 overlap mechanism:** STATE-LEVEL mutual clearing in the two setters
+  (`onOpenPrint` clears `familyPrint`; `onOpenFamilyPrint` clears
+  `printModel`) — `report-print.css` stays BYTE-UNTOUCHED (no CSS class
+  hardening; the state fix suffices: opening one mode unmounts the other ⇒
+  exactly one `.tos-print-area` per open).
+- **D1-3 water honest type:** RENDER-GATE keyed on **days with a non-null
+  value** (additive `waterInDays` / `chlorineRealDays` /
+  `waterInEstimateDays` / `energyEstimateDays` value-day counts on
+  `WaterSupplySummary`) — NOT the `number | null` type change, because
+  `number | null` would force type edits through `lib/pdf.ts` (:426/:430) and
+  `parity-fixtures.test.ts` (:231-233), both OUTSIDE the §7 scope. Identical
+  honesty either way (empty AND rows-but-all-null render "ไม่มีข้อมูล", never
+  0); partial months keep real sums over real denominators; the บ่อบำบัด
+  `WastewaterSummary` sums are NOT cited by the receipt and stay untouched.
+- **D1-4 e2e approach:** the overlap pin lives IN the existing family spec
+  (`env-parity-p4-005-family-reports.spec.ts`) — no NEW sibling spec (house
+  naming preserved); the scenario opens the ทส.1 print view then a family
+  print view (no `goto` in between) under print emulation and asserts exactly
+  ONE `.tos-print-area`.
+- **D1-5 release ruling:** PATCH v1.15.1 CONFIRMED (corrections only, no new
+  features — §4).
+- **D1-6 verbatim-predicate preservation:** `frontend/src/lib/safety-summary.ts`
+  + `safety-summary.test.ts` BYTE-UNTOUCHED — verified by adversarial diff at
+  D4 (`git diff origin/main -- frontend/src/lib/safety-summary.ts
+  frontend/src/lib/safety-summary.test.ts` must be empty); incomplete is
+  never counted as abnormal anywhere in this lane.
+
+### 7.3 R2 P3-informational items carried into this lane's ledger
+
+- **P3-1** (WO trailing whitespace at :226): FIXED in this lane's docs commit
+  while editing the WO (per the merge plan).
+- **P3-2** (redundant supabase-subtree prose in the claim record's
+  forbidden_scope): informational only — both entries constrain identically;
+  recorded here per the R2 receipt ("carried to the implementation lane's
+  ledger"); no registry edit from this lane (registry changes need their own
+  reviewed transition).
+- **P3-3** (branch mapping): stated at §7.0 above.
+
 ---
 
 ## Appendix A — the read-only reproduction receipt, VERBATIM
