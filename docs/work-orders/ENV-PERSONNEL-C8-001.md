@@ -1,10 +1,15 @@
 # Work Order — ENV-PERSONNEL-C8-001 (Claim ENV-PERSONNEL-C8-001-C1, gen 1)
 
-**Status: REVIEW_REQUESTED (implementation delivered 2026-11-21; the
-implementer STOPPED here — the authorized reviewer owns approval + merge).
-Full implementation receipts: `docs/ai/handoffs/ENV-PERSONNEL-C8-001-GLM.md`
-§Implementation receipt (D1 evidence, D2 RED, D3 apply incl. the
-ordering-deviation record + PII-incident note, D4 battery).**
+**Status: DELIVERED—CLOSED (implementation delivered 2026-11-21 via PR #259
+merged `90ab52ea90e26e06a07179de12641eea2ec431d2` — D5 R1
+CHANGES_REQUIRED issuecomment-7056943819 at `9b3f229` repaired at `3e0afb2`
+→ D5 R2 APPROVED issuecomment-7058232457 at the exact repaired head; the
+claim CLOSED by the docs-only closeout transition, which re-pins the fence
+to `90ab52e` and records the P1.1-era deferred VALIDATE CONSTRAINT
+follow-up RESOLVED. Implementation receipts:
+`docs/ai/handoffs/ENV-PERSONNEL-C8-001-GLM.md` §8 (D1 evidence, D2 RED,
+D3 apply incl. the ordering-deviation record + PII-incident note, D4
+battery, D5 repair receipt); closeout receipts: §9 D6 CLOSEOUT RECEIPT.)**
 
 The AppSheet parity plan's C8 deferral, closed: ONE migration correcting
 `core.personnel`'s two enum CHECK surfaces per the owner's explicit approval.
