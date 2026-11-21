@@ -242,3 +242,134 @@ transition was authored in the clean worktree
 canonical checkout was left exactly as found. The sibling lane's transition,
 when it opens, will re-fence against the then-current main (the registry is
 merge-ordered by protocol — one new claim per transition).
+
+## 8. Implementation receipt (2026-11-21, Track-Z GLM — STOP at REVIEW_REQUESTED)
+
+Branch `feat/env-personnel-c8-001` off the verified post-merge main tip
+`643603cca4e66125028a98a9dfde293ea9ca7d7d` (freshness gate: `git fetch`
++ ancestor check at lane start, clean tree). Deliverables: the ONE
+migration `supabase/migrations/20261121100000_parity_c8_personnel_enum.sql`
++ the NEW suite `scripts/test_parity_c8_personnel_enum.py` + this handoff
++ the WO status. `frontend/`, `supabase/functions/`, `.github/`,
+`config.toml`, `seed/`, `CHANGELOG.md`, `frontend/package.json`,
+`20261115120000_parity_p1_001.sql` — all byte-untouched (diff ⊆ WO §7).
+CURRENT-WORK.md untouched at implementation-PR time per the house
+precedent (the closeout transition updates the registry).
+
+### D1 — live re-verification (read-only Management-API probes, synthetic codes only)
+
+Live state at the new base, 2026-11-21: 9 rows total; `active` = 6 with
+ALL 6 inside the authorized code set (gate6 = 6 — the predicate
+`status='active' AND employee_code IN (STAFF-001/002/003/006/008/009)`
+matches exactly the intended 6); `ทำงาน` = 0; `ลาออก` = 3
+(STAFF-004/005/007); positions byte-match WO §0 row-by-row
+(STAFF-002 `ผู้ช่วยช่างทั่วไป`, STAFF-003 `พนักงานเปล`, STAFF-009
+`พนักงานช่วยเหลือคนไข้` outside the old 5-value enum); both CHECKs
+`convalidated=false` with the pinned P1.1 deparses; the P1.4 recorder
+gate rejects all 9 pre-fix (STAFF-001/STAFF-008 fail the status
+clause). **No drift — no pivot.**
+
+### D2 — truthful RED (pre-apply)
+
+`uv run --with pytest python -m pytest scripts/test_parity_c8_personnel_enum.py -q`
+→ **17 failed / 9 passed / 32 subtests passed**; the failing classes
+are EXACTLY the WO §5 D2 four classes: (a) the 6-row status delta
+(`active` must be 0 — was 6; `ทำงาน` must be 6 on the exact code set —
+was 0; post-fix row map ×6), (b) the 8-value position-CHECK def (3 new
+values absent + parent def pin), (c) `convalidated=true` ×2 (were
+false ×2), (d) the P1.4 gate admission (STAFF-001/STAFF-008 rejected).
+Standing passes disclosed verbatim: the 9-row total, positions
+byte-stable row-by-row, the 3-outside-old-enum fact, all 9 positions
+inside the 8-value set (as data), the status CHECK 4-value pin, the 3
+`ลาออก` rows failing the gate by design, the exited-set pin.
+
+### D3 — apply (ENV_DB gate, `scripts/apply_migration_api.py`)
+
+**Apply attempt 1 (WO §5 D3 literal order UPDATE-first) FAILED — the
+live DB refuted the pinned order, recorded verbatim here as the
+ordering deviation (WO §6/D1-adjacent, reviewer adjudicates):**
+statement 1 (`UPDATE … SET status='ทำงาน' …`) failed
+`23514: new row for relation "personnel" violates check constraint
+"ck_core_personnel_position_enum"` — a status UPDATE writes a new row
+version, and 3 of the 6 target rows (STAFF-002/003/009) carry
+positions outside the STILL-PRESENT old 5-value CHECK, so EVERY status
+UPDATE on them is rejected. The statement rolled back atomically (the
+count guard read active=6 / ทำงาน=0 immediately after — no partial
+write); the position-CHECK DROP + re-ADD(8 values) + VALIDATE landed
+(statements 3–5 OK), VALIDATE status correctly refused (6 rows still
+`active`). Root cause: an order dependency the WO missed — the
+constraint swap MUST precede the status UPDATE. Semantics unchanged:
+same UPDATE predicate, same 8-value enum, same VALIDATE-both, same
+rollback.
+
+**Apply attempt 2 (corrected order: swap → UPDATE → guard → VALIDATE
+×2 → notify): 7/7 OK, 0 FAIL.** The count guard passed, which is the
+exactly-6 row-count pin: post-apply probes recorded `active` = 0,
+`ทำงาน` = 6 (ALL 6 inside the authorized set), `ลาออก` = 3 untouched,
+positions byte-identical, both CHECKs `convalidated=true` with deparses
+matching the suite pins byte-exactly (8-value ARRAY in authored order,
+no `NOT VALID` suffix — no pin correction needed on the constraint
+defs). Per-statement row counts: the Management-API query endpoint
+returns no command tag for UPDATE, so the exactly-6 evidence is the
+in-transaction count guard (statement 4) + the post-apply count probes
++ the suite — recorded honestly instead of an unverifiable "UPDATE 6"
+tag.
+
+**PII incident (declared, never repeated):** the attempt-1 PG error
+`DETAIL` echoed one full row INCLUDING a personnel name into the apply
+stderr (the local receipt `/tmp`-only, never committed, never quoted
+further). The corrected apply produced no row-echo. Lesson carried for
+future lanes: prefer predicates whose failure modes cannot echo PII
+rows in DETAIL, and keep raw apply logs out of Git.
+
+### D4 — battery (all GREEN at the implementation head)
+
+| Gate | Result |
+|---|---|
+| Contract suite (post-apply) | **13 passed / 45 subtests passed** |
+| guard (`scripts/env_coordination_guard.py` tests) | **Ran 344 tests — OK** |
+| runtime (`scripts/test_env_autonomy_runtime.py`) | **Ran 62 tests — OK** |
+| validate-registry | `ok:true`, 51 claims, BOOTSTRAP_CONTROL |
+| `check_release_version.py` | **OK (v1.15.0)** exit 0 — NO BUMP holds |
+| vitest FULL | **990 passed / 1 skipped (991)** |
+| `tsc -b` | exit 0 |
+| `oxlint` (`npm run lint`) | exit 0, 0 errors (19 pre-existing warnings) |
+| Playwright FULL `--workers=1` | **335 passed** |
+| `git diff --check` | clean |
+| PII gate | **PASS** — the 9 name tokens (extracted read-only from the /tmp proposal, never echoed) + any 13-digit pattern + JWT/token literals: **0 matches** across ALL changed files |
+| diff vs base | exactly 4 files ⊆ WO §7 |
+
+Battery notes (disclosed): (1) the fresh worktree lacked the GITIGNORED
+`frontend/.env` — vitest first ran 2 failed / 785 passed with 8
+file-level collection failures, ALL from the house fail-loud guard
+(`Missing VITE_SUPABASE_URL / VITE_SUPABASE_ANON_KEY`); resolved by
+copying the canonical checkout's gitignored `frontend/.env` into the
+worktree (machine-local, never committed, values never printed) — the
+same fresh-worktree prerequisite the P4-001 closeout already recorded;
+after the copy: 990 passed / 1 skipped. (2) Frontend battery ran green
+with ZERO frontend diffs — pure no-regression gate.
+
+### Deviations for reviewer adjudication (3)
+
+1. **Statement-order deviation (WO-forced-by-live-DB):** forward order
+   is constraint-swap → status UPDATE → guard → VALIDATE ×2, not the
+   WO §5 D3 UPDATE-first order — the live 23514 (attempt 1) proves the
+   WO order is impossible; all authorized surfaces unchanged; the
+   migration header records the full attempt-1 story.
+2. **Test-side pin correction (P1.001 precedent):** the D2 RED run
+   pinned the post-fix recorder-gate admitted set as exactly
+   {STAFF-001, STAFF-008}; the GREEN live probe replaced it with the
+   §0-table-derived set **{STAFF-001, STAFF-006, STAFF-008}** —
+   STAFF-006 (พนักงานบริการ) passes the UNCHANGED P1.4 predicate
+   post-fix and failed pre-fix only via `active`. The gate did NOT
+   widen; the original pin was narrower than its own predicate. The
+   correction comment lives in the suite test body.
+3. **PII DETAIL incident:** the attempt-1 PG DETAIL echoed one
+   personnel name into /tmp-only stderr — never committed, never
+   re-quoted; declared here per the honesty pins.
+
+### STOP
+
+Implementation halted at REVIEW_REQUESTED per the claim contract — the
+implementer never merges. D5 fresh-GLM review + the reviewer-owned
+approval/merge follow.

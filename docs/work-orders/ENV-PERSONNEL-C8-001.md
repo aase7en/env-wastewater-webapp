@@ -1,7 +1,10 @@
 # Work Order — ENV-PERSONNEL-C8-001 (Claim ENV-PERSONNEL-C8-001-C1, gen 1)
 
-**Status: CLAIMED — this transition ships with the claim PR (STOP at
-REVIEW_REQUESTED); implementation starts only after it merges.**
+**Status: REVIEW_REQUESTED (implementation delivered 2026-11-21; the
+implementer STOPPED here — the authorized reviewer owns approval + merge).
+Full implementation receipts: `docs/ai/handoffs/ENV-PERSONNEL-C8-001-GLM.md`
+§Implementation receipt (D1 evidence, D2 RED, D3 apply incl. the
+ordering-deviation record + PII-incident note, D4 battery).**
 
 The AppSheet parity plan's C8 deferral, closed: ONE migration correcting
 `core.personnel`'s two enum CHECK surfaces per the owner's explicit approval.
