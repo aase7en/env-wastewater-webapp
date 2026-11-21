@@ -1,13 +1,29 @@
 # Work Order — ENV-REPAIR-PREVENT-001 (Claim ENV-REPAIR-PREVENT-001-C1, gen 1)
 
-**Status: IMPLEMENTATION DELIVERED — REVIEW_REQUESTED (2026-11-21).**
-Implementation branch `feat/env-repair-prevent-001` off the post-merge main
-tip `40cab6b76c85a3bf23acff1f21203c2b11c49da2` (PR #255 merge); commits:
-D2 RED `f771f00` → D3 migration → docs (this commit). D-phase log appended
-below (§8). The migration IS APPLIED to ENV_DB (live gate before + the
-post-fix emulation after; receipts in the lane handoff). **The implementing
-lane NEVER merges** — the authorized reviewer owns approval + merge; STOP at
-REVIEW_REQUESTED. The original claim text below is preserved verbatim.
+**Status: DELIVERED — CLOSED (2026-11-21).**
+Claim transition PR #255 merged `40cab6b76c85a3bf23acff1f21203c2b11c49da2`
+(parents `f88157b…` + reviewed transition head `fa3fceb…`; independent
+audit APPROVED issuecomment-7050697677 — every refutation link re-verified).
+Implementation PR #256 merged `b52b69e2176b3430366a532f73debe29d7d48731` —
+merge commit, no squash, parents EXACTLY (`40cab6b…`,
+`a43e2f78b956205de998e86bb60acd3add2724ea`) with the second parent = the
+D5-APPROVED frozen head; expected-head discipline
+`gh pr merge --merge --match-head-commit a43e2f78b956205de998e86bb60acd3add2724ea`.
+D5 fresh-GLM APPROVED issuecomment-7054487026 at the exact frozen head —
+0 P1 / 0 P2, 2 informational P3 carried — with the grant set verified
+VERBS-EXACT against the EF's own SQL, own live privilege probes, contract
+suite 16/16, and the RED outage reproduced via rollback-scoped revocation
+(verbatim 42501 on all three EF steps, counts 0/0/40 drift-free).
+Merge-executor review trail issuecomment-7054562832; merge stat = exactly
+4 files 690+/9− with `supabase/functions/` + `frontend/` + `.github/` diffs
+byte-empty — the EF code-untouched per the pivot rule. Post-merge at
+`b52b69e`: guard 344/344 +450 subtests, validate-registry
+{ok:true, claims:50, BOOTSTRAP_CONTROL}; **NO Pages run** (backend-only
+paths filter — only the `test` workflow green); **NO BUMP — v1.15.0 STAYS,
+no tag**. Closeout receipts: the registry record (status CLOSED +
+one_next_safe_action), this file, and handoff §8 D6 CLOSEOUT RECEIPT.
+The D-phase log below (§8) and the original claim text are preserved
+verbatim.
 
 Preventive repair — TWO items from the repair-lane (ENV-REPAIR-P4-LEDGER-001,
 PR #253/#254) closeout ledger's successor candidates:

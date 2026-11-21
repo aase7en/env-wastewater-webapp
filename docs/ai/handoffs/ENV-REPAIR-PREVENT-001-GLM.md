@@ -275,3 +275,98 @@ refinement (E6's façade-layer framing vs the security_invoker base-table
 truth — recorded, verdict + scope unchanged); secrets resolved via process
 env from the approved Drive secrets file because this worktree has no `.env`
 stub (the P4-lane precedent path; values never printed).
+
+## 8. D6 CLOSEOUT RECEIPT (2026-11-21)
+
+The claim is CLOSED by the docs-only closeout transition off main @
+`b52b69e2176b3430366a532f73debe29d7d48731`. Full chain:
+
+**Claim transition — PR #255 merged `40cab6b76c85a3bf23acff1f21203c2b11c49da2`**
+(parents `f88157b44bba8fffeef920d852b7d69fe32b986a` + reviewed transition head
+`fa3fcebd07748c68b0da0c5bf8d178d030eb75c1`; independent post-merge audit
+APPROVED issuecomment-7050697677: fence recomputed byte-exact, JSON-diff
+49→50 claims exactly one added, refutation links re-verified).
+
+**Implementation — PR #256 merged `b52b69e2176b3430366a532f73debe29d7d48731`**
+(merge commit, no squash; parents EXACTLY (`40cab6b…`,
+`a43e2f78b956205de998e86bb60acd3add2724ea`) — the second parent IS the
+D5-APPROVED frozen head; expected-head discipline
+`gh pr merge --merge --match-head-commit a43e2f78b956205de998e86bb60acd3add2724ea`;
+merge-executor review trail issuecomment-7054562832). Merge stat = exactly
+4 files 690+/9− (`supabase/migrations/20261121000000_repair_prevent_001_sensor_grants_queue_revoke.sql`
+NEW, `scripts/test_repair_prevent_001_grants.py` NEW, this WO, this handoff);
+`supabase/functions/` + `frontend/` + `.github/` diffs byte-empty — **the EF
+stayed CODE-UNTOUCHED per the pivot rule** (D1 ruled E1–E9 confirmed, no
+contradiction). Local main ff-only `40cab6b`→`b52b69e` clean; post-merge at
+`b52b69e`: guard 344 passed + 450 subtests, validate-registry
+{ok:true, claims:50, BOOTSTRAP_CONTROL}; **deploy honest note: NO Pages run
+at `b52b69e`** — only the `test` workflow green (backend-only paths, the
+deploy-frontend.yml filter does not match); **NO BUMP — v1.15.0 STAYS, no
+tag** (regression checker 37/37).
+
+**D5 fresh-GLM independent review — APPROVED issuecomment-7054487026** at the
+exact frozen head `a43e2f7`: 0 P1 / 0 P2 / 2 informational P3 carried to this
+ledger, with D5's OWN verification: (a) the grant set VERBS-EXACT against
+`supabase/functions/ingest-sensor/index.ts` — lookup SELECT `:51-54` →
+`grant select wastewater.sensor`; INSERT `:72` → `grant insert
+wastewater.sensor_reading`; last_seen UPDATE `:77-80` → `grant update
+wastewater.sensor`; nothing more (no DELETE, no ALL; `sensor_reading` PK is
+`uuid DEFAULT gen_random_uuid()` so no sequence grant needed); the REVOKE
+scoped to `anon, authenticated` SELECT on `public.v_pending_threshold_alerts`
+ONLY, every other public façade untouched; (b) own live probes —
+`has_table_privilege` service_role sensor-path all TRUE, the negative
+insert-on-sensor pin FALSE, anon/authenticated queue-façade SELECT FALSE,
+service_role façade SELECT TRUE, `core` usage + `core.audit_log` INSERT TRUE;
+contract suite rerun 16/16; (c) RED truthfulness — the 9F/7P record matches
+the derived would-fail set, and D5 re-reproduced the pre-apply outage
+itself via rollback-scoped transaction-local revocation (verbatim
+`42501: permission denied for table sensor` / `…sensor_reading` on all three
+EF steps, zero durable drift 0/0/40). P3s carried: (1) a fresh worktree needs
+the gitignored `frontend/.env` copied in or vitest shows 8 file-level
+`Missing VITE_SUPABASE_URL` failures — environmental, not code; (2) the test
+script's Drive-secrets path follows the pre-existing house pattern
+(`test_parity_p4_002_notify.py:119-121`, names-only) — no new exposure.
+
+**THE DELIVERED STORY (refutation → real bug → emulation):**
+1. **Refutation** — the repair-lane ledger's recorded premise ("ingest-sensor
+   INSERTs would hit the reading table's audit-trigger 42501") was REFUTED by
+   repo evidence E7/E8: `trg_audit_log` attaches to 12 tables with
+   `wastewater.sensor_reading` EXPLICITLY skipped as write-heavy telemetry
+   (`20260719000003:15,111`), NO trigger exists on either sensor table across
+   ALL migrations, and the audit chain is ALREADY granted role-level
+   (`20261120000001` usage core + insert core.audit_log — the repair lane's
+   own D5 mark-path emulation had live-proven it).
+2. **The REAL bug (live-confirmed pre-fix)** — `ingest-sensor` runs
+   service_role through the default-schema client and resolves via the
+   EXISTING `public.sensor`/`public.sensor_reading` security_invoker façades,
+   then fails at the base-table check: service_role held ZERO wastewater
+   table grants (D1 verbatim `sr_sel/ins/upd_sensor == false`; the only
+   to-service_role migration in the repo is `20261120000001`, which omits
+   sensor/sensor_reading) ⇒ at owner activation EVERY ingest call
+   `42501`-fails, whole batch lost. The pre-fix emulation reproduced the
+   outage verbatim on all three EF steps (§7 D1 item 5).
+3. **The fix + emulation** — ONE additive migration
+   `20261121000000_repair_prevent_001_sensor_grants_queue_revoke.sql`
+   (the EXACT EF verbs + usage restatements; the explicit
+   `REVOKE SELECT … FROM anon, authenticated` on the queue façade — the
+   repair-lane D5 P3-1; `notify pgrst` reload; rollback documented
+   in-header, the audit-chain pre-grants correctly excluded from rollback).
+   Applied via the ENV_DB-gated helper; post-fix rollback-scoped
+   service_role FULL-PATH EMULATION green — all three EF steps HTTP 201
+   through the public façades, NO audit row (telemetry exemption intact),
+   zero durable rows every batch (0/0/40, fixture residue 0); anon REST
+   still 401 `42501` on both queue paths post-REVOKE (fail-closed held).
+
+**Frontier after this closeout merges:** NO active claim. BOTH edge functions
+are now ACTIVATION-SAFE — `notify-threshold` fixed by the repair lane
+(ENV-REPAIR-P4-LEDGER-001) and `ingest-sensor` by THIS lane — so the
+Telegram/sensor channels will work the moment the owner supplies the
+tokens/data (`supabase secrets TELEGRAM_*` + the sensor-data source per the
+recorded runbooks). The remaining work: the Phase-5 owner checklist (dual-run
+≥ 14 วัน start signal, backfill, AppSheet retirement — OWNER-GATED, the
+owner's action) + the C8 personnel proposal AWAITING OWNER APPROVAL
+(presented in-chat 2026-11-20; execution = a small gated lane once the owner
+picks an option). Standing: hooks #155 approved-not-started (owner-manual),
+#156 OPENROUTER_API_KEY renewal (owner-manual), Building WAITING_EXTERNAL.
+All other work still requires a NEW claim transition; no closed lane confers
+execution authority.
