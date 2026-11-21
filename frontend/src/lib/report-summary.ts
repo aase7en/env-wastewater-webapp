@@ -367,16 +367,27 @@ export interface WaterSupplySummary {
   /** Sum_water_in (ref 2796–2810) = Σ recorded Water_In (Filter_Water's
    *  Sum_Water ref 1701–1716 reads the SAME น้ำประปา[Water_In] source). */
   sumWaterIn: number;
+  /** Days that contributed a non-null Water_In value — the
+   *  ENV-REPAIR-REPORT-HONESTY-001 gate key: 0 value-days ⇒ the recorded
+   *  sum renders "ไม่มีข้อมูล", never 0 (covers empty AND rows-but-all-null
+   *  months; recordedDays alone would miss the all-null shape). */
+  waterInDays: number;
   /** Σ water_in_estimate (hours × spec flow) — flagged ประมาณจากชั่วโมงปั๊ม. */
   sumWaterInEstimate: number;
   waterInEstimateFlagged: string;
+  /** Value-day count for water_in_estimate (same honesty gate). */
+  waterInEstimateDays: number;
   /** Sum_Chlorine_use (ref 2812–2826) = Σ chlorine_usage_realy (÷(1+9) view value). */
   sumChlorineReal: number;
+  /** Value-day count for chlorine_usage_realy (same honesty gate). */
+  chlorineRealDays: number;
   /** Kg_chlorine (ref 2844–2850) = sumChlorineReal × 1.2 — display layer. */
   kgChlorine: number;
   /** ไฟฟ้ารวม (ประปา) = Σ energy_use_estimate (hours × 3.7 spec-at-date). */
   sumEnergyEstimate: number;
   energyEstimateFlagged: string;
+  /** Value-day count for energy_use_estimate (same honesty gate). */
+  energyEstimateDays: number;
 }
 
 /** Aggregate the น้ำประปา date-range summary from the P1.5 chain view rows. */
@@ -397,13 +408,17 @@ export function buildWaterSupplySummary(input: {
     boundaryDays: chain.filter((c) => c.hour_boundary_flag === true).length,
     specMissingDays: chain.filter((c) => c.spec_missing === true).length,
     sumWaterIn: sumNonNull(chain.map((c) => c.water_in)),
+    waterInDays: chain.filter((c) => num(c.water_in) !== null).length,
     sumWaterInEstimate: sumNonNull(chain.map((c) => c.water_in_estimate)),
     waterInEstimateFlagged: FLAG_PUMP_HOURS_ESTIMATE,
+    waterInEstimateDays: chain.filter((c) => num(c.water_in_estimate) !== null).length,
     sumChlorineReal,
+    chlorineRealDays: chain.filter((c) => num(c.chlorine_usage_realy) !== null).length,
     // Kg_chlorine = [Sum_Chlorine_use]*1.2 (ref 2849) — display layer (D1-3).
     kgChlorine: sumChlorineReal * REPORT_CHLORINE_LITTER_FACTOR,
     sumEnergyEstimate: sumNonNull(chain.map((c) => c.energy_use_estimate)),
     energyEstimateFlagged: FLAG_SPEC_ESTIMATE,
+    energyEstimateDays: chain.filter((c) => num(c.energy_use_estimate) !== null).length,
   };
 }
 

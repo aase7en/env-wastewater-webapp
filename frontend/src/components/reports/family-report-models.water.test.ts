@@ -155,4 +155,28 @@ describe("น้ำประปา print model — the sample-PDF layout (honest
     expect(m.missingDays).toBe(29);
     expect(m.notes.join("\n")).toContain("29");
   });
+
+  it("ENV-REPAIR-REPORT-HONESTY-001 — zero-rows month renders ไม่มีข้อมูล, never 0 ลบ.ม./0 ลิตร", () => {
+    const m = buildWaterPrintModel({ month: MONTH, chainRows: [], personnel: PERSONNEL });
+    expect(m.recordedDays).toBe(0);
+    expect(m.summaryLines[0]).toContain("ไม่มีข้อมูล");
+    expect(m.summaryLines[0]).not.toContain("0 ลบ.ม.");
+    expect(m.summaryLines[1]).toContain("ไม่มีข้อมูล");
+    expect(m.summaryLines[1]).not.toContain("0 ลิตร");
+    expect(m.notes.join("\n")).not.toContain("0 ลบ.ม.");
+    expect(m.notes.join("\n")).not.toContain("0 kWh");
+  });
+
+  it("ENV-REPAIR-REPORT-HONESTY-001 — rows-but-all-null month also renders ไม่มีข้อมูล (the gate keys on value days, not recordedDays)", () => {
+    const m = buildWaterPrintModel({
+      month: MONTH,
+      chainRows: [w({ water_in: null, chlorine_usage: null, chlorine_usage_realy: null })],
+      personnel: PERSONNEL,
+    });
+    expect(m.recordedDays).toBe(1);
+    expect(m.summaryLines[0]).toContain("ไม่มีข้อมูล");
+    expect(m.summaryLines[0]).not.toContain("0 ลบ.ม.");
+    expect(m.summaryLines[1]).toContain("ไม่มีข้อมูล");
+    expect(m.summaryLines[1]).not.toContain("0 ลิตร");
+  });
 });
