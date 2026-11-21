@@ -135,4 +135,18 @@ describe("ไฟฉุกเฉิน print model — the gdoc authority layout"
     expect(m.summaryAction).toBeNull();
     expect(m.notes.join("\n")).toContain("ไม่มีรายการตรวจสอบในเดือนนี้");
   });
+
+  it("ENV-REPAIR-REPORT-HONESTY-001 — unknown-result-only month ⇒ NOT the ☑ ready verdict (off-vocab never coerced to Ready)", () => {
+    const m = buildLightPrintModel({
+      month: MONTH,
+      checks: [chk({ test_result: "เสีย" }), chk({ id: "b", check_date: "2026-11-06", test_result: "" })],
+      personnel: PERSONNEL,
+    });
+    expect(m.failCount).toBe(0);
+    expect(m.otherCount).toBe(2);
+    expect(m.summaryReady).not.toContain("☑");
+    expect(m.summaryReady).toContain("ยังสรุปความพร้อมใช้งานไม่ได้");
+    expect(m.summaryReady).toContain("2");
+    expect(m.summaryAction).toContain("จำนวน 0 เครื่อง");
+  });
 });

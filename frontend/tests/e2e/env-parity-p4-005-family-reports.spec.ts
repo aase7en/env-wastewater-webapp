@@ -254,4 +254,51 @@ test.describe("family print-ready views (P4.005: ถังดับเพลิ�
     await openFamilyPrint(page, "water");
     expect(writes).toHaveLength(0);
   });
+
+  test("ENV-REPAIR-REPORT-HONESTY-001 — one print area at a time: opening one print mode clears the other (ทส.1 ↔ family), exactly one .tos-print-area per open", async ({ authed: page }) => {
+    await mockFamilyReportsRest(page);
+    // give ทส.1 a recorded day so the print view opens (rows > 0)
+    await page.route("**/rest/v1/v_reading_with_computed**", async (route) => {
+      await route.fulfill({
+        status: 200,
+        contentType: "application/json",
+        body: JSON.stringify([
+          {
+            id: "rd-1", reading_date: "2026-11-05", wastewater_in: 12,
+            chlorine_used: null, excess_sludge_removed: null,
+            tds_aeration: null, do_before_discharge: null,
+          },
+        ]),
+      });
+    });
+
+    await page.goto("/reports");
+    await page.getByTestId("report-open-print").click();
+    await expect(page.getByTestId("tos-print-view")).toBeVisible();
+    await expect(page.locator(".tos-print-area")).toHaveCount(1);
+
+    // open a family print view WITHOUT leaving the page — the ทส.1 area must unmount
+    await page.getByTestId("report-family-ext").click();
+    await page.getByTestId("report-family-month").fill(MONTH);
+    await page.getByTestId("report-family-open-print").click();
+    await expect(page.getByTestId("family-print-view")).toBeVisible();
+    await expect(page.getByTestId("tos-print-view")).toHaveCount(0);
+    await expect(page.locator(".tos-print-area")).toHaveCount(1);
+
+    // under print emulation the single surviving area is the ONLY visible region
+    await page.emulateMedia({ media: "print" });
+    await expect(page.locator(".tos-print-area")).toHaveCount(1);
+    const visibility = await page
+      .locator(".tos-print-area")
+      .first()
+      .evaluate((el) => getComputedStyle(el).visibility);
+    expect(visibility).toBe("visible");
+    await page.emulateMedia({ media: null });
+
+    // and the reverse transition: ทส.1 again clears the family area
+    await page.getByTestId("report-open-print").click();
+    await expect(page.getByTestId("tos-print-view")).toBeVisible();
+    await expect(page.getByTestId("family-print-view")).toHaveCount(0);
+    await expect(page.locator(".tos-print-area")).toHaveCount(1);
+  });
 });

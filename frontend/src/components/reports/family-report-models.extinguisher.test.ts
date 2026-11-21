@@ -178,4 +178,35 @@ describe("ถังดับเพลิง print model — the gdoc authority l
     expect(m.abnormalCount).toBe(0);
     expect(m.notes.join("\n")).toContain("1");
   });
+
+  it("ENV-REPAIR-REPORT-HONESTY-001 — incomplete-only month ⇒ NOT the ☑ ready verdict (unknown never coerced to Ready)", () => {
+    const m = buildExtinguisherPrintModel({
+      month: MONTH,
+      inspections: [row({ pipe: null, handle: null, tank: null, pressure_gauge: null })],
+      masterIds: ["m1"],
+      personnel: PERSONNEL,
+    });
+    expect(m.incompleteCount).toBe(1);
+    expect(m.abnormalCount).toBe(0);
+    expect(m.summaryReady).not.toContain("☑");
+    expect(m.summaryReady).toContain("ยังสรุปความพร้อมใช้งานไม่ได้");
+    expect(m.summaryReady).toContain("1");
+    expect(m.summaryAction).toContain("จำนวน 0 ถัง");
+  });
+
+  it("ENV-REPAIR-REPORT-HONESTY-001 — all-normal + incomplete mix never renders ☑ ready either", () => {
+    const m = buildExtinguisherPrintModel({
+      month: MONTH,
+      inspections: [
+        row({}),
+        row({ id: "b", extinguisher_id: "ext-2", inspection_date: "2026-11-07", pipe: null, handle: "ปกติ", tank: "ปกติ", pressure_gauge: null }),
+      ],
+      masterIds: ["m1"],
+      personnel: PERSONNEL,
+    });
+    expect(m.incompleteCount).toBe(1);
+    expect(m.abnormalCount).toBe(0);
+    expect(m.summaryReady).not.toContain("☑");
+    expect(m.summaryReady).toContain("ยังสรุปความพร้อมใช้งานไม่ได้");
+  });
 });

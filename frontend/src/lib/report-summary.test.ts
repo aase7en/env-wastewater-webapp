@@ -422,6 +422,36 @@ describe("buildWaterSupplySummary (น้ำประปา side)", () => {
     expect(FLAG_SPEC_ESTIMATE).toBe("ค่าประมาณจากสเปก");
     expect(FLAG_PUMP_HOURS_ESTIMATE).toBe("ประมาณจากชั่วโมงปั๊ม");
   });
+
+  it("ENV-REPAIR-REPORT-HONESTY-001 — value-day counts expose days with a non-null value (the honesty gate keys)", () => {
+    expect(s.waterInDays).toBe(1);
+    expect(s.chlorineRealDays).toBe(1);
+    expect(s.waterInEstimateDays).toBe(1);
+    expect(s.energyEstimateDays).toBe(1);
+  });
+
+  it("ENV-REPAIR-REPORT-HONESTY-001 — an empty month has 0 value-days (empty ≠ zero, gate ≠ number)", () => {
+    const empty = buildWaterSupplySummary({ startISO: start, endISO: end, chain: [] });
+    expect(empty.sumWaterIn).toBe(0);
+    expect(empty.waterInDays).toBe(0);
+    expect(empty.chlorineRealDays).toBe(0);
+    expect(empty.waterInEstimateDays).toBe(0);
+    expect(empty.energyEstimateDays).toBe(0);
+  });
+
+  it("ENV-REPAIR-REPORT-HONESTY-001 — rows-but-all-null also has 0 value-days (the gate never keys on recordedDays)", () => {
+    const allNull = buildWaterSupplySummary({
+      startISO: start,
+      endISO: end,
+      chain: [waterChainRow({ id: "wn", check_date: "2026-11-04" })],
+    });
+    expect(allNull.recordedDays).toBe(1);
+    expect(allNull.sumWaterIn).toBe(0);
+    expect(allNull.waterInDays).toBe(0);
+    expect(allNull.chlorineRealDays).toBe(0);
+    expect(allNull.waterInEstimateDays).toBe(0);
+    expect(allNull.energyEstimateDays).toBe(0);
+  });
 });
 
 // ─── Threshold-hit counts (WO §2.4-4 — view-provided flags only) ──────────
