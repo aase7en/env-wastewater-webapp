@@ -55,7 +55,7 @@ GARDEN_ID = "1Hluhfryn2uMdK8nQ2kRJyLI3q-ZbrwgBgveDbhJlerw"
 # report must carry counts only — this string must NEVER appear in the
 # rendered text even though the fixture rows hold it.
 PII_CANARY = "นายทดสอบ พีไอไอล่อลวง"
-PII_CANARY_ID = "1101700123456"
+PII_CANARY_ID = "ACC-110170012345-X"  # synthetic row-content token (12 digits: no 13-digit run by design)
 
 
 def _domain(key: str) -> dict:
