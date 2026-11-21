@@ -243,3 +243,95 @@ because this fresh worktree lacks the gitignored `.env` stub
 (CANONICAL_ENV_ABSENT, verified read-only). The token was exported into
 the process env only, never printed, never committed. No other channel
 was used; the script's own resolver path is unchanged.
+
+## 8. D6 CLOSEOUT RECEIPT (docs-only closeout transition, 2026-11-21)
+
+The docs-only closeout transition closes claim `ENV-PHASE5-READY-001-C1`
+(gen 1) off main @ `da962480248d91f7aa2166962d608d4e0662a5cd` (the
+implementation merge / PR #262 tip; fetched + ff-verified + clean
+dedicated worktree). **STOP at REVIEW_REQUESTED — this closeout PR is
+never merged by its author; the authorized reviewer owns approval +
+merge.**
+
+### 8.1 The delivered chain — receipts verified live before writing
+
+- **Claim transition PR #261 MERGED** `8cf9d3e8e53435a9eadfe1be953c3306233eb65e`
+  (parents `6bb14e9…` + reviewed transition head `f9ac2373…`;
+  merge-executor review **R2 APPROVED issuecomment-7059845106** —
+  "APPROVED (0 P1 / 0 P2)").
+- **Implementation PR #262 MERGED** `da962480248d91f7aa2166962d608d4e0662a5cd`
+  (parents `8cf9d3e…` + **`aaee05690b5f1eb05a8f7ee5f1217a55413a2105`** =
+  EXACTLY the D5-R2-APPROVED repaired head; merge commit, no squash; merge
+  trail in-thread).
+- **D2 truthful RED** `c507744819430543b12144c070a2204ae63fa52a`
+  ("D2 RED-first mocked contract suite…") — the suite failed-to-collect
+  before the script existed; ancestor of the repaired head (verified).
+- **D4 LIVE read-only smoke** (recorded §"D4 LIVE…" above): 17 domains —
+  **7 ตรงกัน / 4 ต่างกัน / 6 ยังไม่มีแหล่งข้อมูล**. The 4 ต่างกัน are
+  EXPECTED pre-cutover drift, never a defect: reading Δ120 (ENV horizon
+  frozen at the 2026-07-04 migration), personnel 34/9 (ENV baseline 9 at
+  migration vs the sheet roster incl. C8 statuses),
+  extinguisher_inspection 877/0 (P2.2 seeded nothing — history awaits the
+  owner backfill), emergency_light_check +10 (rows after the P2.3 seed).
+- **D5 R1 CHANGES_REQUIRED issuecomment-7060512572** at exact head
+  `5a9e30b38d40575111a0d9ef5ea1ddf736a0a63e`: 1×P2 — the checklist never
+  told the owner the 4 ต่างกัน are EXPECTED pre-cutover and its §5
+  register omitted the shared-domain history backfill; 1×P3 — the พ.ศ.
+  Feb-29 cell crash (`value.replace(year=y-543)` ValueError aborting the
+  run).
+- **Repairs at `aaee056`** (single commit on `5a9e30b`, exactly 3 files):
+  checklist §2.4 expected-drift explanation + ตารางที่ 2 rows 9-12
+  shared-domain backfill register + `try/except` unparsable-safe date
+  fallback (row stays counted-as-unparsable) + regression pin.
+- **D5 R2 APPROVED issuecomment-7060669826** (fresh reviewer; both
+  findings verified repaired at `aaee056`).
+
+### 8.2 Deliverables live at `da96248`
+
+- `scripts/phase5_parity_check.py` — the Day-14 acceptance evidence
+  generator (closeout re-run: **23 passed + 17 subtests**).
+- `scripts/test_phase5_parity_check.py` — the D2-first mocked contract
+  suite (zero live network).
+- `docs/ai/PHASE5-CUTOVER-CHECKLIST.md` (Thai) — the ≥14 วัน dual-run
+  protocol, §2.4 expected-drift explanation, §5 shared-domain backfill
+  register (ตารางที่ 2 rows 9-12), every owner decision point marked
+  (🚧). **NO BUMP — v1.15.0 stays, no tag** (internal tooling + docs).
+
+### 8.3 The closeout transition's own fence + verification
+
+- Branch `docs/env-phase5-ready-001-closeout` off `da96248`; fence:
+  `expected_policy_revision = da962480248d91f7aa2166962d608d4e0662a5cd`,
+  `expected_registry_hash = 3e9ae23caf8478d449d537fa52e5f2b0db1987fb7afe473699f70976e1412016`
+  (guard validate-registry registry_hash AT `da96248` — method verified
+  empirically: it byte-exactly reproduces the prior fence
+  `11d15e4c…a78` at `6bb14e9`).
+- Registry diff vs `da96248` = exactly 1 claim changed
+  (`ENV-PHASE5-READY-001-C1` → CLOSED); the other 51 claims
+  byte-identical; `diff --stat` = exactly 3 files (this handoff, the WO,
+  CURRENT-WORK.md).
+
+### 8.4 Frontier after this closeout merges
+
+**NO active claim — ALL non-owner work now EXHAUSTED.** The entire
+AppSheet parity program (Phases 1–4 + repairs + the P4-ledger sweep + the
+prevent lane) plus the Phase-5 readiness toolkit are DELIVERED. What
+remains is **Phase 5 EXECUTION, wholly owner-gated** per
+`docs/ai/PHASE5-CUTOVER-CHECKLIST.md`:
+
+1. **Step 1** — the owner shares the 6 remaining sheets (probe wakeup
+   active; each share pivots its domain from `ยังไม่มีแหล่ง` into the
+   parity table).
+2. **Step 2** — the Telegram token via supabase secrets.
+3. **Step 3** — the dual-run ≥14 วัน: the checklist is the staff
+   protocol; `scripts/phase5_parity_check.py` is the Day-14 acceptance
+   evidence generator.
+4. **Step 4** — the cutover decisions at the checklist's marked 🚧
+   decision points (dual-run acceptance, backfill execution, AppSheet
+   freeze → read-only ≥90 วัน → retirement).
+
+Standing owner-side items: hooks **#155 approved-not-started**
+(owner-manual, not agent-actionable), **#156** OPENROUTER_API_KEY renewal
+(owner-manual), **Building WAITING_EXTERNAL** (DB-check items need psql +
+`.env` from a machine that has them), `ENV-SUNDAYMCP-ROUTING-001-C1`
+owner-side. All other work still requires a NEW claim transition; no
+closed lane confers execution authority.
