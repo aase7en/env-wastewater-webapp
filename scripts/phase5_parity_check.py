@@ -107,7 +107,7 @@ WORKBOOK_NAMES = {
 
 
 def _d(key, name_th, *, source, env_tables, citation, workbook_id=None, tab=None,
-       date_column=None, date_type=None, note=None):
+       date_column=None, date_type=None, note=None, sheet_date_column=None):
     spec = {
         "key": key,
         "name_th": name_th,
@@ -122,6 +122,11 @@ def _d(key, name_th, *, source, env_tables, citation, workbook_id=None, tab=None
         spec["workbook_id"] = workbook_id
     if tab is not None:
         spec["tab"] = tab
+    if sheet_date_column is not None:
+        # the VERBATIM AppSheet-side date column name where a record pins it
+        # (ref-12 §3.2/§3.3 formulas etc.) — the ENV column name is a
+        # translation, not the sheet's header
+        spec["sheet_date_column"] = sheet_date_column
     return spec
 
 
@@ -130,11 +135,16 @@ DOMAIN_MAP = [
     _d("reading", "บ่อบำบัด — บันทึกคุณภาพน้ำรายวัน", source="public",
        workbook_id="1kWtdmDzUNWTB5LnUY87fHjeK6Wcs8jTxeXCIkAoM6Vk", tab="ข้อมูลคุณภาพน้ำ",
        env_tables=[("wastewater", "reading")], date_column="reading_date", date_type="date",
-       citation="ref-12 §3.2/§3.3; P2.4 WO §2.1 tab enumeration; P1.002 meter-chain record"),
+       sheet_date_column="วันที่ บันทึก",
+       citation="ref-12 §3.2/§3.3; P2.4 WO §2.1 tab enumeration; P1.002 meter-chain record",
+       note="การย้ายประวัติปักขอบเขต 907 แถว (ถึง 2026-07-04 ณ เวลาอ่าน); "
+            "แถวที่ชีตมีเพิ่มจาก ENV คือข้อมูลที่ยังบันทึกเฉพาะ AppSheet (dual-run ยังไม่เริ่ม)"),
     _d("personnel", "ผู้ปฏิบัติงาน", source="public",
        workbook_id="1kWtdmDzUNWTB5LnUY87fHjeK6Wcs8jTxeXCIkAoM6Vk", tab="ข้อมูลผู้ปฏิบัติงาน",
        env_tables=[("core", "personnel")], date_column=None, date_type=None,
-       citation="P2.3 receipt (Drive-sourced tab of the pond workbook); C8 personnel lane"),
+       citation="P2.3 receipt (Drive-sourced tab of the pond workbook); C8 personnel lane",
+       note="baseline การย้ายปักไว้ 9 แถว (P3.1 receipt); ชีตเก็บทั้ง roster รวมสถานะ "
+            "ย้ายกลุ่มงาน/ลาออก/ลาศึกษาต่อ (enum C8) — ความต่างต้องตีความตามทะเบียน ไม่ใช่ parity อัตโนมัติ"),
     _d("distributor", "ตัวแทนจำหน่าย", source="public",
        workbook_id="1kWtdmDzUNWTB5LnUY87fHjeK6Wcs8jTxeXCIkAoM6Vk", tab="distributor",
        env_tables=[("core", "distributor")], date_column=None, date_type=None,
@@ -145,11 +155,13 @@ DOMAIN_MAP = [
        citation="P3.5 seed receipt (tab คู่มือ, 10 rows)"),
     _d("item_calibration", "เทียบมาตรฐานเครื่องมือ", source="public",
        workbook_id="1QlG0vskH_uFWoc2BiKMdL2nFkOjhGXE3D_yW3BIHpsw", tab="maintaining",
-       env_tables=[("core", "item_calibration")], date_column="cal_date", date_type="date",
-       citation="P3.3 receipt (SOURCE_XLSX maintaining tab, 11 rows)"),
+       env_tables=[("core", "item_calibration")], date_column="calibration_date", date_type="date",
+       sheet_date_column="Cal_date",
+       citation="P3.3 receipt (tab maintaining, 11 rows; Cal_date → calibration_date per migration 20261118000005)"),
     _d("job_log", "งานสวน — บันทึกการทำงาน", source="public",
        workbook_id="1Hluhfryn2uMdK8nQ2kRJyLI3q-ZbrwgBgveDbhJlerw", tab="job",
        env_tables=[("core", "job_log")], date_column="scanned_at", date_type="timestamp",
+       sheet_date_column="Date_time",
        citation="P3.4 receipt (tab job, 1102 rows; Date_time → scanned_at)"),
     _d("location_area", "งานสวน — พื้นที่", source="public",
        workbook_id="1Hluhfryn2uMdK8nQ2kRJyLI3q-ZbrwgBgveDbhJlerw", tab="location_area",
@@ -162,8 +174,10 @@ DOMAIN_MAP = [
     _d("extinguisher_inspection", "ตรวจสอบถังดับเพลิง", source="public",
        workbook_id="15EjQ9Ze3LsbUlCxWsm5p2PB_a8KD6o-7_c21I7f3s_E", tab="ตรวจสอบถัง",
        env_tables=[("safety", "extinguisher_inspection")], date_column="inspection_date",
-       date_type="date",
-       citation="P2.1/P2.2 receipts (tab ตรวจสอบถัง gid 0, 858 rows)"),
+       date_type="timestamp",
+       citation="P2.1/P2.2 receipts (tab ตรวจสอบถัง gid 0; 858 rows SHAPE-ONLY era)",
+       note="P2.2 ยืนยัน seed NOTHING — ประวัติการตรวจ 858+ แถวยังไม่ถูกย้ายเข้า ENV "
+            "(การย้ายประวัติ = backfill ตามทะเบียน §5 ของเช็กลิสต์ เป็นการตัดสินใจของเจ้าของ)"),
     _d("emergency_light", "ไฟฉุกเฉิน (master)", source="public",
        workbook_id="1iqSxixJxPApUOYNFFvw2cgH4zD7lPcC_tPzNs2QePAw", tab="Emergency light",
        env_tables=[("safety", "emergency_light")], date_column=None, date_type=None,
@@ -171,7 +185,8 @@ DOMAIN_MAP = [
     _d("emergency_light_check", "ตรวจไฟฉุกเฉิน", source="public",
        workbook_id="1iqSxixJxPApUOYNFFvw2cgH4zD7lPcC_tPzNs2QePAw", tab="Check",
        env_tables=[("safety", "emergency_light_check")], date_column="check_date", date_type="date",
-       citation="P2.1/P2.3 receipts (tab Check gid 1164639452, 332 rows)"),
+       citation="P2.1/P2.3 receipts (tab Check gid 1164639452; seeded 332 rows at P2.3)",
+       note="seed ณ P2.3 = 332 แถว; delta จากชีต = แถวที่บันทึกเพิ่มหลัง seed (dual-run ยังไม่เริ่ม)"),
     # ── UNSHARED (SOURCE_UNAVAILABLE — the owner sheet-share obligation) ──
     _d("manual_water_supply", "คู่มือน้ำประปา", source="unshared",
        env_tables=[("core", "manual_water_supply")],
@@ -253,8 +268,14 @@ def _to_iso_date(value):
     if value is None or (isinstance(value, str) and not value.strip()):
         return None
     if isinstance(value, dt.datetime):
+        y = value.year
+        if y >= 2400:  # the recorded seed precedent: sheet พ.ศ. years → CE −543
+            value = value.replace(year=y - 543)
         return value.date().isoformat()
     if isinstance(value, dt.date):
+        y = value.year
+        if y >= 2400:  # Excel date cells whose year number is พ.ศ. (P2.3 precedent)
+            value = value.replace(year=y - 543)
         return value.isoformat()
     if isinstance(value, (int, float)) and not isinstance(value, bool):
         try:
@@ -265,6 +286,8 @@ def _to_iso_date(value):
     m = _ISO_RE.match(text)
     if m:
         y, mo, d = (int(g) for g in m.groups())
+        if y >= 2400:  # Thai พ.ศ. typed in ISO shape — same rule as the slash form
+            y -= 543
         try:
             return dt.date(y, mo, d).isoformat()
         except ValueError:
@@ -307,6 +330,35 @@ def parse_sheet_dates(rows, date_column) -> SheetDates:
         iso_dates=sorted(days),
         monthly=monthly,
     )
+
+
+def resolve_sheet_date_column(frame: SheetFrame, d) -> tuple:
+    """Return (sheet_date_column_or_None, how_it_was_resolved).
+
+    Order: the domain's verbatim `sheet_date_column` when it exists in
+    the frame header → else auto-detect the column with the most
+    parseable date values (the AppSheet header names are Thai/verbatim
+    translations are NOT assumed — D1-1 honesty). No parseable column
+    at all → (None, reason) and the sheet-side date stats stay ไม่ทราบ
+    while row counts stay honest.
+    """
+    declared = d.get("sheet_date_column")
+    if declared and frame.columns and declared in frame.columns:
+        return declared, f"คอลัมน์วันที่ (ชีต): «{declared}» — ตามที่บันทึกไว้ในแผนที่โดเมน"
+    if not frame.rows:
+        return (declared or None), (
+            f"คอลัมน์วันที่ (ชีต): «{declared}» — ชีตว่าง (สถิติวันที่ไม่มีให้ตรวจ)"
+        ) if declared else (None, "ชีตว่าง (ไม่มีคอลัมน์ให้ตรวจ)")
+    best, best_hits = None, 0
+    candidates = frame.columns or (list(frame.rows[0].keys()) if frame.rows else [])
+    for col in candidates:
+        hits = sum(1 for r in frame.rows if _to_iso_date(r.get(col)) is not None)
+        if hits > best_hits:
+            best, best_hits = col, hits
+    if best_hits > 0:
+        tag = "ตามที่บันทึกไว้ในแผนที่โดเมน" if best == declared else "ตรวจพบอัตโนมัติจากหัวตาราง"
+        return best, f"คอลัมน์วันที่ (ชีต): «{best}» — {tag} (อ่านได้ {best_hits}/{len(frame.rows)} แถว)"
+    return None, "ไม่พบคอลัมน์วันที่ที่อ่านได้ในชีต — สถิติวันที่ฝั่ง AppSheet: ไม่ทราบ (จำนวนแถวยังถูกนับครบ)"
 
 
 def _missing_days(iso_dates, cap=30):
@@ -530,6 +582,11 @@ def _sheet_section(sd: SheetDates | None, date_domain: bool):
         if sd.iso_dates:
             cov = _coverage(sd.iso_dates)
             lines.append(f"  ช่วงวันที่ (AppSheet): {sd.iso_dates[0]} → {sd.iso_dates[-1]}")
+            if cov[1] > 365 * 20:
+                lines.append(
+                    "  ⚠ ช่วงวันที่กว้างผิดปกติ (>20 ปี) — อาจมีเซลล์วันที่พิมพ์ผิดในแหล่งข้อมูล; "
+                    "รายงานคงค่าตามแหล่ง (ไม่เดาแทน)"
+                )
             lines.append(
                 f"  ครอบคลุม (AppSheet): {cov[0]}/{cov[1]} วัน ({cov[2]:.1f}%) "
                 f"— ตัวหารคือจำนวนวันปฏิทินในช่วงข้อมูล"
@@ -650,13 +707,22 @@ def _check_domain(d, sheet_source, db_source) -> DomainResult:
         res.lines.append("  ฝั่ง AppSheet: ไม่ทราบ — ไม่มีการสร้างตัวเลขแทน")
         _db_section(res, d, db_source)
         return res
-    sd = parse_sheet_dates(frame.rows, d["date_column"]) if date_domain else None
+    sd = None
+    sheet_date_note = None
+    if date_domain:
+        col, sheet_date_note = resolve_sheet_date_column(frame, d)
+        if col is not None:
+            sd = parse_sheet_dates(frame.rows, col)
+        else:
+            sd = SheetDates(total=len(frame.rows), unparsable=0, iso_dates=[], monthly={})
     if not date_domain:
         sd = SheetDates(total=len(frame.rows), unparsable=0, iso_dates=[], monthly={})
     res.lines.append(
         f"  แหล่ง AppSheet: workbook {WORKBOOK_NAMES.get(d['workbook_id'], d['workbook_id'])} "
         f"({d['workbook_id']}) tab «{d['tab']}» — อ่านอย่างเดียว"
     )
+    if sheet_date_note:
+        res.lines.append(f"  {sheet_date_note}")
     res.lines.extend(_sheet_section(sd, date_domain))
 
     # ── DB side ──
