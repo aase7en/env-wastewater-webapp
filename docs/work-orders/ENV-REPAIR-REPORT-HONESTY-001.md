@@ -1,6 +1,6 @@
 # Work Order — ENV-REPAIR-REPORT-HONESTY-001 (Claim ENV-REPAIR-REPORT-HONESTY-001-C1, gen 1)
 
-**Status: IMPLEMENTATION DELIVERED / REVIEW_REQUESTED (PR #265).** This WO is
+**Status: DELIVERED—CLOSED (PR #265 merged `e0738029e5a01ebaf6a8d5187f4789565e3102cc`, released v1.15.1, deployed, tagged v1.15.1; closeout = registry transition off main @ `e073802`).** This WO is
 written by the
 docs-only claim transition off main @
 `c12775f05d2e15187dbc97c031471a05e9cd2f13` (PR: the
@@ -11,6 +11,24 @@ after this transition PR merges (worktree
 `_worktrees/env-repair-report-honesty-001`, implementation branch off the
 post-merge main tip — name pinned at its D1, house
 `feat/env-repair-report-honesty-001` form).
+DELIVERY CHAIN (closed 2026-11-21): D1 receipt `a4d7968` (LIVE probe re-run
+read-only at `2b1cfd9`, 3/3 shapes identical) → D2 truthful RED `d7bd2be`
+(8 failed / 55 passed, existing 23 model pins stay green) → D3 fix `c7119be`
+→ release `efbc085` (v1.15.1 PATCH) → implementation PR #265 merged
+`e073802` (second parent EXACTLY the D5-APPROVED head `ac230ae2`,
+expected-head discipline `--match-head-commit`, merge trail
+issuecomment-7063107774; merge stat = exactly 12 files 398+/15−,
+`safety-summary.ts` absent — AppSheet verbatim predicates byte-untouched).
+D5 fresh-GLM APPROVED issuecomment-7063078774 at exact head `ac230ae2`
+(0 P1 / 0 P2 / 2 informational P3 carried to the ledger; own battery at head:
+vitest FULL 998P/1skip, tsc clean, oxlint 0, Playwright FULL 336/336 w=1,
+guard 344/344, runtime 62/62, checker OK v1.15.1; RED REPRODUCED at isolated
+`d7bd2be`). Release v1.15.1 LIVE: Pages run 44907777019 SUCCESS @ `e073802`,
+live markers fresh (index-uwg6S2PD.js: 1.15.1 ×2 + chip markers + ไม่มีข้อมูล
+×11 + ยังสรุปความพร้อมใช้งานไม่ได้ ×1), tag v1.15.1 (`28c7c3f7`) peels to
+`e073802`, checker `--tag v1.15.1` exit 0. Post-merge at `e073802`: guard
+344/344 + validate-registry ok:true 53 claims (claim still CLAIMED at merge
+time). Full receipts: registry `one_next_safe_action` + handoff D6.
 Group-A corrective report-honesty repair — the 3 CONFIRMED defects from the
 read-only reproduction receipt `/tmp/env-groupA-repro-2026-11-20.md`
 (UTH[AI]-ENV directive 2026-11-20 Group A, P1 Reports Data Honesty; the
