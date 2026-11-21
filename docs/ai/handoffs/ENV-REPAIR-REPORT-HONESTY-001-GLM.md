@@ -223,6 +223,79 @@ visible + absolute top-left.
   reviewed transition).
 - **P3-3** (branch mapping): stated at §7.0 above.
 
+## 8. D2–D4 execution receipts (implementation lane, 2026-11-21)
+
+### 8.1 D2 — truthful RED (at base; evidence commits a4d7968 + d7bd2be)
+
+- vitest (the 4 model/summary suites): **8 failed / 55 passed** — all 8
+  failures are EXACTLY the new ENV-REPAIR-REPORT-HONESTY-001 pins (ext
+  ☑-with-incomplete ×2, light ☑-with-unknown ×1, water zero-rows
+  "0 ลบ.ม." + all-null ×2 + value-day fields ×3); the existing 23 model
+  pins + all summary pins stayed GREEN through the RED commit.
+- e2e overlap scenario: failed at the EXACT defect — after the family print
+  view opened, the ทส.1 `.tos-print-area` REMAINED mounted
+  (`tos-print-view` count 1 ≠ 0; `.tos-print-area` count 2 ≠ 1).
+
+### 8.2 D3 — the smallest honest fix per defect (commit c7119be)
+
+1. **Ready-gating** (`family-report-models.ts`): extinguisher ☑ now requires
+   `abnormalHeadlineCount === 0 && incompleteCount === 0`; light ☑ requires
+   `failCount === 0 && otherCount === 0`; the abnormal===0-but-incomplete>0
+   month emits the ⚠ non-verdict
+   `⚠ ยังสรุปความพร้อมใช้งานไม่ได้ — มี N รายการ…` disclosing the exact count
+   with the truthful ☐-0 action line (D1-1); ☐ + counted abnormals unchanged;
+   empty-month null-verdict + fallbacks unchanged. `safety-summary.ts`
+   BYTE-UNTOUCHED (verified §8.4).
+2. **Exclusive print areas** (`ReportsPage.tsx`): `onOpenPrint` clears
+   `setFamilyPrint(null)`; `onOpenFamilyPrint` clears `setPrintModel(null)`
+   (state-level mutual clearing per D1-2; opening one print mode unmounts
+   the other ⇒ exactly ONE `.tos-print-area` per open);
+   `report-print.css` BYTE-UNTOUCHED.
+3. **Zero-coercion** (`report-summary.ts` + `family-report-models.ts` +
+   `ReportsPage.tsx`): additive value-day counts on `WaterSupplySummary`
+   (`waterInDays` / `chlorineRealDays` / `waterInEstimateDays` /
+   `energyEstimateDays` — the D1-3 render-gate ruling); the water print
+   summaryLines + estimate notes and all four P1.6 water cards render
+   "ไม่มีข้อมูล" when the keyed value-day count is 0 (covers empty AND
+   rows-but-all-null months — never `recordedDays` alone); partial months
+   keep the real sums over real denominators (all existing data-month pins
+   unchanged).
+
+### 8.3 D4 — FULL battery at the frozen implementation head `efbc085`
+
+| # | Check | Result |
+|---|-------|--------|
+| 1 | vitest FULL (`npx vitest run`) | **53 files / 998 passed / 1 skipped** |
+| 2 | `tsc -b` | clean |
+| 3 | oxlint (`npm run lint`) | exit 0; 0 errors; 0 warnings in the touched files (pre-existing warnings only, untouched files) |
+| 4 | Playwright FULL `--workers=1` | **336 passed / 336 (7.6 m)** — includes the print-overlap e2e (ทส.1 ↔ family both directions, print-emulation visibility, exactly one `.tos-print-area` per open) |
+| 5 | `test_env_coordination_guard.py` | **344/344 OK** |
+| 6 | `test_env_autonomy_runtime.py` | **62/62 OK** |
+| 7 | `test_check_release_version.py` | regression **37 passed, 0 failed** |
+| 8 | `env_coordination_guard.py validate-registry --file docs/ai/CURRENT-WORK.md` | `{ok:true, claims:53, BOOTSTRAP_CONTROL}` (registry untouched by this lane) |
+| 9 | `check_release_version.py --tag v1.15.1` | **OK (v1.15.1; CHANGELOG entry v1.15.1)** |
+| 10 | `git diff --check origin/main...HEAD` | clean (exit 0 — P3-1 repaired) |
+| 11 | secret/JWT-literal grep over the full diff | 0 matches |
+| 12 | diff ⊆ WO §7 | 12 files, all claimed (models + 3 co-located tests, report-summary + test, ReportsPage, e2e spec, CHANGELOG, package.json, WO, handoff) |
+
+### 8.4 Adversarial byte-untouched verification (D1-2 + D1-6 + guard 1/3/4/5)
+
+`git diff origin/main...HEAD --` over `frontend/src/lib/safety-summary.ts`,
+`frontend/src/lib/safety-summary.test.ts`, `supabase/`, `frontend/src/lib/pdf.ts`,
+`frontend/src/lib/parity-fixtures.ts`, `frontend/src/lib/parity-fixtures.test.ts`,
+`frontend/src/components/reports/report-print.css`, `Tos1PrintView.tsx`,
+`Tos2PrintView.tsx`, `ExtinguisherPrintView.tsx`, `LightPrintView.tsx`,
+`WaterPrintView.tsx`, `frontend/src/lib/supabase-queries.ts` → **EMPTY (0
+bytes)**. incompleteCount is never counted as abnormal anywhere in this lane;
+no CSS hardening shipped; the ทส. views are content-frozen; no EF touch; no
+fetch changes; no credentials in any committed file.
+
+### 8.5 CI at the push (PR #265)
+
+`notify` pass · `scripts` pass · `smoke` (prod-URL Playwright) pending at the
+3-commit push — re-checked at the reviewer's approval; this lane stops at
+REVIEW_REQUESTED regardless.
+
 ---
 
 ## Appendix A — the read-only reproduction receipt, VERBATIM
