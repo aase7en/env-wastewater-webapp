@@ -1,14 +1,13 @@
 # Work Order — ENV-REPAIR-PREVENT-001 (Claim ENV-REPAIR-PREVENT-001-C1, gen 1)
 
-**Status: CLAIMED — implementation not started.** This WO is written by the
-docs-only claim transition off main @
-`f88157b44bba8fffeef920d852b7d69fe32b986a` (PR: the
-`docs/env-repair-prevent-001-claim` transition; STOP at REVIEW_REQUESTED —
-the implementing lane NEVER merges; the authorized reviewer owns approval +
-merge). The implementing lane holds the claim ONLY after this transition PR
-merges (worktree `_worktrees/env-repair-prevent-001`, implementation branch
-off the post-merge main tip — name pinned at its D1, house
-`feat/env-repair-prevent-001` form).
+**Status: IMPLEMENTATION DELIVERED — REVIEW_REQUESTED (2026-11-21).**
+Implementation branch `feat/env-repair-prevent-001` off the post-merge main
+tip `40cab6b76c85a3bf23acff1f21203c2b11c49da2` (PR #255 merge); commits:
+D2 RED `f771f00` → D3 migration → docs (this commit). D-phase log appended
+below (§8). The migration IS APPLIED to ENV_DB (live gate before + the
+post-fix emulation after; receipts in the lane handoff). **The implementing
+lane NEVER merges** — the authorized reviewer owns approval + merge; STOP at
+REVIEW_REQUESTED. The original claim text below is preserved verbatim.
 
 Preventive repair — TWO items from the repair-lane (ENV-REPAIR-P4-LEDGER-001,
 PR #253/#254) closeout ledger's successor candidates:
@@ -221,3 +220,62 @@ the queue-façade REVOKE) + the NEW test script
 CONDITIONALLY (expected code-untouched; only per a recorded D1
 contradiction) + this lane's WO/handoff + `docs/ai/CURRENT-WORK.md`.
 Everything else FORBIDDEN (§3).
+
+## 8. D-phase log (implementation receipts — 2026-11-21; full verbatim transcripts in the lane handoff)
+
+- **D1 — LIVE GATE, pre-apply (all probes HTTP-verified; read-only + rollback-scoped):**
+  - Privileges: service_role on `wastewater.sensor`/`wastewater.sensor_reading`
+    select/insert/update **ALL false** (exposure confirmed); `usage`
+    wastewater/core **true** (20261120000001 chain intact).
+  - Queue façade census: anon SELECT **true**, authenticated SELECT **true**
+    (default-privilege residue — the REVOKE target), service_role SELECT true.
+  - Trigger census: `trg_audit_log` on `reading` + `threshold_alert` only;
+    `sensor`/`sensor_reading` **NONE** (telemetry exemption intact — E7 live).
+  - **The pre-fix emulation, verbatim (rollback-scoped, fixture
+    `ENV-RP1-PROBE`, `begin; … rollback;`):**
+    - lookup via `public.sensor` → `ERROR: 42501: permission denied for
+      table sensor`;
+    - INSERT via `public.sensor_reading` → `ERROR: 42501: permission denied
+      for table sensor_reading`;
+    - last_seen UPDATE via `public.sensor` → `ERROR: 42501: permission
+      denied for table sensor`.
+    - Zero-durable post-emulation: counts 0/0/40 unchanged, fixture residue 0.
+  - Anon REST both queue paths pre-apply: **401 `{"code":"42501"}`**.
+  - Honest refinement (verdict unchanged): E6 framed the lookup as passing
+    "the façade layer" — live truth: under `security_invoker=on` the base
+    table is the ONLY check, so ALL THREE steps fail 42501 pre-fix (even
+    earlier than E2/E6 framed). No pivot trigger fired (no pre-existing
+    grants; no sensor trigger) — the pivot rule is satisfied, grants-only
+    fix proceeded, EF code-untouched.
+- **D2 — TRUTHFUL RED** (`scripts/test_repair_prevent_001_grants.py`, commit
+  `f771f00`, run against the UNAPPLIED state): **9 failed / 7 passed** —
+  RED = the 3 grant deltas (A.a–A.c), the 2 REVOKE assertions (B.a–B.b, the
+  default-privilege residue), the 4 emulation tests (E.a–E.d, the verbatim
+  42501s above); standing passes disclosed per the P2.4 P3-1 convention (7):
+  A.d schema usage, A.e audit-chain regression pins, B.c service_role façade
+  select, C.a audit-trigger census, C.b telemetry exemption, D.a/D.b anon
+  REST 401 42501 both paths.
+- **D3 — APPLIED** via `scripts/apply_migration_api.py` (ENV_DB gate):
+  `supabase/migrations/20261121000000_repair_prevent_001_sensor_grants_queue_revoke.sql`
+  — **6/6 statements OK, 0 FAIL** (grants + REVOKE + pgrst reload).
+  Post-verify: exact grant set true (select sensor / insert sensor_reading /
+  update sensor; insert-on-sensor stays FALSE — exact verbs only);
+  anon/authenticated SELECT on the façade **false** (zero residual);
+  service_role façade select **true** (unaffected); audit chain intact.
+  **Post-fix emulation (same rollback-scoped shape): HTTP 201 — all three
+  EF steps green; audit_n stayed 40 inside the tx (NO audit row — exemption
+  confirmed live); rollback left 0/0/40 + fixture residue 0.** Anon REST
+  re-probe: **401 42501 both paths** (the REVOKE never opened anything).
+- **D4 — battery at the delivered head:** new suite **16/16 GREEN**; vitest
+  FULL **53 files, 990 passed + 1 skipped** (designed skip); `tsc -b` exit 0;
+  oxlint **0 errors** (19 pre-existing warnings, exactly the historical
+  baseline; 0 in changed files — no frontend files changed); Playwright FULL
+  chromium `--workers=1` **335/335 exit 0**; guard **344/344 + 450 subtests**;
+  runtime **62/62 OK**; validate-registry `{ok:true, claims:50,
+  enforcement_mode:BOOTSTRAP_CONTROL}`; release checker **OK (v1.15.0;
+  CHANGELOG entry v1.15.0) exit 0 — NO BUMP confirmed** (regression suite
+  37/37); `git diff --check` clean; token/JWT-literal grep 0; **diff vs base
+  ⊆ §7** (4 files: migration + test script + this WO + the handoff —
+  `frontend/`, `.github/`, `supabase/functions/` EMPTY, EF byte-untouched).
+- **STOP — REVIEW_REQUESTED.** D5 fresh-GLM independent review at the exact
+  frozen head; the implementer never merges.

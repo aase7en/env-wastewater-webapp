@@ -128,3 +128,150 @@ OPENROUTER_API_KEY renewal (owner-manual); ENV-BUILDING-REPAIR-001-C1
 WAITING_EXTERNAL; the repair-lane carried P3s stay on the ledger (WO §2 /
 repair handoff §8.3) — this lane adjudicates ONLY its two candidates and
 sweeps nothing else.
+
+---
+
+## 7. D-phase receipts — implementation (2026-11-21, Track-Z GLM)
+
+Branch `feat/env-repair-prevent-001` off `40cab6b76c85a3bf23acff1f21203c2b11c49da2`
+(the PR #255 merge tip). All probes through the house Management-API path
+(`api.supabase.com/v1/projects/gllqtbyofrcjzmbnfoeh/database/query`); secrets
+resolved from the approved Drive secrets file/env — **names only echoed,
+values never printed**; `.env`/`data/raw/` never read into the diff.
+
+### D1 — live evidence + rulings (read-only + rollback-scoped; PRE-apply)
+
+1. **Privilege probes (HTTP 201, verbatim):**
+   `{"sr_usage_ww": true, "sr_usage_core": true, "anon_usage_ww": false,
+   "auth_usage_ww": true}` and
+   `{"sr_sel_sensor": false, "sr_ins_sensor": false, "sr_upd_sensor": false,
+   "sr_sel_reading": false, "sr_ins_reading": false, "sr_upd_reading": false,
+   "sr_del_reading": false}` — service_role held ZERO sensor-path grants
+   (E4/E5 live-confirmed); the 20261120000001 chain (usage wastewater/core)
+   intact (E8 pin).
+2. **Queue-façade census (HTTP 201, verbatim):** `{"anon_sel_facade": true,
+   "auth_sel_facade": true, "sr_sel_facade": true}` — the default-privilege
+   REVOKE target confirmed (item 2).
+3. **Trigger census (HTTP 201, verbatim):** `[{"tbl":"reading","trg":
+   "trg_audit_log"},{"tbl":"reading","trg":"trg_persist_parity_alerts"},
+   {"tbl":"reading","trg":"trg_persist_threshold_alerts"},{"tbl":
+   "threshold_alert","trg":"trg_audit_log"}]` — `sensor`/`sensor_reading`
+   NONE (telemetry exemption intact; E7 live-confirmed).
+4. **Baselines:** sensor=0, sensor_reading=0, audit_log=40.
+5. **THE PRE-FIX EMULATION (rollback-scoped, `begin; insert fixture sensor
+   ENV-RP1-PROBE; set local role service_role; … rollback;`) — verbatim:**
+   - lookup via `public.sensor` (the EF :51-54 shape):
+     `ERROR:  42501: permission denied for table sensor` (HTTP 400);
+   - INSERT via `public.sensor_reading` (the EF :72 shape):
+     `ERROR:  42501: permission denied for table sensor_reading` (HTTP 400);
+   - last_seen UPDATE via `public.sensor` (the EF :77-80 shape):
+     `ERROR:  42501: permission denied for table sensor` (HTTP 400);
+   - zero-durable re-probe: `{"sensor_n": 0, "reading_n": 0,
+     "fixture_left": 0}` — **ROLLBACK LEAVES ZERO DURABLE ROWS**.
+6. **Anon REST pre-apply (both queue paths, verbatim):** GET
+   `/rest/v1/v_pending_threshold_alerts` → `HTTP 401 {"code":"42501",…,
+   "message":"permission denied for view v_pending_threshold_alerts"}`;
+   GET `/rest/v1/sensor_reading` → `HTTP 401 {"code":"42501",…,"message":
+   "permission denied for table sensor_reading"}` — fail-closed confirmed.
+7. **D1-1 mechanism ruling:** E1–E9 CONFIRMED (no contradiction: no
+   pre-existing sensor grants, no sensor trigger). **The pivot rule did not
+   fire** — grants-only fix, EF code-untouched.
+   **Honest refinement recorded (verdict unchanged):** E6 framed the lookup
+   as passing "the public-façade layer" — live truth: under
+   `security_invoker=on` the base table is the ONLY privilege check (the
+   façade ACL is not consulted), so ALL THREE EF steps fail 42501 pre-fix —
+   the outage starts at the very first query (`:51-54`), not at the INSERT.
+   The observable owner-activation behavior matches the WO conclusion
+   exactly (fail-closed 500, whole batch lost); the grant set (D1-2) is
+   unchanged; the migration ships as designed.
+8. **D1-2 grant set (re-derived from the live deltas):** SELECT on
+   `wastewater.sensor` + INSERT on `wastewater.sensor_reading` + UPDATE on
+   `wastewater.sensor` (+ `usage` wastewater restated idempotently). uuid
+   PK `gen_random_uuid()` — live census: 0 sequences on the sensor path —
+   **NO sequence grant** (WO pin). Never GRANT ALL, never blanket (§3.7).
+9. **D1-3 REVOKE shape (as WO):** `revoke select on
+   public.v_pending_threshold_alerts from anon, authenticated;` + the
+   zero-residual re-probe + the service_role-unaffected check — both
+   executed post-apply below.
+10. **D1-5 release ruling:** NO BUMP confirmed post-battery — checker
+    `OK (v1.15.0)` exit 0; zero user-visible change (owner-activated IoT
+    ingest + dormant queue channel).
+11. **D1-6 ledger completeness:** WO §2 — (1) FIXED (grants), (1a)
+    CORRECTED-BY-EVIDENCE (recorded here + §0.1, never a silent rewrite),
+    (2) FIXED (REVOKE), regression pins PINNED (group C of the suite),
+    everything else FORBIDDEN per §3.
+
+### D2 — TRUTHFUL RED (commit `f771f00`, against the UNAPPLIED state)
+
+`python3 -m pytest scripts/test_repair_prevent_001_grants.py -q` →
+**`9 failed, 7 passed`** — verbatim:
+
+```
+FAILED TestGrantChain::test_a_service_role_select_sensor
+FAILED TestGrantChain::test_b_service_role_insert_sensor_reading
+FAILED TestGrantChain::test_c_service_role_update_sensor
+FAILED TestQueueFacadeRevoke::test_a_anon_select_revoked
+FAILED TestQueueFacadeRevoke::test_b_authenticated_select_revoked
+FAILED TestFullPathEmulation::test_a_lookup_select_via_facade
+FAILED TestFullPathEmulation::test_b_sensor_reading_insert_via_facade
+FAILED TestFullPathEmulation::test_c_last_seen_update_via_facade
+FAILED TestFullPathEmulation::test_d_zero_durable_and_no_audit_row
+========================= 9 failed, 7 passed =========================
+```
+
+Standing passes disclosed per the P2.4 P3-1 convention (7): A.d schema
+usage, A.e audit-chain regression pins (usage core + insert core.audit_log +
+0-sequence census), B.c service_role façade select, C.a audit-trigger
+census, C.b telemetry-exemption census, D.a/D.b anon REST 401 42501 both
+paths. Emulation failure messages verbatim: the three `42501` lines of D1 §5.
+
+### D3 — applied + post-verify
+
+`python3 scripts/apply_migration_api.py
+supabase/migrations/20261121000000_repair_prevent_001_sensor_grants_queue_revoke.sql`
+→ **`6/6 OK, 0 FAIL`** (grants ×4, REVOKE, `notify pgrst, 'reload schema'`).
+
+Post-verify (HTTP 201, verbatim): `{"sr_sel_sensor": true, "sr_ins_sensor":
+false, "sr_upd_sensor": true, "sr_ins_reading": true, "sr_usage_ww": true,
+"sr_usage_core": true, "sr_ins_audit": true, "anon_sel_facade": false,
+"auth_sel_facade": false, "sr_sel_facade": true}` — exact verbs only
+(insert-on-sensor stays FALSE), zero anon/authenticated residual,
+service_role unaffected, audit chain intact.
+
+**THE POST-FIX EMULATION (same rollback-scoped shape) — verbatim:**
+HTTP **201**; inside the tx: `{"fixture_rows": 1, "reading_rows": 1,
+"audit_n": 40, "seen_set": true}` — all three EF steps green as
+service_role; **`audit_n` stayed 40 → the sensor path produced NO audit row
+(telemetry exemption, expected-absent, recorded)**. Zero-durable re-probe:
+`{"sensor_n": 0, "reading_n": 0, "audit_n": 40, "fixture_left": 0}` —
+**ROLLBACK LEAVES ZERO DURABLE ROWS**. Anon REST re-probe: **401 42501 both
+paths post-REVOKE** (nothing opened).
+
+### D4 — battery at the delivered head
+
+- New suite: **16/16 passed** (GREEN post-apply).
+- vitest FULL: **53 files, 990 passed + 1 skipped** (designed skip).
+- `tsc -b`: exit 0. oxlint: **0 errors**, 19 warnings (the exact
+  pre-existing baseline; no frontend file changed).
+- Playwright FULL chromium `--workers=1`: **335/335 passed, exit 0**.
+- guard: **344 passed + 450 subtests**. runtime: **Ran 62 tests — OK**.
+- validate-registry: `{"ok": true, "claims": 50,
+  "enforcement_mode": "BOOTSTRAP_CONTROL"}`.
+- Release checker: **`RELEASE VERSION CHECK: OK (v1.15.0; CHANGELOG entry
+  v1.15.0)` exit 0** — NO BUMP; regression suite 37/37 exit 0.
+- `git diff --check`: clean. Token/JWT-literal grep: 0. No bot-token-like
+  literals anywhere in the diff.
+- **Diff vs base ⊆ §7 (4 files):** the migration + the test script + this
+  WO + this handoff. `frontend/` EMPTY; `.github/` EMPTY;
+  `supabase/functions/` EMPTY — **EF byte-untouched (§3.5 held; no D1
+  contradiction ever justified a code change)**; CURRENT-WORK.md untouched
+  (the closeout transition flips the registry, mirroring the PR #152/#161
+  convention).
+
+### Deviations
+
+None from the WO/handoff contract. Notes (non-deviations): the D1 §7 honest
+refinement (E6's façade-layer framing vs the security_invoker base-table
+truth — recorded, verdict + scope unchanged); secrets resolved via process
+env from the approved Drive secrets file because this worktree has no `.env`
+stub (the P4-lane precedent path; values never printed).
