@@ -399,3 +399,127 @@ STAFF-008} pin: `…admits_staff001_and_staff008…` →
 Implementation halted at REVIEW_REQUESTED per the claim contract — the
 implementer never merges. D5 fresh-GLM review + the reviewer-owned
 approval/merge follow.
+
+## 9. D6 CLOSEOUT RECEIPT (2026-11-21, Track-Z GLM — STOP at REVIEW_REQUESTED)
+
+The docs-only closeout transition closes claim ENV-PERSONNEL-C8-001-C1:
+registry status CLAIMED → CLOSED, one_next_safe_action rewritten with the
+full delivered chain, the frontier bullet converted, the fence re-pinned,
+and the P1.1-era deferred VALIDATE CONSTRAINT follow-up recorded RESOLVED
+(`20261115120000_parity_p1_001.sql` created both personnel CHECKs NOT
+VALID — the P1.001 closeout ledger entry is discharged; no successor
+obligation remains).
+
+### Transition record
+
+- Branch `docs/env-personnel-c8-001-closeout` off verified main
+  `90ab52ea90e26e06a07179de12641eea2ec431d2` (= origin/main at lane
+  start, fetched, exact-SHA match; clean tree). Fresh worktree
+  `_worktrees/env-personnel-c8-001-closeout-20261121`.
+- Changed files = exactly 3: `docs/ai/CURRENT-WORK.md` (fence ×2,
+  C1 status CLOSED, one_next_safe_action, frontier bullet),
+  `docs/work-orders/ENV-PERSONNEL-C8-001.md` (status → DELIVERED—CLOSED),
+  this handoff (§9). `frontend/`, `supabase/`, `scripts/`, `.github/`,
+  `CHANGELOG.md`, `frontend/package.json` untouched.
+- Fence: expected_policy_revision =
+  `90ab52ea90e26e06a07179de12641eea2ec431d2`; expected_registry_hash =
+  `0982e54e34c6d36bae8c96b10f42b08d167fe637519a794793cf0f1463598543`
+  (guard validate-registry `registry_hash` AT `90ab52e`, method
+  `scripts/env_coordination_guard.py:417,454` — computed from the exact
+  base text via `git show 90ab52e:docs/ai/CURRENT-WORK.md`; the fence
+  fields carried `ecf4b88` at this point because the claim transition
+  PR #258 re-pinned to ITS base; THIS closeout re-pins to `90ab52e`).
+
+### Receipts verified live at closeout time (GitHub API, exact)
+
+- PR #258 MERGED `643603cca4e66125028a98a9dfde293ea9ca7d7d`
+  2026-11-21T03:02:56Z, parents exactly (ecf4b88, e386995); merge-executor
+  review APPROVED issuecomment-7056328780 with the PII redaction ruling
+  ACCEPTED (19 × `(PII-REDACTED)` verified; 13-digit runs only as git
+  SHAs/migration filenames; zero names/phones/tokens).
+- PR #259 MERGED `90ab52ea90e26e06a07179de12641eea2ec431d2`
+  2026-11-21T05:52:48Z, parents exactly (643603c, **3e0afb2** = the
+  repaired head); merge trail in-thread (the R2 receipt carries the merge
+  plan `--match-head-commit 3e0afb2` with expected parents (643603c,
+  3e0afb2)).
+- D2 truthful RED commit `395e3c0` exists ("D2 RED-first personnel enum
+  contract suite"); 17 failed / 9 passed / 32 subtests reproduced
+  byte-exactly by the D5 counting harness (R1/R2 receipts).
+- D5 R1 CHANGES_REQUIRED issuecomment-7056943819 at exact head `9b3f229`
+  (P2 rollback-order doc bug + 2 informational P3) → repairs at `3e0afb2`
+  (rollback comment fails-closed reorder — comment-only, applied
+  statements byte-identical, strip-`^--` sha256 `c880299c…696722a`
+  reproduced by the reviewer; test renamed
+  `test_recorder_gate_admits_exactly_staff001_staff006_staff008_post_fix`;
+  DEFECT-MEMORY lesson: apply tooling continues past failed statements —
+  always verify the post-apply posture via the count guard) → D5 R2
+  APPROVED issuecomment-7058232457 at exact head `3e0afb2`.
+- D3 attempt-1 `23514` record: the WO literal UPDATE-first order failed
+  live-forced (atomic rollback, count guard active=6 / ทำงาน=0 — no
+  partial write; PII DETAIL incident declared §8) before the corrected
+  order applied 7/7 OK. Recorded verbatim in the closeout registry text.
+
+### Live posture — receipts carried, honestly labeled
+
+The 9-row posture (active=0, ทำงาน=6 on exactly the authorized set
+STAFF-001/002/003/006/008/009, ลาออก=3 untouched, positions
+byte-unchanged row-by-row, both CHECKs `convalidated=true`, the recorder
+gate = the UNCHANGED P1.4 predicate admitting exactly {STAFF-001,
+STAFF-006, STAFF-008}) is carried from the recorded live probes: the
+impl D3/D4 probes (§8) and the D5 R2 fresh reviewer's OWN live read-only
+battery at `3e0afb2` (contract suite 13 passed / 45 subtests; guard 344;
+runtime 62; checker OK v1.15.0; CI notify+scripts success). Honesty
+note: THIS closeout's own suite attempt resolved no
+SUPABASE_ACCESS_TOKEN in-context — the suite recorded an honest
+13-skip per its own semantics ("a skip is absence-of-probe evidence,
+never a pass"); no DB claim in this receipt rests on the skip. Machine
+note: a gitignored `.env` was briefly copied from the impl worktree for
+that attempt and removed after it proved not to be the suite's gate;
+no secret value printed or committed.
+
+### Closeout battery (at the closeout head, docs-only)
+
+guard (`scripts/test_env_coordination_guard.py`): **Ran 344 tests — OK**;
+runtime (`scripts/test_env_autonomy_runtime.py`): **Ran 62 tests — OK**;
+validate-registry: `{ok:true, claims:51, BOOTSTRAP_CONTROL}` with C1
+CLOSED; programmatic claim-by-claim JSON diff vs `90ab52e`: exactly 1 of
+51 claims changed (ENV-PERSONNEL-C8-001-C1 → CLOSED), the other 50
+byte-identical; `git diff --check` clean; `git diff --stat` = exactly
+3 files; `check_release_version.py`: **OK (v1.15.0)** — NO BUMP holds.
+
+### Local-worktree caveat (freshness-gate record)
+
+The canonical checkout was occupied at closeout time by another lane
+(`docs/env-repair-report-honesty-001-claim` @ `40cab6b`, with UNCOMMITTED
+`docs/ai/CURRENT-WORK.md` edits + untracked `_worktrees/` +
+`supabase/.temp/`) — NOT this lane's work, untouched per the git-safety
+rule. Per AGENTS.md the closeout therefore built on a fresh clean
+worktree off current `origin/main @ 90ab52e`; this §9 records the
+caveat. The uncommitted report-honesty edits are another lane's
+in-progress claim work and must land through their own reviewed
+transition.
+
+### Frontier recorded (after this closeout merges)
+
+NO active claim. Remaining: the Phase-5 owner checklist (dual-run/
+token/sheets — Step 1 awaiting owner shares, probe wakeup active), the
+Phase-5 readiness toolkit lane (non-owner, the next candidate — needs
+its own NEW reviewed claim transition), hooks #155 approved-not-started
+(owner-manual, not agent-actionable), #156 open (owner-manual), Building
+WAITING_EXTERNAL. All other work still requires a NEW reviewed claim
+transition; no closed lane confers execution authority.
+
+Registry observation (recorded, not acted on): the registry JSON also
+carries 2 stale pre-existing CLAIMED entries —
+`ENV-BUILDING-REPAIR-001-C1` (the parked WAITING_EXTERNAL Building lane)
+and `ENV-SUNDAYMCP-ROUTING-001-C1` — byte-identical to base `90ab52e`
+and OUT OF SCOPE here (this transition's contract = exactly 1 claim
+changed). The frontier statement "NO active claim" is recorded per the
+coordinator's closeout instruction (the active-frontier sense; Building
+stands WAITING_EXTERNAL). Reconciling those stale entries = a future
+reviewed transition, not this one.
+
+### STOP
+
+This closeout halts at REVIEW_REQUESTED per the claim contract — the
+implementer never merges. The authorized reviewer owns approval + merge.
