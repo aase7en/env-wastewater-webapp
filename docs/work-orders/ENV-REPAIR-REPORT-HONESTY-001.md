@@ -1,6 +1,7 @@
 # Work Order — ENV-REPAIR-REPORT-HONESTY-001 (Claim ENV-REPAIR-REPORT-HONESTY-001-C1, gen 1)
 
-**Status: CLAIMED — implementation not started.** This WO is written by the
+**Status: IMPLEMENTATION DELIVERED / REVIEW_REQUESTED (PR #265).** This WO is
+written by the
 docs-only claim transition off main @
 `c12775f05d2e15187dbc97c031471a05e9cd2f13` (PR: the
 `docs/env-repair-report-honesty-001-claim` transition; STOP at
@@ -10,7 +11,6 @@ after this transition PR merges (worktree
 `_worktrees/env-repair-report-honesty-001`, implementation branch off the
 post-merge main tip — name pinned at its D1, house
 `feat/env-repair-report-honesty-001` form).
-
 Group-A corrective report-honesty repair — the 3 CONFIRMED defects from the
 read-only reproduction receipt `/tmp/env-groupA-repro-2026-11-20.md`
 (UTH[AI]-ENV directive 2026-11-20 Group A, P1 Reports Data Honesty; the
@@ -223,6 +223,6 @@ co-located tests, `frontend/src/lib/report-summary.ts` +
 `report-print.css` CONDITIONALLY (only per a D1-2 adjudication; expected
 untouched), the 3 family print views MINIMAL,
 `frontend/tests/e2e/env-parity-p4-005-family-reports.spec.ts` (+ a NEW
-sibling spec only if D1-4 separates them), `CHANGELOG.md` + 
+sibling spec only if D1-4 separates them), `CHANGELOG.md` +
 `frontend/package.json` (v1.15.1), this lane's WO/handoff +
 `docs/ai/CURRENT-WORK.md`. Everything else FORBIDDEN (§3).
