@@ -204,8 +204,11 @@ export function buildExtinguisherPrintModel(input: {
   const has = summary.inspectedCount > 0;
   let summaryReady: string | null = null;
   let summaryAction: string | null = null;
-  if (has && summary.abnormalHeadlineCount === 0) {
+  if (has && summary.abnormalHeadlineCount === 0 && summary.incompleteCount === 0) {
     summaryReady = "☑ ถังดับเพลิงทุกจุดอยู่ในสภาพพร้อมใช้งาน";
+    summaryAction = "☐ มีถังดับเพลิงที่ต้องดำเนินการแก้ไข/ซ่อมบำรุง จำนวน 0 ถัง (ตามรายละเอียดในตาราง)";
+  } else if (has && summary.abnormalHeadlineCount === 0) {
+    summaryReady = `⚠ ยังสรุปความพร้อมใช้งานไม่ได้ — มี ${summary.incompleteCount} รายการที่ค่าไม่ครบตามสูตร`;
     summaryAction = "☐ มีถังดับเพลิงที่ต้องดำเนินการแก้ไข/ซ่อมบำรุง จำนวน 0 ถัง (ตามรายละเอียดในตาราง)";
   } else if (has) {
     summaryReady = "☐ ถังดับเพลิงทุกจุดอยู่ในสภาพพร้อมใช้งาน";
@@ -324,8 +327,11 @@ export function buildLightPrintModel(input: {
   const has = inRange.length > 0;
   let summaryReady: string | null = null;
   let summaryAction: string | null = null;
-  if (has && failCount === 0) {
+  if (has && failCount === 0 && otherCount === 0) {
     summaryReady = "☑ โคมไฟฉุกเฉินทุกจุดอยู่ในสภาพพร้อมใช้งาน";
+    summaryAction = "☐ มี โคมไฟฉุกเฉินที่ต้องดำเนินการแก้ไข/ซ่อมบำรุง จำนวน 0 เครื่อง (ตามรายละเอียดในตาราง)";
+  } else if (has && failCount === 0) {
+    summaryReady = `⚠ ยังสรุปความพร้อมใช้งานไม่ได้ — มี ${otherCount} รายการผลการทดสอบนอกคำศัพท์ (ผ่าน/ไม่ผ่าน)`;
     summaryAction = "☐ มี โคมไฟฉุกเฉินที่ต้องดำเนินการแก้ไข/ซ่อมบำรุง จำนวน 0 เครื่อง (ตามรายละเอียดในตาราง)";
   } else if (has) {
     summaryReady = "☐ โคมไฟฉุกเฉินทุกจุดอยู่ในสภาพพร้อมใช้งาน";
@@ -469,16 +475,21 @@ export function buildWaterPrintModel(input: {
     recorder: personnelName(personnel, r.recorded_by),
   }));
 
+  const waterSumLabel = ws.waterInDays === 0 ? "ไม่มีข้อมูล" : `${trimNum(ws.sumWaterIn)} ลบ.ม.`;
+  const chlorineSumLabel = ws.chlorineRealDays === 0 ? "ไม่มีข้อมูล" : `${trimNum(ws.sumChlorineReal)} ลิตร`;
+  const waterEstimateLabel = ws.waterInEstimateDays === 0 ? "ไม่มีข้อมูล" : `${trimNum(ws.sumWaterInEstimate)} ลบ.ม.`;
+  const energyEstimateLabel = ws.energyEstimateDays === 0 ? "ไม่มีข้อมูล" : `${trimNum(ws.sumEnergyEstimate)} kWh`;
+
   const summaryLines = [
-    `การบริโภคน้ำประปาบาดาล ตลอดเดือน ${monthThai} ${trimNum(ws.sumWaterIn)} ลบ.ม.`,
-    `ปริมาณสารเคมีหรือสารสกัดชีวภาพที่ใช้ (คลอรีนน้ำ) ${trimNum(ws.sumChlorineReal)} ลิตร`,
+    `การบริโภคน้ำประปาบาดาล ตลอดเดือน ${monthThai} ${waterSumLabel}`,
+    `ปริมาณสารเคมีหรือสารสกัดชีวภาพที่ใช้ (คลอรีนน้ำ) ${chlorineSumLabel}`,
   ];
 
   const notes: string[] = [
     `มีบันทึก ${ws.recordedDays} วัน · ไม่มีบันทึก ${ws.missingDays} วัน (ทั้งหมด ${ws.totalDays || calendar.length} วัน) — วันที่ไม่มีบันทึกไม่ถูกนับเป็น 0`,
     `คลอรีนน้ำ: คลอรีนจริง (ลิตร) = ค่าที่บันทึก ÷10 (อัตราผสม 1:9) ตามมุมมอง P1.5 (v_daily_check_chain) — ตารางรายวันแสดงค่าที่บันทึกตามจริง`,
-    `ปริมาณน้ำเข้า (ประมาณจากชั่วโมงปั๊ม ×สเปกอัตราการไหล): ${trimNum(ws.sumWaterInEstimate)} ลบ.ม. — ค่าประมาณจากสเปก แสดงแยกต่างหาก ไม่รวมในยอดบันทึกจริง`,
-    `พลังงานไฟฟ้า (ค่าประมาณจากสเปก ×ชั่วโมงการทำงาน): ${trimNum(ws.sumEnergyEstimate)} kWh — ค่าประมาณจากสเปก ไม่ใช่ค่ามิเตอร์`,
+    `ปริมาณน้ำเข้า (ประมาณจากชั่วโมงปั๊ม ×สเปกอัตราการไหล): ${waterEstimateLabel} — ค่าประมาณจากสเปก แสดงแยกต่างหาก ไม่รวมในยอดบันทึกจริง`,
+    `พลังงานไฟฟ้า (ค่าประมาณจากสเปก ×ชั่วโมงการทำงาน): ${energyEstimateLabel} — ค่าประมาณจากสเปก ไม่ใช่ค่ามิเตอร์`,
     `วันที่มิเตอร์ชั่วโมงเปลี่ยน ${ws.boundaryDays} วัน — ค่า delta ชั่วโมงของวันนั้นค่าว่าง (ไม่ถูกนับเป็น 0)`,
     `วันที่สเปกไม่ครบ ${ws.specMissingDays} วัน (ค่าประมาณของวันนั้นถูกยกเว้น ไม่ถูกแทนด้วยศูนย์)`,
   ];

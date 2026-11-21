@@ -224,6 +224,7 @@ export function ReportsPage() {
   const onOpenPrint = async () => {
     if (openingPrint) return;
     setOpeningPrint(true);
+    setFamilyPrint(null);
     try {
       const built = await buildTosModel();
       if (built.kind === "ts1" && built.model.rows.length === 0) {
@@ -278,6 +279,7 @@ export function ReportsPage() {
   const onOpenFamilyPrint = async () => {
     if (familyOpening) return;
     setFamilyOpening(true);
+    setPrintModel(null);
     try {
       const startISO = `${familyMonth}-01`;
       const [fy, fm] = familyMonth.split("-").map(Number);
@@ -584,7 +586,13 @@ export function ReportsPage() {
               <div className="p-3 rounded-xl bg-aura-bg/40 border border-aura-borderSubtle" data-testid="report-water-in-total-card">
                 <div className="text-xs text-aura-textMuted">ปริมาณน้ำเข้ารวม (บันทึกจริง)</div>
                 <div className="text-lg font-bold text-aura-textMain" data-testid="report-water-in-total">
-                  {fmt(summary.ws.sumWaterIn, 1)} <span className="text-xs font-normal">m³</span>
+                  {summary.ws.waterInDays === 0 ? (
+                    "ไม่มีข้อมูล"
+                  ) : (
+                    <>
+                      {fmt(summary.ws.sumWaterIn, 1)} <span className="text-xs font-normal">m³</span>
+                    </>
+                  )}
                 </div>
                 <div className="text-[11px] text-aura-textMuted">
                   วันที่มิเตอร์ชั่วโมงเปลี่ยน {summary.ws.boundaryDays} วัน (ถูกยกเว้น)
@@ -593,7 +601,13 @@ export function ReportsPage() {
               <div className="p-3 rounded-xl bg-aura-bg/40 border border-aura-borderSubtle" data-testid="report-water-in-estimate-card">
                 <div className="text-xs text-aura-textMuted">ปริมาณน้ำเข้า (ประมาณจากชั่วโมงปั๊ม)</div>
                 <div className="text-lg font-bold text-aura-textMain" data-testid="report-water-in-estimate">
-                  {fmt(summary.ws.sumWaterInEstimate, 1)} <span className="text-xs font-normal">m³</span>
+                  {summary.ws.waterInEstimateDays === 0 ? (
+                    "ไม่มีข้อมูล"
+                  ) : (
+                    <>
+                      {fmt(summary.ws.sumWaterInEstimate, 1)} <span className="text-xs font-normal">m³</span>
+                    </>
+                  )}
                 </div>
                 {summary.ws.sumWaterInEstimate > 0 && (
                   <div className="text-[11px] mt-1 text-amber-500 font-thai">
@@ -604,16 +618,34 @@ export function ReportsPage() {
               <div className="p-3 rounded-xl bg-aura-bg/40 border border-aura-borderSubtle">
                 <div className="text-xs text-aura-textMuted">คลอรีนจริงรวม (÷อัตราผสม 1:9)</div>
                 <div className="text-lg font-bold text-aura-textMain" data-testid="report-ws-chlorine-real">
-                  {fmt(summary.ws.sumChlorineReal, 2)} <span className="text-xs font-normal">กก.</span>
+                  {summary.ws.chlorineRealDays === 0 ? (
+                    "ไม่มีข้อมูล"
+                  ) : (
+                    <>
+                      {fmt(summary.ws.sumChlorineReal, 2)} <span className="text-xs font-normal">กก.</span>
+                    </>
+                  )}
                 </div>
                 <div className="text-[11px] text-aura-textMuted mt-1" data-testid="report-ws-kg-chlorine">
-                  คลอรีน (กก.) = ×1.2 = {fmt(summary.ws.kgChlorine, 2)} กก.
+                  {summary.ws.chlorineRealDays === 0 ? (
+                    "คลอรีน (กก.) = ×1.2 = ไม่มีข้อมูล"
+                  ) : (
+                    <>
+                      คลอรีน (กก.) = ×1.2 = {fmt(summary.ws.kgChlorine, 2)} กก.
+                    </>
+                  )}
                 </div>
               </div>
               <div className="p-3 rounded-xl bg-aura-bg/40 border border-aura-borderSubtle" data-testid="report-ws-energy-estimate-card">
                 <div className="text-xs text-aura-textMuted">ไฟฟ้ารวม (ประมาณจากสเปก)</div>
                 <div className="text-lg font-bold text-aura-textMain" data-testid="report-ws-energy-estimate">
-                  {fmt(summary.ws.sumEnergyEstimate, 1)} <span className="text-xs font-normal">kWh</span>
+                  {summary.ws.energyEstimateDays === 0 ? (
+                    "ไม่มีข้อมูล"
+                  ) : (
+                    <>
+                      {fmt(summary.ws.sumEnergyEstimate, 1)} <span className="text-xs font-normal">kWh</span>
+                    </>
+                  )}
                 </div>
                 {summary.ws.sumEnergyEstimate > 0 && (
                   <div className="text-[11px] mt-1 text-amber-500 font-thai">
