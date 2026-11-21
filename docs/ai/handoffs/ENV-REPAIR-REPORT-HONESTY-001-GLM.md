@@ -423,3 +423,113 @@ WATER rows-but-all-null month (1 row, water_in/chlorine null):
 - Empty-month family models — already honest (null verdict + explicit "ไม่ออกความพร้อมใช้งานจากข้อมูลว่าง" fallback).
 
 ```
+
+---
+
+## 9. D6 CLOSEOUT RECEIPT (docs-only closeout transition, 2026-11-21)
+
+Closeout branch `docs/env-repair-report-honesty-001-closeout` off main @
+`e0738029e5a01ebaf6a8d5187f4789565e3102cc` (the PR #265 merge SHA, fetched
+and ff-verified clean). This section records the delivered chain and closes
+the claim. The closeout executor does NOT merge its own PR — this transition
+STOPS at REVIEW_REQUESTED.
+
+### 9.1 Delivery chain (all receipts live-verified before writing)
+
+| Phase | Receipt |
+|---|---|
+| Claim transition | PR #264 merged `2b1cfd9edd600ef061646f67743a6cdc24a1d9a7` (docs-only, base `c12775f`; fence re-pinned at that transition to `c12775f` / `ee9b6435…31e72c`) |
+| D1 probe | `a4d79686aa40b5b8db659b146d4544ea611867e3` — LIVE read-only re-run at `2b1cfd9`: 3/3 defect shapes identical, no drift; D1-1..D1-6 rulings recorded (§7.2) |
+| D2 RED | `d7bd2be64277be14e2b10090d5c63280390e8854` — 8 failed / 55 passed (§8.1), existing 23 model pins green through the RED commit |
+| D3 fix | `c7119be1485cec2424024a4467675b2a8b8b6d10` — honest ready-gating + exclusive print areas + no zero-coercion (§8.2) |
+| Release prep | `efbc0858b191d6b2e3485f5866f5694ad9abc0ad` — v1.15.1 PATCH (package.json 1.15.0→1.15.1 + Thai พ.ศ. CHANGELOG) |
+| Docs head | `ac230ae2c79971a9348b62449fd8d57edca0b615` — §8 receipts + byte-untouched verification |
+| Merge | PR #265 merged `e0738029e5a01ebaf6a8d5187f4789565e3102cc`, parents = (`2b1cfd9e…`, `ac230ae2…`), merge commit, no squash, expected-head discipline `--match-head-commit ac230ae2…`; merge-executor review trail [issuecomment-7063107774](https://github.com/aase7en/env-wastewater-webapp/pull/265#issuecomment-7063107774); merge stat = exactly 12 files 398+/15−, `safety-summary.ts` ABSENT (AppSheet verbatim predicates byte-untouched), `CURRENT-WORK.md` untouched at merge, supabase/** EMPTY |
+
+### 9.2 D5 review receipt
+
+D5 fresh-GLM independent review — **APPROVED (0 P1 / 0 P2)** at exact head
+`ac230ae2` vs base `2b1cfd9e`:
+[issuecomment-7063078774](https://github.com/aase7en/env-wastewater-webapp/pull/265#issuecomment-7063078774).
+Reviewer's own battery at head: vitest FULL 998 passed / 1 skipped (53
+files); tsc -b clean; oxlint exit 0; Playwright FULL workers=1 336/336;
+guard 344/344; runtime 62/62; validate-registry ok:true 53 claims; checker
+OK v1.15.1; token/JWT-literal grep 0. RED truthfulness REPRODUCED by the
+reviewer at an isolated `d7bd2be` checkout (focused vitest 8 failed / 55
+passed — exactly the D2 record — + the overlap e2e failing at the exact
+defect assert, spec line 285). **2 informational P3s carried to the ledger
+(non-blocking):** P3-1 `sumWaterIn` stays `number` — honesty is
+render-site convention (value-day gates), not type-enforced; follow-up
+material, mitigated by the doc-comments naming the day fields as the
+honesty gate keys. P3-2 the mutual-clear setters run before the async model
+build — a failed/empty ทส.1 build still unmounts the previously open family
+view (and vice versa); honest behavior, e2e pins the intended semantics; no
+action required.
+
+### 9.3 Release v1.15.1 PATCH — deploy + tag verification
+
+- Pages deploy run 44907777019 **SUCCESS** @ `e073802`
+  (https://github.com/aase7en/env-wastewater-webapp/actions/runs/44907777019).
+- Live asset `assets/index-uwg6S2PD.js` — HTTP 200, last-modified
+  2026-11-21 13:14:07 GMT (fresh in the merge+deploy window). Markers
+  verified in the deployed bundle: `1.15.1` ×2 (incl. the CHANGELOG heading
+  `v1.15.1 — 21 พฤศจิกายน พ.ศ. 2569` — พ.ศ. correct); version-chip markers
+  `app-version-chip` + `app-version-summary` + `ข้อมูลเวอร์ชันแอป`; the
+  honesty markers `ไม่มีข้อมูล` ×11 and `ยังสรุปความพร้อมใช้งานไม่ได้` ×1
+  in the reports code.
+- Annotated tag `v1.15.1` (tag object `28c7c3f780778c2fe126e72c80d5ed8e8f4b2708`)
+  peels (`^{}`) to the deployed merge SHA `e073802`; pushed;
+  `git ls-remote` confirms both refs.
+- `check_release_version.py --tag v1.15.1` → `RELEASE VERSION CHECK: OK
+  (v1.15.1; CHANGELOG entry v1.15.1)`, exit 0.
+
+### 9.4 Post-merge verification at `e073802` (before this closeout branched)
+
+- Guard `test_env_coordination_guard.py`: **344 tests OK** (exit 0).
+- `validate-registry --file docs/ai/CURRENT-WORK.md`: `ok:true`, 53 claims,
+  BOOTSTRAP_CONTROL, registry_hash `47988028c2b6d057404f0b2e939ab7be7b90001d382dad3c9dca20e2f40ba956`
+  — with `ENV-REPAIR-REPORT-HONESTY-001-C1` still **CLAIMED** at merge time
+  (this closeout closes it).
+- Local main ff-only `2b1cfd9→e073802`, clean (only pre-existing untracked
+  `_worktrees/`, `supabase/.temp/` — never touched).
+
+### 9.5 Fence (this closeout ships)
+
+`expected_policy_revision = e0738029e5a01ebaf6a8d5187f4789565e3102cc`
+(the PR #265 merge SHA); `expected_registry_hash =
+47988028c2b6d057404f0b2e939ab7be7b90001d382dad3c9dca20e2f40ba956` =
+guard validate-registry `registry_hash` AT `e073802` (method empirically
+cross-checked against the prior fences — the PR #166 convention). Programmatic
+claim-by-claim JSON diff vs `e073802`: exactly **1 of 53 claims changed**
+(`ENV-REPAIR-REPORT-HONESTY-001-C1` CLAIMED → CLOSED), the other 52
+byte-identical, plus the two top-level fence fields re-pinned. Changed files
+= exactly 3: `docs/ai/CURRENT-WORK.md`, `docs/work-orders/ENV-REPAIR-REPORT-HONESTY-001.md`
+(status → DELIVERED—CLOSED + delivery-chain header), this handoff (§9).
+
+### 9.6 Frontier after this closeout merges
+
+**NO active claim — ALL non-owner work COMPLETE.** The entire program is
+delivered: parity P1–P4 + the corrective/preventive repairs
+(ENV-REPAIR-P4-LEDGER-001, ENV-REPAIR-PREVENT-001) + C8 personnel
+(ENV-PERSONNEL-C8-001) + the Phase-5 readiness toolkit
+(ENV-PHASE5-READY-001) + the report-honesty fixes (this lane, v1.15.1).
+Remaining = **Phase 5 EXECUTION, wholly owner-gated**:
+1. Step 1 — the owner shares the 6 unshared sheets (probe wakeup active).
+2. Step 2 — the Telegram token via `supabase secrets`.
+3. Step 3 — the dual-run ≥14 วัน per `docs/ai/PHASE5-CUTOVER-CHECKLIST.md`
+   with `scripts/phase5_parity_check.py` as the Day-14 evidence generator.
+4. Step 4 — the cutover/rollback decisions (owner 🚧).
+
+Standing owner-manual items: hooks #155 approved-not-started (owner-manual),
+#156 OPENROUTER_API_KEY renewal (owner-manual), Building WAITING_EXTERNAL.
+All other work still requires a NEW reviewed claim transition; no closed
+lane confers execution authority.
+
+### 9.7 Honesty notes
+
+- The closeout executor merged PR #265 only as the explicitly authorized
+  merge-executor step of this task (expected-head discipline, trail
+  comment posted BEFORE the merge); the closeout PR itself is NOT merged by
+  this executor.
+- No token/JWT literal, no `.env`, no `data/raw/` content anywhere in this
+  transition; Thai user-facing dates are พ.ศ. throughout.
