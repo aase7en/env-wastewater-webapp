@@ -1,0 +1,1383 @@
+<!doctype html>
+<html lang="th">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<title>ENV WWTP Digital Twin V3 — Interactive Animated Process</title>
+<meta name="theme-color" content="#081624">
+<style>
+:root{
+  color-scheme:dark;
+  --bg:#081624;
+  --panel:rgba(10,25,40,.88);
+  --line:#294c67;
+  --text:#e9f4fb;
+  --muted:#a6c1d2;
+  --cyan:#61d7ff;
+  --teal:#53d7c9;
+  --warn:#f2c879;
+  --good:#7fe1a6;
+  --accent:#3aa9ff;
+  --shadow:0 18px 40px rgba(0,0,0,.28);
+}
+*{box-sizing:border-box}
+html,body{margin:0;width:100%;height:100%;overflow:hidden;background:var(--bg);color:var(--text);font-family:Inter,"Noto Sans Thai",Tahoma,sans-serif}
+#app{position:fixed;inset:0}
+#app canvas{display:block;width:100%;height:100%;touch-action:none}
+.panel{position:absolute;z-index:10;background:var(--panel);backdrop-filter:blur(16px);border:1px solid rgba(130,190,220,.18);border-radius:16px;box-shadow:var(--shadow)}
+#hud{top:16px;left:16px;padding:16px 18px;width:min(390px,calc(100vw - 32px));pointer-events:none}
+#hud .eyebrow{font-size:10px;letter-spacing:1.8px;font-weight:800;color:#78d9ff}
+#hud h1{margin:7px 0 6px;font-size:20px;line-height:1.3;font-weight:850}
+#hud .sub{font-size:12px;line-height:1.7;color:var(--muted)}
+#hud .chip{display:inline-flex;align-items:center;gap:7px;margin-top:10px;padding:5px 10px;border-radius:999px;border:1px solid #6c5b31;background:#43361d;color:#f5daa4;font-size:10px;font-weight:700}
+#hud .chip::before{content:"";width:7px;height:7px;background:#f7c35e;border-radius:50%}
+#flow{left:16px;bottom:16px;padding:12px 14px;width:min(820px,calc(100vw - 32px));z-index:11}
+#flow .title{font-size:10px;letter-spacing:1.4px;color:#81d5ee;font-weight:800;margin-bottom:8px}
+#flow .steps{display:flex;flex-wrap:wrap;gap:6px;align-items:center}
+#flow .flow-btn{font:inherit;font-size:11px;padding:8px 10px;border-radius:9px;border:1px solid #37566b;background:#20374a;color:#d2e5ef;cursor:pointer;transition:.15s}
+#flow .flow-btn:hover,#flow .flow-btn:focus-visible{background:#2c5674;outline:2px solid transparent}
+#flow .flow-btn.active{background:#0f6689;border-color:#5ce1ff;color:#fff}
+#flow .arrow{color:#58caeb;font-weight:800}
+#flow .note{margin-top:8px;font-size:10px;line-height:1.55;color:#aac0d0}
+#overview{top:16px;right:16px;max-width:325px;padding:12px 14px;z-index:12}
+#overview h2{font-size:11px;letter-spacing:1.2px;color:#a9cfdf;margin:0 0 8px}
+#overview .rows{display:grid;grid-template-columns:1fr auto;gap:7px 10px;font-size:11px;color:#d5e7f1}
+#overview .rows span:last-child{color:#8fd8ff;font-weight:700}
+#marker-layer{position:fixed;inset:0;z-index:8;pointer-events:none}
+.marker{position:absolute;min-width:152px;max-width:215px;padding:9px 10px;border-radius:12px;background:rgba(9,24,39,.93);border:1px solid rgba(110,182,214,.22);box-shadow:0 14px 30px rgba(0,0,0,.25);pointer-events:auto;transform:translate(-50%,-105%);transition:transform .15s ease,border-color .15s ease,opacity .2s}
+.marker:hover{transform:translate(-50%,-108%);border-color:#73dbff}
+.marker.active{border-color:#63ddff;box-shadow:0 0 0 1px rgba(99,221,255,.22),0 14px 30px rgba(0,0,0,.28)}
+.marker .code{font-size:10px;font-weight:800;color:#72d7ff;letter-spacing:1.1px}
+.marker .name{margin-top:3px;font-size:12px;font-weight:800;line-height:1.35}
+.marker .desc{margin-top:4px;font-size:10px;line-height:1.45;color:#b9cddd}
+.marker .metrics{display:grid;grid-template-columns:auto 1fr;gap:3px 8px;margin-top:7px;font-size:10px}
+.marker .metrics .label{color:#87b4ca}.marker .metrics .value{color:#eef9ff;font-weight:700;text-align:right}
+#tooltip{position:fixed;left:0;top:0;z-index:20;display:none;max-width:360px;padding:14px 15px;border-radius:14px;background:rgba(7,17,28,.96);border:1px solid rgba(109,190,230,.3);box-shadow:0 20px 42px rgba(0,0,0,.33);pointer-events:none}
+#tooltip .tp-code{font-size:10px;letter-spacing:1.2px;color:#77dfff;font-weight:800}
+#tooltip .tp-name{font-size:16px;font-weight:850;line-height:1.3;margin:3px 0 7px}
+#tooltip .tp-role{font-size:12px;color:#cae7f5;line-height:1.7;margin-bottom:8px}
+#tooltip .tp-section{margin-top:8px}
+#tooltip .tp-head{font-size:10px;font-weight:800;letter-spacing:1.1px;color:#86ccdf;margin-bottom:5px}
+#tooltip ul{margin:0;padding-left:16px;color:#dcebf4;font-size:11px;line-height:1.55}
+#tooltip table{width:100%;border-collapse:collapse;font-size:11px}
+#tooltip td{padding:4px 0;border-bottom:1px dashed rgba(122,176,201,.18)}
+#tooltip td:first-child{color:#98bdd0;padding-right:10px}.status-pill{display:inline-flex;align-items:center;gap:6px;padding:3px 8px;border-radius:999px;font-size:10px;font-weight:800;background:#1c4134;color:#a8f3c7;border:1px solid #2b7059}.status-pill::before{content:"";width:7px;height:7px;border-radius:50%;background:#7fe1a6}
+#motion-status{position:absolute;left:16px;bottom:166px;z-index:12;font-size:11px;padding:9px 13px;border-radius:9px;color:#b3e8f7;background:rgba(8,25,40,.88);border:1px solid #365a70;pointer-events:none}
+#motion-status strong{color:#7ef4ed}
+#loader,#error{position:fixed;inset:0;z-index:40;display:flex;align-items:center;justify-content:center;padding:24px;text-align:center;background:#091523}
+#error{display:none;flex-direction:column;gap:12px}
+#error p{max-width:680px;margin:0;color:#bdd0dd;line-height:1.7}
+.lil-gui.root{--background-color:#102237;--title-background-color:#1d3b52;--widget-color:#28485f;--hover-color:#345a72;--focus-color:#4f89aa;--text-color:#eaf3fa;--number-color:#a6ebff;--string-color:#ebd69a;position:fixed!important;right:16px!important;top:180px!important;z-index:14!important;max-height:calc(100vh - 196px)!important;overflow-y:auto!important;border:1px solid #2b4b61;border-radius:14px;box-shadow:var(--shadow);scrollbar-width:thin}
+@media (max-width:900px){
+  #hud{top:8px;left:8px;width:230px;padding:12px 13px}
+  #hud h1{font-size:14px}.sub{font-size:10px}
+  #overview{top:auto;right:8px;bottom:145px;max-width:240px}
+  #flow{left:8px;right:8px;bottom:8px;width:auto;padding:9px 10px}
+  #flow .flow-btn{font-size:10px;padding:6px 7px}
+  .marker{min-width:132px;max-width:175px;padding:8px 9px}
+  .marker .name{font-size:11px}
+  .marker .desc{font-size:9px}
+  .lil-gui.root{top:8px!important;right:8px!important;width:min(250px,48vw)!important;max-height:55vh!important}
+}
+@media (max-width:560px){
+  #motion-status{bottom:125px;left:8px;font-size:10px;padding:7px 9px}
+  #overview{display:none}
+  #hud{width:180px}.sub{display:none}
+  #flow .note{display:none}
+  .marker{min-width:120px;max-width:155px}
+}
+</style>
+<script type="importmap">
+{
+  "imports":{
+    "three":"https://cdn.jsdelivr.net/npm/three@0.165.0/build/three.module.js",
+    "three/addons/":"https://cdn.jsdelivr.net/npm/three@0.165.0/examples/jsm/"
+  }
+}
+</script>
+</head>
+<body>
+<div id="app" aria-label="โมเดล 3 มิติ ระบบบำบัดน้ำเสีย โรงพยาบาลอุทัย"></div>
+<section id="marker-layer" aria-hidden="false"></section>
+<div id="tooltip"></div>
+<header id="hud" class="panel">
+  <div class="eyebrow">UTH[AI] · ENV DIGITAL TWIN</div>
+  <h1>ระบบบำบัดน้ำเสียโรงพยาบาลอุทัย<br>3D Digital Twin</h1>
+  <div class="sub">ปรับผังให้ใกล้เคียงระบบ Activated Sludge ขนาด 60 ลบ.ม./วัน มากขึ้น โดยเน้นการใช้งานจริงใน ENV webapp ในอนาคต พร้อมป้ายภาษาไทย, hover popup และโครงสร้างข้อมูลที่ต่อยอดเป็น dashboard / sensor ได้</div>
+  <div class="chip">CONCEPT / MOTION DEMO · ไม่ใช่ข้อมูล Live</div>
+</header>
+<section id="overview" class="panel">
+  <h2>สถานะสรุประบบวันนี้</h2>
+  <div class="rows" id="summaryRows"></div>
+</section>
+<nav id="flow" class="panel" aria-label="ลำดับกระบวนการบำบัด">
+  <div class="title">PROCESS FLOW · เลือกดูตามเส้นทางน้ำและตะกอน</div>
+  <div class="steps">
+    <button class="flow-btn active" data-view="overview">ภาพรวม</button>
+    <button class="flow-btn" data-view="inlet">1 · บ่อสูบน้ำเสีย</button>
+    <span class="arrow">→</span>
+    <button class="flow-btn" data-view="aeration">2 · บ่อเติมอากาศ</button>
+    <span class="arrow">→</span>
+    <button class="flow-btn" data-view="clarifier">3 · บ่อตกตะกอน</button>
+    <span class="arrow">→</span>
+    <button class="flow-btn" data-view="chlorine">4 · บ่อสัมผัสคลอรีน</button>
+    <button class="flow-btn" data-view="sludge">สายตะกอน → ลานทราย</button>
+    <button class="flow-btn" data-view="section">มุมมองหน้าตัด</button>
+  </div>
+  <div class="note">น้ำเสีย: ซ้าย → ขวา → กลับลงด้านล่าง | สีน้ำเงิน = ท่อน้ำ, น้ำตาล = สายตะกอน, เทา = น้ำกรองกลับ | วางเมาส์บนบ่อหรืออุปกรณ์เพื่อดูหน้าที่ / รายละเอียดคร่าว ๆ</div>
+</nav>
+<div id="motion-status"> <strong>● MOTION ACTIVE</strong> · น้ำกระเพื่อม · ฟองอากาศ · ลูกศรเคลื่อนตามท่อ</div>
+<div id="loader">กำลังสร้างโมเดล 3D Digital Twin …</div>
+<div id="error"><strong>ไม่สามารถแสดงโมเดล WebGL ได้</strong><p>โปรดตรวจสอบว่าเบราว์เซอร์รองรับ WebGL 2 และสามารถเชื่อมต่อ CDN เพื่อโหลด Three.js ได้</p></div>
+
+<script type="module">
+import * as THREE from 'three';
+import {OrbitControls} from 'three/addons/controls/OrbitControls.js';
+import GUI from 'https://cdn.jsdelivr.net/npm/lil-gui@0.19.2/+esm';
+
+const app = document.getElementById('app');
+const markerLayer = document.getElementById('marker-layer');
+const tooltip = document.getElementById('tooltip');
+const summaryRows = document.getElementById('summaryRows');
+
+const PLANT_STATUS = {
+  source: 'ยังไม่เชื่อมต่อฟอร์ม',
+  updatedAt: null,
+  system: {
+    flowToday: null,
+    energyToday: null,
+    chlorineToday: null,
+    remarks: 'โครงสร้างพร้อมสำหรับเชื่อมข้อมูลจริงจากฟอร์มหรือเซนเซอร์ในอนาคต'
+  },
+  assets: {
+    T001: { metrics: { status: 'รอข้อมูล', runA: null, runB: null, inflow: null } },
+    T003: { metrics: { pH: null, sv30: null, do1: null, do2: null } },
+    T004: { metrics: { sludgeBlanket: null, returnSludge: null } },
+    T005: { metrics: { freeChlorine: null, contactTime: null } },
+    T006: { metrics: { bed1: null, bed2: null, filtrate: null } },
+    CTRL: { metrics: { power: null, alarm: 'ยังไม่เชื่อมต่อ' } }
+  }
+};
+
+const ASSETS = {
+  T001: {
+    code: 'T-001',
+    name: 'บ่อสูบน้ำเสีย',
+    short: 'รับน้ำเสียรวมและสูบส่งเข้าระบบบำบัด',
+    role: 'บ่อพักน้ำเสียเริ่มต้นของระบบ รับน้ำเสียจากระบบรวบรวมผ่านตะแกรงดักขยะ แล้วใช้ปั๊มจุ่มสูบขึ้นส่งไปยังบ่อเติมอากาศ',
+    details: [
+      'ทำหน้าที่เป็นจุดรวมและยกระดับน้ำเสียเข้าสู่กระบวนการบำบัด',
+      'ภายในมีตะแกรงดักขยะและปั๊มสูบน้ำเสีย 2 ตัว (ใช้งานสลับ/สำรอง)',
+      'ข้อมูลที่ควรแสดงในอนาคต: ชั่วโมงทำงานปั๊ม, สถานะ Auto/Manual, อัตราการสูบ, ระดับน้ำในบ่อ'
+    ],
+    metrics: [
+      { label: 'สถานะปั๊ม', key: 'status', fallback: 'รอข้อมูล' },
+      { label: 'P-001A ทำงาน', key: 'runA', fallback: 'ยังไม่บันทึก' },
+      { label: 'P-001B ทำงาน', key: 'runB', fallback: 'ยังไม่บันทึก' }
+    ],
+    future: ['เวลาทำงาน/หยุดของปั๊มแต่ละตัว', 'spec ปั๊มสูบน้ำเสีย', 'ระดับน้ำ', 'อัตราการไหลเข้าระบบ'],
+    status: 'โหนดหลัก'
+  },
+  T008: {
+    code: 'T-008',
+    name: 'บ่อทิ้งรก / ของเสียติดเชื้อ',
+    short: 'บ่อแยกสำหรับของเสียเฉพาะ',
+    role: 'บ่อรองรับของเสียเฉพาะกิจที่แยกออกจากกระบวนการบำบัดหลัก',
+    details: [
+      'แสดงเป็นองค์ประกอบประกอบผัง เพื่อให้เห็นพื้นที่ใช้งานจริง',
+      'ไม่ได้เป็นสายหลักของ Activated Sludge',
+      'สามารถเพิ่ม SOP, ข้อควรระวัง และวิธีจัดการภายหลังได้'
+    ],
+    metrics: [{ label: 'สถานะ', value: 'แยกจากระบบหลัก' }],
+    future: ['ปริมาณของเสียเข้า', 'รอบการขนย้าย/กำจัด'],
+    status: 'แยกจากสายหลัก'
+  },
+  T003: {
+    code: 'T-003',
+    name: 'บ่อเติมอากาศ',
+    short: 'หัวใจหลักของระบบ Activated Sludge',
+    role: 'บ่อเติมอากาศใช้เลี้ยงจุลินทรีย์ให้ย่อยสลายสารอินทรีย์ในน้ำเสีย โดยมีเครื่องเติมอากาศ 2 ชุดเพื่อเพิ่มออกซิเจนและกวนผสม',
+    details: [
+      'เป็นจุดสำคัญที่ต้องติดตาม pH, DO, SV30 และลักษณะตะกอน',
+      'ในอนาคตควรแสดงเวลาทำงาน/หยุดของเครื่องเติมอากาศแต่ละตัวแบบ real-time',
+      'การมองภาพรวมของบ่อนี้ทำให้รู้สภาพระบบชีวภาพประจำวันได้ชัดที่สุด'
+    ],
+    metrics: [
+      { label: 'pH วันนี้', key: 'pH', fallback: 'รอข้อมูล' },
+      { label: 'SV30 วันนี้', key: 'sv30', fallback: 'รอข้อมูล' },
+      { label: 'DO จุด 1', key: 'do1', fallback: 'รอข้อมูล' },
+      { label: 'DO จุด 2', key: 'do2', fallback: 'รอข้อมูล' }
+    ],
+    future: ['Spec เครื่องเติมอากาศ 1 และ 2', 'รอบทำงาน/หยุด', 'ค่า MLSS/SS', 'อุณหภูมิ', 'TDS'],
+    status: 'หน่วยชีวภาพหลัก'
+  },
+  T004: {
+    code: 'T-004',
+    name: 'บ่อตกตะกอน',
+    short: 'แยกตะกอนชีวภาพออกจากน้ำใส',
+    role: 'บ่อตกตะกอนรับน้ำจากบ่อเติมอากาศและทำหน้าที่แยกตะกอนชีวภาพออกจากน้ำใส โดยตะกอนจะไหลรวมลงสู่ก้นกรวยเพื่อส่งกลับหรือสูบไปยังลานทราย',
+    details: [
+      'น้ำใสล้นผ่านรางวี-น็อชไปยังบ่อสัมผัสคลอรีน',
+      'ตะกอนก้นบ่อแบ่งเป็น Return Sludge และ Excess Sludge',
+      'ข้อมูลอนาคตที่ควรมี: ระดับ sludge blanket, อัตราการสูบตะกอนกลับ, คุณภาพน้ำทิ้งก่อนคลอรีน'
+    ],
+    metrics: [
+      { label: 'Sludge Blanket', key: 'sludgeBlanket', fallback: 'รอข้อมูล' },
+      { label: 'Return Sludge', key: 'returnSludge', fallback: 'รอข้อมูล' }
+    ],
+    future: ['Spec ปั๊มสูบตะกอน', 'รอบการสูบกลับตะกอน', 'คุณภาพน้ำใสล้น'],
+    status: 'แยกน้ำ/ตะกอน'
+  },
+  T005: {
+    code: 'T-005',
+    name: 'บ่อสัมผัสคลอรีน',
+    short: 'ฆ่าเชื้อก่อนปล่อยน้ำทิ้ง',
+    role: 'บ่อสัมผัสคลอรีนรับน้ำใสจากบ่อตกตะกอนเพื่อฆ่าเชื้อก่อนปล่อยออก โดยมีถังและเครื่องจ่ายคลอรีนอยู่ด้านบน',
+    details: [
+      'ควรเฝ้าระวังค่า Free Chlorine และเวลา contact time',
+      'ปริมาณการใช้คลอรีนต่อวันเป็นตัวชี้วัดต้นทุนที่สำคัญ',
+      'เหมาะกับการแสดงค่าน้ำทิ้งปลายทางแบบเห็นทันทีบนโมเดล'
+    ],
+    metrics: [
+      { label: 'Free Chlorine', key: 'freeChlorine', fallback: 'รอข้อมูล' },
+      { label: 'Contact Time', key: 'contactTime', fallback: 'รอข้อมูล' }
+    ],
+    future: ['Spec เครื่องจ่ายคลอรีน', 'อัตราการใช้คลอรีนรายวัน', 'Residual Chlorine ปลายน้ำ'],
+    status: 'หน่วยฆ่าเชื้อ'
+  },
+  T006: {
+    code: 'T-006',
+    name: 'ลานทรายตากตะกอน',
+    short: 'ลดความชื้นของตะกอนส่วนเกิน',
+    role: 'ลานทรายตากตะกอนรับตะกอนส่วนเกินจากบ่อตกตะกอน เพื่อแยกน้ำออกจากตะกอน น้ำกรองผ่านชั้นทรายและกรวดจะไหลกลับเข้าสู่ระบบ',
+    details: [
+      'ในโมเดลแสดงเป็นลานทราย 2 ช่อง พร้อมชั้นกรวด/ทรายและท่อรวบน้ำกรองกลับ',
+      'เหมาะสำหรับติดตามสถานะการใช้งานแต่ละช่องและความชื้นของตะกอน',
+      'ข้อมูลอนาคตควรมี: วันลงตะกอน, สถานะแห้ง/ชื้น, ปริมาณตะกอนขนทิ้ง'
+    ],
+    metrics: [
+      { label: 'Bed 1', key: 'bed1', fallback: 'รอข้อมูล' },
+      { label: 'Bed 2', key: 'bed2', fallback: 'รอข้อมูล' },
+      { label: 'Filtrate Return', key: 'filtrate', fallback: 'รอข้อมูล' }
+    ],
+    future: ['สถานะลานทรายแต่ละช่อง', 'น้ำกรองกลับ', 'รอบขนตะกอน'],
+    status: 'หน่วยจัดการตะกอน'
+  },
+  CTRL: {
+    code: 'B-001',
+    name: 'อาคารควบคุมระบบ',
+    short: 'ศูนย์รวมอุปกรณ์ควบคุมและไฟฟ้า',
+    role: 'อาคารควบคุมเป็นจุดติดตั้งตู้ควบคุมไฟฟ้า ปั๊มบางส่วน และอุปกรณ์สนับสนุนการเดินระบบ รวมถึงเป็นตำแหน่งที่เหมาะสำหรับ dashboard กลางของทั้งระบบ',
+    details: [
+      'ในอนาคตสามารถผูกข้อมูลไฟฟ้า, alarm, ตารางบำรุงรักษา, และแผงควบคุมเข้ากับจุดนี้',
+      'เป็นพื้นที่เหมาะสำหรับเชื่อมต่อ Smart Logger / PLC / HMI หากมี',
+      'โมเดลแสดงอาคารหลังคาทรงปั้นหยาเพื่อให้ใกล้เคียงงานจริง'
+    ],
+    metrics: [
+      { label: 'ไฟฟ้ารวมระบบ', key: 'power', fallback: 'รอข้อมูล' },
+      { label: 'Alarm', key: 'alarm', fallback: 'ยังไม่เชื่อมต่อ' }
+    ],
+    future: ['kWh รายวัน', 'กระแสไฟ/แรงดัน', 'สถานะ MCC / control panel'],
+    status: 'ศูนย์ควบคุม'
+  },
+  P001A: {
+    code: 'P-001A',
+    name: 'ปั๊มสูบน้ำเสีย A',
+    short: 'ปั๊มจุ่มส่งน้ำเสียเข้าระบบ',
+    role: 'ปั๊มจุ่มตัวที่ 1 ในบ่อสูบน้ำเสีย ทำหน้าที่สูบส่งน้ำเสียไปยังบ่อเติมอากาศ',
+    details: [
+      'เหมาะสำหรับติดตามรอบการทำงาน, สถานะ Auto/Manual และชั่วโมงสะสม',
+      'เชื่อมเข้ากับ popup ได้เมื่อมีสเปกและตาราง PM จริง'
+    ],
+    metrics: [{ label: 'สถานะ', value: 'รอข้อมูล' }],
+    future: ['กำลังมอเตอร์', 'อัตราการสูบ', 'Run/Stop นาที', 'ชั่วโมงสะสม'],
+    status: 'อุปกรณ์'
+  },
+  P001B: {
+    code: 'P-001B',
+    name: 'ปั๊มสูบน้ำเสีย B',
+    short: 'ปั๊มจุ่มสำรอง/สลับใช้งาน',
+    role: 'ปั๊มจุ่มตัวที่ 2 ในบ่อสูบน้ำเสีย ทำงานสลับหรือสำรองกับปั๊มตัว A',
+    details: ['ใช้แสดงสถานะสำรองและสุขภาพเครื่องในอนาคต'],
+    metrics: [{ label: 'สถานะ', value: 'รอข้อมูล' }],
+    future: ['กำลังมอเตอร์', 'อัตราการสูบ', 'Run/Stop นาที'],
+    status: 'อุปกรณ์'
+  },
+  AER1: {
+    code: 'AE-001',
+    name: 'เครื่องเติมอากาศ 1',
+    short: 'เติมออกซิเจนให้จุลินทรีย์',
+    role: 'เครื่องเติมอากาศชุดที่ 1 ในบ่อเติมอากาศ',
+    details: ['ควรแสดงรอบทำงาน/หยุด, กำลังมอเตอร์ และสถานะเครื่อง'],
+    metrics: [{ label: 'สถานะ', value: 'รอข้อมูล' }],
+    future: ['Spec เครื่อง', 'Run/Stop นาที', 'กระแสไฟ'],
+    status: 'อุปกรณ์'
+  },
+  AER2: {
+    code: 'AE-002',
+    name: 'เครื่องเติมอากาศ 2',
+    short: 'เติมออกซิเจนให้จุลินทรีย์',
+    role: 'เครื่องเติมอากาศชุดที่ 2 ในบ่อเติมอากาศ',
+    details: ['สามารถแสดงสลับเวลาทำงานแบบ real-time ในอนาคต'],
+    metrics: [{ label: 'สถานะ', value: 'รอข้อมูล' }],
+    future: ['Spec เครื่อง', 'Run/Stop นาที', 'กระแสไฟ'],
+    status: 'อุปกรณ์'
+  },
+  SP001: {
+    code: 'P-004A/B',
+    name: 'ชุดปั๊มสูบตะกอน',
+    short: 'สูบตะกอนกลับและตะกอนส่วนเกิน',
+    role: 'ชุดปั๊มสูบตะกอนบริเวณบ่อตกตะกอน แยกการส่งกลับบ่อเติมอากาศและส่งไปลานทราย',
+    details: ['ควรแสดงสถานะการสูบกลับ, รอบสูบ และอัตราการสูบในอนาคต'],
+    metrics: [{ label: 'สถานะ', value: 'รอข้อมูล' }],
+    future: ['Spec ปั๊ม', 'RAS/WAS schedule', 'ปริมาณสูบ'],
+    status: 'อุปกรณ์'
+  },
+  CL001: {
+    code: 'CL-001',
+    name: 'ชุดจ่ายคลอรีน',
+    short: 'ถังและปั๊มจ่ายคลอรีน',
+    role: 'ชุดถังคลอรีนและปั๊มจ่ายสารเพื่อฆ่าเชื้อในบ่อสัมผัสคลอรีน',
+    details: ['ในอนาคตควรแสดงอัตราการจ่าย, ปริมาณการใช้สาร และปริมาณคงเหลือ'],
+    metrics: [{ label: 'สถานะ', value: 'รอข้อมูล' }],
+    future: ['ปริมาณใช้รายวัน', 'Spec dosing pump', 'ระดับสารเคมี'],
+    status: 'อุปกรณ์'
+  }
+};
+
+const scene = new THREE.Scene();
+scene.background = new THREE.Color(0x0a1724);
+scene.fog = new THREE.Fog(0x0a1724, 42, 110);
+
+const camera = new THREE.PerspectiveCamera(46, window.innerWidth / window.innerHeight, 0.03, 220);
+camera.position.set(19, 18, 22);
+
+const renderer = new THREE.WebGLRenderer({ antialias: true, powerPreference: 'high-performance', preserveDrawingBuffer: true });
+renderer.setSize(window.innerWidth, window.innerHeight);
+renderer.setPixelRatio(Math.min(window.devicePixelRatio || 1, 2));
+renderer.outputColorSpace = THREE.SRGBColorSpace;
+renderer.toneMapping = THREE.ACESFilmicToneMapping;
+renderer.toneMappingExposure = 1.32;
+renderer.shadowMap.enabled = true;
+renderer.shadowMap.type = THREE.PCFSoftShadowMap;
+renderer.localClippingEnabled = true;
+app.appendChild(renderer.domElement);
+
+const controls = new OrbitControls(camera, renderer.domElement);
+controls.target.set(0, -0.6, 0.5);
+controls.enableDamping = true;
+controls.dampingFactor = 0.075;
+controls.minDistance = 1.0;
+controls.maxDistance = 85;
+controls.maxPolarAngle = Math.PI * 0.96;
+controls.screenSpacePanning = true;
+controls.update();
+
+scene.add(new THREE.HemisphereLight(0xc9edff, 0x3e5464, 2.2));
+const sun = new THREE.DirectionalLight(0xfff1dc, 3.2);
+sun.position.set(-16, 24, 14);
+sun.castShadow = true;
+sun.shadow.mapSize.set(2048, 2048);
+sun.shadow.camera.left = -22;
+sun.shadow.camera.right = 22;
+sun.shadow.camera.top = 22;
+sun.shadow.camera.bottom = -22;
+sun.shadow.camera.near = 1;
+sun.shadow.camera.far = 70;
+sun.shadow.bias = -0.00035;
+scene.add(sun);
+const fill = new THREE.DirectionalLight(0x58bef0, 1.0);
+fill.position.set(18, 9, -12);
+scene.add(fill);
+
+const groups = {
+  terrain: new THREE.Group(),
+  concrete: new THREE.Group(),
+  water: new THREE.Group(),
+  pipes: new THREE.Group(),
+  equipment: new THREE.Group(),
+  building: new THREE.Group(),
+  labels3d: new THREE.Group(),
+  guides: new THREE.Group()
+};
+Object.values(groups).forEach(g => scene.add(g));
+
+const registeredMaterials = new Set();
+const clippableMaterials = new Set();
+const interactiveObjects = [];
+const hiddenForCutaway = [];
+const bubbles = [];
+const flowAnimations = [];
+const waveSurfaces = [];
+const markers = [];
+const raycaster = new THREE.Raycaster();
+const mouseNdc = new THREE.Vector2(2, 2);
+let hoveredAssetId = null;
+let hoveredObject = null;
+let cameraTween = null;
+const reducedMotion = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+
+const settings = {
+  clipping: false,
+  cutX: 12,
+  cutY: -0.35,
+  cutZ: 8.6,
+  clipX: false,
+  clipY: true,
+  clipZ: false,
+  showGuides: true,
+  cutaway: true,
+  terrain: true,
+  concrete: true,
+  water: true,
+  pipes: true,
+  building: true,
+  equipment: true,
+  markers: true,
+  wireframe: false,
+  animate: true,
+  flowMotion: true,
+  flowSpeed: 1,
+  waveStrength: 1
+};
+
+const clipPlanes = {
+  x: new THREE.Plane(new THREE.Vector3(-1, 0, 0), settings.cutX),
+  y: new THREE.Plane(new THREE.Vector3(0, -1, 0), settings.cutY),
+  z: new THREE.Plane(new THREE.Vector3(0, 0, -1), settings.cutZ)
+};
+
+function material(color, roughness = 0.82, extra = {}) {
+  const m = new THREE.MeshStandardMaterial({ color, roughness, metalness: 0.04, side: THREE.DoubleSide, ...extra });
+  registeredMaterials.add(m);
+  clippableMaterials.add(m);
+  return m;
+}
+
+function transparentMaterial(color, opacity = 0.35, extra = {}) {
+  return material(color, 0.18, { transparent: true, opacity, depthWrite: false, ...extra });
+}
+
+const MAT = {
+  terrain: material(0x83989f, 0.99),
+  curb: material(0x637a83, 0.96),
+  concrete: material(0xbac6c8, 0.94),
+  concreteDark: material(0x7f9199, 0.95),
+  inner: material(0x9eb2bb, 0.94),
+  rim: material(0xe2e6e4, 0.80),
+  earth: transparentMaterial(0x7d6953, 0.24),
+  steel: material(0x7d919d, 0.38, { metalness: 0.72 }),
+  steelDark: material(0x334958, 0.52, { metalness: 0.54 }),
+  stainless: material(0xc3d3d7, 0.24, { metalness: 0.82 }),
+  grate: material(0x5b7280, 0.46, { metalness: 0.70 }),
+  building: material(0xd9d3c4, 0.96),
+  roof: material(0x3d5667, 0.66),
+  roofEdge: material(0x8db1bf, 0.40, { metalness: 0.28 }),
+  door: material(0x314b5c, 0.56),
+  glass: transparentMaterial(0x73c0e4, 0.55, { metalness: 0.12 }),
+  water: transparentMaterial(0x138cc7, 0.31, { roughness: 0.11 }),
+  waterSurface: transparentMaterial(0x58d6f7, 0.52, { roughness: 0.10 }),
+  sludge: transparentMaterial(0x7d603c, 0.55, { roughness: 0.70 }),
+  sand: material(0xc3ac76, 0.99),
+  gravel: material(0x7a8382, 0.98),
+  bubble: transparentMaterial(0xc2f2ff, 0.54),
+  pumpBlue: material(0x1f76a6, 0.34, { metalness: 0.46 })
+};
+
+const PIPE_MAT = {
+  inflow: material(0x5d7685, 0.35, { metalness: 0.26 }),
+  force: material(0x185ab5, 0.30, { metalness: 0.26 }),
+  bypass: material(0xff9a40, 0.30, { metalness: 0.22 }),
+  overflow: material(0x22d3e9, 0.30, { metalness: 0.22 }),
+  effluent: material(0x84caff, 0.30, { metalness: 0.22 }),
+  sludge: material(0x976038, 0.34, { metalness: 0.22 }),
+  return: material(0xda6555, 0.34, { metalness: 0.18 }),
+  underdrain: material(0x9ba8b2, 0.34, { metalness: 0.26 }),
+  dosing: material(0xf0d26d, 0.28, { metalness: 0.18 })
+};
+
+const V = (x, y, z) => new THREE.Vector3(x, y, z);
+
+function registerInteractive(mesh, assetId) {
+  mesh.userData.assetId = assetId;
+  interactiveObjects.push(mesh);
+  return mesh;
+}
+
+function addMesh(parent, geometry, materialRef, x = 0, y = 0, z = 0, cast = true, receive = true) {
+  const mesh = new THREE.Mesh(geometry, materialRef);
+  mesh.position.set(x, y, z);
+  mesh.castShadow = cast;
+  mesh.receiveShadow = receive;
+  parent.add(mesh);
+  return mesh;
+}
+
+function box(parent, w, h, d, x, y, z, matRef, assetId) {
+  const mesh = addMesh(parent, new THREE.BoxGeometry(w, h, d), matRef, x, y, z);
+  if (assetId) registerInteractive(mesh, assetId);
+  return mesh;
+}
+
+function cylinder(parent, r, h, x, y, z, matRef, segments = 20, assetId) {
+  const mesh = addMesh(parent, new THREE.CylinderGeometry(r, r, h, segments), matRef, x, y, z);
+  if (assetId) registerInteractive(mesh, assetId);
+  return mesh;
+}
+
+function sphere(parent, r, x, y, z, matRef, segments = 12) {
+  return addMesh(parent, new THREE.SphereGeometry(r, segments, 8), matRef, x, y, z);
+}
+
+function beam(parent, a, b, radius, matRef, segments = 12, assetId = null) {
+  const p1 = V(...a), p2 = V(...b);
+  const delta = p2.clone().sub(p1);
+  const len = delta.length();
+  if (len < 0.001) return null;
+  const mesh = addMesh(parent, new THREE.CylinderGeometry(radius, radius, len, segments), matRef);
+  mesh.position.copy(p1).add(p2).multiplyScalar(0.5);
+  mesh.quaternion.setFromUnitVectors(new THREE.Vector3(0, 1, 0), delta.normalize());
+  if (assetId) registerInteractive(mesh, assetId);
+  return mesh;
+}
+
+function pipe(points, diameter, type, arrows = true, assetId = null) {
+  const curve = new THREE.CatmullRomCurve3(points.map(p => V(...p)), false, 'centripetal', 0.06);
+  let length = 0;
+  for (let i = 1; i < points.length; i++) length += V(...points[i-1]).distanceTo(V(...points[i]));
+  const tube = addMesh(groups.pipes, new THREE.TubeGeometry(curve, Math.max(24,Math.ceil(length*12)),diameter/2,10,false),PIPE_MAT[type]);
+  if(assetId)registerInteractive(tube,assetId);
+  if(arrows && length > 0.5){
+    const arrowsCount = Math.min(18,Math.max(2,Math.floor(length/1.45)));
+    const icons=[];
+    for(let i=0;i<arrowsCount;i++){
+      const cone=addMesh(groups.pipes,new THREE.ConeGeometry(Math.max(0.105,diameter*.85),.33,10),PIPE_MAT[type],0,0,0,false,false);
+      cone.userData.flowArrow=true;
+      icons.push(cone);
+    }
+    // Visual motion has no semantic relation to actual pump ON/OFF or flow rate.
+    flowAnimations.push({curve,icons,length,type,phase:Math.random()});
+  }
+  return tube;
+}
+
+// Procedural rippling surface is an animation layer, not measured turbulence.
+function waterRipple(cx,cz,width,depth,level,kind='calm'){
+  const mesh = new THREE.Mesh(
+    new THREE.PlaneGeometry(width,depth,42,42),
+    new THREE.MeshPhysicalMaterial({color:kind==='aeration'?0x34a9d8:0x3daecf,
+      transparent:true,opacity:.88,roughness:.19,metalness:.14,
+      clearcoat:.72,clearcoatRoughness:.10,side:THREE.DoubleSide,
+      clippingPlanes:[],clipShadows:true})
+  );
+  registeredMaterials.add(mesh.material);
+  clippableMaterials.add(mesh.material);
+  mesh.position.set(cx,level,cz);
+  mesh.rotation.x=-Math.PI/2;
+  mesh.castShadow=false;
+  mesh.receiveShadow=true;
+  groups.water.add(mesh);
+  const base=mesh.geometry.attributes.position.array.slice();
+  waveSurfaces.push({mesh,base,cx,cz,kind});
+  return mesh;
+}
+
+function advanceMotion(elapsed,dt){
+  const running=settings.animate && !reducedMotion;
+  for(const track of flowAnimations){
+    track.icons.forEach((icon,i)=>{
+      const active=running&&settings.flowMotion;
+      icon.visible=active && groups.pipes.visible;
+      if(!active)return;
+      const speed=0.7*settings.flowSpeed/Math.max(.1,track.length);
+      const t=((i/track.icons.length)+elapsed*speed+track.phase)%1;
+      const p=track.curve.getPointAt(t);
+      const tangent=track.curve.getTangentAt(t).normalize();
+      icon.position.copy(p);
+      icon.quaternion.setFromUnitVectors(V(0,1,0),tangent);
+    });
+  }
+  for(const surface of waveSurfaces){
+    const attr=surface.mesh.geometry.attributes.position;
+    const a=attr.array;
+    const base=surface.base;
+    const amp=surface.kind==='aeration'?.095:.034;
+    for(let i=0;i<a.length;i+=3){
+      const x=base[i],z=base[i+1];
+      const wave=Math.sin(x*3.2+elapsed*1.8)*Math.cos(z*2.9+elapsed*1.25)+
+      .40*Math.sin(Math.hypot(x,z)*7.1-elapsed*2.2);
+      a[i+2]=(running?wave:0)*amp*settings.waveStrength;
+    }
+    attr.needsUpdate=true;
+    surface.mesh.geometry.computeVertexNormals();
+  }
+}
+
+function geometryFromTriangles(positions) {
+  const g = new THREE.BufferGeometry();
+  g.setAttribute('position', new THREE.Float32BufferAttribute(positions, 3));
+  g.computeVertexNormals();
+  return g;
+}
+
+function quad(arr, a, b, c, d) {
+  for (const p of [a, b, c, a, c, d]) arr.push(p[0], p[1], p[2]);
+}
+
+function squareFrustumGeometry(top, bottom, yTop, yBottom, cx, cz, cap = true) {
+  const tc = [[-top/2,yTop,-top/2],[top/2,yTop,-top/2],[top/2,yTop,top/2],[-top/2,yTop,top/2]];
+  const bc = [[-bottom/2,yBottom,-bottom/2],[bottom/2,yBottom,-bottom/2],[bottom/2,yBottom,bottom/2],[-bottom/2,yBottom,bottom/2]];
+  const p = [];
+  for (let i = 0; i < 4; i++) {
+    const j = (i + 1) % 4;
+    quad(p, tc[i], tc[j], bc[j], bc[i]);
+  }
+  if (cap) {
+    quad(p, tc[3], tc[2], tc[1], tc[0]);
+    quad(p, bc[0], bc[1], bc[2], bc[3]);
+  }
+  const g = geometryFromTriangles(p);
+  g.translate(cx, 0, cz);
+  return g;
+}
+
+function hollowHopperGeometry(outerTop, outerBottom, innerTop, innerBottom, yTop, yBottom, cx, cz) {
+  const corners = (w, y) => [[-w/2,y,-w/2],[w/2,y,-w/2],[w/2,y,w/2],[-w/2,y,w/2]];
+  const OT = corners(outerTop, yTop), OB = corners(outerBottom, yBottom), IT = corners(innerTop, yTop), IB = corners(innerBottom, yBottom);
+  const p = [];
+  for (let i = 0; i < 4; i++) {
+    const j = (i + 1) % 4;
+    quad(p, OT[i], OT[j], OB[j], OB[i]);
+    quad(p, IB[i], IB[j], IT[j], IT[i]);
+    quad(p, OT[i], IT[i], IT[j], OT[j]);
+    quad(p, OB[j], IB[j], IB[i], OB[i]);
+  }
+  const g = geometryFromTriangles(p);
+  g.translate(cx, 0, cz);
+  return g;
+}
+
+function createMarker(assetId, object3d, offsetY = 0.5) {
+  const asset = ASSETS[assetId];
+  if (!asset) return null;
+  const el = document.createElement('button');
+  el.className = 'marker';
+  el.type = 'button';
+  el.setAttribute('aria-label', `${asset.name} (${asset.code})`);
+  const metricsHtml = getAssetMetrics(assetId).slice(0, 2).map(row => `<div class="label">${row.label}</div><div class="value">${row.value}</div>`).join('');
+  el.innerHTML = `
+    <div class="code">${asset.code}</div>
+    <div class="name">${asset.name}</div>
+    <div class="desc">${asset.short}</div>
+    <div class="metrics">${metricsHtml || '<div class="label">ข้อมูล</div><div class="value">รอเชื่อมต่อ</div>'}</div>
+  `;
+  el.addEventListener('mouseenter', e => showTooltipForAsset(assetId, e.clientX, e.clientY));
+  el.addEventListener('mousemove', e => moveTooltip(e.clientX, e.clientY));
+  el.addEventListener('mouseleave', hideTooltip);
+  el.addEventListener('focus', e => showTooltipForAsset(assetId, window.innerWidth / 2, window.innerHeight / 2));
+  el.addEventListener('blur', hideTooltip);
+  el.addEventListener('click', () => focusAsset(assetId));
+  markerLayer.appendChild(el);
+  const marker = { assetId, object3d, el, offsetY };
+  markers.push(marker);
+  return marker;
+}
+
+function getRuntimeMetricValue(assetId, key) {
+  return PLANT_STATUS.assets?.[assetId]?.metrics?.[key] ?? null;
+}
+
+function formatMetricValue(value, fallback = 'ยังไม่มีข้อมูล') {
+  if (value === null || value === undefined || value === '') return fallback;
+  return String(value);
+}
+
+function getAssetMetrics(assetId) {
+  const asset = ASSETS[assetId];
+  if (!asset || !asset.metrics) return [];
+  return asset.metrics.map(item => {
+    if ('value' in item) return { label: item.label, value: formatMetricValue(item.value, item.fallback || 'ยังไม่มีข้อมูล') };
+    return { label: item.label, value: formatMetricValue(getRuntimeMetricValue(assetId, item.key), item.fallback || 'ยังไม่มีข้อมูล') };
+  });
+}
+
+function buildTooltipHtml(assetId) {
+  const asset = ASSETS[assetId];
+  if (!asset) return '';
+  const metrics = getAssetMetrics(assetId);
+  const rows = metrics.length ? metrics.map(m => `<tr><td>${m.label}</td><td>${m.value}</td></tr>`).join('') : '<tr><td>ข้อมูล</td><td>ยังไม่มีข้อมูล</td></tr>';
+  const future = (asset.future || []).map(text => `<li>${text}</li>`).join('');
+  const details = (asset.details || []).map(text => `<li>${text}</li>`).join('');
+  return `
+    <div class="tp-code">${asset.code}</div>
+    <div class="tp-name">${asset.name}</div>
+    <div class="tp-role">${asset.role}</div>
+    <div class="status-pill">${asset.status || 'จุดในระบบ'}</div>
+    <div class="tp-section">
+      <div class="tp-head">ข้อมูลที่แสดงได้ตอนนี้</div>
+      <table>${rows}</table>
+    </div>
+    <div class="tp-section">
+      <div class="tp-head">หน้าที่ / รายละเอียดคร่าว ๆ</div>
+      <ul>${details}</ul>
+    </div>
+    <div class="tp-section">
+      <div class="tp-head">ข้อมูลที่ต่อยอดได้ในอนาคต</div>
+      <ul>${future || '<li>ยังไม่กำหนด</li>'}</ul>
+    </div>
+  `;
+}
+
+function showTooltipForAsset(assetId, x, y) {
+  tooltip.innerHTML = buildTooltipHtml(assetId);
+  tooltip.style.display = 'block';
+  moveTooltip(x, y);
+  hoveredAssetId = assetId;
+  updateMarkerHighlight();
+}
+
+function moveTooltip(x, y) {
+  const pad = 18;
+  const rect = tooltip.getBoundingClientRect();
+  let left = x + 18;
+  let top = y + 18;
+  if (left + rect.width > window.innerWidth - pad) left = x - rect.width - 18;
+  if (top + rect.height > window.innerHeight - pad) top = y - rect.height - 18;
+  left = Math.max(pad, left);
+  top = Math.max(pad, top);
+  tooltip.style.left = `${left}px`;
+  tooltip.style.top = `${top}px`;
+}
+
+function hideTooltip() {
+  tooltip.style.display = 'none';
+  hoveredAssetId = null;
+  updateMarkerHighlight();
+}
+
+function updateMarkerHighlight() {
+  markers.forEach(marker => marker.el.classList.toggle('active', marker.assetId === hoveredAssetId));
+}
+
+function projectToScreen(pos) {
+  const p = pos.clone().project(camera);
+  return {
+    x: (p.x * 0.5 + 0.5) * window.innerWidth,
+    y: (-p.y * 0.5 + 0.5) * window.innerHeight,
+    visible: p.z >= -1 && p.z <= 1
+  };
+}
+
+function updateMarkers() {
+  markerLayer.style.display = settings.markers ? 'block' : 'none';
+  if (!settings.markers) return;
+  markers.forEach(marker => {
+    const world = new THREE.Vector3();
+    marker.object3d.getWorldPosition(world);
+    world.y += marker.offsetY;
+    const screen = projectToScreen(world);
+    const camDir = world.clone().sub(camera.position).normalize();
+    const facing = camDir.dot(camera.getWorldDirection(new THREE.Vector3())) > 0.05;
+    const display = screen.visible && facing ? 'block' : 'none';
+    marker.el.style.display = display;
+    if (display === 'block') {
+      marker.el.style.left = `${screen.x}px`;
+      marker.el.style.top = `${screen.y}px`;
+    }
+  });
+}
+
+function applyClipping() {
+  clipPlanes.x.constant = settings.cutX;
+  clipPlanes.y.constant = settings.cutY;
+  clipPlanes.z.constant = settings.cutZ;
+  const activePlanes = settings.clipping ? [
+    ...(settings.clipX ? [clipPlanes.x] : []),
+    ...(settings.clipY ? [clipPlanes.y] : []),
+    ...(settings.clipZ ? [clipPlanes.z] : [])
+  ] : [];
+  clippableMaterials.forEach(matRef => {
+    matRef.clippingPlanes = activePlanes;
+    matRef.clipShadows = true;
+    matRef.needsUpdate = true;
+  });
+  updateGuidePlanes();
+}
+
+function updateWireframe() {
+  registeredMaterials.forEach(m => {
+    if ('wireframe' in m) {
+      m.wireframe = settings.wireframe;
+      m.needsUpdate = true;
+    }
+  });
+}
+
+function updateLayerVisibility() {
+  groups.terrain.visible = settings.terrain;
+  groups.concrete.visible = settings.concrete;
+  groups.water.visible = settings.water;
+  groups.pipes.visible = settings.pipes;
+  groups.equipment.visible = settings.equipment;
+  groups.building.visible = settings.building;
+  groups.labels3d.visible = settings.markers;
+  updateMarkers();
+}
+
+function updateCutaway() {
+  hiddenForCutaway.forEach(obj => obj.visible = !settings.cutaway);
+}
+
+function createGuidePlane(color, axis) {
+  const matRef = transparentMaterial(color, 0.08, { depthWrite: false });
+  const plane = addMesh(groups.guides, new THREE.PlaneGeometry(25, 25), matRef, 0, 0, 0, false, false);
+  const edgesMat = new THREE.LineBasicMaterial({ color, transparent: true, opacity: 0.35 });
+  registeredMaterials.add(edgesMat);
+  const edges = new THREE.LineSegments(new THREE.EdgesGeometry(new THREE.PlaneGeometry(25, 25)), edgesMat);
+  groups.guides.add(edges);
+  if (axis === 'x') { plane.rotation.y = Math.PI / 2; edges.rotation.y = Math.PI / 2; }
+  if (axis === 'y') { plane.rotation.x = -Math.PI / 2; edges.rotation.x = -Math.PI / 2; }
+  return { plane, edges };
+}
+
+const guidePlanes = {
+  x: createGuidePlane(0xe16072, 'x'),
+  y: createGuidePlane(0x57d7ab, 'y'),
+  z: createGuidePlane(0x5c9fff, 'z')
+};
+
+function updateGuidePlanes() {
+  guidePlanes.x.plane.position.x = guidePlanes.x.edges.position.x = settings.cutX;
+  guidePlanes.y.plane.position.y = guidePlanes.y.edges.position.y = settings.cutY;
+  guidePlanes.z.plane.position.z = guidePlanes.z.edges.position.z = settings.cutZ;
+  groups.guides.visible = settings.clipping && settings.showGuides;
+}
+
+function makeSite() {
+  // Ground is physically OPEN above each underground basin: no solid slab covers water.
+  const tanks=Object.values(layout).filter(t=>t.h && t.w && t.d && t!==layout.CTRL);
+  const xVals=[-12.025,12.025,...tanks.flatMap(t=>[t.x-t.w/2,t.x+t.w/2])].sort((a,b)=>a-b);
+  const zVals=[-8.625,8.625,...tanks.flatMap(t=>[t.z-t.d/2,t.z+t.d/2])].sort((a,b)=>a-b);
+  for(let i=0;i<xVals.length-1;i++)for(let j=0;j<zVals.length-1;j++){
+    const w=xVals[i+1]-xVals[i],d=zVals[j+1]-zVals[j];
+    if(w<.002||d<.002)continue;
+    const x=(xVals[i+1]+xVals[i])/2,z=(zVals[j+1]+zVals[j])/2;
+    if(tanks.some(t=>Math.abs(x-t.x)<t.w/2-.0001 && Math.abs(z-t.z)<t.d/2-.0001))continue;
+    box(groups.terrain,w,.26,d,x,-.13,z,MAT.terrain);
+  }
+  for(const z of [-8.65,8.65])box(groups.terrain,24.2,.17,.20,0,.045,z,MAT.curb);
+  for(const x of [-12.05,12.05])box(groups.terrain,.20,.17,17.3,x,.045,0,MAT.curb);
+  const gridMat=new THREE.LineBasicMaterial({color:0x6c8998,transparent:true,opacity:.12});
+  registeredMaterials.add(gridMat);
+  for(let x=-11;x<=11;x+=1){
+    const g=new THREE.BufferGeometry().setFromPoints([V(x,.008,-8.3),V(x,.008,8.3)]);
+    groups.terrain.add(new THREE.Line(g,gridMat));
+  }
+  for(let z=-8;z<=8;z+=1){
+    const g=new THREE.BufferGeometry().setFromPoints([V(-11.7,.008,z),V(11.7,.008,z)]);
+    groups.terrain.add(new THREE.Line(g,gridMat));
+  }
+  // Neat service paths and shrub border (decorative only, no false monitoring data).
+  for(let i=0;i<13;i++){
+    const x=-10.8+i*1.8;
+    box(groups.terrain,.45,.08,.24,x,.04,8.21,material(i%2?0xa9c7a9:0x8caf91,.9));
+  }
+  const font=document.createElement('canvas');font.width=128;font.height=64;
+  const c=font.getContext('2d');c.fillStyle='#d8eef6';c.font='bold 40px sans-serif';c.fillText('N ↑',9,46);
+  const tex=new THREE.CanvasTexture(font);tex.colorSpace=THREE.SRGBColorSpace;
+  const s=new THREE.Sprite(new THREE.SpriteMaterial({map:tex,transparent:true,depthWrite:false}));
+  s.position.set(10.65,.55,-7.9);s.scale.set(1.4,.7,1);groups.labels3d.add(s);
+}
+
+function rectangularTank(cx, cz, w, d, depth, wall = 0.18, materialRef = MAT.concrete, assetId = null, omitFront = false) {
+  const parapet = 0.78; // 78 cm raised wall visible above grade
+  const wallH = depth + parapet;
+  const wallY = (parapet - depth) / 2;
+  const front = box(groups.concrete, w - 2 * wall, wallH, wall, cx, wallY, cz - d / 2 + wall / 2, materialRef, assetId);
+  const back = box(groups.concrete, w - 2 * wall, wallH, wall, cx, wallY, cz + d / 2 - wall / 2, materialRef, assetId);
+  const left = box(groups.concrete, wall, wallH, d, cx - w / 2 + wall / 2, wallY, cz, materialRef, assetId);
+  const right = box(groups.concrete, wall, wallH, d, cx + w / 2 - wall / 2, wallY, cz, materialRef, assetId);
+  const floor = box(groups.concrete, w, 0.20, d, cx, -depth + 0.10, cz, MAT.concreteDark, assetId);
+  box(groups.concrete, w, 0.075, wall + 0.05, cx, parapet+0.0375, cz - d / 2 + wall / 2, MAT.rim, assetId);
+  box(groups.concrete, w, 0.075, wall + 0.05, cx, parapet+0.0375, cz + d / 2 - wall / 2, MAT.rim, assetId);
+  box(groups.concrete, wall + 0.05, 0.075, d, cx - w / 2 + wall / 2, parapet+0.0375, cz, MAT.rim, assetId);
+  box(groups.concrete, wall + 0.05, 0.075, d, cx + w / 2 - wall / 2, parapet+0.0375, cz, MAT.rim, assetId);
+  if (omitFront) hiddenForCutaway.push(front);
+  return { front, back, left, right, floor };
+}
+
+
+// --- Layout tuned to look more realistic for future ENV webapp use. ---
+// Flow path: T-001 -> T-003 -> T-004 -> T-005 -> outlet. Sludge from T-004 -> T-003/T-006.
+const layout = {
+  T001: { x: -10.0, z: -5.45, w: 1.5, d: 1.5, h: 3.5 },
+  T008: { x: -8.10, z: -5.25, w: 1.2, d: 2.2, h: 1.6 },
+  CTRL: { x: -2.75, z: -5.3, w: 5.0, d: 3.0, h: 3.0 },
+  T003: { x: 7.20, z: -5.10, w: 5.0, d: 5.0, h: 2.3 },
+  T004: { x: 7.20, z: 0.45, w: 3.6, d: 3.6, h: 3.7 },
+  T005: { x: 8.10, z: 5.95, w: 1.5, d: 3.0, h: 1.25 },
+  T006: { x: 2.40, z: 5.6, w: 4.5, d: 3.2, h: 1.25 }
+};
+makeSite();
+
+// T-001
+let t001Anchor, t003Anchor, t004Anchor, t005Anchor, t006Anchor, ctrlAnchor, t008Anchor;
+{
+  const t = layout.T001;
+  rectangularTank(t.x, t.z, t.w, t.d, t.h, 0.18, MAT.concrete, 'T001', true);
+  box(groups.water, 1.10, 2.1, 1.10, t.x, -1.45, t.z, MAT.water, 'T001');
+  waterRipple(t.x,t.z,1.10,1.10,-0.39,'calm');
+  const pA = cylinder(groups.equipment, 0.175, 0.47, t.x - 0.28, -2.98, t.z, MAT.pumpBlue, 22, 'P001A');
+  const pB = cylinder(groups.equipment, 0.175, 0.47, t.x + 0.28, -2.98, t.z, MAT.pumpBlue, 22, 'P001B');
+  cylinder(groups.equipment, 0.20, 0.12, t.x - 0.28, -2.70, t.z, MAT.steelDark, 20, 'P001A');
+  cylinder(groups.equipment, 0.20, 0.12, t.x + 0.28, -2.70, t.z, MAT.steelDark, 20, 'P001B');
+  beam(groups.equipment, [t.x - 0.61, -2.95, t.z - 0.44], [t.x - 0.61, -0.30, t.z - 0.44], 0.014, MAT.stainless, 6, 'T001');
+  beam(groups.equipment, [t.x - 0.61, -2.95, t.z - 0.34], [t.x - 0.61, -0.30, t.z - 0.34], 0.014, MAT.stainless, 6, 'T001');
+  beam(groups.equipment, [t.x - 0.61, -2.95, t.z - 0.24], [t.x - 0.61, -0.30, t.z - 0.24], 0.014, MAT.stainless, 6, 'T001');
+  beam(groups.equipment, [t.x - 0.61, -2.95, t.z - 0.14], [t.x - 0.61, -0.30, t.z - 0.14], 0.014, MAT.stainless, 6, 'T001');
+  beam(groups.equipment, [t.x - 0.61, -2.95, t.z + 0.54], [t.x - 0.32, -2.95, t.z + 0.54], 0.02, MAT.steelDark, 8, 'T001');
+  t001Anchor = new THREE.Object3D(); t001Anchor.position.set(t.x, 0.32, t.z); groups.labels3d.add(t001Anchor);
+  createMarker('T001', t001Anchor, 0.95);
+}
+
+// T-008
+{
+  const t = layout.T008;
+  rectangularTank(t.x, t.z, t.w, t.d, t.h, 0.18, MAT.concrete, 'T008', true);
+  box(groups.equipment, 0.96, 0.045, 0.62, t.x, 0.13, t.z - 0.70, MAT.steel, 'T008');
+  t008Anchor = new THREE.Object3D(); t008Anchor.position.set(t.x, 0.32, t.z); groups.labels3d.add(t008Anchor);
+  createMarker('T008', t008Anchor, 0.95);
+}
+
+// Mechanized coarse screen near influent and fine screen before aeration.
+function barScreen(cx,cz,assetId,width=1.1){
+  box(groups.concrete,width+.32,.70,1.15,cx,.43,cz,MAT.concrete,assetId);
+  for(let i=0;i<11;i++){
+    const xx=cx-width/2+i*width/10;
+    beam(groups.equipment,[xx,.81,cz-.43],[xx,1.31,cz+.36],.019,MAT.stainless,6,assetId);
+  }
+  beam(groups.equipment,[cx-width/2,1.29,cz+.36],[cx+width/2,1.29,cz+.36],.045,MAT.steel,8,assetId);
+}
+barScreen(-9.02,-6.58,'T001',.88);
+barScreen(3.55,-6.83,'T003',.98);
+// Elevated access railings match the architecture of the reference sketch.
+function guardRails(x,z,w,d){
+  for(const side of [-1,1]){
+    for(let i=0;i<=4;i++){
+      const xx=x-w/2+i*w/4;
+      beam(groups.equipment,[xx,.81,z+side*d/2],[xx,1.65,z+side*d/2],.022,MAT.steel,8);
+    }
+    beam(groups.equipment,[x-w/2,1.65,z+side*d/2],[x+w/2,1.65,z+side*d/2],.024,MAT.steel,8);
+  }
+}
+guardRails(layout.T003.x,layout.T003.z,layout.T003.w,layout.T003.d);
+guardRails(layout.T004.x,layout.T004.z,layout.T004.w,layout.T004.d);
+
+// Control building
+{
+  const b = layout.CTRL;
+  box(groups.building, 5.35, 0.24, 3.30, b.x, 0.08, b.z, MAT.concreteDark, 'CTRL');
+  box(groups.building, b.w, b.h, b.d, b.x, 1.55, b.z, MAT.building, 'CTRL');
+  box(groups.building, 1.15, 2.25, 0.08, b.x - 0.75, 1.16, b.z - 1.54, MAT.door, 'CTRL');
+  box(groups.building, 0.95, 1.08, 0.02, b.x - 0.75, 1.69, b.z - 1.59, MAT.glass, 'CTRL');
+  box(groups.building, 1.55, 1.15, 0.05, b.x + 1.10, 1.70, b.z - 1.54, MAT.glass, 'CTRL');
+  for (const side of [-1, 1]) box(groups.building, 0.05, 1.16, 1.10, b.x + side * 2.53, 1.72, b.z + 0.25, MAT.glass, 'CTRL');
+  const yEave = 3.13, yRidge = 4.10;
+  const FL = [b.x - 2.72, yEave, b.z - 1.79], FR = [b.x + 2.72, yEave, b.z - 1.79], BR = [b.x + 2.72, yEave, b.z + 1.79], BL = [b.x - 2.72, yEave, b.z + 1.79], R1 = [b.x - 1.28, yRidge, b.z], R2 = [b.x + 1.28, yRidge, b.z];
+  const roofTriangles = [];
+  quad(roofTriangles, FL, FR, R2, R1); quad(roofTriangles, BR, BL, R1, R2); roofTriangles.push(...FL, ...R1, ...BL, ...FR, ...BR, ...R2);
+  addMesh(groups.building, geometryFromTriangles(roofTriangles), MAT.roof, 0, 0, 0).userData.assetId = 'CTRL';
+  for (const [a, c] of [[FL, FR], [FR, BR], [BR, BL], [BL, FL], [FL, R1], [BL, R1], [FR, R2], [BR, R2], [R1, R2]]) beam(groups.building, a, c, 0.04, MAT.roofEdge, 8, 'CTRL');
+  box(groups.building, 0.85, 1.05, 0.32, b.x + 2.70, 1.42, b.z + 0.65, MAT.steelDark, 'CTRL');
+  ctrlAnchor = new THREE.Object3D(); ctrlAnchor.position.set(b.x, 3.75, b.z); groups.labels3d.add(ctrlAnchor);
+  createMarker('CTRL', ctrlAnchor, 1.0);
+}
+
+// T-003 Aeration
+{
+  const t = layout.T003;
+  rectangularTank(t.x, t.z, t.w, t.d, t.h, 0.20, MAT.concrete, 'T003', true);
+  box(groups.water, 4.56, 2.42, 4.56, t.x, -1.03, t.z, MAT.water, 'T003');
+  waterRipple(t.x,t.z,4.56,4.56,0.18,'aeration');
+  const aerators = [
+    { id: 'AER1', x: t.x - 1.35, z: t.z - 1.15, dx: 0.60, dz: 0.60 },
+    { id: 'AER2', x: t.x + 1.20, z: t.z + 1.15, dx: -0.60, dz: -0.58 }
+  ];
+  aerators.forEach(a => {
+    const top = [a.x, 0.56, a.z], bottom = [a.x + a.dx, -1.20, a.z + a.dz];
+    beam(groups.equipment, top, bottom, 0.105, MAT.stainless, 18, a.id);
+    const axis = V(bottom[0] - top[0], bottom[1] - top[1], bottom[2] - top[2]).normalize();
+    const motor = addMesh(groups.equipment, new THREE.CylinderGeometry(0.25, 0.25, 0.54, 20), MAT.pumpBlue, top[0], top[1], top[2]);
+    motor.quaternion.setFromUnitVectors(new THREE.Vector3(0, 1, 0), axis);
+    registerInteractive(motor, a.id);
+    sphere(groups.equipment, 0.18, ...bottom, MAT.stainless, 12);
+  });
+  box(groups.equipment, 4.54, 0.09, 0.55, t.x, 0.24, t.z - 1.78, MAT.grate, 'T003');
+  box(groups.equipment, 0.55, 0.09, 4.05, t.x + 1.78, 0.24, t.z, MAT.grate, 'T003');
+  beam(groups.equipment, [t.x - 2.23, 1.12, t.z - 2.04], [t.x + 2.04, 1.12, t.z - 2.04], 0.018, MAT.stainless, 8, 'T003');
+  beam(groups.equipment, [t.x + 2.04, 1.12, t.z - 2.04], [t.x + 2.04, 1.12, t.z + 2.04], 0.018, MAT.stainless, 8, 'T003');
+  for (let i = 0; i < 44; i++) {
+    const b = sphere(groups.water, 0.035 + Math.random() * 0.05, t.x - 2.0 + Math.random() * 4.0, -2.05 + Math.random() * 1.55, t.z - 2.0 + Math.random() * 4.0, MAT.bubble, 8);
+    b.castShadow = false;
+    b.userData = { baseX: b.position.x, baseZ: b.position.z, speed: 0.14 + Math.random() * 0.35, phase: Math.random() * Math.PI * 2 };
+    bubbles.push(b);
+  }
+  t003Anchor = new THREE.Object3D(); t003Anchor.position.set(t.x, 0.38, t.z); groups.labels3d.add(t003Anchor);
+  createMarker('T003', t003Anchor, 1.15);
+}
+
+// T-004 Clarifier
+{
+  const t = layout.T004;
+  rectangularTank(t.x, t.z, t.w, t.d, 1.2, 0.20, MAT.concrete, 'T004', true);
+  const hopper = addMesh(groups.concrete, hollowHopperGeometry(3.6, 0.56, 3.20, 0.22, -1.2, -3.7, t.x, t.z), MAT.concrete, 0, 0, 0);
+  registerInteractive(hopper, 'T004');
+  box(groups.concrete, 0.60, 0.16, 0.60, t.x, -4.10, t.z, MAT.concreteDark, 'T004');
+  box(groups.water, 3.18, 1.31, 3.18, t.x, -0.53, t.z, MAT.water, 'T004');
+  waterRipple(t.x,t.z,3.18,3.18,.13,'calm');
+  const waterHopper = addMesh(groups.water, squareFrustumGeometry(3.18, 0.23, -1.19, -3.55, t.x, t.z, true), MAT.water, 0, 0, 0, false, true);
+  registerInteractive(waterHopper, 'T004');
+  const sludge = addMesh(groups.water, squareFrustumGeometry(0.72, 0.20, -3.06, -3.57, t.x, t.z, true), MAT.sludge, 0, 0, 0, false, true);
+  registerInteractive(sludge, 'T004');
+  const feedWell = addMesh(groups.equipment, new THREE.CylinderGeometry(0.30, 0.30, 1.56, 32, 1, true), MAT.stainless, t.x, -0.72, t.z);
+  registerInteractive(feedWell, 'T004');
+  cylinder(groups.equipment, 0.31, 0.045, t.x, 0.075, t.z, MAT.steelDark, 32, 'T004');
+  for (const side of [-1, 1]) {
+    box(groups.equipment, 3.02, 0.13, 0.20, t.x, -0.33, t.z + side * 1.46, MAT.stainless, 'T004');
+    box(groups.equipment, 0.20, 0.13, 3.02, t.x + side * 1.46, -0.33, t.z, MAT.stainless, 'T004');
+  }
+  for (let i = -7; i <= 7; i++) {
+    const v = i * 0.19;
+    for (const side of [-1, 1]) {
+      const notchA = addMesh(groups.equipment, geometryFromTriangles([t.x + v - 0.08, -0.205, t.z + side * 1.34, t.x + v, -0.29, t.z + side * 1.34, t.x + v + 0.08, -0.205, t.z + side * 1.34]), MAT.stainless, 0, 0, 0);
+      registerInteractive(notchA, 'T004');
+    }
+  }
+  box(groups.equipment, 0.55, 0.08, 1.15, t.x, 0.18, t.z + 1.12, MAT.grate, 'T004');
+  t004Anchor = new THREE.Object3D(); t004Anchor.position.set(t.x, 0.36, t.z); groups.labels3d.add(t004Anchor);
+  createMarker('T004', t004Anchor, 1.15);
+}
+
+// T-005 Chlorine contact
+{
+  const t = layout.T005;
+  rectangularTank(t.x, t.z, t.w, t.d, t.h, 0.16, MAT.concrete, 'T005', true);
+  box(groups.water, 1.18, 1.32, 2.64, t.x, -0.52, t.z, MAT.water, 'T005');
+  waterRipple(t.x,t.z,1.18,2.64,.17,'calm');
+  box(groups.concrete, 0.11, 0.82, 1.02, t.x - 0.10, -0.67, t.z - 0.72, MAT.inner, 'T005');
+  box(groups.concrete, 0.11, 0.82, 1.02, t.x + 0.10, -0.67, t.z + 0.34, MAT.inner, 'T005');
+  box(groups.equipment, 0.95, 0.10, 0.80, t.x, 0.27, t.z - 1.22, MAT.steelDark, 'CL001');
+  cylinder(groups.equipment, 0.32, 0.72, t.x, 0.70, t.z - 1.22, material(0xe5e8dc, 0.52), 32, 'CL001');
+  box(groups.equipment, 0.24, 0.18, 0.20, t.x + 0.48, 0.38, t.z - 1.22, MAT.pumpBlue, 'CL001');
+  pipe([[t.x + 0.30, 0.56, t.z - 1.22], [t.x + 0.60, 0.56, t.z - 1.22], [t.x + 0.60, 0.08, t.z - 0.80], [t.x + 0.36, -0.34, t.z - 0.56]], 0.02, 'dosing', false, 'CL001');
+  t005Anchor = new THREE.Object3D(); t005Anchor.position.set(t.x, 0.32, t.z); groups.labels3d.add(t005Anchor);
+  createMarker('T005', t005Anchor, 1.05);
+}
+
+// T-006 Drying beds
+{
+  const t = layout.T006;
+  rectangularTank(t.x, t.z, t.w, t.d, t.h, 0.16, MAT.concrete, 'T006', true);
+  box(groups.concrete, 0.12, 1.25, t.d - 0.30, t.x, -0.625, t.z, MAT.concrete, 'T006');
+  const bed1x = t.x - 1.1, bed2x = t.x + 1.1;
+  [bed1x, bed2x].forEach((x, idx) => {
+    box(groups.concrete, 1.72, 0.32, t.d - 0.42, x, -0.75, t.z, MAT.gravel, 'T006');
+    box(groups.concrete, 1.72, 0.48, t.d - 0.42, x, -0.32, t.z, MAT.sand, 'T006');
+    box(groups.concrete, 1.72, 0.05, t.d - 0.42, x, -0.055, t.z, MAT.sand, 'T006');
+    pipe([[x, -1.06, t.z - 1.20], [x, -1.06, t.z + 1.20]], 0.10, 'underdrain', false, 'T006');
+    for (let i = 0; i < 10; i++) sphere(groups.equipment, 0.022, x, -1.01, t.z - 1.10 + i * 0.24, MAT.steelDark, 8);
+  });
+  t006Anchor = new THREE.Object3D(); t006Anchor.position.set(t.x, 0.32, t.z); groups.labels3d.add(t006Anchor);
+  createMarker('T006', t006Anchor, 1.1);
+}
+
+// FLOW NETWORK: route points follow the user's hand-sketched spatial sequence.
+// A flow arrow indicates process direction, never a measured velocity or live status.
+pipe([[-11.7,-.45,-5.45],[-10.70,-.58,-5.45],[-10.20,-1.03,-5.45]],.15,'inflow',true,'T001');
+pipe([[-10.28,-2.65,-5.45],[-10.28,-.22,-5.45],[-9.3,-.22,-5.45]],.075,'force',false,'P001A');
+pipe([[-9.72,-2.65,-5.45],[-9.72,-.22,-5.45],[-9.3,-.22,-5.45]],.075,'force',false,'P001B');
+// Force-main raised over the paved corridor past the control building.
+pipe([[-9.30,-.22,-5.45],[-6.6,-.22,-5.45],[-.2,-.22,-5.45],[3.46,-.22,-5.45],[4.67,-.19,-5.45],[4.92,.16,-5.43]],.075,'force',true,'T001');
+// Bypass from sump toward chlorine contact: separately colored orange.
+pipe([[-10.6,-1.13,-5.45],[-11.35,-.92,-5.45],[-11.35,-.92,7.82],[-4.0,-.92,7.82],[7.72,-.92,7.82],[8.10,-.45,7.35]],.075,'bypass',true,'T001');
+// Aeration overflow to central clarifier feed well.
+pipe([[7.20,.16,-2.70],[7.20,-.32,-2.26],[7.20,-.47,-1.42],[7.20,-.63,.45]],.150,'overflow',true,'T003');
+// Clarified effluent heads south from weir to contact tank.
+pipe([[8.6,.12,1.40],[9.55,-.15,1.4],[9.55,-.25,3.27],[8.10,-.35,4.30]],.150,'effluent',true,'T004');
+pipe([[8.10,-.45,7.40],[8.10,-.50,8.12],[10.65,-.51,8.12],[11.7,-.54,8.12]],.15,'effluent',true,'T005');
+// Clarifier funnel sludge withdrawal -> independent small sludge pump station.
+pipe([[7.20,-3.78,.45],[6.40,-3.0,.45],[5.25,-1.55,1.45],[4.25,-1.25,1.45]],.075,'sludge',true,'SP001');
+box(groups.equipment,1.10,.16,.65,4.22,-1.36,1.46,MAT.steelDark,'SP001');
+for(const px of [4.02,4.48])cylinder(groups.equipment,.16,.32,px,-1.12,1.46,MAT.pumpBlue,20,'SP001');
+// RAS (return sludge) to aeration tank.
+pipe([[4.23,-1.25,1.46],[3.67,-1.24,.68],[3.67,-.65,-3.65],[4.82,-.49,-4.65]],.075,'return',true,'SP001');
+// WAS (waste sludge) to sand drying beds.
+pipe([[4.23,-1.25,1.46],[3.45,-1.15,2.70],[3.45,-.42,4.08],[3.20,-.20,4.43]],.075,'sludge',true,'SP001');
+pipe([[1.25,-.21,4.43],[2.40,-.21,4.43],[3.56,-.21,4.43]],.075,'sludge',true,'T006');
+for(const x of [1.26,3.55])pipe([[x,-.21,4.43],[x,-.20,5.1]],.075,'sludge',true,'T006');
+// Drying-bed filtrate underdrain return to the sump.
+pipe([[1.26,-1.05,6.55],[2.40,-1.05,6.55],[3.55,-1.05,6.55],[-.10,-1.10,7.48],[-10.15,-1.23,7.48],[-10.15,-1.35,-4.65]],.10,'underdrain',true,'T006');
+
+// Decorative local sludge holding tank, not a new process step.
+cylinder(groups.equipment,.52,1.22,-1.95,.69,5.15,MAT.concrete,28,'T006');
+cylinder(groups.equipment,.55,.10,-1.95,1.35,5.15,MAT.stainless,28,'T006');
+
+function gateValve(x, y, z, assetId) {
+  cylinder(groups.equipment, 0.10, 0.11, x, y, z, MAT.stainless, 12, assetId);
+  beam(groups.equipment, [x, y, z], [x, y + 0.28, z], 0.024, MAT.steel, 8, assetId);
+  const ring = addMesh(groups.equipment, new THREE.TorusGeometry(0.12, 0.02, 8, 24), MAT.stainless, x, y + 0.30, z, false, false);
+  ring.rotation.x = Math.PI / 2;
+  registerInteractive(ring, assetId);
+}
+
+gateValve(-9.20, -0.22, -5.45, 'P001A');
+gateValve(-8.80, -0.22, -5.45, 'P001B');
+gateValve(4.35, -1.25, 1.46, 'SP001');
+gateValve(8.45, -0.48, 7.45, 'CL001');
+
+// Additional equipment tags for future hover details.
+const aer1Anchor = new THREE.Object3D(); aer1Anchor.position.set(layout.T003.x - 1.35, 1.05, layout.T003.z - 1.15); groups.labels3d.add(aer1Anchor);
+const aer2Anchor = new THREE.Object3D(); aer2Anchor.position.set(layout.T003.x + 1.20, 1.05, layout.T003.z + 1.15); groups.labels3d.add(aer2Anchor);
+const spAnchor = new THREE.Object3D(); spAnchor.position.set(4.22, -0.62, 1.46); groups.labels3d.add(spAnchor);
+const clAnchor = new THREE.Object3D(); clAnchor.position.set(layout.T005.x, 1.25, layout.T005.z - 1.22); groups.labels3d.add(clAnchor);
+createMarker('AER1', aer1Anchor, 0.55);
+createMarker('AER2', aer2Anchor, 0.55);
+createMarker('SP001', spAnchor, 0.65);
+createMarker('CL001', clAnchor, 0.70);
+
+function fillSummary() {
+  const rows = [
+    ['ชนิดระบบ', 'Activated Sludge · 60 (ตามข้อมูลแบบ)'],
+    ['แหล่งข้อมูล', PLANT_STATUS.source || 'ยังไม่ระบุ'],
+    ['อัปเดตล่าสุด', PLANT_STATUS.updatedAt || 'ยังไม่เชื่อมต่อ'],
+    ['อัตราการไหลวันนี้', PLANT_STATUS.system.flowToday || 'รอข้อมูล'],
+    ['ไฟฟ้ารวมวันนี้', PLANT_STATUS.system.energyToday || 'รอข้อมูล'],
+    ['คลอรีนใช้วันนี้', PLANT_STATUS.system.chlorineToday || 'รอข้อมูล']
+  ];
+  summaryRows.innerHTML = rows.map(([k, v]) => `<span>${k}</span><span>${v}</span>`).join('');
+}
+fillSummary();
+
+const bookmarks = {
+  overview: { position:[20,20,23],target:[0,-.5,0],clip:{on:false,x:12,y:-.35,z:9} },
+  plan: { position:[.01,30,.01],target:[0,0,0],clip:{on:false,x:12,y:-.35,z:9},topView:true },
+  inlet: { position:[-8.5,5.0,.7],target:[-9.5,-1.3,-5.4],clip:{on:false,x:12,y:-.35,z:9} },
+  aeration: { position:[12.5,5.6,-.2],target:[7.2,-.1,-5.1],clip:{on:false,x:12,y:-.35,z:9} },
+  clarifier: { position:[12.6,6.4,7.0],target:[7.2,-1.5,.45],clip:{on:true,x:12,y:-1.0,z:9} },
+  chlorine: { position:[11.4,5.2,11.7],target:[8.1,-.4,5.95],clip:{on:false,x:12,y:-.35,z:9} },
+  sludge: { position:[5.1,6.7,12.2],target:[2.4,-.4,5.6],clip:{on:false,x:12,y:-.35,z:9} },
+  section: { position:[18,11,23],target:[2.0,-1.4,1.0],clip:{on:true,x:12,y:-.35,z:9} },
+  underground: { position:[9,13,20],target:[0,-1.8,0],clip:{on:true,x:12,y:-.12,z:9} }
+};
+
+function setFlowActive(viewName) {
+  document.querySelectorAll('.flow-btn').forEach(btn => btn.classList.toggle('active', btn.dataset.view === viewName));
+}
+
+function focusAsset(assetId) {
+  const viewMap = {
+    T001: 'inlet', P001A: 'inlet', P001B: 'inlet',
+    T003: 'aeration', AER1: 'aeration', AER2: 'aeration',
+    T004: 'clarifier', SP001: 'sludge',
+    T005: 'chlorine', CL001: 'chlorine',
+    T006: 'sludge', T008: 'inlet', CTRL: 'overview'
+  };
+  moveToView(viewMap[assetId] || 'overview');
+}
+
+function moveToView(name) {
+  const view = bookmarks[name];
+  if (!view) return;
+  setFlowActive(name);
+  settings.clipping = view.clip.on;
+  settings.cutX = view.clip.x;
+  settings.cutY = view.clip.y;
+  settings.cutZ = view.clip.z;
+  settings.clipX = false;
+  settings.clipY = view.clip.on;
+  settings.clipZ = false;
+  if (name === 'underground') {
+    settings.water = false;
+    settings.pipes = true;
+    settings.concrete = true;
+  } else {
+    settings.water = true;
+    settings.pipes = true;
+    settings.concrete = true;
+  }
+  settings.cutaway = name !== 'plan';
+  applyClipping();
+  updateCutaway();
+  updateLayerVisibility();
+  refreshGui();
+  cameraTween = {
+    startPos: camera.position.clone(),
+    endPos: new THREE.Vector3(...view.position),
+    startTarget: controls.target.clone(),
+    endTarget: new THREE.Vector3(...view.target),
+    duration: 1.35,
+    elapsed: 0,
+    topView: !!view.topView
+  };
+}
+
+controls.addEventListener('start', () => { cameraTween = null; });
+
+const guiControllers = [];
+function bindGui(folder, object, key, ...args) {
+  const controller = folder.add(object, key, ...args);
+  guiControllers.push(controller);
+  return controller;
+}
+function refreshGui() { guiControllers.forEach(c => c.updateDisplay()); }
+
+const gui = new GUI({ title: 'ENV WWTP Controls', width: 305 });
+const slicer = gui.addFolder('Cross-Section Slicer');
+bindGui(slicer, settings, 'clipping').name('เปิด Clipping').onChange(applyClipping);
+bindGui(slicer, settings, 'clipX').name('ใช้ระนาบ X').onChange(applyClipping);
+bindGui(slicer, settings, 'cutX', -12, 12, 0.05).name('Cut X').onChange(applyClipping);
+bindGui(slicer, settings, 'clipY').name('ใช้ระนาบ Y').onChange(applyClipping);
+bindGui(slicer, settings, 'cutY', -5, 5, 0.05).name('Cut Y / Depth').onChange(applyClipping);
+bindGui(slicer, settings, 'clipZ').name('ใช้ระนาบ Z').onChange(applyClipping);
+bindGui(slicer, settings, 'cutZ', -9, 9, 0.05).name('Cut Z').onChange(applyClipping);
+bindGui(slicer, settings, 'showGuides').name('แสดงแผ่นตัด').onChange(updateGuidePlanes);
+bindGui(slicer, settings, 'cutaway').name('ซ่อนผนังด้านหน้า').onChange(updateCutaway);
+
+const layers = gui.addFolder('Layer Visibility');
+['terrain','concrete','water','pipes','building','equipment','markers'].forEach(key => bindGui(layers, settings, key).name({terrain:'Terrain / Site', concrete:'Concrete Tanks', water:'Water Volumes', pipes:'Piping Network', building:'Control Building', equipment:'Equipment', markers:'Thai Labels / Dashboard Tags'}[key]).onChange(updateLayerVisibility));
+bindGui(layers, settings, 'wireframe').name('Wireframe').onChange(updateWireframe);
+bindGui(layers, settings, 'animate').name('Motion Animation');
+const motionFolder=gui.addFolder('Animated Process Flow');
+bindGui(motionFolder,settings,'flowMotion').name('เคลื่อนลูกศรตามท่อ');
+bindGui(motionFolder,settings,'flowSpeed',0.1,2.5,0.05).name('Flow Visual Speed ×');
+bindGui(motionFolder,settings,'waveStrength',0,2.5,0.05).name('ความแรงผิวน้ำ');
+
+const views = gui.addFolder('Camera Bookmarks');
+const buttons = {
+  'Overview / ภาพรวม': () => moveToView('overview'),
+  'Top Plan / ผังด้านบน': () => moveToView('plan'),
+  'T-001 บ่อสูบน้ำเสีย': () => moveToView('inlet'),
+  'T-003 บ่อเติมอากาศ': () => moveToView('aeration'),
+  'T-004 บ่อตกตะกอน': () => moveToView('clarifier'),
+  'T-005 บ่อสัมผัสคลอรีน': () => moveToView('chlorine'),
+  'T-006 ลานทราย': () => moveToView('sludge'),
+  '3D Cross Section': () => moveToView('section'),
+  'Underground Pipes': () => moveToView('underground')
+};
+Object.entries(buttons).forEach(([name, fn]) => views.add({ [name]: fn }, name));
+
+const tools = gui.addFolder('Utilities');
+const utility = {
+  reset() {
+    settings.clipping = false;
+    settings.cutX = 12; settings.cutY = -0.35; settings.cutZ = 8.6;
+    settings.clipX = false; settings.clipY = true; settings.clipZ = false;
+    settings.showGuides = true;
+    settings.animate=true;settings.flowMotion=true;settings.flowSpeed=1;settings.waveStrength=1;
+    settings.cutaway = true;
+    settings.terrain = settings.concrete = settings.water = settings.pipes = settings.building = settings.equipment = settings.markers = true;
+    settings.wireframe = false;
+    applyClipping();
+    updateCutaway();
+    updateLayerVisibility();
+    updateWireframe();
+    moveToView('overview');
+  },
+  screenshot() {
+    renderer.render(scene, camera);
+    const link = document.createElement('a');
+    link.download = 'uth-env-wwtp-digital-twin.png';
+    link.href = renderer.domElement.toDataURL('image/png');
+    link.click();
+  }
+};
+tools.add(utility, 'reset').name('Reset All');
+tools.add(utility, 'screenshot').name('Save PNG');
+slicer.open(); layers.open(); views.open();
+
+function onPointerMove(event) {
+  const rect = renderer.domElement.getBoundingClientRect();
+  mouseNdc.x = ((event.clientX - rect.left) / rect.width) * 2 - 1;
+  mouseNdc.y = -((event.clientY - rect.top) / rect.height) * 2 + 1;
+  raycaster.setFromCamera(mouseNdc, camera);
+  const hits = raycaster.intersectObjects(interactiveObjects, false);
+  if (hits.length) {
+    const hit = hits[0].object;
+    if (hit.userData.assetId) {
+      hoveredObject = hit;
+      showTooltipForAsset(hit.userData.assetId, event.clientX, event.clientY);
+      renderer.domElement.style.cursor = 'pointer';
+      return;
+    }
+  }
+  hoveredObject = null;
+  renderer.domElement.style.cursor = '';
+  if (!tooltip.matches(':hover')) hideTooltip();
+}
+
+renderer.domElement.addEventListener('pointermove', onPointerMove);
+renderer.domElement.addEventListener('pointerleave', () => { renderer.domElement.style.cursor = ''; hideTooltip(); });
+document.querySelectorAll('.flow-btn').forEach(btn => btn.addEventListener('click', () => moveToView(btn.dataset.view)));
+
+applyClipping();
+updateLayerVisibility();
+updateCutaway();
+updateWireframe();
+moveToView('overview');
+
+const clock = new THREE.Clock();
+function animate() {
+  requestAnimationFrame(animate);
+  const dt = Math.min(clock.getDelta(), 0.05);
+  const elapsed = clock.elapsedTime;
+
+  if (cameraTween) {
+    cameraTween.elapsed += dt;
+    const t = Math.min(1, cameraTween.elapsed / cameraTween.duration);
+    const s = t < 0.5 ? 4 * t * t * t : 1 - Math.pow(-2 * t + 2, 3) / 2;
+    camera.position.lerpVectors(cameraTween.startPos, cameraTween.endPos, s);
+    controls.target.lerpVectors(cameraTween.startTarget, cameraTween.endTarget, s);
+    camera.up.set(0, cameraTween.topView ? 0 : 1, cameraTween.topView ? -1 : 0);
+    if (t >= 1) cameraTween = null;
+  }
+
+  advanceMotion(elapsed,dt);
+  if (!reducedMotion && settings.animate && settings.water) {
+    for (const bubble of bubbles) {
+      bubble.position.y += bubble.userData.speed * dt;
+      bubble.position.x = bubble.userData.baseX + Math.sin(elapsed * 1.2 + bubble.userData.phase) * 0.06;
+      bubble.position.z = bubble.userData.baseZ + Math.cos(elapsed * 0.8 + bubble.userData.phase) * 0.06;
+      if (bubble.position.y > -0.52) bubble.position.y = -2.08;
+    }
+  }
+
+  controls.update();
+  updateMarkers();
+  renderer.render(scene, camera);
+}
+
+window.addEventListener('resize', () => {
+  camera.aspect = window.innerWidth / window.innerHeight;
+  camera.updateProjectionMatrix();
+  renderer.setSize(window.innerWidth, window.innerHeight);
+  renderer.setPixelRatio(Math.min(window.devicePixelRatio || 1, 2));
+  updateMarkers();
+});
+
+renderer.domElement.addEventListener('webglcontextlost', e => {
+  e.preventDefault();
+  document.getElementById('loader').style.display = 'none';
+  document.getElementById('error').style.display = 'flex';
+});
+
+try {
+  document.getElementById('loader').style.display = 'none';
+  animate();
+} catch (err) {
+  console.error(err);
+  document.getElementById('loader').style.display = 'none';
+  document.getElementById('error').style.display = 'flex';
+}
+</script>
+</body>
+</html>
