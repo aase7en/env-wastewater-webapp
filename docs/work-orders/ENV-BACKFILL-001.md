@@ -1,6 +1,6 @@
 # Work Order — ENV-BACKFILL-001 (Phase-5 backfill seed from the owner's newly shared sources)
 
-**Status:** CLAIMED (C1, generation 1) — claim transition `docs/env-backfill-001-claim`, base `9919c8b76a904a9c805df3883beb4e57839d2faa` (= origin/main tip at transition authoring; clean, fetched, ff verified).
+**Status: REVIEW_REQUESTED (C1, generation 1) — implementation delivered 2026-11-24 on `feat/env-backfill-001`; D2 RED + D3 apply (all counts exact: 30/882/48/351/3/6/24/33-d1-7/51) + D4 battery receipts in the lane handoff (`docs/ai/handoffs/ENV-BACKFILL-001-GLM.md` § Implementation receipts). The implementing lane NEVER merges — the D5 fresh-GLM independent review + the authorized reviewer own approval + merge.** Claim transition `docs/env-backfill-001-claim`, base `9919c8b76a904a9c805df3883beb4e57839d32309a7` (= origin/main tip at transition authoring; clean, fetched, ff verified).
 **Routing:** Track-Z GLM (GLM-5.3 MAX). **STOP at REVIEW_REQUESTED — the implementing lane never merges.**
 
 ---
