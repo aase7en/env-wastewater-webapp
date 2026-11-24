@@ -1,6 +1,6 @@
 # WO — ENV-BACKFILL-002 — carbon-domain backfill (owner sheet "CarbonF งานที่สำเริม")
 
-Status: **CLAIMED (C1, gen 1) — docs-only claim transition.** Implementation is NOT started; the D2 gate below opens only after this transition is independently reviewed and merged to main. STOP at REVIEW_REQUESTED; the implementer never merges.
+Status: **IMPLEMENTATION DELIVERED — REVIEW_REQUESTED (C1, gen 1).** D1 consult receipts + D2 RED (23F/18P pre-apply at head `313a8af`) + D3 apply (76/76 OK; readings 907→1,961, meters 1→27, ledger 27; preflight STOP-on-drift green) + D4 battery GREEN (suite 41/41; idempotency re-run 76 OK w/ zero deltas; vitest 998✓/1 skip; tsc ✓; oxlint 0 errors; Playwright 336/336 w=1; guard 344/344; runtime 62/62; checker OK v1.15.1 NO BUMP) — see `docs/ai/handoffs/ENV-BACKFILL-002-GLM.md` D1–D4. STOP at REVIEW_REQUESTED; the implementer never merges.
 
 - task_id `ENV-BACKFILL-002` (unique — 0 prior ENV-BACKFILL-002* in the repo at base)
 - claim_id `ENV-BACKFILL-002-C1`, generation 1, holder `kilo-env-backfill-002-g1-primary`

@@ -122,3 +122,131 @@ The raw CSVs/HTML stay in `/tmp` only — never committed (real operational data
 1. Create `_worktrees/env-backfill-002` off the transition merge SHA, branch `feat/env-backfill-002` (or the docs/ transition naming if the lane stays docs-bound — implementation code goes on a feat branch per house convention).
 2. D1 consult (WO §4) with receipts → D2 RED (`scripts/test_parity_backfill_002.py`, truthful, canary held) → D3 ONE migration via `scripts/apply_migration_api.py` (ENV_DB gate, preflight STOP-on-drift at 907/2024-01-09/2026-07-04, guarded idempotent, before→after reconciliation) → D4 battery (WO §8.3) → D5 fresh-GLM review at exact head. Implementer never merges. **STOP at REVIEW_REQUESTED.**
 3. NO BUMP — v1.15.1 stays.
+
+---
+
+## D1 — CONSULT RECORD + DECISIONS (2026-11-24, implementation lane)
+
+### Jev consult receipts (jev-1.13.0 via typesafe; 5 calls; raw JSON verbatim also at /tmp/kilo/jev_d1_002/)
+
+Q1 — the A/B/C enum fork (task_classification, choice, risk=high; options encoded in the question text per the P1.2 precedent):
+
+```json
+{"ok": true, "provider": "typesafe", "model": "jev-1.13.0", "family": "task_classification", "primitive": "choice", "answer": "feature", "confidence": 0.37, "probabilities": {"bugfix": 0.29, "feature": 0.53, "docs": 0.0, "review": 0.18}, "input_usage": 777, "output_usage": 46, "latency_ms": 368.6143755912781, "error": null, "authoritative_for_action": false, "advisory_notice": "ADVISORY ONLY. Escalate to frontier reasoning on any error, low confidence, or high risk. Never use as mutation/review authority."}
+```
+
+Q2 — the merge/dedup shape (M merge-sum+breakdown / D drop / X defer):
+
+```json
+{"ok": true, "provider": "typesafe", "model": "jev-1.13.0", "family": "task_classification", "primitive": "choice", "answer": "feature", "confidence": 0.63, "probabilities": {"bugfix": 0.09, "feature": 0.72, "docs": 0.0, "review": 0.19}, "input_usage": 733, "output_usage": 46, "latency_ms": 286.98246726989746, "error": null, "authoritative_for_action": false, "advisory_notice": "ADVISORY ONLY. Escalate to frontier reasoning on any error, low confidence, or high risk. Never use as mutation/review authority."}
+```
+
+Q3 — evidence_relevance for the energy-tab disambiguation (primitive contract-coerced to `noul`):
+
+```json
+{"ok": true, "provider": "typesafe", "model": "jev-1.13.0", "family": "evidence_relevance", "primitive": "noul", "answer": 0.77, "confidence": null, "probabilities": null, "input_usage": 637, "output_usage": 20, "latency_ms": 330.7775827124715, "error": null, "authoritative_for_action": false, "advisory_notice": "ADVISORY ONLY. Escalate to frontier reasoning on any error, low confidence, or high risk. Never use as mutation/review authority."}
+```
+
+Q4 — chlorine domain (CAR vs CHE):
+
+```json
+{"ok": true, "provider": "typesafe", "model": "jev-1.13.0", "family": "task_classification", "primitive": "choice", "answer": "feature", "confidence": 0.55, "probabilities": {"bugfix": 0.0, "feature": 0.66, "docs": 0.0, "review": 0.34}, "input_usage": 629, "output_usage": 46, "latency_ms": 324.010648727417, "error": null, "authoritative_for_action": false, "advisory_notice": "ADVISORY ONLY. Escalate to frontier reasoning on any error, low confidence, or high risk. Never use as mutation/review authority."}
+```
+
+Q5 — the two genuinely-new fragments (LEDGER*/INK*):
+
+```json
+{"ok": true, "provider": "typesafe", "model": "jev-1.13.0", "family": "task_classification", "primitive": "choice", "answer": "feature", "confidence": 0.64, "probabilities": {"bugfix": 0.0, "feature": 0.73, "docs": 0.01, "review": 0.26}, "input_usage": 741, "output_usage": 46, "latency_ms": 343.71563386917114, "error": null, "authoritative_for_action": false, "advisory_notice": "ADVISORY ONLY. Escalate to frontier reasoning on any error, low confidence, or high risk. Never use as mutation/review authority."}
+```
+
+**Contract-degeneracy finding:** every consult returned the provider's own fixed class space (`feature`/`bugfix`/`docs`/`review`) or a bare relevance score — the legend options were NOT reflected in any answer space (the P1.2 options-ignored behavior), confidences 0.37–0.64, Q1 explicitly LOW. **The consult is contract-degenerate on the actual choices** → per the WO's binding procedure and the owner's standing delegation, the GLM coordinator decides with written rationale. Q3's `noul` score 0.77 is retained as a weak corroborating vote that the energy-tab evidence IS relevant.
+
+### D1 decisions (GLM, receipt- and evidence-backed)
+
+1. **Enum fork → (B).** Keep the 5-value `source_type` enum; additive nullable `carbon.reading.activity_subtype` (text); one meter per activity series (26 new); quantity stored in `meter_value` with `consumption NULL` for every non-grid-electric series; ONLY the grid-electricity series (การใช้ไฟฟ้าส่วนภูมิภาค, 121 monthly rows) stores `consumption`. Rationale: (a) additive-first — `ALTER TYPE ... ADD VALUE` churn is exactly the fragile path the WO flags, and A buys nothing numerically; (b) the DECISIVE evidence: `carbon.v_unified_co2e` arm-1 applies the ELECTRICITY factor (0.4999) to **every** `carbon.reading` row's `consumption` regardless of meter, and `carbon.v_overview_carbon` sums **all** consumption as kWh — so ANY non-kWh quantity in `consumption` corrupts both delivered rollups no matter which enum value the meter carries; NULL consumption makes non-electric rows invisible to both (verified post-apply). C's reference table adds indirection without per-row fidelity. (c) subtype + raw_payload keep the sheet's 26-activity vocabulary verbatim.
+2. **Dedup key → `(meter_id, reading_date)`** — the existing UNIQUE constraint is the key; every seed is `INSERT ... SELECT ... WHERE NOT EXISTS` on exactly that pair; re-run ⇒ 0 rows (proven twice, below). **The WO's master-vs-live overlap resolved by evidence:** the live 907 = DAILY cumulative-register readings of the บ่อบำบัด plant submeter (~5 kWh/day; 722 distinct dates in the overlap window, exactly one per date), while the master's electricity = MONTHLY hospital-wide regional grid bills (~42k–81k kWh/month) — same domain+period, NOT the same measurement (~4 orders of magnitude apart). Both series are kept under separate meter identities; the live 907 rows are byte-untouched (plant-meter count 907 before == after; min/max 2024-01-09/2026-07-04 unchanged).
+3. **Multi-row (series,date) groups → merge-sum (Q2's M shape).** The sheet logs waste per department (up to 10 rows/date; 405 multi-row groups; ขยะทั่วไป 2,271 rows over 389 dates), and `UNIQUE(meter_id, reading_date)` makes per-department rows physically impossible without forbidden DDL. Pin: one reading per (meter,date), `meter_value` = arithmetic SUM of the sheet's own same-date rows, full per-row breakdown verbatim in `raw_payload.breakdown` marked `merged_sum`/`rows_merged`. Cost columns are never summed into a computed total unless all rows carry costs (`cost_thb_merged`), else stored per-row (`cost_thb_per_row`).
+4. **Electricity version-conflicts → energy-tab-matching rows (Q3 REL, score 0.77).** 5 dates carry a big monthly bill (42k–81k kWh, ~4.3 ฿/unit) + a small companion (237–378 kWh, ~5.4–5.7 ฿/unit). The dedicated energy tab's 126 dates agree with the big rows everywhere incl. exactly those 5 → the big row is the reading; the 5 small companions are preserved verbatim in `raw_payload.companion_rows` with `recorded_not_aggregated: true` (never dropped, never summed).
+5. **Chlorine → CARBON (Q4 CAR).** 12 rows → a chlorine series meter (`source='other'`, subtype = usage place in breakdown, `consumption NULL`). `chemical.master/movement` implement inventory-balance semantics (NOT NULL balances, lots) that would fabricate stock structure from consumption records; the carbon domain already owns a chlorine production factor. Chlorine tab verified 12/12 exact-subset of master → seeds 0 new rows; master's 6 merged pairs preserve the สถานที่ใช้ split in breakdown.
+6. **Fragments → LEDGER + INKREAD (Q5).** (i) `carbon.waste_sale_ledger` NEW minimal table — 27 rows verbatim: `balance_recorded` stored as-written (never recomputed; seq 27 carries the sheet's own 8,295; seq 11 keeps the negative −730), blank → NULL, undated rows NULL date, the `21/01/2025` anomaly stored as written (recorded, never corrected); **4 notes masked to NULL** (seqs 10, 21, 22, 23 — each contains a personal-name reference; monetary columns untouched). (ii) Ink cartridges mapped INTO `carbon.reading` (ink meter, unit ตลับ): master's 2025-06-05 pair (ตลับ+typo ตลัับ, normalized unit recorded verbatim in payload) covers the tab's same-day pair (verified equal); tab adds 6 NEW dates (12 rows; two multi-row dates merged with model/brand/ink-type breakdown); the **สถานที่ column is omitted from storage entirely** (PII-safe). (iii) TGO form responses → deferred (no honest surface; FORWARD-INTEL note added to `docs/ai/APPSHEET-PARITY-PLAN.md` §9 as the ONLY inventory record; ~150 categories NOT built — hard cap honored).
+7. **Per-tab mappings (zero-double-count evidence):** energy main block = exact date-subset of master electricity (126/126 dates; 5 version-conflicts above; regional monthly summary block in the tab ≡ master 2023 12/12 exact — derived summary, never seeded) → 0 new; gas 6/6, fuel ดีเซล 18/18 + เบนซิน 4/4, paper A4 22/22 + A5 11/11, chlorine 12/12 exact subsets → 0 new each; waterin ประปาส่วนภูมิภาค → +7 (2026-01..07, beyond master) at exact-date rule; waterin บาดาล → period-level prefer-master (the tab's month-end dates duplicate master mid-month readings 14/18 value-identical; Dec-2025 diverges: master 788 @14/12 kept, tab 1060 @31/12 skipped and recorded) → +4 (2024-06..09 only). `query` tab EXCLUDED per WO §7 — `wastewater.reading` 907 untouched.
+
+## D2 — RED record (2026-11-24, at head `313a8af`, batch NOT sent)
+
+`scripts/test_parity_backfill_002.py` (NEW read-only live contract suite, house gate per BACKFILL-001):
+
+- **RED pre-apply: 23 failed / 18 passed** — EnvGate + all 7 baseline canaries (wastewater 907, plant meter identity/907/range, EF 12, chemical/fuel/garbage 0, query-tab exclusion) + 4 static migration-file contracts GREEN; the whole target group truthfully RED on the un-applied schema (the canary proves the batch was never sent pre-apply).
+- **GREEN post-apply: 41 passed / 0 failed** (full list: subtype column, 27 meters exact, total 1,961, provenance 1,054, all manual input_source, UNIQUE dedup key, per-meter counts, sub-tab zero-leak, merged 402 w/ breakdown consistency, 5 version conflicts, consumption discipline 121, meter_value discipline, v_monthly_co2e electricity-only totals, no CO2e for non-electric, pre-2023 no-factor, date-era pins per meter, blanks-NULL, ink-place absence, ledger 27/balances/masks/anomaly, TGO absence, idempotency provenance pin).
+- Suite repairs between RED and GREEN were transport/assertion-style only (select-side casts in the migration; numeric-string comparisons; merged-total 400→402 expectation incl. 2 ink-tab merges; v_monthly_co2e filtered to consumption-bearing rows; ledger mask widened 3→4 notes). All 41 contracts above are from the final file; the RED record binds at `313a8af` (file hashes in git history).
+
+## D3 — apply + verify receipts (2026-11-24)
+
+- **Preflight STOP-on-drift: PASS** (`scripts/backfill_002_preflight.py`; receipt `/tmp/kilo/backfill_002_preflight.json`) — live `carbon.reading` 907 / min 2024-01-09 / max 2026-07-04, meters 1, EF 12, chemical.movement/fuel.dispense_log/garbage.collection_log 0, wastewater.reading 907, subtype column absent.
+- **Apply 1: 33/76 OK, 43 FAIL** — the Management-API query endpoint resolves mixed `NULL`/`::numeric` VALUES columns as text (42804). In-flight state after apply 1: subtype column + 26 meters + ledger DDL/rows landed; 0 reading rows. Guarded-idempotent recovery per the apply script's documented contract.
+- **Apply 2 (repair `6476ce0`): 76/76 OK** — select-side casts (`s.v::numeric, s.c::numeric, s.p::jsonb`). Readings 907 → 1,961.
+- **Idempotency PROVEN twice:** (a) immediate re-run hit endpoint throttling mid-run (ThrottlerException — throttled statements simply don't execute; counts verified stable post-window); (b) full paced re-run: **76 OK / 0 FAIL with zero count deltas** (1,961 / 1,054 / 27).
+- **One out-of-band repair SQL (recorded):** `update carbon.waste_sale_ledger set note = null where entry_seq = 23 and note is not null and note like '%ชัย%' returning entry_seq` — the D1 mask rule was widened from `พี่ชัย` to any `ชัย` personal reference after the first apply revealed seq 23's note carries a personal-looking fragment with no operational vocabulary; the regenerated migration masks it correctly for fresh environments, and this UPDATE reconciled the already-applied row. No other out-of-band SQL.
+- **Count reconciliation (before → after):** `carbon.reading` 907→1,961 (+1,054) · `carbon.meter` 1→27 (+26) · `carbon.waste_sale_ledger` 0→27 (+27) · `carbon.emission_factor` 12→12 · `wastewater.reading` 907→907 · `chemical.movement` 0→0 · `fuel.dispense_log` 0→0 · `garbage.collection_log` 0→0. Full per-meter table + 11 honesty invariants: `/tmp/kilo/backfill_002_reconciliation.md` — **ALL INVARIANTS HOLD** (UNIQUE dedup key 1,961 pairs; consumption 121 grid-only; merged 402; 5 conflicts recorded; no CO2e for non-electric; pre-2023 grid rows honestly excluded from `v_reading_co2e` by the inner lateral join; v_monthly_co2e totals electricity-only; ledger balances as-written; 0 personal-name notes; 0 ink-place values).
+- **Live-corpus integrity:** plant-meter rows 907 before == after; min/max unchanged; `input_source` all-manual everywhere; the WO §3 overlap is resolved as distinct-series (D1 decision 2) — nothing merged into the live rows, nothing dropped from the master.
+
+## D4 — battery (2026-11-24, at final head)
+
+| gate | result |
+|---|---|
+| contract suite (`test_parity_backfill_002.py`) | **41/41 GREEN** |
+| idempotency re-run | 76 OK / 0 FAIL, zero deltas |
+| vitest FULL | **998 passed / 1 skipped** (designed skipIf; after copying the gitignored `frontend/.env` into the worktree — first run without it: 7 suites failed to collect, environmental, not code) |
+| `tsc -b` | clean |
+| oxlint | 0 errors (pre-existing warnings only, none in changed files) |
+| Playwright FULL w=1 | **336/336** (7.7 min) |
+| guard | **344/344** (+450 subtests) |
+| runtime | **62/62** (+32 subtests) |
+| release checker | **OK (v1.15.1; CHANGELOG entry v1.15.1)** — NO BUMP honored |
+| `git diff --check` | clean |
+| PII/token greps over all changed files | 0 hits (the suite's own negative-assertion literals `พี่ชัย`/`ห้องควบคุมโรคติดต่อ` are absence checks, not data; the 14-digit migration filename matches a bare `[0-9]{13}` probe — filename, not a personal number) |
+| diff ⊆ claimed files | migration + 2 new scripts + WO + handoff + plan doc §9 note — nothing else; `frontend/` zero diff, `CURRENT-WORK.md` untouched (registry closeout is the next lane's job), CHANGELOG/package.json untouched |
+
+**STOP at REVIEW_REQUESTED.** The implementer never merges. D5 fresh-GLM independent review at the exact frozen head next.
+
+## D5 — fresh-GLM review receipt + P1/P3 repair record (2026-11-24)
+
+**D5 verdict: CHANGES_REQUIRED** — 1×P1, 1×P3, 2 informational (receipt: `pull/271#issuecomment-7135229565`, at head `20c3ba1`, base `3d5469c` = origin/main, ancestry verified). D5's own battery at that head was fully GREEN (41/41 contract, 998/1 vitest, tsc clean, Playwright 336/336, guard 344, runtime 62, checker v1.15.1, CI pass) — the P1 is a DATA-DIRECTION defect, not a gate failure.
+
+### THE P1 — electricity version-conflicts seeded INVERTED vs the recorded D1 ruling (repaired same day)
+
+- **The ruling (D1 decision 4, above):** *"…the big row is the reading; the 5 small companions are preserved verbatim in `raw_payload.companion_rows`"*.
+- **The deviation:** the implementation stored the OPPOSITE at all 5 conflict dates — `consumption` = the small companion (328/334/341/378/237 kWh), the hospital-wide monthly bill (73,079/71,485/69,375.99/81,131/41,988 kWh) only in `companion_rows`. Nothing was lost (values preserved verbatim, `recorded_not_aggregated`), but the `consumption` column — the source-of-truth summed by `v_overview_carbon` and `v_unified_co2e` — carried the wrong series value for those 5 months.
+- **The migration's justification was factually false:** the base header claimed "the dedicated energy tab's value is the reading", but the sha-pinned CSVs prove the energy tab carries BOTH values at every one of the 5 dates (`energy.csv` physical rows 13/14, 25/26, 41/42, 43/44, 45/46; `basedata.csv` same-date pairs 173/174, 179/180, 187/188, 268/269, 2862/2864) — the tab cannot disambiguate. The D1.4 recorded ruling is the only authority, and the implementation contradicted it.
+- **How D5 caught it:** D1.4's text was checked against the stored direction; the contract suite counted the conflicts (5/5) but never asserted WHICH value became the reading, so nothing could catch the inversion pre-apply. D5 measured the live impact instead of trusting the count.
+- **Live impact BEFORE (measured 2026-11-24):** `v_monthly_co2e` electricity at the 5 months read 545.00 / 494.00 / 484.00 / 496.00 / 379.00 kWh (272.47 / 246.97 / 241.97 / 247.96 / 189.48 kg) — `v_overview_carbon` Dec-2025 showed 379.00 kWh / 0.189 tCO₂e where the sheet's own hospital bill is 41,988 kWh (~21.0 tCO₂e). Miss vs the sheet's bills: 337,058.99 kWh ≈ **168.50 tCO₂e** under-counted (net −1,618 kWh small companions already aggregated → view delta 335,440.99 kWh ≈ **167.69 tCO₂e**).
+
+### The repair (this commit; apply receipt `/tmp/kilo/d5p1_*.json`)
+
+1. **`20261125000001_backfill_002_conflict_direction_fix.sql` (NEW)** — for exactly the 5 (meter, reading_date) rows: `consumption :=` the big hospital-wide value; `raw_payload.cost_thb :=` the big row's cost; `companion_rows[0] :=` the small value + its cost (`recorded_not_aggregated` structure intact; all four numbers verbatim, positions swapped; `meter_value` stays NULL — one quantity column). Every UPDATE pins meter identity + date + current small consumption + companion big value (idempotent + drift-safe; post-apply re-run can never match). Rollback = reverse swap, documented in the header. Also repairs the stale live ledger table comment (one→4 notes). **Applied via the Management-API route (ENV_DB gate): 6/6 OK.**
+2. **Original migration honesty repairs (comments only, VALUES untouched):** the header now states the true D1.4 ruling, records that its VALUES seeded the 5 dates inverted, and requires fresh environments to apply BOTH migrations in filename order; the false "energy tab's value is the reading" claim is gone; the ledger comment says 4 notes.
+3. **Suite (`test_parity_backfill_002.py`):** NEW `test_electricity_conflict_direction_big_is_reading` pins date→(big kWh, big cost, small kWh, small cost) from the sha-pinned CSVs and asserts the live direction + `recorded_not_aggregated` per date; NEW `FixMigrationFileContract` (exists / exactly 5 dates / every update drift-guarded + RETURNING / rollback documented); docstring mask count 3→4; the "resolved by the dedicated energy tab" pin text replaced with the true D1.4 direction.
+4. **RED→GREEN discipline honored for the repair itself:** pre-apply suite run at the live inverted DB: **1 failed / 45 passed** — exactly the direction test (`328.0 != 73079.0 : 2024-08-20`), all else green. Post-apply: **46/46 GREEN**.
+5. **Post-verify (measured):** all 5 rows corrected (consumption = big, companion = small, costs swapped, `recorded_not_aggregated` true); `v_monthly_co2e` electricity now 73,296.00 / 71,645.00 / 69,518.99 / 81,249.00 / 42,130.00 kWh (36,640.69 / 35,815.35 / 34,752.56 / 40,616.39 / 21,060.80 kg); `v_overview_carbon` Dec-2025 = **42,130.00 kWh / 21.061 tCO₂e** (was 379.00 / 0.189); view restoration **+335,440.99 kWh ≈ +167.69 tCO₂e** across the 5 months (full big-bill corpus 337,058.99 kWh ≈ 168.50 tCO₂e now present in `consumption`). Integrity pins unchanged: total 1,961 / provenance 1,054 / plant meter 907 @ 2024-01-09→2026-07-04 / consumption non-null 1,028 (121 grid + 907 live). **Idempotency proven:** all 5 guarded updates re-ran with 0 returned rows.
+
+### P3 (rode along)
+
+Stale mask-count docstrings — suite:23 "3 masked notes"→4 and the base migration's ledger comment "one"→4 (live DB comment repaired by the fix migration).
+
+### D5 informational items (accepted, recorded)
+
+RED at `313a8af` not independently re-executable post-apply (D5 verified-by-structure: same 41 test names, RED→final diff = exactly the D2 repair list); PII grep hits are the literal `place_omitted` marker text (clean). Nothing outstanding.
+
+### Battery at the repair head (this lane's own runs)
+
+| gate | result |
+|---|---|
+| contract suite | **46/46 GREEN** (RED 1F/45P pre-apply, recorded above) |
+| vitest FULL | **998 passed / 1 skipped** (53 files) |
+| `tsc -b` | clean |
+| oxlint | 0 errors (pre-existing warnings) |
+| guard | **344/344** (+450 subtests) |
+| runtime | **62/62** (+32 subtests) |
+| release checker | OK **v1.15.1** — NO BUMP honored |
+| `git diff --check` | clean |
+
+Scope exact: fix migration (NEW) + base-migration comment repairs + suite + this handoff — `frontend/`, `CURRENT-WORK.md`, `CHANGELOG.md` zero diff. **Claim stays REVIEW_REQUESTED; the implementer never merges.** D5 re-review at the new head next.
