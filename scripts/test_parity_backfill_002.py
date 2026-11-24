@@ -72,7 +72,7 @@ CONSUMPTION_ROWS = 121
 MERGED_GROUPS = 400
 ELEC_CONFLICT_DATES = 5
 LEDGER_ROWS = 27
-LEDGER_MASKED_SEQS = [10, 21, 22]
+LEDGER_MASKED_SEQS = [10, 21, 22, 23]
 
 # per-meter pinned counts (series name suffix "(ENV-BACKFILL-002)")
 PER_METER = {
@@ -162,8 +162,14 @@ def token() -> str:
     return _token
 
 
+_PACE = 2.5  # s between Management-API calls — the query endpoint throttles hard
+             # after bulk applies; pacing is transport-only (assertions unchanged)
+
+
 def q(sql: str):
     """Run one SELECT. Returns (ok, rows|error-string)."""
+    import time
+    time.sleep(_PACE)
     r = httpx.post(
         API_URL,
         headers={"Authorization": f"Bearer {token()}", "Content-Type": "application/json"},
@@ -382,15 +388,26 @@ class TargetGroup(unittest.TestCase):
             )
 
     def test_merged_groups_marked_with_breakdown(self):
+        # 400 master multi-row groups + 2 ink-tab multi-row dates = 402
         self.assertEqual(
             scalar(
                 "select count(*)::int n from carbon.reading "
                 "where raw_payload->>'provenance' = 'ENV-BACKFILL-002' "
                 "and raw_payload->>'merged_sum' = 'true'"
             ),
+            MERGED_GROUPS + 2,
+        )
+        self.assertEqual(
+            scalar(
+                "select count(*)::int n from carbon.reading "
+                "where raw_payload->>'provenance' = 'ENV-BACKFILL-002' "
+                "and raw_payload->>'source_tab' = 'ฐานข้อมูล Carbon Footprint รพ.อุทัย' "
+                "and raw_payload->>'merged_sum' = 'true'"
+            ),
             MERGED_GROUPS,
         )
-        # every merged reading carries a breakdown with the same row count
+        # every merged reading (402 incl. 2 ink-tab merges) carries a breakdown
+        # whose length matches rows_merged
         self.assertEqual(
             scalar(
                 "select count(*)::int n from carbon.reading "
@@ -399,7 +416,7 @@ class TargetGroup(unittest.TestCase):
                 "and jsonb_array_length(raw_payload->'breakdown') "
                 "     = (raw_payload->>'rows_merged')::int"
             ),
-            MERGED_GROUPS,
+            MERGED_GROUPS + 2,
         )
 
     def test_electricity_version_conflicts_recorded(self):
@@ -444,9 +461,19 @@ class TargetGroup(unittest.TestCase):
 
     def test_views_keep_source_truthful(self):
         # v_monthly_co2e aggregates consumption — only electricity may appear
-        ok, rows = q("select distinct source from carbon.v_monthly_co2e")
+        ok, rows = q(
+            "select distinct source from carbon.v_monthly_co2e where total_consumption is not null"
+        )
         self.assertTrue(ok)
         self.assertEqual({r["source"] for r in rows}, {"electricity"})
+        # non-electric meters may emit view rows but must carry no consumption totals
+        self.assertEqual(
+            scalar(
+                "select count(*)::int n from carbon.v_monthly_co2e "
+                "where source <> 'electricity' and total_consumption is not null"
+            ),
+            0,
+        )
 
     def test_views_no_co2e_for_non_electric_backfill(self):
         self.assertEqual(
@@ -564,14 +591,15 @@ class TargetGroup(unittest.TestCase):
         )
 
     def test_ledger_balance_recorded_never_recomputed(self):
+        # Management API returns numerics as strings — compare by value
         # seq 27 (undated closing row): balance_before carries the sheet's own 8,295
         self.assertEqual(
-            scalar("select balance_before from carbon.waste_sale_ledger where entry_seq = 27"),
+            float(scalar("select balance_before from carbon.waste_sale_ledger where entry_seq = 27")),
             8295,
         )
         # seq 26 (17/11/2026): in 258 → recorded balance 8,295 as written
         self.assertEqual(
-            scalar("select balance_recorded from carbon.waste_sale_ledger where entry_seq = 26"),
+            float(scalar("select balance_recorded from carbon.waste_sale_ledger where entry_seq = 26")),
             8295,
         )
 
@@ -593,10 +621,14 @@ class TargetGroup(unittest.TestCase):
             "the 21/01/2025 source anomaly must be stored as written",
         )
         self.assertEqual(
-            scalar("select balance_recorded from carbon.waste_sale_ledger "
-                   "where entry_seq = 11"),
+            float(scalar("select balance_recorded from carbon.waste_sale_ledger "
+                         "where entry_seq = 11")),
             -730,
             "negative recorded balance must be stored as written",
+        )
+        self.assertEqual(
+            scalar("select entry_date::text from carbon.waste_sale_ledger where entry_seq = 26"),
+            "2026-11-17",
         )
 
     def test_tgo_template_not_built(self):
@@ -624,35 +656,35 @@ class SubTabZeroLeakSpotChecks(unittest.TestCase):
     def test_gas_lpg_monthly_values(self):
         # master LPG 1/2/2024 = 96 kg (gas tab exact-matched it)
         self.assertEqual(
-            scalar(
-                "select meter_value::text from carbon.reading r "
+            float(scalar(
+                "select meter_value from carbon.reading r "
                 "join carbon.meter m on m.id = r.meter_id "
                 "where m.meter_name like 'การใช้ก๊าซหุงต้ม%ENV-BACKFILL-002%' "
                 "and r.reading_date = '2024-02-01'"
-            ),
-            96,
+            )),
+            96.0,
         )
 
     def test_paper_a4_jan2024(self):
         self.assertEqual(
-            scalar(
-                "select meter_value::text from carbon.reading r "
+            float(scalar(
+                "select meter_value from carbon.reading r "
                 "join carbon.meter m on m.id = r.meter_id "
                 "where m.meter_name like 'การใช้กระดาษ A4%ENV-BACKFILL-002%' "
                 "and r.reading_date = '2024-01-01'"
-            ),
-            51,
+            )),
+            51.0,
         )
 
     def test_waterin_regional_2026_extension(self):
         self.assertEqual(
-            scalar(
-                "select meter_value::text from carbon.reading r "
+            float(scalar(
+                "select meter_value from carbon.reading r "
                 "join carbon.meter m on m.id = r.meter_id "
                 "where m.meter_name like 'การใช้น้ำประปาส่วนภูมิภาค%ENV-BACKFILL-002%' "
                 "and r.reading_date = '2026-07-14'"
-            ),
-            130,
+            )),
+            130.0,
         )
 
     def test_waste_general_merged_sample(self):
