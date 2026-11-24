@@ -147,3 +147,180 @@ Bonus usable now: ไฟฉุกเฉิน Emergency-light master (49) + Chec
 Owner unblocking options for links 3/5: export CSV from AppSheet database UI, or share the backing Google Sheet if the database is sheet-backed, or add link-sharing on the DB's export.
 
 *— END of verbatim attachment —*
+
+---
+
+## Implementation receipts — C1 gen 1 (delivered 2026-11-24, STOP at REVIEW_REQUESTED)
+
+Lane: Track-Z GLM, `_worktrees/env-backfill-001`, branch `feat/env-backfill-001`
+off `8e317d8` (post-merge main tip). Delivered: the ONE migration
+`supabase/migrations/20261124000000_backfill_001.sql` (1,417 guarded INSERT
+statements + the `notify pgrst` trailer; generated PROGRAMMATICALLY — never
+hand-typed — by a /tmp throwaway generator cited here per the P2.1 precedent,
+sha256 `9473ac5ed50ff598a3aac76e2b4aeb7ce81e5a212f2489fcd13fad0b716f2c8a`,
+NOT committed) + `scripts/test_parity_backfill_001.py` (the D2 read-only
+contract suite). CURRENT-WORK.md untouched (its registry fence is hash-pinned
+at the claim transition — registry updates belong to the reviewed
+transitions, never the implementation lane).
+
+### D1 re-census + rulings (drift pivots — recorded, never silent)
+
+The 2026-11-24 CSVs re-censused at implementation time: **882 / 48 / 351 /
+24 / 6 / 3 / 38 / 40 data rows** — exactly the §2 binding counts (no drift).
+Live-DB before-state re-probed read-only: fe 0 / ei 0 / el 48 / elc 332 /
+item 0 / vendor 0 / category 0 / distributor 6 / inventory_lot 0 /
+calibration 11 / personnel 9 / reading 907 / equipment_spec 4.
+
+- **D1-1** `legacy_row_id` = `QR_CODE` verbatim (all 30 values verified
+  22-char PackedUUID — the P2.2 scan-payload-is-this-column direction);
+  `legacy_id` = the QR trace. QR is NOT a stored column (P2.1 D1-3 pin
+  stands — QR_CODE IS the id bytes).
+- **D1-2** latest-per-QR by max `Date_time` (พ.ศ. D/M/Y HH:MM:SS → ISO);
+  tie-break = first occurrence in export order — **0 ties observed**; 0 QRs
+  with all-master-fields-empty; every derived master row has all five fields
+  non-NULL (location/type/packed/expiry/size — 0 NULLs).
+- **D1-3** PII resolution: the 6 distinct non-empty ผู้ตรวจสอบ values
+  (829 of 882 rows non-empty) were matched against `core.personnel.full_name`
+  by EXACT full-name — **0 of 6 matched** ⇒ `inspector_id` NULL on ALL 882
+  rows (names never printed, never committed; the D2 suite probes all seeded
+  text columns per name at runtime — 0 hits). The Check tab's single
+  distinct Auditor value is the known 13-digit account; the **19 net-new
+  rows carry Auditor blank** ⇒ `auditor_id`/`auditor_legacy_id` NULL
+  everywhere in the delta (the P2.3 STAFF-001 mapping evidence tab is not in
+  this lane's source set — no match attempted beyond exact-full-name, per
+  the deterministic-only pin).
+- **D1-4** calibration sets: |seeded (P3.3 `maintaining` ids)| = 11, |CSV
+  `maintenanceID`| = 40, **∩ = ∅** (the guard makes the outcome
+  deterministic); union = 51 rows post-apply. All 40 present
+  (contract-asserted set equality).
+- **D1-5** ONE migration confirmed (no split).
+- **D1-6** NO BUMP honored (CHANGELOG.md + frontend/package.json untouched;
+  checker OK v1.15.1).
+- **D1-7 DEVIATION (the honest pivot — binding):** `chemical.inventory_lot`
+  seeds **33 of the 38 census rows**. Five source rows are unrepresentable
+  in the SHIPPED NOT NULL/CHECK shape without a forbidden DDL change (WO §1:
+  "NO DDL beyond the seed statements"; existing migrations byte-untouched):
+  | row | reason (values verbatim at source) |
+  |---|---|
+  | `e102936e` | Amount `0` — violates `inventory_lot_amount_positive` (> 0) |
+  | `be012199` | Amount `−25`, deduct `−625` — negative correction |
+  | `67f9a938` | Amount `−15`, deduct `−375` — negative correction |
+  | `27bae2e0` | deduct `20` > Amount `1` — violates `inventory_lot_remaining_nonnegative` |
+  | `8ad18e5a` | deduct `2` > Amount `1` — same CHECK (NOTE: a REAL lot — LotNo `6530-024-0001/3`, MFG 4/8/2025, EXP 4/8/2028 — disclosed for a follow-up owner decision) |
+  Never coerced (unknown ≠ zero; a sign-flip is fabrication; the P2.3 D5-R1
+  lesson). The D2 suite asserts these 5 legacy_ids ABSENT and 33 present.
+  The prose "38 rows" was the census expectation; CSV truth + shipped
+  constraints win (the §3.1 CSV-truth-wins precedent). A follow-up additive
+  lane + owner decision can admit them (relaxing the CHECK is an owner
+  adjudication, not a lane call).
+- **D1-8** Vendors `SalesName`/`LineID` (4 / 2 non-empty at source) have NO
+  column in `core.vendor` (the P3.1 schema split put sales/line on
+  `core.distributor`, a different legacy-id space seeded 2026-11-18, out of
+  this lane's target list) — NOT seeded; values masked here (never printed);
+  disclosed so nothing is silently dropped.
+- **D1-9** log datetimes (`Date_time`) interpreted Thai-local ICT:
+  `TIMESTAMPTZ '…+07'` (the source carries no offset; +07 pinned).
+- **D1-10** รูปชำรุด (98 non-empty Drive-relative refs) is not a column of
+  `extinguisher_inspection` (the house attachment pattern) — not seeded;
+  disclosed.
+- **D1-11** `extinguisher_inspection.id` = `sha256(legacy_id)[:8]`
+  (deterministic ENV-style 8-hex UI-crypto shape; 882 distinct verified;
+  house traceability keeps `legacy_id` = row_ID verbatim).
+- Enum reconciliation (flag-never-reject, no CHECK exists): derived master
+  types = 4 distinct values; **1/30 out of the P2.1 documented 5-value
+  master enum** (`น้ำ (Best Drop แบบ Low Pressure Water Mist)` — a member of
+  the P2.2 inspection-side 6-value enum) — flagged, inserted verbatim.
+  `cause_of_damaged` shows 4 observed values vs the 2 documented — verbatim,
+  no CHECK, reported.
+
+### D2 RED (truthful, pre-apply)
+
+`scripts/test_parity_backfill_001.py` — house live-DB gate (Management-API
+access path, SUPABASE_ACCESS_TOKEN from Drive secrets, never printed).
+
+- **RED-A** (migration file absent): **14 failed / 5 passed / 3 skipped** —
+  every failure a truthful live-count mismatch (e.g. `fire_extinguisher`
+  live 0 ≠ pinned 30; `item_calibration` live 11 ≠ pinned 51); the passes
+  are the pre-existing baselines (counts/policies/no-anon) + the two vacuous
+  pins (PII-absence over an empty table, master-undrifted at 48=48).
+- **RED-B** (file generated, UNAPPLIED): **15 failed / 7 passed** — adds the
+  static guard contract pass (all 1,417 INSERTs guarded, zero DDL/grant in
+  the seed block, DERIVED-FROM-LOG marker present) + the idempotency canary
+  FAILING truthfully (sample re-send hits the FK — master rows absent
+  pre-apply).
+
+### D3 apply + post-verify
+
+Preflight: ENV_DB gate (project `gllqtbyofrcjzmbnfoeh`), filename unique,
+live before-snapshot, and the trigger no-op verified live (`auth.uid()` IS
+NULL in the Management-API context ⇒ `core.fn_is_staff_or_admin()` false ⇒
+`trg_extinguisher_update_expdate` bumps nothing — derived master expiry stays
+byte-exact; re-verified GREEN by the full-derivation equality contract).
+
+Apply: `scripts/apply_migration_api.py` per-statement run hit the Management-
+API ThrottlerException at ~statement 630 (630 OK / 788 throttled — nothing
+partial: every statement is guarded and atomic); recovered per the script's
+documented idempotent re-run path via a /tmp throttled resume runner
+(client-side skip of already-inserted keys + 429 backoff): **588/588 OK,
+0 FAIL**. Zero unanticipated writes: every non-target counter byte-identical
+before/after.
+
+**Count reconciliation (plan §7 rule 3) — CSV truth vs DB before → after:**
+
+| table | CSV | before | after | Δ |
+|---|---|---|---|---|
+| safety.fire_extinguisher | 30 QRs | 0 | **30** | +30 |
+| safety.extinguisher_inspection | 882 | 0 | **882** | +882 |
+| safety.emergency_light | 48 | 48 | **48** | 0 (guarded set-diff — the "+1" prose count = §3.1 header artifact) |
+| safety.emergency_light_check | 351 | 332 | **351** | +19 net-new |
+| core.item_category | 3 | 0 | **3** | +3 |
+| core.vendor | 6 | 0 | **6** | +6 |
+| core.item | 24 | 0 | **24** | +24 |
+| core.distributor | — | 6 | **6** | 0 (untouched) |
+| chemical.inventory_lot | 38 − 5 skips | 0 | **33** | +33 (D1-7) |
+| core.item_calibration | 40 + 11 seeded | 11 | **51** | +40 (∩ = ∅) |
+| wastewater.reading / core.personnel / core.equipment_spec | — | 907/9/4 | 907/9/4 | 0 |
+
+Post-verify GREEN: the contract suite **22/22 passed** — full-table
+field-by-field equality vs the CSV bytes (superset of the 3-rows-per-family
+spot-check pin: inspections 882/882, master 30/30, checks 19/19 net-new +
+48/48 master no-drift, items/vendors/categories, lots 33/33, calibration
+40/40), id-shape pin, blanks-NULL pin (0 empty-strings), PII-absence
+full-table probes (0 hits), idempotency canary (guarded re-send inserts
+ZERO), baselines + policies undrifted.
+
+### D4 battery (all green)
+
+| check | result |
+|---|---|
+| contract suite | 22/22 GREEN (post-apply) |
+| vitest FULL | 53 files — 998 passed / 1 skipped (the 2 env-wiring failures seen before copying the gitignored `frontend/.env` into the worktree were environmental, resolved by that copy — no code relation) |
+| tsc -b | clean |
+| oxlint | exit 0 (19 pre-existing warnings, baseline noise) |
+| Playwright FULL workers=1 | **336/336 passed (7.7m)** |
+| guard | **344/344** + 450 subtests |
+| runtime | **62/62** + 32 subtests |
+| checker | OK (v1.15.1; NO BUMP — no tag, no CHANGELOG entry) |
+| `git diff --check` | clean |
+| diff ⊆ claimed scope | exactly the migration + the contract suite + the 2 docs files (CURRENT-WORK.md untouched) |
+| PII/token grep over ALL changed files | never-committable class (inspector names ×6, Auditor 13-digit ×1): **0 hits**; vendor Phone/Email present in the migration VALUES by the D1-6 committable ruling (6 phones / 3 emails — MASKED in every receipt; SalesName/LineID 0, D1-8) |
+| guard `scope-check` machine pass | `ok:false UNKNOWN_CHANGE_KIND` on both code + docs paths — the R2 P3-advisory (annotated scope entries don't machine-match); fail-closed direction only; the PR diff itself is the scope evidence |
+
+Rollback: documented in the migration header (reverse-FK-order DELETEs by
+the exact provenance markers + seeded key sets) — NEVER executed without an
+owner order.
+
+### PII masking note (binding for every reader of this receipt)
+
+This receipt contains NO inspector name, NO Auditor value, NO vendor phone /
+email / sales-name / LineID value, NO personnel identifier. Counts and row
+ids only. The `/tmp/env-links-2026-11-24/` raw sources stay /tmp-only. The
+migration VALUES carry vendor business contacts verbatim per the P3.1 D1-6
+ruling (committable) — masked in THIS receipt and every chat surface. The
+19 net-new check rows carry no Auditor value at all (blank at source). The
+882 inspection rows carry zero inspector-name bytes (NULL `inspector_id`
+everywhere; D1-3 disclosure: 0/6 deterministic full-name matches against the
+9-row `core.personnel`).
+
+**STOP at REVIEW_REQUESTED.** The implementing lane never merges; the D5
+fresh-GLM independent review + the authorized reviewer own approval + merge.
