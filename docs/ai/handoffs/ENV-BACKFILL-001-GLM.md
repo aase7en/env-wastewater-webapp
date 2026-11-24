@@ -324,3 +324,59 @@ everywhere; D1-3 disclosure: 0/6 deterministic full-name matches against the
 
 **STOP at REVIEW_REQUESTED.** The implementing lane never merges; the D5
 fresh-GLM independent review + the authorized reviewer own approval + merge.
+
+### D6 CLOSEOUT RECEIPT (docs-only closeout transition, 2026-11-24 — STOP at REVIEW_REQUESTED)
+
+Executed by `docs/env-backfill-001-closeout` off main @ `dfec9f075436f801ef4a419d44e9e72f31edfb7a`; the closeout lane never merges — the authorized reviewer owns approval + merge. This receipt re-records the delivered counts, the derivation, and the named deviations so the lane closes with a self-contained ledger.
+
+**The chain (all receipts verified live before writing):**
+- Claim transition PR #267 merged `8e317d8618121b28f118bcacd2b55b39d32309a7` (docs-only, base `9919c8b76a904a9c805df3883beb4e57839d2faa` = the Phase-5-READY closeout merge).
+- Implementation PR #268 merged `dfec9f075436f801ef4a419d44e9e72f31edfb7a` — parents EXACTLY (`8e317d8618121b28f118bcacd2b55b39d32309a7`, `6ab113b2b0f453764024aea835ee7097aab0268f` = the D5-APPROVED head); merge commit, no squash, expected-head discipline `--match-head-commit`; branch kept.
+- D5 fresh-GLM APPROVED issuecomment-7131444943 at the exact frozen head `6ab113b` — 0 P1 / 0 P2, **1417/1417 field-verified, 0 mismatches**; merge-executor review trail issuecomment-7131502260 (expected head + merge policy + P3 carry + the no-bump/no-tag/no-Pages ruling). PR gates at merge: OPEN + MERGEABLE + checks green (notify + scripts).
+- Merge stat = exactly 4 files 2512+/1−: the ONE migration +1574, the contract suite NEW +760, this handoff +177, the WO +1/−1. `frontend/` EMPTY, CURRENT-WORK.md untouched at merge.
+- Deploy honest note: **NO Pages run at the merge** — DB+scripts+docs only, `deploy-frontend.yml` paths do not match; only the main `test` workflow executed at `dfec9f0` (success). **NO BUMP — v1.15.1 stays, no tag, no CHANGELOG entry** (D1-6).
+- Post-merge re-verification at `dfec9f0` (executed by this closeout transition): guard **344/344** + 450 subtests passed; validate-registry **{ok:true, claims:54, BOOTSTRAP_CONTROL}** with C1 still CLAIMED pre-closeout.
+
+**The D5 P3s carried to the ledger (both informational):**
+1. **DateStyle-replay hardening note** — `chemical.inventory_lot` INSERTs put raw US-format date literals (`'10/4/2024'`, `'11/4/2024'`) into DATE columns relying on the default session `DateStyle` (ISO,MDY), while `receipt_date` in the same statements uses explicit `DATE 'YYYY-MM-DD'` casts. Landed values verified correct/coherent (e.g. `f9884183` EXP `2024-11-04` after receipt `2024-10-10`), but a DMY-DateStyle client re-running the file would land different dates. Deterministic-replay hardening (explicit casts) = follow-up-lane candidate; no action required for merge.
+2. **amount_deducted-0 disclosure** — 3 seeded lots carry `amount_deducted = 0` where source `Amount_unit_deduct` is blank — consistent with the pre-existing shipped P3_002 ruling (`Amount_unit_deduct → amount_deducted numeric NOT NULL DEFAULT 0`; `Total_deduct` explicitly not persisted), so not a new deviation; recorded so the blank→default mapping is named in the ledger.
+
+**THE COUNT TABLE (delivered — CSV truth vs DB before → after; plan §7 rule 3):**
+
+| table | CSV | before | after | Δ |
+|---|---|---|---|---|
+| safety.fire_extinguisher | 30 QRs (latest-per-QR of the 882-row log) | 0 | **30** | +30 |
+| safety.extinguisher_inspection | 882 | 0 | **882** | +882 |
+| safety.emergency_light | 48 | 48 | **48** | 0 (guarded set-diff — the "+1" prose count = §3.1 header artifact) |
+| safety.emergency_light_check | 351 | 332 | **351** | +19 net-new |
+| core.item_category | 3 | 0 | **3** | +3 |
+| core.vendor | 6 | 0 | **6** | +6 |
+| core.item | 24 | 0 | **24** | +24 |
+| core.distributor | — | 6 | **6** | 0 (untouched) |
+| chemical.inventory_lot | 38 − 5 skips (D1-7) | 0 | **33** | +33 |
+| core.item_calibration | 40 + 11 seeded | 11 | **51** | +40 (∩ = ∅) |
+| wastewater.reading / core.personnel / core.equipment_spec | — | 907/9/4 | 907/9/4 | 0 |
+
+Post-verify GREEN: the contract suite **22/22 passed** — full-table field-by-field equality vs the CSV bytes (the D5 1417/1417 basis: 1,417 guarded INSERTs = 30+882+19+24+6+3+33+40 seed rows; plus 48/48 master no-drift and baselines), blanks-NULL pin (0 empty-strings), PII-absence full-table probes (0 hits), idempotency canary (guarded re-send inserts ZERO).
+
+**THE DERIVATION (durable record):** `safety.fire_extinguisher` is **DERIVED-FROM-LOG** — for each of the **30 distinct QR_CODEs** in the 882-row ตรวจสอบถัง log, take the row with max `Date_time` (tie-break = first occurrence in export order; **0 ties observed**) and copy the six embedded master fields (`QR_CODE/location/type/packing_date/chem_exp/packing_weight` — the export's own column names) into the P2.1 master columns. `source_provenance` records the DERIVED-FROM-LOG provenance verbatim incl. the derivation date + the 882-row basis — honest provenance, NOT a standalone master the owner never had. `legacy_row_id` = `QR_CODE` verbatim (all 30 values verified 22-char PackedUUID); QR is NOT a stored column (the P2.1 D1-3 pin stands). `extinguisher_inspection.id` = `sha256(legacy_id)[:8]` (D1-11, 882 distinct). The master seeds FIRST in the same migration so the P2.2 FK-block retires. Enum reconciliation flag-never-reject: 1/30 derived types out of the documented 5-value master enum (a member of the P2.2 inspection-side 6-value enum) — inserted verbatim; `cause_of_damaged` 4 observed vs 2 documented — verbatim, no CHECK, reported.
+
+**THE D1-7 / D1-8 / D1-10 DEVIATIONS (verbatim carry from § D1):**
+- **D1-7 — `chemical.inventory_lot` seeded 33 of the 38 census rows.** Five source rows are unrepresentable in the SHIPPED NOT NULL/CHECK shape without a forbidden DDL change (WO §1: NO DDL beyond the seed statements; existing migrations byte-untouched). The owner follow-up list:
+
+| row | reason (values verbatim at source) |
+|---|---|
+| `e102936e` | Amount `0` — violates `inventory_lot_amount_positive` (> 0) |
+| `be012199` | Amount `−25`, deduct `−625` — negative correction |
+| `67f9a938` | Amount `−15`, deduct `−375` — negative correction |
+| `27bae2e0` | deduct `20` > Amount `1` — violates `inventory_lot_remaining_nonnegative` |
+| `8ad18e5a` | deduct `2` > Amount `1` — same CHECK (**a REAL lot** — LotNo `6530-024-0001/3`, MFG 4/8/2025, EXP 4/8/2028 — disclosed for a follow-up owner decision) |
+
+  Never coerced (unknown ≠ zero; a sign-flip is fabrication; the P2.3 D5-R1 lesson). The D2 suite asserts these 5 legacy_ids ABSENT and 33 present. CSV truth + shipped constraints win over the prose "38 rows" census expectation (the §3.1 CSV-truth-wins precedent). A follow-up additive lane + owner decision can admit them — relaxing the CHECK is an owner adjudication, not a lane call.
+- **D1-8 — Vendors `SalesName`/`LineID` (4 / 2 non-empty at source) NOT seeded.** No column exists in `core.vendor` (the P3.1 schema split put sales/line on `core.distributor`, a different legacy-id space seeded 2026-11-18, outside this lane's target list). Values masked here (never printed); disclosed so nothing is silently dropped.
+- **D1-10 — รูปชำรุด (98 non-empty Drive-relative refs) NOT seeded.** Not a column of `extinguisher_inspection` (the house attachment pattern); disclosed.
+- Related honesty records: D1-9 log datetimes interpreted Thai-local ICT (`TIMESTAMPTZ '…+07'` — the source carries no offset); D1-3 `inspector_id` NULL on ALL 882 rows (0/6 exact-full-name matches vs the 9-row `core.personnel`; names never printed/committed; the 19 net-new check rows carry Auditor blank → NULL everywhere).
+
+**Fence re-pinned by this closeout:** `expected_policy_revision = dfec9f075436f801ef4a419d44e9e72f31edfb7a` (the PR #268 merge SHA); `expected_registry_hash = 6cd430a71961fe1707f6f1922c29072d177452bd733171c959cbf95703892de1` = the guard `registry_hash` AT `dfec9f0` (validate-registry output at that SHA; same method as the prior closeout fences). Claim-by-claim JSON diff vs `dfec9f0` = **exactly 1 claim changed** (this one → CLOSED); `git diff --check` clean.
+
+**Frontier after this closeout merges:** backfill PART 1 delivered (the owner's 24/11 shares). REMAINING: coliform ×4 + น้ำประปา AppSheet-DB exports (LOGIN-WALLED — the owner will drop CSVs; follow-up lane when they arrive); the 5 inventory-lot rejects (D1-7 owner follow-up list); Phase-5 **dual-run STILL the critical path** (dual-run start/acceptance + AppSheet freeze/read-only/retirement OWNER-GATED — plan P5.1/P5.3 + the checklist decision points; the seed does NOT start dual-run); standing items (Building WAITING_EXTERNAL, SUNDAYMCP owner-side, hooks #155 / #156 owner-manual; extinguisher log LIVE — 858→877→882 count-evolution honesty, future re-sync = own lane). Scope lock released at generation 1; CLOSED confers no fresh mutation authority; all other work still requires a NEW claim transition.
