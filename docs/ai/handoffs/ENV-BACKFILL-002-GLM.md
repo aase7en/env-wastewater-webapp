@@ -250,3 +250,52 @@ RED at `313a8af` not independently re-executable post-apply (D5 verified-by-stru
 | `git diff --check` | clean |
 
 Scope exact: fix migration (NEW) + base-migration comment repairs + suite + this handoff — `frontend/`, `CURRENT-WORK.md`, `CHANGELOG.md` zero diff. **Claim stays REVIEW_REQUESTED; the implementer never merges.** D5 re-review at the new head next.
+
+## D6 — CLOSEOUT RECEIPT (2026-11-24, the closeout lane; docs-only)
+
+The closeout lane live-verified every receipt before writing this record.
+
+### The verified chain
+
+- **Claim transition PR #270 MERGED `3d5469c5f643332b7294fb85f1251efd21e47590`** (docs-only, base `a1bb03906fe7215c04a3d7f13f795e33335c3b72`) — R2 APPROVED `pull/270#issuecomment-7132569017` at exact head `b11dff4d1d3c14095fbb67efb7c72d29e32997ae` vs base `a1bb039`: 0 P1 / 0 P2, 1 cosmetic P3; fence PASS at exact SHA.
+- **Implementation PR #271 MERGED `fff189710579354012db63cf47cce63c42c26892`** — second parent EXACTLY the repaired head `87356109dc53b72bac0b33f732ddf2ce9b32fc60` (merge-commit, no squash); merge stat exactly 7 files 1192+/1− (`20261125000000_backfill_002_carbon.sql` +149, `20261125000001_backfill_002_conflict_direction_fix.sql` NEW +64, `scripts/test_parity_backfill_002.py` NEW +784, `scripts/backfill_002_preflight.py` NEW +62, handoff +128, WO +1/−1, plan-doc §9 +4; `frontend/` EMPTY, `CURRENT-WORK.md` untouched at merge).
+
+### D1 recap (the binding decisions; full receipts in D1 above)
+
+Fork **(B)** additive nullable `carbon.reading.activity_subtype` — GLM-decided after the 5 Jev consults proved contract-degenerate on the actual choices (every answer landed in the provider's own fixed class space, conf 0.37–0.64, Q1 LOW; receipts verbatim above); dedup key `(meter_id, reading_date)`; the master-vs-live overlap resolved **DISTINCT-SERIES** (live 907 = DAILY cumulative plant-submeter readings ~5 kWh/day vs master electricity = MONTHLY hospital-wide regional bills 42k–81k kWh — not the same measurement; both kept under separate meter identities; plant meter 907 byte-untouched before==after); merge-sum for multi-row (series,date) groups; **D1.4: big-bill-is-the-reading** at the 5 electricity version-conflicts (companions preserved verbatim `recorded_not_aggregated`); chlorine → CARBON; LEDGER + INKREAD; TGO ~150 categories FORWARD-INTEL only (plan §9 note; never built).
+
+### The count reconciliation (plan §7 rule 3), live DB before → after
+
+| table | before | after | note |
+|---|---|---|---|
+| `carbon.reading` | 907 | **1,961** | +1,054 backfilled; UNIQUE `(meter_id, reading_date)` holds |
+| `carbon.meter` | 1 | **27** | +26, one meter per activity series (the B-shape) |
+| `carbon.waste_sale_ledger` | 0 | **27** | verbatim incl. the seq-11 negative −730 and the seq-27 8,295; 4 notes masked |
+| `carbon.emission_factor` | 12 | 12 | untouched |
+| `wastewater.reading` | 907 | 907 | byte-undrifted (the query-tab exclusion held) |
+| `chemical.movement` | 0 | 0 | untouched |
+| `fuel.dispense_log` | 0 | 0 | untouched |
+| `garbage.collection_log` | 0 | 0 | untouched |
+
+### THE INVERSION STORY (D5 R1 P1 — the data-direction defect caught and repaired)
+
+- **D5 R1 CHANGES_REQUIRED `pull/271#issuecomment-7135229565` at head `20c3ba1`**: the 5 electricity version-conflicts were seeded **INVERTED** vs the recorded D1.4 ruling — `consumption` carried the small companion (328/334/341/378/237 kWh) while the hospital-wide monthly bill (73,079/71,485/69,375.99/81,131/41,988 kWh) sat only in `companion_rows`. Live impact measured by D5: `v_overview_carbon` Dec-2025 = 379.00 kWh / **0.189 tCO₂e** where the sheet's own bill is 41,988 kWh (~21.0 tCO₂e); miss ≈ **168.5 tCO₂e** under-counted across the 5 months. The migration header's justification ("the energy tab's value is the reading") was factually false — the energy tab carries BOTH values at all 5 dates; the D1.4 recorded ruling was the only authority and the VALUES contradicted it. The contract suite counted the conflicts (5/5) but asserted no direction — nothing could catch the inversion pre-apply.
+- **Repair `8735610`** (single commit on `20c3ba1`): `20261125000001_backfill_002_conflict_direction_fix.sql` swaps exactly the 5 rows big-is-the-reading per D1.4 (costs swapped too; companion structure intact; every UPDATE drift-guarded; applied 6/6 OK via the Management-API route), base-migration honesty comments (the false claim gone; both migrations required in filename order for fresh environments), suite direction assertions (RED 1F/45P pre-apply at the inverted live DB → 46/46 post-apply) + docstring mask-count repairs, and this deviation record.
+- **D5 R2 APPROVED `pull/271#issuecomment-7136322768`** — fresh-eyes re-verification from zero: repair diff verified; own live read-only verification: `v_overview_carbon` Dec-2025 = **42,130.00 kWh / 21.061 tCO₂e restored** (was 379.00 / 0.189, ≈111× the recorded electricity now visible); view restoration +335,440.99 kWh ≈ +167.69 tCO₂e across the 5 months; integrity pins hold (1,961 readings / 1,054 backfill provenance / 27 meters / 27 ledger / wastewater 907 untouched).
+
+### Deviations (recorded, never silent)
+
+1. **ONE-migration pin → TWO numbered migrations** (`20261125000000_backfill_002_carbon.sql` + `20261125000001_backfill_002_conflict_direction_fix.sql`): the split is the D5-R1 P1 repair path — the D5-ruled legitimate fix-migration precedent (P2.2/P2.3); the base migration's header now requires BOTH in filename order for fresh environments. Recorded per the WO §6 pin (any split = explicit recorded deviation, never a silent rename).
+2. **Apply 1 33/76 OK / 43 FAIL (42804)** — the Management-API query endpoint resolves mixed `NULL`/`::numeric` VALUES columns as text; recovered idempotently by repair `6476ce0` (select-side casts): apply 2 = 76/76 OK; idempotency proven twice (76 OK / 0 FAIL / zero count deltas).
+3. **One out-of-band UPDATE** (ledger seq-23 note → NULL) recorded at D3 — the mask rule widened after apply 1 revealed the personal-looking fragment; reconciled live, the regenerated migration masks it correctly.
+4. **The D1.4 delivery inversion itself** — caught by D5 (not by the suite), repaired same day; direction now pinned by `test_electricity_conflict_direction_big_is_reading`.
+
+### Ledger notes carried forward
+
+The 5 `chemical.inventory_lot` rejects (BACKFILL-001 D1-7) remain the OWNER follow-up list; the TGO form's ~150 future categories stay FORWARD-INTEL in `docs/ai/APPSHEET-PARITY-PLAN.md` §9 (never built — the cap honored); **NO BUMP — v1.15.1 stays** (DB-only, no tag, no CHANGELOG entry).
+
+### Frontier after this closeout merges
+
+**NO active claim** — backfill parts 1+2 DELIVERED (the owner's 24/11 shares). REMAINING owner items: coliform ×4 + น้ำประปา CSV exports (AppSheet DB login-walled), the 5 inventory-lot review, Phase-5 dual-run (the critical path, owner-gated), the Telegram token (owner B5). Standing: ENV-SUNDAYMCP-ROUTING-001-C1 (owner-side attestation choice), hooks #155/#156 (owner-manual), ENV-BUILDING-REPAIR-001-C1 (WAITING_EXTERNAL). Each needs its own NEW reviewed claim transition.
+
+**This closeout PR: STOP at REVIEW_REQUESTED — the implementer never merges.** Fence re-pinned: `expected_policy_revision = fff189710579354012db63cf47cce63c42c26892` (the PR #271 merge SHA = current main), `expected_registry_hash = ecffe59582d2b7e62ab1172e5ee072fff31340d521701654aabb669e38682661` (guard `registry_hash` AT that SHA; the method cross-verified — the same method at `a1bb039` reproduces the claim transition's fence `fb0ecbaf…` byte-exactly). JSON-diff vs fff1897: exactly 1 of 55 claims changed (ENV-BACKFILL-002-C1 → CLOSED); battery at head: guard 344/344, validate-registry {ok:true, claims:55, BOOTSTRAP_CONTROL}, git diff --check clean.
