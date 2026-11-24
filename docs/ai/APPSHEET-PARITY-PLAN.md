@@ -307,3 +307,7 @@ AppSheet มี 37 ตาราง (514 คอลัมน์, 402 สูตร,
 - `MIGRATION.md` — ประวัติย้าย 907/907 แถว (5 ก.ค. 2569) + การตัดสินใจ `chlorine_used`→`คลอรีนน้ำที่ใช้จริง`
 - `docs/ai/CURRENT-WORK.md` — สถานะ 001C (epic #110): D5 joint decision 2026-11-08 + closeout 12 พ.ย. 2569 — 001C export เป็น "not-planned, needs substantive owner decision" (ครอบเฉพาะ /flow story export)
 - `docs/ai/digital-twin/11-UTHAI-ACTIVATED-SLUDGE-PROCESS-KNOWLEDGE.md` — อ้างอิง topology กระบวนการเติมอากาศ (ใช้ตรวจความถูกค่าคงที่ ×34/×12 ใน Phase 1)
+
+## 9. FORWARD-INTEL — TGO carbon form template (added 2026-11-24, ENV-BACKFILL-002; additive note only)
+
+The owner's "carbon footprint" sheet (share 2026-11-24, WO `docs/work-orders/ENV-BACKFILL-002.md`) contains a Google-Form response tab `การตอบแบบฟอร์ม` (2 responses × 261 columns, ค.ศ. 2024). Its column inventory is the TGO carbon form template: refrigerants, anesthetic gases, pesticides, fertilizers, wastewater blocks, solar, and further activity blocks — revealing **~150 future activity categories** beyond the 5-value `carbon.source_type` enum and the 26 series backfilled under ENV-BACKFILL-002. Per the WO's hard cap, those categories are **NOT built now** — this note is the only recorded inventory. A future lane must design the schema (likely per-category factor + subtype model) before any of it lands. The 2 response rows were **deferred** (no honest surface; recorded follow-up in the handoff).
