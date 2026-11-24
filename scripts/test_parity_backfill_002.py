@@ -20,7 +20,7 @@ against /tmp/env-carbonf-2026-11-24 sha-verified CSVs — Appendix B):
 
   carbon.reading            907 -> 1961  (+1054 backfill rows)
   carbon.meter                1 ->   27  (+26 activity-series meters)
-  carbon.waste_sale_ledger  new table    (27 ledger rows, 3 masked notes)
+  carbon.waste_sale_ledger  new table    (27 ledger rows, 4 masked notes)
   wastewater.reading        907 == 907  (untouched — query tab EXCLUDED)
   carbon.emission_factor     12 ==  12   (untouched)
   chemical.movement           0 ==   0   (untouched — chlorine went to carbon)
@@ -33,8 +33,10 @@ electricity series (121 rows) so carbon.v_unified_co2e arm-1 and
 carbon.v_overview_carbon keep unit-truthful math; non-electric backfill rows
 get NULL kg_co2e in carbon.v_reading_co2e (unknown ≠ fabricated); merged
 groups marked merged_sum with verbatim breakdowns; electricity 5 version
-conflicts resolved by the dedicated energy tab with companions preserved;
-date era ค.ศ. day-first everywhere (no พ.ศ. shift); ink สถานที่ absent; ledger
+conflicts store the BIG hospital-wide bill as the reading (D1 decision 4)
+with the small companion preserved verbatim in companion_rows — direction
+pinned per-date below (D5 P1 repair); date era ค.ศ. day-first everywhere
+(no พ.ศ. shift); ink สถานที่ absent; ledger
 personal-name notes NULL; 21/01/2025 ledger anomaly stored as written.
 
 Run:
@@ -58,6 +60,8 @@ API_URL = (
 )
 MIGRATION = "20261125000000_backfill_002_carbon.sql"
 MIGRATION_PATH = Path(__file__).resolve().parent.parent / "supabase/migrations" / MIGRATION
+FIX_MIGRATION = "20261125000001_backfill_002_conflict_direction_fix.sql"
+FIX_MIGRATION_PATH = Path(__file__).resolve().parent.parent / "supabase/migrations" / FIX_MIGRATION
 
 PROV = "ENV-BACKFILL-002"
 PLANT_METER_ID = "b6be4c99-c83a-43f7-b765-72286cc78bd0"
@@ -73,6 +77,20 @@ MERGED_GROUPS = 400
 ELEC_CONFLICT_DATES = 5
 LEDGER_ROWS = 27
 LEDGER_MASKED_SEQS = [10, 21, 22, 23]
+
+# D5 P1 direction pin — date -> (big_kwh, big_cost, small_kwh, small_cost),
+# byte-verified against the sha-pinned CSVs (energy.csv physical rows 13/14,
+# 25/26, 41/42, 43/44, 45/46; basedata.csv same-date pairs). The READING must
+# be the big hospital-wide bill (D1 decision 4); the small companion stays in
+# companion_rows recorded_not_aggregated. Catches the inverted seeding the
+# D5 review found (receipt pull/271#issuecomment-7135229565).
+ELEC_CONFLICT_PIN = {
+    "2024-08-20": (73079.0, 334248.52, 328.0, 1845.27),
+    "2024-09-19": (71485.0, 332410.89, 334.0, 1872.9),
+    "2024-10-20": (69375.99, 316737.23, 341.0, 1905.17),
+    "2025-06-21": (81131.0, 354798.81, 378.0, 1994.74),
+    "2025-12-21": (41988.0, 178311.53, 237.0, 1365.15),
+}
 
 # per-meter pinned counts (series name suffix "(ENV-BACKFILL-002)")
 PER_METER = {
@@ -435,6 +453,31 @@ class TargetGroup(unittest.TestCase):
             ELEC_CONFLICT_DATES,
         )
 
+    def test_electricity_conflict_direction_big_is_reading(self):
+        # D5 P1: which value became the READING must be asserted, not just the
+        # conflict count — consumption == the big hospital-wide bill (D1.4),
+        # companion == the small value recorded_not_aggregated, costs coherent.
+        ok, rows = q(
+            "select r.reading_date::text d, r.consumption::text c, "
+            "r.raw_payload->>'cost_thb' c_top, "
+            "r.raw_payload->'companion_rows'->0->>'value' c_val, "
+            "r.raw_payload->'companion_rows'->0->>'cost_thb' c_cost, "
+            "r.raw_payload->'companion_rows'->0->>'recorded_not_aggregated' rna "
+            "from carbon.reading r join carbon.meter m on m.id = r.meter_id "
+            "where m.meter_name like 'การใช้ไฟฟ้าส่วนภูมิภาค%ENV-BACKFILL-002%' "
+            "and r.raw_payload->>'version_conflict' = 'true'"
+        )
+        self.assertTrue(ok)
+        by_date = {r["d"]: r for r in rows}
+        self.assertEqual(set(by_date), set(ELEC_CONFLICT_PIN), "conflict dates drifted")
+        for d, (big, big_cost, small, small_cost) in ELEC_CONFLICT_PIN.items():
+            r = by_date[d]
+            self.assertEqual(float(r["c"]), big, f"{d}: consumption must be the big bill")
+            self.assertEqual(float(r["c_top"]), big_cost, f"{d}: top-level cost must be the big row's")
+            self.assertEqual(float(r["c_val"]), small, f"{d}: companion must carry the small value")
+            self.assertEqual(float(r["c_cost"]), small_cost, f"{d}: companion cost must be the small row's")
+            self.assertEqual(r["rna"], "true", f"{d}: companion must stay recorded_not_aggregated")
+
     def test_consumption_only_grid_electricity(self):
         n = scalar(
             "select count(*)::int n from carbon.reading where consumption is not null"
@@ -648,6 +691,40 @@ class TargetGroup(unittest.TestCase):
             ),
             NEW_READINGS,
         )
+
+
+class FixMigrationFileContract(unittest.TestCase):
+    """Static shape of the D5-P1 direction-fix migration — phase-independent."""
+
+    def test_fix_file_exists(self):
+        self.assertTrue(FIX_MIGRATION_PATH.exists(), "direction-fix migration missing")
+
+    def test_fix_pins_exactly_the_5_dates(self):
+        sql = FIX_MIGRATION_PATH.read_text(encoding="utf-8")
+        for d in ELEC_CONFLICT_PIN:
+            self.assertIn(f"date '{d}'", sql, f"fix migration does not pin {d}")
+        # no other electricity date may be swapped: each update line pins one date
+        updates = [ln for ln in sql.splitlines() if ln.strip().lower().startswith("update carbon.reading")]
+        self.assertEqual(len(updates), ELEC_CONFLICT_DATES, "fix must swap exactly 5 rows")
+
+    def test_fix_every_update_drift_guarded(self):
+        # each update must pin meter identity + date + current small consumption
+        # + companion big value (idempotent + drift-safe), and return the result
+        for ln in FIX_MIGRATION_PATH.read_text(encoding="utf-8").splitlines():
+            s = ln.strip().lower()
+            if not s.startswith("update carbon.reading"):
+                continue
+            for needle in (
+                "where r.meter_id = (select id from carbon.meter",
+                "r.consumption =",
+                "(r.raw_payload->'companion_rows'->0->>'value')::numeric =",
+                "returning",
+            ):
+                self.assertIn(needle, s, f"unguarded/unordered fix update: {ln[:100]}")
+
+    def test_fix_documents_rollback(self):
+        sql = FIX_MIGRATION_PATH.read_text(encoding="utf-8")
+        self.assertIn("-- ROLLBACK", sql, "reverse swap must be documented")
 
 
 class SubTabZeroLeakSpotChecks(unittest.TestCase):

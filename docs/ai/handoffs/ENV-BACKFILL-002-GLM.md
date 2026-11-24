@@ -207,3 +207,46 @@ Q5 — the two genuinely-new fragments (LEDGER*/INK*):
 | diff ⊆ claimed files | migration + 2 new scripts + WO + handoff + plan doc §9 note — nothing else; `frontend/` zero diff, `CURRENT-WORK.md` untouched (registry closeout is the next lane's job), CHANGELOG/package.json untouched |
 
 **STOP at REVIEW_REQUESTED.** The implementer never merges. D5 fresh-GLM independent review at the exact frozen head next.
+
+## D5 — fresh-GLM review receipt + P1/P3 repair record (2026-11-24)
+
+**D5 verdict: CHANGES_REQUIRED** — 1×P1, 1×P3, 2 informational (receipt: `pull/271#issuecomment-7135229565`, at head `20c3ba1`, base `3d5469c` = origin/main, ancestry verified). D5's own battery at that head was fully GREEN (41/41 contract, 998/1 vitest, tsc clean, Playwright 336/336, guard 344, runtime 62, checker v1.15.1, CI pass) — the P1 is a DATA-DIRECTION defect, not a gate failure.
+
+### THE P1 — electricity version-conflicts seeded INVERTED vs the recorded D1 ruling (repaired same day)
+
+- **The ruling (D1 decision 4, above):** *"…the big row is the reading; the 5 small companions are preserved verbatim in `raw_payload.companion_rows`"*.
+- **The deviation:** the implementation stored the OPPOSITE at all 5 conflict dates — `consumption` = the small companion (328/334/341/378/237 kWh), the hospital-wide monthly bill (73,079/71,485/69,375.99/81,131/41,988 kWh) only in `companion_rows`. Nothing was lost (values preserved verbatim, `recorded_not_aggregated`), but the `consumption` column — the source-of-truth summed by `v_overview_carbon` and `v_unified_co2e` — carried the wrong series value for those 5 months.
+- **The migration's justification was factually false:** the base header claimed "the dedicated energy tab's value is the reading", but the sha-pinned CSVs prove the energy tab carries BOTH values at every one of the 5 dates (`energy.csv` physical rows 13/14, 25/26, 41/42, 43/44, 45/46; `basedata.csv` same-date pairs 173/174, 179/180, 187/188, 268/269, 2862/2864) — the tab cannot disambiguate. The D1.4 recorded ruling is the only authority, and the implementation contradicted it.
+- **How D5 caught it:** D1.4's text was checked against the stored direction; the contract suite counted the conflicts (5/5) but never asserted WHICH value became the reading, so nothing could catch the inversion pre-apply. D5 measured the live impact instead of trusting the count.
+- **Live impact BEFORE (measured 2026-11-24):** `v_monthly_co2e` electricity at the 5 months read 545.00 / 494.00 / 484.00 / 496.00 / 379.00 kWh (272.47 / 246.97 / 241.97 / 247.96 / 189.48 kg) — `v_overview_carbon` Dec-2025 showed 379.00 kWh / 0.189 tCO₂e where the sheet's own hospital bill is 41,988 kWh (~21.0 tCO₂e). Miss vs the sheet's bills: 337,058.99 kWh ≈ **168.50 tCO₂e** under-counted (net −1,618 kWh small companions already aggregated → view delta 335,440.99 kWh ≈ **167.69 tCO₂e**).
+
+### The repair (this commit; apply receipt `/tmp/kilo/d5p1_*.json`)
+
+1. **`20261125000001_backfill_002_conflict_direction_fix.sql` (NEW)** — for exactly the 5 (meter, reading_date) rows: `consumption :=` the big hospital-wide value; `raw_payload.cost_thb :=` the big row's cost; `companion_rows[0] :=` the small value + its cost (`recorded_not_aggregated` structure intact; all four numbers verbatim, positions swapped; `meter_value` stays NULL — one quantity column). Every UPDATE pins meter identity + date + current small consumption + companion big value (idempotent + drift-safe; post-apply re-run can never match). Rollback = reverse swap, documented in the header. Also repairs the stale live ledger table comment (one→4 notes). **Applied via the Management-API route (ENV_DB gate): 6/6 OK.**
+2. **Original migration honesty repairs (comments only, VALUES untouched):** the header now states the true D1.4 ruling, records that its VALUES seeded the 5 dates inverted, and requires fresh environments to apply BOTH migrations in filename order; the false "energy tab's value is the reading" claim is gone; the ledger comment says 4 notes.
+3. **Suite (`test_parity_backfill_002.py`):** NEW `test_electricity_conflict_direction_big_is_reading` pins date→(big kWh, big cost, small kWh, small cost) from the sha-pinned CSVs and asserts the live direction + `recorded_not_aggregated` per date; NEW `FixMigrationFileContract` (exists / exactly 5 dates / every update drift-guarded + RETURNING / rollback documented); docstring mask count 3→4; the "resolved by the dedicated energy tab" pin text replaced with the true D1.4 direction.
+4. **RED→GREEN discipline honored for the repair itself:** pre-apply suite run at the live inverted DB: **1 failed / 45 passed** — exactly the direction test (`328.0 != 73079.0 : 2024-08-20`), all else green. Post-apply: **46/46 GREEN**.
+5. **Post-verify (measured):** all 5 rows corrected (consumption = big, companion = small, costs swapped, `recorded_not_aggregated` true); `v_monthly_co2e` electricity now 73,296.00 / 71,645.00 / 69,518.99 / 81,249.00 / 42,130.00 kWh (36,640.69 / 35,815.35 / 34,752.56 / 40,616.39 / 21,060.80 kg); `v_overview_carbon` Dec-2025 = **42,130.00 kWh / 21.061 tCO₂e** (was 379.00 / 0.189); view restoration **+335,440.99 kWh ≈ +167.69 tCO₂e** across the 5 months (full big-bill corpus 337,058.99 kWh ≈ 168.50 tCO₂e now present in `consumption`). Integrity pins unchanged: total 1,961 / provenance 1,054 / plant meter 907 @ 2024-01-09→2026-07-04 / consumption non-null 1,028 (121 grid + 907 live). **Idempotency proven:** all 5 guarded updates re-ran with 0 returned rows.
+
+### P3 (rode along)
+
+Stale mask-count docstrings — suite:23 "3 masked notes"→4 and the base migration's ledger comment "one"→4 (live DB comment repaired by the fix migration).
+
+### D5 informational items (accepted, recorded)
+
+RED at `313a8af` not independently re-executable post-apply (D5 verified-by-structure: same 41 test names, RED→final diff = exactly the D2 repair list); PII grep hits are the literal `place_omitted` marker text (clean). Nothing outstanding.
+
+### Battery at the repair head (this lane's own runs)
+
+| gate | result |
+|---|---|
+| contract suite | **46/46 GREEN** (RED 1F/45P pre-apply, recorded above) |
+| vitest FULL | **998 passed / 1 skipped** (53 files) |
+| `tsc -b` | clean |
+| oxlint | 0 errors (pre-existing warnings) |
+| guard | **344/344** (+450 subtests) |
+| runtime | **62/62** (+32 subtests) |
+| release checker | OK **v1.15.1** — NO BUMP honored |
+| `git diff --check` | clean |
+
+Scope exact: fix migration (NEW) + base-migration comment repairs + suite + this handoff — `frontend/`, `CURRENT-WORK.md`, `CHANGELOG.md` zero diff. **Claim stays REVIEW_REQUESTED; the implementer never merges.** D5 re-review at the new head next.

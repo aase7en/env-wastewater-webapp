@@ -22,9 +22,15 @@
 --   full per-row breakdown in raw_payload marked merged_sum. Never re-derived
 --   beyond that stated-row aggregation; computed-looking columns (ค่าใช้จ่าย,
 --   ยอดรวมเหลือ) stored as-written or NULL — never recomputed.
---   Electricity 5 version-conflict dates: the dedicated energy tab's value is
---   the reading; small companion rows preserved verbatim in raw_payload
+--   Electricity 5 version-conflict dates: the big hospital-wide row is the
+--   reading (D1 decision 4); small companions preserved verbatim in raw_payload
 --   (companion_rows, recorded_not_aggregated).
+--   HONESTY NOTE (D5 P1, pull/271#issuecomment-7135229565): this file's VALUES
+--   seeded those 5 dates INVERTED (small-as-reading; the earlier "energy tab's
+--   value is the reading" claim here was false — the tab carries BOTH values at
+--   all 5 dates, so it cannot disambiguate). The direction-fix migration that
+--   follows this file in supabase/migrations/ swaps them on apply; fresh
+--   environments must apply BOTH in filename order.
 --   Dates: all seeded tabs are ค.ศ. d/m/yyyy (day-first, re-proven at D2);
 --   blanks → NULL; unknown ≠ zero. The ledger's 21/01/2025 date is stored
 --   as written (recorded source anomaly).
@@ -129,7 +135,7 @@ create table if not exists carbon.waste_sale_ledger (
   provenance text not null default 'ENV-BACKFILL-002 (sheet เงินขายขยะ ledger, 2026-11-24 share)',
   created_at timestamptz not null default now()
 );
-comment on table carbon.waste_sale_ledger is 'ENV-BACKFILL-002: waste-sale revenue ledger — ยอดรวมเหลือ stored as-written, never recomputed; one personal-name note masked NULL (D1 PII rule).';
+comment on table carbon.waste_sale_ledger is 'ENV-BACKFILL-002: waste-sale revenue ledger — ยอดรวมเหลือ stored as-written, never recomputed; 4 personal-name notes masked NULL (D1 PII rule).';
 do $$
 begin
   if not exists (select 1 from pg_policies
